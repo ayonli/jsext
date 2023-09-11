@@ -1,7 +1,6 @@
 # JsExt
 
-Extended functionalities that are missing in the JavaScript standard types but frequently used in
-practice.
+Extended functions added to JavaScript standard types that are frequently used in practice.
 
 ## Install
 
@@ -11,8 +10,8 @@ npm i @ayonli/jsext
 
 ## Usage
 
-This package adds functions directly onto the builtin type like `String`, `Number`, etc. To use them,
-import the target sub-module into the workspace, like this:
+This package adds functions directly onto the builtin types like `String`, `Number`, etc. To use
+them, import the target sub-module into the workspace, like this:
 
 ```ts
 import "@ayonli/jsext/string";

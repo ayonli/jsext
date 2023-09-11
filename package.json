@@ -1,7 +1,7 @@
 {
     "name": "@ayonli/jsext",
     "version": "0.1.0",
-    "description": "Extended functionalities that are missing in the JavaScript standard types but frequently used in practice.",
+    "description": "Extended functions added to JavaScript standard types that are frequently used in practice.",
     "main": "index.js",
     "types": "index.ts",
     "scripts": {
@@ -9,6 +9,39 @@
         "test": "mocha",
         "postpublish": "ls *.js|xargs rm; ls *.js.map|xargs rm; ls collections/*.js|xargs rm; ls collections/*.js.map|xargs rm"
     },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ayonli/jsext.git"
+    },
+    "keywords": [
+        "compare",
+        "capitalize",
+        "hyphenate",
+        "chunk",
+        "truncate",
+        "random",
+        "isFloat",
+        "count",
+        "split",
+        "uniq",
+        "shuffle",
+        "orderBy",
+        "groupBy",
+        "patch",
+        "pick",
+        "omit",
+        "sum",
+        "avg",
+        "wrap",
+        "sleep",
+        "promise"
+    ],
+    "author": "A-yon Lee <the@ayon.li>",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/ayonli/jsext/issues"
+    },
+    "homepage": "https://github.com/ayonli/jsext#readme",
     "devDependencies": {
         "@types/mocha": "^10.0.1",
         "@types/node": "^20.6.0",
