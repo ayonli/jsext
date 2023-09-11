@@ -1,5 +1,5 @@
 import "./array";
-import { test } from "mocha";
+import { describe, test } from "mocha";
 import { strictEqual, deepStrictEqual, notDeepEqual } from "assert";
 
 test("Array.prototype.first", () => {
@@ -180,7 +180,7 @@ test("Array.prototype.orderBy", () => {
     ] as Item[]);
 });
 
-test("Array.prototype.groupBy", () => {
+describe("Array.prototype.groupBy", () => {
     type Item = { group: string; tag: string; };
     const arr: Item[] = [
         {
@@ -196,16 +196,20 @@ test("Array.prototype.groupBy", () => {
             tag: "C",
         }
     ];
-    const record = arr.groupBy(item => item.group);
 
-    deepStrictEqual(record, {
-        world: [{ group: "world", tag: "A" }],
-        room: [{ group: "room", tag: "B" }, { group: "room", tag: "C" }]
+    test("Object", () => {
+        const record = arr.groupBy(item => item.group);
+        deepStrictEqual(record, {
+            world: [{ group: "world", tag: "A" }],
+            room: [{ group: "room", tag: "B" }, { group: "room", tag: "C" }]
+        });
     });
 
-    const map = arr.groupBy(item => item.group, Map);
-    deepStrictEqual(map, new Map<string, Item[]>([
-        ["world", [{ group: "world", tag: "A" }]],
-        ["room", [{ group: "room", tag: "B" }, { group: "room", tag: "C" }]]
-    ]));
+    test("Map", () => {
+        const map = arr.groupBy(item => item.group, Map);
+        deepStrictEqual(map, new Map<string, Item[]>([
+            ["world", [{ group: "world", tag: "A" }]],
+            ["room", [{ group: "room", tag: "B" }, { group: "room", tag: "C" }]]
+        ]));
+    });
 });

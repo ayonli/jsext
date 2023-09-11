@@ -42,10 +42,13 @@
         "url": "https://github.com/ayonli/jsext/issues"
     },
     "homepage": "https://github.com/ayonli/jsext#readme",
+    "dependencies": {
+        "check-iterable": "^1.1.0",
+        "tslib": "^2.6.2"
+    },
     "devDependencies": {
         "@types/mocha": "^10.0.1",
         "@types/node": "^20.6.0",
-        "dotry": "^1.4.0",
         "mocha": "^10.2.0",
         "ts-node": "^10.9.1",
         "typescript": "^4.9.5"
