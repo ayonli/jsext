@@ -33,6 +33,7 @@
         "sum",
         "avg",
         "wrap",
+        "try",
         "sleep",
         "promise"
     ],
