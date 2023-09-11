@@ -25,6 +25,11 @@ Or import all at once:
 import "@ayonli/jsext";
 ```
 
+> Some people may argue that it's a bad idea to patch methods / functions to the prototypes or
+> constructors of the basic types. But after years of programming and designing APIs (not http
+> endpoints, the real APIs), I've found it that the simplest way of coding is having things work out
+> of the box.
+
 ## Functions
 
 - `String`
