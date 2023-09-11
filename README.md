@@ -1,6 +1,6 @@
 # JsExt
 
-Extended functions added to JavaScript standard types that are frequently used in practice.
+Additional functions added to JavaScript standard types that are frequently used in practice.
 
 ## Install
 

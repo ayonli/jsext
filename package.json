@@ -1,7 +1,7 @@
 {
     "name": "@ayonli/jsext",
     "version": "0.1.0",
-    "description": "Extended functions added to JavaScript standard types that are frequently used in practice.",
+    "description": "Additional functions added to JavaScript standard types that are frequently used in practice.",
     "main": "index.js",
     "types": "index.ts",
     "scripts": {
