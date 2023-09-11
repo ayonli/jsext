@@ -1,0 +1,28 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2018",
+        "newLine": "LF",
+        "importHelpers": true,
+        "sourceMap": true,
+        "strict": true,
+        "noUnusedParameters": true,
+        "noUnusedLocals": true,
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "noImplicitOverride": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "noPropertyAccessFromIndexSignature": true,
+        "noUncheckedIndexedAccess": true,
+        "paths": {
+            "@ayonli/jsext": [
+                "."
+            ]
+        }
+    },
+    "include": [
+        "*.ts",
+        "*/**.ts"
+    ]
+}
