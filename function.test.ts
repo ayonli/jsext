@@ -233,10 +233,10 @@ describe("Function", () => {
         });
     });
 
-    describe("Function.withDefer", () => {
+    describe("Function.useDefer", () => {
         test("regular function", () => {
             const logs: string[] = [];
-            const text = Function.withDefer((defer, text: string) => {
+            const text = Function.useDefer((defer, text: string) => {
                 defer(() => void logs.push("1"));
                 defer(() => void logs.push("2"));
 
@@ -246,7 +246,7 @@ describe("Function", () => {
             strictEqual(text, "Hello, World!");
             deepStrictEqual(logs, ["2", "1"]);
 
-            const [err, text2] = Function.try(() => Function.withDefer((defer, text: string) => {
+            const [err, text2] = Function.try(() => Function.useDefer((defer, text: string) => {
                 defer(() => {
                     throw new Error("something went wrong");
                 });
@@ -260,7 +260,7 @@ describe("Function", () => {
                 name = "Foo";
 
                 say(word: string) {
-                    return Function.withDefer(function (this: Foo, defer, word: string) {
+                    return Function.useDefer(function (this: Foo, defer, word: string) {
                         defer(() => void logs.push(this.name));
                         return word;
                     }).call(this, word);
@@ -275,7 +275,7 @@ describe("Function", () => {
         test("async function", async () => {
             const logs: string[] = [];
             const errors: ({ error: Error | null, tag: string; })[] = [];
-            const text = await Function.withDefer(async (defer, text: string) => {
+            const text = await Function.useDefer(async (defer, text: string) => {
                 defer(async () => void logs.push(await Promise.resolve("1")));
                 defer(async () => void logs.push(await Promise.resolve("2")));
 
@@ -286,7 +286,7 @@ describe("Function", () => {
             deepStrictEqual(logs, ["2", "1"]);
             deepStrictEqual(errors, []);
 
-            const [err, text2] = await Function.try(() => Function.withDefer(async (defer, text: string) => {
+            const [err, text2] = await Function.try(() => Function.useDefer(async (defer, text: string) => {
                 defer(() => Promise.reject(new Error("something went wrong")));
 
                 return await Promise.resolve(text);
@@ -298,7 +298,7 @@ describe("Function", () => {
                 name = "Foo";
 
                 say(word: string) {
-                    return Function.withDefer(async function (this: Foo, defer, word: string) {
+                    return Function.useDefer(async function (this: Foo, defer, word: string) {
                         defer(async () => void logs.push(await Promise.resolve(this.name)));
                         return word;
                     }).call(this, word);
@@ -312,7 +312,7 @@ describe("Function", () => {
 
         test("generator function", () => {
             const logs: string[] = [];
-            const gen = Function.withDefer(function* (defer, text: string) {
+            const gen = Function.useDefer(function* (defer, text: string) {
                 defer(() => void logs.push("1"));
                 defer(() => void logs.push("2"));
 
@@ -334,7 +334,7 @@ describe("Function", () => {
             deepStrictEqual(logs, ["Hello", "World", "2", "1", "Hello, World!"]);
 
             const logs2: string[] = [];
-            const gen2 = Function.try(Function.withDefer(function* (defer, text: string) {
+            const gen2 = Function.try(Function.useDefer(function* (defer, text: string) {
                 defer(() => void logs2.push("1"));
                 defer(() => void logs2.push("2"));
 
@@ -365,7 +365,7 @@ describe("Function", () => {
 
         test("async generator function", async () => {
             const logs: string[] = [];
-            const gen = Function.withDefer(async function* (defer, text: string) {
+            const gen = Function.useDefer(async function* (defer, text: string) {
                 defer(async () => void logs.push(await Promise.resolve("1")));
                 defer(async () => void logs.push(await Promise.resolve("2")));
 
@@ -387,7 +387,7 @@ describe("Function", () => {
             deepStrictEqual(logs, ["Hello", "World", "2", "1", "Hello, World!"]);
 
             const logs2: string[] = [];
-            const gen2 = Function.try(Function.withDefer(async function* (defer, text: string) {
+            const gen2 = Function.try(Function.useDefer(async function* (defer, text: string) {
                 defer(async () => void logs2.push(await Promise.resolve("1")));
                 defer(async () => void logs2.push(await Promise.resolve("2")));
 

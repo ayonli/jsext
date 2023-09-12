@@ -40,7 +40,7 @@ declare global {
         /** Resolves a promise and returns the error and result in a `[err, res]` tuple. */
         try<E = Error, R = any>(job: Promise<R>): Promise<[E, R]>;
         /**
-         * Inspired by Golang, creates a function that accepts a `defer` function which can be used
+         * Inspired by Golang, creates a function that receives a `defer` function which can be used
          * to carry deferred jobs that will be run after the main function is complete.
          * 
          * Multiple calls of the `defer` function is supported, and the callbacks are called in the
@@ -48,7 +48,7 @@ declare global {
          * an async generator function, and all the running procedures will be awaited.
          * 
          * @example
-         *  const getVersion = await Function.withDefer(async (defer) => {
+         *  const getVersion = await Function.useDefer(async (defer) => {
          *      const file = await fs.open("./package.json", "r");
          *      defer(() => file.close());
          *
@@ -58,7 +58,7 @@ declare global {
          *      return pkg.version as string;
          *  });
          */
-        withDefer<T, R = any, A extends any[] = any[]>(
+        useDefer<T, R = any, A extends any[] = any[]>(
             fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R
         ): (this: T, ...args: A) => R;
     }
@@ -165,7 +165,7 @@ Function.try = function (fn: any, ...args: any[]) {
     }
 };
 
-Function.withDefer = function <E, R, A extends any[]>(
+Function.useDefer = function <E, R, A extends any[]>(
     fn: (defer: (cb: () => void) => void, ...args: A) => any
 ) {
     return function (this: any, ...args: A) {
