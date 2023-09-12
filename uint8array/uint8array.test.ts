@@ -1,4 +1,4 @@
-import "./uint8array";
+import "../augment";
 import { describe, test } from "mocha";
 import { deepStrictEqual, ok, strictEqual } from "assert";
 

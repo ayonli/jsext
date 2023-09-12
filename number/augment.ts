@@ -1,4 +1,4 @@
-export { };
+import { isFloat, random } from ".";
 
 declare global {
     interface NumberConstructor {
@@ -9,10 +9,5 @@ declare global {
     }
 }
 
-Number.isFloat = function (value) {
-    return typeof value === "number" && (!Number.isFinite(value) || (value as number) % 1 !== 0);
-};
-
-Number.random = function (min, max) {
-    return min + Math.floor(Math.random() * (max - min + 1));
-};
+Number.isFloat = isFloat;
+Number.random = random;

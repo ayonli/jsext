@@ -1,4 +1,4 @@
-import "./object";
+import "../augment";
 import { describe, test } from "mocha";
 import { deepStrictEqual, ok } from "assert";
 

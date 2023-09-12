@@ -1,4 +1,4 @@
-export { };
+import { avg, product, sum } from ".";
 
 declare global {
     interface Math {
@@ -11,14 +11,6 @@ declare global {
     }
 }
 
-Math.sum = (...values) => {
-    return values.reduce((sum, value) => sum + value, 0);
-};
-
-Math.avg = (...values) => {
-    return Math.sum(...values) / values.length;
-};
-
-Math.product = (...values) => {
-    return values.slice(1).reduce((sum, value) => sum * value, values[0] ?? 0);
-};
+Math.sum = sum;
+Math.avg = avg;
+Math.product = product;

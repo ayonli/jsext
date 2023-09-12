@@ -1,6 +1,6 @@
 # JsExt
 
-Additional functions added to JavaScript standard types that are frequently used in practice.
+Additional functions for JavaScript builtin types that are frequently used in practice.
 
 ## Install
 
@@ -8,29 +8,47 @@ Additional functions added to JavaScript standard types that are frequently used
 npm i @ayonli/jsext
 ```
 
-## Usage
-
-This package adds functions directly onto the builtin types like `String`, `Number`, etc. To use
-them, import the target sub-module into the workspace, like this:
+## Usages
 
 ```ts
-import "@ayonli/jsext/string";
-import "@ayonli/jsext/number";
-// ...
+import jsext from "@ayonli/jsext";
 ```
-
-Or import all at once:
-
-```ts
-import "@ayonli/jsext";
-```
-
-> Some people may argue that it's a bad idea to patch methods / functions to the prototypes or
-> constructors of the basic types. But after years of programming and designing APIs (not http
-> endpoints, the real APIs), I've found it that the simplest way of coding is having things work out
-> of the box.
 
 ## Functions
+
+- `try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(fn: (...args: A) => AsyncGenerator<T, TReturn, TNext>, ...args: A): AsyncGenerator<[E, T], [E, TReturn], TNext>`
+- `try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(fn: (...args: A) => Generator<T, TReturn, TNext>, ...args: A): Generator<[E, T], [E, TReturn], TNext>`
+- `try<E = Error, R = any, A extends any[] = any[]>(fn: (...args: A) => Promise<R>, ...args: A): Promise<[E, R]>`
+- `try<E = Error, R = any, A extends any[] = any[]>(fn: (...args: A) => R, ...args: A): [E, R]`
+- `try<E = Error, T = any, TReturn = any, TNext = unknown>(gen: AsyncGenerator<T, TReturn, TNext>): AsyncGenerator<[E, T], [E, TReturn], TNext>`
+- `try<E = Error, T = any, TReturn = any, TNext = unknown>(gen: Generator<T, TReturn, TNext>): Generator<[E, T], [E, TReturn], TNext>`
+- `try<E = Error, R = any>(job: Promise<R>): Promise<[E, R]>`
+- `func<T, R = any, A extends any[] = any[]>(fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R): (this: T, ...args: A) => R`
+- `wrap<T, Fn extends (this: T, ...args: any[]) => any>(fn: Fn, wrapper: (this: T, fn: Fn, ...args: Parameters<Fn>) => ReturnType<Fn>): Fn`
+
+## Sub-packages
+
+### string
+
+```ts
+import { capitalize, chunk, /* ... */ } from "@ayonli/jsext/string";
+// or
+import "@ayonli/jsext/string/augment";
+```
+
+**Functions**
+
+- `compare(str1: string, str2: string): -1 | 0 | 1`
+- `random(length: number): string`
+- `count(str: string, sub: string): number`
+- `capitalize(str: string, all?: boolean): string`
+- `hyphenate(str: string): string`
+- `words(str: string): string[]`
+- `chunk(str: string, length: number): string[]`
+- `truncate(str: string, length: number): string`
+- `byteLength(str: string): number`
+
+**Augment**
 
 - `String`
     - `compare(str1: string, str2: string): -1 | 0 | 1`
@@ -44,9 +62,40 @@ import "@ayonli/jsext";
         - `truncate(length: number): string`
         - `byteLength(): number`
 
-- `Number`
-    - `isFloat(value: unknown): boolean`
-    - `random(min: number, max: number): number`
+### number
+
+```ts
+import { isFloat, random } from "@ayonli/jsext/number";
+// or
+import "@ayonli/jsext/number/augment";
+```
+
+**Functions**
+
+- `isFloat(value: unknown): boolean`
+- `random(min: number, max: number): number`
+
+### array
+
+```ts
+import { count, split, /* ... */ } from "@ayonli/jsext/array";
+// or
+import "@ayonli/jsext/array/augment";
+```
+
+**Functions**
+
+- `count<T>(arr: RealArrayLike<T>, ele: T): number`
+- `equals<T>(arr1: RealArrayLike<T>, arr2: RealArrayLike<T>): boolean`
+- `split<T>(arr: RealArrayLike<T>, delimiter: T): RealArrayLike<T>[]`
+- `chunk<T>(arr: RealArrayLike<T>, length: number): RealArrayLike<T>[]`
+- `uniq<T>(arr: T[]): T[]`
+- `shuffle<T>(arr: T[]): T[]`
+- `orderBy<T>(arr: T[], key: keyof T, order: "asc" | "desc" = "asc"): T[]`
+- `groupBy<T>(arr: T[], fn: (item: T, i: number) => string | symbol, type?: ObjectConstructor): Record<string | symbol, T[]>`
+- `groupBy<T, K extends string>(arr: T[], fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
+
+**Augment**
 
 - `Array<T>`
     - `prototype`
@@ -65,6 +114,23 @@ import "@ayonli/jsext";
         - `groupBy(fn: (item: T, i: number) => string | symbol, type?: ObjectConstructor): Record<string | symbol, T[]>`
         - `groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
 
+### uint8array
+
+```ts
+import { compare, split, /* ... */ } from "@ayonli/jsext/uint8array";
+// or
+import "@ayonli/jsext/uint8array/augment";
+```
+
+**Functions**
+
+- `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
+- `equals(arr1: Uint8Array, arr2: Uint8Array): boolean`
+- `split<T extends Uint8Array>(arr: T, delimiter: number): T[]`
+- `chunk<T extends Uint8Array>(arr: T, length: number): T[]`
+
+**Augment**
+
 - `Uint8Array`
     - `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
     - `prototype`
@@ -72,47 +138,63 @@ import "@ayonli/jsext";
         - `split(delimiter: number): this[]`
         - `chunk(length: number): this[]`
 
-- `Object`
-    - `hasOwn(obj: any, key: string | number | symbol): boolean`
-    - `patch<T extends {}, U>(target: T, source: U): T & U`
-    - `patch<T extends {}, U, V>(target: T, source1: U, source2: V): T & U & V`
-    - `patch<T extends {}, U, V, W>(target: T, source1: U, source2: V, source3: W): T & U & V & W`
-    - `patch(target: object, ...sources: any[]): any`
-    - `pick<T extends object, U extends keyof T>(obj: T, keys: U[]): Pick<T, U>`
-    - `pick<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
-    - `omit<T extends object, U extends keyof T>(obj: T, keys: U[]): Omit<T, U>`
-    - `omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
+### object
 
-- `Function`
-    - `wrap<T, Fn extends (this: T, ...args: any[]) => any>(fn: Fn, wrapper: (this: T, fn: Fn, ...args: Parameters<Fn>) => ReturnType<Fn>): Fn`
-    - `try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(fn: (...args: A) => AsyncGenerator<T, TReturn, TNext>, ...args: A): AsyncGenerator<[E, T], [E, TReturn], TNext>`
-    - `try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(fn: (...args: A) => Generator<T, TReturn, TNext>, ...args: A): Generator<[E, T], [E, TReturn], TNext>`
-    - `try<E = Error, R = any, A extends any[] = any[]>(fn: (...args: A) => Promise<R>, ...args: A): Promise<[E, R]>`
-    - `try<E = Error, R = any, A extends any[] = any[]>(fn: (...args: A) => R, ...args: A): [E, R]`
-    - `try<E = Error, T = any, TReturn = any, TNext = unknown>(gen: AsyncGenerator<T, TReturn, TNext>): AsyncGenerator<[E, T], [E, TReturn], TNext>`
-    - `try<E = Error, T = any, TReturn = any, TNext = unknown>(gen: Generator<T, TReturn, TNext>): Generator<[E, T], [E, TReturn], TNext>`
-    - `try<E = Error, R = any>(job: Promise<R>): Promise<[E, R]>`
-    - `useDefer<T, R = any, A extends any[] = any[]>(fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R): (this: T, ...args: A) => R`
+```ts
+import { hasOwn, pathc, /* ... */ } from "@ayonli/jsext/object";
+// or
+import "@ayonli/jsext/object/augment";
+```
 
-- `Math`
-    - `sum(...values: number[]): number`
-    - `avg(...values: number[]): number`
-    - `product(...values: number[]): number`
+**Functions**
 
-- `Promise`
-    - `timeout<T>(value: T | Promise<T>, ms: number): Promise<T>`
-    - `after<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
-    - `sleep(ms: number): Promise<void>`
+- `hasOwn(obj: any, key: string | number | symbol): boolean`
+- `patch<T extends {}, U>(target: T, source: U): T & U`
+- `patch<T extends {}, U, V>(target: T, source1: U, source2: V): T & U & V`
+- `patch<T extends {}, U, V, W>(target: T, source1: U, source2: V, source3: W): T & U & V & W`
+- `patch(target: object, ...sources: any[]): any`
+- `pick<T extends object, U extends keyof T>(obj: T, keys: U[]): Pick<T, U>`
+- `pick<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
+- `omit<T extends object, U extends keyof T>(obj: T, keys: U[]): Omit<T, U>`
+- `omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
 
-## Sub-packages
+### math
 
-**collections**
+```ts
+import { sum, avg, product } from "@ayonli/jsext/math";
+// or
+import "@ayonli/jsext/math/augment";
+```
+
+**Functions**
+
+- `sum(...values: number[]): number`
+- `avg(...values: number[]): number`
+- `product(...values: number[]): number`
+
+### promise
+
+```ts
+import { timeout, after, sleep } from "@ayonli/jsext/promise";
+// or
+import "@ayonli/jsext/promise/augment";
+```
+
+**Functions**
+
+- `timeout<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
+- `after<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
+- `sleep(ms: number): Promise<void>`
+
+### collections
 
 ```ts
 import BiMap from "@ayonli/jsext/collections/BiMap";
 import CiMap from "@ayonli/jsext/collections/CiMap";
 // or
 import { BiMap, CiMap } from "@ayonli/jsext/collections";
+// or
+import "@ayonli/jsext/collections/augment";
 ```
 
 - `BiMap<K, V>` (extends `Map<K, V>`) Bi-directional map, keys and values are unique and map to each
@@ -123,3 +205,9 @@ import { BiMap, CiMap } from "@ayonli/jsext/collections";
         - `deleteValue(value: V): boolean`
 - `CiMap<K extends string, V>` (implements `Map<K, V>`) Case-insensitive map, keys are
     case-insensitive.
+
+## Import All Sub-package Augments At Once
+
+```ts
+import "@ayonli/jsext/augment";
+```

@@ -1,14 +1,14 @@
-import "./function";
-import "./string";
+import jsext from "./index";
+import { words } from "./string";
 import { describe, test } from "mocha";
 import { deepStrictEqual, strictEqual } from "assert";
 
-describe("Function", () => {
-    test("Function.wrap", () => {
+describe("jsext", () => {
+    test("jsext.wrap", () => {
         function echo(text: string) {
             console.log(text);
         }
-        const wrapped = Function.wrap(echo, (fn, text) => {
+        const wrapped = jsext.wrap(echo, (fn, text) => {
             fn(text);
         });
 
@@ -17,7 +17,7 @@ describe("Function", () => {
         strictEqual(wrapped.toString(), echo.toString());
     });
 
-    describe("Function.try", () => {
+    describe("jsext.try", () => {
         const EmptyStringError = new Error("the string must not be empty");
 
         test("regular function", () => {
@@ -28,8 +28,8 @@ describe("Function", () => {
                 return str;
             }
 
-            deepStrictEqual(Function.try(check, "Hello, World!"), [null, "Hello, World!"]);
-            deepStrictEqual(Function.try(check, ""), [EmptyStringError, undefined]);
+            deepStrictEqual(jsext.try(check, "Hello, World!"), [null, "Hello, World!"]);
+            deepStrictEqual(jsext.try(check, ""), [EmptyStringError, undefined]);
         });
 
         test("async function", async () => {
@@ -40,8 +40,8 @@ describe("Function", () => {
                 return await Promise.resolve(str);
             }
 
-            deepStrictEqual(await Function.try(check, "Hello, World!"), [null, "Hello, World!"]);
-            deepStrictEqual(await Function.try(check, ""), [EmptyStringError, undefined]);
+            deepStrictEqual(await jsext.try(check, "Hello, World!"), [null, "Hello, World!"]);
+            deepStrictEqual(await jsext.try(check, ""), [EmptyStringError, undefined]);
         });
 
         test("generator function", () => {
@@ -57,7 +57,7 @@ describe("Function", () => {
                 return "OK";
             }
 
-            const res = Function.try(check, "Hello, World!");
+            const res = jsext.try(check, "Hello, World!");
             const errors: Error[] = [];
             let str = "";
 
@@ -77,7 +77,7 @@ describe("Function", () => {
             deepStrictEqual(errors, []);
             strictEqual(str, "Hello, World!OK");
 
-            const res2 = Function.try(check(""));
+            const res2 = jsext.try(check(""));
             const errors2: Error[] = [];
             let str2 = "";
 
@@ -111,7 +111,7 @@ describe("Function", () => {
                 return "OK";
             }
 
-            const res = Function.try(check, "Hello, World!");
+            const res = jsext.try(check, "Hello, World!");
             const errors: Error[] = [];
             let str = "";
 
@@ -131,7 +131,7 @@ describe("Function", () => {
             deepStrictEqual(errors, []);
             strictEqual(str, "Hello, World!OK");
 
-            const res2 = Function.try(check(""));
+            const res2 = jsext.try(check(""));
             const errors2: Error[] = [];
             let str2 = "";
 
@@ -160,12 +160,12 @@ describe("Function", () => {
                 return await Promise.resolve(str);
             }
 
-            deepStrictEqual(await Function.try(check("Hello, World!")), [null, "Hello, World!"]);
-            deepStrictEqual(await Function.try(check("")), [EmptyStringError, undefined]);
+            deepStrictEqual(await jsext.try(check("Hello, World!")), [null, "Hello, World!"]);
+            deepStrictEqual(await jsext.try(check("")), [EmptyStringError, undefined]);
         });
 
         test("pass value into generator function", () => {
-            const res = Function.try(function* (str): Generator<string, string, number> {
+            const res = jsext.try(function* (str): Generator<string, string, number> {
                 if (str.length === 0) {
                     throw EmptyStringError;
                 }
@@ -199,7 +199,7 @@ describe("Function", () => {
         });
 
         test("pass value into async generator function", async () => {
-            const res = Function.try(async function* (str): AsyncGenerator<string, string, number> {
+            const res = jsext.try(async function* (str): AsyncGenerator<string, string, number> {
                 if (str.length === 0) {
                     throw EmptyStringError;
                 }
@@ -233,10 +233,10 @@ describe("Function", () => {
         });
     });
 
-    describe("Function.useDefer", () => {
+    describe("jsext.func", () => {
         test("regular function", () => {
             const logs: string[] = [];
-            const text = Function.useDefer((defer, text: string) => {
+            const text = jsext.func((defer, text: string) => {
                 defer(() => void logs.push("1"));
                 defer(() => void logs.push("2"));
 
@@ -246,7 +246,7 @@ describe("Function", () => {
             strictEqual(text, "Hello, World!");
             deepStrictEqual(logs, ["2", "1"]);
 
-            const [err, text2] = Function.try(() => Function.useDefer((defer, text: string) => {
+            const [err, text2] = jsext.try(() => jsext.func((defer, text: string) => {
                 defer(() => {
                     throw new Error("something went wrong");
                 });
@@ -260,7 +260,7 @@ describe("Function", () => {
                 name = "Foo";
 
                 say(word: string) {
-                    return Function.useDefer(function (this: Foo, defer, word: string) {
+                    return jsext.func(function (this: Foo, defer, word: string) {
                         defer(() => void logs.push(this.name));
                         return word;
                     }).call(this, word);
@@ -275,7 +275,7 @@ describe("Function", () => {
         test("async function", async () => {
             const logs: string[] = [];
             const errors: ({ error: Error | null, tag: string; })[] = [];
-            const text = await Function.useDefer(async (defer, text: string) => {
+            const text = await jsext.func(async (defer, text: string) => {
                 defer(async () => void logs.push(await Promise.resolve("1")));
                 defer(async () => void logs.push(await Promise.resolve("2")));
 
@@ -286,7 +286,7 @@ describe("Function", () => {
             deepStrictEqual(logs, ["2", "1"]);
             deepStrictEqual(errors, []);
 
-            const [err, text2] = await Function.try(() => Function.useDefer(async (defer, text: string) => {
+            const [err, text2] = await jsext.try(() => jsext.func(async (defer, text: string) => {
                 defer(() => Promise.reject(new Error("something went wrong")));
 
                 return await Promise.resolve(text);
@@ -298,7 +298,7 @@ describe("Function", () => {
                 name = "Foo";
 
                 say(word: string) {
-                    return Function.useDefer(async function (this: Foo, defer, word: string) {
+                    return jsext.func(async function (this: Foo, defer, word: string) {
                         defer(async () => void logs.push(await Promise.resolve(this.name)));
                         return word;
                     }).call(this, word);
@@ -312,11 +312,11 @@ describe("Function", () => {
 
         test("generator function", () => {
             const logs: string[] = [];
-            const gen = Function.useDefer(function* (defer, text: string) {
+            const gen = jsext.func(function* (defer, text: string) {
                 defer(() => void logs.push("1"));
                 defer(() => void logs.push("2"));
 
-                for (const word of text.words()) {
+                for (const word of words(text)) {
                     yield word;
                 }
 
@@ -334,11 +334,11 @@ describe("Function", () => {
             deepStrictEqual(logs, ["Hello", "World", "2", "1", "Hello, World!"]);
 
             const logs2: string[] = [];
-            const gen2 = Function.try(Function.useDefer(function* (defer, text: string) {
+            const gen2 = jsext.try(jsext.func(function* (defer, text: string) {
                 defer(() => void logs2.push("1"));
                 defer(() => void logs2.push("2"));
 
-                for (const word of text.words()) {
+                for (const word of words(text)) {
                     if (word === "World") {
                         throw new Error("something went wrong");
                     } else {
@@ -365,11 +365,11 @@ describe("Function", () => {
 
         test("async generator function", async () => {
             const logs: string[] = [];
-            const gen = Function.useDefer(async function* (defer, text: string) {
+            const gen = jsext.func(async function* (defer, text: string) {
                 defer(async () => void logs.push(await Promise.resolve("1")));
                 defer(async () => void logs.push(await Promise.resolve("2")));
 
-                for (const word of text.words()) {
+                for (const word of words(text)) {
                     yield word;
                 }
 
@@ -387,11 +387,11 @@ describe("Function", () => {
             deepStrictEqual(logs, ["Hello", "World", "2", "1", "Hello, World!"]);
 
             const logs2: string[] = [];
-            const gen2 = Function.try(Function.useDefer(async function* (defer, text: string) {
+            const gen2 = jsext.try(jsext.func(async function* (defer, text: string) {
                 defer(async () => void logs2.push(await Promise.resolve("1")));
                 defer(async () => void logs2.push(await Promise.resolve("2")));
 
-                for (const word of text.words()) {
+                for (const word of words(text)) {
                     if (word === "World") {
                         throw new Error("something went wrong");
                     } else {

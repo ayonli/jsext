@@ -1,5 +1,5 @@
-import "./promise";
-import "./function";
+import "../augment";
+import jsext from "../index";
 import { describe, test } from "mocha";
 import { deepStrictEqual, ok, strictEqual } from "assert";
 
@@ -14,7 +14,7 @@ describe("Promise", () => {
                 resolve(1);
             }, 100);
         });
-        const [err, res2] = await Function.try(Promise.timeout(job, 50));
+        const [err, res2] = await jsext.try(Promise.timeout(job, 50));
         strictEqual(res2, undefined);
         deepStrictEqual(err, new Error("operation timeout after 50ms"));
     });

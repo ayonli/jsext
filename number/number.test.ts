@@ -1,4 +1,4 @@
-import "./number";
+import "../augment";
 import { describe, test } from "mocha";
 import { ok, strictEqual } from "assert";
 

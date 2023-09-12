@@ -71,7 +71,7 @@ export default class CiMap<K extends string, V> implements Map<K, V> {
         }, thisArg);
     }
 
-    [Symbol.iterator]() {
+    [Symbol.iterator](): IterableIterator<[K, V]> {
         return this.entries();
     }
 }

@@ -1,4 +1,4 @@
-import "./math";
+import "../augment";
 import { describe, test } from "mocha";
 import { strictEqual } from "assert";
 

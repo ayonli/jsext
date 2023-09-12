@@ -1,4 +1,4 @@
-export { };
+import { hasOwn, omit, patch, pick } from ".";
 
 declare global {
     interface ObjectConstructor {
@@ -28,49 +28,9 @@ declare global {
 }
 
 if (!Object.hasOwn) {
-    Object.hasOwn = function (obj, key) {
-        return Object.prototype.hasOwnProperty.call(obj, key);
-    };
+    Object.hasOwn = hasOwn;
 }
 
-Object.patch = function (target: any, ...sources: any[]) {
-    for (const source of sources) {
-        for (const key of Reflect.ownKeys(source)) {
-            if (!Object.hasOwn(target, key) || target[key] === undefined) {
-                target[key] = source[key];
-            }
-        }
-    }
-
-    return target;
-};
-
-Object.pick = function (obj: any, keys: (string | symbol)[]) {
-    return keys.reduce((result: any, key: string | symbol) => {
-        if (key in obj && obj[key] !== undefined) {
-            result[key] = obj[key];
-        }
-
-        return result;
-    }, {});
-};
-
-Object.omit = function (obj: any, keys: (string | symbol)[]) {
-    const allKeys = Reflect.ownKeys(obj);
-    const keptKeys = allKeys.filter(key => !keys.includes(key));
-    const result = Object.pick(obj, keptKeys);
-
-    // special treatment for Error types
-    if (obj instanceof Error) {
-        ["name", "message"].forEach(key => {
-            if (!keys.includes(key) &&
-                (obj as any)[key] !== undefined &&
-                !Object.hasOwn(result, key)
-            ) {
-                result[key] = (obj as any)[key];
-            }
-        });
-    }
-
-    return result;
-};
+Object.patch = patch;
+Object.pick = pick;
+Object.omit = omit;
