@@ -7,7 +7,7 @@
     "scripts": {
         "prepublishOnly": "tsc",
         "test": "mocha",
-        "postpublish": "ls *.js|xargs rm; ls *.js.map|xargs rm; ls collections/*.js|xargs rm; ls collections/*.js.map|xargs rm"
+        "postpublish": "ls *.js|xargs rm; ls *.js.map|xargs rm; ls */*.js|xargs rm; ls */*.js.map|xargs rm"
     },
     "repository": {
         "type": "git",
