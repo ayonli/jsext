@@ -22,9 +22,10 @@ describe("Promise", () => {
     test("Promise.after", async () => {
         let startTime = Date.now();
         const res1 = await Promise.after(Promise.resolve(1), 50);
+        const duration = Date.now() - startTime;
 
         strictEqual(res1, 1);
-        ok(Date.now() - startTime >= 50);
+        ok(duration >= 49); // setTimeout is inaccurate, it could tick faster then expected.
 
         startTime = Date.now();
         const job = new Promise<number>((resolve) => {
@@ -33,8 +34,10 @@ describe("Promise", () => {
             }, 100);
         });
         const res2 = await Promise.after(job, 50);
+        const duration2 = Date.now() - startTime;
+
         strictEqual(res2, 1);
-        ok(Date.now() - startTime >= 100);
+        ok(duration2 >= 100);
     });
 
     test("Promise.sleep", async () => {
