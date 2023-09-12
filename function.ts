@@ -1,10 +1,5 @@
 import { isGenerator, isAsyncGenerator } from "check-iterable";
 
-export type DeferredCallback<E, R> = (result: {
-    value?: Awaited<R>;
-    error: E | null;
-}) => R extends Promise<any> ? Promise<void> : void;
-
 declare global {
     interface FunctionConstructor {
         /**
@@ -45,18 +40,12 @@ declare global {
         /** Resolves a promise and returns the error and result in a `[err, res]` tuple. */
         try<E = Error, R = any>(job: Promise<R>): Promise<[E, R]>;
         /**
-         * Inspired by Golang, creates a function that accepts a `defer` function which can be used to
-         * carry deferred jobs that will be run after the main function is complete.
-         * 
-         * The deferred callback function receives an argument which is an object in the form of
-         * `{ value, error }`, in which the `value` is the return value of the main function and the
-         * `error` is the error happened during the call. Both properties can be modified in the
-         * deferred callback, and the result (return / thrown value) of the main function will be
-         * altered accordingly.
+         * Inspired by Golang, creates a function that accepts a `defer` function which can be used
+         * to carry deferred jobs that will be run after the main function is complete.
          * 
          * Multiple calls of the `defer` function is supported, and the callbacks are called in the
-         * LIFO order. Callbacks can be async functions if the main function is an async function,
-         * and the running procedures will all awaited.
+         * LIFO order. Callbacks can be async functions if the main function is an async function or
+         * an async generator function, and all the running procedures will be awaited.
          * 
          * @example
          *  const getVersion = await Function.withDefer(async (defer) => {
@@ -69,8 +58,8 @@ declare global {
          *      return pkg.version as string;
          *  });
          */
-        withDefer<T, E = Error, R = any, A extends any[] = any[]>(
-            fn: (this: T, defer: (cb: DeferredCallback<E, R>) => void, ...args: A) => R
+        withDefer<T, R = any, A extends any[] = any[]>(
+            fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R
         ): (this: T, ...args: A) => R;
     }
 }
@@ -99,22 +88,19 @@ Function.wrap = function <T extends (...args: any[]) => any>(
     return wrapped as T;
 };
 
-function handleTry(res: any) {
+function handleTry(returns: any) {
     // Implementation details should be ordered from complex to simple.
 
-    if (isAsyncGenerator(res)) {
+    if (isAsyncGenerator(returns)) {
         return (async function* () {
-            let input: any;
+            let input: unknown;
             let result: any;
 
             // Use `while` loop instead of `for...of...` in order to
             // retrieve the return value of a generator function.
             while (true) {
                 try {
-                    let {
-                        done,
-                        value
-                    } = await (<AsyncIterableIterator<any>>res).next(input);
+                    let { done, value } = await returns.next(input);
 
                     if (done) {
                         result = value;
@@ -135,18 +121,15 @@ function handleTry(res: any) {
             }
 
             return Promise.resolve([null, result]);
-        })() as AsyncIterableIterator<any>;
-    } else if (isGenerator(res)) {
+        })() as AsyncGenerator<unknown, any, unknown>;
+    } else if (isGenerator(returns)) {
         return (function* () {
-            let input: any;
+            let input: unknown;
             let result: any;
 
             while (true) {
                 try {
-                    let {
-                        done,
-                        value
-                    } = (<IterableIterator<any>>res).next(input);
+                    let { done, value } = returns.next(input);
 
                     if (done) {
                         result = value;
@@ -161,20 +144,12 @@ function handleTry(res: any) {
             }
 
             return [null, result];
-        })() as IterableIterator<any>;
-    } else if (typeof res?.then === "function") {
-        res = (res as PromiseLike<any>).then((value: any) => [null, value]);
-
-        // There is no guarantee that a promise-like object's `then()`
-        // method will always return a promise, to avoid any trouble, we
-        // need to do one more check.
-        if (typeof res?.catch === "function") {
-            return (res as Promise<any>).catch((err: unknown) => [err, undefined]);
-        } else {
-            return res;
-        }
+        })() as Generator<unknown, any, unknown>;
+    } else if (typeof returns?.then === "function") {
+        returns = (returns as PromiseLike<any>).then((value: any) => [null, value]);
+        return Promise.resolve(returns).catch((err: unknown) => [err, undefined]) as any;
     } else {
-        return [null, res];
+        return [null, returns];
     }
 }
 
@@ -191,20 +166,90 @@ Function.try = function (fn: any, ...args: any[]) {
 };
 
 Function.withDefer = function <E, R, A extends any[]>(
-    fn: (defer: (cb: DeferredCallback<E, R>) => void, ...args: A) => any
+    fn: (defer: (cb: () => void) => void, ...args: A) => any
 ) {
     return function (this: any, ...args: A) {
-        const callbacks: DeferredCallback<E, R>[] = [];
-        const defer = (cb: DeferredCallback<E, R>) => {
-            callbacks.push(cb);
-        };
+        const callbacks: (() => void)[] = [];
+        const defer = (cb: () => void) => void callbacks.push(cb);
         type Result = { value?: Awaited<R>; error: E | null; };
         let result: Result | undefined;
 
         try {
             const returns = fn.call(this, defer, ...args) as any;
 
-            if (typeof returns?.["then"] === "function") {
+            if (isAsyncGenerator(returns)) {
+                const gen = (async function* () {
+                    let input: unknown;
+
+                    // Use `while` loop instead of `for...of...` in order to
+                    // retrieve the return value of a generator function.
+                    while (true) {
+                        try {
+                            let { done, value } = await returns.next(input);
+
+                            if (done) {
+                                result = { value, error: null };
+                                break;
+                            } else {
+                                // Receive any potential input value that passed
+                                // to the outer `next()` call, and pass them to
+                                // `res.next()` in the next call.
+                                input = yield Promise.resolve(value);
+                            }
+                        } catch (error) {
+                            // If any error occurs, capture that error and break
+                            // the loop immediately, indicating the process is
+                            // forced broken.
+                            result = { value: void 0, error } as Result;
+                            break;
+                        }
+                    }
+
+                    for (let i = callbacks.length - 1; i >= 0; i--) {
+                        await (callbacks[i] as () => void | Promise<void>)?.();
+                    }
+
+                    if (result.error) {
+                        throw result.error;
+                    } else {
+                        return Promise.resolve(result.value);
+                    }
+                })() as AsyncGenerator<unknown, any, unknown>;
+
+                return gen as R;
+            } else if (isGenerator(returns)) {
+                const gen = (function* () {
+                    let input: unknown;
+
+                    while (true) {
+                        try {
+                            let { done, value } = returns.next(input);
+
+                            if (done) {
+                                result = { value, error: null };
+                                break;
+                            } else {
+                                input = yield value;
+                            }
+                        } catch (error) {
+                            result = { value: void 0, error } as Result;
+                            break;
+                        }
+                    }
+
+                    for (let i = callbacks.length - 1; i >= 0; i--) {
+                        callbacks[i]?.();
+                    }
+
+                    if (result.error) {
+                        throw result.error;
+                    } else {
+                        return result.value;
+                    }
+                })() as Generator<unknown, R, unknown>;
+
+                return gen as R;
+            } else if (typeof returns?.then === "function") {
                 return Promise.resolve(returns as PromiseLike<R>).then(value => ({
                     value,
                     error: null,
@@ -213,7 +258,7 @@ Function.withDefer = function <E, R, A extends any[]>(
                     error,
                 } as Result)).then(async result => {
                     for (let i = callbacks.length - 1; i >= 0; i--) {
-                        await callbacks[i]?.(result);
+                        await (callbacks[i] as () => void | Promise<void>)?.();
                     }
 
                     if (result.error) {
@@ -225,12 +270,12 @@ Function.withDefer = function <E, R, A extends any[]>(
             } else {
                 result = { value: returns, error: null } as Result;
             }
-        } catch (error: unknown) {
+        } catch (error) {
             result = { value: void 0, error } as Result;
         }
 
         for (let i = callbacks.length - 1; i >= 0; i--) {
-            callbacks[i]?.(result);
+            callbacks[i]?.();
         }
 
         if (result.error) {

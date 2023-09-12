@@ -1,4 +1,5 @@
 import "./function";
+import "./string";
 import { describe, test } from "mocha";
 import { deepStrictEqual, strictEqual } from "assert";
 
@@ -234,37 +235,20 @@ describe("Function", () => {
 
     describe("Function.withDefer", () => {
         test("regular function", () => {
-            const logs: { log: string, tag: string; }[] = [];
-            const errors: ({ error: Error | null, tag: string; })[] = [];
+            const logs: string[] = [];
             const text = Function.withDefer((defer, text: string) => {
-                defer(res => {
-                    if (res.value) {
-                        logs.push({ log: res.value, tag: "1" });
-                    } else {
-                        errors.push({ error: res.error, tag: "1" });
-                    }
-                });
-                defer(res => {
-                    if (res.value) {
-                        logs.push({ log: res.value, tag: "2" });
-                    } else {
-                        errors.push({ error: res.error, tag: "2" });
-                    }
-                });
+                defer(() => void logs.push("1"));
+                defer(() => void logs.push("2"));
 
                 return text;
             })("Hello, World!");
 
             strictEqual(text, "Hello, World!");
-            deepStrictEqual(logs, [
-                { log: "Hello, World!", tag: "2" },
-                { log: "Hello, World!", tag: "1" }
-            ] as typeof logs);
-            deepStrictEqual(errors, []);
+            deepStrictEqual(logs, ["2", "1"]);
 
             const [err, text2] = Function.try(() => Function.withDefer((defer, text: string) => {
-                defer(res => {
-                    res.error = new Error("something went wrong");
+                defer(() => {
+                    throw new Error("something went wrong");
                 });
 
                 return text;
@@ -277,51 +261,33 @@ describe("Function", () => {
 
                 say(word: string) {
                     return Function.withDefer(function (this: Foo, defer, word: string) {
-                        defer(res => {
-                            res.value = this.name + " says '" + res.value + "'";
-                        });
+                        defer(() => void logs.push(this.name));
                         return word;
                     }).call(this, word);
                 }
             }
 
             const text3 = new Foo().say("bar");
-            strictEqual(text3, "Foo says 'bar'");
+            strictEqual(text3, "bar");
+            deepStrictEqual(logs, ["2", "1", "Foo"]);
         });
 
         test("async function", async () => {
-            const logs: { log: string, tag: string; }[] = [];
+            const logs: string[] = [];
             const errors: ({ error: Error | null, tag: string; })[] = [];
             const text = await Function.withDefer(async (defer, text: string) => {
-                defer(async res => {
-                    if (res.value) {
-                        logs.push(await Promise.resolve({ log: res.value, tag: "1" }));
-                    } else {
-                        errors.push(await Promise.resolve({ error: res.error, tag: "1" }));
-                    }
-                });
-                defer(async res => {
-                    if (res.value) {
-                        logs.push(await Promise.resolve({ log: res.value, tag: "2" }));
-                    } else {
-                        errors.push(await Promise.resolve({ error: res.error, tag: "2" }));
-                    }
-                });
+                defer(async () => void logs.push(await Promise.resolve("1")));
+                defer(async () => void logs.push(await Promise.resolve("2")));
 
                 return await Promise.resolve(text);
             })("Hello, World!");
 
             strictEqual(text, "Hello, World!");
-            deepStrictEqual(logs, [
-                { log: "Hello, World!", tag: "2" },
-                { log: "Hello, World!", tag: "1" }
-            ] as typeof logs);
+            deepStrictEqual(logs, ["2", "1"]);
             deepStrictEqual(errors, []);
 
             const [err, text2] = await Function.try(() => Function.withDefer(async (defer, text: string) => {
-                defer(async res => {
-                    res.error = await Promise.resolve(new Error("something went wrong"));
-                });
+                defer(() => Promise.reject(new Error("something went wrong")));
 
                 return await Promise.resolve(text);
             })("Hello, World!"));
@@ -333,16 +299,121 @@ describe("Function", () => {
 
                 say(word: string) {
                     return Function.withDefer(async function (this: Foo, defer, word: string) {
-                        defer(res => {
-                            res.value = this.name + " says '" + res.value + "'";
-                        });
+                        defer(async () => void logs.push(await Promise.resolve(this.name)));
                         return word;
                     }).call(this, word);
                 }
             }
 
             const text3 = await new Foo().say("bar");
-            strictEqual(text3, "Foo says 'bar'");
+            strictEqual(text3, "bar");
+            deepStrictEqual(logs, ["2", "1", "Foo"]);
+        });
+
+        test("generator function", () => {
+            const logs: string[] = [];
+            const gen = Function.withDefer(function* (defer, text: string) {
+                defer(() => void logs.push("1"));
+                defer(() => void logs.push("2"));
+
+                for (const word of text.words()) {
+                    yield word;
+                }
+
+                return text;
+            })("Hello, World!");
+
+            while (true) {
+                const { done, value } = gen.next();
+                logs.push(value);
+
+                if (done)
+                    break;
+            }
+
+            deepStrictEqual(logs, ["Hello", "World", "2", "1", "Hello, World!"]);
+
+            const logs2: string[] = [];
+            const gen2 = Function.try(Function.withDefer(function* (defer, text: string) {
+                defer(() => void logs2.push("1"));
+                defer(() => void logs2.push("2"));
+
+                for (const word of text.words()) {
+                    if (word === "World") {
+                        throw new Error("something went wrong");
+                    } else {
+                        yield word;
+                    }
+                }
+
+                return text;
+            })("Hello, World!"));
+
+            while (true) {
+                const { done, value: [err, res] } = gen2.next();
+
+                if (!err) {
+                    logs2.push(res);
+                }
+
+                if (done)
+                    break;
+            }
+
+            deepStrictEqual(logs2, ["Hello", "2", "1", undefined]);
+        });
+
+        test("async generator function", async () => {
+            const logs: string[] = [];
+            const gen = Function.withDefer(async function* (defer, text: string) {
+                defer(async () => void logs.push(await Promise.resolve("1")));
+                defer(async () => void logs.push(await Promise.resolve("2")));
+
+                for (const word of text.words()) {
+                    yield word;
+                }
+
+                return text;
+            })("Hello, World!");
+
+            while (true) {
+                const { done, value } = await gen.next();
+                logs.push(value);
+
+                if (done)
+                    break;
+            }
+
+            deepStrictEqual(logs, ["Hello", "World", "2", "1", "Hello, World!"]);
+
+            const logs2: string[] = [];
+            const gen2 = Function.try(Function.withDefer(async function* (defer, text: string) {
+                defer(async () => void logs2.push(await Promise.resolve("1")));
+                defer(async () => void logs2.push(await Promise.resolve("2")));
+
+                for (const word of text.words()) {
+                    if (word === "World") {
+                        throw new Error("something went wrong");
+                    } else {
+                        yield word;
+                    }
+                }
+
+                return text;
+            })("Hello, World!"));
+
+            while (true) {
+                const { done, value: [err, res] } = await gen2.next();
+
+                if (!err) {
+                    logs2.push(res);
+                }
+
+                if (done)
+                    break;
+            }
+
+            deepStrictEqual(logs2, ["Hello", "2", "1", undefined]);
         });
     });
 });
