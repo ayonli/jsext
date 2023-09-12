@@ -231,4 +231,118 @@ describe("Function", () => {
             strictEqual(str, "Hello, World!13");
         });
     });
+
+    describe("Function.withDefer", () => {
+        test("regular function", () => {
+            const logs: { log: string, tag: string; }[] = [];
+            const errors: ({ error: Error | null, tag: string; })[] = [];
+            const text = Function.withDefer((defer, text: string) => {
+                defer(res => {
+                    if (res.value) {
+                        logs.push({ log: res.value, tag: "1" });
+                    } else {
+                        errors.push({ error: res.error, tag: "1" });
+                    }
+                });
+                defer(res => {
+                    if (res.value) {
+                        logs.push({ log: res.value, tag: "2" });
+                    } else {
+                        errors.push({ error: res.error, tag: "2" });
+                    }
+                });
+
+                return text;
+            })("Hello, World!");
+
+            strictEqual(text, "Hello, World!");
+            deepStrictEqual(logs, [
+                { log: "Hello, World!", tag: "2" },
+                { log: "Hello, World!", tag: "1" }
+            ] as typeof logs);
+            deepStrictEqual(errors, []);
+
+            const [err, text2] = Function.try(() => Function.withDefer((defer, text: string) => {
+                defer(res => {
+                    res.error = new Error("something went wrong");
+                });
+
+                return text;
+            })("Hello, World!"));
+            deepStrictEqual(err, new Error("something went wrong"));
+            strictEqual(text2, undefined);
+
+            class Foo {
+                name = "Foo";
+
+                say(word: string) {
+                    return Function.withDefer(function (this: Foo, defer, word: string) {
+                        defer(res => {
+                            res.value = this.name + " says '" + res.value + "'";
+                        });
+                        return word;
+                    }).call(this, word);
+                }
+            }
+
+            const text3 = new Foo().say("bar");
+            strictEqual(text3, "Foo says 'bar'");
+        });
+
+        test("async function", async () => {
+            const logs: { log: string, tag: string; }[] = [];
+            const errors: ({ error: Error | null, tag: string; })[] = [];
+            const text = await Function.withDefer(async (defer, text: string) => {
+                defer(async res => {
+                    if (res.value) {
+                        logs.push(await Promise.resolve({ log: res.value, tag: "1" }));
+                    } else {
+                        errors.push(await Promise.resolve({ error: res.error, tag: "1" }));
+                    }
+                });
+                defer(async res => {
+                    if (res.value) {
+                        logs.push(await Promise.resolve({ log: res.value, tag: "2" }));
+                    } else {
+                        errors.push(await Promise.resolve({ error: res.error, tag: "2" }));
+                    }
+                });
+
+                return await Promise.resolve(text);
+            })("Hello, World!");
+
+            strictEqual(text, "Hello, World!");
+            deepStrictEqual(logs, [
+                { log: "Hello, World!", tag: "2" },
+                { log: "Hello, World!", tag: "1" }
+            ] as typeof logs);
+            deepStrictEqual(errors, []);
+
+            const [err, text2] = await Function.try(() => Function.withDefer(async (defer, text: string) => {
+                defer(async res => {
+                    res.error = await Promise.resolve(new Error("something went wrong"));
+                });
+
+                return await Promise.resolve(text);
+            })("Hello, World!"));
+            deepStrictEqual(err, new Error("something went wrong"));
+            strictEqual(text2, undefined);
+
+            class Foo {
+                name = "Foo";
+
+                say(word: string) {
+                    return Function.withDefer(async function (this: Foo, defer, word: string) {
+                        defer(res => {
+                            res.value = this.name + " says '" + res.value + "'";
+                        });
+                        return word;
+                    }).call(this, word);
+                }
+            }
+
+            const text3 = await new Foo().say("bar");
+            strictEqual(text3, "Foo says 'bar'");
+        });
+    });
 });
