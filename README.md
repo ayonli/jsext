@@ -84,7 +84,7 @@ import "@ayonli/jsext";
     - `omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
 
 - `Function`
-    - `wrap<Fn extends (...args: any[]) => any>(fn: Fn, wrapper: (this: Function, fn: Fn, ...args: Parameters<Fn>) => ReturnType<Fn>): Fn`
+    - `wrap<T, Fn extends (this: T, ...args: any[]) => any>(fn: Fn, wrapper: (this: T, fn: Fn, ...args: Parameters<Fn>) => ReturnType<Fn>): Fn`
     - `try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(fn: (...args: A) => AsyncGenerator<T, TReturn, TNext>, ...args: A): AsyncGenerator<[E, T], [E, TReturn], TNext>`
     - `try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(fn: (...args: A) => Generator<T, TReturn, TNext>, ...args: A): Generator<[E, T], [E, TReturn], TNext>`
     - `try<E = Error, R = any, A extends any[] = any[]>(fn: (...args: A) => Promise<R>, ...args: A): Promise<[E, R]>`
@@ -92,6 +92,7 @@ import "@ayonli/jsext";
     - `try<E = Error, T = any, TReturn = any, TNext = unknown>(gen: AsyncGenerator<T, TReturn, TNext>): AsyncGenerator<[E, T], [E, TReturn], TNext>`
     - `try<E = Error, T = any, TReturn = any, TNext = unknown>(gen: Generator<T, TReturn, TNext>): Generator<[E, T], [E, TReturn], TNext>`
     - `try<E = Error, R = any>(job: Promise<R>): Promise<[E, R]>`
+    - `withDefer<T, R = any, A extends any[] = any[]>(fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R): (this: T, ...args: A) => R`
 
 - `Math`
     - `sum(...values: number[]): number`
