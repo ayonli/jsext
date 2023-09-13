@@ -1,0 +1,36 @@
+import { Exception, fromObject, toObject as _toObject } from ".";
+
+declare global {
+    interface Error {
+        toObject(): { [x: string | symbol]: any; };
+        toJSON(): { [x: string | symbol]: any; };
+    }
+
+    interface ErrorConstructor {
+        fromObject<T extends { name: "Error"; }>(obj: T): Error;
+        fromObject<T extends { name: "EvalError"; }>(obj: T): EvalError;
+        fromObject<T extends { name: "RangeError"; }>(obj: T): RangeError;
+        fromObject<T extends { name: "ReferenceError"; }>(obj: T): ReferenceError;
+        fromObject<T extends { name: "SyntaxError"; }>(obj: T): SyntaxError;
+        fromObject<T extends { name: "TypeError"; }>(obj: T): TypeError;
+        fromObject<T extends { name: "URIError"; }>(obj: T): URIError;
+        fromObject<T extends { name: "Exception"; }>(obj: T): Exception;
+        fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T;
+    }
+
+    class Exception extends Error {
+        readonly cause?: unknown;
+        readonly code: number;
+        constructor(message: string, code?: number);
+        constructor(message: string, options: { cause?: unknown; code?: number; });
+    }
+}
+
+//@ts-ignore
+globalThis["Exception"] = Exception;
+
+Error.fromObject = fromObject;
+
+Error.prototype.toJSON = Error.prototype.toObject = function toObject() {
+    return _toObject(this);
+};

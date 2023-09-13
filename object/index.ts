@@ -41,7 +41,7 @@ export function pick(obj: any, keys: (string | symbol)[]) {
  * Creates an object composed without the picked keys.
  * 
  * NOTE: this function only collect keys from the object's own properties, except for type
- * Error, whose `name` and `message` are always collected.
+ * Error, whose `name`, `message` and `cause` are always collected.
  */
 export function omit<T extends object, U extends keyof T>(obj: T, keys: U[]): Omit<T, U>;
 export function omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>;
@@ -52,7 +52,7 @@ export function omit(obj: any, keys: (string | symbol)[]) {
 
     // special treatment for Error types
     if (obj instanceof Error) {
-        ["name", "message"].forEach(key => {
+        ["name", "message", "cause"].forEach(key => {
             if (!keys.includes(key) &&
                 (obj as any)[key] !== undefined &&
                 !Object.hasOwn(result, key)

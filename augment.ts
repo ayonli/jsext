@@ -6,3 +6,4 @@ import "./object/augment";
 import "./math/augment";
 import "./promise/augment";
 import "./collections/augment";
+import "./error/augment";
