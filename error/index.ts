@@ -3,10 +3,12 @@ import Exception from "./Exception";
 
 export { Exception };
 
+/** Transform the error to a plain object. */
 export function toObject<T extends Error>(err: T): { [x: string | symbol]: any; } {
     return omit(err, []);
 }
 
+/** Reverse a plain object to a specific error type according to the `name` property. */
 export function fromObject<T extends { name: "Error"; }>(obj: T): Error;
 export function fromObject<T extends { name: "EvalError"; }>(obj: T): EvalError;
 export function fromObject<T extends { name: "RangeError"; }>(obj: T): RangeError;

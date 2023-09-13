@@ -74,6 +74,9 @@ import "@ayonli/jsext/number/augment";
 
 - `isFloat(value: unknown): boolean`
 - `random(min: number, max: number): number`
+- `sequence(min: number, max: number, step?: number, loop?: boolean): Generator<number, void, unknown>`
+
+*When augment, these functions will be attached to the `Number` constructor.*
 
 ### array
 
@@ -158,6 +161,8 @@ import "@ayonli/jsext/object/augment";
 - `omit<T extends object, U extends keyof T>(obj: T, keys: U[]): Omit<T, U>`
 - `omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
 
+*When augment, these functions will be attached to the `Object` constructor.*
+
 ### math
 
 ```ts
@@ -171,6 +176,8 @@ import "@ayonli/jsext/math/augment";
 - `sum(...values: number[]): number`
 - `avg(...values: number[]): number`
 - `product(...values: number[]): number`
+
+*When augment, these functions will be attached to the `Math` namespace.*
 
 ### promise
 
@@ -186,6 +193,8 @@ import "@ayonli/jsext/promise/augment";
 - `after<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
 - `sleep(ms: number): Promise<void>`
 
+*When augment, these functions will be attached to the `Promise` constructor.*
+
 ### collections
 
 ```ts
@@ -197,6 +206,8 @@ import { BiMap, CiMap } from "@ayonli/jsext/collections";
 import "@ayonli/jsext/collections/augment";
 ```
 
+**Types**
+
 - `BiMap<K, V>` (extends `Map<K, V>`) Bi-directional map, keys and values are unique and map to each
     other.
     - `prototype` (additional)
@@ -205,6 +216,39 @@ import "@ayonli/jsext/collections/augment";
         - `deleteValue(value: V): boolean`
 - `CiMap<K extends string, V>` (implements `Map<K, V>`) Case-insensitive map, keys are
     case-insensitive.
+
+*When augment, these types will be exposed to the global namespace.*
+
+### error
+
+```ts
+import Exception from "@ayonli/jsext/error/Exception";
+// or
+import { Exception } from "@ayonli/jsext/error";
+// or
+import "@ayonli/jsext/error/augment";
+```
+
+**Types**
+
+- `Exception` (extends `Error`)
+    - `cause?: unknown`
+    - `code: number`
+
+*When augment, these types will be exposed to the global namespace.*
+
+**Functions**
+
+- `toObject<T extends Error>(err: T): { [x: string | symbol]: any; }`
+- `fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T`
+
+**Augment**
+
+- `Error`
+    - `fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T`
+    - `prototype`
+        - `toObject(): { [x: string | symbol]: any; }`
+        - `toJSON(): { [x: string | symbol]: any; }`
 
 ## Import All Sub-package Augments At Once
 

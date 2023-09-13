@@ -2,11 +2,13 @@ import { Exception, fromObject, toObject as _toObject } from ".";
 
 declare global {
     interface Error {
+        /** Transform the error to a plain object. */
         toObject(): { [x: string | symbol]: any; };
         toJSON(): { [x: string | symbol]: any; };
     }
 
     interface ErrorConstructor {
+        /** Reverse a plain object to a specific error type according to the `name` property. */
         fromObject<T extends { name: "Error"; }>(obj: T): Error;
         fromObject<T extends { name: "EvalError"; }>(obj: T): EvalError;
         fromObject<T extends { name: "RangeError"; }>(obj: T): RangeError;
