@@ -15,7 +15,7 @@ export function patch(target: object, ...sources: any[]): any;
 export function patch(target: any, ...sources: any[]) {
     for (const source of sources) {
         for (const key of Reflect.ownKeys(source)) {
-            if (!Object.hasOwn(target, key) || target[key] === undefined) {
+            if (!hasOwn(target, key) || target[key] === undefined) {
                 target[key] = source[key];
             }
         }
@@ -48,14 +48,14 @@ export function omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>;
 export function omit(obj: any, keys: (string | symbol)[]) {
     const allKeys = Reflect.ownKeys(obj);
     const keptKeys = allKeys.filter(key => !keys.includes(key));
-    const result = Object.pick(obj, keptKeys);
+    const result = pick(obj, keptKeys);
 
     // special treatment for Error types
     if (obj instanceof Error) {
         ["name", "message", "cause"].forEach(key => {
             if (!keys.includes(key) &&
                 (obj as any)[key] !== undefined &&
-                !Object.hasOwn(result, key)
+                !hasOwn(result, key)
             ) {
                 result[key] = (obj as any)[key];
             }
