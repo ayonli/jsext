@@ -1,4 +1,13 @@
-import { chunk, count, equals, groupBy, orderBy, shuffle, split, uniq } from ".";
+import {
+    chunk as _chunk,
+    count as _count,
+    equals as _equals,
+    groupBy as _groupBy,
+    orderBy as _orderBy,
+    shuffle as _shuffle,
+    split as _split,
+    uniq as _uniq
+} from ".";
 
 declare global {
     interface Array<T> {
@@ -44,61 +53,61 @@ declare global {
     }
 }
 
-Array.prototype.first = function () {
+Array.prototype.first = function first() {
     return this[0];
 };
 
-Array.prototype.last = function () {
+Array.prototype.last = function last() {
     return this[this.length - 1];
 };
 
-Array.prototype.count = function (ele) {
-    return count(this, ele);
+Array.prototype.count = function count(ele) {
+    return _count(this, ele);
 };
 
-Array.prototype.equals = function (another) {
-    return equals(this, another);
+Array.prototype.equals = function equals(another) {
+    return _equals(this, another);
 };
 
-Array.prototype.split = function (delimiter) {
-    return split(this, delimiter) as any[];
+Array.prototype.split = function split(delimiter) {
+    return _split(this, delimiter) as any[];
 };
 
-Array.prototype.chunk = function (length) {
-    return chunk(this, length) as any[];
+Array.prototype.chunk = function chunk(length) {
+    return _chunk(this, length) as any[];
 };
 
-Array.prototype.uniq = function () {
-    return uniq(this);
+Array.prototype.uniq = function uniq() {
+    return _uniq(this);
 };
 
-Array.prototype.shuffle = function () {
-    return shuffle(this);
+Array.prototype.shuffle = function shuffle() {
+    return _shuffle(this);
 };
 
-Array.prototype.toShuffled = function () {
+Array.prototype.toShuffled = function toShuffled() {
     return this.slice().shuffle();
 };
 
 if (!Array.prototype.toReversed) {
-    Array.prototype.toReversed = function () {
+    Array.prototype.toReversed = function toReversed() {
         return this.slice().reverse();
     };
 }
 
 if (!Array.prototype.toSorted) {
-    Array.prototype.toSorted = function (fn) {
+    Array.prototype.toSorted = function toSorted(fn) {
         return this.slice().sort(fn);
     };
 }
 
-Array.prototype.orderBy = function (key, order = "asc") {
-    return orderBy(this, key, order);
+Array.prototype.orderBy = function orderBy(key, order = "asc") {
+    return _orderBy(this, key, order);
 };
 
-Array.prototype.groupBy = function (
+Array.prototype.groupBy = function orderBy(
     fn: (item: any, i: number) => any,
     type: ObjectConstructor | MapConstructor = Object
 ): any {
-    return groupBy(this, fn, type as any);
+    return _groupBy(this, fn, type as any);
 };

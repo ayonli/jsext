@@ -1,4 +1,14 @@
-import { byteLength, capitalize, chunk, compare, count, hyphenate, random, truncate, words } from ".";
+import {
+    compare,
+    random,
+    byteLength as _byteLength,
+    capitalize as _capitalize,
+    chunk as _chunk,
+    count as _count,
+    hyphenate as _hyphenate,
+    truncate as _truncate,
+    words as _words
+} from ".";
 
 declare global {
     interface StringConstructor {
@@ -34,30 +44,30 @@ declare global {
 String.compare = compare;
 String.random = random;
 
-String.prototype.count = function (sub) {
-    return count(String(this), sub);
+String.prototype.count = function count(sub) {
+    return _count(String(this), sub);
 };
 
-String.prototype.capitalize = function (all) {
-    return capitalize(String(this), all);
+String.prototype.capitalize = function capitalize(all) {
+    return _capitalize(String(this), all);
 };
 
-String.prototype.hyphenate = function () {
-    return hyphenate(String(this));
+String.prototype.hyphenate = function capitalize() {
+    return _hyphenate(String(this));
 };
 
-String.prototype.words = function () {
-    return words(String(this));
+String.prototype.words = function words() {
+    return _words(String(this));
 };
 
-String.prototype.chunk = function (length) {
-    return chunk(String(this), length);
+String.prototype.chunk = function chunk(length) {
+    return _chunk(String(this), length);
 };
 
-String.prototype.truncate = function (length) {
-    return truncate(String(this), length);
+String.prototype.truncate = function truncate(length) {
+    return _truncate(String(this), length);
 };
 
-String.prototype.byteLength = function () {
-    return byteLength(String(this));
+String.prototype.byteLength = function byteLength() {
+    return _byteLength(String(this));
 };

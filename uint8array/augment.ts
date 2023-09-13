@@ -1,4 +1,4 @@
-import { chunk, compare, equals, split } from ".";
+import { compare, equals as _equals, split as _split, chunk as _chunk } from ".";
 
 declare global {
     interface Uint8ArrayConstructor {
@@ -21,14 +21,14 @@ declare global {
 
 Uint8Array.compare = compare;
 
-Uint8Array.prototype.equals = function (another) {
-    return equals(this, another);
+Uint8Array.prototype.equals = function equals(another) {
+    return _equals(this, another);
 };
 
-Uint8Array.prototype.split = function (delimiter) {
-    return split(this, delimiter);
+Uint8Array.prototype.split = function split(delimiter) {
+    return _split(this, delimiter);
 };
 
-Uint8Array.prototype.chunk = function (length) {
-    return chunk(this, length);
+Uint8Array.prototype.chunk = function chunk(length) {
+    return _chunk(this, length);
 };
