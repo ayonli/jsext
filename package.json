@@ -1,13 +1,13 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.3.1",
+    "version": "0.3.2",
     "description": "Additional functions for JavaScript builtin types that are frequently used in practice.",
-    "main": "index.js",
-    "types": "index.ts",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
     "scripts": {
         "prepublishOnly": "tsc",
         "test": "mocha",
-        "postpublish": "ls *.js|xargs rm; ls *.js.map|xargs rm; ls */*.js|xargs rm; ls */*.js.map|xargs rm"
+        "postpublish": "rm -rf dist"
     },
     "repository": {
         "type": "git",
