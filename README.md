@@ -255,3 +255,10 @@ import "@ayonli/jsext/error/augment";
 ```ts
 import "@ayonli/jsext/augment";
 ```
+
+## Having trouble with ts-loader?
+
+1. Set `module.rules.options.allowTsInNodeModules` as `true` for **ts-loader** in
+    `webpack.config.js`;
+2. Set `compilerOptions.rootDirs` as `["src", "node_modules/@ayonli/jsext"]` in `tsconfig.json`
+    (`src` could be different for different projects), meanwhile, disable `compilerOptions.rootDir`.
