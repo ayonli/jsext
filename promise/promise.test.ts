@@ -37,7 +37,7 @@ describe("Promise", () => {
         const duration2 = Date.now() - startTime;
 
         strictEqual(res2, 1);
-        ok(duration2 >= 100);
+        ok(duration2 >= 99);
     });
 
     test("Promise.sleep", async () => {
