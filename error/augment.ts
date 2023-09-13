@@ -1,13 +1,13 @@
-import { Exception, fromObject, toObject as _toObject } from ".";
+import { Exception, fromObject, toObject } from ".";
 
 declare global {
     interface Error {
-        /** Transform the error to a plain object. */
-        toObject(): { [x: string | symbol]: any; };
-        toJSON(): { [x: string | symbol]: any; };
+        toJSON(): { [x: string]: any; };
     }
 
     interface ErrorConstructor {
+        /** Transform the error to a plain object. */
+        toObject<T extends Error>(err: T): { [x: string | symbol]: any; }
         /** Reverse a plain object to a specific error type according to the `name` property. */
         fromObject<T extends { name: "Error"; }>(obj: T): Error;
         fromObject<T extends { name: "EvalError"; }>(obj: T): EvalError;
@@ -31,8 +31,9 @@ declare global {
 //@ts-ignore
 globalThis["Exception"] = Exception;
 
+Error.toObject = toObject
 Error.fromObject = fromObject;
 
-Error.prototype.toJSON = Error.prototype.toObject = function toObject() {
-    return _toObject(this);
+Error.prototype.toJSON = function toJSON() {
+    return toObject(this);
 };

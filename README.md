@@ -245,9 +245,9 @@ import "@ayonli/jsext/error/augment";
 **Augment**
 
 - `Error`
+    - `toObject<T extends Error>(err: T): { [x: string | symbol]: any; }`
     - `fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T`
     - `prototype`
-        - `toObject(): { [x: string | symbol]: any; }`
         - `toJSON(): { [x: string | symbol]: any; }`
 
 ## Import All Sub-package Augments At Once

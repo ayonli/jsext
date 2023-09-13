@@ -3,6 +3,43 @@ import { test } from "mocha";
 import { strictEqual } from "assert";
 
 describe("Error", () => {
+    test("Error.toObject", () => {
+        // @ts-ignore
+        const err1 = Object.assign(new Error("something went wrong", { cause: "unknown" }), {
+            code: 500,
+        });
+        const obj1 = Error.toObject(err1);
+        strictEqual(obj1["name"], err1.name);
+        strictEqual(obj1["message"], err1.message);
+        strictEqual(obj1["stack"], err1.stack);
+        // @ts-ignore
+        strictEqual(obj1["cause"], err1["cause"]);
+        // @ts-ignore
+        strictEqual(obj1["code"], err1.code);
+
+        // @ts-ignore
+        const err2 = Object.assign(new TypeError("something went wrong", { cause: "unknown" }), {
+            code: 500,
+        });
+        const obj2 = Error.toObject(err2);
+        strictEqual(obj2["name"], err2.name);
+        strictEqual(obj2["message"], err2.message);
+        strictEqual(obj2["stack"], err2.stack);
+        // @ts-ignore
+        strictEqual(obj2["cause"], err2["cause"]);
+        // @ts-ignore
+        strictEqual(obj2["code"], err2.code);
+
+        // @ts-ignore
+        const err3 = new Exception("something went wrong", { cause: "unknown", code: 500 });
+        const obj3 = Error.toObject(err3);
+        strictEqual(obj3["name"], err3.name);
+        strictEqual(obj3["message"], err3.message);
+        strictEqual(obj3["stack"], err3.stack);
+        strictEqual(obj3["cause"], err3.cause);
+        strictEqual(obj3["code"], err3.code);
+    });
+
     test("Error.fromObject", () => {
         const obj1 = {
             name: "Error",
@@ -156,12 +193,12 @@ describe("Error", () => {
         strictEqual(err9["code"], obj9.code);
     });
 
-    test("Error.prototype.toObject", () => {
+    test("Error.prototype.toJSON", () => {
         // @ts-ignore
         const err1 = Object.assign(new Error("something went wrong", { cause: "unknown" }), {
             code: 500,
         });
-        const obj1 = err1.toObject();
+        const obj1 = err1.toJSON();
         strictEqual(obj1["name"], err1.name);
         strictEqual(obj1["message"], err1.message);
         strictEqual(obj1["stack"], err1.stack);
@@ -174,7 +211,7 @@ describe("Error", () => {
         const err2 = Object.assign(new TypeError("something went wrong", { cause: "unknown" }), {
             code: 500,
         });
-        const obj2 = err2.toObject();
+        const obj2 = err2.toJSON();
         strictEqual(obj2["name"], err2.name);
         strictEqual(obj2["message"], err2.message);
         strictEqual(obj2["stack"], err2.stack);
@@ -185,7 +222,7 @@ describe("Error", () => {
 
         // @ts-ignore
         const err3 = new Exception("something went wrong", { cause: "unknown", code: 500 });
-        const obj3 = err3.toObject();
+        const obj3 = err3.toJSON();
         strictEqual(obj3["name"], err3.name);
         strictEqual(obj3["message"], err3.message);
         strictEqual(obj3["stack"], err3.stack);
