@@ -8,28 +8,29 @@ export interface JsExt {
     try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
         fn: (...args: A) => AsyncGenerator<T, TReturn, TNext>,
         ...args: A
-    ): AsyncGenerator<[E, T], [E, TReturn], TNext>;
+    ): AsyncGenerator<[E | null, T], [E | null, TReturn], TNext>;
     try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
         fn: (...args: A) => Generator<T, TReturn, TNext>,
         ...args: A
-    ): Generator<[E, T], [E, TReturn], TNext>;
+    ): Generator<[E | null, T], [E | null, TReturn], TNext>;
     try<E = Error, R = any, A extends any[] = any[]>(
         fn: (...args: A) => Promise<R>,
         ...args: A
-    ): Promise<[E, R]>;
+    ): Promise<[E | null, R]>;
     try<E = Error, R = any, A extends any[] = any[]>(
         fn: (...args: A) => R,
         ...args: A
-    ): [E, R];
+    ): [E | null, R];
     /** Resolves a generator and renders its yield value in a `[err, val]` tuple. */
     try<E = Error, T = any, TReturn = any, TNext = unknown>(
         gen: AsyncGenerator<T, TReturn, TNext>
-    ): AsyncGenerator<[E, T], [E, TReturn], TNext>;
+    ): AsyncGenerator<[E | null, T], [E | null, TReturn], TNext>;
     try<E = Error, T = any, TReturn = any, TNext = unknown>(
         gen: Generator<T, TReturn, TNext>
-    ): Generator<[E, T], [E, TReturn], TNext>;
+    ): Generator<[E | null, T], [E | null, TReturn], TNext>;
     /** Resolves a promise and returns the error and result in a `[err, res]` tuple. */
-    try<E = Error, R = any>(job: Promise<R>): Promise<[E, R]>;
+    try<E = Error, R = any>(job: Promise<R>): Promise<[E | null, R]>;
+
     /**
      * Inspired by Golang, creates a function that receives a `defer` function which can be used
      * to carry deferred jobs that will be run after the main function is complete.
@@ -52,6 +53,7 @@ export interface JsExt {
     func<T, R = any, A extends any[] = any[]>(
         fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R
     ): (this: T, ...args: A) => R;
+
     /**
      * Wraps a function inside another function and returns a new function
      * that copies the original function's name and properties.
@@ -60,6 +62,7 @@ export interface JsExt {
         fn: Fn,
         wrapper: (this: T, fn: Fn, ...args: Parameters<Fn>) => ReturnType<Fn>
     ): Fn;
+
     /**
      * Wraps a source as an AsyncIterable object that can be used in the `for...await...` loop
      * for reading streaming data.
@@ -77,6 +80,29 @@ export interface JsExt {
         error?: string;
         close?: string;
     }): AsyncIterable<T>;
+
+    /** Runs a task in the script in a worker thread that can be aborted during runtime. */
+    run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
+        /** If not set, runs the default function, otherwise runs the specific function. */
+        fn?: string;
+        /** Automatically abort when timeout (in milliseconds). */
+        timeout?: number;
+        /**
+         * By default, type is automatically detected by the extension of the script (`.js` or
+         * `.cjs` for CommonJS and `.mjs` for ES Module), but we can explicitly set this option to
+         * `module` to treat a `.js` file as an ES Module.
+         * 
+         * In browser, this option is ignored and will always resolve to ES Module.
+         */
+        type?: "classic" | "module";
+        /**
+         * In browser, this option is ignored and will always use the web worker.
+         */
+        adapter?: "worker_threads" | "child_process";
+    }): Promise<{
+        abort: () => Promise<void>;
+        returns: () => Promise<R>;
+    }>;
 }
 
 const jsext: JsExt = {
@@ -479,6 +505,125 @@ const jsext: JsExt = {
 
         return {
             [Symbol.asyncIterator]: () => iterable
+        };
+    },
+    async run(script, args, options) {
+        const msg = {
+            type: "ffi",
+            script,
+            fn: options?.fn || "default",
+            args,
+        };
+        let result: { value: any; error: unknown; } | undefined;
+        let resolver: {
+            resolve: (data: any) => void;
+            reject: (err: unknown) => void;
+        } | undefined;
+        let terminate = () => Promise.resolve<void>(void 0);
+        let timeout = options?.timeout ? setTimeout(() => {
+            const error = new Error(`operation timeout after ${options.timeout}ms`);
+
+            if (resolver) {
+                resolver.reject(error);
+            } else {
+                result = { value: void 0, error };
+            }
+
+            terminate();
+        }, options.timeout) : null;
+
+        const handleMessage = (msg: any) => {
+            if (msg && typeof msg === "object" && msg.type === "result") {
+                if (resolver) {
+                    if (msg.error) {
+                        resolver.reject(msg.error);
+                    } else {
+                        resolver.resolve(msg.value);
+                    }
+                } else {
+                    result = { value: msg.value, error: msg.error };
+                }
+
+                terminate();
+            }
+        };
+        const handleError = (error: unknown) => {
+            if (resolver) {
+                resolver.reject(error);
+            } else {
+                result = { value: void 0, error };
+            }
+        };
+        const handleExit = (code: number | null) => {
+            if (code) {
+                handleError(new Error(`worker exited (code: ${code})`));
+            } else {
+                if (resolver) {
+                    resolver.resolve(void 0);
+                } else {
+                    result = { value: void 0, error: null };
+                }
+            }
+        };
+
+        if (typeof process === "object" && process.versions?.node) {
+            const path = await import("path");
+            const esModule = options?.type === "module" || /\.(mjs|mts)$/.test(script);
+            const entry = path.join(__dirname, esModule ? "worker.mjs" : "worker.cjs");
+
+            if (options?.adapter === "child_process") {
+                const { fork } = await import("child_process");
+                const worker = fork(entry, {
+                    stdio: "inherit",
+                    serialization: "advanced",
+                });
+                terminate = () => Promise.resolve(void worker.kill(1));
+
+                worker.send(msg);
+                worker.on("message", handleMessage);
+                worker.once("error", handleError);
+                worker.once("exit", handleExit);
+            } else {
+                const { Worker } = await import("worker_threads");
+                const worker = new Worker(entry, { workerData: msg });
+                terminate = async () => void (await worker.terminate());
+
+                worker.on("message", handleMessage);
+                worker.once("error", handleError);
+                worker.once("messageerror", handleError);
+                worker.once("exit", handleExit);
+            }
+        } else {
+            const worker = new Worker("/worker-web.mjs", { type: "module" });
+            terminate = async () => {
+                await Promise.resolve(worker.terminate());
+                handleExit(1);
+            };
+
+            worker.postMessage(msg);
+            worker.onmessage = (ev) => handleMessage(ev.data);
+            worker.onerror = (ev) => handleMessage(ev.error || new Error(ev.message));
+            worker.onmessageerror = () => {
+                handleMessage(new Error("unable to deserialize the message"));
+            };
+        }
+
+        return {
+            abort: async () => {
+                timeout && clearTimeout(timeout);
+                await terminate();
+            },
+            returns: () => new Promise<any>((resolve, reject) => {
+                if (result) {
+                    if (result.error) {
+                        reject(result.error);
+                    } else {
+                        resolve(result.value);
+                    }
+                } else {
+                    resolver = { resolve, reject };
+                }
+            }),
         };
     }
 };

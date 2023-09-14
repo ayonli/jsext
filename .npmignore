@@ -7,3 +7,5 @@ node_modules/
 *.tgz
 *.lockb
 tsconfig.json
+job.cjs
+job.mjs

@@ -34,6 +34,31 @@ import jsext from "@ayonli/jsext";
 - `read<T>(target: EventTarget, eventMap?: { message?: string; error?: string; close?: string; }): AsyncIterable<T>`
 - `read<T>(target: NodeJS.EventEmitter, eventMap?: { data?: string; error?: string; close?: string; }): AsyncIterable<T>`
 
+```ts
+/** Runs a task in the script in a worker thread that can be aborted during runtime. */
+function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
+    /** If not set, runs the default function, otherwise runs the specific function. */
+    fn?: string;
+    /** Automatically abort when timeout (in milliseconds). */
+    timeout?: number;
+    /**
+     * By default, type is automatically detected by the extension of the script (`.js` or
+     * `.cjs` for CommonJS and `.mjs` for ES Module), but we can explicitly set this option to
+     * `module` to treat a `.js` file as an ES Module.
+     * 
+     * In browser, this option is ignored and will always resolve to ES Module.
+     */
+    type?: "classic" | "module";
+    /**
+     * In browser, this option is ignored and will always use the web worker.
+     */
+    adapter?: "worker_threads" | "child_process";
+}): Promise<{
+    abort: () => Promise<void>;
+    returns: () => Promise<R>;
+}>;
+```
+
 ## Sub-packages
 
 ### string
