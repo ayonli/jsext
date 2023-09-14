@@ -455,7 +455,7 @@ describe("jsext", () => {
                 }
             }).listen(12345);
             defer(() => new Promise(resolve => {
-                server.closeAllConnections();
+                server.closeAllConnections?.();
                 server.close(resolve);
             }));
 
@@ -492,7 +492,7 @@ describe("jsext", () => {
                 httpServer: server
             });
             defer(() => new Promise(resolve => {
-                server.closeAllConnections();
+                server.closeAllConnections?.();
                 server.close(resolve);
             }));
 
@@ -521,6 +521,11 @@ describe("jsext", () => {
         }));
 
         test("EventTarget", async () => {
+            if (parseInt(process.version.slice(1)) < 15) {
+                // EventTarget is available after Node.js v15
+                return;
+            }
+
             const target1 = new EventTarget();
             const messages: string[] = [];
 
@@ -588,7 +593,7 @@ describe("jsext", () => {
 
             (async () => {
                 await Promise.resolve(null);
-                target2.emit("reply","foo");
+                target2.emit("reply", "foo");
                 target2.emit("reply", "bar");
             })();
 
