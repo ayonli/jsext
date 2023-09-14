@@ -23,8 +23,16 @@ import jsext from "@ayonli/jsext";
 - `try<E = Error, T = any, TReturn = any, TNext = unknown>(gen: AsyncGenerator<T, TReturn, TNext>): AsyncGenerator<[E, T], [E, TReturn], TNext>`
 - `try<E = Error, T = any, TReturn = any, TNext = unknown>(gen: Generator<T, TReturn, TNext>): Generator<[E, T], [E, TReturn], TNext>`
 - `try<E = Error, R = any>(job: Promise<R>): Promise<[E, R]>`
+
 - `func<T, R = any, A extends any[] = any[]>(fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R): (this: T, ...args: A) => R`
+
 - `wrap<T, Fn extends (this: T, ...args: any[]) => any>(fn: Fn, wrapper: (this: T, fn: Fn, ...args: Parameters<Fn>) => ReturnType<Fn>): Fn`
+
+- `read<I extends AsyncIterable<any>>(iterable: I): I`
+- `read(es: EventSource, options?: { event?: string; }): AsyncIterable<string>`
+- `read<T extends Uint8Array | string>(ws: WebSocket): AsyncIterable<T>`
+- `read<T>(target: EventTarget, eventMap?: { message?: string; error?: string; close?: string; }): AsyncIterable<T>`
+- `read<T>(target: NodeJS.EventEmitter, eventMap?: { data?: string; error?: string; close?: string; }): AsyncIterable<T>`
 
 ## Sub-packages
 
