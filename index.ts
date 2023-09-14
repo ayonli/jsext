@@ -507,12 +507,12 @@ const jsext: JsExt = {
             [Symbol.asyncIterator]: () => iterable
         };
     },
-    async run(script, args, options) {
+    async run(script, args = undefined, options = undefined) {
         const msg = {
             type: "ffi",
             script,
             fn: options?.fn || "default",
-            args,
+            args: args ?? [],
         };
         let result: { value: any; error: unknown; } | undefined;
         let resolver: {
