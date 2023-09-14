@@ -1,5 +1,13 @@
 import { isAsyncGenerator, isGenerator } from "https://deno.land/x/check_iterable/index.js";
 
+function isFFIMessage(msg) {
+    return msg && typeof msg === "object" &&
+        msg.type === "ffi" &&
+        typeof msg.script === "string" &&
+        typeof msg.fn === "string" &&
+        Array.isArray(msg.args);
+}
+
 /**
  * @param {{type: string; script: string; fn: string; args: any[]}} msg 
  * @param {(reply: { type: string; value?: any; error?: unknown; done?: boolean }) => void} send
@@ -37,12 +45,7 @@ async function handleMessage(msg, send) {
 }
 
 self.addEventListener("message", async ({ data: msg }) => {
-    if (msg && typeof msg === "object" &&
-        msg.type === "ffi" &&
-        typeof msg.script === "string" &&
-        typeof msg.fn === "string" &&
-        Array.isArray(msg.args)
-    ) {
+    if (isFFIMessage(msg)) {
         await handleMessage(msg, self.postMessage.bind(self));
     }
 });

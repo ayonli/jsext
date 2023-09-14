@@ -650,6 +650,17 @@ describe("jsext", () => {
 
             deepStrictEqual(words, ["foo", "bar"]);
             strictEqual(await job6.result(), "foo, bar");
+
+            const job7 = await jsext.run("./job.cjs", ["World"], { keepAlive: true });
+            strictEqual(await job7.result(), "Hello, World");
+
+            const job8 = await jsext.run("./job.cjs", ["World"], { fn: "greet" });
+            strictEqual(job8.workerId, job7.workerId);
+            strictEqual(await job8.result(), "Hi, World");
+
+            const job9 = await jsext.run("./job.cjs", ["World"]);
+            ok(job8.workerId !== job9.workerId);
+            strictEqual(await job9.result(), "Hello, World");
         });
 
         test("child_process", async () => {
@@ -697,6 +708,17 @@ describe("jsext", () => {
 
             deepStrictEqual(words, ["foo", "bar"]);
             strictEqual(await job6.result(), "foo, bar");
+
+            const job7 = await jsext.run("./job.cjs", ["World"], { keepAlive: true });
+            strictEqual(await job7.result(), "Hello, World");
+
+            const job8 = await jsext.run("./job.cjs", ["World"], { fn: "greet" });
+            strictEqual(job8.workerId, job7.workerId);
+            strictEqual(await job8.result(), "Hi, World");
+
+            const job9 = await jsext.run("./job.cjs", ["World"]);
+            ok(job8.workerId !== job9.workerId);
+            strictEqual(await job9.result(), "Hello, World");
         });
     });
 });

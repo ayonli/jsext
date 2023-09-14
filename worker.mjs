@@ -1,5 +1,13 @@
-import { isMainThread, parentPort, workerData } from "worker_threads";
+import { isMainThread, parentPort } from "worker_threads";
 import { isAsyncGenerator, isGenerator } from "check-iterable";
+
+function isFFIMessage(msg) {
+    return msg && typeof msg === "object" &&
+        msg.type === "ffi" &&
+        typeof msg.script === "string" &&
+        typeof msg.fn === "string" &&
+        Array.isArray(msg.args);
+}
 
 /**
  * @param {{type: string; script: string; fn: string; args: any[]}} msg 
@@ -38,24 +46,14 @@ async function handleMessage(msg, send) {
 }
 
 if (!isMainThread && parentPort) {
-    (async (msg) => {
-        if (msg && typeof msg === "object" &&
-            msg.type === "ffi" &&
-            typeof msg.script === "string" &&
-            typeof msg.fn === "string" &&
-            Array.isArray(msg.args)
-        ) {
+    parentPort.on("message", async (msg) => {
+        if (isFFIMessage(msg)) {
             await handleMessage(msg, parentPort.postMessage.bind(parentPort));
         }
-    })(workerData);
+    });
 } else if (process.send) {
     process.on("message", async (msg) => {
-        if (msg && typeof msg === "object" &&
-            msg.type === "ffi" &&
-            typeof msg.script === "string" &&
-            typeof msg.fn === "string" &&
-            Array.isArray(msg.args)
-        ) {
+        if (isFFIMessage(msg)) {
             await handleMessage(msg, process.send?.bind(process));
         }
     });

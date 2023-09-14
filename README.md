@@ -39,8 +39,13 @@ import jsext from "@ayonli/jsext";
 function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
     /** If not set, runs the default function, otherwise runs the specific function. */
     fn?: string;
-    /** Automatically abort when timeout (in milliseconds). */
+    /** Automatically abort the task when timeout (in milliseconds). */
     timeout?: number;
+    /**
+     * Instead of dropping the worker after the task has completed, keep it alive so that it can
+     * be reused by other tasks.
+     */
+    keepAlive?: boolean;
     /**
      * In browser, this option is ignored and will always use the web worker.
      */
