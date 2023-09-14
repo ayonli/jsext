@@ -1,6 +1,6 @@
 # JsExt
 
-Additional functions for JavaScript builtin types that are frequently used in practice.
+Additional functions for JavaScript programming in practice.
 
 ## Install
 
