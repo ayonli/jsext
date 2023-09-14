@@ -100,8 +100,8 @@ export interface JsExt {
          */
         adapter?: "worker_threads" | "child_process";
     }): Promise<{
-        abort: () => Promise<void>;
-        returns: () => Promise<R>;
+        abort(): Promise<void>;
+        result(): Promise<R>;
     }>;
 }
 
@@ -504,7 +504,9 @@ const jsext: JsExt = {
         }
 
         return {
-            [Symbol.asyncIterator]: () => iterable
+            [Symbol.asyncIterator]() {
+                return iterable;
+            }
         };
     },
     async run(script, args = undefined, options = undefined) {
@@ -609,21 +611,23 @@ const jsext: JsExt = {
         }
 
         return {
-            abort: async () => {
+            async abort() {
                 timeout && clearTimeout(timeout);
                 await terminate();
             },
-            returns: () => new Promise<any>((resolve, reject) => {
-                if (result) {
-                    if (result.error) {
-                        reject(result.error);
+            async result() {
+                return await new Promise<any>((resolve, reject) => {
+                    if (result) {
+                        if (result.error) {
+                            reject(result.error);
+                        } else {
+                            resolve(result.value);
+                        }
                     } else {
-                        resolve(result.value);
+                        resolver = { resolve, reject };
                     }
-                } else {
-                    resolver = { resolve, reject };
-                }
-            }),
+                });
+            },
         };
     }
 };

@@ -615,22 +615,22 @@ describe("jsext", () => {
     describe("jsext.run", () => {
         test("worker_threads", async () => {
             const job1 = await jsext.run("./job.cjs", ["World"]);
-            strictEqual(await job1.returns(), "Hello, World");
+            strictEqual(await job1.result(), "Hello, World");
 
             const job2 = await jsext.run("./job.cjs", ["World"], { fn: "greet" });
-            strictEqual(await job2.returns(), "Hi, World");
+            strictEqual(await job2.result(), "Hi, World");
 
             const job3 = await jsext.run("./job.mjs", ["World"], {
                 fn: "greet",
                 type: "module",
             });
-            strictEqual(await job3.returns(), "Hi, World");
+            strictEqual(await job3.result(), "Hi, World");
 
             const job4 = await jsext.run<string, [string]>("./job.mjs", ["foobar"], {
                 fn: "takeTooLong",
                 timeout: 50,
             });
-            const [err4, res4] = await jsext.try(job4.returns());
+            const [err4, res4] = await jsext.try(job4.result());
             strictEqual(res4, undefined);
             deepStrictEqual(err4, new Error("operation timeout after 50ms"));
 
@@ -638,34 +638,34 @@ describe("jsext", () => {
                 fn: "takeTooLong",
             });
             await job5.abort();
-            const [err5, res5] = await jsext.try(job5.returns());
+            const [err5, res5] = await jsext.try(job5.result());
             strictEqual(res5, undefined);
             deepStrictEqual(err5, null);
         });
 
         test("child_process", async () => {
             const job1 = await jsext.run("./job.cjs", ["World"], { adapter: "child_process" });
-            strictEqual(await job1.returns(), "Hello, World");
+            strictEqual(await job1.result(), "Hello, World");
 
             const job2 = await jsext.run("./job.cjs", ["World"], {
                 fn: "greet",
                 adapter: "child_process",
             });
-            strictEqual(await job2.returns(), "Hi, World");
+            strictEqual(await job2.result(), "Hi, World");
 
             const job3 = await jsext.run("./job.mjs", ["World"], {
                 fn: "greet",
                 type: "module",
                 adapter: "child_process",
             });
-            strictEqual(await job3.returns(), "Hi, World");
+            strictEqual(await job3.result(), "Hi, World");
 
             const job4 = await jsext.run<string, [string]>("./job.mjs", ["foobar"], {
                 fn: "takeTooLong",
                 timeout: 50,
                 adapter: "child_process",
             });
-            const [err4, res4] = await jsext.try(job4.returns());
+            const [err4, res4] = await jsext.try(job4.result());
             strictEqual(res4, undefined);
             deepStrictEqual(err4, new Error("operation timeout after 50ms"));
 
@@ -674,7 +674,7 @@ describe("jsext", () => {
                 adapter: "child_process",
             });
             await job5.abort();
-            const [err5, res5] = await jsext.try(job5.returns());
+            const [err5, res5] = await jsext.try(job5.result());
             strictEqual(res5, undefined);
             deepStrictEqual(err5, null);
         });

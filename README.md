@@ -54,8 +54,8 @@ function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
      */
     adapter?: "worker_threads" | "child_process";
 }): Promise<{
-    abort: () => Promise<void>;
-    returns: () => Promise<R>;
+    abort(): Promise<void>;
+    result(): Promise<R>;
 }>;
 ```
 
