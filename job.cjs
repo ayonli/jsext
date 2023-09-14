@@ -22,3 +22,14 @@ exports.takeTooLong = async function takeTooLong(text) {
     await new Promise(resolve => setTimeout(resolve, 100));
     return text;
 };
+
+/**
+ * @param {string[]} words 
+ */
+exports.sequence = async function* sequence(words) {
+    for (const word of words) {
+        yield word;
+    }
+
+    return words.join(", ");
+};

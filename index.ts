@@ -88,20 +88,16 @@ export interface JsExt {
         /** Automatically abort when timeout (in milliseconds). */
         timeout?: number;
         /**
-         * By default, type is automatically detected by the extension of the script (`.js` or
-         * `.cjs` for CommonJS and `.mjs` for ES Module), but we can explicitly set this option to
-         * `module` to treat a `.js` file as an ES Module.
-         * 
-         * In browser, this option is ignored and will always resolve to ES Module.
-         */
-        type?: "classic" | "module";
-        /**
          * In browser, this option is ignored and will always use the web worker.
          */
         adapter?: "worker_threads" | "child_process";
     }): Promise<{
+        /** Terminates the worker and abort the task. */
         abort(): Promise<void>;
+        /** Retrieves the return value of the function. */
         result(): Promise<R>;
+        /** Iterates the yield value if the function returns a generator. */
+        iterate(): AsyncIterable<R>;
     }>;
 }
 
@@ -516,44 +512,67 @@ const jsext: JsExt = {
             fn: options?.fn || "default",
             args: args ?? [],
         };
-        let result: { value: any; error: unknown; } | undefined;
+        const buffer: any[] = [];
+        let error: Error | null = null;
+        let result: { value: any; } | undefined;
         let resolver: {
             resolve: (data: any) => void;
             reject: (err: unknown) => void;
         } | undefined;
+        let iterator: NodeJS.EventEmitter | undefined;
         let terminate = () => Promise.resolve<void>(void 0);
         let timeout = options?.timeout ? setTimeout(() => {
-            const error = new Error(`operation timeout after ${options.timeout}ms`);
+            const err = new Error(`operation timeout after ${options.timeout}ms`);
 
             if (resolver) {
-                resolver.reject(error);
+                resolver.reject(err);
             } else {
-                result = { value: void 0, error };
+                error = err;
             }
 
             terminate();
         }, options.timeout) : null;
 
         const handleMessage = (msg: any) => {
-            if (msg && typeof msg === "object" && msg.type === "result") {
-                if (resolver) {
-                    if (msg.error) {
-                        resolver.reject(msg.error);
-                    } else {
+            if (msg && typeof msg === "object" && typeof msg.type === "string") {
+                if (msg.type === "error") {
+                    return handleError(msg.error);
+                } else if (msg.type === "return") {
+                    if (resolver) {
                         resolver.resolve(msg.value);
+                    } else {
+                        result = { value: msg.value };
                     }
-                } else {
-                    result = { value: msg.value, error: msg.error };
-                }
 
-                terminate();
+                    terminate();
+                } else if (msg.type === "yield") {
+                    if (msg.done) {
+                        if (resolver) {
+                            resolver.resolve(msg.value);
+                        } else {
+                            result = { value: msg.value };
+                        }
+
+                        terminate();
+                    } else {
+                        if (iterator) {
+                            iterator.emit("data", msg.value);
+                        } else {
+                            buffer.push(msg.value);
+                        }
+                    }
+                }
             }
         };
-        const handleError = (error: unknown) => {
+
+        const handleError = (err: Error | null) => {
             if (resolver) {
-                resolver.reject(error);
+                resolver.reject(err);
+            } else if (iterator) {
+                iterator.emit("error", err);
+                iterator.emit("close");
             } else {
-                result = { value: void 0, error };
+                error = err;
             }
         };
         const handleExit = (code: number | null) => {
@@ -562,16 +581,17 @@ const jsext: JsExt = {
             } else {
                 if (resolver) {
                     resolver.resolve(void 0);
+                } else if (iterator) {
+                    iterator.emit("close");
                 } else {
-                    result = { value: void 0, error: null };
+                    result = { value: void 0 };
                 }
             }
         };
 
         if (typeof process === "object" && process.versions?.node) {
             const path = await import("path");
-            const esModule = options?.type === "module" || /\.(mjs|mts)$/.test(script);
-            const entry = path.join(__dirname, esModule ? "worker.mjs" : "worker.cjs");
+            const entry = path.join(__dirname, "worker.mjs");
 
             if (options?.adapter === "child_process") {
                 const { fork } = await import("child_process");
@@ -606,7 +626,7 @@ const jsext: JsExt = {
             worker.onmessage = (ev) => handleMessage(ev.data);
             worker.onerror = (ev) => handleMessage(ev.error || new Error(ev.message));
             worker.onmessageerror = () => {
-                handleMessage(new Error("unable to deserialize the message"));
+                handleError(new Error("unable to deserialize the message"));
             };
         }
 
@@ -617,16 +637,39 @@ const jsext: JsExt = {
             },
             async result() {
                 return await new Promise<any>((resolve, reject) => {
-                    if (result) {
-                        if (result.error) {
-                            reject(result.error);
-                        } else {
-                            resolve(result.value);
-                        }
+                    if (error) {
+                        reject(error);
+                    } else if (result) {
+                        resolve(result.value);
                     } else {
                         resolver = { resolve, reject };
                     }
                 });
+            },
+            async *iterate() {
+                if (resolver) {
+                    throw new Error("result() has been called");
+                } else if (result) {
+                    throw new TypeError("the response is not iterable");
+                }
+
+                const { EventEmitter } = await import("events");
+                iterator = new EventEmitter();
+
+                if (buffer.length) {
+                    (async () => {
+                        await Promise.resolve(null);
+                        let msg: any;
+
+                        while (msg = buffer.shift()) {
+                            iterator.emit("data", msg);
+                        }
+                    })().catch(console.error);
+                }
+
+                for await (const msg of jsext.read<any>(iterator)) {
+                    yield msg;
+                }
             },
         };
     }

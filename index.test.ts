@@ -620,10 +620,7 @@ describe("jsext", () => {
             const job2 = await jsext.run("./job.cjs", ["World"], { fn: "greet" });
             strictEqual(await job2.result(), "Hi, World");
 
-            const job3 = await jsext.run("./job.mjs", ["World"], {
-                fn: "greet",
-                type: "module",
-            });
+            const job3 = await jsext.run("./job.mjs", ["World"], { fn: "greet", });
             strictEqual(await job3.result(), "Hi, World");
 
             const job4 = await jsext.run<string, [string]>("./job.mjs", ["foobar"], {
@@ -641,6 +638,18 @@ describe("jsext", () => {
             const [err5, res5] = await jsext.try(job5.result());
             strictEqual(res5, undefined);
             deepStrictEqual(err5, null);
+
+            const job6 = await jsext.run<string, [string[]]>("./job.mjs", [["foo", "bar"]], {
+                fn: "sequence",
+            });
+            const words: string[] = [];
+
+            for await (const word of job6.iterate()) {
+                words.push(word);
+            }
+
+            deepStrictEqual(words, ["foo", "bar"]);
+            strictEqual(await job6.result(), "foo, bar");
         });
 
         test("child_process", async () => {
@@ -655,7 +664,6 @@ describe("jsext", () => {
 
             const job3 = await jsext.run("./job.mjs", ["World"], {
                 fn: "greet",
-                type: "module",
                 adapter: "child_process",
             });
             strictEqual(await job3.result(), "Hi, World");
@@ -677,6 +685,18 @@ describe("jsext", () => {
             const [err5, res5] = await jsext.try(job5.result());
             strictEqual(res5, undefined);
             deepStrictEqual(err5, null);
+
+            const job6 = await jsext.run<string, [string[]]>("./job.mjs", [["foo", "bar"]], {
+                fn: "sequence",
+            });
+            const words: string[] = [];
+
+            for await (const word of job6.iterate()) {
+                words.push(word);
+            }
+
+            deepStrictEqual(words, ["foo", "bar"]);
+            strictEqual(await job6.result(), "foo, bar");
         });
     });
 });
