@@ -15,6 +15,7 @@
         "noFallthroughCasesInSwitch": true,
         "noPropertyAccessFromIndexSignature": true,
         "noUncheckedIndexedAccess": true,
+        "skipLibCheck": true,
         "paths": {
             "@ayonli/jsext": [
                 "."
