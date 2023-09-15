@@ -157,11 +157,20 @@ export interface JsExt {
         wrapper: (this: T, fn: Fn, ...args: Parameters<Fn>) => ReturnType<Fn>
     ): Fn;
 
-    /** Returns an extended class that combines all mixin methods. */
-    mixins<T, M extends any[]>(
-        base: Constructor<T>,
+    /**
+     * Returns an extended class that combines all mixin methods.
+     * 
+     * This function does not mutate the base class but create a pivot class
+     * instead.
+     */
+    mixins<T extends Constructor<any>, M extends any[]>(
+        base: T,
         ...mixins: { [X in keyof M]: Constructor<M[X]> }
-    ): Constructor<UnionToIntersection<FlatArray<[T, M], 1>>>;
+    ): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
+    mixins<T extends Constructor<any>, M extends any[]>(
+        base: T,
+        ...mixins: M
+    ): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
 
     /**
      * Wraps a source as an AsyncIterable object that can be used in the `for...await...` loop
@@ -425,17 +434,20 @@ const jsext: JsExt = {
         return wrapped as Fn;
     },
     mixins(base, ...mixins) {
-        const ctor = class extends (<any>base) { };
+        const obj = { ctor: null as any as Constructor<any> };
+        obj.ctor = class extends (<any>base) { }; // make sure this class has no name
 
         for (let mixin of mixins) {
             if (typeof mixin == "function") {
-                mergeHierarchy(ctor, mixin);
+                mergeHierarchy(obj.ctor, mixin);
+            } else if (mixin && typeof mixin == "object") {
+                mergeIfNotExists(obj.ctor.prototype, mixin);
             } else {
-                throw new TypeError("mixin must be a constructor");
+                throw new TypeError("mixin must be a constructor or an object");
             }
         }
 
-        return ctor as Constructor<any>;
+        return obj.ctor as Constructor<any>;
     },
     read<T>(source: any, eventMap: {
         event?: string; // for EventSource custom event
