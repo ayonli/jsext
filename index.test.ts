@@ -468,9 +468,9 @@ describe("jsext", () => {
         ok(typeof bar.show === "function");
         ok(typeof bar.str === "function");
         strictEqual(bar.ver, "v0.1");
-        strictEqual(bar.name, "Bar");
         ok(!hasOwn(bar, "name"));
         strictEqual(Bar.length, 0);
+        strictEqual(bar.name, "Bar");
 
         const proto = Object.getPrototypeOf(bar);
         strictEqual(proto, Bar.prototype);
@@ -495,9 +495,11 @@ describe("jsext", () => {
         ok(typeof bar2.str === "function");
         ok(typeof bar2.log === "function");
         strictEqual(bar.ver, "v0.1");
-        strictEqual(bar2.name, "");
         ok(!hasOwn(bar2, "name"));
         strictEqual(Bar2.length, 0);
+
+        const [err] = jsext.try(() => strictEqual(bar2.name, ""));
+        err && strictEqual(bar2.name, "Bar"); // old v8
     });
 
     describe("jsext.read", () => {
