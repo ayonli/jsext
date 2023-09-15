@@ -1,9 +1,8 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.3.10",
+    "version": "0.4.0",
     "description": "Additional functions for JavaScript programming in practice.",
     "main": "index.js",
-    "types": "index.ts",
     "scripts": {
         "prepublishOnly": "tsc",
         "test": "mocha",
@@ -71,7 +70,6 @@
             "ts-node/register"
         ],
         "spec": [
-            "*.test.ts",
             "**/*.test.ts"
         ]
     }

@@ -811,7 +811,13 @@ const jsext: JsExt = {
 
         if (isNode) {
             const path = await import("path");
-            const entry = path.join(__dirname, "worker.mjs");
+            let entry: string;
+            
+            if (__filename.endsWith(".js")) { // compiled
+                entry = path.join(__dirname, "worker.mjs");
+            } else {
+                entry = path.join(path.dirname(__dirname), "worker.mjs");
+            }
 
             if (options?.adapter === "child_process") {
                 let worker: ChildProcess;
