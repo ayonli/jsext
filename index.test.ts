@@ -229,80 +229,96 @@ describe("jsext", () => {
     });
 
     describe("jsext.func", () => {
-        test("regular function", () => {
-            const logs: string[] = [];
-            const text = jsext.func((defer, text: string) => {
-                defer(() => void logs.push("1"));
-                defer(() => void logs.push("2"));
+        describe("regular function", () => {
+            test("success", () => {
+                const logs: string[] = [];
+                const text = jsext.func((defer, text: string) => {
+                    defer(() => void logs.push("1"));
+                    defer(() => void logs.push("2"));
 
-                return text;
-            })("Hello, World!");
+                    return text;
+                })("Hello, World!");
 
-            strictEqual(text, "Hello, World!");
-            deepStrictEqual(logs, ["2", "1"]);
+                strictEqual(text, "Hello, World!");
+                deepStrictEqual(logs, ["2", "1"]);
+            });
 
-            const [err, text2] = jsext.try(() => jsext.func((defer, text: string) => {
-                defer(() => {
-                    throw new Error("something went wrong");
-                });
+            test("error", () => {
+                const [err, text2] = jsext.try(() => jsext.func((defer, text: string) => {
+                    defer(() => {
+                        throw new Error("something went wrong");
+                    });
 
-                return text;
-            })("Hello, World!"));
-            deepStrictEqual(err, new Error("something went wrong"));
-            strictEqual(text2, undefined);
+                    return text;
+                })("Hello, World!"));
+                deepStrictEqual(err, new Error("something went wrong"));
+                strictEqual(text2, undefined);
+            });
 
-            class Foo {
-                name = "Foo";
+            test("as method", () => {
+                const logs: string[] = [];
 
-                say(word: string) {
-                    return jsext.func(function (this: Foo, defer, word: string) {
-                        defer(() => void logs.push(this.name));
-                        return word;
-                    }).call(this, word);
+                class Foo {
+                    name = "Foo";
+
+                    say(word: string) {
+                        return jsext.func(function (this: Foo, defer, word: string) {
+                            defer(() => void logs.push(this.name));
+                            return word;
+                        }).call(this, word);
+                    }
                 }
-            }
 
-            const text3 = new Foo().say("bar");
-            strictEqual(text3, "bar");
-            deepStrictEqual(logs, ["2", "1", "Foo"]);
+                const text3 = new Foo().say("bar");
+                strictEqual(text3, "bar");
+                deepStrictEqual(logs, ["Foo"]);
+            });
         });
 
-        test("async function", async () => {
-            const logs: string[] = [];
-            const errors: ({ error: Error | null, tag: string; })[] = [];
-            const text = await jsext.func(async (defer, text: string) => {
-                defer(async () => void logs.push(await Promise.resolve("1")));
-                defer(async () => void logs.push(await Promise.resolve("2")));
+        describe("async function", () => {
+            test("success", async () => {
+                const logs: string[] = [];
+                const errors: ({ error: Error | null, tag: string; })[] = [];
+                const text = await jsext.func(async (defer, text: string) => {
+                    defer(async () => void logs.push(await Promise.resolve("1")));
+                    defer(async () => void logs.push(await Promise.resolve("2")));
 
-                return await Promise.resolve(text);
-            })("Hello, World!");
+                    return await Promise.resolve(text);
+                })("Hello, World!");
 
-            strictEqual(text, "Hello, World!");
-            deepStrictEqual(logs, ["2", "1"]);
-            deepStrictEqual(errors, []);
+                strictEqual(text, "Hello, World!");
+                deepStrictEqual(logs, ["2", "1"]);
+                deepStrictEqual(errors, []);
+            });
 
-            const [err, text2] = await jsext.try(() => jsext.func(async (defer, text: string) => {
-                defer(() => Promise.reject(new Error("something went wrong")));
+            test("error", async () => {
+                const [err, text2] = await jsext.try(() => jsext.func(async (defer, text: string) => {
+                    defer(() => Promise.reject(new Error("something went wrong")));
 
-                return await Promise.resolve(text);
-            })("Hello, World!"));
-            deepStrictEqual(err, new Error("something went wrong"));
-            strictEqual(text2, undefined);
+                    return await Promise.resolve(text);
+                })("Hello, World!"));
+                deepStrictEqual(err, new Error("something went wrong"));
+                strictEqual(text2, undefined);
+            });
 
-            class Foo {
-                name = "Foo";
+            test("as method", async () => {
+                const logs: string[] = [];
 
-                say(word: string) {
-                    return jsext.func(async function (this: Foo, defer, word: string) {
-                        defer(async () => void logs.push(await Promise.resolve(this.name)));
-                        return word;
-                    }).call(this, word);
+                class Foo {
+                    name = "Foo";
+
+                    say(word: string) {
+                        return jsext.func(async function (this: Foo, defer, word: string) {
+                            defer(async () => void logs.push(await Promise.resolve(this.name)));
+                            return word;
+                        }).call(this, word);
+                    }
                 }
-            }
 
-            const text3 = await new Foo().say("bar");
-            strictEqual(text3, "bar");
-            deepStrictEqual(logs, ["2", "1", "Foo"]);
+                const text3 = await new Foo().say("bar");
+                strictEqual(text3, "bar");
+                deepStrictEqual(logs, ["Foo"]);
+            });
         });
 
         test("generator function", () => {
@@ -442,7 +458,7 @@ describe("jsext", () => {
                     ok(res1 !== res3);
                 });
 
-                test("failure", async () => {
+                test("error", async () => {
                     const fn = jsext.throttle(<T>(obj: T) => {
                         if (true) {
                             throw new Error("something went wrong");
@@ -487,7 +503,7 @@ describe("jsext", () => {
                     ok(res1 !== res3);
                 });
 
-                test("failure", async () => {
+                test("error", async () => {
                     const [err1] = jsext.try(() => jsext.throttle(<T>(obj: T) => {
                         if (true) {
                             throw new Error("something went wrong");
@@ -547,7 +563,7 @@ describe("jsext", () => {
                     ok(res1 !== res3);
                 });
 
-                test("failure", async () => {
+                test("error", async () => {
                     const fn = jsext.throttle(<T>(obj: T) => {
                         if (true) {
                             return Promise.reject(new Error("something went wrong"));
@@ -595,7 +611,7 @@ describe("jsext", () => {
                     ok(res1 !== res3);
                 });
 
-                test("failure", async () => {
+                test("error", async () => {
                     const [[err1], [err2]] = await Promise.all([
                         jsext.try(jsext.throttle(<T>(obj: T) => {
                             if (true) {
@@ -641,7 +657,7 @@ describe("jsext", () => {
         });
     });
 
-    test("jsext.mixins", () => {
+    describe("jsext.mixins", () => {
         class A {
             get name() {
                 return this.constructor.name;
@@ -678,45 +694,49 @@ describe("jsext", () => {
             }
         }
 
-        const bar = new Bar("v0.1");
-        ok(typeof bar.bool === "function");
-        ok(typeof bar.echo === "function");
-        ok(typeof bar.num === "function");
-        ok(typeof bar.show === "function");
-        ok(typeof bar.str === "function");
-        strictEqual(bar.ver, "v0.1");
-        ok(!hasOwn(bar, "name"));
-        strictEqual(Bar.length, 0);
-        strictEqual(bar.name, "Bar");
-
-        const proto = Object.getPrototypeOf(bar);
-        strictEqual(proto, Bar.prototype);
-        ok(typeof proto.bool === "function");
-        ok(typeof proto.echo === "function");
-        ok(typeof proto.num === "function");
-        ok(typeof proto.show === "function");
-        ok(typeof proto.str === "function");
-
         const Bar2 = jsext.mixins(Bar, {
             log(text: string) {
                 console.log(text);
             }
         });
 
-        const bar2 = new Bar2("v0.1");
-        ok(bar2 instanceof Bar);
-        ok(typeof bar2.bool === "function");
-        ok(typeof bar2.echo === "function");
-        ok(typeof bar2.num === "function");
-        ok(typeof bar2.show === "function");
-        ok(typeof bar2.str === "function");
-        ok(typeof bar2.log === "function");
-        strictEqual(bar.ver, "v0.1");
-        ok(!hasOwn(bar2, "name"));
-        strictEqual(Bar2.length, 0);
+        test("class constructor", () => {
+            const bar = new Bar("v0.1");
+            ok(typeof bar.bool === "function");
+            ok(typeof bar.echo === "function");
+            ok(typeof bar.num === "function");
+            ok(typeof bar.show === "function");
+            ok(typeof bar.str === "function");
+            strictEqual(bar.ver, "v0.1");
+            ok(!hasOwn(bar, "name"));
+            strictEqual(Bar.length, 0);
+            strictEqual(bar.name, "Bar");
 
-        const [err] = jsext.try(() => strictEqual(bar2.name, ""));
-        err && strictEqual(bar2.name, "Bar"); // old v8
+            const proto = Object.getPrototypeOf(bar);
+            strictEqual(proto, Bar.prototype);
+            ok(typeof proto.bool === "function");
+            ok(typeof proto.echo === "function");
+            ok(typeof proto.num === "function");
+            ok(typeof proto.show === "function");
+            ok(typeof proto.str === "function");
+        });
+
+        test("object literal", () => {
+            const bar2 = new Bar2("v0.1");
+            ok(bar2 instanceof Bar);
+            ok(typeof bar2.bool === "function");
+            ok(typeof bar2.echo === "function");
+            ok(typeof bar2.num === "function");
+            ok(typeof bar2.show === "function");
+            ok(typeof bar2.str === "function");
+            ok(typeof bar2.log === "function");
+            strictEqual(bar2.ver, "v0.1");
+            ok(!hasOwn(bar2, "name"));
+            strictEqual(Bar2.length, 0);
+
+            const [err] = jsext.try(() => strictEqual(bar2.name, ""));
+            err && strictEqual(bar2.name, "Bar"); // old v8
+        });
     });
 
     describe("jsext.read", () => {
@@ -909,112 +929,139 @@ describe("jsext", () => {
     });
 
     describe("jsext.run", () => {
-        test("worker_threads", async () => {
-            const job1 = await jsext.run("./job.cjs", ["World"]);
-            strictEqual(await job1.result(), "Hello, World");
-
-            const job2 = await jsext.run("./job.cjs", ["World"], { fn: "greet" });
-            strictEqual(await job2.result(), "Hi, World");
-
-            const job3 = await jsext.run("./job.mjs", ["World"], { fn: "greet", });
-            strictEqual(await job3.result(), "Hi, World");
-
-            const job4 = await jsext.run<string, [string]>("./job.mjs", ["foobar"], {
-                fn: "takeTooLong",
-                timeout: 50,
+        describe("worker_threads", () => {
+            test("CommonJS", async () => {
+                const job = await jsext.run("./job.cjs", ["World"]);
+                strictEqual(await job.result(), "Hello, World");
             });
-            const [err4, res4] = await jsext.try(job4.result());
-            strictEqual(res4, undefined);
-            deepStrictEqual(err4, new Error("operation timeout after 50ms"));
 
-            const job5 = await jsext.run<string, [string]>("./job.mjs", ["foobar"], {
-                fn: "takeTooLong",
+            test("ES Module", async () => {
+                const job = await jsext.run("./job.mjs", ["World"]);
+                strictEqual(await job.result(), "Hello, World");
             });
-            await job5.abort();
-            const [err5, res5] = await jsext.try(job5.result());
-            strictEqual(res5, undefined);
-            deepStrictEqual(err5, null);
 
-            const job6 = await jsext.run<string, [string[]]>("./job.mjs", [["foo", "bar"]], {
-                fn: "sequence",
+            test("custom function", async () => {
+                const job = await jsext.run("./job.cjs", ["World"], { fn: "greet" });
+                strictEqual(await job.result(), "Hi, World");
             });
-            const words: string[] = [];
 
-            for await (const word of job6.iterate()) {
-                words.push(word);
-            }
+            test("timeout", async () => {
+                const job = await jsext.run<string, [string]>("./job.mjs", ["foobar"], {
+                    fn: "takeTooLong",
+                    timeout: 50,
+                });
+                const [err, res] = await jsext.try(job.result());
+                strictEqual(res, undefined);
+                deepStrictEqual(err, new Error("operation timeout after 50ms"));
+            });
 
-            deepStrictEqual(words, ["foo", "bar"]);
-            strictEqual(await job6.result(), "foo, bar");
+            test("abort", async () => {
+                const job = await jsext.run<string, [string]>("./job.mjs", ["foobar"], {
+                    fn: "takeTooLong",
+                });
+                await job.abort();
+                const [err, res] = await jsext.try(job.result());
+                strictEqual(res, undefined);
+                deepStrictEqual(err, null);
+            });
 
-            const job7 = await jsext.run("./job.cjs", ["World"], { keepAlive: true });
-            strictEqual(await job7.result(), "Hello, World");
+            test("iterate", async () => {
+                const job = await jsext.run<string, [string[]]>("./job.mjs", [["foo", "bar"]], {
+                    fn: "sequence",
+                });
+                const words: string[] = [];
 
-            const job8 = await jsext.run("./job.cjs", ["World"], { fn: "greet" });
-            strictEqual(job8.workerId, job7.workerId);
-            strictEqual(await job8.result(), "Hi, World");
+                for await (const word of job.iterate()) {
+                    words.push(word);
+                }
 
-            const job9 = await jsext.run("./job.cjs", ["World"]);
-            ok(job8.workerId !== job9.workerId);
-            strictEqual(await job9.result(), "Hello, World");
+                deepStrictEqual(words, ["foo", "bar"]);
+                strictEqual(await job.result(), "foo, bar");
+            });
+
+            test("keep alive", async () => {
+                const job1 = await jsext.run("./job.cjs", ["World"], { keepAlive: true });
+                strictEqual(await job1.result(), "Hello, World");
+
+                const job2 = await jsext.run("./job.cjs", ["World"], { fn: "greet" });
+                strictEqual(job2.workerId, job1.workerId);
+                strictEqual(await job2.result(), "Hi, World");
+
+                const job3 = await jsext.run("./job.cjs", ["World"]);
+                ok(job2.workerId !== job3.workerId);
+                strictEqual(await job3.result(), "Hello, World");
+            });
         });
 
-        test("child_process", async () => {
-            const job1 = await jsext.run("./job.cjs", ["World"], { adapter: "child_process" });
-            strictEqual(await job1.result(), "Hello, World");
-
-            const job2 = await jsext.run("./job.cjs", ["World"], {
-                fn: "greet",
-                adapter: "child_process",
+        describe("child_process", async () => {
+            test("CommonJS", async () => {
+                const job = await jsext.run("./job.cjs", ["World"], { adapter: "child_process" });
+                strictEqual(await job.result(), "Hello, World");
             });
-            strictEqual(await job2.result(), "Hi, World");
 
-            const job3 = await jsext.run("./job.mjs", ["World"], {
-                fn: "greet",
-                adapter: "child_process",
+            test("ES Module", async () => {
+                const job = await jsext.run("./job.mjs", ["World"], {
+                    adapter: "child_process",
+                });
+                strictEqual(await job.result(), "Hello, World");
             });
-            strictEqual(await job3.result(), "Hi, World");
 
-            const job4 = await jsext.run<string, [string]>("./job.mjs", ["foobar"], {
-                fn: "takeTooLong",
-                timeout: 50,
-                adapter: "child_process",
+            test("custom function", async () => {
+                const job = await jsext.run("./job.cjs", ["World"], {
+                    fn: "greet",
+                    adapter: "child_process",
+                });
+                strictEqual(await job.result(), "Hi, World");
             });
-            const [err4, res4] = await jsext.try(job4.result());
-            strictEqual(res4, undefined);
-            deepStrictEqual(err4, new Error("operation timeout after 50ms"));
 
-            const job5 = await jsext.run<string, [string]>("./job.mjs", ["foobar"], {
-                fn: "takeTooLong",
-                adapter: "child_process",
+            test("timeout", async () => {
+                const job = await jsext.run<string, [string]>("./job.mjs", ["foobar"], {
+                    fn: "takeTooLong",
+                    timeout: 50,
+                    adapter: "child_process",
+                });
+                const [err, res] = await jsext.try(job.result());
+                strictEqual(res, undefined);
+                deepStrictEqual(err, new Error("operation timeout after 50ms"));
             });
-            await job5.abort();
-            const [err5, res5] = await jsext.try(job5.result());
-            strictEqual(res5, undefined);
-            deepStrictEqual(err5, null);
 
-            const job6 = await jsext.run<string, [string[]]>("./job.mjs", [["foo", "bar"]], {
-                fn: "sequence",
+            test("abort", async () => {
+                const job = await jsext.run<string, [string]>("./job.mjs", ["foobar"], {
+                    fn: "takeTooLong",
+                    adapter: "child_process",
+                });
+                await job.abort();
+                const [err, res] = await jsext.try(job.result());
+                strictEqual(res, undefined);
+                deepStrictEqual(err, null);
             });
-            const words: string[] = [];
 
-            for await (const word of job6.iterate()) {
-                words.push(word);
-            }
+            test("iterate", async () => {
+                const job = await jsext.run<string, [string[]]>("./job.mjs", [["foo", "bar"]], {
+                    fn: "sequence",
+                });
+                const words: string[] = [];
 
-            deepStrictEqual(words, ["foo", "bar"]);
-            strictEqual(await job6.result(), "foo, bar");
+                for await (const word of job.iterate()) {
+                    words.push(word);
+                }
 
-            const job7 = await jsext.run("./job.cjs", ["World"], { keepAlive: true });
-            strictEqual(await job7.result(), "Hello, World");
+                deepStrictEqual(words, ["foo", "bar"]);
+                strictEqual(await job.result(), "foo, bar");
+            });
 
-            const job8 = await jsext.run("./job.cjs", ["World"], { fn: "greet" });
-            strictEqual(job8.workerId, job7.workerId);
-            strictEqual(await job8.result(), "Hi, World");
+            test("keep alive", async () => {
+                const job1 = await jsext.run("./job.cjs", ["World"], { keepAlive: true });
+                strictEqual(await job1.result(), "Hello, World");
 
-            const job9 = await jsext.run("./job.cjs", ["World"]);
-            ok(job8.workerId !== job9.workerId);
-            strictEqual(await job9.result(), "Hello, World");
+                const job2 = await jsext.run("./job.cjs", ["World"], { fn: "greet" });
+                strictEqual(job2.workerId, job1.workerId);
+                strictEqual(await job2.result(), "Hi, World");
+
+                const job3 = await jsext.run("./job.cjs", ["World"]);
+                ok(job2.workerId !== job3.workerId);
+                strictEqual(await job3.result(), "Hello, World");
+            });
         });
     });
 });
