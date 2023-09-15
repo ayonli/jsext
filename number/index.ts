@@ -1,6 +1,8 @@
 /** Returns true if the given value is a float, false otherwise. */
 export function isFloat(value: unknown): boolean {
-    return typeof value === "number" && (!Number.isFinite(value) || (value as number) % 1 !== 0);
+    return typeof value === "number"
+        && !Number.isNaN(value)
+        && (!Number.isFinite(value) || (value as number) % 1 !== 0);
 }
 
 /** Returns a random integer ranged from `min` to `max`. */

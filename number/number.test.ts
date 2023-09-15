@@ -8,6 +8,7 @@ describe("Number", () => {
         ok(!Number.isFloat(1));
         ok(!Number.isFloat("1.2"));
         ok(!Number.isFloat("abc"));
+        ok(!Number.isFloat(NaN));
     });
 
     test("Number.random", () => {
