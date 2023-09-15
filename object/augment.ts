@@ -1,4 +1,4 @@
-import as, { hasOwn, hasOwnMethod, omit, patch, pick } from ".";
+import { hasOwn, hasOwnMethod, omit, patch, pick, as } from ".";
 
 declare global {
     interface ObjectConstructor {
