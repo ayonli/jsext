@@ -12,6 +12,11 @@ declare global {
         new (...args: any[]): T;
         prototype: T;
     }
+    interface TypedArray extends Array<number> {
+        readonly buffer: ArrayBufferLike;
+        readonly byteLength: number;
+        subarray(begin?: number, end?: number): TypedArray;
+    }
     type Optional<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
     type Ensured<T, K extends keyof T> = Required<Pick<T, K>> & Omit<T, K>;
 }

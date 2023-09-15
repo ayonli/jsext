@@ -3,6 +3,13 @@ export interface Constructor<T> extends Function {
     new (...args: any[]): T;
     prototype: T;
 }
+export interface TypedArray extends Array<number> {
+    readonly buffer: ArrayBufferLike;
+    readonly byteLength: number;
+    subarray(begin?: number, end?: number): TypedArray;
+}
+export type Optional<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
+export type Ensured<T, K extends keyof T> = Required<Pick<T, K>> & Omit<T, K>;
 export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
 export interface JsExt {
     /**
