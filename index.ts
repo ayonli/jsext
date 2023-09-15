@@ -3,6 +3,13 @@ import type { Worker as NodeWorker } from "worker_threads";
 import type { ChildProcess } from "child_process";
 import { sequence } from "./number";
 
+export interface Constructor<T> extends Function {
+    new(...args: any[]): T;
+    prototype: T;
+}
+
+export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
+
 const isNode = typeof process === "object" && process.versions?.node;
 
 /**
@@ -34,6 +41,58 @@ let workerPool: {
 // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
 // pop a consumer and run the callback, which will retry gaining the worker and retry the task.
 const workerConsumerQueue: (() => void)[] = [];
+
+/**
+ * Merges properties and methods only if they're missing in the class. 
+ */
+function mergeIfNotExists(proto: object, source: object, mergeSuper = false) {
+    let props = Reflect.ownKeys(source);
+
+    for (let prop of props) {
+        if (prop == "constructor") {
+            continue;
+        } else if (mergeSuper) {
+            // When merging properties from super classes, the properties in the
+            // base class has the first priority and shall not be overwrite.
+            if (!(prop in proto)) {
+                setProp(proto, source, <string | symbol>prop);
+            }
+        } else if (!proto.hasOwnProperty(prop)) {
+            setProp(proto, source, <string | symbol>prop);
+        }
+    }
+
+    return proto;
+}
+
+/**
+ * Merges properties and methods across the prototype chain.
+ */
+function mergeHierarchy(ctor: Function, mixin: Function, mergeSuper = false) {
+    mergeIfNotExists(ctor.prototype, mixin.prototype, mergeSuper);
+
+    let _super = Object.getPrototypeOf(mixin);
+
+    // Every user defined class or functions that can be instantiated have their
+    // own names, if no name appears, that means the function has traveled to 
+    // the root of the hierarchical tree.
+    if (_super.name) {
+        mergeHierarchy(ctor, _super, true);
+    }
+}
+
+/**
+ * Sets property for prototype based on the given source and prop name properly.
+ */
+function setProp(proto: any, source: any, prop: string | symbol) {
+    let desc = Object.getOwnPropertyDescriptor(source, prop);
+
+    if (desc) {
+        Object.defineProperty(proto, prop, desc);
+    } else {
+        proto[prop] = source[prop];
+    }
+}
 
 export interface JsExt {
     /**
@@ -97,6 +156,12 @@ export interface JsExt {
         fn: Fn,
         wrapper: (this: T, fn: Fn, ...args: Parameters<Fn>) => ReturnType<Fn>
     ): Fn;
+
+    /** Returns an extended class that combines all mixin methods. */
+    mixins<T, M extends any[]>(
+        base: Constructor<T>,
+        ...mixins: { [X in keyof M]: Constructor<M[X]> }
+    ): Constructor<UnionToIntersection<FlatArray<[T, M], 1>>>;
 
     /**
      * Wraps a source as an AsyncIterable object that can be used in the `for...await...` loop
@@ -359,6 +424,19 @@ const jsext: JsExt = {
 
         return wrapped as Fn;
     },
+    mixins(base, ...mixins) {
+        const ctor = class extends (<any>base) { };
+
+        for (let mixin of mixins) {
+            if (typeof mixin == "function") {
+                mergeHierarchy(ctor, mixin);
+            } else {
+                throw new TypeError("mixin must be a constructor");
+            }
+        }
+
+        return ctor as Constructor<any>;
+    },
     read<T>(source: any, eventMap: {
         event?: string; // for EventSource custom event
         message?: string;
@@ -553,7 +631,7 @@ const jsext: JsExt = {
             fn: options?.fn || "default",
             args: args ?? [],
         };
-        
+
         // `buffer` is used to store data pieces yielded by generator functions before they are
         // consumed. `error` and `result` serves similar purposes for function results.
         const buffer: any[] = [];

@@ -28,6 +28,8 @@ import jsext from "@ayonli/jsext";
 
 - `wrap<T, Fn extends (this: T, ...args: any[]) => any>(fn: Fn, wrapper: (this: T, fn: Fn, ...args: Parameters<Fn>) => ReturnType<Fn>): Fn`
 
+- `mixins<T, M extends any[]>(base: Constructor<T>, ...mixins: { [X in keyof M]: Constructor<M[X]> }): Constructor<UnionToIntersection<FlatArray<[T, M], 1>>>`
+
 - `read<I extends AsyncIterable<any>>(iterable: I): I`
 - `read(es: EventSource, options?: { event?: string; }): AsyncIterable<string>`
 - `read<T extends Uint8Array | string>(ws: WebSocket): AsyncIterable<T>`

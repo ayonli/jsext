@@ -1,5 +1,6 @@
 import jsext from "./index";
 import { words } from "./string";
+import { hasOwn } from "./object";
 import { describe, test } from "mocha";
 import { deepStrictEqual, ok, strictEqual } from "assert";
 import { createReadStream } from "fs";
@@ -10,19 +11,6 @@ import { server as WebSocketServer, w3cwebsocket } from "websocket";
 import EventEmitter = require("events");
 
 describe("jsext", () => {
-    test("jsext.wrap", () => {
-        function echo(text: string) {
-            console.log(text);
-        }
-        const wrapped = jsext.wrap(echo, (fn, text) => {
-            fn(text);
-        });
-
-        strictEqual(wrapped.name, echo.name);
-        strictEqual(wrapped.length, echo.length);
-        strictEqual(wrapped.toString(), echo.toString());
-    });
-
     describe("jsext.try", () => {
         const EmptyStringError = new Error("the string must not be empty");
 
@@ -421,6 +409,72 @@ describe("jsext", () => {
 
             deepStrictEqual(logs2, ["Hello", "2", "1", undefined]);
         });
+    });
+
+    test("jsext.wrap", () => {
+        function echo(text: string) {
+            console.log(text);
+        }
+        const wrapped = jsext.wrap(echo, (fn, text) => {
+            fn(text);
+        });
+
+        strictEqual(wrapped.name, echo.name);
+        strictEqual(wrapped.length, echo.length);
+        strictEqual(wrapped.toString(), echo.toString());
+    });
+
+    test("jsext.mixins", () => {
+        class A {
+            get name() {
+                return this.constructor.name;
+            }
+
+            str() {
+                return "";
+            }
+        }
+
+        class B {
+            num() {
+                return 0;
+            }
+        }
+
+        class C extends B {
+            bool() {
+                return false;
+            }
+        }
+
+        class Foo {
+            echo(text: string) {
+                return text;
+            }
+        }
+
+        class Bar extends jsext.mixins(Foo, A, C) {
+            show(str: string) {
+                return str;
+            }
+        }
+
+        const bar = new Bar();
+        ok(typeof bar.bool === "function");
+        ok(typeof bar.echo === "function");
+        ok(typeof bar.num === "function");
+        ok(typeof bar.show === "function");
+        ok(typeof bar.str === "function");
+        strictEqual(bar.name, "Bar");
+        ok(!hasOwn(bar, "name"));
+
+        const proto = Object.getPrototypeOf(bar);
+        strictEqual(proto, Bar.prototype);
+        ok(typeof proto.bool === "function");
+        ok(typeof proto.echo === "function");
+        ok(typeof proto.num === "function");
+        ok(typeof proto.show === "function");
+        ok(typeof proto.str === "function");
     });
 
     describe("jsext.read", () => {
