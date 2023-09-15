@@ -64,7 +64,7 @@ export interface JsExt {
     /**
      * Returns an extended class that combines all mixin methods.
      *
-     * This function does not mutate the base class but create a pivot class
+     * This function does not mutates the base class but create a pivot class
      * instead.
      */
     mixins<T extends Constructor<any>, M extends any[]>(base: T, ...mixins: {

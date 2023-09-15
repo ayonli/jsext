@@ -17,7 +17,7 @@ export declare function uniq<T>(arr: T[]): T[];
 /**
  * Reorganizes the elements in the array in random order.
  *
- * This function mutate the array.
+ * This function mutates the array.
  */
 export declare function shuffle<T>(arr: T[]): T[];
 /**

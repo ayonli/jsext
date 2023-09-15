@@ -88,7 +88,7 @@ export function uniq<T>(arr: T[]): T[] {
 /**
  * Reorganizes the elements in the array in random order.
  * 
- * This function mutate the array.
+ * This function mutates the array.
  */
 export function shuffle<T>(arr: T[]): T[] {
     for (let i = arr.length - 1; i > 0; i--) {

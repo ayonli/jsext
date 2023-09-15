@@ -31,7 +31,7 @@ declare global {
         /**
          * Reorganizes the elements in the array in random order.
          * 
-         * This function mutate the array.
+         * This function mutates the array.
          */
         shuffle(): T[];
         toShuffled(): T[];
