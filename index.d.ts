@@ -91,7 +91,7 @@ export interface JsExt {
         close?: string;
     }): AsyncIterable<T>;
     /** Runs a task in the script in a worker thread that can be aborted during runtime. */
-    run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
+    run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
         /** If not set, runs the default function, otherwise runs the specific function. */
         fn?: string;
         /** Automatically abort the task when timeout (in milliseconds). */
@@ -110,9 +110,9 @@ export interface JsExt {
         /** Terminates the worker and abort the task. */
         abort(): Promise<void>;
         /** Retrieves the return value of the function. */
-        result(): Promise<R>;
+        result(): Promise<T>;
         /** Iterates the yield value if the function returns a generator. */
-        iterate(): AsyncIterable<R>;
+        iterate(): AsyncIterable<T>;
     }>;
 }
 declare const jsext: JsExt;

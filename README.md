@@ -40,34 +40,9 @@ import jsext from "@ayonli/jsext";
 - `read<T>(target: EventTarget, eventMap?: { message?: string; error?: string; close?: string; }): AsyncIterable<T>`
 - `read<T>(target: NodeJS.EventEmitter, eventMap?: { data?: string; error?: string; close?: string; }): AsyncIterable<T>`
 
-```ts
-/** Runs a task in the script in a worker thread that can be aborted during runtime. */
-function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
-    /** If not set, runs the default function, otherwise runs the specific function. */
-    fn?: string;
-    /** Automatically abort the task when timeout (in milliseconds). */
-    timeout?: number;
-    /**
-     * Instead of dropping the worker after the task has completed, keep it alive so that it can
-     * be reused by other tasks.
-     */
-    keepAlive?: boolean;
-    /**
-     * In browser, this option is ignored and will always use the web worker.
-     */
-    adapter?: "worker_threads" | "child_process";
-}): Promise<{
-    workerId: number;
-    /** Terminates the worker and abort the task. */
-    abort(): Promise<void>;
-    /** Retrieves the return value of the function. */
-    result(): Promise<R>;
-    /** Iterates the yield value if the function returns a generator. */
-    iterate(): AsyncIterable<R>;
-}>;
-```
+- `run<T, A extends any[] = any[]>(script: string, args?: A, options?: { fn?: string; timeout?: number; adapter?: "worker_threads" | "child_process" }): Promise<{ workerId: number; abort(): Promise<void>; result(): Promise<T>; iterate(): AsyncIterable<T>; }>`
 
-See [index.d.ts](./index.d.ts) for more details.
+See [index.d.ts](./index.d.ts) for details and docs.
 
 ## Sub-packages
 
@@ -313,4 +288,4 @@ If we're developing libraries and share them openly on NPM, in order to prevent 
 better not to use augmentations, but use the corresponding functions from the sub-packages instead.
 
 But if we're developing private projects, using augmentations can save a lot of time, it's easier to
-read or write and make sense.
+read and write, and make sense.
