@@ -1,8 +1,14 @@
-import { hasOwn, omit, patch, pick } from ".";
+import { hasOwn, hasOwnMethod, omit, patch, pick } from ".";
 
 declare global {
     interface ObjectConstructor {
         hasOwn(obj: any, key: string | number | symbol): boolean;
+        /**
+         * Returns `true` if the specified object has the indicated method as its own method (in its
+         * own prototype). If the method is inherited, or is not in the prototype, or does not exist,
+         * this function returns `false`.
+         */
+        hasOwnMethod(obj: any, method: string | symbol): boolean;
         /**
          * Copies the key-value pairs that are presented in the source objects but are missing in
          * the target object into the target, later pairs are skipped if the same key already exists.
@@ -29,6 +35,10 @@ declare global {
 
 if (!Object.hasOwn) {
     Object.hasOwn = hasOwn;
+}
+
+if (!Object.hasOwnMethod) {
+    Object.hasOwnMethod = hasOwnMethod;
 }
 
 Object.patch = patch;

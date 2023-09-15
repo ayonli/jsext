@@ -189,6 +189,7 @@ import "@ayonli/jsext/object/augment";
 **Functions**
 
 - `hasOwn(obj: any, key: string | number | symbol): boolean`
+- `hasOwnMethod(obj: any, method: string | symbol): boolean`
 - `patch<T extends {}, U>(target: T, source: U): T & U`
 - `patch<T extends {}, U, V>(target: T, source1: U, source2: V): T & U & V`
 - `patch<T extends {}, U, V, W>(target: T, source1: U, source2: V, source3: W): T & U & V & W`

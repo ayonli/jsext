@@ -3,6 +3,18 @@ export function hasOwn(obj: any, key: string | number | symbol): boolean {
 };
 
 /**
+ * Returns `true` if the specified object has the indicated method as its own method (in its own
+ * prototype). If the method is inherited, or is not in the prototype, or does not exist, this
+ * function returns `false`.
+ */
+export function hasOwnMethod(obj: any, method: string | symbol): boolean {
+    let proto = Object.getPrototypeOf(obj);
+    return proto !== null
+        && Object.prototype.hasOwnProperty.call(proto, method)
+        && typeof proto[method] === "function";
+}
+
+/**
  * Copies the key-value pairs that are presented in the source objects but are missing in
  * the target object into the target, later pairs are skipped if the same key already exists.
  * 

@@ -33,6 +33,7 @@
         "sum",
         "avg",
         "wrap",
+        "mixin",
         "try",
         "defer",
         "sleep",

@@ -14,6 +14,29 @@ describe("Object", () => {
         ok(obj2.foo === obj1.foo);
     });
 
+    test("Object.hasOwnMethod", () => {
+        class Foo {
+            say(word: string) {
+                console.log(word);
+            }
+        }
+
+        class Bar extends Foo {
+            constructor(public echo: (text: string) => string) {
+                super();
+            }
+
+            show(text: string) {
+                console.log(text);
+            }
+        }
+
+        const obj1 = new Bar((text: string) => text);
+        ok(Object.hasOwnMethod(obj1, "show"));
+        ok(!Object.hasOwnMethod(obj1, "say"));
+        ok(!Object.hasOwnMethod(obj1, "echo"));
+    });
+
     test("Object.patch", () => {
         const obj = { foo: "hello" };
 
