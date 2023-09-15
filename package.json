@@ -38,6 +38,7 @@
         "defer",
         "sleep",
         "promise",
+        "throttle",
         "worker"
     ],
     "author": "A-yon Lee <the@ayon.li>",

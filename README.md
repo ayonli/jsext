@@ -28,6 +28,9 @@ import jsext from "@ayonli/jsext";
 
 - `wrap<T, Fn extends (this: T, ...args: any[]) => any>(fn: Fn, wrapper: (this: T, fn: Fn, ...args: Parameters<Fn>) => ReturnType<Fn>): Fn`
 
+- `throttle<T, Fn extends (this: T, ...args: any[]) => any>(handler: Fn, duration: number): Fn`
+- `throttle<T, Fn extends (this: T, ...args: any[]) => any>(handler: Fn, options: { duration: number; for?: any }): Fn`
+
 - `mixins<T extends Constructor<any>, M extends any[]>(base: T, ...mixins: { [X in keyof M]: Constructor<M[X]> }): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>`
 - `mixins<T extends Constructor<any>, M extends any[]>(base: T, ...mixins: M): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>`
 
@@ -54,6 +57,7 @@ function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
      */
     adapter?: "worker_threads" | "child_process";
 }): Promise<{
+    workerId: number;
     /** Terminates the worker and abort the task. */
     abort(): Promise<void>;
     /** Retrieves the return value of the function. */
