@@ -88,12 +88,12 @@ export function omit(obj: any, keys: (string | symbol)[]) {
  * @example
  *  as(bar, SomeType)?.doSomething();
  */
-export function as(obj: any, type: StringConstructor): string;
-export function as(obj: any, type: NumberConstructor): number;
-export function as(obj: any, type: BigIntConstructor): bigint;
-export function as(obj: any, type: BooleanConstructor): boolean;
-export function as(obj: any, type: SymbolConstructor): symbol;
-export function as<T>(obj: any, type: Constructor<T>): T;
+export function as(obj: any, type: StringConstructor): string | null;
+export function as(obj: any, type: NumberConstructor): number | null;
+export function as(obj: any, type: BigIntConstructor): bigint | null;
+export function as(obj: any, type: BooleanConstructor): boolean | null;
+export function as(obj: any, type: SymbolConstructor): symbol | null;
+export function as<T>(obj: any, type: Constructor<T>): T | null;
 export function as(obj: any, type: any): any {
     if (typeof type !== "function") {
         throw new TypeError("type must be a valid constructor");

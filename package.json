@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.3.8",
+    "version": "0.3.9",
     "description": "Additional functions for JavaScript programming in practice.",
     "main": "index.js",
     "types": "index.ts",
