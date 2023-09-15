@@ -1,4 +1,4 @@
-import { hasOwn, hasOwnMethod, omit, patch, pick } from ".";
+import as, { hasOwn, hasOwnMethod, omit, patch, pick } from ".";
 
 declare global {
     interface ObjectConstructor {
@@ -30,6 +30,18 @@ declare global {
          */
         omit<T extends object, U extends keyof T>(obj: T, keys: U[]): Omit<T, U>;
         omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>;
+        /**
+         * Returns the object if it's an instance of the given type, otherwise returns `null`.
+         * This function is mainly used for the optional chaining syntax.
+         * @example
+         *  Object.as(bar, SomeType)?.doSomething();
+         */
+        as(obj: any, type: StringConstructor): string | null;
+        as(obj: any, type: NumberConstructor): number | null;
+        as(obj: any, type: BigIntConstructor): bigint | null;
+        as(obj: any, type: BooleanConstructor): boolean | null;
+        as(obj: any, type: SymbolConstructor): symbol | null;
+        as<T>(obj: any, type: Constructor<T>): T | null;
     }
 }
 
@@ -44,3 +56,4 @@ if (!Object.hasOwnMethod) {
 Object.patch = patch;
 Object.pick = pick;
 Object.omit = omit;
+Object.as = as;

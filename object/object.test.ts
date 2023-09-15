@@ -1,6 +1,6 @@
 import "../augment";
 import { describe, test } from "mocha";
-import { deepStrictEqual, ok } from "assert";
+import { deepStrictEqual, ok, strictEqual } from "assert";
 
 describe("Object", () => {
     test("Object.hasOwn", () => {
@@ -31,10 +31,10 @@ describe("Object", () => {
             }
         }
 
-        const obj1 = new Bar((text: string) => text);
-        ok(Object.hasOwnMethod(obj1, "show"));
-        ok(!Object.hasOwnMethod(obj1, "say"));
-        ok(!Object.hasOwnMethod(obj1, "echo"));
+        const obj = new Bar((text: string) => text);
+        ok(Object.hasOwnMethod(obj, "show"));
+        ok(!Object.hasOwnMethod(obj, "say"));
+        ok(!Object.hasOwnMethod(obj, "echo"));
     });
 
     test("Object.patch", () => {
@@ -77,5 +77,36 @@ describe("Object", () => {
         }
 
         deepStrictEqual(Object.omit(new B(), ["bar", symbol2]), { foo: "hello", [symbol1]: 123 });
+    });
+
+    test("Object.as", () => {
+        class Foo {
+            echo(text: string) {
+                return text;
+            }
+        }
+
+        strictEqual(Object.as("hello, world", String), "hello, world");
+        strictEqual(Object.as("hello, world", Number), null);
+        strictEqual(Object.as(new String("hello, world"), String), "hello, world");
+
+        strictEqual(Object.as(123, Number), 123);
+        strictEqual(Object.as(123, BigInt), null);
+        strictEqual(Object.as(new Number(123), Number), 123);
+
+        strictEqual(Object.as(BigInt(123), BigInt), BigInt(123));
+        strictEqual(Object.as(BigInt(123), Number), null);
+
+        strictEqual(Object.as(true, Boolean), true);
+        strictEqual(Object.as(false, Object), null);
+        strictEqual(Object.as(new Boolean(), Boolean), false);
+
+        strictEqual(Object.as(Symbol.for("foo"), Symbol), Symbol.for("foo"));
+        strictEqual(Object.as(Symbol.for("foo"), String), null);
+
+        const obj: any = new Foo();
+        strictEqual(Object.as(obj, Foo), obj);
+        strictEqual(Object.as(obj, Array), null);
+        strictEqual(Object.as(obj, Foo)?.echo("hello, world"), "hello, world");
     });
 });

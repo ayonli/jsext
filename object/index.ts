@@ -1,3 +1,5 @@
+import type { Constructor } from "../index";
+
 export function hasOwn(obj: any, key: string | number | symbol): boolean {
     return Object.prototype.hasOwnProperty.call(obj, key);
 };
@@ -75,4 +77,43 @@ export function omit(obj: any, keys: (string | symbol)[]) {
     }
 
     return result;
+}
+
+/**
+ * Returns the object if it's an instance of the given type, otherwise returns `null`.
+ * This function is mainly used for the optional chaining syntax.
+ * @example
+ *  as(bar, SomeType)?.doSomething();
+ */
+export default function as(obj: any, type: StringConstructor): string;
+export default function as(obj: any, type: NumberConstructor): number;
+export default function as(obj: any, type: BigIntConstructor): bigint;
+export default function as(obj: any, type: BooleanConstructor): boolean;
+export default function as(obj: any, type: SymbolConstructor): symbol;
+export default function as<T>(obj: any, type: Constructor<T>): T;
+export default function as(obj: any, type: any): any {
+    if (typeof type !== "function") {
+        throw new TypeError("type must be a valid constructor");
+    }
+
+    let _type: any;
+    let primitiveMap = <Record<string, Function>>{
+        "string": String,
+        "number": Number,
+        "bigint": BigInt,
+        "boolean": Boolean,
+        "symbol": Symbol
+    };
+
+    if (obj instanceof type) {
+        if ([String, Number, Boolean].includes(type)) {
+            return obj.valueOf(); // make sure the primitives are returned.
+        } else {
+            return obj;
+        }
+    } else if ((_type = typeof obj) && primitiveMap[_type] === type) {
+        return obj;
+    }
+
+    return null;
 }

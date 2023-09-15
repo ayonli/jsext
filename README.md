@@ -198,6 +198,12 @@ import "@ayonli/jsext/object/augment";
 - `pick<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
 - `omit<T extends object, U extends keyof T>(obj: T, keys: U[]): Omit<T, U>`
 - `omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
+- `as(obj: any, type: StringConstructor): string | null`
+- `as(obj: any, type: NumberConstructor): number | null`
+- `as(obj: any, type: BigIntConstructor): bigint | null`
+- `as(obj: any, type: BooleanConstructor): boolean | null`
+- `as(obj: any, type: SymbolConstructor): symbol | null`
+- `as<T>(obj: any, type: Constructor<T>): T | null`
 
 *When augment, these functions will be attached to the `Object` constructor.*
 
