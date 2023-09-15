@@ -1,4 +1,4 @@
-import { after, sleep, timeout } from ".";
+import { after, sleep, timeout, until } from ".";
 
 declare global {
     interface PromiseConstructor {
@@ -8,9 +8,12 @@ declare global {
         after<T>(value: T | PromiseLike<T>, ms: number): Promise<T>;
         /** Blocks the context for a given time. */
         sleep(ms: number): Promise<void>;
+        /** Blocks the context until the test is passed. */
+        until(test: () => boolean | Promise<boolean>): Promise<void>;
     }
 }
 
 Promise.timeout = timeout;
 Promise.after = after;
 Promise.sleep = sleep;
+Promise.until = until;

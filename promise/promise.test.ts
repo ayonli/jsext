@@ -45,4 +45,10 @@ describe("Promise", () => {
         await Promise.sleep(50);
         ok(Date.now() - startTime >= 50);
     });
+
+    test("Promise.until", async () => {
+        let result = 0;
+        await Promise.until(() => (++result) === 10);
+        strictEqual(result, 10);
+    });
 });

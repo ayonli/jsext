@@ -236,6 +236,7 @@ import "@ayonli/jsext/promise/augment";
 - `timeout<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
 - `after<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
 - `sleep(ms: number): Promise<void>`
+- `until(test: () => boolean | Promise<boolean>): Promise<void>`
 
 *When augment, these functions will be attached to the `Promise` constructor.*
 

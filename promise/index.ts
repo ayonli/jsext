@@ -27,3 +27,13 @@ export async function after<T>(value: T | PromiseLike<T>, ms: number): Promise<T
 export async function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+/** Blocks the context until the test is passed. */
+export async function until(test: () => boolean | Promise<boolean>): Promise<void> {
+    if (typeof globalThis.setImmediate === "undefined") {
+        // @ts-ignore
+        globalThis.setImmediate = (cb: () => void) => setTimeout(cb, 0);
+    }
+
+    do { await new Promise<void>(globalThis.setImmediate); } while ((await test()) == false);
+}
