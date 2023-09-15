@@ -11,9 +11,12 @@ export function hasOwn(obj: any, key: string | number | symbol): boolean {
  */
 export function hasOwnMethod(obj: any, method: string | symbol): boolean {
     let proto = Object.getPrototypeOf(obj);
-    return proto !== null
-        && Object.prototype.hasOwnProperty.call(proto, method)
-        && typeof proto[method] === "function";
+
+    if (!proto || !hasOwn(proto, method)) {
+        return false;
+    }
+
+    return typeof Object.getOwnPropertyDescriptor(proto, method)?.value === "function";
 }
 
 /**

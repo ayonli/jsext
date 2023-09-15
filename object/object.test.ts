@@ -29,12 +29,23 @@ describe("Object", () => {
             show(text: string) {
                 console.log(text);
             }
+
+            get display() {
+                return (str: string) => {
+                    console.log(str);
+                };
+            }
         }
+
+        // @ts-ignore
+        Bar.prototype["abc"] = function () { };
 
         const obj = new Bar((text: string) => text);
         ok(Object.hasOwnMethod(obj, "show"));
         ok(!Object.hasOwnMethod(obj, "say"));
         ok(!Object.hasOwnMethod(obj, "echo"));
+        ok(!Object.hasOwnMethod(obj, "display"));
+        ok(Object.hasOwnMethod(obj, "abc"));
     });
 
     test("Object.patch", () => {
