@@ -1,8 +1,12 @@
 .vscode/
 node_modules/
-dist/
 *.js
 *.js.map
 *.tgz
 !worker.js
 !*.config.js
+!job-example.js
+!esm/index.js
+!esm/index.js.map
+!bundle/index.js
+!bundle/index.js.map

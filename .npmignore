@@ -3,7 +3,6 @@
 node_modules/
 *.test.ts
 *.test.js
-*.test.js.map
 *.tgz
 *.lockb
 tsconfig.json
