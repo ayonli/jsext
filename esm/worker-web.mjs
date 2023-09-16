@@ -1,4 +1,4 @@
-import { isAsyncGenerator, isGenerator } from "https://raw.githubusercontent.com/ayonli/check-iterable/master/index.js";
+import { isAsyncGenerator, isGenerator } from "https://deno.land/x/check_iterable/index.js";
 
 function isFFIMessage(msg) {
     return msg && typeof msg === "object" &&
@@ -45,8 +45,8 @@ async function handleMessage(msg, send) {
     }
 }
 
-self.addEventListener("message", async ({ data: msg }) => {
+self.onmessage = async ({ data: msg }) => {
     if (isFFIMessage(msg)) {
         await handleMessage(msg, self.postMessage.bind(self));
     }
-});
+};
