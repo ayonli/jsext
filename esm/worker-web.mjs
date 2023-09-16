@@ -8,6 +8,9 @@ function isFFIMessage(msg) {
         Array.isArray(msg.args);
 }
 
+/** @type {Map<string, any>} */
+const cache = new Map();
+
 /**
  * @param {{type: string; script: string; fn: string; args: any[]}} msg 
  * @param {(reply: { type: string; value?: any; error?: unknown; done?: boolean }) => void} send
@@ -20,23 +23,27 @@ async function handleMessage(msg, send) {
             baseUrl = baseUrl.slice(5);
         }
 
-        let url = new URL(msg.script, baseUrl);
-        let module;
+        let url = new URL(msg.script, baseUrl).href;
+        let module = cache.get(url);
 
-        try {
-            module = await import(url);
-        } catch (err) {
-            if (String(err).includes("Failed")) {
-                // The content-type of the response isn't application/javascript, try to download it
-                // and load it with object URL.
-                const res = await fetch(url);
-                const buf = await res.arrayBuffer();
-                const blob = new Blob([new Uint8Array(buf)], { type: "application/javascript" });
+        if (!module) {
+            try {
+                module = await import(url);
+                cache.set(url, module);
+            } catch (err) {
+                if (String(err).includes("Failed")) {
+                    // The content-type of the response isn't application/javascript, try to
+                    // download it and load it with object URL.
+                    const res = await fetch(url);
+                    const buf = await res.arrayBuffer();
+                    const blob = new Blob([new Uint8Array(buf)], { type: "application/javascript" });
 
-                const _url = URL.createObjectURL(blob);
-                module = await import(_url);
-            } else {
-                throw err;
+                    const _url = URL.createObjectURL(blob);
+                    module = await import(_url);
+                    cache.set(url, module);
+                } else {
+                    throw err;
+                }
             }
         }
 
