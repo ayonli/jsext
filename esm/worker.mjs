@@ -54,9 +54,10 @@ if (!isMainThread && parentPort) {
         }
     });
 } else if (process.send) {
+    process.send("ready"); // notify the parent process that the worker is ready;
     process.on("message", async (msg) => {
         if (isFFIMessage(msg)) {
-            await handleMessage(msg, process.send?.bind(process));
+            await handleMessage(msg, process.send.bind(process));
         }
     });
 }

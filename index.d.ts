@@ -100,12 +100,15 @@ export interface JsExt {
     /**
      * Runs a task in the `script` in a worker thread that can be aborted during runtime.
      *
-     * In Node.js, the `script` is relative to the `process.cwd()` if not absolute.
+     * In Node.js, the `script` can be either a CommonJS module or an ES module, and is relative to
+     * the `process.cwd()` if not absolute.
      *
-     * In browser, if the `script` is not an absolute path, there could be two situations:
-     *  1. If the worker entry file is loaded normally (with `content-type: application/json`), the
+     * In browser, the `script` can only be an ES module, if it's not an absolute path, there could
+     * be two situations:
+     *
+     * 1. If the worker entry file is loaded normally (with `content-type: application/json`), the
      *      `script` is relative to the current page.
-     *  2. If the worker is loaded with an object URL (the content-type of the entry file isn't
+     * 2. If the worker is loaded with an object URL (the content-type of the entry file isn't
      *      `application/json`), the `script` will be relative to the root directory of the URL.
      *
      * So it would be better to just set an absolute path and prevent unnecessary headache.

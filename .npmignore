@@ -7,10 +7,7 @@ node_modules/
 *.tgz
 *.lockb
 tsconfig.json
-job-example.cjs
+job-example.js
 job-example.mjs
 *.config.js
 bundle/
-esm/index.mjs
-esm/index.mjs.map
-esm/worker-web.mjs

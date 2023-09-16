@@ -5,7 +5,7 @@
     "main": "index.js",
     "scripts": {
         "test": "mocha",
-        "postpublish": "ls *.js|grep -v config.js|xargs rm; ls *.js.map|xargs rm; ls */*.js|grep -v bundle|xargs rm; ls */*.js.map|grep -v bundle|xargs rm",
+        "postpublish": "ls *.js|grep -v config.js|grep -v example.js|xargs rm; ls *.js.map|xargs rm; ls */*.js|grep -v bundle|grep -v esm|xargs rm; ls */*.js.map|grep -v bundle|grep -v esm|xargs rm",
         "build": "tsc && rollup -c rollup.config.mjs && webpack",
         "prepublishOnly": "npm run build"
     },
@@ -59,7 +59,6 @@
         "@types/mocha": "^10.0.1",
         "@types/node": "^20.6.0",
         "@types/websocket": "^1.0.6",
-        "builtin-modules": "^3.3.0",
         "eventsource": "1.1",
         "mocha": "^10.2.0",
         "rollup": "^3.29.2",
@@ -71,7 +70,7 @@
         "websocket": "^1.0.34"
     },
     "engines": {
-        "node": ">=14"
+        "node": ">=12"
     },
     "mocha": {
         "require": [

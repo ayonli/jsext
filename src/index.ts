@@ -228,12 +228,15 @@ export interface JsExt {
     /**
      * Runs a task in the `script` in a worker thread that can be aborted during runtime.
      * 
-     * In Node.js, the `script` is relative to the `process.cwd()` if not absolute.
+     * In Node.js, the `script` can be either a CommonJS module or an ES module, and is relative to
+     * the `process.cwd()` if not absolute.
      * 
-     * In browser, if the `script` is not an absolute path, there could be two situations:
-     *  1. If the worker entry file is loaded normally (with `content-type: application/json`), the
+     * In browser, the `script` can only be an ES module, if it's not an absolute path, there could
+     * be two situations:
+     * 
+     * 1. If the worker entry file is loaded normally (with `content-type: application/json`), the
      *      `script` is relative to the current page.
-     *  2. If the worker is loaded with an object URL (the content-type of the entry file isn't
+     * 2. If the worker is loaded with an object URL (the content-type of the entry file isn't
      *      `application/json`), the `script` will be relative to the root directory of the URL.
      * 
      * So it would be better to just set an absolute path and prevent unnecessary headache.
@@ -839,7 +842,9 @@ const jsext: JsExt = {
 
         if (isNode) {
             const path = await import("path");
-            const fs = await import("fs/promises");
+            const util = await import("util");
+            const fs = await import("fs");
+            const stat = util.promisify(fs.stat);
             let _filename: string;
             let _dirname: string;
             let entry: string;
@@ -850,19 +855,19 @@ const jsext: JsExt = {
             } else {
                 // Using the ES module in Node.js is very unlikely, so we just check the module
                 // filename in a simple manner, and report error if not found.
-                let [err] = await jsext.try(fs.stat("package.json"));
+                let [err] = await jsext.try(stat("package.json"));
 
                 if (err) {
                     throw new Error("the current working directory is not a Node.js module");
                 }
 
                 _filename = process.cwd() + "/node_modules/@ayonli/jsext/esm/index.mjs";
-                [err] = await jsext.try(fs.stat(_filename));
+                [err] = await jsext.try(stat(_filename));
 
                 if (err) {
                     // Assuming this is @ayonli/jsext itself.
                     _filename = process.cwd() + "/esm/index.mjs";
-                    [err] = await jsext.try(fs.stat(_filename));
+                    [err] = await jsext.try(stat(_filename));
 
                     if (err) {
                         throw new Error("can not locate the worker entry");
@@ -880,6 +885,7 @@ const jsext: JsExt = {
 
             if (options?.adapter === "child_process") {
                 let worker: ChildProcess;
+                let ok = true;
                 poolRecord = workerPool.find(item => {
                     return item.adapter === "child_process" && !item.busy;
                 });
@@ -890,14 +896,30 @@ const jsext: JsExt = {
                     poolRecord.busy = true;
                 } else if (workerPool.length < maxWorkerNum) {
                     const { fork } = await import("child_process");
-                    worker = fork(entry, { stdio: "inherit", serialization: "advanced" });
+                    const isPrior14 = parseInt(process.version.slice(1)) < 14;
+                    worker = fork(entry, {
+                        stdio: "inherit",
+                        serialization: isPrior14 ? "advanced" : "json",
+                    });
                     workerId = worker.pid as number;
+                    ok = await new Promise<boolean>((resolve) => {
+                        worker.once("exit", () => {
+                            if (error) {
+                                // The child process took too long to start and cause timeout error.
+                                resolve(false);
+                            }
+                        });
+                        worker.once("message", () => {
+                            worker.removeAllListeners("exit");
+                            resolve(true);
+                        });
+                    });
 
                     // Fill the worker pool regardless the current call should keep-alive or not,
                     // this will make sure that the total number of workers will not exceed the
                     // maxWorkerNum. If the the call doesn't keep-alive the worker, it will be
                     // cleaned after the call.
-                    workerPool.push(poolRecord = {
+                    ok && workerPool.push(poolRecord = {
                         workerId,
                         worker,
                         adapter: "child_process",
@@ -919,12 +941,15 @@ const jsext: JsExt = {
                 };
                 terminate = () => Promise.resolve(void worker.kill(1));
 
-                worker.send(msg);
-                worker.on("message", handleMessage);
-                worker.once("error", handleError);
-                worker.once("exit", handleExit);
+                if (ok) {
+                    worker.send(msg);
+                    worker.on("message", handleMessage);
+                    worker.once("error", handleError);
+                    worker.once("exit", handleExit);
+                }
             } else {
                 let worker: NodeWorker;
+                let ok = true;
                 poolRecord = workerPool.find(item => {
                     return item.adapter === "worker_threads" && !item.busy;
                 });
@@ -937,7 +962,19 @@ const jsext: JsExt = {
                     const { Worker } = await import("worker_threads");
                     worker = new Worker(entry);
                     workerId = worker.threadId;
-                    workerPool.push(poolRecord = {
+                    ok = await new Promise<boolean>((resolve) => {
+                        worker.once("exit", () => {
+                            if (error) {
+                                // The child process took too long to start and cause timeout error.
+                                resolve(false);
+                            }
+                        });
+                        worker.once("online", () => {
+                            worker.removeAllListeners("exit");
+                            resolve(true);
+                        });
+                    });
+                    ok && workerPool.push(poolRecord = {
                         workerId,
                         worker,
                         adapter: "worker_threads",
@@ -955,11 +992,13 @@ const jsext: JsExt = {
                 };
                 terminate = async () => void (await worker.terminate());
 
-                worker.postMessage(msg);
-                worker.on("message", handleMessage);
-                worker.once("error", handleError);
-                worker.once("messageerror", handleError);
-                worker.once("exit", handleExit);
+                if (ok) {
+                    worker.postMessage(msg);
+                    worker.on("message", handleMessage);
+                    worker.once("error", handleError);
+                    worker.once("messageerror", handleError);
+                    worker.once("exit", handleExit);
+                }
             }
         } else {
             let worker: Worker;
