@@ -20,6 +20,7 @@ export type Ensured<T, K extends keyof T> = Required<Pick<T, K>> & Omit<T, K>;
 export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
 
 const isNode = typeof process === "object" && !!process.versions?.node;
+declare var Deno: any;
 
 type ThrottleCache = {
     for: any;
@@ -742,8 +743,8 @@ const jsext: JsExt = {
             args: args ?? [],
         };
 
-        if (typeof (globalThis as any)["Deno"] === "object") {
-            msg.baseUrl = "file://" + (globalThis as any)["Deno"].cwd() + "/";
+        if (typeof Deno === "object") {
+            msg.baseUrl = "file://" + Deno.cwd() + "/";
         } else if (isNode) {
             msg.baseUrl = "file://" + process.cwd() + "/";
         } else if (typeof location === "object") {
@@ -1017,7 +1018,7 @@ const jsext: JsExt = {
                     || "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs";
                 let url: string;
 
-                if (typeof (globalThis as any)["Deno"] === "object") {
+                if (typeof Deno === "object") {
                     // Deno can load the module regardless of MINE type.
                     url = new URL(_url, msg.baseUrl).href;
                 } else {

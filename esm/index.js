@@ -1366,8 +1366,8 @@ const jsext = {
             fn: (options === null || options === void 0 ? void 0 : options.fn) || "default",
             args: args !== null && args !== void 0 ? args : [],
         };
-        if (typeof globalThis["Deno"] === "object") {
-            msg.baseUrl = "file://" + globalThis["Deno"].cwd() + "/";
+        if (typeof Deno === "object") {
+            msg.baseUrl = "file://" + Deno.cwd() + "/";
         }
         else if (isNode) {
             msg.baseUrl = "file://" + process.cwd() + "/";
@@ -1635,7 +1635,7 @@ const jsext = {
                 const _url = (options === null || options === void 0 ? void 0 : options.webWorkerEntry)
                     || "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs";
                 let url;
-                if (typeof globalThis["Deno"] === "object") {
+                if (typeof Deno === "object") {
                     // Deno can load the module regardless of MINE type.
                     url = new URL(_url, msg.baseUrl).href;
                 }
