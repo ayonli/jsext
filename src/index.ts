@@ -19,7 +19,7 @@ export type Ensured<T, K extends keyof T> = Required<Pick<T, K>> & Omit<T, K>;
 
 export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
 
-const isNode = typeof process === "object" && process.versions?.node;
+const isNode = typeof process === "object" && !!process.versions?.node;
 
 type ThrottleCache = {
     for: any;
@@ -229,17 +229,10 @@ export interface JsExt {
      * Runs a task in the `script` in a worker thread that can be aborted during runtime.
      * 
      * In Node.js, the `script` can be either a CommonJS module or an ES module, and is relative to
-     * the `process.cwd()` if not absolute.
+     * the current working directory if not absolute.
      * 
-     * In browser, the `script` can only be an ES module, if it's not an absolute path, there could
-     * be two situations:
-     * 
-     * 1. If the worker entry file is loaded normally (with `content-type: application/json`), the
-     *      `script` is relative to the current page.
-     * 2. If the worker is loaded with an object URL (the content-type of the entry file isn't
-     *      `application/json`), the `script` will be relative to the root directory of the URL.
-     * 
-     * So it would be better to just set an absolute path and prevent unnecessary headache.
+     * In browser or Deno, the `script` can only be an ES module, and is relative to the current URL
+     * (or working directory for Deno) if not absolute.
      */
     run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
         /** If not set, runs the default function, otherwise runs the specific function. */
@@ -744,9 +737,18 @@ const jsext: JsExt = {
         const msg = {
             type: "ffi",
             script,
+            baseUrl: "",
             fn: options?.fn || "default",
             args: args ?? [],
         };
+
+        if (typeof (globalThis as any)["Deno"] === "object") {
+            msg.baseUrl = "file://" + (globalThis as any)["Deno"].cwd() + "/";
+        } else if (isNode) {
+            msg.baseUrl = "file://" + process.cwd() + "/";
+        } else if (typeof location === "object") {
+            msg.baseUrl = location.href;
+        }
 
         // `buffer` is used to store data pieces yielded by generator functions before they are
         // consumed. `error` and `result` serves similar purposes for function results.
@@ -1011,27 +1013,32 @@ const jsext: JsExt = {
                 workerId = poolRecord.workerId;
                 poolRecord.busy = true;
             } else if (workerPool.length < maxWorkerNum) {
-                const url = options?.webWorkerEntry
+                const _url = options?.webWorkerEntry
                     || "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs";
-                const res = await fetch(url);
-                let _url: string;
+                let url: string;
 
-                if (res.headers.get("content-type")?.startsWith("application/javascript")) {
-                    _url = url;
+                if (typeof (globalThis as any)["Deno"] === "object") {
+                    // Deno can load the module regardless of MINE type.
+                    url = new URL(_url, msg.baseUrl).href;
                 } else {
-                    // GitHub returns MIME type `text/plain` for the file, we need to change it to
-                    // `application/javascript`, by creating a new blob a with custom type and using
-                    // URL.createObjectURL() to create a `blob:` URL for the resource so that it can
-                    // be loaded by the Worker constructor.
-                    //
-                    // NOTE: a blob URL will cause the `location.href` in the worker alway points to
-                    // the blob URL instead of the current page.
-                    const buf = await res.arrayBuffer();
-                    const blob = new Blob([new Uint8Array(buf)], { type: "application/javascript" });
-                    _url = URL.createObjectURL(blob);
+                    const res = await fetch(_url);
+
+                    if (res.headers.get("content-type")?.startsWith("application/javascript")) {
+                        url = _url;
+                    } else {
+                        // GitHub returns MIME type `text/plain` for the file, we need to change it
+                        // to `application/javascript`, by creating a new blob a with custom type
+                        // and using URL.createObjectURL() to create a `blob:` URL for the resource
+                        // so that it can be loaded by the Worker constructor.
+                        const buf = await res.arrayBuffer();
+                        const blob = new Blob([new Uint8Array(buf)], {
+                            type: "application/javascript",
+                        });
+                        url = URL.createObjectURL(blob);
+                    }
                 }
 
-                worker = new Worker(_url, { type: "module" });
+                worker = new Worker(url, { type: "module" });
                 workerId = workerIdCounter.next().value as number;
                 workerPool.push(poolRecord = {
                     workerId,

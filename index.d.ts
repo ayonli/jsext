@@ -101,17 +101,10 @@ export interface JsExt {
      * Runs a task in the `script` in a worker thread that can be aborted during runtime.
      *
      * In Node.js, the `script` can be either a CommonJS module or an ES module, and is relative to
-     * the `process.cwd()` if not absolute.
+     * the current working directory if not absolute.
      *
-     * In browser, the `script` can only be an ES module, if it's not an absolute path, there could
-     * be two situations:
-     *
-     * 1. If the worker entry file is loaded normally (with `content-type: application/json`), the
-     *      `script` is relative to the current page.
-     * 2. If the worker is loaded with an object URL (the content-type of the entry file isn't
-     *      `application/json`), the `script` will be relative to the root directory of the URL.
-     *
-     * So it would be better to just set an absolute path and prevent unnecessary headache.
+     * In browser or Deno, the `script` can only be an ES module, and is relative to the current URL
+     * (or working directory for Deno) if not absolute.
      */
     run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
         /** If not set, runs the default function, otherwise runs the specific function. */

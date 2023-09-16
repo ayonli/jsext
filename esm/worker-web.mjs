@@ -1,5 +1,8 @@
 import { isAsyncGenerator, isGenerator } from "https://deno.land/x/check_iterable/index.js";
 
+/** @type {Map<string, any>} */
+const cache = new Map();
+
 function isFFIMessage(msg) {
     return msg && typeof msg === "object" &&
         msg.type === "ffi" &&
@@ -8,22 +11,13 @@ function isFFIMessage(msg) {
         Array.isArray(msg.args);
 }
 
-/** @type {Map<string, any>} */
-const cache = new Map();
-
 /**
- * @param {{type: string; script: string; fn: string; args: any[]}} msg 
+ * @param {{type: string; script: string; baseUrl: string; fn: string; args: any[]}} msg 
  * @param {(reply: { type: string; value?: any; error?: unknown; done?: boolean }) => void} send
  */
 async function handleMessage(msg, send) {
     try {
-        let baseUrl = location.href;
-
-        if (baseUrl.startsWith("blob:")) {
-            baseUrl = baseUrl.slice(5);
-        }
-
-        let url = new URL(msg.script, baseUrl).href;
+        const url = new URL(msg.script, msg.baseUrl).href;
         let module = cache.get(url);
 
         if (!module) {
@@ -31,7 +25,7 @@ async function handleMessage(msg, send) {
                 module = await import(url);
                 cache.set(url, module);
             } catch (err) {
-                if (String(err).includes("Failed")) {
+                if (typeof Deno === "undefined" && String(err).includes("Failed")) {
                     // The content-type of the response isn't application/javascript, try to
                     // download it and load it with object URL.
                     const res = await fetch(url);

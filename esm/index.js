@@ -842,7 +842,7 @@ function hasGeneratorSpecials(obj) {
 Object.defineProperty(jsext$1, "__esModule", { value: true });
 const check_iterable_1 = checkIterable;
 const number_1 = number;
-const isNode = typeof process === "object" && ((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
+const isNode = typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
 const throttleCaches = new Map();
 /**
  * The maximum number of workers is set to 4 times of the CPU core numbers.
@@ -1362,9 +1362,19 @@ const jsext = {
         const msg = {
             type: "ffi",
             script,
+            baseUrl: "",
             fn: (options === null || options === void 0 ? void 0 : options.fn) || "default",
             args: args !== null && args !== void 0 ? args : [],
         };
+        if (typeof globalThis["Deno"] === "object") {
+            msg.baseUrl = "file://" + globalThis["Deno"].cwd() + "/";
+        }
+        else if (isNode) {
+            msg.baseUrl = "file://" + process.cwd() + "/";
+        }
+        else if (typeof location === "object") {
+            msg.baseUrl = location.href;
+        }
         // `buffer` is used to store data pieces yielded by generator functions before they are
         // consumed. `error` and `result` serves similar purposes for function results.
         const buffer = [];
@@ -1622,26 +1632,31 @@ const jsext = {
                 poolRecord.busy = true;
             }
             else if (workerPool.length < maxWorkerNum) {
-                const url = (options === null || options === void 0 ? void 0 : options.webWorkerEntry)
+                const _url = (options === null || options === void 0 ? void 0 : options.webWorkerEntry)
                     || "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs";
-                const res = await fetch(url);
-                let _url;
-                if ((_a = res.headers.get("content-type")) === null || _a === void 0 ? void 0 : _a.startsWith("application/javascript")) {
-                    _url = url;
+                let url;
+                if (typeof globalThis["Deno"] === "object") {
+                    // Deno can load the module regardless of MINE type.
+                    url = new URL(_url, msg.baseUrl).href;
                 }
                 else {
-                    // GitHub returns MIME type `text/plain` for the file, we need to change it to
-                    // `application/javascript`, by creating a new blob a with custom type and using
-                    // URL.createObjectURL() to create a `blob:` URL for the resource so that it can
-                    // be loaded by the Worker constructor.
-                    //
-                    // NOTE: a blob URL will cause the `location.href` in the worker alway points to
-                    // the blob URL instead of the current page.
-                    const buf = await res.arrayBuffer();
-                    const blob = new Blob([new Uint8Array(buf)], { type: "application/javascript" });
-                    _url = URL.createObjectURL(blob);
+                    const res = await fetch(_url);
+                    if ((_a = res.headers.get("content-type")) === null || _a === void 0 ? void 0 : _a.startsWith("application/javascript")) {
+                        url = _url;
+                    }
+                    else {
+                        // GitHub returns MIME type `text/plain` for the file, we need to change it
+                        // to `application/javascript`, by creating a new blob a with custom type
+                        // and using URL.createObjectURL() to create a `blob:` URL for the resource
+                        // so that it can be loaded by the Worker constructor.
+                        const buf = await res.arrayBuffer();
+                        const blob = new Blob([new Uint8Array(buf)], {
+                            type: "application/javascript",
+                        });
+                        url = URL.createObjectURL(blob);
+                    }
                 }
-                worker = new Worker(_url, { type: "module" });
+                worker = new Worker(url, { type: "module" });
                 workerId = workerIdCounter.next().value;
                 workerPool.push(poolRecord = {
                     workerId,

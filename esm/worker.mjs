@@ -11,7 +11,7 @@ function isFFIMessage(msg) {
 }
 
 /**
- * @param {{type: string; script: string; fn: string; args: any[]}} msg 
+ * @param {{type: string; script: string; baseUrl: string; fn: string; args: any[]}} msg 
  * @param {(reply: { type: string; value?: any; error?: unknown; done?: boolean }) => void} send
  * @param {string} cwd
  */
