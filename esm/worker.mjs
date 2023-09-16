@@ -1,3 +1,4 @@
+import { resolve } from "path";
 import { isMainThread, parentPort } from "worker_threads";
 import { isAsyncGenerator, isGenerator } from "check-iterable";
 
@@ -12,10 +13,11 @@ function isFFIMessage(msg) {
 /**
  * @param {{type: string; script: string; fn: string; args: any[]}} msg 
  * @param {(reply: { type: string; value?: any; error?: unknown; done?: boolean }) => void} send
+ * @param {string} cwd
  */
 async function handleMessage(msg, send) {
     try {
-        let module = await import(msg.script);
+        let module = await import(resolve(process.cwd(), msg.script));
 
         if (typeof module.default === "object" && typeof module.default.default === "function") {
             module = module.default; // CommonJS module

@@ -97,7 +97,13 @@ export interface JsExt {
         error?: string;
         close?: string;
     }): AsyncIterable<T>;
-    /** Runs a task in the script in a worker thread that can be aborted during runtime. */
+    /**
+     * Runs a task in the script in a worker thread that can be aborted during runtime.
+     *
+     * In Node.js, the script is relative to the `process.cwd()` if not absolute.
+     *
+     * In browser, the script is relative to the root path of the website.
+     */
     run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
         /** If not set, runs the default function, otherwise runs the specific function. */
         fn?: string;

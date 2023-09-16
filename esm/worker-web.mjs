@@ -1,4 +1,4 @@
-import { isAsyncGenerator, isGenerator } from "https://deno.land/x/check_iterable/index.js";
+import { isAsyncGenerator, isGenerator } from "https://raw.githubusercontent.com/ayonli/check-iterable/master/index.js";
 
 function isFFIMessage(msg) {
     return msg && typeof msg === "object" &&
@@ -14,7 +14,8 @@ function isFFIMessage(msg) {
  */
 async function handleMessage(msg, send) {
     try {
-        let module = await import(msg.script);
+        const filename = location.origin + "/" + msg.script;
+        let module = await import(filename);
 
         if (typeof module.default === "object" && typeof module.default.default === "function") {
             module = module.default; // CommonJS module

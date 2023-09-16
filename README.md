@@ -289,3 +289,32 @@ better not to use augmentations, but use the corresponding functions from the su
 
 But if we're developing private projects, using augmentations can save a lot of time, it's easier to
 read and write, and make sense.
+
+## Web Support
+
+When using this package in the browser, there are three ways to import this package.
+
+1. Import From `node_modules`
+
+This is the same as above, but requires a module bundler such as webpack.
+
+2. Load ES Module
+
+```html
+<script type="module">
+    import jsext from "https://raw.githubusercontent.com/ayonli/jsext/main/esm/index.mjs";
+    // this will also include the augmentations
+</script>
+```
+
+Note: this module can also be used Node.js as well.
+
+### Load Bundle
+
+```html
+<script src="https://raw.githubusercontent.com/ayonli/jsext/main/bundle/index.js"></script>
+<script>
+    const { default: jsext } = window["@ayonli/jsext"];
+    // this will also include the augmentations
+<script>
+```

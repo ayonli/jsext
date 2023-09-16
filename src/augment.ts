@@ -7,6 +7,9 @@ import "./math/augment";
 import "./promise/augment";
 import "./collections/augment";
 import "./error/augment";
+import jsext from "./index";
+
+export default jsext;
 
 declare global {
     interface Constructor<T> extends Function {

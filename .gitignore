@@ -5,4 +5,4 @@ dist/
 *.js.map
 *.tgz
 !worker.js
-!job.js
+!*.config.js

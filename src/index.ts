@@ -225,7 +225,13 @@ export interface JsExt {
         close?: string;
     }): AsyncIterable<T>;
 
-    /** Runs a task in the script in a worker thread that can be aborted during runtime. */
+    /**
+     * Runs a task in the script in a worker thread that can be aborted during runtime.
+     * 
+     * In Node.js, the script is relative to the `process.cwd()` if not absolute.
+     * 
+     * In browser, the script is relative to the root path of the website.
+     */
     run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
         /** If not set, runs the default function, otherwise runs the specific function. */
         fn?: string;
@@ -813,19 +819,50 @@ const jsext: JsExt = {
                 resolver.resolve(void 0);
             } else if (iterator) {
                 iterator.emit("close");
-            } else if (!error) {
+            } else if (!error && !result) {
                 result = { value: void 0 };
             }
         };
 
         if (isNode) {
             const path = await import("path");
+            const fs = await import("fs/promises");
+            let _filename: string;
+            let _dirname: string;
             let entry: string;
-            
-            if (__filename.endsWith(".js")) { // compiled
-                entry = path.join(__dirname, "worker.mjs");
+
+            if (typeof __filename === "string") {
+                _filename = __filename;
+                _dirname = __dirname;
             } else {
-                entry = path.join(path.dirname(__dirname), "worker.mjs");
+                // Using the ES module in Node.js is very unlikely, so we just check the module
+                // filename in a simple manner, and report error if not found.
+                let [err] = await jsext.try(fs.stat("package.json"));
+
+                if (err) {
+                    throw new Error("the current working directory is not a Node.js module");
+                }
+
+                _filename = process.cwd() + "/node_modules/@ayonli/jsext/esm/index.mjs";
+                [err] = await jsext.try(fs.stat(_filename));
+
+                if (err) {
+                    // Assuming this is @ayonli/jsext itself.
+                    _filename = process.cwd() + "/esm/index.mjs";
+                    [err] = await jsext.try(fs.stat(_filename));
+
+                    if (err) {
+                        throw new Error("can not locate the worker entry");
+                    }
+                }
+
+                _dirname = path.dirname(_filename);
+            }
+
+            if (_filename.endsWith(".js")) { // compiled
+                entry = path.join(_dirname, "esm", "worker.mjs");
+            } else {
+                entry = path.join(path.dirname(_dirname), "esm", "worker.mjs");
             }
 
             if (options?.adapter === "child_process") {
@@ -912,9 +949,6 @@ const jsext: JsExt = {
                 worker.once("exit", handleExit);
             }
         } else {
-            // Browser support is a little bit tricky, unlike in Node.js, the program will
-            // automatically folk process or thread with the default entry file, in browser, we need
-            // to place the `worker-web.mjs` file in the website root path in order to load it.
             let worker: Worker;
             poolRecord = workerPool.find(item => {
                 return item.adapter === "worker_threads" && !item.busy;
@@ -925,7 +959,9 @@ const jsext: JsExt = {
                 workerId = poolRecord.workerId;
                 poolRecord.busy = true;
             } else if (workerPool.length < maxWorkerNum) {
-                worker = new Worker("/worker-web.mjs", { type: "module" });
+                worker = new Worker(
+                    "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs",
+                    { type: "module" });
                 workerId = workerIdCounter.next().value as number;
                 workerPool.push(poolRecord = {
                     workerId,
