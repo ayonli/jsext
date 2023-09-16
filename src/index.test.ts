@@ -931,22 +931,22 @@ describe("jsext", () => {
     describe("jsext.run", () => {
         describe("worker_threads", () => {
             test("CommonJS", async () => {
-                const job = await jsext.run("./job.cjs", ["World"]);
+                const job = await jsext.run("./job-example.cjs", ["World"]);
                 strictEqual(await job.result(), "Hello, World");
             });
 
             test("ES Module", async () => {
-                const job = await jsext.run("./job.mjs", ["World"]);
+                const job = await jsext.run("./job-example.mjs", ["World"]);
                 strictEqual(await job.result(), "Hello, World");
             });
 
             test("custom function", async () => {
-                const job = await jsext.run("./job.cjs", ["World"], { fn: "greet" });
+                const job = await jsext.run("./job-example.cjs", ["World"], { fn: "greet" });
                 strictEqual(await job.result(), "Hi, World");
             });
 
             test("timeout", async () => {
-                const job = await jsext.run<string, [string]>("./job.mjs", ["foobar"], {
+                const job = await jsext.run<string, [string]>("./job-example.mjs", ["foobar"], {
                     fn: "takeTooLong",
                     timeout: 50,
                 });
@@ -956,7 +956,7 @@ describe("jsext", () => {
             });
 
             test("abort", async () => {
-                const job = await jsext.run<string, [string]>("./job.mjs", ["foobar"], {
+                const job = await jsext.run<string, [string]>("./job-example.mjs", ["foobar"], {
                     fn: "takeTooLong",
                 });
                 await job.abort();
@@ -966,7 +966,7 @@ describe("jsext", () => {
             });
 
             test("iterate", async () => {
-                const job = await jsext.run<string, [string[]]>("./job.mjs", [["foo", "bar"]], {
+                const job = await jsext.run<string, [string[]]>("./job-example.mjs", [["foo", "bar"]], {
                     fn: "sequence",
                 });
                 const words: string[] = [];
@@ -980,14 +980,14 @@ describe("jsext", () => {
             });
 
             test("keep alive", async () => {
-                const job1 = await jsext.run("./job.cjs", ["World"], { keepAlive: true });
+                const job1 = await jsext.run("./job-example.cjs", ["World"], { keepAlive: true });
                 strictEqual(await job1.result(), "Hello, World");
 
-                const job2 = await jsext.run("./job.cjs", ["World"], { fn: "greet" });
+                const job2 = await jsext.run("./job-example.cjs", ["World"], { fn: "greet" });
                 strictEqual(job2.workerId, job1.workerId);
                 strictEqual(await job2.result(), "Hi, World");
 
-                const job3 = await jsext.run("./job.cjs", ["World"]);
+                const job3 = await jsext.run("./job-example.cjs", ["World"]);
                 ok(job2.workerId !== job3.workerId);
                 strictEqual(await job3.result(), "Hello, World");
             });
@@ -995,19 +995,19 @@ describe("jsext", () => {
 
         describe("child_process", async () => {
             test("CommonJS", async () => {
-                const job = await jsext.run("./job.cjs", ["World"], { adapter: "child_process" });
+                const job = await jsext.run("./job-example.cjs", ["World"], { adapter: "child_process" });
                 strictEqual(await job.result(), "Hello, World");
             });
 
             test("ES Module", async () => {
-                const job = await jsext.run("./job.mjs", ["World"], {
+                const job = await jsext.run("./job-example.mjs", ["World"], {
                     adapter: "child_process",
                 });
                 strictEqual(await job.result(), "Hello, World");
             });
 
             test("custom function", async () => {
-                const job = await jsext.run("./job.cjs", ["World"], {
+                const job = await jsext.run("./job-example.cjs", ["World"], {
                     fn: "greet",
                     adapter: "child_process",
                 });
@@ -1015,7 +1015,7 @@ describe("jsext", () => {
             });
 
             test("timeout", async () => {
-                const job = await jsext.run<string, [string]>("./job.mjs", ["foobar"], {
+                const job = await jsext.run<string, [string]>("./job-example.mjs", ["foobar"], {
                     fn: "takeTooLong",
                     timeout: 50,
                     adapter: "child_process",
@@ -1026,7 +1026,7 @@ describe("jsext", () => {
             });
 
             test("abort", async () => {
-                const job = await jsext.run<string, [string]>("./job.mjs", ["foobar"], {
+                const job = await jsext.run<string, [string]>("./job-example.mjs", ["foobar"], {
                     fn: "takeTooLong",
                     adapter: "child_process",
                 });
@@ -1037,7 +1037,7 @@ describe("jsext", () => {
             });
 
             test("iterate", async () => {
-                const job = await jsext.run<string, [string[]]>("./job.mjs", [["foo", "bar"]], {
+                const job = await jsext.run<string, [string[]]>("./job-example.mjs", [["foo", "bar"]], {
                     fn: "sequence",
                 });
                 const words: string[] = [];
@@ -1051,14 +1051,14 @@ describe("jsext", () => {
             });
 
             test("keep alive", async () => {
-                const job1 = await jsext.run("./job.cjs", ["World"], { keepAlive: true });
+                const job1 = await jsext.run("./job-example.cjs", ["World"], { keepAlive: true });
                 strictEqual(await job1.result(), "Hello, World");
 
-                const job2 = await jsext.run("./job.cjs", ["World"], { fn: "greet" });
+                const job2 = await jsext.run("./job-example.cjs", ["World"], { fn: "greet" });
                 strictEqual(job2.workerId, job1.workerId);
                 strictEqual(await job2.result(), "Hi, World");
 
-                const job3 = await jsext.run("./job.cjs", ["World"]);
+                const job3 = await jsext.run("./job-example.cjs", ["World"]);
                 ok(job2.workerId !== job3.workerId);
                 strictEqual(await job3.result(), "Hello, World");
             });
