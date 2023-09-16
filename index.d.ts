@@ -123,8 +123,6 @@ export interface JsExt {
          * could be slow due to poor internet connection, we can copy the entry file
          * `esm/worker-web.mjs` to a local path of our website and set this option to that path so
          * that it can be loaded locally.
-         * 
-         * This option is ignored in Node.js.
          */
         webWorkerEntry?: string;
     }): Promise<{
