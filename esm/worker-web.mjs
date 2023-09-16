@@ -14,8 +14,31 @@ function isFFIMessage(msg) {
  */
 async function handleMessage(msg, send) {
     try {
-        const filename = location.origin + "/" + msg.script;
-        let module = await import(filename);
+        let baseUrl = location.href;
+
+        if (baseUrl.startsWith("blob:")) {
+            baseUrl = baseUrl.slice(5);
+        }
+
+        let url = new URL(msg.script, baseUrl);
+        let module;
+
+        try {
+            module = await import(url);
+        } catch (err) {
+            if (String(err).includes("Failed")) {
+                // The content-type of the response isn't application/javascript, try to download it
+                // and load it with object URL.
+                const res = await fetch(url);
+                const buf = await res.arrayBuffer();
+                const blob = new Blob([new Uint8Array(buf)], { type: "application/javascript" });
+
+                const _url = URL.createObjectURL(blob);
+                module = await import(_url);
+            } else {
+                throw err;
+            }
+        }
 
         if (typeof module.default === "object" && typeof module.default.default === "function") {
             module = module.default; // CommonJS module

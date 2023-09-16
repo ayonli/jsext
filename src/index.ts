@@ -226,11 +226,17 @@ export interface JsExt {
     }): AsyncIterable<T>;
 
     /**
-     * Runs a task in the script in a worker thread that can be aborted during runtime.
+     * Runs a task in the `script` in a worker thread that can be aborted during runtime.
      * 
-     * In Node.js, the script is relative to the `process.cwd()` if not absolute.
+     * In Node.js, the `script` is relative to the `process.cwd()` if not absolute.
      * 
-     * In browser, the script is relative to the root path of the website.
+     * In browser, if the `script` is not an absolute path, there could be two situations:
+     *  1. If the worker entry file is loaded normally (with `content-type: application/json`), the
+     *      `script` is relative to the current page.
+     *  2. If the worker is loaded with an object URL (the content-type of the entry file isn't
+     *      `application/json`), the `script` will be relative to the root directory of the URL.
+     * 
+     * So it would be better to just set an absolute path and prevent unnecessary headache.
      */
     run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
         /** If not set, runs the default function, otherwise runs the specific function. */
@@ -969,14 +975,22 @@ const jsext: JsExt = {
                 const url = options?.webWorkerEntry
                     || "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs";
                 const res = await fetch(url);
+                let _url: string;
 
-                // GitHub returns MIME type `text/plain` for the file, we need to change it to
-                // `application/javascript`, by creating a new blob a with custom type and using
-                // URL.createObjectURL() to create a temporary URL for the resource so that it can
-                // be loaded by the Worker constructor.
-                const buf = await res.arrayBuffer();
-                const blob = new Blob([new Uint8Array(buf)], { type: "application/javascript" });
-                const _url = URL.createObjectURL(blob);
+                if (res.headers.get("content-type")?.startsWith("application/javascript")) {
+                    _url = url;
+                } else {
+                    // GitHub returns MIME type `text/plain` for the file, we need to change it to
+                    // `application/javascript`, by creating a new blob a with custom type and using
+                    // URL.createObjectURL() to create a `blob:` URL for the resource so that it can
+                    // be loaded by the Worker constructor.
+                    //
+                    // NOTE: a blob URL will cause the `location.href` in the worker alway points to
+                    // the blob URL instead of the current page.
+                    const buf = await res.arrayBuffer();
+                    const blob = new Blob([new Uint8Array(buf)], { type: "application/javascript" });
+                    _url = URL.createObjectURL(blob);
+                }
 
                 worker = new Worker(_url, { type: "module" });
                 workerId = workerIdCounter.next().value as number;

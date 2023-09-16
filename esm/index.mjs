@@ -1358,6 +1358,7 @@ const jsext = {
         };
     },
     async run(script, args = undefined, options = undefined) {
+        var _a;
         const msg = {
             type: "ffi",
             script,
@@ -1588,13 +1589,22 @@ const jsext = {
                 const url = (options === null || options === void 0 ? void 0 : options.webWorkerEntry)
                     || "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs";
                 const res = await fetch(url);
-                // GitHub returns MIME type `text/plain` for the file, we need to change it to
-                // `application/javascript`, by creating a new blob a with custom type and using
-                // URL.createObjectURL() to create a temporary URL for the resource so that it can
-                // be loaded by the Worker constructor.
-                const buf = await res.arrayBuffer();
-                const blob = new Blob([new Uint8Array(buf)], { type: "application/javascript" });
-                const _url = URL.createObjectURL(blob);
+                let _url;
+                if ((_a = res.headers.get("content-type")) === null || _a === void 0 ? void 0 : _a.startsWith("application/javascript")) {
+                    _url = url;
+                }
+                else {
+                    // GitHub returns MIME type `text/plain` for the file, we need to change it to
+                    // `application/javascript`, by creating a new blob a with custom type and using
+                    // URL.createObjectURL() to create a `blob:` URL for the resource so that it can
+                    // be loaded by the Worker constructor.
+                    //
+                    // NOTE: a blob URL will cause the `location.href` in the worker alway points to
+                    // the blob URL instead of the current page.
+                    const buf = await res.arrayBuffer();
+                    const blob = new Blob([new Uint8Array(buf)], { type: "application/javascript" });
+                    _url = URL.createObjectURL(blob);
+                }
                 worker = new Worker(_url, { type: "module" });
                 workerId = workerIdCounter.next().value;
                 workerPool.push(poolRecord = {
