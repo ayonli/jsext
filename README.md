@@ -302,7 +302,7 @@ This is the same as above, but requires a module bundler such as webpack.
 
 ```html
 <script type="module">
-    import jsext from "https://raw.githubusercontent.com/ayonli/jsext/main/esm/index.mjs";
+    import jsext from "https://deno.land/x/ayonli_jsext/esm/index.js";
     // this will also include the augmentations
 </script>
 ```
@@ -312,7 +312,7 @@ Note: this module can also be used Node.js as well.
 ### Load Bundle
 
 ```html
-<script src="https://raw.githubusercontent.com/ayonli/jsext/main/bundle/index.js"></script>
+<script src="https://deno.land/x/ayonli_jsext/bundle/index.js"></script>
 <script>
     const { default: jsext } = window["@ayonli/jsext"];
     // this will also include the augmentations

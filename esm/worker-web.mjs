@@ -1,4 +1,4 @@
-import { isAsyncGenerator, isGenerator } from "https://raw.githubusercontent.com/ayonli/check-iterable/master/index.js" assert { type: "application/javascript" };
+import { isAsyncGenerator, isGenerator } from "https://deno.land/x/check_iterable/index.js";
 
 function isFFIMessage(msg) {
     return msg && typeof msg === "object" &&

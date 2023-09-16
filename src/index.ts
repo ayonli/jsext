@@ -246,6 +246,13 @@ export interface JsExt {
          * In browser, this option is ignored and will always use the web worker.
          */
         adapter?: "worker_threads" | "child_process";
+        /**
+         * In browser, by default, the program loads the worker entry directly from GitHub, which
+         * could be slow due to poor internet connection, we can copy the entry file
+         * `esm/worker-web.mjs` to a local path of our website and set this option to that path so
+         * that it can be loaded locally.
+         */
+        webWorkerEntry?: string;
     }): Promise<{
         workerId: number;
         /** Terminates the worker and abort the task. */
@@ -959,9 +966,19 @@ const jsext: JsExt = {
                 workerId = poolRecord.workerId;
                 poolRecord.busy = true;
             } else if (workerPool.length < maxWorkerNum) {
-                worker = new Worker(
-                    "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs",
-                    { type: "module" });
+                const url = options?.webWorkerEntry
+                    || "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs";
+                const res = await fetch(url);
+
+                // GitHub returns MIME type `text/plain` for the file, we need to change it to
+                // `application/javascript`, by creating a new blob a with custom type and using
+                // URL.createObjectURL() to create a temporary URL for the resource so that it can
+                // be loaded by the Worker constructor.
+                const buf = await res.arrayBuffer();
+                const blob = new Blob([new Uint8Array(buf)], { type: "application/javascript" });
+                const _url = URL.createObjectURL(blob);
+
+                worker = new Worker(_url, { type: "module" });
                 workerId = workerIdCounter.next().value as number;
                 workerPool.push(poolRecord = {
                     workerId,

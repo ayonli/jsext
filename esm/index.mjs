@@ -1585,7 +1585,17 @@ const jsext = {
                 poolRecord.busy = true;
             }
             else if (workerPool.length < maxWorkerNum) {
-                worker = new Worker("https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs", { type: "module" });
+                const url = (options === null || options === void 0 ? void 0 : options.webWorkerEntry)
+                    || "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs";
+                const res = await fetch(url);
+                // GitHub returns MIME type `text/plain` for the file, we need to change it to
+                // `application/javascript`, by creating a new blob a with custom type and using
+                // URL.createObjectURL() to create a temporary URL for the resource so that it can
+                // be loaded by the Worker constructor.
+                const buf = await res.arrayBuffer();
+                const blob = new Blob([new Uint8Array(buf)], { type: "application/javascript" });
+                const _url = URL.createObjectURL(blob);
+                worker = new Worker(_url, { type: "module" });
                 workerId = workerIdCounter.next().value;
                 workerPool.push(poolRecord = {
                     workerId,
