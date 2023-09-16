@@ -309,7 +309,7 @@ This is the same as above, but requires a module bundler such as webpack.
 
 Note: the ES module can be used Node.js and Deno as well.
 
-### Load Bundle
+3. Load Bundle
 
 ```html
 <script src="https://deno.land/x/ayonli_jsext/bundle/index.js"></script>
