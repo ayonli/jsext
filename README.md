@@ -307,7 +307,7 @@ This is the same as above, but requires a module bundler such as webpack.
 </script>
 ```
 
-Note: the ES module can be used Node.js and Deno as well.
+Note: the ES module can also be used in Deno.
 
 3. Include Bundle
 
