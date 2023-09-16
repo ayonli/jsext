@@ -117,12 +117,15 @@ export interface JsExt {
          */
         keepAlive?: boolean;
         /**
-         * In browser, this option is ignored and will always use the web worker.
+         * Choose whether to use `worker_threads` or `child_process` fron running the script.
+         * The default setting is `worker_threads`.
+         *
+         * In browser or Deno, this option is ignored and will always use the web worker.
          */
         adapter?: "worker_threads" | "child_process";
         /**
-         * In browser, by default, the program loads the worker entry directly from GitHub, which
-         * could be slow due to poor internet connection, we can copy the entry file
+         * In browser or Deno, by default, the program loads the worker entry directly from GitHub,
+         * which could be slow due to poor internet connection, we can copy the entry file
          * `esm/worker-web.mjs` to a local path of our website and set this option to that path so
          * that it can be loaded locally.
          */
