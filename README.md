@@ -298,7 +298,7 @@ When using this package in the browser, there are three ways to import this pack
 
 This is the same as above, but requires a module bundler such as webpack.
 
-2. Load ES Module
+2. Import ES Module
 
 ```html
 <script type="module">
@@ -309,7 +309,7 @@ This is the same as above, but requires a module bundler such as webpack.
 
 Note: the ES module can be used Node.js and Deno as well.
 
-3. Load Bundle
+3. Include Bundle
 
 ```html
 <script src="https://deno.land/x/ayonli_jsext/bundle/index.js"></script>
