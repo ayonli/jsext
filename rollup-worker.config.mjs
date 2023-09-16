@@ -1,0 +1,16 @@
+import resolve from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import { builtinModules } from "module";
+
+export default {
+    input: 'esm/src/worker-web.mjs',
+    output: {
+        file: "esm/worker-web.mjs",
+        format: "es",
+        compact: true,
+    },
+    plugins: [
+        resolve({ preferBuiltins: true }),
+        commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
+    ],
+};

@@ -1022,20 +1022,18 @@ const jsext: JsExt = {
                     url = new URL(_url, msg.baseUrl).href;
                 } else {
                     const res = await fetch(_url);
+                    let blob: Blob;
 
                     if (res.headers.get("content-type")?.startsWith("application/javascript")) {
-                        url = _url;
+                        blob = await res.blob();
                     } else {
-                        // GitHub returns MIME type `text/plain` for the file, we need to change it
-                        // to `application/javascript`, by creating a new blob a with custom type
-                        // and using URL.createObjectURL() to create a `blob:` URL for the resource
-                        // so that it can be loaded by the Worker constructor.
                         const buf = await res.arrayBuffer();
-                        const blob = new Blob([new Uint8Array(buf)], {
+                        blob = new Blob([new Uint8Array(buf)], {
                             type: "application/javascript",
                         });
-                        url = URL.createObjectURL(blob);
                     }
+
+                    url = URL.createObjectURL(blob);
                 }
 
                 worker = new Worker(url, { type: "module" });

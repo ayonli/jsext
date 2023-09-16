@@ -6,7 +6,7 @@
     "scripts": {
         "test": "mocha",
         "postpublish": "ls *.js|grep -v config.js|grep -v example.js|xargs rm; ls *.js.map|xargs rm; ls */*.js|grep -v bundle|grep -v esm|xargs rm; ls */*.js.map|grep -v bundle|grep -v esm|xargs rm",
-        "build": "tsc && rollup -c rollup.config.mjs && webpack",
+        "build": "tsc && rollup -c rollup.config.mjs && rollup -c rollup-worker.config.mjs && webpack",
         "prepublishOnly": "npm run build"
     },
     "repository": {

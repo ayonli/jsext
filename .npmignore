@@ -10,3 +10,5 @@ job-example.js
 job-example.mjs
 *.config.js
 bundle/
+esm/src/
+esm/worker-web.mjs

@@ -1,6 +1,79 @@
-import { isAsyncGenerator, isGenerator } from "https://deno.land/x/check_iterable/index.js";
+var checkIterable = {};Object.defineProperty(checkIterable, "__esModule", {
+  value: true
+});
+checkIterable.isIterable = isIterable;
+checkIterable.isAsyncIterable = isAsyncIterable;
+checkIterable.isIteratorLike = isIteratorLike;
+checkIterable.isIterableIterator = isIterableIterator;
+checkIterable.isAsyncIterableIterator = isAsyncIterableIterator;
+var isGenerator_1 = checkIterable.isGenerator = isGenerator;
+var isAsyncGenerator_1 = checkIterable.isAsyncGenerator = isAsyncGenerator;
+function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
+if (!Symbol.asyncIterator) {
+  Symbol.asyncIterator = Symbol("Symbol.asyncIterator");
+}
 
-/** @type {Map<string, any>} */
+/**
+ * Checks if the given object is an Iterable (implemented `@@iterator`).
+ * @returns {obj is Iterable<any>}
+ */
+function isIterable(obj) {
+  return obj !== null && obj !== undefined && typeof obj[Symbol.iterator] === "function";
+}
+
+/**
+ * Checks if the given object is an AsyncIterable (implemented `@@asyncIterator`).
+ * @returns {obj is AsyncIterable<any>}
+ */
+function isAsyncIterable(obj) {
+  return obj !== null && obj !== undefined && typeof obj[Symbol.asyncIterator] === "function";
+}
+
+/**
+ * Checks if the given object is an IteratorLike (implemented `next`).
+ * @returns {obj is { next: Function }}
+ */
+function isIteratorLike(obj) {
+  // An iterable object has a 'next' method, however including a 'next' method
+  // doesn't ensure the object is an iterator, it is only iterator-like.
+  return _typeof(obj) === "object" && obj !== null && typeof obj.next === "function";
+}
+
+/**
+ * Checks if the given object is an IterableIterator (implemented both
+ * `@@iterator` and `next`).
+ */
+function isIterableIterator(obj) {
+  return isIteratorLike(obj) && typeof obj[Symbol.iterator] === "function";
+}
+
+/**
+ * Checks if the given object is an AsyncIterableIterator (implemented
+ * both `@@asyncIterator` and `next`).
+ * @returns {obj is AsyncIterableIterator<any>}
+ */
+function isAsyncIterableIterator(obj) {
+  return isIteratorLike(obj) && typeof obj[Symbol.asyncIterator] === "function";
+}
+
+/**
+ * Checks if the given object is a Generator.
+ * @returns {obj is Generator}
+ */
+function isGenerator(obj) {
+  return isIterableIterator(obj) && hasGeneratorSpecials(obj);
+}
+
+/**
+ * Checks if the given object is an AsyncGenerator.
+ * @returns {obj is AsyncGenerator}
+ */
+function isAsyncGenerator(obj) {
+  return isAsyncIterableIterator(obj) && hasGeneratorSpecials(obj);
+}
+function hasGeneratorSpecials(obj) {
+  return typeof obj["return"] === "function" && typeof obj["throw"] === "function";
+}/** @type {Map<string, any>} */
 const cache = new Map();
 
 function isFFIMessage(msg) {
@@ -21,22 +94,29 @@ async function handleMessage(msg, send) {
         let module = cache.get(url);
 
         if (!module) {
-            try {
+            if (typeof Deno === "object") {
                 module = await import(url);
                 cache.set(url, module);
-            } catch (err) {
-                if (typeof Deno === "undefined" && String(err).includes("Failed")) {
-                    // The content-type of the response isn't application/javascript, try to
-                    // download it and load it with object URL.
-                    const res = await fetch(url);
-                    const buf = await res.arrayBuffer();
-                    const blob = new Blob([new Uint8Array(buf)], { type: "application/javascript" });
-
-                    const _url = URL.createObjectURL(blob);
-                    module = await import(_url);
+            } else {
+                try {
+                    module = await import(url);
                     cache.set(url, module);
-                } else {
-                    throw err;
+                } catch (err) {
+                    if (String(err).includes("Failed")) {
+                        // The content-type of the response isn't application/javascript, try to
+                        // download it and load it with object URL.
+                        const res = await fetch(url);
+                        const buf = await res.arrayBuffer();
+                        const blob = new Blob([new Uint8Array(buf)], {
+                            type: "application/javascript",
+                        });
+                        const _url = URL.createObjectURL(blob);
+
+                        module = await import(_url);
+                        cache.set(url, module);
+                    } else {
+                        throw err;
+                    }
                 }
             }
         }
@@ -47,7 +127,7 @@ async function handleMessage(msg, send) {
 
         const returns = await module[msg.fn](...msg.args);
 
-        if (isAsyncGenerator(returns) || isGenerator(returns)) {
+        if (isAsyncGenerator_1(returns) || isGenerator_1(returns)) {
             while (true) {
                 try {
                     const { value, done } = await returns.next();
