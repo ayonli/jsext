@@ -36,6 +36,8 @@ Note: this package works well in both CommonJS and ES Module.
 - `mixins<T extends Constructor<any>, M extends any[]>(base: T, ...mixins: { [X in keyof M]: Constructor<M[X]> }): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>`
 - `mixins<T extends Constructor<any>, M extends any[]>(base: T, ...mixins: M): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>`
 
+- `isSubclassOf<T, B>(ctor1: Constructor<T>, ctor2: Constructor<B>): boolean`
+
 - `read<I extends AsyncIterable<any>>(iterable: I): I`
 - `read(es: EventSource, options?: { event?: string; }): AsyncIterable<string>`
 - `read<T extends Uint8Array | string>(ws: WebSocket): AsyncIterable<T>`
@@ -93,6 +95,8 @@ import "@ayonli/jsext/number/augment";
 **Functions**
 
 - `isFloat(value: unknown): boolean`
+- `isNumeric(value: unknown): boolean`
+- `isBetween(value: number, [min, max]: [number, number]): boolean`
 - `random(min: number, max: number): number`
 - `sequence(min: number, max: number, step?: number, loop?: boolean): Generator<number, void, unknown>`
 
@@ -307,7 +311,7 @@ This is the same as above, but requires a module bundler such as webpack.
     import jsext from "https://deno.land/x/ayonli_jsext/esm/index.js";
     import "https://deno.land/x/ayonli_jsext/esm/augment.js";
     // or sub-packages
-    import { isFloat } from "https://deno.land/x/ayonli_jsext/esm/number/index.js";
+    import { isFloat, isNumeric } from "https://deno.land/x/ayonli_jsext/esm/number/index.js";
     import "https://deno.land/x/ayonli_jsext/esm/number/augment.js";
 </script>
 ```

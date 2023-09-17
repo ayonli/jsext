@@ -332,6 +332,11 @@ const jsext = {
         }
         return obj.ctor;
     },
+    isSubclassOf(ctor1, ctor2) {
+        return typeof ctor1 === "function"
+            && typeof ctor2 === "function"
+            && ctor1.prototype instanceof ctor2;
+    },
     read(source, eventMap = undefined) {
         var _a;
         if (typeof source[Symbol.asyncIterator] === "function") {
