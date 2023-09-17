@@ -44,11 +44,11 @@ Note: this package works well in both CommonJS and ES Module.
 
 - `run<T, A extends any[] = any[]>(script: string, args?: A, options?: { fn?: string; timeout?: number; adapter?: "worker_threads" | "child_process" }): Promise<{ workerId: number; abort(): Promise<void>; result(): Promise<T>; iterate(): AsyncIterable<T>; }>`
 
-See [index.d.ts](./index.d.ts) for details and docs.
+See [index.ts](./index.ts) for details and docs.
 
 ## Sub-packages
 
-### [string](./string/index.d.ts)
+### [string](./string/index.ts)
 
 ```js
 import { capitalize, chunk, /* ... */ } from "@ayonli/jsext/string";
@@ -68,7 +68,7 @@ import "@ayonli/jsext/string/augment";
 - `truncate(str: string, length: number): string`
 - `byteLength(str: string): number`
 
-**[Augmentation](./string/augment.d.ts)**
+**[Augmentation](./string/augment.ts)**
 
 - `String`
     - `compare(str1: string, str2: string): -1 | 0 | 1`
@@ -82,7 +82,7 @@ import "@ayonli/jsext/string/augment";
         - `truncate(length: number): string`
         - `byteLength(): number`
 
-### [number](./number/index.d.ts)
+### [number](./number/index.ts)
 
 ```js
 import { isFloat, random } from "@ayonli/jsext/number";
@@ -96,9 +96,9 @@ import "@ayonli/jsext/number/augment";
 - `random(min: number, max: number): number`
 - `sequence(min: number, max: number, step?: number, loop?: boolean): Generator<number, void, unknown>`
 
-*When [augment](./number/augment.d.ts)ing, these functions will be attached to the `Number` constructor.*
+*When [augment](./number/augment.ts)ing, these functions will be attached to the `Number` constructor.*
 
-### [array](./array/index.d.ts)
+### [array](./array/index.ts)
 
 ```js
 import { count, split, /* ... */ } from "@ayonli/jsext/array";
@@ -118,7 +118,7 @@ import "@ayonli/jsext/array/augment";
 - `groupBy<T>(arr: T[], fn: (item: T, i: number) => string | symbol, type?: ObjectConstructor): Record<string | symbol, T[]>`
 - `groupBy<T, K extends string>(arr: T[], fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
 
-**[Augmentation](./array/augment.d.ts)**
+**[Augmentation](./array/augment.ts)**
 
 - `Array<T>`
     - `prototype`
@@ -137,7 +137,7 @@ import "@ayonli/jsext/array/augment";
         - `groupBy(fn: (item: T, i: number) => string | symbol, type?: ObjectConstructor): Record<string | symbol, T[]>`
         - `groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
 
-### [uint8array](/uint8array/index.d.ts)
+### [uint8array](/uint8array/index.ts)
 
 ```js
 import { compare, split, /* ... */ } from "@ayonli/jsext/uint8array";
@@ -152,7 +152,7 @@ import "@ayonli/jsext/uint8array/augment";
 - `split<T extends Uint8Array>(arr: T, delimiter: number): T[]`
 - `chunk<T extends Uint8Array>(arr: T, length: number): T[]`
 
-**[Augmentation](./uint8array/augment.d.ts)**
+**[Augmentation](./uint8array/augment.ts)**
 
 - `Uint8Array`
     - `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
@@ -161,7 +161,7 @@ import "@ayonli/jsext/uint8array/augment";
         - `split(delimiter: number): this[]`
         - `chunk(length: number): this[]`
 
-### [object](./object/index.d.ts)
+### [object](./object/index.ts)
 
 ```js
 import { hasOwn, path, /* ... */ } from "@ayonli/jsext/object";
@@ -188,9 +188,9 @@ import "@ayonli/jsext/object/augment";
 - `as(obj: any, type: SymbolConstructor): symbol | null`
 - `as<T>(obj: any, type: Constructor<T>): T | null`
 
-*When [augment](./object/augment.d.ts)ing, these functions will be attached to the `Object` constructor.*
+*When [augment](./object/augment.ts)ing, these functions will be attached to the `Object` constructor.*
 
-### [math](./math/index.d.ts)
+### [math](./math/index.ts)
 
 ```js
 import { sum, avg, product } from "@ayonli/jsext/math";
@@ -204,9 +204,9 @@ import "@ayonli/jsext/math/augment";
 - `avg(...values: number[]): number`
 - `product(...values: number[]): number`
 
-*When [augment](./math/augment.d.ts)ing, these functions will be attached to the `Math` namespace.*
+*When [augment](./math/augment.ts)ing, these functions will be attached to the `Math` namespace.*
 
-### [promise](./promise/index.d.ts)
+### [promise](./promise/index.ts)
 
 ```js
 import { timeout, after, sleep, until } from "@ayonli/jsext/promise";
@@ -221,9 +221,9 @@ import "@ayonli/jsext/promise/augment";
 - `sleep(ms: number): Promise<void>`
 - `until(test: () => boolean | Promise<boolean>): Promise<void>`
 
-*When [augment](./promise/augment.d.ts)ing, these functions will be attached to the `Promise` constructor.*
+*When [augment](./promise/augment.ts)ing, these functions will be attached to the `Promise` constructor.*
 
-### [collections](./collections/index.d.ts)
+### [collections](./collections/index.ts)
 
 ```js
 import BiMap from "@ayonli/jsext/collections/BiMap";
@@ -245,9 +245,9 @@ import "@ayonli/jsext/collections/augment";
 - `CiMap<K extends string, V>` (implements `Map<K, V>`) Case-insensitive map, keys are
     case-insensitive.
 
-*When [augment](./collections/augment.d.ts)ing, these types will be exposed to the global namespace.*
+*When [augment](./collections/augment.ts)ing, these types will be exposed to the global namespace.*
 
-### [error](./error/index.d.ts)
+### [error](./error/index.ts)
 
 ```js
 import Exception from "@ayonli/jsext/error/Exception";
@@ -263,14 +263,14 @@ import "@ayonli/jsext/error/augment";
     - `cause?: unknown`
     - `code: number`
 
-*When [augment](./error/augment.d.ts)ing, these types will be exposed to the global namespace.*
+*When [augment](./error/augment.ts)ing, these types will be exposed to the global namespace.*
 
 **Functions**
 
 - `toObject<T extends Error>(err: T): { [x: string | symbol]: any; }`
 - `fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T`
 
-**[Augmentation](./error/augment.d.ts)**
+**[Augmentation](./error/augment.ts)**
 
 - `Error`
     - `toObject<T extends Error>(err: T): { [x: string | symbol]: any; }`

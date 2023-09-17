@@ -4,95 +4,95 @@
     "description": "Additional functions for JavaScript programming in practice.",
     "exports": {
         ".": {
-            "require": "./index.js",
+            "require": "./cjs/index.js",
             "import": "./esm/index.js"
         },
         "./augment": {
-            "require": "./augment.js",
+            "require": "./cjs/augment.js",
             "import": "./esm/augment.js"
         },
         "./array": {
-            "require": "./array/index.js",
+            "require": "./cjs/array/index.js",
             "import": "./esm/array/index.js"
         },
         "./array/augment": {
-            "require": "./array/augment.js",
+            "require": "./cjs/array/augment.js",
             "import": "./esm/array/augment.js"
         },
         "./collections": {
-            "require": "./collections/index.js",
+            "require": "./cjs/collections/index.js",
             "import": "./esm/collections/index.js"
         },
         "./collections/augment": {
-            "require": "./collections/augment.js",
+            "require": "./cjs/collections/augment.js",
             "import": "./esm/collections/augment.js"
         },
         "./collections/BiMap": {
-            "require": "./collections/BiMap.js",
+            "require": "./cjs/collections/BiMap.js",
             "import": "./esm/collections/BiMap.js"
         },
         "./collections/CiMap": {
-            "require": "./collections/CiMap.js",
+            "require": "./cjs/collections/CiMap.js",
             "import": "./esm/collections/CiMap.js"
         },
         "./error": {
-            "require": "./error/index.js",
+            "require": "./cjs/error/index.js",
             "import": "./esm/error/index.js"
         },
         "./error/augment": {
-            "require": "./error/augment.js",
+            "require": "./cjs/error/augment.js",
             "import": "./esm/error/augment.js"
         },
         "./error/Exception": {
-            "require": "./error/Exception.js",
+            "require": "./cjs/error/Exception.js",
             "import": "./esm/error/Exception.js"
         },
         "./math": {
-            "require": "./math/index.js",
+            "require": "./cjs/math/index.js",
             "import": "./esm/math/index.js"
         },
         "./math/augment": {
-            "require": "./math/augment.js",
+            "require": "./cjs/math/augment.js",
             "import": "./esm/math/augment.js"
         },
         "./number": {
-            "require": "./number/index.js",
+            "require": "./cjs/number/index.js",
             "import": "./esm/number/index.js"
         },
         "./number/augment": {
-            "require": "./number/augment.js",
+            "require": "./cjs/number/augment.js",
             "import": "./esm/number/augment.js"
         },
         "./object": {
-            "require": "./object/index.js",
+            "require": "./cjs/object/index.js",
             "import": "./esm/object/index.js"
         },
         "./object/augment": {
-            "require": "./object/augment.js",
+            "require": "./cjs/object/augment.js",
             "import": "./esm/object/augment.js"
         },
         "./promise": {
-            "require": "./promise/index.js",
+            "require": "./cjs/promise/index.js",
             "import": "./esm/promise/index.js"
         },
         "./promise/augment": {
-            "require": "./promise/augment.js",
+            "require": "./cjs/promise/augment.js",
             "import": "./esm/promise/augment.js"
         },
         "./string": {
-            "require": "./string/index.js",
+            "require": "./cjs/string/index.js",
             "import": "./esm/string/index.js"
         },
         "./string/augment": {
-            "require": "./string/augment.js",
+            "require": "./cjs/string/augment.js",
             "import": "./esm/string/augment.js"
         },
         "./uint8array": {
-            "require": "./uint8array/index.js",
+            "require": "./cjs/uint8array/index.js",
             "import": "./esm/uint8array/index.js"
         },
         "./uint8array/augment": {
-            "require": "./uint8array/augment.js",
+            "require": "./cjs/uint8array/augment.js",
             "import": "./esm/uint8array/augment.js"
         }
     },

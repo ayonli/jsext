@@ -9,15 +9,10 @@ import MagicString from "magic-string";
 
 export default {
     input: Object.fromEntries(
-        glob.sync('src/**/*.ts').filter(file => !file.endsWith(".test.ts")).map(file => [
-            // This remove `src/` as well as the file extension from each
-            // file, so e.g. src/nested/foo.js becomes nested/foo
-            path.relative(
-                'src',
-                file.slice(0, file.length - path.extname(file).length)
-            ),
-            // This expands the relative paths to absolute paths, so e.g.
-            // src/nested/foo becomes /project/src/nested/foo.js
+        glob.sync('**/*.ts', { ignore: ['node_modules/**', "**/*.d.ts"] }).filter(file => {
+            return !file.endsWith(".test.ts");
+        }).map(file => [
+            file.slice(0, file.length - path.extname(file).length),
             fileURLToPath(new URL(file, import.meta.url))
         ])
     ),
@@ -26,10 +21,12 @@ export default {
         format: "es",
         sourcemap: true,
         preserveModules: true,
-        preserveModulesRoot: 'src',
+        preserveModulesRoot: '.',
         entryFileNames: (chunkInfo) => {
             if (chunkInfo.name.includes('node_modules')) {
                 return chunkInfo.name.replace('node_modules', '_external') + '.js';
+            } else if (chunkInfo.name === "worker-web") {
+                return "[name].mjs";
             }
 
             return '[name].js';

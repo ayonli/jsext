@@ -9,6 +9,7 @@ tsconfig.json
 job-example.js
 job-example.mjs
 *.config.js
+*.config.mjs
 bundle/
-esm/src/
-esm/worker-web.mjs
+worker-web.mjs
+!esm/worker-web.mjs

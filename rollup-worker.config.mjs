@@ -3,7 +3,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import { builtinModules } from "module";
 
 export default {
-    input: 'esm/src/worker-web.mjs',
+    input: 'worker-web.mjs',
     output: {
         file: "esm/worker-web.mjs",
         format: "es",

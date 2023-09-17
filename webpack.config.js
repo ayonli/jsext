@@ -1,6 +1,6 @@
 module.exports = {
     mode: "production",
-    entry: "./src/augment.ts",
+    entry: "./augment.ts",
     devtool: "source-map",
     target: "node",
     // node: {

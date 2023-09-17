@@ -1,9 +1,4 @@
 .vscode/
 node_modules/
-*.js
-*.js.map
+cjs/
 *.tgz
-!*.config.js
-!job-example.js
-!bundle/index.js
-!bundle/index.js.map

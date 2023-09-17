@@ -1,0 +1,1 @@
+{"version":3,"file":"augment.js","sources":["../../math/augment.ts"],"sourcesContent":["import { avg, product, sum } from \".\";\nMath.sum = sum;\nMath.avg = avg;\nMath.product = product;\n//# sourceMappingURL=augment.js.map"],"names":[],"mappings":";;AACA,IAAI,CAAC,GAAG,GAAG,GAAG,CAAC;AACf,IAAI,CAAC,GAAG,GAAG,GAAG,CAAC;AACf,IAAI,CAAC,OAAO,GAAG,OAAO"}

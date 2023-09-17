@@ -2,12 +2,11 @@
     "compilerOptions": {
         "module": "commonjs",
         "target": "es2018",
-        "rootDir": "./src",
-        "outDir": "./",
+        "rootDir": ".",
+        "outDir": "./cjs",
         "newLine": "LF",
         "importHelpers": true,
         "sourceMap": true,
-        "declaration": true,
         "strict": true,
         "noUnusedParameters": true,
         "noUnusedLocals": true,
@@ -18,7 +17,9 @@
         "noFallthroughCasesInSwitch": true,
         "noPropertyAccessFromIndexSignature": true,
         "noUncheckedIndexedAccess": true,
-        "types": ["node"],
+        "types": [
+            "node"
+        ],
         "paths": {
             "@ayonli/jsext": [
                 "."
@@ -26,12 +27,12 @@
         }
     },
     "include": [
-        "./src/*.ts",
-        "./src/*/**.ts"
+        "*.ts",
+        "*/**.ts"
     ],
     "exclude": [
         "node_modules",
-        "./src/*.test.ts",
-        "./src/*/**.test.ts"
+        "*.test.ts",
+        "*/**.test.ts"
     ]
 }
