@@ -9,7 +9,7 @@ function isFloat(value) {
  * number, a bigint, or a string that can be converted to a number or bigint.
  */
 function isNumeric(value) {
-    let type = typeof value;
+    const type = typeof value;
     if (type === "number" || type === "bigint") {
         return true;
     }

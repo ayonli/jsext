@@ -24,8 +24,8 @@ const workerConsumerQueue = [];
  * Merges properties and methods only if they're missing in the class.
  */
 function mergeIfNotExists(proto, source, mergeSuper = false) {
-    let props = Reflect.ownKeys(source);
-    for (let prop of props) {
+    const props = Reflect.ownKeys(source);
+    for (const prop of props) {
         if (prop == "constructor") {
             continue;
         }
@@ -47,7 +47,7 @@ function mergeIfNotExists(proto, source, mergeSuper = false) {
  */
 function mergeHierarchy(ctor, mixin, mergeSuper = false) {
     mergeIfNotExists(ctor.prototype, mixin.prototype, mergeSuper);
-    let _super = Object.getPrototypeOf(mixin);
+    const _super = Object.getPrototypeOf(mixin);
     // Every user defined class or functions that can be instantiated have their
     // own names, if no name appears, that means the function has traveled to 
     // the root of the hierarchical tree.
@@ -59,7 +59,7 @@ function mergeHierarchy(ctor, mixin, mergeSuper = false) {
  * Sets property for prototype based on the given source and prop name properly.
  */
 function setProp(proto, source, prop) {
-    let desc = Object.getOwnPropertyDescriptor(source, prop);
+    const desc = Object.getOwnPropertyDescriptor(source, prop);
     if (desc) {
         Object.defineProperty(proto, prop, desc);
     }
@@ -87,7 +87,7 @@ const jsext = {
                 // retrieve the return value of a generator function.
                 while (true) {
                     try {
-                        let { done, value } = await returns.next(input);
+                        const { done, value } = await returns.next(input);
                         if (done) {
                             result = value;
                             break;
@@ -107,7 +107,7 @@ const jsext = {
                         break;
                     }
                 }
-                return Promise.resolve([null, result]);
+                return [null, result];
             })();
         }
         else if (isGenerator_1(returns)) {
@@ -116,7 +116,7 @@ const jsext = {
                 let result;
                 while (true) {
                     try {
-                        let { done, value } = returns.next(input);
+                        const { done, value } = returns.next(input);
                         if (done) {
                             result = value;
                             break;
@@ -157,7 +157,7 @@ const jsext = {
                         // retrieve the return value of a generator function.
                         while (true) {
                             try {
-                                let { done, value } = await returns.next(input);
+                                const { done, value } = await returns.next(input);
                                 if (done) {
                                     result = { value, error: null };
                                     break;
@@ -184,7 +184,7 @@ const jsext = {
                             throw result.error;
                         }
                         else {
-                            return Promise.resolve(result.value);
+                            return result.value;
                         }
                     })();
                     return gen;
@@ -195,7 +195,7 @@ const jsext = {
                         let input;
                         while (true) {
                             try {
-                                let { done, value } = returns.next(input);
+                                const { done, value } = returns.next(input);
                                 if (done) {
                                     result = { value, error: null };
                                     break;
@@ -319,7 +319,7 @@ const jsext = {
         const obj = { ctor: null };
         obj.ctor = class extends base {
         }; // make sure this class has no name
-        for (let mixin of mixins) {
+        for (const mixin of mixins) {
             if (typeof mixin == "function") {
                 mergeHierarchy(obj.ctor, mixin);
             }
@@ -516,7 +516,7 @@ const jsext = {
         };
     },
     async run(script, args = undefined, options = undefined) {
-        var _a;
+        var _a, _b;
         const msg = {
             type: "ffi",
             script,
@@ -544,7 +544,7 @@ const jsext = {
         let poolRecord;
         let release;
         let terminate = () => Promise.resolve(void 0);
-        let timeout = (options === null || options === void 0 ? void 0 : options.timeout) ? setTimeout(() => {
+        const timeout = (options === null || options === void 0 ? void 0 : options.timeout) ? setTimeout(() => {
             const err = new Error(`operation timeout after ${options.timeout}ms`);
             if (resolver) {
                 resolver.reject(err);
@@ -724,7 +724,8 @@ const jsext = {
                 else if (workerPool.length < maxWorkerNum) {
                     const { Worker } = await import('worker_threads');
                     worker = new Worker(entry);
-                    workerId = worker.threadId;
+                    // `threadId` may not exist in Bun.
+                    workerId = (_a = worker.threadId) !== null && _a !== void 0 ? _a : workerIdCounter.next().value;
                     ok = await new Promise((resolve) => {
                         worker.once("exit", () => {
                             if (error) {
@@ -787,7 +788,7 @@ const jsext = {
                         || "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs";
                     const res = await fetch(_url);
                     let blob;
-                    if ((_a = res.headers.get("content-type")) === null || _a === void 0 ? void 0 : _a.startsWith("application/javascript")) {
+                    if ((_b = res.headers.get("content-type")) === null || _b === void 0 ? void 0 : _b.startsWith("application/javascript")) {
                         blob = await res.blob();
                     }
                     else {

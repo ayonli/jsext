@@ -8,7 +8,7 @@ function hasOwn(obj, key) {
  */
 function hasOwnMethod(obj, method) {
     var _a;
-    let proto = Object.getPrototypeOf(obj);
+    const proto = Object.getPrototypeOf(obj);
     if (!proto || !hasOwn(proto, method)) {
         return false;
     }
@@ -53,7 +53,7 @@ function as(obj, type) {
         throw new TypeError("type must be a valid constructor");
     }
     let _type;
-    let primitiveMap = {
+    const primitiveMap = {
         "string": String,
         "number": Number,
         "bigint": BigInt,
