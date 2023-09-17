@@ -97,7 +97,8 @@
         }
     },
     "scripts": {
-        "test": "mocha",
+        "test": "mocha -r ts-node/register",
+        "test:bun": "bun run ./node_modules/mocha/bin/mocha",
         "build": "tsc && rollup -c rollup.config.mjs && rollup -c rollup-worker.config.mjs && webpack",
         "prepublishOnly": "npm run build"
     },
