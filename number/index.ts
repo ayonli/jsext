@@ -10,7 +10,7 @@ export function isFloat(value: unknown): boolean {
  * number, a bigint, or a string that can be converted to a number or bigint.
  */
 export function isNumeric(value: unknown): boolean {
-    let type = typeof value;
+    const type = typeof value;
 
     if (type === "number" || type === "bigint") {
         return true;

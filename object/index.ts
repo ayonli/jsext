@@ -10,7 +10,7 @@ export function hasOwn(obj: any, key: string | number | symbol): boolean {
  * function returns `false`.
  */
 export function hasOwnMethod(obj: any, method: string | symbol): boolean {
-    let proto = Object.getPrototypeOf(obj);
+    const proto = Object.getPrototypeOf(obj);
 
     if (!proto || !hasOwn(proto, method)) {
         return false;
@@ -100,7 +100,7 @@ export function as(obj: any, type: any): any {
     }
 
     let _type: any;
-    let primitiveMap = <Record<string, Function>>{
+    const primitiveMap = <Record<string, Function>>{
         "string": String,
         "number": Number,
         "bigint": BigInt,

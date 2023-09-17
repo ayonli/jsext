@@ -41,7 +41,7 @@ describe("Promise", () => {
     });
 
     test("Promise.sleep", async () => {
-        let startTime = Date.now();
+        const startTime = Date.now();
         await Promise.sleep(50);
         ok(Date.now() - startTime >= 50);
     });
