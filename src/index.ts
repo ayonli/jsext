@@ -30,7 +30,7 @@ type ThrottleCache = {
 const throttleCaches = new Map<any, ThrottleCache>();
 
 /**
- * The maximum number of workers is set to 4 times of the CPU core numbers.
+ * The maximum number of workers allowed to exist at the same time.
  * 
  * The primary purpose of the workers is not mean to run tasks in parallel, but run them in separate
  * from the main thread, so that aborting tasks can be achieved by terminating the worker thread and
@@ -39,13 +39,7 @@ const throttleCaches = new Map<any, ThrottleCache>();
  * That said, the worker thread can still be used to achieve parallelism, but it should be noticed
  * that only the numbers of tasks that equals to the CPU core numbers will be run at the same time.
  */
-const maxWorkerNum = (() => {
-    if (isNode) {
-        return (require("os").cpus().length as number) * 4;
-    } else {
-        return 16;
-    }
-})();
+const maxWorkerNum = 16;
 
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 let workerPool: {
@@ -848,9 +842,7 @@ const jsext: JsExt = {
 
         if (isNode) {
             const path = await import("path");
-            const util = await import("util");
-            const fs = await import("fs");
-            const stat = util.promisify(fs.stat);
+            const { fileURLToPath } = await import("url");
             let _filename: string;
             let _dirname: string;
             let entry: string;
@@ -859,31 +851,14 @@ const jsext: JsExt = {
                 _filename = __filename;
                 _dirname = __dirname;
             } else {
-                // Using the ES module in Node.js is very unlikely, so we just check the module
-                // filename in a simple manner, and report error if not found.
-                let [err] = await jsext.try(stat("package.json"));
-
-                if (err) {
-                    throw new Error("the current working directory is not a Node.js module");
-                }
-
-                _filename = process.cwd() + "/node_modules/@ayonli/jsext/esm/index.mjs";
-                [err] = await jsext.try(stat(_filename));
-
-                if (err) {
-                    // Assuming this is @ayonli/jsext itself.
-                    _filename = process.cwd() + "/esm/index.mjs";
-                    [err] = await jsext.try(stat(_filename));
-
-                    if (err) {
-                        throw new Error("can not locate the worker entry");
-                    }
-                }
-
+                // This file URL will be replace with `import.meta.url` by Rollup plugin.
+                _filename = fileURLToPath("file://{__filename}");
                 _dirname = path.dirname(_filename);
             }
 
-            if (_filename.endsWith(".js")) { // compiled
+            if (path.basename(_dirname) === "esm") { // ES module output
+                entry = path.join(_dirname, "worker.mjs");
+            } else if (_filename.endsWith(".js")) { // tsc compiled
                 entry = path.join(_dirname, "esm", "worker.mjs");
             } else {
                 entry = path.join(path.dirname(_dirname), "esm", "worker.mjs");
@@ -1017,14 +992,17 @@ const jsext: JsExt = {
                 workerId = poolRecord.workerId;
                 poolRecord.busy = true;
             } else if (workerPool.length < maxWorkerNum) {
-                const _url = options?.webWorkerEntry
-                    || "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs";
                 let url: string;
 
                 if (typeof Deno === "object") {
                     // Deno can load the module regardless of MINE type.
-                    url = new URL(_url, msg.baseUrl).href;
+                    url = [
+                        ...("file://{__filename}".split("/").slice(0, -1)),
+                        "worker-web.mjs"
+                    ].join("/");
                 } else {
+                    const _url = options?.webWorkerEntry
+                        || "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs";
                     const res = await fetch(_url);
                     let blob: Blob;
 

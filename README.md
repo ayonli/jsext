@@ -10,9 +10,11 @@ npm i @ayonli/jsext
 
 ## Usages
 
-```ts
+```js
 import jsext from "@ayonli/jsext";
 ```
+
+Note: this package works well in both CommonJS and ES Module.
 
 ## Functions
 
@@ -48,7 +50,7 @@ See [index.d.ts](./index.d.ts) for details and docs.
 
 ### [string](./string/index.d.ts)
 
-```ts
+```js
 import { capitalize, chunk, /* ... */ } from "@ayonli/jsext/string";
 // or
 import "@ayonli/jsext/string/augment";
@@ -82,7 +84,7 @@ import "@ayonli/jsext/string/augment";
 
 ### [number](./number/index.d.ts)
 
-```ts
+```js
 import { isFloat, random } from "@ayonli/jsext/number";
 // or
 import "@ayonli/jsext/number/augment";
@@ -98,7 +100,7 @@ import "@ayonli/jsext/number/augment";
 
 ### [array](./array/index.d.ts)
 
-```ts
+```js
 import { count, split, /* ... */ } from "@ayonli/jsext/array";
 // or
 import "@ayonli/jsext/array/augment";
@@ -137,7 +139,7 @@ import "@ayonli/jsext/array/augment";
 
 ### [uint8array](/uint8array/index.d.ts)
 
-```ts
+```js
 import { compare, split, /* ... */ } from "@ayonli/jsext/uint8array";
 // or
 import "@ayonli/jsext/uint8array/augment";
@@ -161,8 +163,8 @@ import "@ayonli/jsext/uint8array/augment";
 
 ### [object](./object/index.d.ts)
 
-```ts
-import { hasOwn, pathc, /* ... */ } from "@ayonli/jsext/object";
+```js
+import { hasOwn, path, /* ... */ } from "@ayonli/jsext/object";
 // or
 import "@ayonli/jsext/object/augment";
 ```
@@ -190,7 +192,7 @@ import "@ayonli/jsext/object/augment";
 
 ### [math](./math/index.d.ts)
 
-```ts
+```js
 import { sum, avg, product } from "@ayonli/jsext/math";
 // or
 import "@ayonli/jsext/math/augment";
@@ -206,7 +208,7 @@ import "@ayonli/jsext/math/augment";
 
 ### [promise](./promise/index.d.ts)
 
-```ts
+```js
 import { timeout, after, sleep, until } from "@ayonli/jsext/promise";
 // or
 import "@ayonli/jsext/promise/augment";
@@ -223,7 +225,7 @@ import "@ayonli/jsext/promise/augment";
 
 ### [collections](./collections/index.d.ts)
 
-```ts
+```js
 import BiMap from "@ayonli/jsext/collections/BiMap";
 import CiMap from "@ayonli/jsext/collections/CiMap";
 // or
@@ -247,7 +249,7 @@ import "@ayonli/jsext/collections/augment";
 
 ### [error](./error/index.d.ts)
 
-```ts
+```js
 import Exception from "@ayonli/jsext/error/Exception";
 // or
 import { Exception } from "@ayonli/jsext/error";
@@ -278,7 +280,7 @@ import "@ayonli/jsext/error/augment";
 
 ## Import all sub-package augmentation at once
 
-```ts
+```js
 import "@ayonli/jsext/augment";
 ```
 
@@ -303,7 +305,10 @@ This is the same as above, but requires a module bundler such as webpack.
 ```html
 <script type="module">
     import jsext from "https://deno.land/x/ayonli_jsext/esm/index.js";
-    // this will also include the augmentations
+    import "https://deno.land/x/ayonli_jsext/esm/augment.js";
+    // or sub-packages
+    import { isFloat } from "https://deno.land/x/ayonli_jsext/esm/number/index.js";
+    import "https://deno.land/x/ayonli_jsext/esm/number/augment.js";
 </script>
 ```
 

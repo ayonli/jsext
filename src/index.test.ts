@@ -813,7 +813,7 @@ describe("jsext", () => {
             }));
 
             wsServer.on("request", async req => {
-                let conn = req.accept('echo-protocol', req.origin);
+                let conn = req.accept("echo-protocol", req.origin);
 
                 for (let msg of ["hello", "world"]) {
                     conn.send(msg);

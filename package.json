@@ -1,8 +1,101 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.4.0",
+    "version": "0.4.1",
     "description": "Additional functions for JavaScript programming in practice.",
-    "main": "index.js",
+    "exports": {
+        ".": {
+            "require": "./index.js",
+            "import": "./esm/index.js"
+        },
+        "./augment": {
+            "require": "./augment.js",
+            "import": "./esm/augment.js"
+        },
+        "./array": {
+            "require": "./array/index.js",
+            "import": "./esm/array/index.js"
+        },
+        "./array/augment": {
+            "require": "./array/augment.js",
+            "import": "./esm/array/augment.js"
+        },
+        "./collections": {
+            "require": "./collections/index.js",
+            "import": "./esm/collections/index.js"
+        },
+        "./collections/augment": {
+            "require": "./collections/augment.js",
+            "import": "./esm/collections/augment.js"
+        },
+        "./collections/BiMap": {
+            "require": "./collections/BiMap.js",
+            "import": "./esm/collections/BiMap.js"
+        },
+        "./collections/CiMap": {
+            "require": "./collections/CiMap.js",
+            "import": "./esm/collections/CiMap.js"
+        },
+        "./error": {
+            "require": "./error/index.js",
+            "import": "./esm/error/index.js"
+        },
+        "./error/augment": {
+            "require": "./error/augment.js",
+            "import": "./esm/error/augment.js"
+        },
+        "./error/Exception": {
+            "require": "./error/Exception.js",
+            "import": "./esm/error/Exception.js"
+        },
+        "./math": {
+            "require": "./math/index.js",
+            "import": "./esm/math/index.js"
+        },
+        "./math/augment": {
+            "require": "./math/augment.js",
+            "import": "./esm/math/augment.js"
+        },
+        "./number": {
+            "require": "./number/index.js",
+            "import": "./esm/number/index.js"
+        },
+        "./number/augment": {
+            "require": "./number/augment.js",
+            "import": "./esm/number/augment.js"
+        },
+        "./object": {
+            "require": "./object/index.js",
+            "import": "./esm/object/index.js"
+        },
+        "./object/augment": {
+            "require": "./object/augment.js",
+            "import": "./esm/object/augment.js"
+        },
+        "./promise": {
+            "require": "./promise/index.js",
+            "import": "./esm/promise/index.js"
+        },
+        "./promise/augment": {
+            "require": "./promise/augment.js",
+            "import": "./esm/promise/augment.js"
+        },
+        "./string": {
+            "require": "./string/index.js",
+            "import": "./esm/string/index.js"
+        },
+        "./string/augment": {
+            "require": "./string/augment.js",
+            "import": "./esm/string/augment.js"
+        },
+        "./uint8array": {
+            "require": "./uint8array/index.js",
+            "import": "./esm/uint8array/index.js"
+        },
+        "./uint8array/augment": {
+            "require": "./uint8array/augment.js",
+            "import": "./esm/uint8array/augment.js"
+        }
+    },
     "scripts": {
         "test": "mocha",
         "postpublish": "ls *.js|grep -v config.js|grep -v example.js|xargs rm; ls *.js.map|xargs rm; ls */*.js|grep -v bundle|grep -v esm|xargs rm; ls */*.js.map|grep -v bundle|grep -v esm|xargs rm",
@@ -55,11 +148,14 @@
         "@ayonli/sse": "^0.4.0",
         "@rollup/plugin-commonjs": "^25.0.4",
         "@rollup/plugin-node-resolve": "^15.2.1",
+        "@rollup/plugin-typescript": "^11.1.3",
         "@types/eventsource": "^1.1.11",
         "@types/mocha": "^10.0.1",
         "@types/node": "^20.6.0",
         "@types/websocket": "^1.0.6",
         "eventsource": "1.1",
+        "glob": "^10.3.4",
+        "magic-string": "^0.30.3",
         "mocha": "^10.2.0",
         "rollup": "^3.29.2",
         "ts-loader": "^9.4.4",

@@ -1,4 +1,6 @@
-var checkIterable = {};Object.defineProperty(checkIterable, "__esModule", {
+var checkIterable = {};
+
+Object.defineProperty(checkIterable, "__esModule", {
   value: true
 });
 checkIterable.isIterable = isIterable;
@@ -73,7 +75,9 @@ function isAsyncGenerator(obj) {
 }
 function hasGeneratorSpecials(obj) {
   return typeof obj["return"] === "function" && typeof obj["throw"] === "function";
-}/** @type {Map<string, any>} */
+}
+
+/** @type {Map<string, any>} */
 const cache = new Map();
 
 function isFFIMessage(msg) {

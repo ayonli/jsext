@@ -7,7 +7,6 @@ export default {
     output: {
         file: "esm/worker-web.mjs",
         format: "es",
-        compact: true,
     },
     plugins: [
         resolve({ preferBuiltins: true }),
