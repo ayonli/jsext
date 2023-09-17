@@ -5,6 +5,10 @@ import { deepStrictEqual, ok, strictEqual } from "assert";
 describe("Number", () => {
     test("Number.isFloat", () => {
         ok(Number.isFloat(1.2));
+        ok(Number.isFloat(Infinity));
+        ok(Number.isFloat(-Infinity));
+        ok(Number.isFloat(Number.MIN_VALUE));
+        ok(!Number.isFloat(Number.MAX_VALUE));
         ok(!Number.isFloat(1));
         ok(!Number.isFloat("1.2"));
         ok(!Number.isFloat("abc"));

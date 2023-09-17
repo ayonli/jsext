@@ -119,5 +119,16 @@ describe("Object", () => {
         strictEqual(Object.as(obj, Foo), obj);
         strictEqual(Object.as(obj, Array), null);
         strictEqual(Object.as(obj, Foo)?.echo("hello, world"), "hello, world");
+
+        const re: any = /[0-9a-zA-Z]/;
+        strictEqual(Object.as(re, RegExp), re);
+        strictEqual(Object.as(re, Object), re);
+        strictEqual(Object.as(re, Array), null);
+        strictEqual(Object.as(re, RegExp)?.source, "[0-9a-zA-Z]");
+
+        const fn: any = () => null;
+        strictEqual(Object.as(fn, Function), fn);
+        strictEqual(Object.as(fn, Object), fn);
+        strictEqual(Object.as(fn, Function)?.name, "fn");
     });
 });
