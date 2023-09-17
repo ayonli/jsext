@@ -7,9 +7,4 @@ import './math/augment.js';
 import './promise/augment.js';
 import './collections/augment.js';
 import './error/augment.js';
-import jsext from './index.js';
-
-
-
-export { jsext as default };
 //# sourceMappingURL=augment.js.map

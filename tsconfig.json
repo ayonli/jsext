@@ -32,6 +32,7 @@
     ],
     "exclude": [
         "node_modules",
+        "bundle.ts",
         "*.test.ts",
         "*/**.test.ts"
     ]

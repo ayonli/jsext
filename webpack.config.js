@@ -1,6 +1,8 @@
+const TerserPlugin = require('terser-webpack-plugin');
+
 module.exports = {
     mode: "production",
-    entry: "./augment.ts",
+    entry: "./bundle.ts",
     devtool: "source-map",
     target: "node",
     // node: {
@@ -26,5 +28,16 @@ module.exports = {
                 }
             }
         ]
-    }
+    },
+    optimization: {
+        minimizer: [
+            new TerserPlugin({
+                parallel: true,
+                terserOptions: {
+                    keep_classnames: true,
+                    keep_fnames: true,
+                },
+            }),
+        ],
+    },
 };

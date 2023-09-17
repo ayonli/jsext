@@ -9,8 +9,8 @@ import MagicString from "magic-string";
 
 export default {
     input: Object.fromEntries(
-        glob.sync('**/*.ts', { ignore: ['node_modules/**', "**/*.d.ts"] }).filter(file => {
-            return !file.endsWith(".test.ts");
+        glob.sync('**/*.ts', {
+            ignore: ['node_modules/**', "**/*.test.ts", "bundle.ts"],
         }).map(file => [
             file.slice(0, file.length - path.extname(file).length),
             fileURLToPath(new URL(file, import.meta.url))
@@ -25,8 +25,6 @@ export default {
         entryFileNames: (chunkInfo) => {
             if (chunkInfo.name.includes('node_modules')) {
                 return chunkInfo.name.replace('node_modules', '_external') + '.js';
-            } else if (chunkInfo.name === "worker-web") {
-                return "[name].mjs";
             }
 
             return '[name].js';

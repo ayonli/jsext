@@ -319,7 +319,7 @@ Note: the ES module can also be used in Deno.
 ```html
 <script src="https://deno.land/x/ayonli_jsext/bundle/index.js"></script>
 <script>
-    const { default: jsext } = window["@ayonli/jsext"];
+    const jsext = window["@ayonli/jsext"];
     // this will also include the augmentations
 <script>
 ```
