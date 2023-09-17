@@ -57,9 +57,9 @@ const workerConsumerQueue: (() => void)[] = [];
  * Merges properties and methods only if they're missing in the class. 
  */
 function mergeIfNotExists(proto: object, source: object, mergeSuper = false) {
-    let props = Reflect.ownKeys(source);
+    const props = Reflect.ownKeys(source);
 
-    for (let prop of props) {
+    for (const prop of props) {
         if (prop == "constructor") {
             continue;
         } else if (mergeSuper) {
@@ -82,7 +82,7 @@ function mergeIfNotExists(proto: object, source: object, mergeSuper = false) {
 function mergeHierarchy(ctor: Function, mixin: Function, mergeSuper = false) {
     mergeIfNotExists(ctor.prototype, mixin.prototype, mergeSuper);
 
-    let _super = Object.getPrototypeOf(mixin);
+    const _super = Object.getPrototypeOf(mixin);
 
     // Every user defined class or functions that can be instantiated have their
     // own names, if no name appears, that means the function has traveled to 
@@ -96,7 +96,7 @@ function mergeHierarchy(ctor: Function, mixin: Function, mergeSuper = false) {
  * Sets property for prototype based on the given source and prop name properly.
  */
 function setProp(proto: any, source: any, prop: string | symbol) {
-    let desc = Object.getOwnPropertyDescriptor(source, prop);
+    const desc = Object.getOwnPropertyDescriptor(source, prop);
 
     if (desc) {
         Object.defineProperty(proto, prop, desc);
@@ -289,7 +289,7 @@ const jsext: JsExt = {
                 // retrieve the return value of a generator function.
                 while (true) {
                     try {
-                        let { done, value } = await returns.next(input);
+                        const { done, value } = await returns.next(input);
 
                         if (done) {
                             result = value;
@@ -318,7 +318,7 @@ const jsext: JsExt = {
 
                 while (true) {
                     try {
-                        let { done, value } = returns.next(input);
+                        const { done, value } = returns.next(input);
 
                         if (done) {
                             result = value;
@@ -361,7 +361,7 @@ const jsext: JsExt = {
                         // retrieve the return value of a generator function.
                         while (true) {
                             try {
-                                let { done, value } = await returns.next(input);
+                                const { done, value } = await returns.next(input);
 
                                 if (done) {
                                     result = { value, error: null };
@@ -399,7 +399,7 @@ const jsext: JsExt = {
 
                         while (true) {
                             try {
-                                let { done, value } = returns.next(input);
+                                const { done, value } = returns.next(input);
 
                                 if (done) {
                                     result = { value, error: null };
@@ -535,7 +535,7 @@ const jsext: JsExt = {
         const obj = { ctor: null as any as Constructor<any> };
         obj.ctor = class extends (<any>base) { }; // make sure this class has no name
 
-        for (let mixin of mixins) {
+        for (const mixin of mixins) {
             if (typeof mixin == "function") {
                 mergeHierarchy(obj.ctor, mixin);
             } else if (mixin && typeof mixin == "object") {
@@ -770,7 +770,7 @@ const jsext: JsExt = {
         let poolRecord: typeof workerPool[0] | undefined;
         let release: () => void;
         let terminate = () => Promise.resolve<void>(void 0);
-        let timeout = options?.timeout ? setTimeout(() => {
+        const timeout = options?.timeout ? setTimeout(() => {
             const err = new Error(`operation timeout after ${options.timeout}ms`);
 
             if (resolver) {
@@ -948,7 +948,8 @@ const jsext: JsExt = {
                 } else if (workerPool.length < maxWorkerNum) {
                     const { Worker } = await import("worker_threads");
                     worker = new Worker(entry);
-                    workerId = worker.threadId;
+                    // `threadId` may not exist in Bun.
+                    workerId = worker.threadId ?? workerIdCounter.next().value;
                     ok = await new Promise<boolean>((resolve) => {
                         worker.once("exit", () => {
                             if (error) {

@@ -8,7 +8,9 @@ import { createReadStream } from "fs";
 import * as http from "http";
 import SSE from "@ayonli/sse";
 import dEventSource = require("eventsource");
-import { server as WebSocketServer, w3cwebsocket } from "websocket";
+// import { server as WebSocketServer, w3cwebsocket } from "websocket";
+import { WebSocketServer } from "ws";
+import WebSocket = require("isomorphic-ws");
 import EventEmitter = require("events");
 
 describe("jsext", () => {
@@ -45,7 +47,7 @@ describe("jsext", () => {
                     throw EmptyStringError;
                 }
 
-                for (let x of str) {
+                for (const x of str) {
                     yield x;
                 }
 
@@ -57,7 +59,7 @@ describe("jsext", () => {
             let str = "";
 
             while (true) {
-                let { value: [err, x], done } = res.next();
+                const { value: [err, x], done } = res.next();
 
                 if (done) {
                     x !== undefined && (str += x);
@@ -77,7 +79,7 @@ describe("jsext", () => {
             let str2 = "";
 
             while (true) {
-                let { value: [err, x], done } = res2.next();
+                const { value: [err, x], done } = res2.next();
 
                 if (done) {
                     x !== undefined && (str2 += x);
@@ -99,7 +101,7 @@ describe("jsext", () => {
                     throw EmptyStringError;
                 }
 
-                for (let x of str) {
+                for (const x of str) {
                     yield x;
                 }
 
@@ -111,7 +113,7 @@ describe("jsext", () => {
             let str = "";
 
             while (true) {
-                let { value: [err, x], done } = await res.next();
+                const { value: [err, x], done } = await res.next();
 
                 if (done) {
                     x !== undefined && (str += x);
@@ -131,7 +133,7 @@ describe("jsext", () => {
             let str2 = "";
 
             while (true) {
-                let { value: [err, x], done } = await res2.next();
+                const { value: [err, x], done } = await res2.next();
 
                 if (done) {
                     x !== undefined && (str2 += x);
@@ -167,7 +169,7 @@ describe("jsext", () => {
 
                 let count = 0;
 
-                for (let x of str) {
+                for (const x of str) {
                     count += yield x;
                 }
 
@@ -177,7 +179,7 @@ describe("jsext", () => {
             let str = "";
 
             while (true) {
-                let { value: [err, x], done } = res.next(1);
+                const { value: [err, x], done } = res.next(1);
 
                 if (done) {
                     x !== undefined && (str += x);
@@ -201,7 +203,7 @@ describe("jsext", () => {
 
                 let count = 0;
 
-                for (let x of str) {
+                for (const x of str) {
                     count += yield x;
                 }
 
@@ -211,7 +213,7 @@ describe("jsext", () => {
             let str = "";
 
             while (true) {
-                let { value: [err, x], done } = await res.next(1);
+                const { value: [err, x], done } = await res.next(1);
 
                 if (done) {
                     x !== undefined && (str += x);
@@ -813,24 +815,20 @@ describe("jsext", () => {
         }));
 
         test("WebSocket", jsext.func(async (defer) => {
-            let server = http.createServer().listen(12345);
-            let wsServer = new WebSocketServer({
-                httpServer: server
-            });
+            const server = http.createServer().listen(12345);
+            const wsServer = new WebSocketServer({ server });
             defer(() => new Promise(resolve => {
                 server.closeAllConnections?.();
                 server.close(resolve);
             }));
 
-            wsServer.on("request", async req => {
-                let conn = req.accept("echo-protocol", req.origin);
-
-                for (let msg of ["hello", "world"]) {
-                    conn.send(msg);
+            wsServer.on("connection", async ws => {
+                for (const msg of ["hello", "world"]) {
+                    ws.send(msg);
                 }
             });
 
-            const ws = new w3cwebsocket(
+            const ws = new WebSocket(
                 "ws://localhost:12345",
                 "echo-protocol") as unknown as WebSocket;
             const messages: string[] = [];
