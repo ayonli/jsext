@@ -15,6 +15,29 @@ describe("Number", () => {
         ok(!Number.isFloat(NaN));
     });
 
+    test("Number.isNumeric", () => {
+        ok(Number.isNumeric(123));
+        ok(Number.isNumeric(Infinity));
+        ok(Number.isNumeric(-Infinity));
+        ok(Number.isNumeric(Number.MIN_VALUE));
+        ok(Number.isNumeric(Number.MAX_VALUE));
+        ok(Number.isNumeric(BigInt(Number.MAX_VALUE)));
+        ok(Number.isNumeric("123"));
+        ok(Number.isNumeric("1.23"));
+        ok(Number.isNumeric("0b1010"));
+        ok(Number.isNumeric("0b1010"));
+        ok(Number.isNumeric("0o123"));
+        ok(Number.isNumeric("0x123"));
+    });
+
+    test("Number.isBetween", () => {
+        ok(Number.isBetween(1, [1, 2]));
+        ok(Number.isBetween(2, [1, 2]));
+        ok(Number.isBetween(2, [1, 3]));
+        ok(!Number.isBetween(0, [1, 2]));
+        ok(!Number.isBetween(3, [1, 2]));
+    });
+
     test("Number.random", () => {
         strictEqual(Number.random(0, 0), 0);
 
