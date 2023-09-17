@@ -309,7 +309,7 @@ const jsext: JsExt = {
                     }
                 }
 
-                return Promise.resolve([null, result]);
+                return [null, result];
             })() as AsyncGenerator<unknown, any, unknown>;
         } else if (isGenerator(returns)) {
             return (function* () {
@@ -388,7 +388,7 @@ const jsext: JsExt = {
                         if (result.error) {
                             throw result.error;
                         } else {
-                            return Promise.resolve(result.value);
+                            return result.value;
                         }
                     })() as AsyncGenerator<unknown, any, unknown>;
 
