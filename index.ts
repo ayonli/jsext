@@ -202,6 +202,9 @@ export interface JsExt {
         ...mixins: M
     ): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
 
+    /** Checks if a class is a subclass of another class. */
+    isSubclassOf<T, B>(ctor1: Constructor<T>, ctor2: Constructor<B>): boolean;
+
     /**
      * Wraps a source as an AsyncIterable object that can be used in the `for...await...` loop
      * for reading streaming data.
@@ -543,6 +546,11 @@ const jsext: JsExt = {
         }
 
         return obj.ctor as Constructor<any>;
+    },
+    isSubclassOf(ctor1, ctor2) {
+        return typeof ctor1 === "function"
+            && typeof ctor2 === "function"
+            && ctor1.prototype instanceof ctor2;
     },
     read<T>(source: any, eventMap: {
         event?: string; // for EventSource custom event

@@ -739,6 +739,16 @@ describe("jsext", () => {
         });
     });
 
+    test("jsext.isSubclassOf", () => {
+        class A { }
+        class B extends A { }
+        class C extends A { }
+
+        ok(jsext.isSubclassOf(B, A));
+        ok(jsext.isSubclassOf(A, Object));
+        ok(!jsext.isSubclassOf(C, B));
+    });
+
     describe("jsext.read", () => {
         test("ReadableStream", async () => {
             const file = createReadStream("./package.json");
