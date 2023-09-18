@@ -48,7 +48,7 @@ function omit(obj, keys) {
     }
     return result;
 }
-function as(obj, type) {
+function as(value, type) {
     if (typeof type !== "function") {
         throw new TypeError("type must be a valid constructor");
     }
@@ -60,19 +60,33 @@ function as(obj, type) {
         "boolean": Boolean,
         "symbol": Symbol
     };
-    if (obj instanceof type) {
+    if (value instanceof type) {
         if ([String, Number, Boolean].includes(type)) {
-            return obj.valueOf(); // make sure the primitives are returned.
+            return value.valueOf(); // make sure the primitives are returned.
         }
         else {
-            return obj;
+            return value;
         }
     }
-    else if ((_type = typeof obj) && primitiveMap[_type] === type) {
-        return obj;
+    else if ((_type = typeof value) && primitiveMap[_type] === type) {
+        return value;
     }
     return null;
 }
+/**
+ * Returns `true` if the given value is valid. Thee following values are considered invalid:
+ *
+ * - `undefined`
+ * - `null`
+ * - `NaN`
+ * - `Invalid Date`
+ */
+function isValid(value) {
+    return value !== undefined
+        && value !== null
+        && !Object.is(value, NaN)
+        && !(value instanceof Date && value.toString() === "Invalid Date");
+}
 
-export { as, hasOwn, hasOwnMethod, omit, patch, pick };
+export { as, hasOwn, hasOwnMethod, isValid, omit, patch, pick };
 //# sourceMappingURL=index.js.map
