@@ -1131,7 +1131,7 @@ export async function run<T, A extends any[] = any[]>(
     };
 }
 
-export default {
+const jsext = {
     try: _try,
     func,
     wrap,
@@ -1141,3 +1141,4 @@ export default {
     read,
     run,
 };
+export default jsext;

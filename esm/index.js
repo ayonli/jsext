@@ -905,7 +905,7 @@ async function run(script, args = undefined, options = undefined) {
         },
     };
 }
-var index = {
+const jsext = {
     try: _try,
     func,
     wrap,
@@ -916,5 +916,5 @@ var index = {
     run,
 };
 
-export { AsyncFunction, AsyncGeneratorFunction, _try, index as default, func, isSubclassOf, mixins, read, run, throttle, wrap };
+export { AsyncFunction, AsyncGeneratorFunction, _try, jsext as default, func, isSubclassOf, mixins, read, run, throttle, wrap };
 //# sourceMappingURL=index.js.map
