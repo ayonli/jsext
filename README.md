@@ -185,12 +185,13 @@ import "@ayonli/jsext/object/augment";
 - `pick<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
 - `omit<T extends object, U extends keyof T>(obj: T, keys: U[]): Omit<T, U>`
 - `omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
-- `as(obj: any, type: StringConstructor): string | null`
-- `as(obj: any, type: NumberConstructor): number | null`
-- `as(obj: any, type: BigIntConstructor): bigint | null`
-- `as(obj: any, type: BooleanConstructor): boolean | null`
-- `as(obj: any, type: SymbolConstructor): symbol | null`
-- `as<T>(obj: any, type: Constructor<T>): T | null`
+- `as(value: unknown, type: StringConstructor): string | null`
+- `as(value: unknown, type: NumberConstructor): number | null`
+- `as(value: unknown, type: BigIntConstructor): bigint | null`
+- `as(value: unknown, type: BooleanConstructor): boolean | null`
+- `as(value: unknown, type: SymbolConstructor): symbol | null`
+- `as<T>(value: unknown, type: Constructor<T>): T | null`
+- `isValid(value: unknown): boolean`
 
 *When [augment](./object/augment.ts)ing, these functions will be attached to the `Object` constructor.*
 

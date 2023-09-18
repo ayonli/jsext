@@ -83,18 +83,18 @@ export function omit(obj: any, keys: (string | symbol)[]) {
 }
 
 /**
- * Returns the object if it's an instance of the given type, otherwise returns `null`.
- * This function is mainly used for the optional chaining syntax.
+ * Checks if the value is an instance of the given type, returns the value itself if passed,
+ * otherwise returns `null`. This function is mainly used for the optional chaining syntax.
  * @example
- *  as(bar, SomeType)?.doSomething();
+ *  Object.as(bar, SomeType)?.doSomething();
  */
-export function as(obj: any, type: StringConstructor): string | null;
-export function as(obj: any, type: NumberConstructor): number | null;
-export function as(obj: any, type: BigIntConstructor): bigint | null;
-export function as(obj: any, type: BooleanConstructor): boolean | null;
-export function as(obj: any, type: SymbolConstructor): symbol | null;
-export function as<T>(obj: any, type: Constructor<T>): T | null;
-export function as(obj: any, type: any): any {
+export function as(value: unknown, type: StringConstructor): string | null;
+export function as(value: unknown, type: NumberConstructor): number | null;
+export function as(value: unknown, type: BigIntConstructor): bigint | null;
+export function as(value: unknown, type: BooleanConstructor): boolean | null;
+export function as(value: unknown, type: SymbolConstructor): symbol | null;
+export function as<T>(value: unknown, type: Constructor<T>): T | null;
+export function as(value: any, type: any): any {
     if (typeof type !== "function") {
         throw new TypeError("type must be a valid constructor");
     }
@@ -108,15 +108,30 @@ export function as(obj: any, type: any): any {
         "symbol": Symbol
     };
 
-    if (obj instanceof type) {
+    if (value instanceof type) {
         if ([String, Number, Boolean].includes(type)) {
-            return obj.valueOf(); // make sure the primitives are returned.
+            return value.valueOf(); // make sure the primitives are returned.
         } else {
-            return obj;
+            return value;
         }
-    } else if ((_type = typeof obj) && primitiveMap[_type] === type) {
-        return obj;
+    } else if ((_type = typeof value) && primitiveMap[_type] === type) {
+        return value;
     }
 
     return null;
+}
+
+/**
+ * Returns `true` if the given value is valid. Thee following values are considered invalid:
+ * 
+ * - `undefined`
+ * - `null`
+ * - `NaN`
+ * - `Invalid Date`
+ */
+export function isValid(value: unknown): boolean {
+    return value !== undefined
+        && value !== null
+        && !Object.is(value, NaN)
+        && !(value instanceof Date && value.toString() === "Invalid Date");
 }

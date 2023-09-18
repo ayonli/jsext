@@ -1,4 +1,4 @@
-import { hasOwn, hasOwnMethod, omit, patch, pick, as } from ".";
+import { hasOwn, hasOwnMethod, omit, patch, pick, as, isValid } from ".";
 
 declare global {
     interface ObjectConstructor {
@@ -31,17 +31,26 @@ declare global {
         omit<T extends object, U extends keyof T>(obj: T, keys: U[]): Omit<T, U>;
         omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>;
         /**
-         * Returns the object if it's an instance of the given type, otherwise returns `null`.
-         * This function is mainly used for the optional chaining syntax.
+         * Checks if the value is an instance of the given type, returns the value itself if passed,
+         * otherwise returns `null`. This function is mainly used for the optional chaining syntax.
          * @example
          *  Object.as(bar, SomeType)?.doSomething();
          */
-        as(obj: any, type: StringConstructor): string | null;
-        as(obj: any, type: NumberConstructor): number | null;
-        as(obj: any, type: BigIntConstructor): bigint | null;
-        as(obj: any, type: BooleanConstructor): boolean | null;
-        as(obj: any, type: SymbolConstructor): symbol | null;
-        as<T>(obj: any, type: Constructor<T>): T | null;
+        as(value: unknown, type: StringConstructor): string | null;
+        as(value: unknown, type: NumberConstructor): number | null;
+        as(value: unknown, type: BigIntConstructor): bigint | null;
+        as(value: unknown, type: BooleanConstructor): boolean | null;
+        as(value: unknown, type: SymbolConstructor): symbol | null;
+        as<T>(value: unknown, type: Constructor<T>): T | null;
+        /**
+         * Returns `true` if the given value is valid. Thee following values are considered invalid:
+         * 
+         * - `undefined`
+         * - `null`
+         * - `NaN`
+         * - `Invalid Date`
+         */
+        isValid(value: unknown): boolean;
     }
 }
 
@@ -57,3 +66,4 @@ Object.patch = patch;
 Object.pick = pick;
 Object.omit = omit;
 Object.as = as;
+Object.isValid = isValid;

@@ -131,4 +131,16 @@ describe("Object", () => {
         strictEqual(Object.as(fn, Object), fn);
         strictEqual(Object.as(fn, Function)?.name, "fn");
     });
+
+    test("Object.isValid", () => {
+        ok(Object.isValid(""));
+        ok(Object.isValid(0));
+        ok(Object.isValid(false));
+        ok(Object.isValid({}));
+        ok(Object.isValid([]));
+        ok(!Object.isValid(undefined));
+        ok(!Object.isValid(null));
+        ok(!Object.isValid(NaN));
+        ok(!Object.isValid(new Date("foobar")));
+    });
 });
