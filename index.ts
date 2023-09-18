@@ -949,7 +949,7 @@ const jsext: JsExt = {
                     const { Worker } = await import("worker_threads");
                     worker = new Worker(entry);
                     // `threadId` may not exist in Bun.
-                    workerId = worker.threadId ?? workerIdCounter.next().value;
+                    workerId = worker.threadId ?? workerIdCounter.next().value as number;
                     ok = await new Promise<boolean>((resolve) => {
                         worker.once("exit", () => {
                             if (error) {
