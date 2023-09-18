@@ -25,3 +25,10 @@ export default class Exception extends Error {
         }
     }
 }
+
+Object.defineProperty(Exception.prototype, "name", {
+    configurable: true,
+    enumerable: false,
+    writable: true,
+    value: "Exception",
+});

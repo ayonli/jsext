@@ -20,6 +20,12 @@ class Exception extends Error {
         }
     }
 }
+Object.defineProperty(Exception.prototype, "name", {
+    configurable: true,
+    enumerable: false,
+    writable: true,
+    value: "Exception",
+});
 
 export { Exception as default };
 //# sourceMappingURL=Exception.js.map
