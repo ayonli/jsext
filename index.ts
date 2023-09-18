@@ -3,6 +3,23 @@ import type { Worker as NodeWorker } from "worker_threads";
 import type { ChildProcess } from "child_process";
 import { sequence } from "./number";
 
+export const AsyncFunction = (async function () { }).constructor as AsyncFunctionConstructor;
+export const AsyncGeneratorFunction = (async function* () { }).constructor as AsyncGeneratorFunctionConstructor;
+
+export interface AsyncFunction {
+    (...args: any[]): Promise<unknown>;
+    readonly length: number;
+    readonly name: string;
+}
+
+export interface AsyncFunctionConstructor {
+    new(...args: any[]): AsyncFunction;
+    (...args: any[]): AsyncFunction;
+    readonly length: number;
+    readonly name: string;
+    readonly prototype: AsyncFunction;
+}
+
 export interface Constructor<T> extends Function {
     new(...args: any[]): T;
     prototype: T;

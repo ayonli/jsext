@@ -48,6 +48,18 @@ Note: this package works well in both CommonJS and ES Module.
 
 See [index.ts](./index.ts) for details and docs.
 
+## Types
+
+- `AsyncFunction`
+- `AsyncGeneratorFunction`
+- `AsyncFunctionConstructor`
+- `Constructor<T>`
+- `TypedArray`
+- `Optional<T, K extends keyof T>`
+- `Ensured<T, K extends keyof T>`
+
+When [augment](./augment.ts)ing, these types will ba attached to the global namespace.
+
 ## Sub-packages
 
 ### [string](./string/index.ts)
