@@ -2,6 +2,12 @@ class Exception extends Error {
     constructor(message, options = 0) {
         super(message);
         this.code = 0;
+        Object.defineProperty(this, "name", {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: this.constructor.name,
+        });
         if (typeof options === "number") {
             this.code = options;
         }
@@ -20,12 +26,6 @@ class Exception extends Error {
         }
     }
 }
-Object.defineProperty(Exception.prototype, "name", {
-    configurable: true,
-    enumerable: false,
-    writable: true,
-    value: "Exception",
-});
 
 export { Exception as default };
 //# sourceMappingURL=Exception.js.map
