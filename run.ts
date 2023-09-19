@@ -106,7 +106,7 @@ export default async function run<T, A extends any[] = any[]>(
         resolve: (data: any) => void;
         reject: (err: unknown) => void;
     } | undefined;
-    let iterator: NodeJS.EventEmitter | undefined;
+    let iterator: EventTarget | NodeJS.EventEmitter | undefined;
     let workerId: number | undefined;
     let poolRecord: typeof workerPool[0] | undefined;
     let release: () => void;
@@ -151,7 +151,13 @@ export default async function run<T, A extends any[] = any[]>(
                     handleMessage({ type: "return", value: msg.value });
                 } else {
                     if (iterator) {
-                        iterator.emit("data", msg.value);
+                        if (typeof (iterator as EventTarget).dispatchEvent === "function") {
+                            (iterator as EventTarget).dispatchEvent(
+                                new MessageEvent("message", { data: msg.value })
+                            );
+                        } else {
+                            (iterator as NodeJS.EventEmitter).emit("data", msg.value);
+                        }
                     } else {
                         buffer.push(msg.value);
                     }
@@ -164,7 +170,13 @@ export default async function run<T, A extends any[] = any[]>(
         if (resolver) {
             resolver.reject(err);
         } else if (iterator) {
-            iterator.emit("error", err);
+            if (typeof (iterator as EventTarget).dispatchEvent === "function") {
+                (iterator as EventTarget).dispatchEvent(
+                    new MessageEvent("error", { data: err })
+                );
+            } else {
+                (iterator as NodeJS.EventEmitter).emit("error", err);
+            }
         } else {
             error = err;
         }
@@ -183,7 +195,11 @@ export default async function run<T, A extends any[] = any[]>(
         if (resolver) {
             resolver.resolve(void 0);
         } else if (iterator) {
-            iterator.emit("close");
+            if (typeof (iterator as EventTarget).dispatchEvent === "function") {
+                (iterator as EventTarget).dispatchEvent(new MessageEvent("close"));
+            } else {
+                (iterator as NodeJS.EventEmitter).emit("close");
+            }
         } else if (!error && !result) {
             result = { value: void 0 };
         }
@@ -414,22 +430,41 @@ export default async function run<T, A extends any[] = any[]>(
                 throw new TypeError("the response is not iterable");
             }
 
-            const { EventEmitter } = await import("node:events");
-            iterator = new EventEmitter();
+            if (typeof MessageEvent === "function" && typeof EventTarget === "function") {
+                iterator = new EventTarget();
 
-            if (buffer.length) {
-                (async () => {
-                    await Promise.resolve(null);
-                    let msg: any;
+                if (buffer.length) {
+                    (async () => {
+                        await Promise.resolve(null);
+                        let msg: any;
 
-                    while (msg = buffer.shift()) {
-                        iterator.emit("data", msg);
-                    }
-                })().catch(console.error);
-            }
+                        while (msg = buffer.shift()) {
+                            iterator.dispatchEvent(new MessageEvent("message", { data: msg }));
+                        }
+                    })().catch(console.error);
+                }
 
-            for await (const msg of read<any>(iterator)) {
-                yield msg;
+                for await (const msg of read<any>(iterator)) {
+                    yield msg;
+                }
+            } else {
+                const { EventEmitter } = await import("events");
+                iterator = new EventEmitter();
+
+                if (buffer.length) {
+                    (async () => {
+                        await Promise.resolve(null);
+                        let msg: any;
+
+                        while (msg = buffer.shift()) {
+                            iterator.emit("data", msg);
+                        }
+                    })().catch(console.error);
+                }
+
+                for await (const msg of read<any>(iterator)) {
+                    yield msg;
+                }
             }
         },
     };
