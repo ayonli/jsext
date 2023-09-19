@@ -65,7 +65,7 @@ When [augment](./augment.ts)ing, these types will ba attached to the global name
 ### [string](./string/index.ts)
 
 ```js
-import { capitalize, chunk, /* ... */ } from "@ayonli/jsext/string";
+import { compare, random, /* ... */ } from "@ayonli/jsext/string";
 // or
 import "@ayonli/jsext/string/augment";
 ```
@@ -99,7 +99,7 @@ import "@ayonli/jsext/string/augment";
 ### [number](./number/index.ts)
 
 ```js
-import { isFloat, random } from "@ayonli/jsext/number";
+import { isFloat, isNumeric, /* ... */ } from "@ayonli/jsext/number";
 // or
 import "@ayonli/jsext/number/augment";
 ```
@@ -117,7 +117,7 @@ import "@ayonli/jsext/number/augment";
 ### [array](./array/index.ts)
 
 ```js
-import { count, split, /* ... */ } from "@ayonli/jsext/array";
+import { count, equals, /* ... */ } from "@ayonli/jsext/array";
 // or
 import "@ayonli/jsext/array/augment";
 ```
@@ -156,7 +156,7 @@ import "@ayonli/jsext/array/augment";
 ### [uint8array](/uint8array/index.ts)
 
 ```js
-import { compare, split, /* ... */ } from "@ayonli/jsext/uint8array";
+import { compare, equals, /* ... */ } from "@ayonli/jsext/uint8array";
 // or
 import "@ayonli/jsext/uint8array/augment";
 ```
@@ -180,7 +180,7 @@ import "@ayonli/jsext/uint8array/augment";
 ### [object](./object/index.ts)
 
 ```js
-import { hasOwn, path, /* ... */ } from "@ayonli/jsext/object";
+import { hasOwn, hasOwnMethod, /* ... */ } from "@ayonli/jsext/object";
 // or
 import "@ayonli/jsext/object/augment";
 ```
@@ -210,7 +210,7 @@ import "@ayonli/jsext/object/augment";
 ### [math](./math/index.ts)
 
 ```js
-import { sum, avg, product } from "@ayonli/jsext/math";
+import { sum, avg, /* ... */ } from "@ayonli/jsext/math";
 // or
 import "@ayonli/jsext/math/augment";
 ```
@@ -226,7 +226,7 @@ import "@ayonli/jsext/math/augment";
 ### [promise](./promise/index.ts)
 
 ```js
-import { timeout, after, sleep, until } from "@ayonli/jsext/promise";
+import { timeout, after, /* ... */ } from "@ayonli/jsext/promise";
 // or
 import "@ayonli/jsext/promise/augment";
 ```
