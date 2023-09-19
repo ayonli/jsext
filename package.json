@@ -124,6 +124,7 @@
         "posttest": "node posttest.cjs",
         "test": "node --no-warnings=ExperimentalWarning --loader=ts-node/esm ./node_modules/mocha/bin/mocha",
         "test:bun": "bun run ./node_modules/mocha/bin/mocha",
+        "test:deno": "deno run --allow-read --allow-net test-deno.ts",
         "build:esm": "rollup -c rollup-esm.config.mjs",
         "build:cjs": "rollup -c rollup-cjs.config.mjs",
         "build:bundle": "rollup -c rollup-bundle.config.mjs",
@@ -195,6 +196,10 @@
         "spec": [
             "*.test.ts",
             "*/**.test.ts"
+        ],
+        "exclude": [
+            "*-deno.test.ts",
+            "*/**-deno.test.ts"
         ]
     }
 }

@@ -1,9 +1,8 @@
 import "../augment.ts";
-import { describe, test } from "mocha";
-import { deepStrictEqual, ok, strictEqual } from "assert";
+import { deepStrictEqual, ok, strictEqual } from "node:assert";
 
 describe("Number", () => {
-    test("Number.isFloat", () => {
+    it("Number.isFloat", () => {
         ok(Number.isFloat(1.2));
         ok(Number.isFloat(Infinity));
         ok(Number.isFloat(-Infinity));
@@ -15,7 +14,7 @@ describe("Number", () => {
         ok(!Number.isFloat(NaN));
     });
 
-    test("Number.isNumeric", () => {
+    it("Number.isNumeric", () => {
         ok(Number.isNumeric(123));
         ok(Number.isNumeric(Infinity));
         ok(Number.isNumeric(-Infinity));
@@ -30,7 +29,7 @@ describe("Number", () => {
         ok(Number.isNumeric("0x123"));
     });
 
-    test("Number.isBetween", () => {
+    it("Number.isBetween", () => {
         ok(Number.isBetween(1, [1, 2]));
         ok(Number.isBetween(2, [1, 2]));
         ok(Number.isBetween(2, [1, 3]));
@@ -38,14 +37,14 @@ describe("Number", () => {
         ok(!Number.isBetween(3, [1, 2]));
     });
 
-    test("Number.random", () => {
+    it("Number.random", () => {
         strictEqual(Number.random(0, 0), 0);
 
         const num = Number.random(0, 10);
         ok(num >= 0 && num <= 10);
     });
 
-    test("Number.sequence", () => {
+    it("Number.sequence", () => {
         deepStrictEqual([...Number.sequence(0, 9)], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
         deepStrictEqual([...Number.sequence(0, 3, 0.5)], [0, 0.5, 1, 1.5, 2, 2.5, 3]);
 

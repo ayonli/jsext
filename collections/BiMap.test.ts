@@ -1,9 +1,8 @@
 import "../augment.ts";
-import { describe, test } from "mocha";
-import { ok, strictEqual } from "assert";
+import { ok, strictEqual } from "node:assert";
 
 describe("BiMap", () => {
-    test("new BiMap", () => {
+    it("new BiMap", () => {
         const map = new BiMap<string, string>([
             ["foo", "hello"],
             ["bar", "world"]
@@ -18,7 +17,7 @@ describe("BiMap", () => {
         strictEqual(map.getKey("world"), "bar");
     });
 
-    test("BiMap.prototype.set", () => {
+    it("BiMap.prototype.set", () => {
         const map = new BiMap<string, string>();
 
         map.set("foo", "hello").set("bar", "world");
@@ -29,7 +28,7 @@ describe("BiMap", () => {
         strictEqual(map.get("bar"), "world");
     });
 
-    test("BiMap.prototype.getKey", () => {
+    it("BiMap.prototype.getKey", () => {
         const map = new BiMap<string, string>([
             ["foo", "hello"],
             ["bar", "world"]
@@ -39,7 +38,7 @@ describe("BiMap", () => {
         strictEqual(map.getKey("world"), "bar");
     });
 
-    test("BiMap.prototype.hasValue", () => {
+    it("BiMap.prototype.hasValue", () => {
         const map = new BiMap<string, string>([
             ["foo", "hello"],
             ["bar", "world"]
@@ -49,7 +48,7 @@ describe("BiMap", () => {
         ok(map.hasValue("world"));
     });
 
-    test("BiMap.prototype.deleteValue", () => {
+    it("BiMap.prototype.deleteValue", () => {
         const map = new BiMap<string, string>([
             ["foo", "hello"],
             ["bar", "world"]
@@ -60,7 +59,7 @@ describe("BiMap", () => {
         ok(map.has("bar"));
     });
 
-    test("BiMap.prototype.clear", () => {
+    it("BiMap.prototype.clear", () => {
         const map = new BiMap<string, string>([
             ["foo", "hello"],
             ["bar", "world"]

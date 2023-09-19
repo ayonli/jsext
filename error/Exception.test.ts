@@ -1,9 +1,8 @@
 import "../augment.ts";
-import { test } from "mocha";
-import { strictEqual, deepStrictEqual, ok } from "assert";
+import { strictEqual, deepStrictEqual, ok } from "node:assert";
 
 describe("Exception", () => {
-    test("new Exception", () => {
+    it("new Exception", () => {
         const e1 = new Exception("something went wrong");
         ok(e1 instanceof Error);
         strictEqual(e1.name, "Exception");

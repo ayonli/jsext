@@ -1,9 +1,8 @@
 import "../augment.ts";
-import { test } from "mocha";
-import { strictEqual } from "assert";
+import { strictEqual } from "node:assert";
 
 describe("Error", () => {
-    test("Error.toObject", () => {
+    it("Error.toObject", () => {
         // @ts-ignore
         const err1 = Object.assign(new Error("something went wrong", { cause: "unknown" }), {
             code: 500,
@@ -40,7 +39,7 @@ describe("Error", () => {
         strictEqual(obj3["code"], err3.code);
     });
 
-    test("Error.fromObject", () => {
+    it("Error.fromObject", () => {
         const obj1 = {
             name: "Error",
             message: "something went wrong",
@@ -193,7 +192,7 @@ describe("Error", () => {
         strictEqual(err9["code"], obj9.code);
     });
 
-    test("Error.prototype.toJSON", () => {
+    it("Error.prototype.toJSON", () => {
         // @ts-ignore
         const err1 = Object.assign(new Error("something went wrong", { cause: "unknown" }), {
             code: 500,

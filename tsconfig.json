@@ -21,7 +21,8 @@
         "noPropertyAccessFromIndexSignature": true,
         "noUncheckedIndexedAccess": true,
         "types": [
-            "node"
+            "node",
+            "mocha"
         ],
         "paths": {
             "@ayonli/jsext": [

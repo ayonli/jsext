@@ -1,9 +1,8 @@
 import "../augment.ts";
-import { describe, test } from "mocha";
-import { deepStrictEqual, ok, strictEqual } from "assert";
+import { deepStrictEqual, ok, strictEqual } from "node:assert";
 
 describe("CiMap", () => {
-    test("new CiMap", () => {
+    it("new CiMap", () => {
         const map = new CiMap<string, string>([
             ["Foo", "hello"],
             ["Bar", "world"]
@@ -17,7 +16,7 @@ describe("CiMap", () => {
         strictEqual(map.size, 2);
     });
 
-    test("CiMap.prototype.set", () => {
+    it("CiMap.prototype.set", () => {
         const map = new CiMap<string, string>();
 
         map.set("Foo", "hello");
@@ -32,7 +31,7 @@ describe("CiMap", () => {
         strictEqual(map.get("bar"), "world");
     });
 
-    test("CiMap.prototype.get", () => {
+    it("CiMap.prototype.get", () => {
         const map = new CiMap<string, string>([
             ["Foo", "hello"],
             ["Bar", "world"]
@@ -42,7 +41,7 @@ describe("CiMap", () => {
         strictEqual(map.get("bar"), "world");
     });
 
-    test("CiMap.prototype.has", () => {
+    it("CiMap.prototype.has", () => {
         const map = new CiMap<string, string>([
             ["Foo", "hello"],
             ["Bar", "world"]
@@ -52,7 +51,7 @@ describe("CiMap", () => {
         ok(map.has("Bar"));
     });
 
-    test("CiMap.prototype.delete", () => {
+    it("CiMap.prototype.delete", () => {
         const map = new CiMap<string, string>([
             ["Foo", "hello"],
             ["Bar", "world"]
@@ -69,7 +68,7 @@ describe("CiMap", () => {
         strictEqual(map.size, 0);
     });
 
-    test("CiMap.prototype.clear", () => {
+    it("CiMap.prototype.clear", () => {
         const map = new CiMap<string, string>([
             ["Foo", "hello"],
             ["Bar", "world"]
@@ -82,7 +81,7 @@ describe("CiMap", () => {
         strictEqual(map.size, 0);
     });
 
-    test("CiMap.prototype.entries", () => {
+    it("CiMap.prototype.entries", () => {
         const map1 = new CiMap<string, string>([
             ["Foo", "hello"],
             ["Bar", "world"]
@@ -95,7 +94,7 @@ describe("CiMap", () => {
         deepStrictEqual([...map1.entries()], [...map2.entries()]);
     });
 
-    test("CiMap.prototype.keys", () => {
+    it("CiMap.prototype.keys", () => {
         const map1 = new CiMap<string, string>([
             ["Foo", "hello"],
             ["Bar", "world"]
@@ -108,7 +107,7 @@ describe("CiMap", () => {
         deepStrictEqual([...map1.keys()], [...map2.keys()]);
     });
 
-    test("CiMap.prototype.values", () => {
+    it("CiMap.prototype.values", () => {
         const map1 = new CiMap<string, string>([
             ["Foo", "hello"],
             ["Bar", "world"]
@@ -121,7 +120,7 @@ describe("CiMap", () => {
         deepStrictEqual([...map1.values()], [...map2.values()]);
     });
 
-    test("CiMap.prototype[Symbol.iterator]", () => {
+    it("CiMap.prototype[Symbol.iterator]", () => {
         const map1 = new CiMap<string, string>([
             ["Foo", "hello"],
             ["Bar", "world"]
@@ -134,7 +133,7 @@ describe("CiMap", () => {
         deepStrictEqual([...map1], [...map2]);
     });
 
-    test("CiMap.prototype.forEach", () => {
+    it("CiMap.prototype.forEach", () => {
         const map = new CiMap<string, string>([
             ["Foo", "hello"],
             ["Bar", "world"]

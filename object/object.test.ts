@@ -1,9 +1,8 @@
 import "../augment.ts";
-import { describe, test } from "mocha";
-import { deepStrictEqual, ok, strictEqual } from "assert";
+import { deepStrictEqual, ok, strictEqual } from "node:assert";
 
 describe("Object", () => {
-    test("Object.hasOwn", () => {
+    it("Object.hasOwn", () => {
         const obj1 = { foo: "hello" };
         const obj2 = Object.create(obj1);
         obj2["bar"] = "world";
@@ -14,7 +13,7 @@ describe("Object", () => {
         ok(obj2.foo === obj1.foo);
     });
 
-    test("Object.hasOwnMethod", () => {
+    it("Object.hasOwnMethod", () => {
         class Foo {
             say(word: string) {
                 console.log(word);
@@ -48,7 +47,7 @@ describe("Object", () => {
         ok(Object.hasOwnMethod(obj, "abc"));
     });
 
-    test("Object.patch", () => {
+    it("Object.patch", () => {
         const obj = { foo: "hello" };
 
         deepStrictEqual(Object.patch(obj, { foo: "hi", bar: "world", }), {
@@ -64,7 +63,7 @@ describe("Object", () => {
         });
     });
 
-    test("Object.pick", () => {
+    it("Object.pick", () => {
         const symbol1 = Symbol("symbol1");
         const symbol2 = Symbol("symbol2");
         const obj = { foo: "hello", bar: "world", [symbol1]: 123, [symbol2]: 456 };
@@ -72,7 +71,7 @@ describe("Object", () => {
         deepStrictEqual(Object.pick(obj, ["constructor"]), { constructor: Object });
     });
 
-    test("Object.omit", () => {
+    it("Object.omit", () => {
         const symbol1 = Symbol("symbol1");
         const symbol2 = Symbol("symbol2");
         const obj = { foo: "hello", bar: "world", [symbol1]: 123, [symbol2]: 456 };
@@ -90,7 +89,7 @@ describe("Object", () => {
         deepStrictEqual(Object.omit(new B(), ["bar", symbol2]), { foo: "hello", [symbol1]: 123 });
     });
 
-    test("Object.as", () => {
+    it("Object.as", () => {
         class Foo {
             echo(text: string) {
                 return text;
@@ -132,7 +131,7 @@ describe("Object", () => {
         strictEqual(Object.as(fn, Function)?.name, "fn");
     });
 
-    test("Object.isValid", () => {
+    it("Object.isValid", () => {
         ok(Object.isValid(""));
         ok(Object.isValid(0));
         ok(Object.isValid(false));

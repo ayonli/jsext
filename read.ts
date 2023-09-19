@@ -1,0 +1,204 @@
+/**
+ * Wraps a source as an AsyncIterable object that can be used in the `for...await...` loop
+ * for reading streaming data.
+ */
+export default function read<I extends AsyncIterable<any>>(iterable: I): I;
+export default function read(es: EventSource, options?: { event?: string; }): AsyncIterable<string>;
+export default function read<T extends Uint8Array | string>(ws: WebSocket): AsyncIterable<T>;
+export default function read<T>(target: EventTarget, eventMap?: {
+    message?: string;
+    error?: string;
+    close?: string;
+}): AsyncIterable<T>;
+export default function read<T>(target: NodeJS.EventEmitter, eventMap?: {
+    data?: string;
+    error?: string;
+    close?: string;
+}): AsyncIterable<T>;
+export default function read<T>(source: any, eventMap: {
+    event?: string; // for EventSource custom event
+    message?: string;
+    data?: string;
+    error?: string;
+    close?: string;
+} | undefined = undefined): AsyncIterable<T> {
+    if (typeof source[Symbol.asyncIterator] === "function") {
+        return source;
+    }
+
+    const iterable = {
+        ended: false,
+        error: null as Error | null,
+        queue: [] as T[],
+        consumers: [] as {
+            resolve: (data: IteratorResult<T>) => void;
+            reject: (err: any) => void;
+        }[],
+        next() {
+            return new Promise<IteratorResult<T>>((resolve, reject) => {
+                if (this.error && !this.ended) {
+                    // If there is error occurred during the last transmission and the iterator
+                    // hasn't been closed, reject that error and stop the iterator immediately.
+                    reject(this.error);
+                    this.ended = true;
+                } else if (this.ended && !this.queue.length) {
+                    // If the iterator has is closed, resolve the pending consumer with void
+                    // value.
+                    resolve({ value: void 0 as T, done: true });
+                } else if (this.queue.length > 0) {
+                    // If there are data in the queue, resolve the the first piece immediately.
+                    resolve({ value: this.queue.shift() as T, done: false });
+                } else {
+                    // If there are no queued data, push the consumer to a waiting queue.
+                    this.consumers.push({ resolve, reject });
+                }
+            });
+        }
+    };
+
+    const handleMessage = (data: T) => {
+        if (iterable.consumers.length > 0) {
+            iterable.consumers.shift()?.resolve({ value: data, done: false });
+        } else {
+            iterable.queue.push(data);
+        }
+    };
+    const handleClose = () => {
+        iterable.ended = true;
+        let consumer: typeof iterable["consumers"][0] | undefined;
+
+        while (consumer = iterable.consumers.shift()) {
+            consumer.resolve({ value: undefined, done: true });
+        }
+    };
+    const handleError = (err: Error) => {
+        iterable.error = err;
+
+        if (iterable.consumers.length > 0) {
+            iterable.consumers.forEach(item => {
+                item.reject(err);
+            });
+            iterable.consumers = [];
+        }
+    };
+    const handleBrowserErrorEvent = (ev: Event) => {
+        let err: Error;
+
+        if (ev instanceof ErrorEvent) {
+            err = ev.error || new Error(ev.message);
+        } else {
+            // @ts-ignore
+            err = new Error("something went wrong", { cause: ev });
+        }
+
+        handleError(err);
+    };
+
+    const proto = Object.getPrototypeOf(source);
+    const msgDesc = Object.getOwnPropertyDescriptor(proto, "onmessage");
+
+    if (msgDesc?.set && typeof source.close === "function") { // WebSocket or EventSource
+        const errDesc = Object.getOwnPropertyDescriptor(proto, "onerror");
+        const closeDesc = Object.getOwnPropertyDescriptor(proto, "onclose");
+        let cleanup: () => void;
+
+        if (eventMap?.event &&
+            eventMap?.event !== "message" &&
+            typeof source["addEventListener"] === "function"
+        ) { // for EventSource listening on custom events
+            const es = source as EventSource;
+            const eventName = eventMap.event;
+            const msgListener = (ev: MessageEvent<T>) => {
+                handleMessage(ev.data);
+            };
+
+            es.addEventListener(eventName, msgListener);
+            cleanup = () => {
+                es.removeEventListener(eventName, msgListener);
+            };
+        } else {
+            msgDesc.set.call(source, (ev: MessageEvent<T>) => {
+                handleMessage(ev.data);
+            });
+            cleanup = () => {
+                msgDesc.set?.call(source, null);
+            };
+        }
+
+        errDesc?.set?.call(source, handleBrowserErrorEvent);
+
+        if (closeDesc?.set) { // WebSocket
+            closeDesc.set.call(source, () => {
+                handleClose();
+                closeDesc.set?.call(source, null);
+                errDesc?.set?.call(source, null);
+                cleanup?.();
+            });
+        } else if (!closeDesc?.set && typeof source.close === "function") { // EventSource
+            // EventSource by default does not trigger close event, we need to make sure when
+            // it calls the close() function, the iterator is automatically closed.
+            const es = source as EventSource;
+            const _close = es.close;
+            es.close = function close() {
+                _close.call(es);
+                handleClose();
+                es.close = _close;
+                errDesc?.set?.call(source, null);
+                cleanup?.();
+            };
+        }
+    } else if (typeof source.send === "function" && typeof source.close === "function") {
+        // non-standard WebSocket implementation
+        const ws = source as WebSocket;
+        ws.onmessage = (ev: MessageEvent<T>) => {
+            handleMessage(ev.data);
+        };
+        ws.onerror = handleBrowserErrorEvent;
+        ws.onclose = () => {
+            handleClose();
+            ws.onclose = null;
+            ws.onerror = null;
+            ws.onmessage = null;
+        };
+    } else if (typeof source["addEventListener"] === "function") { // EventTarget
+        const target = source as EventTarget;
+        const msgEvent = eventMap?.message || "message";
+        const errEvent = eventMap?.error || "error";
+        const closeEvent = eventMap?.close || "close";
+        const msgListener = (ev: Event) => {
+            if (ev instanceof MessageEvent) {
+                handleMessage(ev.data);
+            }
+        };
+
+        target.addEventListener(msgEvent, msgListener);
+        target.addEventListener(errEvent, handleBrowserErrorEvent);
+        target.addEventListener(closeEvent, function closeListener() {
+            handleClose();
+            target.removeEventListener(closeEvent, closeListener);
+            target.removeEventListener(msgEvent, msgListener);
+            target.removeEventListener(errEvent, handleBrowserErrorEvent);
+        });
+    } else if (typeof source["on"] === "function") { // EventEmitter
+        const target = source as NodeJS.EventEmitter;
+        const dataEvent = eventMap?.data || "data";
+        const errEvent = eventMap?.error || "error";
+        const endEvent = eventMap?.close || "close";
+
+        target.on(dataEvent, handleMessage);
+        target.once(errEvent, handleError);
+        target.once(endEvent, () => {
+            handleClose();
+            target.off(dataEvent, handleMessage);
+            target.off(dataEvent, handleError);
+        });
+    } else {
+        throw new TypeError("the input source cannot be read as an AsyncIterable object");
+    }
+
+    return {
+        [Symbol.asyncIterator]() {
+            return iterable;
+        }
+    };
+}
