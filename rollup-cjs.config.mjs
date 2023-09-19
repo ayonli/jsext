@@ -9,7 +9,7 @@ import { builtinModules } from "module";
 export default {
     input: Object.fromEntries(
         glob.sync('**/*.ts', {
-            ignore: ['node_modules/**', "**/*.test.ts", "bundle.ts"],
+            ignore: ['node_modules/**', "**/*.test.ts", "bundle.ts", "worker.ts", "worker-web.ts"],
         }).map(file => [
             file.slice(0, file.length - path.extname(file).length),
             fileURLToPath(new URL(file, import.meta.url))

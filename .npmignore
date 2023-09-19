@@ -1,6 +1,5 @@
 .vscode/
 .github/
-bundle/
 node_modules/
 *.test.ts
 *.tgz
@@ -8,7 +7,11 @@ node_modules/
 *.config.mjs
 bundle.ts
 tsconfig.json
-job-example.js
+pretest.cjs
+posttest.cjs
+job-example.cjs
 job-example.mjs
-worker-web.mjs
-!esm/worker-web.mjs
+bundle/index.js
+bundle/index.js.map
+!bundle/worker.mjs
+!bundle/worker-web.mjs

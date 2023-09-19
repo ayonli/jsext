@@ -1,4 +1,5 @@
-import { isAsyncGenerator, isGenerator } from "check-iterable";
+// @ts-ignore
+import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
 
 /** @type {Map<string, any>} */
 const cache = new Map();

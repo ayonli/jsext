@@ -12,6 +12,8 @@ npm i @ayonli/jsext
 
 ```js
 import jsext from "@ayonli/jsext";
+// Or in Deno
+import jsext from "https://deno.land/x/ayonli_jsext/index.ts"; // since v0.5.0
 ```
 
 Note: this package works well in both CommonJS and ES Module.
@@ -328,8 +330,6 @@ This is the same as above, but requires a module bundler such as webpack.
     import "https://deno.land/x/ayonli_jsext/esm/number/augment.js";
 </script>
 ```
-
-Note: the ES module can also be used in Deno.
 
 3. Include Bundle
 

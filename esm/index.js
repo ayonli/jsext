@@ -1,4 +1,4 @@
-import { isAsyncGenerator as isAsyncGenerator_1, isGenerator as isGenerator_1 } from './_external/check-iterable/index.js';
+import { isAsyncGenerator, isGenerator } from './external/check-iterable/index.js';
 import { sequence } from './number/index.js';
 
 var _a;
@@ -15,7 +15,7 @@ function _try(fn, ...args) {
     }
     let returns = fn;
     // Implementation details should be ordered from complex to simple.
-    if (isAsyncGenerator_1(returns)) {
+    if (isAsyncGenerator(returns)) {
         return (async function* () {
             let input;
             let result;
@@ -46,7 +46,7 @@ function _try(fn, ...args) {
             return [null, result];
         })();
     }
-    else if (isGenerator_1(returns)) {
+    else if (isGenerator(returns)) {
         return (function* () {
             let input;
             let result;
@@ -104,7 +104,7 @@ function func(fn) {
         let result;
         try {
             const returns = fn.call(this, defer, ...args);
-            if (isAsyncGenerator_1(returns)) {
+            if (isAsyncGenerator(returns)) {
                 const gen = (async function* () {
                     var _a;
                     let input;
@@ -144,7 +144,7 @@ function func(fn) {
                 })();
                 return gen;
             }
-            else if (isGenerator_1(returns)) {
+            else if (isGenerator(returns)) {
                 const gen = (function* () {
                     var _a;
                     let input;
@@ -661,15 +661,17 @@ async function run(script, args = undefined, options = undefined) {
         }
     };
     if (isNode) {
-        const path = await import('path');
-        const { fileURLToPath } = await import('url');
-        const dirname = path.dirname(fileURLToPath(import.meta.url));
-        let entry;
-        if (["cjs", "esm"].includes(path.basename(dirname))) { // compiled
-            entry = path.join(path.dirname(dirname), "worker.mjs");
-        }
-        else {
-            entry = path.join(dirname, "worker.mjs");
+        let entry = options === null || options === void 0 ? void 0 : options.workerEntry;
+        if (!entry) {
+            const path = await import('path');
+            const { fileURLToPath } = await import('url');
+            const dirname = path.dirname(fileURLToPath(import.meta.url));
+            if (["cjs", "esm"].includes(path.basename(dirname))) { // compiled
+                entry = path.join(path.dirname(dirname), "bundle", "worker.mjs");
+            }
+            else {
+                entry = path.join(dirname, "worker.mjs");
+            }
         }
         if ((options === null || options === void 0 ? void 0 : options.adapter) === "child_process") {
             let worker;
@@ -808,8 +810,8 @@ async function run(script, args = undefined, options = undefined) {
                 ].join("/");
             }
             else {
-                const _url = (options === null || options === void 0 ? void 0 : options.webWorkerEntry)
-                    || "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs";
+                const _url = (options === null || options === void 0 ? void 0 : options.workerEntry)
+                    || "https://raw.githubusercontent.com/ayonli/jsext/main/bundle/worker-web.mjs";
                 const res = await fetch(_url);
                 let blob;
                 if ((_b = res.headers.get("content-type")) === null || _b === void 0 ? void 0 : _b.startsWith("application/javascript")) {

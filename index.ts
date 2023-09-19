@@ -1,6 +1,7 @@
-import { isAsyncGenerator, isGenerator } from "check-iterable";
 import type { Worker as NodeWorker } from "worker_threads";
 import type { ChildProcess } from "child_process";
+// @ts-ignore
+import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
 import { sequence } from "./number/index.ts";
 
 export const AsyncFunction = (async function () { }).constructor as AsyncFunctionConstructor;
@@ -756,10 +757,15 @@ export async function run<T, A extends any[] = any[]>(
         /**
          * In browser or Deno, by default, the program loads the worker entry directly from GitHub,
          * which could be slow due to poor internet connection, we can copy the entry file
-         * `esm/worker-web.mjs` to a local path of our website and set this option to that path so
-         * that it can be loaded locally.
+         * `bundle/worker-web.mjs` to a local path of our website and set this option to that path
+         * so that it can be loaded locally.
+         * 
+         * Or, if the code is bundled, the program won't be able to automatically locate the entry
+         * file in the file system, in such case, we can also copy the entry file
+         * (`bundle/worker-web.mjs` for the browser or Deno, `bundle/worker.mjs` for Node.js) to a
+         * local directory and supply this option instead.
          */
-        webWorkerEntry?: string;
+        workerEntry?: string;
     } | undefined = undefined
 ): Promise<{
     workerId: number;
@@ -879,15 +885,18 @@ export async function run<T, A extends any[] = any[]>(
     };
 
     if (isNode) {
-        const path = await import("path");
-        const { fileURLToPath } = await import("url");
-        const dirname = path.dirname(fileURLToPath(import.meta.url));
-        let entry: string;
+        let entry = options?.workerEntry;
 
-        if (["cjs", "esm"].includes(path.basename(dirname))) { // compiled
-            entry = path.join(path.dirname(dirname), "worker.mjs");
-        } else {
-            entry = path.join(dirname, "worker.mjs");
+        if (!entry) {
+            const path = await import("path");
+            const { fileURLToPath } = await import("url");
+            const dirname = path.dirname(fileURLToPath(import.meta.url));
+
+            if (["cjs", "esm"].includes(path.basename(dirname))) { // compiled
+                entry = path.join(path.dirname(dirname), "bundle", "worker.mjs");
+            } else {
+                entry = path.join(dirname, "worker.mjs");
+            }
         }
 
         if (options?.adapter === "child_process") {
@@ -1028,8 +1037,8 @@ export async function run<T, A extends any[] = any[]>(
                     "worker-web.mjs"
                 ].join("/");
             } else {
-                const _url = options?.webWorkerEntry
-                    || "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs";
+                const _url = options?.workerEntry
+                    || "https://raw.githubusercontent.com/ayonli/jsext/main/bundle/worker-web.mjs";
                 const res = await fetch(_url);
                 let blob: Blob;
 

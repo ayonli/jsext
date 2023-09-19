@@ -7,13 +7,6 @@ export default class Exception extends Error {
     constructor(message: string, options: number | { cause?: unknown; code?: number; } = 0) {
         super(message);
 
-        Object.defineProperty(this, "name", {
-            configurable: true,
-            enumerable: false,
-            writable: true,
-            value: this.constructor.name,
-        });
-
         if (typeof options === "number") {
             this.code = options;
         } else {
@@ -32,3 +25,10 @@ export default class Exception extends Error {
         }
     }
 }
+
+Object.defineProperty(Exception.prototype, "name", {
+    configurable: true,
+    enumerable: false,
+    writable: true,
+    value: "Exception",
+});
