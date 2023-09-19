@@ -4,116 +4,139 @@
     "description": "Additional functions for JavaScript programming in practice.",
     "exports": {
         ".": {
+            "bun": "./index.ts",
             "require": "./cjs/index.js",
             "import": "./esm/index.js",
             "default": "./index.ts"
         },
         "./augment": {
+            "bun": "./augment.ts",
             "require": "./cjs/augment.js",
             "import": "./esm/augment.js",
             "default": "./augment.ts"
         },
         "./array": {
+            "bun": "./array/index.ts",
             "require": "./cjs/array/index.js",
             "import": "./esm/array/index.js",
             "default": "./array/index.ts"
         },
         "./array/augment": {
+            "bun": "./array/augment.ts",
             "require": "./cjs/array/augment.js",
             "import": "./esm/array/augment.js",
             "default": "./array/augment.ts"
         },
         "./collections": {
+            "bun": "./collections/index.ts",
             "require": "./cjs/collections/index.js",
             "import": "./esm/collections/index.js",
             "default": "./collections/index.ts"
         },
         "./collections/augment": {
+            "bun": "./collections/augment.ts",
             "require": "./cjs/collections/augment.js",
             "import": "./esm/collections/augment.js",
             "default": "./collections/augment.ts"
         },
         "./collections/BiMap": {
+            "bun": "./collections/BiMap.ts",
             "require": "./cjs/collections/BiMap.js",
             "import": "./esm/collections/BiMap.js",
             "default": "./collections/BiMap.ts"
         },
         "./collections/CiMap": {
+            "bun": "./collections/CiMap.ts",
             "require": "./cjs/collections/CiMap.js",
             "import": "./esm/collections/CiMap.js",
             "default": "./collections/CiMap.ts"
         },
         "./error": {
+            "bun": "./error/index.ts",
             "require": "./cjs/error/index.js",
             "import": "./esm/error/index.js",
             "default": "./error/index.ts"
         },
         "./error/augment": {
+            "bun": "./error/augment.ts",
             "require": "./cjs/error/augment.js",
             "import": "./esm/error/augment.js",
             "default": "./error/augment.ts"
         },
         "./error/Exception": {
+            "bun": "./error/Exception.ts",
             "require": "./cjs/error/Exception.js",
             "import": "./esm/error/Exception.js",
             "default": "./error/Exception.ts"
         },
         "./math": {
+            "bun": "./math/index.ts",
             "require": "./cjs/math/index.js",
             "import": "./esm/math/index.js",
             "default": "./math/index.ts"
         },
         "./math/augment": {
+            "bun": "./math/augment.ts",
             "require": "./cjs/math/augment.js",
             "import": "./esm/math/augment.js",
             "default": "./math/augment.ts"
         },
         "./number": {
+            "bun": "./number/index.ts",
             "require": "./cjs/number/index.js",
             "import": "./esm/number/index.js",
             "default": "./number/index.ts"
         },
         "./number/augment": {
+            "bun": "./number/augment.ts",
             "require": "./cjs/number/augment.js",
             "import": "./esm/number/augment.js",
             "default": "./number/augment.ts"
         },
         "./object": {
+            "bun": "./object/index.ts",
             "require": "./cjs/object/index.js",
             "import": "./esm/object/index.js",
             "default": "./object/index.ts"
         },
         "./object/augment": {
+            "bun": "./object/augment.ts",
             "require": "./cjs/object/augment.js",
             "import": "./esm/object/augment.js",
             "default": "./object/augment.ts"
         },
         "./promise": {
+            "bun": "./promise/index.ts",
             "require": "./cjs/promise/index.js",
             "import": "./esm/promise/index.js",
             "default": "./promise/index.ts"
         },
         "./promise/augment": {
+            "bun": "./promise/augment.ts",
             "require": "./cjs/promise/augment.js",
             "import": "./esm/promise/augment.js",
             "default": "./promise/augment.ts"
         },
         "./string": {
+            "bun": "./string/index.ts",
             "require": "./cjs/string/index.js",
             "import": "./esm/string/index.js",
             "default": "./string/index.ts"
         },
         "./string/augment": {
+            "bun": "./string/augment.ts",
             "require": "./cjs/string/augment.js",
             "import": "./esm/string/augment.js",
             "default": "./string/augment.ts"
         },
         "./uint8array": {
+            "bun": "./uint8array/index.ts",
             "require": "./cjs/uint8array/index.js",
             "import": "./esm/uint8array/index.js",
             "default": "./uint8array/index.ts"
         },
         "./uint8array/augment": {
+            "bun": "./uint8array/augment.ts",
             "require": "./cjs/uint8array/augment.js",
             "import": "./esm/uint8array/augment.js",
             "default": "./uint8array/augment.ts"
