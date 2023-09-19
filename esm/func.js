@@ -1,14 +1,14 @@
-// @ts-ignore
-import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
+import { isAsyncGenerator, isGenerator } from './external/check-iterable/index.js';
 
+// @ts-ignore
 /**
  * Inspired by Golang, creates a function that receives a `defer` function which can be used
  * to carry deferred jobs that will be run after the main function is complete.
- * 
+ *
  * Multiple calls of the `defer` function is supported, and the callbacks are called in the
  * LIFO order. Callbacks can be async functions if the main function is an async function or
  * an async generator function, and all the running procedures will be awaited.
- * 
+ *
  * @example
  *  const getVersion = func(async (defer) => {
  *      const file = await fs.open("./package.json", "r");
@@ -20,123 +20,124 @@ import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.m
  *      return pkg.version as string;
  *  });
  */
-export default function func<T, R = any, A extends any[] = any[]>(
-    fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R
-): (this: T, ...args: A) => R {
-    return function (this: T, ...args: A) {
-        const callbacks: (() => void)[] = [];
-        const defer = (cb: () => void) => void callbacks.push(cb);
-        type Result = { value?: Awaited<R>; error: unknown; };
-        let result: Result | undefined;
-
+function func(fn) {
+    return function (...args) {
+        var _a;
+        const callbacks = [];
+        const defer = (cb) => void callbacks.push(cb);
+        let result;
         try {
-            const returns = fn.call(this, defer, ...args) as any;
-
+            const returns = fn.call(this, defer, ...args);
             if (isAsyncGenerator(returns)) {
                 const gen = (async function* () {
-                    let input: unknown;
-
+                    var _a;
+                    let input;
                     // Use `while` loop instead of `for...of...` in order to
                     // retrieve the return value of a generator function.
                     while (true) {
                         try {
                             const { done, value } = await returns.next(input);
-
                             if (done) {
                                 result = { value, error: null };
                                 break;
-                            } else {
+                            }
+                            else {
                                 // Receive any potential input value that passed
                                 // to the outer `next()` call, and pass them to
                                 // `res.next()` in the next call.
                                 input = yield Promise.resolve(value);
                             }
-                        } catch (error) {
+                        }
+                        catch (error) {
                             // If any error occurs, capture that error and break
                             // the loop immediately, indicating the process is
                             // forced broken.
-                            result = { value: void 0, error } as Result;
+                            result = { value: void 0, error };
                             break;
                         }
                     }
-
                     for (let i = callbacks.length - 1; i >= 0; i--) {
-                        await (callbacks[i] as () => void | Promise<void>)?.();
+                        await ((_a = callbacks[i]) === null || _a === void 0 ? void 0 : _a.call(callbacks));
                     }
-
                     if (result.error) {
                         throw result.error;
-                    } else {
+                    }
+                    else {
                         return result.value;
                     }
-                })() as AsyncGenerator<unknown, any, unknown>;
-
-                return gen as R;
-            } else if (isGenerator(returns)) {
+                })();
+                return gen;
+            }
+            else if (isGenerator(returns)) {
                 const gen = (function* () {
-                    let input: unknown;
-
+                    var _a;
+                    let input;
                     while (true) {
                         try {
                             const { done, value } = returns.next(input);
-
                             if (done) {
                                 result = { value, error: null };
                                 break;
-                            } else {
+                            }
+                            else {
                                 input = yield value;
                             }
-                        } catch (error) {
-                            result = { value: void 0, error } as Result;
+                        }
+                        catch (error) {
+                            result = { value: void 0, error };
                             break;
                         }
                     }
-
                     for (let i = callbacks.length - 1; i >= 0; i--) {
-                        callbacks[i]?.();
+                        (_a = callbacks[i]) === null || _a === void 0 ? void 0 : _a.call(callbacks);
                     }
-
                     if (result.error) {
                         throw result.error;
-                    } else {
+                    }
+                    else {
                         return result.value;
                     }
-                })() as Generator<unknown, R, unknown>;
-
-                return gen as R;
-            } else if (typeof returns?.then === "function") {
-                return Promise.resolve(returns as PromiseLike<R>).then(value => ({
+                })();
+                return gen;
+            }
+            else if (typeof (returns === null || returns === void 0 ? void 0 : returns.then) === "function") {
+                return Promise.resolve(returns).then(value => ({
                     value,
                     error: null,
-                } as Result)).catch((error: unknown) => ({
+                })).catch((error) => ({
                     value: void 0,
                     error,
-                } as Result)).then(async result => {
+                })).then(async (result) => {
+                    var _a;
                     for (let i = callbacks.length - 1; i >= 0; i--) {
-                        await (callbacks[i] as () => void | Promise<void>)?.();
+                        await ((_a = callbacks[i]) === null || _a === void 0 ? void 0 : _a.call(callbacks));
                     }
-
                     if (result.error) {
                         throw result.error;
-                    } else {
+                    }
+                    else {
                         return result.value;
                     }
-                }) as R;
-            } else {
-                result = { value: returns, error: null } as Result;
+                });
             }
-        } catch (error) {
-            result = { value: void 0, error } as Result;
+            else {
+                result = { value: returns, error: null };
+            }
         }
-
+        catch (error) {
+            result = { value: void 0, error };
+        }
         for (let i = callbacks.length - 1; i >= 0; i--) {
-            callbacks[i]?.();
+            (_a = callbacks[i]) === null || _a === void 0 ? void 0 : _a.call(callbacks);
         }
-
         if (result.error) {
             throw result.error;
-        } else {
-            return result.value as R;
+        }
+        else {
+            return result.value;
         }
     };
 }
+
+export { func as default };
+//# sourceMappingURL=func.js.map

@@ -16,39 +16,229 @@ import jsext from "@ayonli/jsext";
 import jsext from "https://deno.land/x/ayonli_jsext/index.ts"; // since v0.5.0
 ```
 
-Note: this package works well in both CommonJS and ES Module.
-
 ## Functions
 
-- `try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(fn: (...args: A) => AsyncGenerator<T, TReturn, TNext>, ...args: A): AsyncGenerator<[E, T], [E, TReturn], TNext>`
-- `try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(fn: (...args: A) => Generator<T, TReturn, TNext>, ...args: A): Generator<[E, T], [E, TReturn], TNext>`
-- `try<E = Error, R = any, A extends any[] = any[]>(fn: (...args: A) => Promise<R>, ...args: A): Promise<[E, R]>`
-- `try<E = Error, R = any, A extends any[] = any[]>(fn: (...args: A) => R, ...args: A): [E, R]`
-- `try<E = Error, T = any, TReturn = any, TNext = unknown>(gen: AsyncGenerator<T, TReturn, TNext>): AsyncGenerator<[E, T], [E, TReturn], TNext>`
-- `try<E = Error, T = any, TReturn = any, TNext = unknown>(gen: Generator<T, TReturn, TNext>): Generator<[E, T], [E, TReturn], TNext>`
-- `try<E = Error, R = any>(job: Promise<R>): Promise<[E, R]>`
+```ts
+function _try<E = Error, R = any, A extends any[] = any[]>(
+    fn: (...args: A) => R,
+    ...args: A
+): [E | null, R];
+function _try<E = Error, R = any, A extends any[] = any[]>(
+    fn: (...args: A) => Promise<R>,
+    ...args: A
+): Promise<[E | null, R]>;
+```
 
-- `func<T, R = any, A extends any[] = any[]>(fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R): (this: T, ...args: A) => R`
+Invokes a regular function or an async function and renders its result in a `[err, val]` tuple.
 
-- `wrap<T, Fn extends (this: T, ...args: any[]) => any>(fn: Fn, wrapper: (this: T, fn: Fn, ...args: Parameters<Fn>) => ReturnType<Fn>): Fn`
+Note: this function should be called as `jsext.try()`.
 
-- `throttle<T, Fn extends (this: T, ...args: any[]) => any>(handler: Fn, duration: number): Fn`
-- `throttle<T, Fn extends (this: T, ...args: any[]) => any>(handler: Fn, options: { duration: number; for?: any }): Fn`
+---
 
-- `mixins<T extends Constructor<any>, M extends any[]>(base: T, ...mixins: { [X in keyof M]: Constructor<M[X]> }): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>`
-- `mixins<T extends Constructor<any>, M extends any[]>(base: T, ...mixins: M): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>`
+```ts
+function _try<E = Error, R = any>(job: Promise<R>): Promise<[E | null, R]>;
+```
 
-- `isSubclassOf<T, B>(ctor1: Constructor<T>, ctor2: Constructor<B>): boolean`
+Resolves a promise and renders its result in a `[err, res]` tuple.
 
-- `read<I extends AsyncIterable<any>>(iterable: I): I`
-- `read(es: EventSource, options?: { event?: string; }): AsyncIterable<string>`
-- `read<T extends Uint8Array | string>(ws: WebSocket): AsyncIterable<T>`
-- `read<T>(target: EventTarget, eventMap?: { message?: string; error?: string; close?: string; }): AsyncIterable<T>`
-- `read<T>(target: NodeJS.EventEmitter, eventMap?: { data?: string; error?: string; close?: string; }): AsyncIterable<T>`
+Note: this function should be called as `jsext.try()`.
 
-- `run<T, A extends any[] = any[]>(script: string, args?: A, options?: { fn?: string; timeout?: number; adapter?: "worker_threads" | "child_process" }): Promise<{ workerId: number; abort(): Promise<void>; result(): Promise<T>; iterate(): AsyncIterable<T>; }>`
+---
 
-See [index.ts](./index.ts) for details and docs.
+```ts
+function _try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
+    fn: (...args: A) => Generator<T, TReturn, TNext>,
+    ...args: A
+): Generator<[E | null, T], [E | null, TReturn], TNext>;
+function _try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
+    fn: (...args: A) => AsyncGenerator<T, TReturn, TNext>,
+    ...args: A
+): AsyncGenerator<[E | null, T], [E | null, TReturn], TNext>;
+```
+
+Invokes a generator function or an async generator function and renders its yield value and result
+in a `[err, val]` tuple.
+
+Note: this function should be called as `jsext.try()`.
+
+---
+
+```ts
+function _try<E = Error, T = any, TReturn = any, TNext = unknown>(
+    gen: Generator<T, TReturn, TNext>
+): Generator<[E | null, T], [E | null, TReturn], TNext>;
+function _try<E = Error, T = any, TReturn = any, TNext = unknown>(
+    gen: AsyncGenerator<T, TReturn, TNext>
+): AsyncGenerator<[E | null, T], [E | null, TReturn], TNext>;
+```
+
+Resolves a generator or an async generator and renders its yield value and result in a `[err, val]`
+tuple.
+
+Note: this function should be called as `jsext.try()`.
+
+---
+
+```ts
+function func<T, R = any, A extends any[] = any[]>(
+    fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R
+): (this: T, ...args: A) => R;
+```
+
+Inspired by Golang, creates a function that receives a `defer` function which can be used
+to carry deferred jobs that will be run after the main function is complete.
+
+Multiple calls of the `defer` function is supported, and the callbacks are called in the
+LIFO order. Callbacks can be async functions if the main function is an async function or
+an async generator function, and all the running procedures will be awaited.
+
+**Example:**
+
+```ts
+const getVersion = func(async (defer) => {
+    const file = await fs.open("./package.json", "r");
+    defer(() => file.close());
+
+    const content = await file.readFile("utf8");
+    const pkg = JSON.parse(content);
+
+    return pkg.version as string;
+});
+```
+
+---
+
+```ts
+function wrap<T, Fn extends (this: T, ...args: any[]) => any>(
+    fn: Fn,
+    wrapper: (this: T, fn: Fn, ...args: Parameters<Fn>) => ReturnType<Fn>
+): Fn
+```
+
+Wraps a function inside another function and returns a new function that copies the original
+function's name and other properties.
+
+---
+
+```ts
+function throttle<T, Fn extends (this: T, ...args: any[]) => any>(
+    handler: Fn,
+    duration: number
+): Fn;
+function throttle<T, Fn extends (this: T, ...args: any[]) => any>(handler: Fn, options: {
+    duration: number;
+    /**
+     * Use the throttle strategy `for` the given key, this will keep the result in a global
+     * cache, binding new `handler` function for the same key will result in the same result
+     * as the previous, unless the duration has passed. This mechanism guarantees that both
+     * creating the throttled function in function scopes and overwriting the handler are
+     * possible.
+     */
+    for?: any;
+}): Fn;
+```
+
+Creates a throttled function that will only be run once in a certain amount of time.
+
+If a subsequent call happens within the `duration`, the previous result will be returned and
+the `handler` function will not be invoked.
+
+---
+
+```ts
+function mixins<T extends Constructor<any>, M extends any[]>(
+    base: T,
+    ...mixins: { [X in keyof M]: Constructor<M[X]> }
+): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
+function mixins<T extends Constructor<any>, M extends any[]>(
+    base: T,
+    ...mixins: M
+): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
+```
+
+Returns an extended class that combines all mixin methods.
+
+This function does not mutates the base class but create a pivot class instead.
+
+---
+
+```ts
+function isSubclassOf<T, B>(ctor1: Constructor<T>, ctor2: Constructor<B>): boolean;
+```
+
+Checks if a class is a subclass of another class.
+
+---
+
+```ts
+function read<I extends AsyncIterable<any>>(iterable: I): I;
+function read(es: EventSource, options?: { event?: string; }): AsyncIterable<string>;
+function read<T extends Uint8Array | string>(ws: WebSocket): AsyncIterable<T>;
+function read<T>(target: EventTarget, eventMap?: {
+    message?: string;
+    error?: string;
+    close?: string;
+}): AsyncIterable<T>;
+function read<T>(target: NodeJS.EventEmitter, eventMap?: {
+    data?: string;
+    error?: string;
+    close?: string;
+}): AsyncIterable<T>;
+```
+
+Wraps a source as an AsyncIterable object that can be used in the `for...await...` loop
+for reading streaming data.
+
+---
+
+```ts
+function run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
+    /** If not set, runs the default function, otherwise runs the specific function. */
+    fn?: string;
+    /** Automatically abort the task when timeout (in milliseconds). */
+    timeout?: number;
+    /**
+     * Instead of dropping the worker after the task has completed, keep it alive so that it can
+     * be reused by other tasks.
+     */
+    keepAlive?: boolean;
+    /**
+     * Choose whether to use `worker_threads` or `child_process` fron running the script.
+     * The default setting is `worker_threads`.
+     * 
+     * In browser or Deno, this option is ignored and will always use the web worker.
+     */
+    adapter?: "worker_threads" | "child_process";
+    /**
+     * In browser or Deno, by default, the program loads the worker entry directly from GitHub,
+     * which could be slow due to poor internet connection, we can copy the entry file
+     * `bundle/worker-web.mjs` to a local path of our website and set this option to that path
+     * so that it can be loaded locally.
+     * 
+     * Or, if the code is bundled, the program won't be able to automatically locate the entry
+     * file in the file system, in such case, we can also copy the entry file
+     * (`bundle/worker-web.mjs` for the browser or Deno, `bundle/worker.mjs` for Node.js) to a
+     * local directory and supply this option instead.
+     */
+    workerEntry?: string;
+}): Promise<{
+    workerId: number;
+    /** Terminates the worker and abort the task. */
+    abort(): Promise<void>;
+    /** Retrieves the return value of the function. */
+    result(): Promise<T>;
+    /** Iterates the yield value if the function returns a generator. */
+    iterate(): AsyncIterable<T>;
+}>;
+```
+
+Runs a task in the `script` in a worker thread that can be aborted during runtime.
+
+In Node.js, the `script` can be either a CommonJS module or an ES module, and is relative to
+the current working directory if not absolute.
+
+In browser or Deno, the `script` can only be an ES module, and is relative to the current URL
+(or working directory for Deno) if not absolute.
 
 ## Types
 
@@ -60,7 +250,7 @@ See [index.ts](./index.ts) for details and docs.
 - `Optional<T, K extends keyof T>`
 - `Ensured<T, K extends keyof T>`
 
-When [augment](./augment.ts)ing, these types will ba attached to the global namespace.
+When [augment](./augment.ts)ing, these types will ba exposed to the global scope.
 
 ## Sub-packages
 
@@ -264,7 +454,7 @@ import "@ayonli/jsext/collections/augment";
 - `CiMap<K extends string, V>` (implements `Map<K, V>`) Case-insensitive map, keys are
     case-insensitive.
 
-*When [augment](./collections/augment.ts)ing, these types will be exposed to the global namespace.*
+*When [augment](./collections/augment.ts)ing, these types will be exposed to the global scope.*
 
 ### [error](./error/index.ts)
 
@@ -282,7 +472,7 @@ import "@ayonli/jsext/error/augment";
     - `cause?: unknown`
     - `code: number`
 
-*When [augment](./error/augment.ts)ing, these types will be exposed to the global namespace.*
+*When [augment](./error/augment.ts)ing, these types will be exposed to the global scope.*
 
 **Functions**
 

@@ -1,15 +1,22 @@
 import path from "path";
 import { glob } from "glob";
 import { fileURLToPath } from "url";
-import typescript from '@rollup/plugin-typescript';
-import resolve from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
+import typescript from "@rollup/plugin-typescript";
+import resolve from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
 import { builtinModules } from "module";
 
 export default {
     input: Object.fromEntries(
-        glob.sync('**/*.ts', {
-            ignore: ['node_modules/**', "**/*.test.ts", "bundle.ts", "worker.ts", "worker-web.ts"],
+        glob.sync("**/*.ts", {
+            ignore: [
+                "node_modules/**",
+                "**/*.test.ts",
+                "**/test-*.ts",
+                "bundle.ts",
+                "worker.ts",
+                "worker-web.ts"
+            ],
         }).map(file => [
             file.slice(0, file.length - path.extname(file).length),
             fileURLToPath(new URL(file, import.meta.url))
@@ -20,13 +27,13 @@ export default {
         format: "es",
         sourcemap: true,
         preserveModules: true,
-        preserveModulesRoot: '.',
+        preserveModulesRoot: ".",
         entryFileNames: (chunkInfo) => {
-            if (chunkInfo.name.includes('node_modules')) {
-                return chunkInfo.name.replace('node_modules', '_external') + '.js';
+            if (chunkInfo.name.includes("node_modules")) {
+                return chunkInfo.name.replace("node_modules", "_external") + ".js";
             }
 
-            return '[name].js';
+            return "[name].js";
         }
     },
     plugins: [

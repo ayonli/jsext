@@ -1,6 +1,9 @@
 // @ts-ignore
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
 
+// The following declarations shall be order from complex to simple, otherwise TypeScript won't work
+// well.
+
 /**
  * Invokes an async generator function and renders its yield value and result in a `[err, val]` tuple.
  */

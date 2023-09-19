@@ -1,6 +1,6 @@
 /**
- * Wraps a function inside another function and returns a new function
- * that copies the original function's name and properties.
+ * Wraps a function inside another function and returns a new function that copies the original
+ * function's name and other properties.
  */
 export default function wrap<T, Fn extends (this: T, ...args: any[]) => any>(
     fn: Fn,
