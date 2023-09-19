@@ -1,4 +1,4 @@
-import BiMap from "./BiMap";
-import CiMap from "./CiMap";
+import BiMap from "./BiMap.ts";
+import CiMap from "./CiMap.ts";
 
 export { BiMap, CiMap };

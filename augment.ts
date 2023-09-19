@@ -1,13 +1,13 @@
-import "./string/augment";
-import "./number/augment";
-import "./array/augment";
-import "./uint8array/augment";
-import "./object/augment";
-import "./math/augment";
-import "./promise/augment";
-import "./collections/augment";
-import "./error/augment";
-import { AsyncFunction, AsyncGeneratorFunction } from ".";
+import "./string/augment.ts";
+import "./number/augment.ts";
+import "./array/augment.ts";
+import "./uint8array/augment.ts";
+import "./object/augment.ts";
+import "./math/augment.ts";
+import "./promise/augment.ts";
+import "./collections/augment.ts";
+import "./error/augment.ts";
+import { AsyncFunction, AsyncGeneratorFunction } from "./index.ts";
 
 declare global {
     const AsyncFunction: AsyncFunctionConstructor;

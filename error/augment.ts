@@ -1,4 +1,4 @@
-import { Exception, fromObject, toObject } from ".";
+import { Exception, fromObject, toObject } from "./index.ts";
 
 declare global {
     interface Error {

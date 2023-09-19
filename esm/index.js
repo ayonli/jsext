@@ -663,23 +663,13 @@ async function run(script, args = undefined, options = undefined) {
     if (isNode) {
         const path = await import('path');
         const { fileURLToPath } = await import('url');
-        let _filename;
-        let _dirname;
+        const dirname = path.dirname(fileURLToPath(import.meta.url));
         let entry;
-        if (typeof __filename === "string") {
-            _filename = __filename;
-            _dirname = __dirname;
+        if (["cjs", "esm"].includes(path.basename(dirname))) { // compiled
+            entry = path.join(path.dirname(dirname), "worker.mjs");
         }
         else {
-            // This file URL will be replace with `import.meta.url` by Rollup plugin.
-            _filename = fileURLToPath(import.meta.url);
-            _dirname = path.dirname(_filename);
-        }
-        if (["cjs", "esm"].includes(path.basename(_dirname))) { // compiled
-            entry = path.join(path.dirname(_dirname), "worker.mjs");
-        }
-        else {
-            entry = path.join(_dirname, "worker.mjs");
+            entry = path.join(dirname, "worker.mjs");
         }
         if ((options === null || options === void 0 ? void 0 : options.adapter) === "child_process") {
             let worker;

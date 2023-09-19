@@ -8,7 +8,7 @@ import {
     hyphenate as _hyphenate,
     truncate as _truncate,
     words as _words
-} from ".";
+} from "./index.ts";
 
 declare global {
     interface StringConstructor {

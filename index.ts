@@ -1,7 +1,7 @@
 import { isAsyncGenerator, isGenerator } from "check-iterable";
 import type { Worker as NodeWorker } from "worker_threads";
 import type { ChildProcess } from "child_process";
-import { sequence } from "./number";
+import { sequence } from "./number/index.ts";
 
 export const AsyncFunction = (async function () { }).constructor as AsyncFunctionConstructor;
 export const AsyncGeneratorFunction = (async function* () { }).constructor as AsyncGeneratorFunctionConstructor;
@@ -881,23 +881,13 @@ export async function run<T, A extends any[] = any[]>(
     if (isNode) {
         const path = await import("path");
         const { fileURLToPath } = await import("url");
-        let _filename: string;
-        let _dirname: string;
+        const dirname = path.dirname(fileURLToPath(import.meta.url));
         let entry: string;
 
-        if (typeof __filename === "string") {
-            _filename = __filename;
-            _dirname = __dirname;
+        if (["cjs", "esm"].includes(path.basename(dirname))) { // compiled
+            entry = path.join(path.dirname(dirname), "worker.mjs");
         } else {
-            // This file URL will be replace with `import.meta.url` by Rollup plugin.
-            _filename = fileURLToPath("file://{__filename}");
-            _dirname = path.dirname(_filename);
-        }
-
-        if (["cjs", "esm"].includes(path.basename(_dirname))) { // compiled
-            entry = path.join(path.dirname(_dirname), "worker.mjs");
-        } else {
-            entry = path.join(_dirname, "worker.mjs");
+            entry = path.join(dirname, "worker.mjs");
         }
 
         if (options?.adapter === "child_process") {
@@ -1034,7 +1024,7 @@ export async function run<T, A extends any[] = any[]>(
             if (typeof Deno === "object") {
                 // Deno can load the module regardless of MINE type.
                 url = [
-                    ...("file://{__filename}".split("/").slice(0, -1)),
+                    ...(import.meta.url.split("/").slice(0, -1)),
                     "worker-web.mjs"
                 ].join("/");
             } else {

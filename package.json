@@ -120,9 +120,15 @@
         }
     },
     "scripts": {
-        "test": "mocha -r ts-node/register",
+        "pretest": "node pretest.cjs",
+        "posttest": "node posttest.cjs",
+        "test": "node --no-warnings=ExperimentalWarning --loader=ts-node/esm ./node_modules/mocha/bin/mocha",
         "test:bun": "bun run ./node_modules/mocha/bin/mocha",
-        "build": "tsc && rollup -c rollup.config.mjs && rollup -c rollup-worker.config.mjs && webpack",
+        "build:esm": "rollup -c rollup-esm.config.mjs",
+        "build:cjs": "rollup -c rollup-cjs.config.mjs",
+        "build:bundle": "rollup -c rollup-bundle.config.mjs",
+        "build:worker": "rollup -c rollup-worker.config.mjs",
+        "build": "npm run build:esm && npm run build:cjs && npm run build:bundle && npm run build:worker",
         "prepublishOnly": "npm run build"
     },
     "repository": {
@@ -174,7 +180,6 @@
         "@types/eventsource": "^1.1.11",
         "@types/mocha": "^10.0.1",
         "@types/node": "^20.6.0",
-        "@types/websocket": "^1.0.6",
         "@types/ws": "^8.5.5",
         "eventsource": "1.1",
         "glob": "^10.3.4",
@@ -185,9 +190,7 @@
         "ts-loader": "^9.4.4",
         "ts-node": "^10.9.1",
         "tslib": "^2.6.2",
-        "typescript": "^4.9.5",
-        "webpack": "^5.88.2",
-        "webpack-cli": "^5.1.4",
+        "typescript": "^5.2.2",
         "ws": "^8.14.1"
     },
     "engines": {

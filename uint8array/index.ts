@@ -1,4 +1,4 @@
-import { equals as _equals, split as _split, chunk as _chunk } from "../array";
+import { equals as _equals, split as _split, chunk as _chunk } from "../array/index.ts";
 
 /** Like `Buffer.compare` but for pure `Uint8Array`. */
 export function compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1 {

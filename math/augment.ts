@@ -1,4 +1,4 @@
-import { avg, product, sum } from ".";
+import { avg, product, sum } from "./index.ts";
 
 declare global {
     interface Math {

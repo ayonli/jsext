@@ -1,4 +1,4 @@
-import { compare, equals as _equals, split as _split, chunk as _chunk } from ".";
+import { compare, equals as _equals, split as _split, chunk as _chunk } from "./index.ts";
 
 declare global {
     interface Uint8ArrayConstructor {

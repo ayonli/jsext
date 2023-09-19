@@ -1,5 +1,5 @@
-import { omit } from "../object";
-import Exception from "./Exception";
+import { omit } from "../object/index.ts";
+import Exception from "./Exception.ts";
 
 export { Exception };
 

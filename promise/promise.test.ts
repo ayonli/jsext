@@ -1,5 +1,5 @@
-import "../augment";
-import jsext from "../index";
+import "../augment.ts";
+import jsext from "../index.ts";
 import { describe, test } from "mocha";
 import { deepStrictEqual, ok, strictEqual } from "assert";
 

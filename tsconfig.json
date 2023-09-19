@@ -1,13 +1,16 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
+        "module": "esnext",
         "target": "es2018",
         "rootDir": ".",
-        "outDir": "./cjs",
         "newLine": "LF",
         "importHelpers": true,
         "sourceMap": true,
         "strict": true,
+        "noEmit": true,
+        "allowImportingTsExtensions": true,
+        "esModuleInterop": true,
+        "moduleResolution": "NodeNext",
         "noUnusedParameters": true,
         "noUnusedLocals": true,
         "noImplicitAny": true,

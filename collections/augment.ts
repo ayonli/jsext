@@ -1,5 +1,5 @@
 
-import { BiMap, CiMap } from ".";
+import { BiMap, CiMap } from "./index.ts";
 
 declare global {
     class BiMap<K, V> extends Map<K, V> {

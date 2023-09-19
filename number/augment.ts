@@ -1,4 +1,4 @@
-import { isBetween, isFloat, isNumeric, random, sequence } from ".";
+import { isBetween, isFloat, isNumeric, random, sequence } from "./index.ts";
 
 declare global {
     interface NumberConstructor {

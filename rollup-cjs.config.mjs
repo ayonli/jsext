@@ -5,7 +5,6 @@ import typescript from '@rollup/plugin-typescript';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import { builtinModules } from "module";
-import MagicString from "magic-string";
 
 export default {
     input: Object.fromEntries(
@@ -17,8 +16,9 @@ export default {
         ])
     ),
     output: {
-        dir: "esm",
-        format: "es",
+        dir: "cjs",
+        format: "cjs",
+        exports: "named",
         sourcemap: true,
         preserveModules: true,
         preserveModulesRoot: '.',
@@ -31,30 +31,8 @@ export default {
         }
     },
     plugins: [
-        typescript({
-            module: "esnext",
-            outDir: "esm",
-            declaration: false,
-        }),
+        typescript({ module: "esnext", moduleResolution: "bundler" }),
         resolve({ preferBuiltins: true }),
         commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
-        {
-            name: "replace-filename-filepath",
-            renderChunk(_code) {
-                const code = String(_code);
-                const placeholder = `"file://{__filename}"`;
-
-                if (code.includes(placeholder)) {
-                    const str = new MagicString(code);
-                    str.replaceAll(`"file://{__filename}"`, "import.meta.url");
-                    return {
-                        code: str.toString(),
-                        map: str.generateMap(),
-                    };
-                }
-
-                return null;
-            },
-        },
     ],
 };

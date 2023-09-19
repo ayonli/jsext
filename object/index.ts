@@ -1,4 +1,4 @@
-import type { Constructor } from "../index";
+import type { Constructor } from "../index.ts";
 
 export function hasOwn(obj: any, key: string | number | symbol): boolean {
     return Object.prototype.hasOwnProperty.call(obj, key);

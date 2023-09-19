@@ -7,7 +7,7 @@ import {
     shuffle as _shuffle,
     split as _split,
     uniq as _uniq
-} from ".";
+} from "./index.ts";
 
 declare global {
     interface Array<T> {

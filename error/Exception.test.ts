@@ -1,4 +1,4 @@
-import "../augment";
+import "../augment.ts";
 import { test } from "mocha";
 import { strictEqual, deepStrictEqual, ok } from "assert";
 

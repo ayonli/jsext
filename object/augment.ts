@@ -1,4 +1,4 @@
-import { hasOwn, hasOwnMethod, omit, patch, pick, as, isValid } from ".";
+import { hasOwn, hasOwnMethod, omit, patch, pick, as, isValid } from "./index.ts";
 
 declare global {
     interface ObjectConstructor {

@@ -1,4 +1,4 @@
-import "./augment";
-import jsext from "./index";
+import "./augment.ts";
+import jsext from "./index.ts";
 
-export = jsext;
+export default jsext;

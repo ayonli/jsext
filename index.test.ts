@@ -1,17 +1,20 @@
-import jsext from "./index";
-import { words } from "./string";
-import { hasOwn } from "./object";
-import { sleep } from "./promise";
+import jsext from "./index.ts";
+import { words } from "./string/index.ts";
+import { hasOwn } from "./object/index.ts";
+import { sleep } from "./promise/index.ts";
 import { describe, test } from "mocha";
 import { deepStrictEqual, ok, strictEqual } from "assert";
 import { createReadStream } from "fs";
 import * as http from "http";
-import SSE from "@ayonli/sse";
-import dEventSource = require("eventsource");
-// import { server as WebSocketServer, w3cwebsocket } from "websocket";
+// @ts-ignore
+import { SSE } from "@ayonli/sse";
+// @ts-ignore
+import dEventSource from "eventsource";
 import { WebSocketServer } from "ws";
-import WebSocket = require("isomorphic-ws");
-import EventEmitter = require("events");
+// @ts-ignore
+import dWebSocket from "isomorphic-ws";
+// @ts-ignore
+import { EventEmitter } from "events";
 
 describe("jsext", () => {
     describe("jsext.try", () => {
@@ -828,7 +831,8 @@ describe("jsext", () => {
                 }
             });
 
-            const ws = new WebSocket(
+            // @ts-ignore
+            const ws = new dWebSocket(
                 "ws://localhost:12345",
                 "echo-protocol") as unknown as WebSocket;
             const messages: string[] = [];
@@ -939,7 +943,7 @@ describe("jsext", () => {
     describe("jsext.run", () => {
         describe("worker_threads", () => {
             test("CommonJS", async () => {
-                const job = await jsext.run("job-example.js", ["World"]);
+                const job = await jsext.run("job-example.cjs", ["World"]);
                 strictEqual(await job.result(), "Hello, World");
             });
 
@@ -1003,7 +1007,7 @@ describe("jsext", () => {
 
         describe("child_process", async () => {
             test("CommonJS", async () => {
-                const job = await jsext.run("job-example.js", ["World"], {
+                const job = await jsext.run("job-example.cjs", ["World"], {
                     adapter: "child_process",
                 });
                 strictEqual(await job.result(), "Hello, World");

@@ -1,4 +1,4 @@
-import { chunk as _chunk } from "../array";
+import { chunk as _chunk } from "../array/index.ts";
 
 /**
  * Compares two strings, returns `-1` if `a < b`, `0` if `a == b` and `1` if `a > b`.

@@ -1,2 +1,1777 @@
-!function webpackUniversalModuleDefinition(e,t){"object"==typeof exports&&"object"==typeof module?module.exports=t():"function"==typeof define&&define.amd?define([],t):"object"==typeof exports?exports["@ayonli/jsext"]=t():e["@ayonli/jsext"]=t()}(this,(()=>(()=>{"use strict";var e={817:(e,t)=>{function _typeof(e){return _typeof="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},_typeof(e)}function isIteratorLike(e){return"object"===_typeof(e)&&null!==e&&"function"==typeof e.next}function isIterableIterator(e){return isIteratorLike(e)&&"function"==typeof e[Symbol.iterator]}function isAsyncIterableIterator(e){return isIteratorLike(e)&&"function"==typeof e[Symbol.asyncIterator]}function hasGeneratorSpecials(e){return"function"==typeof e.return&&"function"==typeof e.throw}Object.defineProperty(t,"__esModule",{value:!0}),t.isIterable=function isIterable(e){return null!=e&&"function"==typeof e[Symbol.iterator]},t.isAsyncIterable=function isAsyncIterable(e){return null!=e&&"function"==typeof e[Symbol.asyncIterator]},t.isIteratorLike=isIteratorLike,t.isIterableIterator=isIterableIterator,t.isAsyncIterableIterator=isAsyncIterableIterator,t.isGenerator=function isGenerator(e){return isIterableIterator(e)&&hasGeneratorSpecials(e)},t.isAsyncGenerator=function isAsyncGenerator(e){return isAsyncIterableIterator(e)&&hasGeneratorSpecials(e)},Symbol.asyncIterator||(Symbol.asyncIterator=Symbol("Symbol.asyncIterator"))},149:(e,t,r)=>{Object.defineProperty(t,"__esModule",{value:!0});const n=r(351);Array.prototype.first=function first(){return this[0]},Array.prototype.last=function last(){return this[this.length-1]},Array.prototype.count=function count(e){return(0,n.count)(this,e)},Array.prototype.equals=function equals(e){return(0,n.equals)(this,e)},Array.prototype.split=function split(e){return(0,n.split)(this,e)},Array.prototype.chunk=function chunk(e){return(0,n.chunk)(this,e)},Array.prototype.uniq=function uniq(){return(0,n.uniq)(this)},Array.prototype.shuffle=function shuffle(){return(0,n.shuffle)(this)},Array.prototype.toShuffled=function toShuffled(){return this.slice().shuffle()},Array.prototype.toReversed||(Array.prototype.toReversed=function toReversed(){return this.slice().reverse()}),Array.prototype.toSorted||(Array.prototype.toSorted=function toSorted(e){return this.slice().sort(e)}),Array.prototype.orderBy=function orderBy(e,t="asc"){return(0,n.orderBy)(this,e,t)},Array.prototype.groupBy=function orderBy(e,t=Object){return(0,n.groupBy)(this,e,t)}},351:(e,t)=>{Object.defineProperty(t,"__esModule",{value:!0}),t.groupBy=t.orderBy=t.shuffle=t.uniq=t.chunk=t.split=t.equals=t.count=void 0,t.count=function count(e,t){let r=0;for(let n=0;n<e.length;n++)e[n]===t&&r++;return r},t.equals=function equals(e,t){if(e.length!==t.length)return!1;for(let r=0;r<e.length;r++)if(e[r]!==t[r])return!1;return!0},t.split=function split(e,t){const r=[],n=e.length;let o=0;for(let i=0;i<n;i++)e[i]===t&&(r.push(e.slice(o,i)),o=i+1);if(o<n)r.push(e.slice(o,n));else if(o===n){const t=e.constructor;"function"==typeof t.from?r.push(t.from([])):r.push(new t([]))}return r},t.chunk=function chunk(e,t){const r=e.length,n=Math.ceil(r/t),o=new Array(n);let i=0,s=0;for(;i<r;)o[s]=e.slice(i,i+t),i+=t,s++;return o},t.uniq=function uniq(e){return[...new Set(e)]},t.shuffle=function shuffle(e){for(let t=e.length-1;t>0;t--){const r=Math.floor(Math.random()*(t+1));[e[t],e[r]]=[e[r],e[t]]}return e},t.orderBy=function orderBy(e,t,r="asc"){const n=e.slice();return n.sort(((e,r)=>{if("object"!=typeof e||"object"!=typeof r||!e||!r||Array.isArray(e)||Array.isArray(r))return-1;const n=e[t],o=r[t];return void 0===n||void 0===o?-1:"number"==typeof n&&"number"==typeof o?n-o:"string"==typeof n&&"string"==typeof o||"bigint"==typeof n&&"bigint"==typeof o?n<o?-1:1:-1})),"desc"===r&&n.reverse(),n},t.groupBy=function groupBy(e,t,r=Object){if(r===Map){const r=new Map;for(let n=0;n<e.length;n++){const o=e[n],i=t(o,n),s=r.get(i);s?s.push(o):r.set(i,[o])}return r}{const r={};for(let n=0;n<e.length;n++){const o=e[n],i=t(o,n),s=r[i];s?s.push(o):r[i]=[o]}return r}}},169:(e,t,r)=>{Object.defineProperty(t,"__esModule",{value:!0}),r(253),r(968),r(149),r(115),r(783),r(168),r(800),r(13),r(640);const n=r(254);globalThis.AsyncFunction=n.AsyncFunction,globalThis.AsyncGeneratorFunction=n.AsyncGeneratorFunction},284:(e,t,r)=>{r(169);const n=r(254);e.exports=n.default},361:(e,t)=>{Object.defineProperty(t,"__esModule",{value:!0});const r=Symbol("inverse");class BiMap extends Map{get[Symbol.toStringTag](){return"BiMap"}constructor(e=null){if(super(),this[r]=new Map,e)for(const[t,r]of e)this.set(t,r)}set(e,t){return super.set(e,t),this[r].set(t,e),this}getKey(e){return this[r].get(e)}hasValue(e){return this[r].has(e)}deleteValue(e){if(this[r].has(e)){const t=this[r].get(e);return super.delete(t),this[r].delete(e),!0}return!1}clear(){super.clear(),this[r].clear()}}t.default=BiMap},983:(e,t)=>{Object.defineProperty(t,"__esModule",{value:!0});const r=Symbol("internal");class CiMap{get[Symbol.toStringTag](){return"CiMap"}get size(){return this[r].size}constructor(e=null){if(this[r]=new Map,e)for(const[t,r]of e)this.set(t,r)}set(e,t){const n=String(e).toLowerCase();return this[r].set(n,{key:e,value:t}),this}get(e){var t;const n=String(e).toLowerCase();return null===(t=this[r].get(n))||void 0===t?void 0:t.value}has(e){const t=String(e).toLowerCase();return this[r].has(t)}delete(e){const t=String(e).toLowerCase();return this[r].delete(t)}clear(){this[r].clear()}*entries(){for(const{key:e,value:t}of this[r].values())yield[e,t]}*keys(){for(const{key:e}of this[r].values())yield e}*values(){for(const{value:e}of this[r].values())yield e}forEach(e,t){this[r].forEach((({key:t,value:r})=>{e(r,t,this)}),t)}[Symbol.iterator](){return this.entries()}}t.default=CiMap},13:(e,t,r)=>{Object.defineProperty(t,"__esModule",{value:!0});const n=r(669);globalThis.BiMap=n.BiMap,globalThis.CiMap=n.CiMap},669:(e,t,r)=>{Object.defineProperty(t,"__esModule",{value:!0}),t.CiMap=t.BiMap=void 0;const n=r(361);t.BiMap=n.default;const o=r(983);t.CiMap=o.default},515:(e,t)=>{Object.defineProperty(t,"__esModule",{value:!0});class Exception extends Error{constructor(e,t=0){super(e),this.code=0,Object.defineProperty(this,"name",{configurable:!0,enumerable:!1,writable:!0,value:this.constructor.name}),"number"==typeof t?this.code=t:(t.cause&&Object.defineProperty(this,"cause",{configurable:!0,enumerable:!1,writable:!0,value:t.cause}),t.code&&(this.code=t.code))}}t.default=Exception},640:(e,t,r)=>{Object.defineProperty(t,"__esModule",{value:!0});const n=r(171);globalThis.Exception=n.Exception,Error.toObject=n.toObject,Error.fromObject=n.fromObject,Error.prototype.toJSON=function toJSON(){return(0,n.toObject)(this)}},171:(e,t,r)=>{Object.defineProperty(t,"__esModule",{value:!0}),t.fromObject=t.toObject=t.Exception=void 0;const n=r(664),o=r(515);t.Exception=o.default,t.toObject=function toObject(e){return(0,n.omit)(e,[])},t.fromObject=function fromObject(e){var t;let r=globalThis[e.name];r||(r="Exception"===e.name?o.default:Error);const n=Object.create(r.prototype,{message:{configurable:!0,enumerable:!1,writable:!0,value:null!==(t=e.message)&&void 0!==t?t:""}});return n.name!==e.name&&Object.defineProperty(n,"name",{configurable:!0,enumerable:!1,writable:!0,value:e.name}),void 0!==e.stack&&Object.defineProperty(n,"stack",{configurable:!0,enumerable:!1,writable:!0,value:e.stack}),null!=e.cause&&Object.defineProperty(n,"cause",{configurable:!0,enumerable:!1,writable:!0,value:e.cause}),Reflect.ownKeys(e).filter((e=>!["name","message","stack","cause"].includes(e))).forEach((t=>{n[t]=e[t]})),n}},254:(e,t,r)=>{var n;Object.defineProperty(t,"__esModule",{value:!0}),t.run=t.read=t.isSubclassOf=t.mixins=t.throttle=t.wrap=t.func=t._try=t.AsyncGeneratorFunction=t.AsyncFunction=void 0;const o=r(817),i=r(906);function _try(e,...t){if("function"==typeof e)try{return _try(e.apply(void 0,t))}catch(e){return[e,void 0]}let r=e;return(0,o.isAsyncGenerator)(r)?async function*(){let e,t;for(;;)try{const{done:n,value:o}=await r.next(e);if(n){t=o;break}e=yield Promise.resolve([null,o])}catch(e){yield Promise.resolve([e,void 0]);break}return[null,t]}():(0,o.isGenerator)(r)?function*(){let e,t;for(;;)try{const{done:n,value:o}=r.next(e);if(n){t=o;break}e=yield[null,o]}catch(e){yield[e,void 0];break}return[null,t]}():"function"==typeof(null==r?void 0:r.then)?(r=r.then((e=>[null,e])),Promise.resolve(r).catch((e=>[e,void 0]))):[null,r]}function func(e){return function(...t){var r;const n=[],defer=e=>{n.push(e)};let i;try{const r=e.call(this,defer,...t);if((0,o.isAsyncGenerator)(r)){const e=async function*(){var e;let t;for(;;)try{const{done:e,value:n}=await r.next(t);if(e){i={value:n,error:null};break}t=yield Promise.resolve(n)}catch(e){i={value:void 0,error:e};break}for(let t=n.length-1;t>=0;t--)await(null===(e=n[t])||void 0===e?void 0:e.call(n));if(i.error)throw i.error;return i.value}();return e}if((0,o.isGenerator)(r)){const e=function*(){var e;let t;for(;;)try{const{done:e,value:n}=r.next(t);if(e){i={value:n,error:null};break}t=yield n}catch(e){i={value:void 0,error:e};break}for(let t=n.length-1;t>=0;t--)null===(e=n[t])||void 0===e||e.call(n);if(i.error)throw i.error;return i.value}();return e}if("function"==typeof(null==r?void 0:r.then))return Promise.resolve(r).then((e=>({value:e,error:null}))).catch((e=>({value:void 0,error:e}))).then((async e=>{var t;for(let e=n.length-1;e>=0;e--)await(null===(t=n[e])||void 0===t?void 0:t.call(n));if(e.error)throw e.error;return e.value}));i={value:r,error:null}}catch(e){i={value:void 0,error:e}}for(let e=n.length-1;e>=0;e--)null===(r=n[e])||void 0===r||r.call(n);if(i.error)throw i.error;return i.value}}function wrap(e,t){const wrapped=function(...r){return t.call(this,e,...r)};return Object.defineProperty(wrapped,"name",Object.getOwnPropertyDescriptor(e,"name")),Object.defineProperty(wrapped,"length",Object.getOwnPropertyDescriptor(e,"length")),Object.defineProperty(wrapped,"toString",{configurable:!0,enumerable:!1,writable:!0,value:e.toString.bind(e)}),wrapped}t.AsyncFunction=async function(){}.constructor,t.AsyncGeneratorFunction=async function*(){}.constructor,t._try=_try,t.func=func,t.wrap=wrap;const s=new Map;function throttle(e,t){const r="number"==typeof t?null:t.for,n="number"==typeof t?t:t.duration,handleCall=function(t,...r){var o;if(t.result&&Date.now()<(null!==(o=t.expires)&&void 0!==o?o:0)){if(t.result.error)throw t.result.error;return t.result.value}try{const o=e.call(this,...r);return t.result={value:o},t.expires=Date.now()+n,o}catch(e){throw t.result={error:e},t.expires=Date.now()+n,e}};if(r){let e=s.get(r);return e||(e={for:r},s.set(r,e)),function(...t){return handleCall.call(this,e,...t)}}{const e={for:null};return function(...t){return handleCall.call(this,e,...t)}}}function mergeIfNotExists(e,t,r=!1){const n=Reflect.ownKeys(t);for(const o of n)"constructor"!=o&&(r?o in e||setProp(e,t,o):e.hasOwnProperty(o)||setProp(e,t,o));return e}function mergeHierarchy(e,t,r=!1){mergeIfNotExists(e.prototype,t.prototype,r);const n=Object.getPrototypeOf(t);n.name&&mergeHierarchy(e,n,!0)}function setProp(e,t,r){const n=Object.getOwnPropertyDescriptor(t,r);n?Object.defineProperty(e,r,n):e[r]=t[r]}function mixins(e,...t){const r={ctor:null};r.ctor=class extends e{};for(const e of t)if("function"==typeof e)mergeHierarchy(r.ctor,e);else{if(!e||"object"!=typeof e)throw new TypeError("mixin must be a constructor or an object");mergeIfNotExists(r.ctor.prototype,e)}return r.ctor}function isSubclassOf(e,t){return"function"==typeof e&&"function"==typeof t&&e.prototype instanceof t}function read(e,t=void 0){var r;if("function"==typeof e[Symbol.asyncIterator])return e;const n={ended:!1,error:null,queue:[],consumers:[],next(){return new Promise(((e,t)=>{this.error&&!this.ended?(t(this.error),this.ended=!0):this.ended&&!this.queue.length?e({value:void 0,done:!0}):this.queue.length>0?e({value:this.queue.shift(),done:!1}):this.consumers.push({resolve:e,reject:t})}))}},handleMessage=e=>{var t;n.consumers.length>0?null===(t=n.consumers.shift())||void 0===t||t.resolve({value:e,done:!1}):n.queue.push(e)},handleClose=()=>{let e;for(n.ended=!0;e=n.consumers.shift();)e.resolve({value:void 0,done:!0})},handleError=e=>{n.error=e,n.consumers.length>0&&(n.consumers.forEach((t=>{t.reject(e)})),n.consumers=[])},handleBrowserErrorEvent=e=>{let t;t=e instanceof ErrorEvent?e.error||new Error(e.message):new Error("something went wrong",{cause:e}),handleError(t)},o=Object.getPrototypeOf(e),i=Object.getOwnPropertyDescriptor(o,"onmessage");if((null==i?void 0:i.set)&&"function"==typeof e.close){const n=Object.getOwnPropertyDescriptor(o,"onerror"),s=Object.getOwnPropertyDescriptor(o,"onclose");let u;if((null==t?void 0:t.event)&&"message"!==(null==t?void 0:t.event)&&"function"==typeof e.addEventListener){const r=e,n=t.event,msgListener=e=>{handleMessage(e.data)};r.addEventListener(n,msgListener),u=()=>{r.removeEventListener(n,msgListener)}}else i.set.call(e,(e=>{handleMessage(e.data)})),u=()=>{var t;null===(t=i.set)||void 0===t||t.call(e,null)};if(null===(r=null==n?void 0:n.set)||void 0===r||r.call(e,handleBrowserErrorEvent),null==s?void 0:s.set)s.set.call(e,(()=>{var t,r;handleClose(),null===(t=s.set)||void 0===t||t.call(e,null),null===(r=null==n?void 0:n.set)||void 0===r||r.call(e,null),null==u||u()}));else if(!(null==s?void 0:s.set)&&"function"==typeof e.close){const t=e,r=t.close;t.close=function close(){var o;r.call(t),handleClose(),t.close=r,null===(o=null==n?void 0:n.set)||void 0===o||o.call(e,null),null==u||u()}}}else if("function"==typeof e.send&&"function"==typeof e.close){const t=e;t.onmessage=e=>{handleMessage(e.data)},t.onerror=handleBrowserErrorEvent,t.onclose=()=>{handleClose(),t.onclose=null,t.onerror=null,t.onmessage=null}}else if("function"==typeof e.addEventListener){const r=e,n=(null==t?void 0:t.message)||"message",o=(null==t?void 0:t.error)||"error",i=(null==t?void 0:t.close)||"close",msgListener=e=>{e instanceof MessageEvent&&handleMessage(e.data)};r.addEventListener(n,msgListener),r.addEventListener(o,handleBrowserErrorEvent),r.addEventListener(i,(function closeListener(){handleClose(),r.removeEventListener(i,closeListener),r.removeEventListener(n,msgListener),r.removeEventListener(o,handleBrowserErrorEvent)}))}else{if("function"!=typeof e.on)throw new TypeError("the input source cannot be read as an AsyncIterable object");{const r=e,n=(null==t?void 0:t.data)||"data",o=(null==t?void 0:t.error)||"error",i=(null==t?void 0:t.close)||"close";r.on(n,handleMessage),r.once(o,handleError),r.once(i,(()=>{handleClose(),r.off(n,handleMessage),r.off(n,handleError)}))}}return{[Symbol.asyncIterator]:()=>n}}t.throttle=throttle,t.mixins=mixins,t.isSubclassOf=isSubclassOf,t.read=read;const u="object"==typeof process&&!!(null===(n=process.versions)||void 0===n?void 0:n.node),a=(0,i.sequence)(1,Number.MAX_SAFE_INTEGER,1,!0);let l=[];const c=[];async function run(e,t=void 0,n=void 0){var o,i;const s={type:"ffi",script:e,baseUrl:"",fn:(null==n?void 0:n.fn)||"default",args:null!=t?t:[]};"object"==typeof Deno?s.baseUrl="file://"+Deno.cwd()+"/":u?s.baseUrl="file://"+process.cwd()+"/":"object"==typeof location&&(s.baseUrl=location.href);const f=[];let p,d,y,h,v,m,b=null,terminate=()=>Promise.resolve(void 0);const w=(null==n?void 0:n.timeout)?setTimeout((()=>{const e=new Error(`operation timeout after ${n.timeout}ms`);d?d.reject(e):b=e,terminate()}),n.timeout):null,handleMessage=e=>{var t;if(e&&"object"==typeof e&&"string"==typeof e.type){if("error"===e.type)return handleError(e.error);"return"===e.type?((null==n?void 0:n.keepAlive)?(null==m||m(),c.length&&(null===(t=c.shift())||void 0===t||t())):terminate(),d?d.resolve(e.value):p={value:e.value}):"yield"===e.type&&(e.done?handleMessage({type:"return",value:e.value}):y?y.emit("data",e.value):f.push(e.value))}},handleError=e=>{d?d.reject(e):y?y.emit("error",e):b=e},handleExit=()=>{var e;v&&(l=l.filter((e=>e!==v)),c.length&&(null===(e=c.shift())||void 0===e||e())),d?d.resolve(void 0):y?y.emit("close"):b||p||(p={value:void 0})};if(u){const i=await Promise.resolve().then((()=>r(17))),{fileURLToPath:u}=await Promise.resolve().then((()=>r(310)));let f,p,d;if(f=__filename,p=__dirname,d=["cjs","esm"].includes(i.basename(p))?i.join(i.dirname(p),"worker.mjs"):i.join(p,"worker.mjs"),"child_process"===(null==n?void 0:n.adapter)){let o,i=!0;if(v=l.find((e=>"child_process"===e.adapter&&!e.busy)),v)o=v.worker,h=v.workerId,v.busy=!0;else{if(!(l.length<16))return new Promise((e=>{c.push(e)})).then((()=>run(e,t,n)));{const{fork:e}=await Promise.resolve().then((()=>r(81))),t=parseInt(process.version.slice(1))<14;o=e(d,{stdio:"inherit",serialization:t?"advanced":"json"}),h=o.pid,i=await new Promise((e=>{o.once("exit",(()=>{b&&e(!1)})),o.once("message",(()=>{o.removeAllListeners("exit"),e(!0)}))})),i&&l.push(v={workerId:h,worker:o,adapter:"child_process",busy:!0})}}m=()=>{o.off("message",handleMessage),v&&(v.busy=!1)},terminate=()=>Promise.resolve(void o.kill(1)),i&&(o.send(s),o.on("message",handleMessage),o.once("error",handleError),o.once("exit",handleExit))}else{let i,u=!0;if(v=l.find((e=>"worker_threads"===e.adapter&&!e.busy)),v)i=v.worker,h=v.workerId,v.busy=!0;else{if(!(l.length<16))return new Promise((e=>{c.push(e)})).then((()=>run(e,t,n)));{const{Worker:e}=await Promise.resolve().then((()=>r(267)));i=new e(d),h=null!==(o=i.threadId)&&void 0!==o?o:a.next().value,u=await new Promise((e=>{i.once("exit",(()=>{b&&e(!1)})),i.once("online",(()=>{i.removeAllListeners("exit"),e(!0)}))})),u&&l.push(v={workerId:h,worker:i,adapter:"worker_threads",busy:!0})}}m=()=>{i.off("message",handleMessage),v&&(v.busy=!1)},terminate=async()=>{await i.terminate()},u&&(i.postMessage(s),i.on("message",handleMessage),i.once("error",handleError),i.once("messageerror",handleError),i.once("exit",handleExit))}}else{let r;if(v=l.find((e=>"worker_threads"===e.adapter&&!e.busy)),v)r=v.worker,h=v.workerId,v.busy=!0;else{if(!(l.length<16))return new Promise((e=>{c.push(e)})).then((()=>run(e,t,n)));{let e;if("object"==typeof Deno)e=[..."file://{__filename}".split("/").slice(0,-1),"worker-web.mjs"].join("/");else{const t=(null==n?void 0:n.webWorkerEntry)||"https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs",r=await fetch(t);let o;if(null===(i=r.headers.get("content-type"))||void 0===i?void 0:i.startsWith("application/javascript"))o=await r.blob();else{const e=await r.arrayBuffer();o=new Blob([new Uint8Array(e)],{type:"application/javascript"})}e=URL.createObjectURL(o)}r=new Worker(e,{type:"module"}),h=a.next().value,l.push(v={workerId:h,worker:r,adapter:"worker_threads",busy:!0})}}m=()=>{r.onmessage=null,v&&(v.busy=!1)},terminate=async()=>{await Promise.resolve(r.terminate()),handleExit()},r.postMessage(s),r.onmessage=e=>handleMessage(e.data),r.onerror=e=>handleMessage(e.error||new Error(e.message)),r.onmessageerror=()=>{handleError(new Error("unable to deserialize the message"))}}return{workerId:h,async abort(){w&&clearTimeout(w),await terminate()},result:async()=>await new Promise(((e,t)=>{b?t(b):p?e(p.value):d={resolve:e,reject:t}})),async*iterate(){if(d)throw new Error("result() has been called");if(p)throw new TypeError("the response is not iterable");const{EventEmitter:e}=await Promise.resolve().then((()=>r(820)));y=new e,f.length&&(async()=>{let e;for(await Promise.resolve(null);e=f.shift();)y.emit("data",e)})().catch(console.error);for await(const e of read(y))yield e}}}t.run=run;const f={try:_try,func,wrap,throttle,mixins,isSubclassOf,read,run};t.default=f},168:(e,t,r)=>{Object.defineProperty(t,"__esModule",{value:!0});const n=r(794);Math.sum=n.sum,Math.avg=n.avg,Math.product=n.product},794:(e,t)=>{Object.defineProperty(t,"__esModule",{value:!0}),t.product=t.avg=t.sum=void 0,t.sum=function sum(...e){return e.reduce(((e,t)=>e+t),0)},t.avg=function avg(...e){return Math.sum(...e)/e.length},t.product=function product(...e){var t;return e.slice(1).reduce(((e,t)=>e*t),null!==(t=e[0])&&void 0!==t?t:0)}},968:(e,t,r)=>{Object.defineProperty(t,"__esModule",{value:!0});const n=r(906);Number.isFloat=n.isFloat,Number.isNumeric=n.isNumeric,Number.isBetween=n.isBetween,Number.random=n.random,Number.sequence=n.sequence},906:(e,t)=>{Object.defineProperty(t,"__esModule",{value:!0}),t.sequence=t.random=t.isBetween=t.isNumeric=t.isFloat=void 0,t.isFloat=function isFloat(e){return!("number"!=typeof e||Number.isNaN(e)||Number.isFinite(e)&&e%1==0)},t.isNumeric=function isNumeric(e){const t=typeof e;if("number"===t||"bigint"===t)return!0;if("string"===t){if(!Number.isNaN(e))return!0;try{return BigInt(e),!0}catch(e){return!1}}return!1},t.isBetween=function isBetween(e,[t,r]){return e>=t&&e<=r},t.random=function random(e,t){return e+Math.floor(Math.random()*(t-e+1))},t.sequence=function*sequence(e,t,r=1,n=!1){let o=e;for(;;)if(yield o,o>=t){if(!n)break;o=e}else o+=r}},783:(e,t,r)=>{Object.defineProperty(t,"__esModule",{value:!0});const n=r(664);Object.hasOwn||(Object.hasOwn=n.hasOwn),Object.hasOwnMethod||(Object.hasOwnMethod=n.hasOwnMethod),Object.patch=n.patch,Object.pick=n.pick,Object.omit=n.omit,Object.as=n.as,Object.isValid=n.isValid},664:(e,t)=>{function hasOwn(e,t){return Object.prototype.hasOwnProperty.call(e,t)}function pick(e,t){return t.reduce(((t,r)=>(r in e&&void 0!==e[r]&&(t[r]=e[r]),t)),{})}Object.defineProperty(t,"__esModule",{value:!0}),t.isValid=t.as=t.omit=t.pick=t.patch=t.hasOwnMethod=t.hasOwn=void 0,t.hasOwn=hasOwn,t.hasOwnMethod=function hasOwnMethod(e,t){var r;const n=Object.getPrototypeOf(e);return!(!n||!hasOwn(n,t))&&"function"==typeof(null===(r=Object.getOwnPropertyDescriptor(n,t))||void 0===r?void 0:r.value)},t.patch=function patch(e,...t){for(const r of t)for(const t of Reflect.ownKeys(r))hasOwn(e,t)&&void 0!==e[t]||(e[t]=r[t]);return e},t.pick=pick,t.omit=function omit(e,t){const r=Reflect.ownKeys(e).filter((e=>!t.includes(e))),n=pick(e,r);return e instanceof Error&&["name","message","cause"].forEach((r=>{t.includes(r)||void 0===e[r]||hasOwn(n,r)||(n[r]=e[r])})),n},t.as=function as(e,t){if("function"!=typeof t)throw new TypeError("type must be a valid constructor");let r;const n={string:String,number:Number,bigint:BigInt,boolean:Boolean,symbol:Symbol};return e instanceof t?[String,Number,Boolean].includes(t)?e.valueOf():e:(r=typeof e)&&n[r]===t?e:null},t.isValid=function isValid(e){return!(null==e||Object.is(e,NaN)||e instanceof Date&&"Invalid Date"===e.toString())}},800:(e,t,r)=>{Object.defineProperty(t,"__esModule",{value:!0});const n=r(675);Promise.timeout=n.timeout,Promise.after=n.after,Promise.sleep=n.sleep,Promise.until=n.until},675:(e,t)=>{Object.defineProperty(t,"__esModule",{value:!0}),t.until=t.sleep=t.after=t.timeout=void 0,t.timeout=async function timeout(e,t){return await Promise.race([e,new Promise(((e,r)=>setTimeout((()=>{r(new Error(`operation timeout after ${t}ms`))}),t)))])},t.after=async function after(e,t){const[r]=await Promise.allSettled([e,new Promise((e=>setTimeout(e,t)))]);if("fulfilled"===r.status)return r.value;throw r.reason},t.sleep=async function sleep(e){return new Promise((t=>setTimeout(t,e)))},t.until=async function until(e){void 0===globalThis.setImmediate&&(globalThis.setImmediate=e=>setTimeout(e,0));do{await new Promise(globalThis.setImmediate)}while(0==await e())}},253:(e,t,r)=>{Object.defineProperty(t,"__esModule",{value:!0});const n=r(702);String.compare=n.compare,String.random=n.random,String.prototype.count=function count(e){return(0,n.count)(String(this),e)},String.prototype.capitalize=function capitalize(e){return(0,n.capitalize)(String(this),e)},String.prototype.hyphenate=function capitalize(){return(0,n.hyphenate)(String(this))},String.prototype.words=function words(){return(0,n.words)(String(this))},String.prototype.chunk=function chunk(e){return(0,n.chunk)(String(this),e)},String.prototype.truncate=function truncate(e){return(0,n.truncate)(String(this),e)},String.prototype.byteLength=function byteLength(){return(0,n.byteLength)(String(this))}},702:(e,t,r)=>{Object.defineProperty(t,"__esModule",{value:!0}),t.byteLength=t.truncate=t.chunk=t.words=t.hyphenate=t.capitalize=t.count=t.random=t.compare=void 0;const n=r(351);t.compare=function compare(e,t){return e<t?-1:e>t?1:0},t.random=function random(e){const t="0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";let r="";for(;0<e--;){r+=t[Math.floor(62*Math.random())]}return r},t.count=function count(e,t){return t?e?e.split(t).length-1:0:e.length+1},t.capitalize=function capitalize(e,t){const r=t?/\w+/g:/\w+/;return e.replace(r,(e=>e[0].toUpperCase()+e.slice(1).toLowerCase()))},t.hyphenate=function hyphenate(e){return e.replace(/(\S)\s+(\S)/g,((e,t,r)=>t+"-"+r))},t.words=function words(e){const t=e.match(/\w+/g);return t?[...t]:[]},t.chunk=function chunk(e,t){return(0,n.chunk)(e,t)},t.truncate=function truncate(e,t){return t<=0?"":t>=e.length?e:(t-=3,e.slice(0,t)+"...")};const o=new TextEncoder;t.byteLength=function byteLength(e){return o.encode(e).byteLength}},115:(e,t,r)=>{Object.defineProperty(t,"__esModule",{value:!0});const n=r(947);Uint8Array.compare=n.compare,Uint8Array.prototype.equals=function equals(e){return(0,n.equals)(this,e)},Uint8Array.prototype.split=function split(e){return(0,n.split)(this,e)},Uint8Array.prototype.chunk=function chunk(e){return(0,n.chunk)(this,e)}},947:(e,t,r)=>{Object.defineProperty(t,"__esModule",{value:!0}),t.chunk=t.split=t.equals=t.compare=void 0;const n=r(351);t.compare=function compare(e,t){if(e===t)return 0;for(let r=0;r<e.length;r++){const n=e[r],o=t[r];if(void 0===o)return 1;if(n<o)return-1;if(n>o)return 1}return e.length<t.length?-1:0},t.equals=function equals(e,t){return e instanceof Uint8Array&&t instanceof Uint8Array&&(0,n.equals)(e,t)},t.split=function split(e,t){return(0,n.split)(e,t)},t.chunk=function chunk(e,t){return(0,n.chunk)(e,t)}},81:e=>{e.exports=require("child_process")},820:e=>{e.exports=require("events")},17:e=>{e.exports=require("path")},310:e=>{e.exports=require("url")},267:e=>{e.exports=require("worker_threads")}},t={};var r=function __webpack_require__(r){var n=t[r];if(void 0!==n)return n.exports;var o=t[r]={exports:{}};return e[r](o,o.exports,__webpack_require__),o.exports}(284);return r})()));
+(function (global, factory) {
+    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+    typeof define === 'function' && define.amd ? define(factory) :
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global["@ayonli/jsext"] = factory());
+})(this, (function () { 'use strict';
+
+    var _documentCurrentScript = typeof document !== 'undefined' ? document.currentScript : null;
+    /** Counts the occurrence of the element in the array. */
+    function count$1(arr, ele) {
+        let count = 0;
+        for (let i = 0; i < arr.length; i++) {
+            if (arr[i] === ele) {
+                count++;
+            }
+        }
+        return count;
+    }
+    /**
+     * Performs a shallow compare to another array and see if it contains the same elements as
+     * this array.
+     */
+    function equals$1(arr1, arr2) {
+        if (arr1.length !== arr2.length) {
+            return false;
+        }
+        for (let i = 0; i < arr1.length; i++) {
+            if (arr1[i] !== arr2[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+    /** Breaks the array into smaller chunks according to the given delimiter. */
+    function split$1(arr, delimiter) {
+        const chunks = [];
+        const limit = arr.length;
+        let offset = 0;
+        for (let i = 0; i < limit; i++) {
+            if (arr[i] === delimiter) {
+                chunks.push(arr.slice(offset, i));
+                offset = i + 1;
+            }
+        }
+        if (offset < limit) {
+            chunks.push(arr.slice(offset, limit));
+        }
+        else if (offset === limit) {
+            const ctor = arr.constructor;
+            if (typeof ctor.from === "function") {
+                chunks.push(ctor.from([]));
+            }
+            else {
+                chunks.push(new ctor([]));
+            }
+        }
+        return chunks;
+    }
+    /** Breaks the array into smaller chunks according to the given length. */
+    function chunk$2(arr, length) {
+        const limit = arr.length;
+        const size = Math.ceil(limit / length);
+        const chunks = new Array(size);
+        let offset = 0;
+        let idx = 0;
+        while (offset < limit) {
+            chunks[idx] = arr.slice(offset, offset + length);
+            offset += length;
+            idx++;
+        }
+        return chunks;
+    }
+    /** Returns a subset of the array that contains only unique items. */
+    function uniq(arr) {
+        return [...new Set(arr)];
+    }
+    /**
+     * Reorganizes the elements in the array in random order.
+     *
+     * This function mutates the array.
+     */
+    function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+    /**
+     * Orders the items of the array according to the specified comparable `key` (whose value
+     * must either be a numeric or string).
+     */
+    function orderBy(arr, key, order = "asc") {
+        const items = arr.slice();
+        items.sort((a, b) => {
+            if (typeof a !== "object" || typeof b !== "object" ||
+                !a || !b ||
+                Array.isArray(a) || Array.isArray(b)) {
+                return -1;
+            }
+            const _a = a[key];
+            const _b = b[key];
+            if (_a === undefined || _b === undefined) {
+                return -1;
+            }
+            if (typeof _a === "number" && typeof _b === "number") {
+                return _a - _b;
+            }
+            else if ((typeof _a === "string" && typeof _b === "string")
+                || (typeof _a === "bigint" && typeof _b === "bigint")) {
+                if (_a < _b) {
+                    return -1;
+                }
+                else if (_a > _b) {
+                    return 1;
+                }
+                else {
+                    return 1;
+                }
+            }
+            else {
+                return -1;
+            }
+        });
+        if (order === "desc") {
+            items.reverse();
+        }
+        return items;
+    }
+    function groupBy(arr, fn, type = Object) {
+        if (type === Map) {
+            const groups = new Map();
+            for (let i = 0; i < arr.length; i++) {
+                const item = arr[i];
+                const key = fn(item, i);
+                const list = groups.get(key);
+                if (list) {
+                    list.push(item);
+                }
+                else {
+                    groups.set(key, [item]);
+                }
+            }
+            return groups;
+        }
+        else {
+            const groups = {};
+            for (let i = 0; i < arr.length; i++) {
+                const item = arr[i];
+                const key = fn(item, i);
+                const list = groups[key];
+                if (list) {
+                    list.push(item);
+                }
+                else {
+                    groups[key] = [item];
+                }
+            }
+            return groups;
+        }
+    }
+
+    /**
+     * Compares two strings, returns `-1` if `a < b`, `0` if `a == b` and `1` if `a > b`.
+     */
+    function compare$1(str1, str2) {
+        if (str1 < str2) {
+            return -1;
+        }
+        else if (str1 > str2) {
+            return 1;
+        }
+        else {
+            return 0;
+        }
+    }
+    /** Returns a random string, the charset matches `/[0-9a-zA-Z]/` */
+    function random$1(length) {
+        const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        let str = "";
+        while (0 < length--) {
+            const i = Math.floor(Math.random() * chars.length);
+            str += chars[i];
+        }
+        return str;
+    }
+    /** Counts the occurrence of the sub-string in the string. */
+    function count(str, sub) {
+        if (!sub) {
+            return str.length + 1;
+        }
+        else if (!str) {
+            return 0;
+        }
+        return str.split(sub).length - 1;
+    }
+    /**
+     * Capitalizes the string, if `all` is true, all words are capitalized, otherwise only
+     * the first word will be capitalized.
+     */
+    function capitalize(str, all) {
+        const regex = all ? /\w+/g : /\w+/;
+        return str.replace(regex, (match) => {
+            return match[0].toUpperCase() + match.slice(1).toLowerCase();
+        });
+    }
+    /** Replaces the spaces between non-empty characters of the string with hyphens (`-`). */
+    function hyphenate(str) {
+        return str.replace(/(\S)\s+(\S)/g, (_, $1, $2) => $1 + "-" + $2);
+    }
+    /** Extracts words (in latin characters) from the string. */
+    function words(str) {
+        const matches = str.match(/\w+/g);
+        return matches ? [...matches] : [];
+    }
+    /** Breaks the string into smaller chunks according to the given length. */
+    function chunk$1(str, length) {
+        return chunk$2(str, length);
+    }
+    /** Truncates the string to the given length (including the ending `...`). */
+    function truncate(str, length) {
+        if (length <= 0) {
+            return "";
+        }
+        else if (length >= str.length) {
+            return str;
+        }
+        else {
+            length -= 3;
+            return str.slice(0, length) + "...";
+        }
+    }
+    const encoder = new TextEncoder();
+    /** Returns the byte length of the string. */
+    function byteLength(str) {
+        return encoder.encode(str).byteLength;
+    }
+
+    String.compare = compare$1;
+    String.random = random$1;
+    String.prototype.count = function count$1(sub) {
+        return count(String(this), sub);
+    };
+    String.prototype.capitalize = function capitalize$1(all) {
+        return capitalize(String(this), all);
+    };
+    String.prototype.hyphenate = function capitalize() {
+        return hyphenate(String(this));
+    };
+    String.prototype.words = function words$1() {
+        return words(String(this));
+    };
+    String.prototype.chunk = function chunk(length) {
+        return chunk$1(String(this), length);
+    };
+    String.prototype.truncate = function truncate$1(length) {
+        return truncate(String(this), length);
+    };
+    String.prototype.byteLength = function byteLength$1() {
+        return byteLength(String(this));
+    };
+
+    /** Returns `true` if the given value is a float number, `false` otherwise. */
+    function isFloat(value) {
+        return typeof value === "number"
+            && !Number.isNaN(value)
+            && (!Number.isFinite(value) || value % 1 !== 0);
+    }
+    /**
+     * Returns `true` if the given value is a numeric value, `false` otherwise. A numeric value is a
+     * number, a bigint, or a string that can be converted to a number or bigint.
+     */
+    function isNumeric(value) {
+        const type = typeof value;
+        if (type === "number" || type === "bigint") {
+            return true;
+        }
+        else if (type === "string") {
+            if (!Number.isNaN(value)) {
+                return true;
+            }
+            else {
+                try {
+                    BigInt(value);
+                    return true;
+                }
+                catch (_a) {
+                    return false;
+                }
+            }
+        }
+        return false;
+    }
+    /** Return `true` if a number is between the given range (inclusive). */
+    function isBetween(value, [min, max]) {
+        return value >= min && value <= max;
+    }
+    /** Returns a random integer ranged from `min` to `max`. */
+    function random(min, max) {
+        return min + Math.floor(Math.random() * (max - min + 1));
+    }
+    /** Creates a generator that produces sequential numbers from `min` to `max` (inclusive). */
+    function* sequence(min, max, step = 1, loop = false) {
+        let id = min;
+        while (true) {
+            yield id;
+            if (id >= max) {
+                if (loop) {
+                    id = min;
+                }
+                else {
+                    break;
+                }
+            }
+            else {
+                id += step;
+            }
+        }
+    }
+
+    Number.isFloat = isFloat;
+    Number.isNumeric = isNumeric;
+    Number.isBetween = isBetween;
+    Number.random = random;
+    Number.sequence = sequence;
+
+    Array.prototype.first = function first() {
+        return this[0];
+    };
+    Array.prototype.last = function last() {
+        return this[this.length - 1];
+    };
+    Array.prototype.count = function count(ele) {
+        return count$1(this, ele);
+    };
+    Array.prototype.equals = function equals(another) {
+        return equals$1(this, another);
+    };
+    Array.prototype.split = function split(delimiter) {
+        return split$1(this, delimiter);
+    };
+    Array.prototype.chunk = function chunk(length) {
+        return chunk$2(this, length);
+    };
+    Array.prototype.uniq = function uniq$1() {
+        return uniq(this);
+    };
+    Array.prototype.shuffle = function shuffle$1() {
+        return shuffle(this);
+    };
+    Array.prototype.toShuffled = function toShuffled() {
+        return this.slice().shuffle();
+    };
+    if (!Array.prototype.toReversed) {
+        Array.prototype.toReversed = function toReversed() {
+            return this.slice().reverse();
+        };
+    }
+    if (!Array.prototype.toSorted) {
+        Array.prototype.toSorted = function toSorted(fn) {
+            return this.slice().sort(fn);
+        };
+    }
+    Array.prototype.orderBy = function orderBy$1(key, order = "asc") {
+        return orderBy(this, key, order);
+    };
+    Array.prototype.groupBy = function orderBy(fn, type = Object) {
+        return groupBy(this, fn, type);
+    };
+
+    /** Like `Buffer.compare` but for pure `Uint8Array`. */
+    function compare(arr1, arr2) {
+        if (arr1 === arr2) {
+            return 0;
+        }
+        for (let i = 0; i < arr1.length; i++) {
+            const ele1 = arr1[i];
+            const ele2 = arr2[i];
+            if (ele2 === undefined) {
+                return 1;
+            }
+            else if (ele1 < ele2) {
+                return -1;
+            }
+            else if (ele1 > ele2) {
+                return 1;
+            }
+        }
+        return arr1.length < arr2.length ? -1 : 0;
+    }
+    /**
+     * Compare this array to another array and see if it contains the same elements as
+     * this array.
+     */
+    function equals(arr1, arr2) {
+        if (!(arr1 instanceof Uint8Array) || !(arr2 instanceof Uint8Array)) {
+            return false;
+        }
+        return equals$1(arr1, arr2);
+    }
+    /** Breaks the array into smaller chunks according to the given delimiter. */
+    function split(arr, delimiter) {
+        return split$1(arr, delimiter);
+    }
+    /** Breaks the array into smaller chunks according to the given length. */
+    function chunk(arr, length) {
+        return chunk$2(arr, length);
+    }
+
+    Uint8Array.compare = compare;
+    Uint8Array.prototype.equals = function equals$1(another) {
+        return equals(this, another);
+    };
+    Uint8Array.prototype.split = function split$1(delimiter) {
+        return split(this, delimiter);
+    };
+    Uint8Array.prototype.chunk = function chunk$1(length) {
+        return chunk(this, length);
+    };
+
+    function hasOwn(obj, key) {
+        return Object.prototype.hasOwnProperty.call(obj, key);
+    }
+    /**
+     * Returns `true` if the specified object has the indicated method as its own method (in its own
+     * prototype). If the method is inherited, or is not in the prototype, or does not exist, this
+     * function returns `false`.
+     */
+    function hasOwnMethod(obj, method) {
+        var _a;
+        const proto = Object.getPrototypeOf(obj);
+        if (!proto || !hasOwn(proto, method)) {
+            return false;
+        }
+        return typeof ((_a = Object.getOwnPropertyDescriptor(proto, method)) === null || _a === void 0 ? void 0 : _a.value) === "function";
+    }
+    function patch(target, ...sources) {
+        for (const source of sources) {
+            for (const key of Reflect.ownKeys(source)) {
+                if (!hasOwn(target, key) || target[key] === undefined) {
+                    target[key] = source[key];
+                }
+            }
+        }
+        return target;
+    }
+    function pick(obj, keys) {
+        return keys.reduce((result, key) => {
+            if (key in obj && obj[key] !== undefined) {
+                result[key] = obj[key];
+            }
+            return result;
+        }, {});
+    }
+    function omit(obj, keys) {
+        const allKeys = Reflect.ownKeys(obj);
+        const keptKeys = allKeys.filter(key => !keys.includes(key));
+        const result = pick(obj, keptKeys);
+        // special treatment for Error types
+        if (obj instanceof Error) {
+            ["name", "message", "cause"].forEach(key => {
+                if (!keys.includes(key) &&
+                    obj[key] !== undefined &&
+                    !hasOwn(result, key)) {
+                    result[key] = obj[key];
+                }
+            });
+        }
+        return result;
+    }
+    function as(value, type) {
+        if (typeof type !== "function") {
+            throw new TypeError("type must be a valid constructor");
+        }
+        let _type;
+        const primitiveMap = {
+            "string": String,
+            "number": Number,
+            "bigint": BigInt,
+            "boolean": Boolean,
+            "symbol": Symbol
+        };
+        if (value instanceof type) {
+            if ([String, Number, Boolean].includes(type)) {
+                return value.valueOf(); // make sure the primitives are returned.
+            }
+            else {
+                return value;
+            }
+        }
+        else if ((_type = typeof value) && primitiveMap[_type] === type) {
+            return value;
+        }
+        return null;
+    }
+    /**
+     * Returns `true` if the given value is valid. Thee following values are considered invalid:
+     *
+     * - `undefined`
+     * - `null`
+     * - `NaN`
+     * - `Invalid Date`
+     */
+    function isValid(value) {
+        return value !== undefined
+            && value !== null
+            && !Object.is(value, NaN)
+            && !(value instanceof Date && value.toString() === "Invalid Date");
+    }
+
+    if (!Object.hasOwn) {
+        Object.hasOwn = hasOwn;
+    }
+    if (!Object.hasOwnMethod) {
+        Object.hasOwnMethod = hasOwnMethod;
+    }
+    Object.patch = patch;
+    Object.pick = pick;
+    Object.omit = omit;
+    Object.as = as;
+    Object.isValid = isValid;
+
+    /** Returns the sum value of the given values. */
+    function sum(...values) {
+        return values.reduce((sum, value) => sum + value, 0);
+    }
+    /** Returns the average value of the given values. */
+    function avg(...values) {
+        return Math.sum(...values) / values.length;
+    }
+    /** Returns a the product value multiplied by the given values. */
+    function product(...values) {
+        var _a;
+        return values.slice(1).reduce((sum, value) => sum * value, (_a = values[0]) !== null && _a !== void 0 ? _a : 0);
+    }
+
+    Math.sum = sum;
+    Math.avg = avg;
+    Math.product = product;
+
+    /** Try to resolve a promise with a timeout limit. */
+    async function timeout(value, ms) {
+        const result = await Promise.race([
+            value,
+            new Promise((_, reject) => setTimeout(() => {
+                reject(new Error(`operation timeout after ${ms}ms`));
+            }, ms))
+        ]);
+        return result;
+    }
+    /** Resolves a promise only after the given duration. */
+    async function after(value, ms) {
+        const [result] = await Promise.allSettled([
+            value,
+            new Promise(resolve => setTimeout(resolve, ms))
+        ]);
+        if (result.status === "fulfilled") {
+            return result.value;
+        }
+        else {
+            throw result.reason;
+        }
+    }
+    /** Blocks the context for a given time. */
+    async function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    /** Blocks the context until the test is passed. */
+    async function until(test) {
+        if (typeof globalThis.setImmediate === "undefined") {
+            // @ts-ignore
+            globalThis.setImmediate = (cb) => setTimeout(cb, 0);
+        }
+        do {
+            await new Promise(globalThis.setImmediate);
+        } while ((await test()) == false);
+    }
+
+    Promise.timeout = timeout;
+    Promise.after = after;
+    Promise.sleep = sleep;
+    Promise.until = until;
+
+    const inverse = Symbol("inverse");
+    /** Bi-directional map, keys and values are unique and map to each other. */
+    class BiMap extends Map {
+        get [Symbol.toStringTag]() {
+            return "BiMap";
+        }
+        constructor(iterable = null) {
+            super();
+            this[inverse] = new Map();
+            if (iterable) {
+                for (const [key, value] of iterable) {
+                    this.set(key, value);
+                }
+            }
+        }
+        set(key, value) {
+            super.set(key, value);
+            this[inverse].set(value, key);
+            return this;
+        }
+        getKey(value) {
+            return this[inverse].get(value);
+        }
+        hasValue(value) {
+            return this[inverse].has(value);
+        }
+        deleteValue(value) {
+            if (this[inverse].has(value)) {
+                const key = this[inverse].get(value);
+                super.delete(key);
+                this[inverse].delete(value);
+                return true;
+            }
+            return false;
+        }
+        clear() {
+            super.clear();
+            this[inverse].clear();
+        }
+    }
+
+    const internal = Symbol("internal");
+    /** Case-insensitive map, keys are case-insensitive. */
+    class CiMap {
+        get [Symbol.toStringTag]() {
+            return "CiMap";
+        }
+        get size() {
+            return this[internal].size;
+        }
+        constructor(iterable = null) {
+            this[internal] = new Map();
+            if (iterable) {
+                for (const [key, value] of iterable) {
+                    this.set(key, value);
+                }
+            }
+        }
+        set(key, value) {
+            const id = String(key).toLowerCase();
+            this[internal].set(id, { key, value });
+            return this;
+        }
+        get(key) {
+            var _a;
+            const id = String(key).toLowerCase();
+            return (_a = this[internal].get(id)) === null || _a === void 0 ? void 0 : _a.value;
+        }
+        has(key) {
+            const id = String(key).toLowerCase();
+            return this[internal].has(id);
+        }
+        delete(key) {
+            const id = String(key).toLowerCase();
+            return this[internal].delete(id);
+        }
+        clear() {
+            this[internal].clear();
+        }
+        *entries() {
+            for (const { key, value } of this[internal].values()) {
+                yield [key, value];
+            }
+        }
+        *keys() {
+            for (const { key } of this[internal].values()) {
+                yield key;
+            }
+        }
+        *values() {
+            for (const { value } of this[internal].values()) {
+                yield value;
+            }
+        }
+        forEach(callbackfn, thisArg) {
+            this[internal].forEach(({ key, value }) => {
+                callbackfn(value, key, this);
+            }, thisArg);
+        }
+        [Symbol.iterator]() {
+            return this.entries();
+        }
+    }
+
+    // @ts-ignore
+    globalThis["BiMap"] = BiMap;
+    // @ts-ignore
+    globalThis["CiMap"] = CiMap;
+
+    class Exception extends Error {
+        constructor(message, options = 0) {
+            super(message);
+            this.code = 0;
+            Object.defineProperty(this, "name", {
+                configurable: true,
+                enumerable: false,
+                writable: true,
+                value: this.constructor.name,
+            });
+            if (typeof options === "number") {
+                this.code = options;
+            }
+            else {
+                if (options.cause) {
+                    Object.defineProperty(this, "cause", {
+                        configurable: true,
+                        enumerable: false,
+                        writable: true,
+                        value: options.cause,
+                    });
+                }
+                if (options.code) {
+                    this.code = options.code;
+                }
+            }
+        }
+    }
+
+    /** Transform the error to a plain object. */
+    function toObject(err) {
+        return omit(err, []);
+    }
+    function fromObject(obj) {
+        var _a;
+        // @ts-ignore
+        let ctor = globalThis[obj.name];
+        if (!ctor) {
+            if (obj["name"] === "Exception") {
+                ctor = Exception;
+            }
+            else {
+                ctor = Error;
+            }
+        }
+        const err = Object.create(ctor.prototype, {
+            message: {
+                configurable: true,
+                enumerable: false,
+                writable: true,
+                value: (_a = obj["message"]) !== null && _a !== void 0 ? _a : "",
+            },
+        });
+        if (err.name !== obj["name"]) {
+            Object.defineProperty(err, "name", {
+                configurable: true,
+                enumerable: false,
+                writable: true,
+                value: obj["name"],
+            });
+        }
+        if (obj["stack"] !== undefined) {
+            Object.defineProperty(err, "stack", {
+                configurable: true,
+                enumerable: false,
+                writable: true,
+                value: obj["stack"],
+            });
+        }
+        if (obj["cause"] != undefined) {
+            Object.defineProperty(err, "cause", {
+                configurable: true,
+                enumerable: false,
+                writable: true,
+                value: obj["cause"],
+            });
+        }
+        const otherKeys = Reflect.ownKeys(obj).filter(key => !["name", "message", "stack", "cause"].includes(key));
+        otherKeys.forEach(key => {
+            // @ts-ignore
+            err[key] = obj[key];
+        });
+        return err;
+    }
+
+    //@ts-ignore
+    globalThis["Exception"] = Exception;
+    Error.toObject = toObject;
+    Error.fromObject = fromObject;
+    Error.prototype.toJSON = function toJSON() {
+        return toObject(this);
+    };
+
+    var checkIterable = {};
+
+    Object.defineProperty(checkIterable, "__esModule", {
+      value: true
+    });
+    checkIterable.isIterable = isIterable;
+    checkIterable.isAsyncIterable = isAsyncIterable;
+    checkIterable.isIteratorLike = isIteratorLike;
+    checkIterable.isIterableIterator = isIterableIterator;
+    checkIterable.isAsyncIterableIterator = isAsyncIterableIterator;
+    var isGenerator_1 = checkIterable.isGenerator = isGenerator;
+    var isAsyncGenerator_1 = checkIterable.isAsyncGenerator = isAsyncGenerator;
+    function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
+    if (!Symbol.asyncIterator) {
+      Symbol.asyncIterator = Symbol("Symbol.asyncIterator");
+    }
+
+    /**
+     * Checks if the given object is an Iterable (implemented `@@iterator`).
+     * @returns {obj is Iterable<any>}
+     */
+    function isIterable(obj) {
+      return obj !== null && obj !== undefined && typeof obj[Symbol.iterator] === "function";
+    }
+
+    /**
+     * Checks if the given object is an AsyncIterable (implemented `@@asyncIterator`).
+     * @returns {obj is AsyncIterable<any>}
+     */
+    function isAsyncIterable(obj) {
+      return obj !== null && obj !== undefined && typeof obj[Symbol.asyncIterator] === "function";
+    }
+
+    /**
+     * Checks if the given object is an IteratorLike (implemented `next`).
+     * @returns {obj is { next: Function }}
+     */
+    function isIteratorLike(obj) {
+      // An iterable object has a 'next' method, however including a 'next' method
+      // doesn't ensure the object is an iterator, it is only iterator-like.
+      return _typeof(obj) === "object" && obj !== null && typeof obj.next === "function";
+    }
+
+    /**
+     * Checks if the given object is an IterableIterator (implemented both
+     * `@@iterator` and `next`).
+     */
+    function isIterableIterator(obj) {
+      return isIteratorLike(obj) && typeof obj[Symbol.iterator] === "function";
+    }
+
+    /**
+     * Checks if the given object is an AsyncIterableIterator (implemented
+     * both `@@asyncIterator` and `next`).
+     * @returns {obj is AsyncIterableIterator<any>}
+     */
+    function isAsyncIterableIterator(obj) {
+      return isIteratorLike(obj) && typeof obj[Symbol.asyncIterator] === "function";
+    }
+
+    /**
+     * Checks if the given object is a Generator.
+     * @returns {obj is Generator}
+     */
+    function isGenerator(obj) {
+      return isIterableIterator(obj) && hasGeneratorSpecials(obj);
+    }
+
+    /**
+     * Checks if the given object is an AsyncGenerator.
+     * @returns {obj is AsyncGenerator}
+     */
+    function isAsyncGenerator(obj) {
+      return isAsyncIterableIterator(obj) && hasGeneratorSpecials(obj);
+    }
+    function hasGeneratorSpecials(obj) {
+      return typeof obj["return"] === "function" && typeof obj["throw"] === "function";
+    }
+
+    var _a;
+    const AsyncFunction = (async function () { }).constructor;
+    const AsyncGeneratorFunction = (async function* () { }).constructor;
+    function _try(fn, ...args) {
+        if (typeof fn === "function") {
+            try {
+                return _try(fn.apply(void 0, args));
+            }
+            catch (err) {
+                return [err, undefined];
+            }
+        }
+        let returns = fn;
+        // Implementation details should be ordered from complex to simple.
+        if (isAsyncGenerator_1(returns)) {
+            return (async function* () {
+                let input;
+                let result;
+                // Use `while` loop instead of `for...of...` in order to
+                // retrieve the return value of a generator function.
+                while (true) {
+                    try {
+                        const { done, value } = await returns.next(input);
+                        if (done) {
+                            result = value;
+                            break;
+                        }
+                        else {
+                            // Receive any potential input value that passed
+                            // to the outer `next()` call, and pass them to
+                            // `res.next()` in the next call.
+                            input = yield Promise.resolve([null, value]);
+                        }
+                    }
+                    catch (err) {
+                        // If any error occurs, yield that error as resolved
+                        // and break the loop immediately, indicating the
+                        // process is forced broken.
+                        yield Promise.resolve([err, undefined]);
+                        break;
+                    }
+                }
+                return [null, result];
+            })();
+        }
+        else if (isGenerator_1(returns)) {
+            return (function* () {
+                let input;
+                let result;
+                while (true) {
+                    try {
+                        const { done, value } = returns.next(input);
+                        if (done) {
+                            result = value;
+                            break;
+                        }
+                        else {
+                            input = yield [null, value];
+                        }
+                    }
+                    catch (err) {
+                        yield [err, undefined];
+                        break;
+                    }
+                }
+                return [null, result];
+            })();
+        }
+        else if (typeof (returns === null || returns === void 0 ? void 0 : returns.then) === "function") {
+            returns = returns.then((value) => [null, value]);
+            return Promise.resolve(returns).catch((err) => [err, undefined]);
+        }
+        else {
+            return [null, returns];
+        }
+    }
+    /**
+     * Inspired by Golang, creates a function that receives a `defer` function which can be used
+     * to carry deferred jobs that will be run after the main function is complete.
+     *
+     * Multiple calls of the `defer` function is supported, and the callbacks are called in the
+     * LIFO order. Callbacks can be async functions if the main function is an async function or
+     * an async generator function, and all the running procedures will be awaited.
+     *
+     * @example
+     *  const getVersion = await jsext.func(async (defer) => {
+     *      const file = await fs.open("./package.json", "r");
+     *      defer(() => file.close());
+     *
+     *      const content = await file.readFile("utf8");
+     *      const pkg = JSON.parse(content);
+     *
+     *      return pkg.version as string;
+     *  });
+     */
+    function func(fn) {
+        return function (...args) {
+            var _a;
+            const callbacks = [];
+            const defer = (cb) => void callbacks.push(cb);
+            let result;
+            try {
+                const returns = fn.call(this, defer, ...args);
+                if (isAsyncGenerator_1(returns)) {
+                    const gen = (async function* () {
+                        var _a;
+                        let input;
+                        // Use `while` loop instead of `for...of...` in order to
+                        // retrieve the return value of a generator function.
+                        while (true) {
+                            try {
+                                const { done, value } = await returns.next(input);
+                                if (done) {
+                                    result = { value, error: null };
+                                    break;
+                                }
+                                else {
+                                    // Receive any potential input value that passed
+                                    // to the outer `next()` call, and pass them to
+                                    // `res.next()` in the next call.
+                                    input = yield Promise.resolve(value);
+                                }
+                            }
+                            catch (error) {
+                                // If any error occurs, capture that error and break
+                                // the loop immediately, indicating the process is
+                                // forced broken.
+                                result = { value: void 0, error };
+                                break;
+                            }
+                        }
+                        for (let i = callbacks.length - 1; i >= 0; i--) {
+                            await ((_a = callbacks[i]) === null || _a === void 0 ? void 0 : _a.call(callbacks));
+                        }
+                        if (result.error) {
+                            throw result.error;
+                        }
+                        else {
+                            return result.value;
+                        }
+                    })();
+                    return gen;
+                }
+                else if (isGenerator_1(returns)) {
+                    const gen = (function* () {
+                        var _a;
+                        let input;
+                        while (true) {
+                            try {
+                                const { done, value } = returns.next(input);
+                                if (done) {
+                                    result = { value, error: null };
+                                    break;
+                                }
+                                else {
+                                    input = yield value;
+                                }
+                            }
+                            catch (error) {
+                                result = { value: void 0, error };
+                                break;
+                            }
+                        }
+                        for (let i = callbacks.length - 1; i >= 0; i--) {
+                            (_a = callbacks[i]) === null || _a === void 0 ? void 0 : _a.call(callbacks);
+                        }
+                        if (result.error) {
+                            throw result.error;
+                        }
+                        else {
+                            return result.value;
+                        }
+                    })();
+                    return gen;
+                }
+                else if (typeof (returns === null || returns === void 0 ? void 0 : returns.then) === "function") {
+                    return Promise.resolve(returns).then(value => ({
+                        value,
+                        error: null,
+                    })).catch((error) => ({
+                        value: void 0,
+                        error,
+                    })).then(async (result) => {
+                        var _a;
+                        for (let i = callbacks.length - 1; i >= 0; i--) {
+                            await ((_a = callbacks[i]) === null || _a === void 0 ? void 0 : _a.call(callbacks));
+                        }
+                        if (result.error) {
+                            throw result.error;
+                        }
+                        else {
+                            return result.value;
+                        }
+                    });
+                }
+                else {
+                    result = { value: returns, error: null };
+                }
+            }
+            catch (error) {
+                result = { value: void 0, error };
+            }
+            for (let i = callbacks.length - 1; i >= 0; i--) {
+                (_a = callbacks[i]) === null || _a === void 0 ? void 0 : _a.call(callbacks);
+            }
+            if (result.error) {
+                throw result.error;
+            }
+            else {
+                return result.value;
+            }
+        };
+    }
+    /**
+     * Wraps a function inside another function and returns a new function
+     * that copies the original function's name and properties.
+     */
+    function wrap(fn, wrapper) {
+        const wrapped = function (...args) {
+            return wrapper.call(this, fn, ...args);
+        };
+        Object.defineProperty(wrapped, "name", Object.getOwnPropertyDescriptor(fn, "name"));
+        Object.defineProperty(wrapped, "length", Object.getOwnPropertyDescriptor(fn, "length"));
+        Object.defineProperty(wrapped, "toString", {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: fn.toString.bind(fn),
+        });
+        return wrapped;
+    }
+    const throttleCaches = new Map();
+    function throttle(handler, options) {
+        const key = typeof options === "number" ? null : options.for;
+        const duration = typeof options === "number" ? options : options.duration;
+        const handleCall = function (cache, ...args) {
+            var _a;
+            if (cache.result && Date.now() < ((_a = cache.expires) !== null && _a !== void 0 ? _a : 0)) {
+                if (cache.result.error) {
+                    throw cache.result.error;
+                }
+                else {
+                    return cache.result.value;
+                }
+            }
+            try {
+                const returns = handler.call(this, ...args);
+                cache.result = { value: returns };
+                cache.expires = Date.now() + duration;
+                return returns;
+            }
+            catch (error) {
+                cache.result = { error };
+                cache.expires = Date.now() + duration;
+                throw error;
+            }
+        };
+        if (!key) {
+            const cache = { for: null };
+            return function (...args) {
+                return handleCall.call(this, cache, ...args);
+            };
+        }
+        else {
+            let cache = throttleCaches.get(key);
+            if (!cache) {
+                cache = { for: key };
+                throttleCaches.set(key, cache);
+            }
+            return function (...args) {
+                return handleCall.call(this, cache, ...args);
+            };
+        }
+    }
+    /**
+     * Merges properties and methods only if they're missing in the class.
+     */
+    function mergeIfNotExists(proto, source, mergeSuper = false) {
+        const props = Reflect.ownKeys(source);
+        for (const prop of props) {
+            if (prop == "constructor") {
+                continue;
+            }
+            else if (mergeSuper) {
+                // When merging properties from super classes, the properties in the
+                // base class has the first priority and shall not be overwrite.
+                if (!(prop in proto)) {
+                    setProp(proto, source, prop);
+                }
+            }
+            else if (!proto.hasOwnProperty(prop)) {
+                setProp(proto, source, prop);
+            }
+        }
+        return proto;
+    }
+    /**
+     * Merges properties and methods across the prototype chain.
+     */
+    function mergeHierarchy(ctor, mixin, mergeSuper = false) {
+        mergeIfNotExists(ctor.prototype, mixin.prototype, mergeSuper);
+        const _super = Object.getPrototypeOf(mixin);
+        // Every user defined class or functions that can be instantiated have their
+        // own names, if no name appears, that means the function has traveled to 
+        // the root of the hierarchical tree.
+        if (_super.name) {
+            mergeHierarchy(ctor, _super, true);
+        }
+    }
+    /**
+     * Sets property for prototype based on the given source and prop name properly.
+     */
+    function setProp(proto, source, prop) {
+        const desc = Object.getOwnPropertyDescriptor(source, prop);
+        if (desc) {
+            Object.defineProperty(proto, prop, desc);
+        }
+        else {
+            proto[prop] = source[prop];
+        }
+    }
+    function mixins(base, ...mixins) {
+        const obj = { ctor: null };
+        obj.ctor = class extends base {
+        }; // make sure this class has no name
+        for (const mixin of mixins) {
+            if (typeof mixin == "function") {
+                mergeHierarchy(obj.ctor, mixin);
+            }
+            else if (mixin && typeof mixin == "object") {
+                mergeIfNotExists(obj.ctor.prototype, mixin);
+            }
+            else {
+                throw new TypeError("mixin must be a constructor or an object");
+            }
+        }
+        return obj.ctor;
+    }
+    /** Checks if a class is a subclass of another class. */
+    function isSubclassOf(ctor1, ctor2) {
+        return typeof ctor1 === "function"
+            && typeof ctor2 === "function"
+            && ctor1.prototype instanceof ctor2;
+    }
+    function read(source, eventMap = undefined) {
+        var _a;
+        if (typeof source[Symbol.asyncIterator] === "function") {
+            return source;
+        }
+        const iterable = {
+            ended: false,
+            error: null,
+            queue: [],
+            consumers: [],
+            next() {
+                return new Promise((resolve, reject) => {
+                    if (this.error && !this.ended) {
+                        // If there is error occurred during the last transmission and the iterator
+                        // hasn't been closed, reject that error and stop the iterator immediately.
+                        reject(this.error);
+                        this.ended = true;
+                    }
+                    else if (this.ended && !this.queue.length) {
+                        // If the iterator has is closed, resolve the pending consumer with void
+                        // value.
+                        resolve({ value: void 0, done: true });
+                    }
+                    else if (this.queue.length > 0) {
+                        // If there are data in the queue, resolve the the first piece immediately.
+                        resolve({ value: this.queue.shift(), done: false });
+                    }
+                    else {
+                        // If there are no queued data, push the consumer to a waiting queue.
+                        this.consumers.push({ resolve, reject });
+                    }
+                });
+            }
+        };
+        const handleMessage = (data) => {
+            var _a;
+            if (iterable.consumers.length > 0) {
+                (_a = iterable.consumers.shift()) === null || _a === void 0 ? void 0 : _a.resolve({ value: data, done: false });
+            }
+            else {
+                iterable.queue.push(data);
+            }
+        };
+        const handleClose = () => {
+            iterable.ended = true;
+            let consumer;
+            while (consumer = iterable.consumers.shift()) {
+                consumer.resolve({ value: undefined, done: true });
+            }
+        };
+        const handleError = (err) => {
+            iterable.error = err;
+            if (iterable.consumers.length > 0) {
+                iterable.consumers.forEach(item => {
+                    item.reject(err);
+                });
+                iterable.consumers = [];
+            }
+        };
+        const handleBrowserErrorEvent = (ev) => {
+            let err;
+            if (ev instanceof ErrorEvent) {
+                err = ev.error || new Error(ev.message);
+            }
+            else {
+                // @ts-ignore
+                err = new Error("something went wrong", { cause: ev });
+            }
+            handleError(err);
+        };
+        const proto = Object.getPrototypeOf(source);
+        const msgDesc = Object.getOwnPropertyDescriptor(proto, "onmessage");
+        if ((msgDesc === null || msgDesc === void 0 ? void 0 : msgDesc.set) && typeof source.close === "function") { // WebSocket or EventSource
+            const errDesc = Object.getOwnPropertyDescriptor(proto, "onerror");
+            const closeDesc = Object.getOwnPropertyDescriptor(proto, "onclose");
+            let cleanup;
+            if ((eventMap === null || eventMap === void 0 ? void 0 : eventMap.event) &&
+                (eventMap === null || eventMap === void 0 ? void 0 : eventMap.event) !== "message" &&
+                typeof source["addEventListener"] === "function") { // for EventSource listening on custom events
+                const es = source;
+                const eventName = eventMap.event;
+                const msgListener = (ev) => {
+                    handleMessage(ev.data);
+                };
+                es.addEventListener(eventName, msgListener);
+                cleanup = () => {
+                    es.removeEventListener(eventName, msgListener);
+                };
+            }
+            else {
+                msgDesc.set.call(source, (ev) => {
+                    handleMessage(ev.data);
+                });
+                cleanup = () => {
+                    var _a;
+                    (_a = msgDesc.set) === null || _a === void 0 ? void 0 : _a.call(source, null);
+                };
+            }
+            (_a = errDesc === null || errDesc === void 0 ? void 0 : errDesc.set) === null || _a === void 0 ? void 0 : _a.call(source, handleBrowserErrorEvent);
+            if (closeDesc === null || closeDesc === void 0 ? void 0 : closeDesc.set) { // WebSocket
+                closeDesc.set.call(source, () => {
+                    var _a, _b;
+                    handleClose();
+                    (_a = closeDesc.set) === null || _a === void 0 ? void 0 : _a.call(source, null);
+                    (_b = errDesc === null || errDesc === void 0 ? void 0 : errDesc.set) === null || _b === void 0 ? void 0 : _b.call(source, null);
+                    cleanup === null || cleanup === void 0 ? void 0 : cleanup();
+                });
+            }
+            else if (!(closeDesc === null || closeDesc === void 0 ? void 0 : closeDesc.set) && typeof source.close === "function") { // EventSource
+                // EventSource by default does not trigger close event, we need to make sure when
+                // it calls the close() function, the iterator is automatically closed.
+                const es = source;
+                const _close = es.close;
+                es.close = function close() {
+                    var _a;
+                    _close.call(es);
+                    handleClose();
+                    es.close = _close;
+                    (_a = errDesc === null || errDesc === void 0 ? void 0 : errDesc.set) === null || _a === void 0 ? void 0 : _a.call(source, null);
+                    cleanup === null || cleanup === void 0 ? void 0 : cleanup();
+                };
+            }
+        }
+        else if (typeof source.send === "function" && typeof source.close === "function") {
+            // non-standard WebSocket implementation
+            const ws = source;
+            ws.onmessage = (ev) => {
+                handleMessage(ev.data);
+            };
+            ws.onerror = handleBrowserErrorEvent;
+            ws.onclose = () => {
+                handleClose();
+                ws.onclose = null;
+                ws.onerror = null;
+                ws.onmessage = null;
+            };
+        }
+        else if (typeof source["addEventListener"] === "function") { // EventTarget
+            const target = source;
+            const msgEvent = (eventMap === null || eventMap === void 0 ? void 0 : eventMap.message) || "message";
+            const errEvent = (eventMap === null || eventMap === void 0 ? void 0 : eventMap.error) || "error";
+            const closeEvent = (eventMap === null || eventMap === void 0 ? void 0 : eventMap.close) || "close";
+            const msgListener = (ev) => {
+                if (ev instanceof MessageEvent) {
+                    handleMessage(ev.data);
+                }
+            };
+            target.addEventListener(msgEvent, msgListener);
+            target.addEventListener(errEvent, handleBrowserErrorEvent);
+            target.addEventListener(closeEvent, function closeListener() {
+                handleClose();
+                target.removeEventListener(closeEvent, closeListener);
+                target.removeEventListener(msgEvent, msgListener);
+                target.removeEventListener(errEvent, handleBrowserErrorEvent);
+            });
+        }
+        else if (typeof source["on"] === "function") { // EventEmitter
+            const target = source;
+            const dataEvent = (eventMap === null || eventMap === void 0 ? void 0 : eventMap.data) || "data";
+            const errEvent = (eventMap === null || eventMap === void 0 ? void 0 : eventMap.error) || "error";
+            const endEvent = (eventMap === null || eventMap === void 0 ? void 0 : eventMap.close) || "close";
+            target.on(dataEvent, handleMessage);
+            target.once(errEvent, handleError);
+            target.once(endEvent, () => {
+                handleClose();
+                target.off(dataEvent, handleMessage);
+                target.off(dataEvent, handleError);
+            });
+        }
+        else {
+            throw new TypeError("the input source cannot be read as an AsyncIterable object");
+        }
+        return {
+            [Symbol.asyncIterator]() {
+                return iterable;
+            }
+        };
+    }
+    const isNode = typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
+    /**
+     * The maximum number of workers allowed to exist at the same time.
+     *
+     * The primary purpose of the workers is not mean to run tasks in parallel, but run them in separate
+     * from the main thread, so that aborting tasks can be achieved by terminating the worker thread and
+     * it will not affect the main thread.
+     *
+     * That said, the worker thread can still be used to achieve parallelism, but it should be noticed
+     * that only the numbers of tasks that equals to the CPU core numbers will be run at the same time.
+     */
+    const maxWorkerNum = 16;
+    const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
+    let workerPool = [];
+    // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
+    // pop a consumer and run the callback, which will retry gaining the worker and retry the task.
+    const workerConsumerQueue = [];
+    /**
+     * Runs a task in the `script` in a worker thread that can be aborted during runtime.
+     *
+     * In Node.js, the `script` can be either a CommonJS module or an ES module, and is relative to
+     * the current working directory if not absolute.
+     *
+     * In browser or Deno, the `script` can only be an ES module, and is relative to the current URL
+     * (or working directory for Deno) if not absolute.
+     */
+    async function run(script, args = undefined, options = undefined) {
+        var _a, _b;
+        const msg = {
+            type: "ffi",
+            script,
+            baseUrl: "",
+            fn: (options === null || options === void 0 ? void 0 : options.fn) || "default",
+            args: args !== null && args !== void 0 ? args : [],
+        };
+        if (typeof Deno === "object") {
+            msg.baseUrl = "file://" + Deno.cwd() + "/";
+        }
+        else if (isNode) {
+            msg.baseUrl = "file://" + process.cwd() + "/";
+        }
+        else if (typeof location === "object") {
+            msg.baseUrl = location.href;
+        }
+        // `buffer` is used to store data pieces yielded by generator functions before they are
+        // consumed. `error` and `result` serves similar purposes for function results.
+        const buffer = [];
+        let error = null;
+        let result;
+        let resolver;
+        let iterator;
+        let workerId;
+        let poolRecord;
+        let release;
+        let terminate = () => Promise.resolve(void 0);
+        const timeout = (options === null || options === void 0 ? void 0 : options.timeout) ? setTimeout(() => {
+            const err = new Error(`operation timeout after ${options.timeout}ms`);
+            if (resolver) {
+                resolver.reject(err);
+            }
+            else {
+                error = err;
+            }
+            terminate();
+        }, options.timeout) : null;
+        const handleMessage = (msg) => {
+            var _a;
+            if (msg && typeof msg === "object" && typeof msg.type === "string") {
+                if (msg.type === "error") {
+                    return handleError(msg.error);
+                }
+                else if (msg.type === "return") {
+                    if (options === null || options === void 0 ? void 0 : options.keepAlive) {
+                        // Release before resolve.
+                        release === null || release === void 0 ? void 0 : release();
+                        if (workerConsumerQueue.length) {
+                            // Queued consumer now has chance to gain the worker.
+                            (_a = workerConsumerQueue.shift()) === null || _a === void 0 ? void 0 : _a();
+                        }
+                    }
+                    else {
+                        terminate();
+                    }
+                    if (resolver) {
+                        resolver.resolve(msg.value);
+                    }
+                    else {
+                        result = { value: msg.value };
+                    }
+                }
+                else if (msg.type === "yield") {
+                    if (msg.done) {
+                        // The final message of yield event is the return value.
+                        handleMessage({ type: "return", value: msg.value });
+                    }
+                    else {
+                        if (iterator) {
+                            iterator.emit("data", msg.value);
+                        }
+                        else {
+                            buffer.push(msg.value);
+                        }
+                    }
+                }
+            }
+        };
+        const handleError = (err) => {
+            if (resolver) {
+                resolver.reject(err);
+            }
+            else if (iterator) {
+                iterator.emit("error", err);
+            }
+            else {
+                error = err;
+            }
+        };
+        const handleExit = () => {
+            var _a;
+            if (poolRecord) {
+                // Clean the pool before resolve.
+                workerPool = workerPool.filter(record => record !== poolRecord);
+                if (workerConsumerQueue.length) {
+                    // Queued consumer now has chance to create new worker.
+                    (_a = workerConsumerQueue.shift()) === null || _a === void 0 ? void 0 : _a();
+                }
+            }
+            if (resolver) {
+                resolver.resolve(void 0);
+            }
+            else if (iterator) {
+                iterator.emit("close");
+            }
+            else if (!error && !result) {
+                result = { value: void 0 };
+            }
+        };
+        if (isNode) {
+            const path = await import('path');
+            const { fileURLToPath } = await import('url');
+            const dirname = path.dirname(fileURLToPath((typeof document === 'undefined' && typeof location === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : typeof document === 'undefined' ? location.href : (_documentCurrentScript && _documentCurrentScript.src || new URL('index.js', document.baseURI).href))));
+            let entry;
+            if (["cjs", "esm"].includes(path.basename(dirname))) { // compiled
+                entry = path.join(path.dirname(dirname), "worker.mjs");
+            }
+            else {
+                entry = path.join(dirname, "worker.mjs");
+            }
+            if ((options === null || options === void 0 ? void 0 : options.adapter) === "child_process") {
+                let worker;
+                let ok = true;
+                poolRecord = workerPool.find(item => {
+                    return item.adapter === "child_process" && !item.busy;
+                });
+                if (poolRecord) {
+                    worker = poolRecord.worker;
+                    workerId = poolRecord.workerId;
+                    poolRecord.busy = true;
+                }
+                else if (workerPool.length < maxWorkerNum) {
+                    const { fork } = await import('child_process');
+                    const isPrior14 = parseInt(process.version.slice(1)) < 14;
+                    worker = fork(entry, {
+                        stdio: "inherit",
+                        serialization: isPrior14 ? "advanced" : "json",
+                    });
+                    workerId = worker.pid;
+                    ok = await new Promise((resolve) => {
+                        worker.once("exit", () => {
+                            if (error) {
+                                // The child process took too long to start and cause timeout error.
+                                resolve(false);
+                            }
+                        });
+                        worker.once("message", () => {
+                            worker.removeAllListeners("exit");
+                            resolve(true);
+                        });
+                    });
+                    // Fill the worker pool regardless the current call should keep-alive or not,
+                    // this will make sure that the total number of workers will not exceed the
+                    // maxWorkerNum. If the the call doesn't keep-alive the worker, it will be
+                    // cleaned after the call.
+                    ok && workerPool.push(poolRecord = {
+                        workerId,
+                        worker,
+                        adapter: "child_process",
+                        busy: true,
+                    });
+                }
+                else {
+                    // Put the current call in the consumer queue if there are no workers available,
+                    // once an existing call finishes, the queue will pop the its head consumer and
+                    // retry.
+                    return new Promise((resolve) => {
+                        workerConsumerQueue.push(resolve);
+                    }).then(() => run(script, args, options));
+                }
+                release = () => {
+                    // Remove the event listener so that later calls will not mess up.
+                    worker.off("message", handleMessage);
+                    poolRecord && (poolRecord.busy = false);
+                };
+                terminate = () => Promise.resolve(void worker.kill(1));
+                if (ok) {
+                    worker.send(msg);
+                    worker.on("message", handleMessage);
+                    worker.once("error", handleError);
+                    worker.once("exit", handleExit);
+                }
+            }
+            else {
+                let worker;
+                let ok = true;
+                poolRecord = workerPool.find(item => {
+                    return item.adapter === "worker_threads" && !item.busy;
+                });
+                if (poolRecord) {
+                    worker = poolRecord.worker;
+                    workerId = poolRecord.workerId;
+                    poolRecord.busy = true;
+                }
+                else if (workerPool.length < maxWorkerNum) {
+                    const { Worker } = await import('worker_threads');
+                    worker = new Worker(entry);
+                    // `threadId` may not exist in Bun.
+                    workerId = (_a = worker.threadId) !== null && _a !== void 0 ? _a : workerIdCounter.next().value;
+                    ok = await new Promise((resolve) => {
+                        worker.once("exit", () => {
+                            if (error) {
+                                // The child process took too long to start and cause timeout error.
+                                resolve(false);
+                            }
+                        });
+                        worker.once("online", () => {
+                            worker.removeAllListeners("exit");
+                            resolve(true);
+                        });
+                    });
+                    ok && workerPool.push(poolRecord = {
+                        workerId,
+                        worker,
+                        adapter: "worker_threads",
+                        busy: true,
+                    });
+                }
+                else {
+                    return new Promise((resolve) => {
+                        workerConsumerQueue.push(resolve);
+                    }).then(() => run(script, args, options));
+                }
+                release = () => {
+                    worker.off("message", handleMessage);
+                    poolRecord && (poolRecord.busy = false);
+                };
+                terminate = async () => void (await worker.terminate());
+                if (ok) {
+                    worker.postMessage(msg);
+                    worker.on("message", handleMessage);
+                    worker.once("error", handleError);
+                    worker.once("messageerror", handleError);
+                    worker.once("exit", handleExit);
+                }
+            }
+        }
+        else {
+            let worker;
+            poolRecord = workerPool.find(item => {
+                return item.adapter === "worker_threads" && !item.busy;
+            });
+            if (poolRecord) {
+                worker = poolRecord.worker;
+                workerId = poolRecord.workerId;
+                poolRecord.busy = true;
+            }
+            else if (workerPool.length < maxWorkerNum) {
+                let url;
+                if (typeof Deno === "object") {
+                    // Deno can load the module regardless of MINE type.
+                    url = [
+                        ...((typeof document === 'undefined' && typeof location === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : typeof document === 'undefined' ? location.href : (_documentCurrentScript && _documentCurrentScript.src || new URL('index.js', document.baseURI).href)).split("/").slice(0, -1)),
+                        "worker-web.mjs"
+                    ].join("/");
+                }
+                else {
+                    const _url = (options === null || options === void 0 ? void 0 : options.webWorkerEntry)
+                        || "https://raw.githubusercontent.com/ayonli/jsext/main/esm/worker-web.mjs";
+                    const res = await fetch(_url);
+                    let blob;
+                    if ((_b = res.headers.get("content-type")) === null || _b === void 0 ? void 0 : _b.startsWith("application/javascript")) {
+                        blob = await res.blob();
+                    }
+                    else {
+                        const buf = await res.arrayBuffer();
+                        blob = new Blob([new Uint8Array(buf)], {
+                            type: "application/javascript",
+                        });
+                    }
+                    url = URL.createObjectURL(blob);
+                }
+                worker = new Worker(url, { type: "module" });
+                workerId = workerIdCounter.next().value;
+                workerPool.push(poolRecord = {
+                    workerId,
+                    worker,
+                    adapter: "worker_threads",
+                    busy: true,
+                });
+            }
+            else {
+                return new Promise((resolve) => {
+                    workerConsumerQueue.push(resolve);
+                }).then(() => run(script, args, options));
+            }
+            release = () => {
+                worker.onmessage = null;
+                poolRecord && (poolRecord.busy = false);
+            };
+            terminate = async () => {
+                await Promise.resolve(worker.terminate());
+                handleExit();
+            };
+            worker.postMessage(msg);
+            worker.onmessage = (ev) => handleMessage(ev.data);
+            worker.onerror = (ev) => handleMessage(ev.error || new Error(ev.message));
+            worker.onmessageerror = () => {
+                handleError(new Error("unable to deserialize the message"));
+            };
+        }
+        return {
+            workerId,
+            async abort() {
+                timeout && clearTimeout(timeout);
+                await terminate();
+            },
+            async result() {
+                return await new Promise((resolve, reject) => {
+                    if (error) {
+                        reject(error);
+                    }
+                    else if (result) {
+                        resolve(result.value);
+                    }
+                    else {
+                        resolver = { resolve, reject };
+                    }
+                });
+            },
+            async *iterate() {
+                if (resolver) {
+                    throw new Error("result() has been called");
+                }
+                else if (result) {
+                    throw new TypeError("the response is not iterable");
+                }
+                const { EventEmitter } = await import('events');
+                iterator = new EventEmitter();
+                if (buffer.length) {
+                    (async () => {
+                        await Promise.resolve(null);
+                        let msg;
+                        while (msg = buffer.shift()) {
+                            iterator.emit("data", msg);
+                        }
+                    })().catch(console.error);
+                }
+                for await (const msg of read(iterator)) {
+                    yield msg;
+                }
+            },
+        };
+    }
+    const jsext = {
+        try: _try,
+        func,
+        wrap,
+        throttle,
+        mixins,
+        isSubclassOf,
+        read,
+        run,
+    };
+
+    // @ts-ignore
+    globalThis["AsyncFunction"] = AsyncFunction;
+    // @ts-ignore
+    globalThis["AsyncGeneratorFunction"] = AsyncGeneratorFunction;
+
+    return jsext;
+
+}));
 //# sourceMappingURL=index.js.map
