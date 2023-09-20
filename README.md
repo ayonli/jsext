@@ -18,6 +18,16 @@ import jsext from "https://deno.land/x/ayonli_jsext/index.ts"; // since v0.5.0
 
 ## Functions
 
+- `jsext.try`
+- `jsext.func`
+- `jsext.wrap`
+- `jsext.throttle`
+- `jsext.mixins`
+- `jsext.isSubclassOf`
+- `jsext.read`
+- `jsext.run`
+- `jsext.example`
+
 ```ts
 function _try<E = Error, R = any, A extends any[] = any[]>(
     fn: (...args: A) => R,
@@ -59,7 +69,7 @@ if (err) {
 function _try<E = Error, R = any>(job: Promise<R>): Promise<[E | null, R]>;
 ```
 
-Resolves a promise and renders its result in a `[err, res]` tuple.
+Resolves a promise and renders its result in a `[err, val]` tuple.
 
 Note: this function should be called as `jsext.try()`.
 
