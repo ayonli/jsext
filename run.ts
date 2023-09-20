@@ -39,6 +39,28 @@ const workerConsumerQueue: (() => void)[] = [];
  * 
  * In browser or Deno, the `script` can only be an ES module, and is relative to the current URL
  * (or working directory for Deno) if not absolute.
+ * 
+ * @example
+ *  const job1 = await run("./job-example.mjs", ["World"]);
+ *  console.log(await job1.result()); // Hello, World
+ * 
+ *  const job2 = await run<string, [string[]]>("./job-example.mjs", [["foo", "bar"]], {
+ *      fn: "sequence",
+ *  });
+ *  for await (const word of job2.iterate()) {
+ *      console.log(word);
+ *      // Output:
+ *      // foo
+ *      // bar
+ *  }
+ * 
+ *  const job3 = await run<string, [string]>("job-example.mjs", ["foobar"], {
+ *     fn: "takeTooLong",
+ *  });
+ *  await job3.abort();
+ *  const [err, res] = await jsext.try(job3.result());
+ *  console.assert(err === null);
+ *  console.assert(res === undefined);
  */
 export default async function run<T, A extends any[] = any[]>(
     script: string,

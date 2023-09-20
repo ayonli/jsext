@@ -6,6 +6,19 @@ import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.m
 
 /**
  * Invokes an async generator function and renders its yield value and result in a `[err, val]` tuple.
+ * 
+ * @example
+ *  const iter = jsext.try(async function* () {
+ *      // do something that may fail
+ *  });
+ * 
+ *  for await (const [err, val] of iter) {
+ *      if (err) {
+ *          console.error("something went wrong:", err);
+ *      } else {
+ *          console.log("current value:", val);
+ *      }
+ *  }
  */
 export default function _try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
     fn: (...args: A) => AsyncGenerator<T, TReturn, TNext>,
@@ -13,6 +26,19 @@ export default function _try<E = Error, T = any, A extends any[] = any[], TRetur
 ): AsyncGenerator<[E | null, T], [E | null, TReturn], TNext>;
 /**
  * Invokes a generator function and renders its yield value and result in a `[err, val]` tuple.
+ * 
+ * @example
+ *  const iter = jsext.try(function* () {
+ *      // do something that may fail
+ *  });
+ * 
+ *  for (const [err, val] of iter) {
+ *      if (err) {
+ *          console.error("something went wrong:", err);
+ *      } else {
+ *          console.log("current value:", val);
+ *      }
+ *  }
  */
 export default function _try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
     fn: (...args: A) => Generator<T, TReturn, TNext>,
@@ -20,6 +46,15 @@ export default function _try<E = Error, T = any, A extends any[] = any[], TRetur
 ): Generator<[E | null, T], [E | null, TReturn], TNext>;
 /**
  * Invokes an async function and renders its result in a `[err, val]` tuple.
+ * 
+ * @example
+ *  let [err, res] = await jsext.try(async () => {
+ *      return await axios.get("https://example.org");
+ *  });
+ * 
+ *  if (err) {
+ *      res = (err as any)["response"];
+ *  }
  */
 export default function _try<E = Error, R = any, A extends any[] = any[]>(
     fn: (...args: A) => Promise<R>,
@@ -27,6 +62,11 @@ export default function _try<E = Error, R = any, A extends any[] = any[]>(
 ): Promise<[E | null, R]>;
 /**
  * Invokes a function and renders its result in a `[err, val]` tuple.
+ * 
+ * @example
+ *  const [err, res] = jsext.try(() => {
+ *      // do something that may fail
+ *  });
  */
 export default function _try<E = Error, R = any, A extends any[] = any[]>(
     fn: (...args: A) => R,
@@ -34,18 +74,49 @@ export default function _try<E = Error, R = any, A extends any[] = any[]>(
 ): [E | null, R];
 /**
  * Resolves an async generator and renders its yield value and result in a `[err, val]` tuple.
+ * 
+ * @example
+ *  async function* gen() {
+ *      // do something that may fail
+ *  };
+ * 
+ *  for await (const [err, val] of jsext.try(gen())) {
+ *      if (err) {
+ *          console.error("something went wrong:", err);
+ *      } else {
+ *          console.log("current value:", val);
+ *      }
+ *  }
  */
 export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>(
     gen: AsyncGenerator<T, TReturn, TNext>
 ): AsyncGenerator<[E | null, T], [E | null, TReturn], TNext>;
 /**
  * Resolves a generator and renders its yield value and result in a `[err, val]` tuple.
+ * 
+ * @example
+ *  const iter = Number.sequence();
+ * 
+ *  for (const [err, id] of jsext.try(iter)) {
+ *      if (err) {
+ *          console.error("something went wrong:", err);
+ *      } else {
+ *          console.log("current id:", id);
+ *      }
+ *  }
  */
 export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>(
     gen: Generator<T, TReturn, TNext>
 ): Generator<[E | null, T], [E | null, TReturn], TNext>;
 /**
  * Resolves a promise and renders its result in a `[err, res]` tuple.
+ * 
+ * @example
+ *  let [err, res] = await jsext.try(axios.get("https://example.org"));
+ * 
+ *  if (err) {
+ *      res = (err as any)["response"];
+ *  }
  */
 export default function _try<E = Error, R = any>(job: Promise<R>): Promise<[E | null, R]>;
 export default function _try(fn: any, ...args: any[]) {

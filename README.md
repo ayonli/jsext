@@ -33,6 +33,26 @@ Invokes a regular function or an async function and renders its result in a `[er
 
 Note: this function should be called as `jsext.try()`.
 
+**Example**
+
+```ts
+const [err, res] = jsext.try(() => {
+    // do something that may fail
+});
+```
+
+**Example (async)**
+
+```ts
+let [err, res] = await jsext.try(async () => {
+    return await axios.get("https://example.org");
+});
+
+if (err) {
+    res = (err as any)["response"];
+}
+```
+
 ---
 
 ```ts
@@ -42,6 +62,16 @@ function _try<E = Error, R = any>(job: Promise<R>): Promise<[E | null, R]>;
 Resolves a promise and renders its result in a `[err, res]` tuple.
 
 Note: this function should be called as `jsext.try()`.
+
+**Example**
+
+```ts
+let [err, res] = await jsext.try(axios.get("https://example.org"));
+
+if (err) {
+    res = (err as any)["response"];
+}
+```
 
 ---
 
@@ -61,6 +91,38 @@ in a `[err, val]` tuple.
 
 Note: this function should be called as `jsext.try()`.
 
+**Example**
+
+```ts
+const iter = jsext.try(function* () {
+    // do something that may fail
+});
+
+for (const [err, val] of iter) {
+    if (err) {
+        console.error("something went wrong:", err);
+    } else {
+        console.log("current value:", val);
+    }
+}
+```
+
+**Example (async)**
+
+```ts
+const iter = jsext.try(async function* () {
+    // do something that may fail
+});
+
+for await (const [err, val] of iter) {
+    if (err) {
+        console.error("something went wrong:", err);
+    } else {
+        console.log("current value:", val);
+    }
+}
+```
+
 ---
 
 ```ts
@@ -77,6 +139,36 @@ tuple.
 
 Note: this function should be called as `jsext.try()`.
 
+**Example**
+
+```ts
+const iter = Number.sequence();
+
+for (const [err, id] of jsext.try(iter)) {
+    if (err) {
+        console.error("something went wrong:", err);
+    } else {
+        console.log("current id:", id);
+    }
+}
+```
+
+**Example (async)**
+
+```ts
+async function* gen() {
+    // do something that may fail
+};
+
+for await (const [err, val] of jsext.try(gen())) {
+    if (err) {
+        console.error("something went wrong:", err);
+    } else {
+        console.log("current value:", val);
+    }
+}
+```
+
 ---
 
 ```ts
@@ -92,7 +184,7 @@ Multiple calls of the `defer` function is supported, and the callbacks are calle
 LIFO order. Callbacks can be async functions if the main function is an async function or
 an async generator function, and all the running procedures will be awaited.
 
-**Example:**
+**Example**
 
 ```ts
 const getVersion = func(async (defer) => {
@@ -117,6 +209,22 @@ function wrap<T, Fn extends (this: T, ...args: any[]) => any>(
 
 Wraps a function inside another function and returns a new function that copies the original
 function's name and other properties.
+
+**Example**
+
+```ts
+function log(text: string) {
+    console.log(text);
+}
+
+const show = wrap(log, function (fn, text) {
+    return fn.call(this, new Date().toISOString() + " " + text);
+});
+
+console.log(show.name); // log
+console.log(show.length); // 1
+console.assert(show.toString() === log.toString());
+```
 
 ---
 
@@ -143,6 +251,31 @@ Creates a throttled function that will only be run once in a certain amount of t
 If a subsequent call happens within the `duration`, the previous result will be returned and
 the `handler` function will not be invoked.
 
+**Example**
+
+```ts
+const fn = throttle((input: string) => input, 1_000);
+console.log(fn("foo")); // foo
+console.log(fn("bar")); // foo
+
+await Promise.sleep(1_000);
+console.log(fn("bar")); // bar
+```
+
+**Example (with key)**
+
+```ts
+const out1 = await throttle(() => Promise.resolve("foo"), { duration: 1_000, for: "example" })();
+console.log(out1); // foo
+
+const out2 = await throttle(() => Promise.resolve("bar"), { duration: 1_000, for: "example" })();
+console.log(out2); // foo
+
+await Promise.sleep(1_000);
+const out3 = await throttle(() => Promise.resolve("bar"), { duration: 1_000, for: "example" })();
+console.log(out3); // bar
+```
+
 ---
 
 ```ts
@@ -160,6 +293,32 @@ Returns an extended class that combines all mixin methods.
 
 This function does not mutates the base class but create a pivot class instead.
 
+**Example**
+
+```ts
+class Log {
+    log(text: string) {
+        console.log(text);
+    }
+}
+
+class View {
+    display(data: Record<string, any>[]) {
+        console.table(data);
+    }
+}
+
+class Controller extends mixins(View, Log) {
+    constructor(readonly topic: string) {
+        super();
+    }
+}
+
+const ctrl = new Controller("foo");
+ctrl.log("something is happening");
+ctrl.display([{ topic: ctrl.topic, content: "something is happening" }]);
+```
+
 ---
 
 ```ts
@@ -167,6 +326,15 @@ function isSubclassOf<T, B>(ctor1: Constructor<T>, ctor2: Constructor<B>): boole
 ```
 
 Checks if a class is a subclass of another class.
+
+**Example**
+
+```ts
+class Moment extends Date {}
+
+console.assert(isSubclassOf(Moment, Date));
+console.assert(isSubclassOf(Moment, Object)); // all classes are subclasses of Object
+```
 
 ---
 
@@ -189,6 +357,53 @@ function read<T>(target: NodeJS.EventEmitter, eventMap?: {
 Wraps a source as an AsyncIterable object that can be used in the `for...await...` loop
 for reading streaming data.
 
+**Example (EventSource)**
+
+```ts
+// listen to the `onmessage`
+const sse = new EventSource("/sse/message");
+
+for await (const msg of read(sse)) {
+    console.log("receive message:", msg);
+}
+
+// listen to a specific event
+const channel = new EventSource("/sse/broadcast");
+
+for await (const msg of read(channel, { event: "broadcast" })) {
+    console.log("receive message:", msg);
+}
+```
+
+**Example (WebSocket)**
+
+```ts
+const ws = new WebSocket("/ws");
+
+for await (const data of read(ws)) {
+    if (typeof data === "string") {
+        console.log("receive text message:", data);
+    } else {
+        console.log("receive binary data:", data);
+    }
+}
+```
+
+**Example (EventTarget)**
+
+```ts
+for await (const msg of read(self)) {
+    console.log("receive message from the parent window:", msg);
+}
+```
+
+**Example (EventEmitter)**
+
+```ts
+for await (const msg of read(process)) {
+    console.log("receive message from the parent process:", msg);
+}
+```
 ---
 
 ```ts
@@ -239,6 +454,27 @@ the current working directory if not absolute.
 
 In browser or Deno, the `script` can only be an ES module, and is relative to the current URL
 (or working directory for Deno) if not absolute.
+
+**Example (result)**
+
+```ts
+const job1 = await run("./job-example.mjs", ["World"]);
+console.log(await job1.result()); // Hello, World
+```
+
+**Example (iterate)**
+
+```ts
+const job2 = await run<string, [string[]]>("./job-example.mjs", [["foo", "bar"]], {
+    fn: "sequence",
+});
+for await (const word of job2.iterate()) {
+    console.log(word);
+    // Output:
+    // foo
+    // bar
+}
+```
 
 ## Types
 
@@ -487,7 +723,7 @@ import "@ayonli/jsext/error/augment";
     - `prototype`
         - `toJSON(): { [x: string | symbol]: any; }`
 
-## Import all sub-package augmentation at once
+## Import all sub-package augmentations at once
 
 ```js
 import "@ayonli/jsext/augment";
