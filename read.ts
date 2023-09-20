@@ -3,13 +3,53 @@
  * for reading streaming data.
  */
 export default function read<I extends AsyncIterable<any>>(iterable: I): I;
+/**
+ * @example
+ *  // listen to the `onmessage`
+ *  const sse = new EventSource("/sse/message");
+ * 
+ *  for await (const msg of read(sse)) {
+ *      console.log("receive message:", msg);
+ *  }
+ * 
+ *  // listen to a specific event
+ *  const channel = new EventSource("/sse/broadcast");
+ *  
+ *  for await (const msg of read(channel, { event: "broadcast" })) {
+ *      console.log("receive message:", msg);
+ *  }
+ */
 export default function read(es: EventSource, options?: { event?: string; }): AsyncIterable<string>;
+/**
+ * @example
+ *  const ws = new WebSocket("/ws");
+ * 
+ *  for await (const msg of read(ws)) {
+ *      if (typeof data === "string") {
+ *          console.log("receive text message:", data);
+ *      } else {
+ *          console.log("receive binary data:", data);
+ *      }
+ *  }
+ */
 export default function read<T extends Uint8Array | string>(ws: WebSocket): AsyncIterable<T>;
+/**
+ * @example
+ *  for await (const msg of read(self)) {
+ *      console.log("receive message from the parent window:", msg);
+ *  }
+ */
 export default function read<T>(target: EventTarget, eventMap?: {
     message?: string;
     error?: string;
     close?: string;
 }): AsyncIterable<T>;
+/**
+ * @example
+ *  for await (const msg of read(process)) {
+ *      console.log("receive message from the parent process:", msg);
+ *  }
+ */
 export default function read<T>(target: NodeJS.EventEmitter, eventMap?: {
     data?: string;
     error?: string;
@@ -181,13 +221,34 @@ export default function read<T>(source: any, eventMap: {
         });
     } else if (typeof source["on"] === "function") { // EventEmitter
         const target = source as NodeJS.EventEmitter;
-        const dataEvent = eventMap?.data || "data";
-        const errEvent = eventMap?.error || "error";
-        const endEvent = eventMap?.close || "close";
+        let dataEvent: string;
+        let errEvent: string;
+        let closeEvent: string;
+
+        if (typeof process === "object" && source === process) {
+            dataEvent = "message";
+            errEvent = "uncaughtException";
+            closeEvent = "exit";
+        } else if (typeof source["kill"] === "function" && typeof source["send"] === "function") {
+            // child process
+            dataEvent = "message";
+            errEvent = "error";
+            closeEvent = "exit";
+        } else if (typeof source["terminate"] === "function"
+            && typeof source["postMessage"] === "function"
+        ) { // worker thread
+            dataEvent = "message";
+            errEvent = "error";
+            closeEvent = "exit";
+        } else {
+            dataEvent = eventMap?.data || "data";
+            errEvent = eventMap?.error || "error";
+            closeEvent = eventMap?.close || "close";
+        }
 
         target.on(dataEvent, handleMessage);
         target.once(errEvent, handleError);
-        target.once(endEvent, () => {
+        target.once(closeEvent, () => {
             handleClose();
             target.off(dataEvent, handleMessage);
             target.off(dataEvent, handleError);
