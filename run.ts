@@ -1,6 +1,7 @@
 import type { Worker as NodeWorker } from "worker_threads";
 import type { ChildProcess } from "child_process";
 import { sequence } from "./number/index.ts";
+import { isFunction } from "./try.ts";
 import read from "./read.ts";
 
 const isNode = typeof process === "object" && !!process.versions?.node;
@@ -151,7 +152,7 @@ export default async function run<T, A extends any[] = any[]>(
                     handleMessage({ type: "return", value: msg.value });
                 } else {
                     if (iterator) {
-                        if (typeof (iterator as EventTarget).dispatchEvent === "function") {
+                        if (isFunction((iterator as EventTarget).dispatchEvent)) {
                             (iterator as EventTarget).dispatchEvent(
                                 new MessageEvent("message", { data: msg.value })
                             );
@@ -170,7 +171,7 @@ export default async function run<T, A extends any[] = any[]>(
         if (resolver) {
             resolver.reject(err);
         } else if (iterator) {
-            if (typeof (iterator as EventTarget).dispatchEvent === "function") {
+            if (isFunction((iterator as EventTarget).dispatchEvent)) {
                 (iterator as EventTarget).dispatchEvent(
                     new MessageEvent("error", { data: err })
                 );
@@ -195,7 +196,7 @@ export default async function run<T, A extends any[] = any[]>(
         if (resolver) {
             resolver.resolve(void 0);
         } else if (iterator) {
-            if (typeof (iterator as EventTarget).dispatchEvent === "function") {
+            if (isFunction((iterator as EventTarget).dispatchEvent)) {
                 (iterator as EventTarget).dispatchEvent(new MessageEvent("close"));
             } else {
                 (iterator as NodeJS.EventEmitter).emit("close");

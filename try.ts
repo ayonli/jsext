@@ -49,7 +49,7 @@ export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>
  */
 export default function _try<E = Error, R = any>(job: Promise<R>): Promise<[E | null, R]>;
 export default function _try(fn: any, ...args: any[]) {
-    if (typeof fn === "function") {
+    if (isFunction(fn)) {
         try {
             return _try(fn.apply(void 0, args));
         } catch (err) {
@@ -114,10 +114,14 @@ export default function _try(fn: any, ...args: any[]) {
 
             return [null, result];
         })() as Generator<unknown, any, unknown>;
-    } else if (typeof returns?.then === "function") {
+    } else if (isFunction(returns?.then)) {
         returns = (returns as PromiseLike<any>).then((value: any) => [null, value]);
         return Promise.resolve(returns).catch((err: unknown) => [err, undefined]) as any;
     } else {
         return [null, returns];
     }
+}
+
+export function isFunction(val: unknown): val is (...args: any[]) => any {
+    return typeof val === "function";
 }

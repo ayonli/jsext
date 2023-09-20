@@ -61,6 +61,29 @@ function setProp(proto: any, source: any, prop: string | symbol) {
  * 
  * This function does not mutates the base class but create a pivot class
  * instead.
+ * 
+ * @example
+ *  class Log {
+ *      log(text: string) {
+ *          console.log(text);
+ *      }
+ *  }
+ * 
+ *  class View {
+ *      display(data: Record<string, any>[]) {
+ *          console.table(data);
+ *      }
+ *  }
+ * 
+ *  class Controller extends mixins(View, Log) {
+ *      constructor(readonly topic: string) {
+ *          super();
+ *      }
+ *  }
+ * 
+ *  const ctrl = new Controller("foo");
+ *  ctrl.log("something is happening");
+ *  ctrl.display([{ topic: ctrl.topic, content: "something is happening" }]);
  */
 export default function mixins<T extends Constructor<any>, M extends any[]>(
     base: T,
