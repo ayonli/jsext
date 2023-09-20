@@ -11,8 +11,8 @@ import type { Ensured } from "./index.ts";
  * instead of using the built-in `console`.
  * 
  * NOTE: this function is used to simplify the process of writing tests, it does not work in Bun and
- * browsers currently, because Bun removes comments when running the program, and the function
- * relies on Node.js built-in modules.
+ * browsers currently, because Bun removes comments during runtime, and the function relies on
+ * Node.js built-in modules.
  * 
  * @experimental
  * 

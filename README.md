@@ -431,7 +431,7 @@ for await (const msg of read(process)) {
 
 ```ts
 function run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
-    /** If not set, invoke the default function, otherwise invoke the specific function. */
+    /** If not set, invoke the default function, otherwise invoke the specified function. */
     fn?: string;
     /** Automatically abort the task when timeout (in milliseconds). */
     timeout?: number;
@@ -455,7 +455,7 @@ function run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
      * 
      * Or, if the code is bundled, the program won't be able to automatically locate the entry
      * file in the file system, in such case, we can also copy the entry file
-     * (`bundle/worker-web.mjs` for the browser or Deno, `bundle/worker.mjs` for Node.js or Bun)
+     * (`bundle/worker.mjs` for Node.js and Bun, `bundle/worker-web.mjs` for browser and Deno)
      * to a local directory and supply this option instead.
      */
     workerEntry?: string;
@@ -463,19 +463,19 @@ function run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
     workerId: number;
     /** Terminates the worker and abort the task. */
     abort(): Promise<void>;
-    /** Retrieves the return value of the function. */
+    /** Retrieves the return value of the function that has been called.. */
     result(): Promise<T>;
     /** Iterates the yield value if the function returns a generator. */
     iterate(): AsyncIterable<T>;
 }>;
 ```
 
-Runs a `script` in a worker thread that can be aborted during runtime.
+Runs a `script` in a worker thread or child process that can be aborted during runtime.
 
-In Node.js or Bun, the `script` can be either a CommonJS module or an ES module, and is relative to
+In Node.js and Bun, the `script` can be either a CommonJS module or an ES module, and is relative to
 the current working directory if not absolute.
 
-In browser or Deno, the `script` can only be an ES module, and is relative to the current URL
+In browser and Deno, the `script` can only be an ES module, and is relative to the current URL
 (or working directory for Deno) if not absolute.
 
 **Example (result)**
@@ -519,8 +519,8 @@ The example function receives a customized `console` object which will be used t
 instead of using the built-in `console`.
 
 NOTE: this function is used to simplify the process of writing tests, it does not work in Bun and
-browsers currently, because Bun removes comments when running the program, and the function
-relies on Node.js built-in modules.
+browsers currently, because Bun removes comments during runtime, and the function relies on Node.js
+built-in modules.
 
 **Example**
 

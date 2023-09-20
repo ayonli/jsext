@@ -21,12 +21,12 @@ let workerPool = [];
 // pop a consumer and run the callback, which will retry gaining the worker and retry the task.
 const workerConsumerQueue = [];
 /**
- * Runs a `script` in a worker thread that can be aborted during runtime.
+ * Runs a `script` in a worker thread or child process that can be aborted during runtime.
  *
- * In Node.js or Bun, the `script` can be either a CommonJS module or an ES module, and is relative
+ * In Node.js and Bun, the `script` can be either a CommonJS module or an ES module, and is relative
  * to the current working directory if not absolute.
  *
- * In browser or Deno, the `script` can only be an ES module, and is relative to the current URL
+ * In browser and Deno, the `script` can only be an ES module, and is relative to the current URL
  * (or working directory for Deno) if not absolute.
  *
  * @example
