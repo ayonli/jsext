@@ -9,7 +9,7 @@ import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.m
  * tuple.
  * 
  * @example
- *  const iter = jsext.try(async function* () {
+ *  const iter = _try(async function* () {
  *      // do something that may fail
  *  });
  * 
@@ -29,7 +29,7 @@ export default function _try<E = Error, T = any, A extends any[] = any[], TRetur
  * Invokes a generator function and renders its yield value and result in an `[err, val]` tuple.
  * 
  * @example
- *  const iter = jsext.try(function* () {
+ *  const iter = _try(function* () {
  *      // do something that may fail
  *  });
  * 
@@ -49,7 +49,7 @@ export default function _try<E = Error, T = any, A extends any[] = any[], TRetur
  * Invokes an async function and renders its result in an `[err, res]` tuple.
  * 
  * @example
- *  let [err, res] = await jsext.try(async () => {
+ *  let [err, res] = await _try(async () => {
  *      return await axios.get("https://example.org");
  *  });
  * 
@@ -65,7 +65,7 @@ export default function _try<E = Error, R = any, A extends any[] = any[]>(
  * Invokes a function and renders its result in an `[err, res]` tuple.
  * 
  * @example
- *  const [err, res] = jsext.try(() => {
+ *  const [err, res] = _try(() => {
  *      // do something that may fail
  *  });
  */
@@ -81,7 +81,7 @@ export default function _try<E = Error, R = any, A extends any[] = any[]>(
  *      // do something that may fail
  *  }
  * 
- *  for await (const [err, val] of jsext.try(gen())) {
+ *  for await (const [err, val] of _try(gen())) {
  *      if (err) {
  *          console.error("something went wrong:", err);
  *      } else {
@@ -96,9 +96,9 @@ export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>
  * Resolves a generator and renders its yield value and result in an `[err, val]` tuple.
  * 
  * @example
- *  const iter = Number.sequence();
+ *  const iter = Number.sequence(1, 10);
  * 
- *  for (const [err, val] of jsext.try(iter)) {
+ *  for (const [err, val] of _try(iter)) {
  *      if (err) {
  *          console.error("something went wrong:", err);
  *      } else {
@@ -113,7 +113,7 @@ export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>
  * Resolves a promise and renders its result in an `[err, res]` tuple.
  * 
  * @example
- *  let [err, res] = await jsext.try(axios.get("https://example.org"));
+ *  let [err, res] = await _try(axios.get("https://example.org"));
  * 
  *  if (err) {
  *      res = (err as any)["response"];

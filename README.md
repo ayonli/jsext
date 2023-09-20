@@ -48,7 +48,7 @@ Invokes a regular function or an async function and renders its result in an `[e
 **Example**
 
 ```ts
-const [err, res] = jsext.try(() => {
+const [err, res] = _try(() => {
     // do something that may fail
 });
 ```
@@ -56,7 +56,7 @@ const [err, res] = jsext.try(() => {
 **Example (async)**
 
 ```ts
-let [err, res] = await jsext.try(async () => {
+let [err, res] = await _try(async () => {
     return await axios.get("https://example.org");
 });
 
@@ -76,7 +76,7 @@ Resolves a promise and renders its result in an `[err, res]` tuple.
 **Example**
 
 ```ts
-let [err, res] = await jsext.try(axios.get("https://example.org"));
+let [err, res] = await _try(axios.get("https://example.org"));
 
 if (err) {
     res = (err as any)["response"];
@@ -102,7 +102,7 @@ in an `[err, val]` tuple.
 **Example**
 
 ```ts
-const iter = jsext.try(function* () {
+const iter = _try(function* () {
     // do something that may fail
 });
 
@@ -118,7 +118,7 @@ for (const [err, val] of iter) {
 **Example (async)**
 
 ```ts
-const iter = jsext.try(async function* () {
+const iter = _try(async function* () {
     // do something that may fail
 });
 
@@ -148,9 +148,9 @@ tuple.
 **Example**
 
 ```ts
-const iter = Number.sequence();
+const iter = Number.sequence(1, 10);
 
-for (const [err, val] of jsext.try(iter)) {
+for (const [err, val] of _try(iter)) {
     if (err) {
         console.error("something went wrong:", err);
     } else {
@@ -166,7 +166,7 @@ async function* gen() {
     // do something that may fail
 };
 
-for await (const [err, val] of jsext.try(gen())) {
+for await (const [err, val] of _try(gen())) {
     if (err) {
         console.error("something went wrong:", err);
     } else {
