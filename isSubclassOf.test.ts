@@ -1,5 +1,5 @@
 import { ok } from "node:assert";
-import isSubclassOf from "./isSubclassOf.ts";
+import jsext from "./index.ts";
 
 describe("jsext.isSubclassOf", () => {
     it("jsext.isSubclassOf", () => {
@@ -7,8 +7,8 @@ describe("jsext.isSubclassOf", () => {
         class B extends A { }
         class C extends A { }
 
-        ok(isSubclassOf(B, A));
-        ok(isSubclassOf(A, Object));
-        ok(!isSubclassOf(C, B));
+        ok(jsext.isSubclassOf(B, A));
+        ok(jsext.isSubclassOf(A, Object));
+        ok(!jsext.isSubclassOf(C, B));
     });
 });

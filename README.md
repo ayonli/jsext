@@ -45,8 +45,6 @@ function _try<E = Error, R = any, A extends any[] = any[]>(
 
 Invokes a regular function or an async function and renders its result in a `[err, val]` tuple.
 
-Note: this function should be called as `jsext.try()`.
-
 **Example**
 
 ```ts
@@ -75,8 +73,6 @@ function _try<E = Error, R = any>(job: Promise<R>): Promise<[E | null, R]>;
 
 Resolves a promise and renders its result in a `[err, val]` tuple.
 
-Note: this function should be called as `jsext.try()`.
-
 **Example**
 
 ```ts
@@ -102,8 +98,6 @@ function _try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext 
 
 Invokes a generator function or an async generator function and renders its yield value and result
 in a `[err, val]` tuple.
-
-Note: this function should be called as `jsext.try()`.
 
 **Example**
 
@@ -150,8 +144,6 @@ function _try<E = Error, T = any, TReturn = any, TNext = unknown>(
 
 Resolves a generator or an async generator and renders its yield value and result in a `[err, val]`
 tuple.
-
-Note: this function should be called as `jsext.try()`.
 
 **Example**
 
@@ -509,13 +501,11 @@ for await (const word of job2.iterate()) {
 ### jsext.example
 
 ```ts
-function example<T, A extends any[] = any[]>(
-    fn: (
-        this: T,
-        console: Ensured<Partial<Console>, "debug" | "dir" | "error" | "info" | "log" | "warn">,
-        ...args: A
-    ) => void | Promise<void>
-): (this: T, ...args: A) => Promise<void>;
+function example<T, A extends any[] = any[]>(fn: (
+    this: T,
+    console: Ensured<Partial<Console>, "debug" | "dir" | "error" | "info" | "log" | "warn">,
+    ...args: A
+) => void | Promise<void>): (this: T, ...args: A) => Promise<void>;
 ```
 
 Inspired by Golang's **Examples as Tests** design, creates a function that carries example code
@@ -532,10 +522,10 @@ relies on Node.js built-in modules.
 **Example**
 
 ```ts
-it("should fail because the actual output is `1` instead of `2`", example(console => {
-    console.log(1);
+it("should output as expected", example(console => {
+    console.log("Hello, World!");
     // output:
-    // 2
+    // Hello, World!
 }));
 ```
 

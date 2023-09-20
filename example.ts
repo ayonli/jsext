@@ -17,19 +17,17 @@ import type { Ensured } from "./index.ts";
  * @experimental
  * 
  * @example
- *  it("should fail because the actual output is `1` instead of `2`", example(console => {
- *      console.log(1);
+ *  it("should output as expected", example(console => {
+ *      console.log("Hello, World!");
  *      // output:
- *      // 2
+ *      // Hello, World!
  *  }));
  */
-export default function example<T, A extends any[] = any[]>(
-    fn: (
-        this: T,
-        console: Ensured<Partial<Console>, "debug" | "dir" | "error" | "info" | "log" | "warn">,
-        ...args: A
-    ) => void | Promise<void>
-): (this: T, ...args: A) => Promise<void> {
+export default function example<T, A extends any[] = any[]>(fn: (
+    this: T,
+    console: Ensured<Partial<Console>, "debug" | "dir" | "error" | "info" | "log" | "warn">,
+    ...args: A
+) => void | Promise<void>): (this: T, ...args: A) => Promise<void> {
     const call: { stack?: string; } = {};
     Error.captureStackTrace(call, example);
 
