@@ -476,6 +476,39 @@ for await (const word of job2.iterate()) {
 }
 ```
 
+---
+
+```ts
+function example<T, A extends any[] = any[]>(
+    fn: (
+        this: T,
+        console: Ensured<Partial<Console>, "debug" | "dir" | "error" | "info" | "log" | "warn">,
+        ...args: A
+    ) => void | Promise<void>
+): (this: T, ...args: A) => Promise<void>;
+```
+
+Inspired by Golang's **Examples as Tests** design, creates a function that carries example code
+with `// output:` comments, when the returned function is called, it will automatically check if
+the actual output matches the one declared in the comment.
+
+The example function receives a customized `console` object which will be used to log outputs
+instead of using the built-in `console`.
+
+NOTE: this function is used to simplify the process of writing tests, it does not work in Bun and
+browsers currently, because Bun removes comments when running the program, and the function
+relies on Node.js built-in modules.
+
+**Example**
+
+```ts
+it("should fail because the actual output is `1` instead of `2`", example(console => {
+    console.log(1);
+    // output:
+    // 2
+}));
+```
+
 ## Types
 
 - `AsyncFunction`

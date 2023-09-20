@@ -78,7 +78,7 @@ export default function _try<E = Error, R = any, A extends any[] = any[]>(
  * @example
  *  async function* gen() {
  *      // do something that may fail
- *  };
+ *  }
  * 
  *  for await (const [err, val] of jsext.try(gen())) {
  *      if (err) {
@@ -109,7 +109,7 @@ export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>
     gen: Generator<T, TReturn, TNext>
 ): Generator<[E | null, T], [E | null, TReturn], TNext>;
 /**
- * Resolves a promise and renders its result in a `[err, res]` tuple.
+ * Resolves a promise and renders its result in a `[err, val]` tuple.
  * 
  * @example
  *  let [err, res] = await jsext.try(axios.get("https://example.org"));

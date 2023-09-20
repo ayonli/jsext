@@ -1,4 +1,12 @@
-/** Checks if a class is a subclass of another class. */
+/**
+ * Checks if a class is a subclass of another class.
+ *
+ * @example
+ *  class Moment extends Date {}
+ *
+ *  console.assert(isSubclassOf(Moment, Date));
+ *  console.assert(isSubclassOf(Moment, Object)); // all classes are subclasses of Object
+ */
 function isSubclassOf(ctor1, ctor2) {
     return typeof ctor1 === "function"
         && typeof ctor2 === "function"

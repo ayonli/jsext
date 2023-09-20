@@ -2,7 +2,7 @@ import { isAsyncGenerator, isGenerator } from './external/check-iterable/index.j
 
 // @ts-ignore
 function _try(fn, ...args) {
-    if (typeof fn === "function") {
+    if (isFunction(fn)) {
         try {
             return _try(fn.apply(void 0, args));
         }
@@ -66,7 +66,7 @@ function _try(fn, ...args) {
             return [null, result];
         })();
     }
-    else if (typeof (returns === null || returns === void 0 ? void 0 : returns.then) === "function") {
+    else if (isFunction(returns === null || returns === void 0 ? void 0 : returns.then)) {
         returns = returns.then((value) => [null, value]);
         return Promise.resolve(returns).catch((err) => [err, undefined]);
     }
@@ -74,6 +74,9 @@ function _try(fn, ...args) {
         return [null, returns];
     }
 }
+function isFunction(val) {
+    return typeof val === "function";
+}
 
-export { _try as default };
+export { _try as default, isFunction };
 //# sourceMappingURL=try.js.map

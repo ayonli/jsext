@@ -1,6 +1,8 @@
+import { isFunction } from './try.js';
+
 function read(source, eventMap = undefined) {
     var _a;
-    if (typeof source[Symbol.asyncIterator] === "function") {
+    if (isFunction(source[Symbol.asyncIterator])) {
         return source;
     }
     const iterable = {
@@ -70,13 +72,13 @@ function read(source, eventMap = undefined) {
     };
     const proto = Object.getPrototypeOf(source);
     const msgDesc = Object.getOwnPropertyDescriptor(proto, "onmessage");
-    if ((msgDesc === null || msgDesc === void 0 ? void 0 : msgDesc.set) && typeof source.close === "function") { // WebSocket or EventSource
+    if ((msgDesc === null || msgDesc === void 0 ? void 0 : msgDesc.set) && isFunction(source["close"])) { // WebSocket or EventSource
         const errDesc = Object.getOwnPropertyDescriptor(proto, "onerror");
         const closeDesc = Object.getOwnPropertyDescriptor(proto, "onclose");
         let cleanup;
         if ((eventMap === null || eventMap === void 0 ? void 0 : eventMap.event) &&
             (eventMap === null || eventMap === void 0 ? void 0 : eventMap.event) !== "message" &&
-            typeof source["addEventListener"] === "function") { // for EventSource listening on custom events
+            isFunction(source["addEventListener"])) { // for EventSource listening on custom events
             const es = source;
             const eventName = eventMap.event;
             const msgListener = (ev) => {
@@ -106,7 +108,7 @@ function read(source, eventMap = undefined) {
                 cleanup === null || cleanup === void 0 ? void 0 : cleanup();
             });
         }
-        else if (!(closeDesc === null || closeDesc === void 0 ? void 0 : closeDesc.set) && typeof source.close === "function") { // EventSource
+        else if (!(closeDesc === null || closeDesc === void 0 ? void 0 : closeDesc.set) && isFunction(source["close"])) { // EventSource
             // EventSource by default does not trigger close event, we need to make sure when
             // it calls the close() function, the iterator is automatically closed.
             const es = source;
@@ -121,7 +123,7 @@ function read(source, eventMap = undefined) {
             };
         }
     }
-    else if (typeof source.send === "function" && typeof source.close === "function") {
+    else if (isFunction(source["send"]) && isFunction(source["close"])) {
         // non-standard WebSocket implementation
         const ws = source;
         ws.onmessage = (ev) => {
@@ -135,7 +137,7 @@ function read(source, eventMap = undefined) {
             ws.onmessage = null;
         };
     }
-    else if (typeof source["addEventListener"] === "function") { // EventTarget
+    else if (isFunction(source["addEventListener"])) { // EventTarget
         const target = source;
         const msgEvent = (eventMap === null || eventMap === void 0 ? void 0 : eventMap.message) || "message";
         const errEvent = (eventMap === null || eventMap === void 0 ? void 0 : eventMap.error) || "error";
@@ -154,14 +156,32 @@ function read(source, eventMap = undefined) {
             target.removeEventListener(errEvent, handleBrowserErrorEvent);
         });
     }
-    else if (typeof source["on"] === "function") { // EventEmitter
+    else if (isFunction(source["on"])) { // EventEmitter
         const target = source;
-        const dataEvent = (eventMap === null || eventMap === void 0 ? void 0 : eventMap.data) || "data";
-        const errEvent = (eventMap === null || eventMap === void 0 ? void 0 : eventMap.error) || "error";
-        const endEvent = (eventMap === null || eventMap === void 0 ? void 0 : eventMap.close) || "close";
+        let dataEvent;
+        let errEvent;
+        let closeEvent;
+        if (typeof process === "object" && source === process) {
+            dataEvent = "message";
+            errEvent = "uncaughtException";
+            closeEvent = "exit";
+        }
+        else if ((isFunction(source["send"]) && isFunction(source["kill"])) || // child process
+            (isFunction(source["postMessage"]) && isFunction(source["terminate"])) || // worker thread
+            (isFunction(source["postMessage"]) && isFunction(source["close"])) // message port
+        ) {
+            dataEvent = "message";
+            errEvent = "error";
+            closeEvent = "exit";
+        }
+        else {
+            dataEvent = (eventMap === null || eventMap === void 0 ? void 0 : eventMap.data) || "data";
+            errEvent = (eventMap === null || eventMap === void 0 ? void 0 : eventMap.error) || "error";
+            closeEvent = (eventMap === null || eventMap === void 0 ? void 0 : eventMap.close) || "close";
+        }
         target.on(dataEvent, handleMessage);
         target.once(errEvent, handleError);
-        target.once(endEvent, () => {
+        target.once(closeEvent, () => {
             handleClose();
             target.off(dataEvent, handleMessage);
             target.off(dataEvent, handleError);

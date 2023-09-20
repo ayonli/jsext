@@ -1,4 +1,5 @@
 import { sequence } from './number/index.js';
+import { isFunction } from './try.js';
 import read from './read.js';
 
 var _a;
@@ -27,6 +28,28 @@ const workerConsumerQueue = [];
  *
  * In browser or Deno, the `script` can only be an ES module, and is relative to the current URL
  * (or working directory for Deno) if not absolute.
+ *
+ * @example
+ *  const job1 = await run("./job-example.mjs", ["World"]);
+ *  console.log(await job1.result()); // Hello, World
+ *
+ *  const job2 = await run<string, [string[]]>("./job-example.mjs", [["foo", "bar"]], {
+ *      fn: "sequence",
+ *  });
+ *  for await (const word of job2.iterate()) {
+ *      console.log(word);
+ *      // Output:
+ *      // foo
+ *      // bar
+ *  }
+ *
+ *  const job3 = await run<string, [string]>("job-example.mjs", ["foobar"], {
+ *     fn: "takeTooLong",
+ *  });
+ *  await job3.abort();
+ *  const [err, res] = await jsext.try(job3.result());
+ *  console.assert(err === null);
+ *  console.assert(res === undefined);
  */
 async function run(script, args = undefined, options = undefined) {
     var _a, _b;
@@ -99,7 +122,7 @@ async function run(script, args = undefined, options = undefined) {
                 }
                 else {
                     if (iterator) {
-                        if (typeof iterator.dispatchEvent === "function") {
+                        if (isFunction(iterator.dispatchEvent)) {
                             iterator.dispatchEvent(new MessageEvent("message", { data: msg.value }));
                         }
                         else {
@@ -118,7 +141,7 @@ async function run(script, args = undefined, options = undefined) {
             resolver.reject(err);
         }
         else if (iterator) {
-            if (typeof iterator.dispatchEvent === "function") {
+            if (isFunction(iterator.dispatchEvent)) {
                 iterator.dispatchEvent(new MessageEvent("error", { data: err }));
             }
             else {
@@ -143,7 +166,7 @@ async function run(script, args = undefined, options = undefined) {
             resolver.resolve(void 0);
         }
         else if (iterator) {
-            if (typeof iterator.dispatchEvent === "function") {
+            if (isFunction(iterator.dispatchEvent)) {
                 iterator.dispatchEvent(new MessageEvent("close"));
             }
             else {

@@ -35,9 +35,11 @@
         "*/**.ts"
     ],
     "exclude": [
-        "node_modules",
-        "bundle.ts",
-        "*.test.ts",
-        "*/**.test.ts"
-    ]
+        "node_modules"
+    ],
+    "bun": {
+        "compilerOptions": {
+            "removeComments": false
+        }
+    }
 }

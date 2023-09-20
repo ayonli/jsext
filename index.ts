@@ -6,6 +6,7 @@ import mixins from "./mixins.ts";
 import isSubclassOf from "./isSubclassOf.ts";
 import read from "./read.ts";
 import run from "./run.ts";
+import example from "./example.ts";
 
 export const AsyncFunction = (async function () { }).constructor as AsyncFunctionConstructor;
 export const AsyncGeneratorFunction = (async function* () { }).constructor as AsyncGeneratorFunctionConstructor;
@@ -47,5 +48,6 @@ const jsext = {
     isSubclassOf,
     read,
     run,
+    example,
 };
 export default jsext;

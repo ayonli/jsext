@@ -1,6 +1,19 @@
 /**
  * Wraps a function inside another function and returns a new function that copies the original
  * function's name and other properties.
+ *
+ * @example
+ *  function log(text: string) {
+ *      console.log(text);
+ *  }
+ *
+ *  const show = wrap(log, function (fn, text) {
+ *      return fn.call(this, new Date().toISOString() + " " + text);
+ *  });
+ *
+ *  console.log(show.name); // log
+ *  console.log(show.length); // 1
+ *  console.assert(show.toString() === log.toString());
  */
 function wrap(fn, wrapper) {
     const wrapped = function (...args) {
