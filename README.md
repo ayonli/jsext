@@ -18,15 +18,19 @@ import jsext from "https://deno.land/x/ayonli_jsext/index.ts"; // since v0.5.0
 
 ## Functions
 
-- `jsext.try`
-- `jsext.func`
-- `jsext.wrap`
-- `jsext.throttle`
-- `jsext.mixins`
-- `jsext.isSubclassOf`
-- `jsext.read`
-- `jsext.run`
-- `jsext.example`
+- [jsext.try](#jsexttry)
+- [jsext.func](#jsextfunc)
+- [jsext.wrap](#jsextwrap)
+- [jsext.throttle](#jsextthrottle)
+- [jsext.mixins](#jsextmixins)
+- [jsext.isSubclassOf](#jsextissubclassof)
+- [jsext.read](#jsextread)
+- [jsext.run](#jsextrun)
+- [jsext.example](#jsextexample)
+
+And other functions in [sub-packages](#sub-packages).
+
+### jsext.try
 
 ```ts
 function _try<E = Error, R = any, A extends any[] = any[]>(
@@ -181,6 +185,8 @@ for await (const [err, val] of jsext.try(gen())) {
 
 ---
 
+### jsext.func
+
 ```ts
 function func<T, R = any, A extends any[] = any[]>(
     fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R
@@ -210,6 +216,8 @@ const getVersion = func(async (defer) => {
 
 ---
 
+### jsext.wrap
+
 ```ts
 function wrap<T, Fn extends (this: T, ...args: any[]) => any>(
     fn: Fn,
@@ -237,6 +245,8 @@ console.assert(show.toString() === log.toString());
 ```
 
 ---
+
+### jsext.throttle
 
 ```ts
 function throttle<T, Fn extends (this: T, ...args: any[]) => any>(
@@ -288,6 +298,8 @@ console.log(out3); // bar
 
 ---
 
+### jsext.mixins
+
 ```ts
 function mixins<T extends Constructor<any>, M extends any[]>(
     base: T,
@@ -331,6 +343,8 @@ ctrl.display([{ topic: ctrl.topic, content: "something is happening" }]);
 
 ---
 
+### jsext.isSubclassOf
+
 ```ts
 function isSubclassOf<T, B>(ctor1: Constructor<T>, ctor2: Constructor<B>): boolean;
 ```
@@ -347,6 +361,8 @@ console.assert(isSubclassOf(Moment, Object)); // all classes are subclasses of O
 ```
 
 ---
+
+### jsext.read
 
 ```ts
 function read<I extends AsyncIterable<any>>(iterable: I): I;
@@ -415,6 +431,8 @@ for await (const msg of read(process)) {
 }
 ```
 ---
+
+### jsext.run
 
 ```ts
 function run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
@@ -487,6 +505,8 @@ for await (const word of job2.iterate()) {
 ```
 
 ---
+
+### jsext.example
 
 ```ts
 function example<T, A extends any[] = any[]>(
