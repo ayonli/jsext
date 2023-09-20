@@ -32,10 +32,10 @@ let workerPool: {
 const workerConsumerQueue: (() => void)[] = [];
 
 /**
- * Runs a task in the `script` in a worker thread that can be aborted during runtime.
+ * Runs a `script` in a worker thread that can be aborted during runtime.
  * 
- * In Node.js, the `script` can be either a CommonJS module or an ES module, and is relative to
- * the current working directory if not absolute.
+ * In Node.js or Bun, the `script` can be either a CommonJS module or an ES module, and is relative
+ * to the current working directory if not absolute.
  * 
  * In browser or Deno, the `script` can only be an ES module, and is relative to the current URL
  * (or working directory for Deno) if not absolute.
@@ -66,7 +66,7 @@ export default async function run<T, A extends any[] = any[]>(
     script: string,
     args: A | undefined = undefined,
     options: {
-        /** If not set, runs the default function, otherwise runs the specific function. */
+        /** If not set, invoke the default function, otherwise invoke the specific function. */
         fn?: string;
         /** Automatically abort the task when timeout (in milliseconds). */
         timeout?: number;
@@ -76,22 +76,22 @@ export default async function run<T, A extends any[] = any[]>(
          */
         keepAlive?: boolean;
         /**
-         * Choose whether to use `worker_threads` or `child_process` fron running the script.
+         * Choose whether to use `worker_threads` or `child_process` for running the script.
          * The default setting is `worker_threads`.
          * 
          * In browser or Deno, this option is ignored and will always use the web worker.
          */
         adapter?: "worker_threads" | "child_process";
         /**
-         * In browser or Deno, by default, the program loads the worker entry directly from GitHub,
+         * In browser, by default, the program loads the worker entry directly from GitHub,
          * which could be slow due to poor internet connection, we can copy the entry file
          * `bundle/worker-web.mjs` to a local path of our website and set this option to that path
          * so that it can be loaded locally.
          * 
          * Or, if the code is bundled, the program won't be able to automatically locate the entry
          * file in the file system, in such case, we can also copy the entry file
-         * (`bundle/worker-web.mjs` for the browser or Deno, `bundle/worker.mjs` for Node.js) to a
-         * local directory and supply this option instead.
+         * (`bundle/worker-web.mjs` for the browser or Deno, `bundle/worker.mjs` for Node.js or Bun)
+         * to a local directory and supply this option instead.
          */
         workerEntry?: string;
     } | undefined = undefined

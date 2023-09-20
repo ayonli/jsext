@@ -84,6 +84,9 @@ function setProp(proto: any, source: any, prop: string | symbol) {
  *  const ctrl = new Controller("foo");
  *  ctrl.log("something is happening");
  *  ctrl.display([{ topic: ctrl.topic, content: "something is happening" }]);
+ * 
+ *  console.assert(isSubclassOf(Controller, View));
+ *  console.assert(!isSubclassOf(Controller, Log));
  */
 export default function mixins<T extends Constructor<any>, M extends any[]>(
     base: T,

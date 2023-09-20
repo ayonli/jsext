@@ -1,5 +1,5 @@
 /**
- * Inspired by Golang's **Examples as Tests** design, creates a function that carries example code
+ * Inspired by Golang's **Example as Test** design, creates a function that carries example code
  * with `// output:` comments, when the returned function is called, it will automatically check if
  * the actual output matches the one declared in the comment.
  *
@@ -13,10 +13,10 @@
  * @experimental
  *
  * @example
- *  it("should fail because the actual output is `1` instead of `2`", example(console => {
- *      console.log(1);
+ *  it("should output as expected", example(console => {
+ *      console.log("Hello, World!");
  *      // output:
- *      // 2
+ *      // Hello, World!
  *  }));
  */
 function example(fn) {

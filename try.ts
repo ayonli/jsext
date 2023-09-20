@@ -5,7 +5,8 @@ import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.m
 // well.
 
 /**
- * Invokes an async generator function and renders its yield value and result in a `[err, val]` tuple.
+ * Invokes an async generator function and renders its yield value and result in an `[err, val]`
+ * tuple.
  * 
  * @example
  *  const iter = jsext.try(async function* () {
@@ -25,7 +26,7 @@ export default function _try<E = Error, T = any, A extends any[] = any[], TRetur
     ...args: A
 ): AsyncGenerator<[E | null, T], [E | null, TReturn], TNext>;
 /**
- * Invokes a generator function and renders its yield value and result in a `[err, val]` tuple.
+ * Invokes a generator function and renders its yield value and result in an `[err, val]` tuple.
  * 
  * @example
  *  const iter = jsext.try(function* () {
@@ -45,7 +46,7 @@ export default function _try<E = Error, T = any, A extends any[] = any[], TRetur
     ...args: A
 ): Generator<[E | null, T], [E | null, TReturn], TNext>;
 /**
- * Invokes an async function and renders its result in a `[err, val]` tuple.
+ * Invokes an async function and renders its result in an `[err, res]` tuple.
  * 
  * @example
  *  let [err, res] = await jsext.try(async () => {
@@ -61,7 +62,7 @@ export default function _try<E = Error, R = any, A extends any[] = any[]>(
     ...args: A
 ): Promise<[E | null, R]>;
 /**
- * Invokes a function and renders its result in a `[err, val]` tuple.
+ * Invokes a function and renders its result in an `[err, res]` tuple.
  * 
  * @example
  *  const [err, res] = jsext.try(() => {
@@ -73,7 +74,7 @@ export default function _try<E = Error, R = any, A extends any[] = any[]>(
     ...args: A
 ): [E | null, R];
 /**
- * Resolves an async generator and renders its yield value and result in a `[err, val]` tuple.
+ * Resolves an async generator and renders its yield value and result in an `[err, val]` tuple.
  * 
  * @example
  *  async function* gen() {
@@ -92,16 +93,16 @@ export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>
     gen: AsyncGenerator<T, TReturn, TNext>
 ): AsyncGenerator<[E | null, T], [E | null, TReturn], TNext>;
 /**
- * Resolves a generator and renders its yield value and result in a `[err, val]` tuple.
+ * Resolves a generator and renders its yield value and result in an `[err, val]` tuple.
  * 
  * @example
  *  const iter = Number.sequence();
  * 
- *  for (const [err, id] of jsext.try(iter)) {
+ *  for (const [err, val] of jsext.try(iter)) {
  *      if (err) {
  *          console.error("something went wrong:", err);
  *      } else {
- *          console.log("current id:", id);
+ *          console.log("current value:", val);
  *      }
  *  }
  */
@@ -109,7 +110,7 @@ export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>
     gen: Generator<T, TReturn, TNext>
 ): Generator<[E | null, T], [E | null, TReturn], TNext>;
 /**
- * Resolves a promise and renders its result in a `[err, val]` tuple.
+ * Resolves a promise and renders its result in an `[err, res]` tuple.
  * 
  * @example
  *  let [err, res] = await jsext.try(axios.get("https://example.org"));

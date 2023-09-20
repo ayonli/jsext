@@ -43,7 +43,7 @@ function _try<E = Error, R = any, A extends any[] = any[]>(
 ): Promise<[E | null, R]>;
 ```
 
-Invokes a regular function or an async function and renders its result in a `[err, val]` tuple.
+Invokes a regular function or an async function and renders its result in an `[err, res]` tuple.
 
 **Example**
 
@@ -71,7 +71,7 @@ if (err) {
 function _try<E = Error, R = any>(job: Promise<R>): Promise<[E | null, R]>;
 ```
 
-Resolves a promise and renders its result in a `[err, val]` tuple.
+Resolves a promise and renders its result in an `[err, res]` tuple.
 
 **Example**
 
@@ -97,7 +97,7 @@ function _try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext 
 ```
 
 Invokes a generator function or an async generator function and renders its yield value and result
-in a `[err, val]` tuple.
+in an `[err, val]` tuple.
 
 **Example**
 
@@ -142,7 +142,7 @@ function _try<E = Error, T = any, TReturn = any, TNext = unknown>(
 ): AsyncGenerator<[E | null, T], [E | null, TReturn], TNext>;
 ```
 
-Resolves a generator or an async generator and renders its yield value and result in a `[err, val]`
+Resolves a generator or an async generator and renders its yield value and result in an `[err, val]`
 tuple.
 
 **Example**
@@ -150,11 +150,11 @@ tuple.
 ```ts
 const iter = Number.sequence();
 
-for (const [err, id] of jsext.try(iter)) {
+for (const [err, val] of jsext.try(iter)) {
     if (err) {
         console.error("something went wrong:", err);
     } else {
-        console.log("current id:", id);
+        console.log("current value:", val);
     }
 }
 ```
@@ -185,10 +185,10 @@ function func<T, R = any, A extends any[] = any[]>(
 ): (this: T, ...args: A) => R;
 ```
 
-Inspired by Golang, creates a function that receives a `defer` function which can be used
+Inspired by Golang, creates a function that receives a `defer` keyword which can be used
 to carry deferred jobs that will be run after the main function is complete.
 
-Multiple calls of the `defer` function is supported, and the callbacks are called in the
+Multiple calls of the `defer` keyword is supported, and the callbacks are called in the
 LIFO order. Callbacks can be async functions if the main function is an async function or
 an async generator function, and all the running procedures will be awaited.
 
@@ -331,6 +331,9 @@ class Controller extends mixins(View, Log) {
 const ctrl = new Controller("foo");
 ctrl.log("something is happening");
 ctrl.display([{ topic: ctrl.topic, content: "something is happening" }]);
+
+console.assert(isSubclassOf(Controller, View));
+console.assert(!isSubclassOf(Controller, Log));
 ```
 
 ---
@@ -428,7 +431,7 @@ for await (const msg of read(process)) {
 
 ```ts
 function run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
-    /** If not set, runs the default function, otherwise runs the specific function. */
+    /** If not set, invoke the default function, otherwise invoke the specific function. */
     fn?: string;
     /** Automatically abort the task when timeout (in milliseconds). */
     timeout?: number;
@@ -438,22 +441,22 @@ function run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
      */
     keepAlive?: boolean;
     /**
-     * Choose whether to use `worker_threads` or `child_process` fron running the script.
+     * Choose whether to use `worker_threads` or `child_process` for running the script.
      * The default setting is `worker_threads`.
      * 
      * In browser or Deno, this option is ignored and will always use the web worker.
      */
     adapter?: "worker_threads" | "child_process";
     /**
-     * In browser or Deno, by default, the program loads the worker entry directly from GitHub,
+     * In browser, by default, the program loads the worker entry directly from GitHub,
      * which could be slow due to poor internet connection, we can copy the entry file
      * `bundle/worker-web.mjs` to a local path of our website and set this option to that path
      * so that it can be loaded locally.
      * 
      * Or, if the code is bundled, the program won't be able to automatically locate the entry
      * file in the file system, in such case, we can also copy the entry file
-     * (`bundle/worker-web.mjs` for the browser or Deno, `bundle/worker.mjs` for Node.js) to a
-     * local directory and supply this option instead.
+     * (`bundle/worker-web.mjs` for the browser or Deno, `bundle/worker.mjs` for Node.js or Bun)
+     * to a local directory and supply this option instead.
      */
     workerEntry?: string;
 }): Promise<{
@@ -467,9 +470,9 @@ function run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
 }>;
 ```
 
-Runs a task in the `script` in a worker thread that can be aborted during runtime.
+Runs a `script` in a worker thread that can be aborted during runtime.
 
-In Node.js, the `script` can be either a CommonJS module or an ES module, and is relative to
+In Node.js or Bun, the `script` can be either a CommonJS module or an ES module, and is relative to
 the current working directory if not absolute.
 
 In browser or Deno, the `script` can only be an ES module, and is relative to the current URL
@@ -508,7 +511,7 @@ function example<T, A extends any[] = any[]>(fn: (
 ) => void | Promise<void>): (this: T, ...args: A) => Promise<void>;
 ```
 
-Inspired by Golang's **Examples as Tests** design, creates a function that carries example code
+Inspired by Golang's **Example as Test** design, creates a function that carries example code
 with `// output:` comments, when the returned function is called, it will automatically check if
 the actual output matches the one declared in the comment.
 
@@ -539,7 +542,7 @@ it("should output as expected", example(console => {
 - `Optional<T, K extends keyof T>`
 - `Ensured<T, K extends keyof T>`
 
-When [augment](./augment.ts)ing, these types will ba exposed to the global scope.
+When [augment](./augment.ts)ing, these types will be exposed to the global scope.
 
 ## Sub-packages
 

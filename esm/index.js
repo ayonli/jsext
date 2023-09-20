@@ -10,6 +10,9 @@ import example from './example.js';
 
 const AsyncFunction = (async function () { }).constructor;
 const AsyncGeneratorFunction = (async function* () { }).constructor;
+/**
+ * The entry of jsext main functions.
+ */
 const jsext = {
     try: _try,
     func,
@@ -22,5 +25,5 @@ const jsext = {
     example,
 };
 
-export { AsyncFunction, AsyncGeneratorFunction, jsext as default };
+export { AsyncFunction, AsyncGeneratorFunction, _try, jsext as default, example, func, isSubclassOf, mixins, read, run, throttle, wrap };
 //# sourceMappingURL=index.js.map
