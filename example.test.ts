@@ -4,6 +4,14 @@ import jsext from "./index.ts";
 declare var Bun: any;
 
 describe("jsext.example", () => {
+    if (typeof Bun === "undefined") {
+        it("should output as expected", jsext.example(console => {
+            console.log("Hello, World!");
+            // output:
+            // Hello, World!
+        }));
+    }
+
     it("regular function", async function (this) {
         if (typeof Bun === "object") {
             this.skip();
