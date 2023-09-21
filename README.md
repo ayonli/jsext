@@ -430,7 +430,7 @@ const channel = chan<number>();
         await channel.push(num);
     }
 
-    await channel.close();
+    channel.close();
 })();
 
 for await (const num of channel) {
