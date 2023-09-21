@@ -63,30 +63,32 @@ function setProp(proto: any, source: any, prop: string | symbol) {
  * instead.
  * 
  * @example
- *  class Log {
- *      log(text: string) {
- *          console.log(text);
- *      }
- *  }
+ * ```ts
+ * class Log {
+ *     log(text: string) {
+ *         console.log(text);
+ *     }
+ * }
  * 
- *  class View {
- *      display(data: Record<string, any>[]) {
- *          console.table(data);
- *      }
- *  }
+ * class View {
+ *     display(data: Record<string, any>[]) {
+ *         console.table(data);
+ *     }
+ * }
  * 
- *  class Controller extends mixins(View, Log) {
- *      constructor(readonly topic: string) {
- *          super();
- *      }
- *  }
+ * class Controller extends mixins(View, Log) {
+ *     constructor(readonly topic: string) {
+ *         super();
+ *     }
+ * }
  * 
- *  const ctrl = new Controller("foo");
- *  ctrl.log("something is happening");
- *  ctrl.display([{ topic: ctrl.topic, content: "something is happening" }]);
+ * const ctrl = new Controller("foo");
+ * ctrl.log("something is happening");
+ * ctrl.display([{ topic: ctrl.topic, content: "something is happening" }]);
  * 
- *  console.assert(isSubclassOf(Controller, View));
- *  console.assert(!isSubclassOf(Controller, Log));
+ * console.assert(isSubclassOf(Controller, View));
+ * console.assert(!isSubclassOf(Controller, Log));
+ * ```
  */
 export default function mixins<T extends Constructor<any>, M extends any[]>(
     base: T,

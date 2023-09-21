@@ -34,7 +34,9 @@ declare global {
          * Checks if the value is an instance of the given type, returns the value itself if passed,
          * otherwise returns `null`. This function is mainly used for the optional chaining syntax.
          * @example
-         *  Object.as(bar, SomeType)?.doSomething();
+         * ```ts
+         * Object.as(bar, SomeType)?.doSomething();
+         * ```
          */
         as(value: unknown, type: StringConstructor): string | null;
         as(value: unknown, type: NumberConstructor): number | null;

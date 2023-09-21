@@ -493,10 +493,22 @@ const job2 = await run<string, [string[]]>("./job-example.mjs", [["foo", "bar"]]
 });
 for await (const word of job2.iterate()) {
     console.log(word);
-    // Output:
-    // foo
-    // bar
 }
+// output:
+// foo
+// bar
+```
+
+**Example (abort)**
+
+```ts
+const job3 = await run<string, [string]>("./job-example.mjs", ["foobar"], {
+    fn: "takeTooLong",
+});
+await job3.abort();
+const [err, res] = await _try(job3.result());
+console.assert(err === null);
+console.assert(res === undefined);
 ```
 
 ---

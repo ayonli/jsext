@@ -10,15 +10,17 @@ import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.m
  * an async generator function, and all the running procedures will be awaited.
  * 
  * @example
- *  const getVersion = func(async (defer) => {
- *      const file = await fs.open("./package.json", "r");
- *      defer(() => file.close());
- *
- *      const content = await file.readFile("utf8");
- *      const pkg = JSON.parse(content);
- *
- *      return pkg.version as string;
- *  });
+ * ```ts
+ * const getVersion = func(async (defer) => {
+ *     const file = await fs.open("./package.json", "r");
+ *     defer(() => file.close());
+ * 
+ *     const content = await file.readFile("utf8");
+ *     const pkg = JSON.parse(content);
+ * 
+ *     return pkg.version as string;
+ * });
+ * ```
  */
 export default function func<T, R = any, A extends any[] = any[]>(
     fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R

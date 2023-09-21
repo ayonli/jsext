@@ -10,14 +10,14 @@
  * browsers currently, because Bun hasn't implement the `Console` constructor and removes comments
  * during runtime, and the function relies on Node.js built-in modules.
  *
- * @experimental
- *
  * @example
- *  it("should output as expected", example(console => {
- *      console.log("Hello, World!");
- *      // output:
- *      // Hello, World!
- *  }));
+ * ```ts
+ * it("should output as expected", example(console => {
+ *     console.log("Hello, World!");
+ *     // output:
+ *     // Hello, World!
+ * }));
+ * ```
  */
 function example(fn, options = undefined) {
     const call = {};

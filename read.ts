@@ -7,39 +7,45 @@ import { isFunction } from "./try.ts";
 export default function read<I extends AsyncIterable<any>>(iterable: I): I;
 /**
  * @example
- *  // listen to the `onmessage`
- *  const sse = new EventSource("/sse/message");
+ * ```ts
+ * // listen to the `onmessage`
+ * const sse = new EventSource("/sse/message");
  * 
- *  for await (const msg of read(sse)) {
- *      console.log("receive message:", msg);
- *  }
+ * for await (const msg of read(sse)) {
+ *     console.log("receive message:", msg);
+ * }
  * 
- *  // listen to a specific event
- *  const channel = new EventSource("/sse/broadcast");
- *  
- *  for await (const msg of read(channel, { event: "broadcast" })) {
- *      console.log("receive message:", msg);
- *  }
+ * // listen to a specific event
+ * const channel = new EventSource("/sse/broadcast");
+ * 
+ * for await (const msg of read(channel, { event: "broadcast" })) {
+ *     console.log("receive message:", msg);
+ * }
+ * ```
  */
 export default function read(es: EventSource, options?: { event?: string; }): AsyncIterable<string>;
 /**
  * @example
- *  const ws = new WebSocket("/ws");
+ * ```ts
+ * const ws = new WebSocket("/ws");
  * 
- *  for await (const msg of read(ws)) {
- *      if (typeof data === "string") {
- *          console.log("receive text message:", data);
- *      } else {
- *          console.log("receive binary data:", data);
- *      }
- *  }
+ * for await (const msg of read(ws)) {
+ *     if (typeof data === "string") {
+ *         console.log("receive text message:", data);
+ *     } else {
+ *         console.log("receive binary data:", data);
+ *     }
+ * }
+ * ```
  */
 export default function read<T extends Uint8Array | string>(ws: WebSocket): AsyncIterable<T>;
 /**
  * @example
- *  for await (const msg of read(self)) {
- *      console.log("receive message from the parent window:", msg);
- *  }
+ * ```ts
+ * for await (const msg of read(self)) {
+ *     console.log("receive message from the parent window:", msg);
+ * }
+ * ```
  */
 export default function read<T>(target: EventTarget, eventMap?: {
     message?: string;
@@ -48,9 +54,11 @@ export default function read<T>(target: EventTarget, eventMap?: {
 }): AsyncIterable<T>;
 /**
  * @example
- *  for await (const msg of read(process)) {
- *      console.log("receive message from the parent process:", msg);
- *  }
+ * ```ts
+ * for await (const msg of read(process)) {
+ *     console.log("receive message from the parent process:", msg);
+ * }
+ * ```
  */
 export default function read<T>(target: NodeJS.EventEmitter, eventMap?: {
     data?: string;

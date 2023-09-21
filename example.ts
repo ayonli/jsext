@@ -1,5 +1,3 @@
-import type { AssertionError } from "node:assert";
-
 declare var Deno: any;
 
 /**
@@ -14,14 +12,14 @@ declare var Deno: any;
  * browsers currently, because Bun hasn't implement the `Console` constructor and removes comments
  * during runtime, and the function relies on Node.js built-in modules.
  * 
- * @experimental
- * 
  * @example
- *  it("should output as expected", example(console => {
- *      console.log("Hello, World!");
- *      // output:
- *      // Hello, World!
- *  }));
+ * ```ts
+ * it("should output as expected", example(console => {
+ *     console.log("Hello, World!");
+ *     // output:
+ *     // Hello, World!
+ * }));
+ * ```
  */
 export default function example<T, A extends any[] = any[]>(
     fn: (this: T, console: Console, ...args: A) => void | Promise<void>,
@@ -118,11 +116,11 @@ export default function example<T, A extends any[] = any[]>(
                     }
                 }
             } catch (err: unknown) {
-                Object.defineProperty(err as AssertionError, "stack", {
+                Object.defineProperty(err as Error, "stack", {
                     configurable: true,
                     writable: true,
                     enumerable: false,
-                    value: (err as AssertionError).stack
+                    value: (err as Error).stack
                         + "\n" + call.stack?.split("\n").slice(1).join("\n"),
                 });
 

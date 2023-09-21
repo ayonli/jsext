@@ -9,17 +9,19 @@ import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.m
  * tuple.
  * 
  * @example
- *  const iter = _try(async function* () {
- *      // do something that may fail
- *  });
+ * ```ts
+ * const iter = _try(async function* () {
+ *     // do something that may fail
+ * });
  * 
- *  for await (const [err, val] of iter) {
- *      if (err) {
- *          console.error("something went wrong:", err);
- *      } else {
- *          console.log("current value:", val);
- *      }
- *  }
+ * for await (const [err, val] of iter) {
+ *     if (err) {
+ *         console.error("something went wrong:", err);
+ *     } else {
+ *         console.log("current value:", val);
+ *     }
+ * }
+ * ```
  */
 export default function _try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
     fn: (...args: A) => AsyncGenerator<T, TReturn, TNext>,
@@ -29,17 +31,19 @@ export default function _try<E = Error, T = any, A extends any[] = any[], TRetur
  * Invokes a generator function and renders its yield value and result in an `[err, val]` tuple.
  * 
  * @example
- *  const iter = _try(function* () {
- *      // do something that may fail
- *  });
+ * ```ts
+ * const iter = _try(function* () {
+ *     // do something that may fail
+ * });
  * 
- *  for (const [err, val] of iter) {
- *      if (err) {
- *          console.error("something went wrong:", err);
- *      } else {
- *          console.log("current value:", val);
- *      }
- *  }
+ * for (const [err, val] of iter) {
+ *     if (err) {
+ *         console.error("something went wrong:", err);
+ *     } else {
+ *         console.log("current value:", val);
+ *     }
+ * }
+ * ```
  */
 export default function _try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
     fn: (...args: A) => Generator<T, TReturn, TNext>,
@@ -49,13 +53,15 @@ export default function _try<E = Error, T = any, A extends any[] = any[], TRetur
  * Invokes an async function and renders its result in an `[err, res]` tuple.
  * 
  * @example
- *  let [err, res] = await _try(async () => {
- *      return await axios.get("https://example.org");
- *  });
+ * ```ts
+ * let [err, res] = await _try(async () => {
+ *     return await axios.get("https://example.org");
+ * });
  * 
- *  if (err) {
- *      res = (err as any)["response"];
- *  }
+ * if (err) {
+ *     res = (err as any)["response"];
+ * }
+ * ```
  */
 export default function _try<E = Error, R = any, A extends any[] = any[]>(
     fn: (...args: A) => Promise<R>,
@@ -65,9 +71,11 @@ export default function _try<E = Error, R = any, A extends any[] = any[]>(
  * Invokes a function and renders its result in an `[err, res]` tuple.
  * 
  * @example
- *  const [err, res] = _try(() => {
- *      // do something that may fail
- *  });
+ * ```ts
+ * const [err, res] = _try(() => {
+ *     // do something that may fail
+ * });
+ * ```
  */
 export default function _try<E = Error, R = any, A extends any[] = any[]>(
     fn: (...args: A) => R,
@@ -77,17 +85,19 @@ export default function _try<E = Error, R = any, A extends any[] = any[]>(
  * Resolves an async generator and renders its yield value and result in an `[err, val]` tuple.
  * 
  * @example
- *  async function* gen() {
- *      // do something that may fail
- *  }
+ * ```ts
+ * async function* gen() {
+ *     // do something that may fail
+ * }
  * 
- *  for await (const [err, val] of _try(gen())) {
- *      if (err) {
- *          console.error("something went wrong:", err);
- *      } else {
- *          console.log("current value:", val);
- *      }
- *  }
+ * for await (const [err, val] of _try(gen())) {
+ *     if (err) {
+ *         console.error("something went wrong:", err);
+ *     } else {
+ *         console.log("current value:", val);
+ *     }
+ * }
+ * ```
  */
 export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>(
     gen: AsyncGenerator<T, TReturn, TNext>
@@ -96,15 +106,17 @@ export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>
  * Resolves a generator and renders its yield value and result in an `[err, val]` tuple.
  * 
  * @example
- *  const iter = Number.sequence(1, 10);
+ * ```ts
+ * const iter = Number.sequence(1, 10);
  * 
- *  for (const [err, val] of _try(iter)) {
- *      if (err) {
- *          console.error("something went wrong:", err);
- *      } else {
- *          console.log("current value:", val);
- *      }
- *  }
+ * for (const [err, val] of _try(iter)) {
+ *     if (err) {
+ *         console.error("something went wrong:", err);
+ *     } else {
+ *         console.log("current value:", val);
+ *     }
+ * }
+ * ```
  */
 export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>(
     gen: Generator<T, TReturn, TNext>
@@ -113,11 +125,13 @@ export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>
  * Resolves a promise and renders its result in an `[err, res]` tuple.
  * 
  * @example
- *  let [err, res] = await _try(axios.get("https://example.org"));
+ * ```ts
+ * let [err, res] = await _try(axios.get("https://example.org"));
  * 
- *  if (err) {
- *      res = (err as any)["response"];
- *  }
+ * if (err) {
+ *     res = (err as any)["response"];
+ * }
+ * ```
  */
 export default function _try<E = Error, R = any>(job: Promise<R>): Promise<[E | null, R]>;
 export default function _try(fn: any, ...args: any[]) {
