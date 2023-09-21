@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "description": "Additional functions for JavaScript programming in practice.",
     "exports": {
         ".": {
