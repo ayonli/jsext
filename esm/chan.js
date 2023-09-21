@@ -12,12 +12,13 @@ class Channel {
      *
      * If there is a receiver, the data will be consumed immediately. Otherwise:
      *
-     * - If this is an non-buffered channel, this function will block until a receiver is available
-     *  and the data is consumed.
+     * - If this is an non-buffered channel, this function will block until a receiver is
+     *  available and the data is consumed.
      *
      * - If this is a buffered channel, then:
      *      - If the buffer size is within the capacity, the data will be pushed to the buffer.
-     *      - Otherwise, this function will block until there is new room for the data in the buffer.
+     *      - Otherwise, this function will block until there is new room for the data in the
+     *          buffer.
      */
     push(data) {
         if (this.state !== 1) {
@@ -50,7 +51,7 @@ class Channel {
         }
     }
     /**
-     * Pops data from the channel.
+     * Retrieves data from the channel.
      *
      * If there isn't data available at the moment, this function will block until new data is
      * available.
@@ -95,7 +96,7 @@ class Channel {
      * will be automatically released by the GC. However, if the channel is used in a
      * `for await...of...` loop, closing the channel will allow the loop to break automatically.
      */
-    close(err = undefined) {
+    close(err = null) {
         this.state = 2;
         this.error = err;
         // Delay the closure till the next event loop so that `sub` can be bound in the

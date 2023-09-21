@@ -644,7 +644,8 @@ it("should output as expected", example(console => {
 - `Optional<T, K extends keyof T>`
 - `Ensured<T, K extends keyof T>`
 
-When [augment](./augment.ts)ing, these types will be exposed to the global scope.
+When [augment](./augment.ts)ing, these types will be exposed to the global scope (except for
+`Channel`).
 
 ## Sub-packages
 

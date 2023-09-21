@@ -3,8 +3,8 @@ export class Channel<T> implements AsyncIterable<T> {
     readonly capacity: number;
     private buffer: T[] = [];
     private pub?: () => T;
-    private sub?: (err: unknown, data?: T) => void;
-    private error: unknown;
+    private sub?: (err: Error | null, data?: T) => void;
+    private error?: Error | null;
     private state: 0 | 1 | 2 = 1;
 
     constructor(capacity = 0) {
@@ -20,12 +20,13 @@ export class Channel<T> implements AsyncIterable<T> {
      * 
      * If there is a receiver, the data will be consumed immediately. Otherwise:
      * 
-     * - If this is an non-buffered channel, this function will block until a receiver is available
-     *  and the data is consumed.
+     * - If this is an non-buffered channel, this function will block until a receiver is
+     *  available and the data is consumed.
      * 
      * - If this is a buffered channel, then:
      *      - If the buffer size is within the capacity, the data will be pushed to the buffer.
-     *      - Otherwise, this function will block until there is new room for the data in the buffer.
+     *      - Otherwise, this function will block until there is new room for the data in the
+     *          buffer.
      */
     push(data: T): Promise<void> {
         if (this.state !== 1) {
@@ -55,7 +56,7 @@ export class Channel<T> implements AsyncIterable<T> {
     }
 
     /**
-     * Pops data from the channel.
+     * Retrieves data from the channel.
      * 
      * If there isn't data available at the moment, this function will block until new data is
      * available.
@@ -97,7 +98,7 @@ export class Channel<T> implements AsyncIterable<T> {
      * will be automatically released by the GC. However, if the channel is used in a
      * `for await...of...` loop, closing the channel will allow the loop to break automatically.
      */
-    close(err: unknown = undefined) {
+    close(err: Error | null = null) {
         this.state = 2;
         this.error = err;
 

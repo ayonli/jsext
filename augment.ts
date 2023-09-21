@@ -13,13 +13,13 @@ declare global {
     const AsyncFunction: AsyncFunctionConstructor;
     const AsyncGeneratorFunction: AsyncGeneratorFunctionConstructor;
 
-    export interface AsyncFunction {
+    interface AsyncFunction {
         (...args: any[]): Promise<unknown>;
         readonly length: number;
         readonly name: string;
     }
 
-    export interface AsyncFunctionConstructor {
+    interface AsyncFunctionConstructor {
         new(...args: any[]): AsyncFunction;
         (...args: any[]): AsyncFunction;
         readonly length: number;
