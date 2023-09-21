@@ -504,11 +504,13 @@ for await (const word of job2.iterate()) {
 ### jsext.example
 
 ```ts
-function example<T, A extends any[] = any[]>(fn: (
-    this: T,
-    console: Ensured<Partial<Console>, "debug" | "dir" | "error" | "info" | "log" | "warn">,
-    ...args: A
-) => void | Promise<void>): (this: T, ...args: A) => Promise<void>;
+function example<T, A extends any[] = any[]>(
+    fn: (this: T, console: Console, ...args: A) => void | Promise<void>,
+    options?: {
+        /** Suppress logging to the terminal and only check the output. */
+        suppress?: boolean;
+    }
+): (this: T, ...args: A) => Promise<void>;
 ```
 
 Inspired by Golang's **Example as Test** design, creates a function that carries example code
@@ -519,8 +521,8 @@ The example function receives a customized `console` object which will be used t
 instead of using the built-in `console`.
 
 NOTE: this function is used to simplify the process of writing tests, it does not work in Bun and
-browsers currently, because Bun removes comments during runtime, and the function relies on Node.js
-built-in modules.
+browsers currently, because Bun hasn't implement the `Console` constructor and removes comments
+during runtime, and the function relies on Node.js built-in modules.
 
 **Example**
 

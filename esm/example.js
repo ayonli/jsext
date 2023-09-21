@@ -7,8 +7,8 @@
  * instead of using the built-in `console`.
  *
  * NOTE: this function is used to simplify the process of writing tests, it does not work in Bun and
- * browsers currently, because Bun removes comments during runtime, and the function relies on
- * Node.js built-in modules.
+ * browsers currently, because Bun hasn't implement the `Console` constructor and removes comments
+ * during runtime, and the function relies on Node.js built-in modules.
  *
  * @experimental
  *
@@ -19,7 +19,7 @@
  *      // Hello, World!
  *  }));
  */
-function example(fn) {
+function example(fn, options = undefined) {
     const call = {};
     Error.captureStackTrace(call, example);
     return async function (...args) {
@@ -40,7 +40,7 @@ function example(fn) {
         let expected = [];
         for (let line of lines) {
             line = line.trimStart();
-            if (line.startsWith("// ")) {
+            if (line.startsWith("//")) {
                 expected.push(line.slice(3));
             }
             else {
@@ -57,43 +57,59 @@ function example(fn) {
         }
         expected.reverse();
         const assert = await import('node:assert');
-        const util = await import('node:util');
+        const { Writable } = await import('node:stream');
+        const { Console } = await import('node:console');
         const logs = [];
-        const log = (format, ...args) => {
-            logs.push(util.format(format, ...args));
-        };
-        const _console = {
-            log,
-            debug: log,
-            error: log,
-            info: log,
-            warn: log,
-            dir: (obj, options) => {
-                logs.push(util.inspect(obj, options));
-            }
-        };
+        const decoder = new TextDecoder();
+        const stdout = new Writable({
+            write(chunk, _, callback) {
+                logs.push(chunk);
+                // const str = decoder.decode(chunk);
+                // const lines = str.split("\n");
+                // lines.forEach((line, i) => {
+                //     if (line || i !== lines.length - 1) {
+                //         logs.push(line);
+                //     }
+                // });
+                callback();
+            },
+        });
+        const _console = new Console(stdout);
         const returns = fn.call(this, _console, ...args);
-        const handleResult = () => {
+        const handleResult = async () => {
             var _a;
-            const actual = logs.join("\n");
+            const actual = logs.map(chunk => decoder.decode(chunk)).join("\n").replace(/[\n]+$/, "");
             const _expected = expected.join("\n");
             try {
                 // @ts-ignore
                 assert.ok(actual === _expected, `\nexpected:\n${_expected}\n\ngot:\n${actual}`);
+                if (!(options === null || options === void 0 ? void 0 : options.suppress)) {
+                    for (const chunk of logs) {
+                        if (typeof Deno === "object") {
+                            await Deno.stdout.write(chunk);
+                        }
+                        else if (typeof process === "object") {
+                            await new Promise(resolve => process.stdout.write(chunk, () => resolve()));
+                        }
+                    }
+                }
             }
             catch (err) {
-                err.stack = err.stack
-                    + "\n" + ((_a = call.stack) === null || _a === void 0 ? void 0 : _a.split("\n").slice(1).join("\n"));
+                Object.defineProperty(err, "stack", {
+                    configurable: true,
+                    writable: true,
+                    enumerable: false,
+                    value: err.stack
+                        + "\n" + ((_a = call.stack) === null || _a === void 0 ? void 0 : _a.split("\n").slice(1).join("\n")),
+                });
                 throw err;
             }
         };
         if (typeof (returns === null || returns === void 0 ? void 0 : returns.then) === "function") {
-            return returns.then(handleResult);
+            await returns;
         }
-        else {
-            handleResult();
-            return;
-        }
+        await new Promise(resolve => stdout.end(() => resolve()));
+        await handleResult();
     };
 }
 

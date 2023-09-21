@@ -1,6 +1,6 @@
 import type { AssertionError } from "node:assert";
-import type { InspectOptions } from "node:util";
-import type { Ensured } from "./index.ts";
+
+declare var Deno: any;
 
 /**
  * Inspired by Golang's **Example as Test** design, creates a function that carries example code
@@ -11,8 +11,8 @@ import type { Ensured } from "./index.ts";
  * instead of using the built-in `console`.
  * 
  * NOTE: this function is used to simplify the process of writing tests, it does not work in Bun and
- * browsers currently, because Bun removes comments during runtime, and the function relies on
- * Node.js built-in modules.
+ * browsers currently, because Bun hasn't implement the `Console` constructor and removes comments
+ * during runtime, and the function relies on Node.js built-in modules.
  * 
  * @experimental
  * 
@@ -23,11 +23,13 @@ import type { Ensured } from "./index.ts";
  *      // Hello, World!
  *  }));
  */
-export default function example<T, A extends any[] = any[]>(fn: (
-    this: T,
-    console: Ensured<Partial<Console>, "debug" | "dir" | "error" | "info" | "log" | "warn">,
-    ...args: A
-) => void | Promise<void>): (this: T, ...args: A) => Promise<void> {
+export default function example<T, A extends any[] = any[]>(
+    fn: (this: T, console: Console, ...args: A) => void | Promise<void>,
+    options: {
+        /** Suppress logging to the terminal and only check the output. */
+        suppress?: boolean;
+    } | undefined = undefined
+): (this: T, ...args: A) => Promise<void> {
     const call: { stack?: string; } = {};
     Error.captureStackTrace(call, example);
 
@@ -53,7 +55,7 @@ export default function example<T, A extends any[] = any[]>(fn: (
         for (let line of lines) {
             line = line.trimStart();
 
-            if (line.startsWith("// ")) {
+            if (line.startsWith("//")) {
                 expected.push(line.slice(3));
             } else {
                 throw new Error("the output comment must be at the end of the example");
@@ -71,42 +73,64 @@ export default function example<T, A extends any[] = any[]>(fn: (
         expected.reverse();
 
         const assert = await import("node:assert");
-        const util = await import("node:util");
-        const logs: string[] = [];
-        const log = (format: any, ...args: any[]) => {
-            logs.push(util.format(format, ...args));
-        };
-        const _console: Ensured<Partial<Console>, "debug" | "dir" | "error" | "info" | "log" | "warn"> = {
-            log,
-            debug: log,
-            error: log,
-            info: log,
-            warn: log,
-            dir: (obj: any, options?: InspectOptions) => {
-                logs.push(util.inspect(obj, options));
-            }
-        };
+        const { Writable } = await import("node:stream");
+        const { Console } = await import("node:console");
+        const logs: Uint8Array[] = [];
+        const decoder = new TextDecoder();
+        const stdout = new Writable({
+            write(chunk, _, callback) {
+                logs.push(chunk);
+                // const str = decoder.decode(chunk);
+                // const lines = str.split("\n");
 
+                // lines.forEach((line, i) => {
+                //     if (line || i !== lines.length - 1) {
+                //         logs.push(line);
+                //     }
+                // });
+
+                callback();
+            },
+        });
+        const _console = new Console(stdout);
         const returns = fn.call(this, _console, ...args);
-        const handleResult = () => {
-            const actual = logs.join("\n");
+        const handleResult = async () => {
+            const actual = logs.map(chunk => decoder.decode(chunk)).join("\n").replace(/[\n]+$/, "");
             const _expected = expected.join("\n");
 
             try {
                 // @ts-ignore
                 assert.ok(actual === _expected, `\nexpected:\n${_expected}\n\ngot:\n${actual}`);
+
+                if (!options?.suppress) {
+                    for (const chunk of logs) {
+                        if (typeof Deno === "object") {
+                            await Deno.stdout.write(chunk);
+                        } else if (typeof process === "object") {
+                            await new Promise<void>(
+                                resolve => process.stdout.write(chunk, () => resolve())
+                            );
+                        }
+                    }
+                }
             } catch (err: unknown) {
-                (err as AssertionError).stack = (err as AssertionError).stack
-                    + "\n" + call.stack?.split("\n").slice(1).join("\n");
+                Object.defineProperty(err as AssertionError, "stack", {
+                    configurable: true,
+                    writable: true,
+                    enumerable: false,
+                    value: (err as AssertionError).stack
+                        + "\n" + call.stack?.split("\n").slice(1).join("\n"),
+                });
+
                 throw err;
             }
         };
 
         if (typeof returns?.then === "function") {
-            return returns.then(handleResult);
-        } else {
-            handleResult();
-            return;
+            await returns;
         }
+
+        await new Promise<void>(resolve => stdout.end(() => resolve()));
+        await handleResult();
     };
 }

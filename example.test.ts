@@ -13,7 +13,7 @@ describe("jsext.example", () => {
             console.log(1);
             // output:
             // 1
-        })());
+        }, { suppress: true })());
         assert.strictEqual(err1, null);
 
         const [err2] = await jsext.try(jsext.example(console => {
@@ -21,7 +21,7 @@ describe("jsext.example", () => {
             // output:
             // 1
 
-        })());
+        }, { suppress: true })());
         assert.strictEqual(err2, null);
 
         const [err3] = await jsext.try(jsext.example(console => {
@@ -30,14 +30,14 @@ describe("jsext.example", () => {
             // Output:
             // 1
 
-        })());
+        }, { suppress: true })());
         assert.strictEqual(err3, null);
 
         const [err4] = await jsext.try(jsext.example(console => {
             console.log(1);
             // output:
             // 2
-        })());
+        }, { suppress: true })());
         assert.strictEqual(err4?.message, "\nexpected:\n2\n\ngot:\n1");
 
         const [err5] = await jsext.try(jsext.example(console => {
@@ -45,7 +45,7 @@ describe("jsext.example", () => {
             // output:
             // 2
             console.log(2);
-        })());
+        }, { suppress: true })());
         assert.strictEqual(
             err5?.message,
             "the output comment must be at the end of the example");
@@ -57,7 +57,7 @@ describe("jsext.example", () => {
             console.log(2);
             // output:
             // 2
-        })());
+        }, { suppress: true })());
         assert.strictEqual(
             err6?.message,
             "there can only be one output comment in the example");
@@ -66,7 +66,7 @@ describe("jsext.example", () => {
             console.log(typeof this.timeout);
             // output:
             // function
-        }).apply(this));
+        }, { suppress: true }).apply(this));
         assert.strictEqual(err7, null);
     });
 
@@ -80,7 +80,7 @@ describe("jsext.example", () => {
             console.log(1);
             // output:
             // 1
-        })());
+        }, { suppress: true })());
         assert.strictEqual(err1, null);
 
         const [err2] = await jsext.try(jsext.example(async console => {
@@ -89,7 +89,7 @@ describe("jsext.example", () => {
             // output:
             // 1
 
-        })());
+        }, { suppress: true })());
         assert.strictEqual(err2, null);
 
         const [err3] = await jsext.try(jsext.example(async console => {
@@ -99,7 +99,7 @@ describe("jsext.example", () => {
             // Output:
             // 1
 
-        })());
+        }, { suppress: true })());
         assert.strictEqual(err3, null);
 
         const [err4] = await jsext.try(jsext.example(async console => {
@@ -107,7 +107,7 @@ describe("jsext.example", () => {
             console.log(1);
             // output:
             // 2
-        })());
+        }, { suppress: true })());
         assert.strictEqual(err4?.message, "\nexpected:\n2\n\ngot:\n1");
 
         const [err5] = await jsext.try(jsext.example(async console => {
@@ -116,7 +116,7 @@ describe("jsext.example", () => {
             // output:
             // 2
             console.log(2);
-        })());
+        }, { suppress: true })());
         assert.strictEqual(
             err5?.message,
             "the output comment must be at the end of the example");
@@ -129,7 +129,7 @@ describe("jsext.example", () => {
             console.log(2);
             // output:
             // 2
-        })());
+        }, { suppress: true })());
         assert.strictEqual(
             err6?.message,
             "there can only be one output comment in the example");
@@ -139,7 +139,7 @@ describe("jsext.example", () => {
             console.log(typeof this.timeout);
             // output:
             // function
-        }).apply(this));
+        }, { suppress: true }).apply(this));
         assert.strictEqual(err7, null);
     });
 });
