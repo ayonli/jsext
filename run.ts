@@ -1,5 +1,5 @@
-import type { Worker as NodeWorker } from "worker_threads";
-import type { ChildProcess } from "child_process";
+import type { Worker as NodeWorker } from "node:worker_threads";
+import type { ChildProcess } from "node:child_process";
 import { sequence } from "./number/index.ts";
 import { isFunction } from "./try.ts";
 import read from "./read.ts";
