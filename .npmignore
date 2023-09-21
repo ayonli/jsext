@@ -9,6 +9,7 @@ bundle.ts
 tsconfig.json
 pretest.cjs
 posttest.cjs
+test-deno.ts
 job-example.cjs
 job-example.mjs
 bundle/index.js
