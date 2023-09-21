@@ -1,7 +1,8 @@
+import chan from "./chan.ts";
 import { isFunction } from "./try.ts";
 
 /**
- * Wraps a source as an AsyncIterable object that can be used in the `for...await...` loop
+ * Wraps a source as an AsyncIterable object that can be used in the `for await...of...` loop
  * for reading streaming data.
  */
 export default function read<I extends AsyncIterable<any>>(iterable: I): I;
@@ -76,61 +77,9 @@ export default function read<T>(source: any, eventMap: {
         return source;
     }
 
-    const iterable = {
-        ended: false,
-        error: null as Error | null,
-        queue: [] as T[],
-        consumers: [] as {
-            resolve: (data: IteratorResult<T>) => void;
-            reject: (err: any) => void;
-        }[],
-        next() {
-            return new Promise<IteratorResult<T>>((resolve, reject) => {
-                if (this.error && !this.ended) {
-                    // If there is error occurred during the last transmission and the iterator
-                    // hasn't been closed, reject that error and stop the iterator immediately.
-                    reject(this.error);
-                    this.ended = true;
-                } else if (this.ended && !this.queue.length) {
-                    // If the iterator has is closed, resolve the pending consumer with void
-                    // value.
-                    resolve({ value: void 0 as T, done: true });
-                } else if (this.queue.length > 0) {
-                    // If there are data in the queue, resolve the the first piece immediately.
-                    resolve({ value: this.queue.shift() as T, done: false });
-                } else {
-                    // If there are no queued data, push the consumer to a waiting queue.
-                    this.consumers.push({ resolve, reject });
-                }
-            });
-        }
-    };
-
-    const handleMessage = (data: T) => {
-        if (iterable.consumers.length > 0) {
-            iterable.consumers.shift()?.resolve({ value: data, done: false });
-        } else {
-            iterable.queue.push(data);
-        }
-    };
-    const handleClose = () => {
-        iterable.ended = true;
-        let consumer: typeof iterable["consumers"][0] | undefined;
-
-        while (consumer = iterable.consumers.shift()) {
-            consumer.resolve({ value: undefined, done: true });
-        }
-    };
-    const handleError = (err: Error) => {
-        iterable.error = err;
-
-        if (iterable.consumers.length > 0) {
-            iterable.consumers.forEach(item => {
-                item.reject(err);
-            });
-            iterable.consumers = [];
-        }
-    };
+    const channel = chan<T>(Infinity);
+    const handleMessage = channel.push.bind(channel);
+    const handleClose = channel.close.bind(channel);
     const handleBrowserErrorEvent = (ev: Event) => {
         let err: Error;
 
@@ -141,7 +90,7 @@ export default function read<T>(source: any, eventMap: {
             err = new Error("something went wrong", { cause: ev });
         }
 
-        handleError(err);
+        handleClose(err);
     };
 
     const proto = Object.getPrototypeOf(source);
@@ -254,19 +203,17 @@ export default function read<T>(source: any, eventMap: {
         }
 
         target.on(dataEvent, handleMessage);
-        target.once(errEvent, handleError);
+        target.once(errEvent, handleClose);
         target.once(closeEvent, () => {
             handleClose();
             target.off(dataEvent, handleMessage);
-            target.off(dataEvent, handleError);
+            target.off(errEvent, handleClose);
         });
     } else {
         throw new TypeError("the input source cannot be read as an AsyncIterable object");
     }
 
     return {
-        [Symbol.asyncIterator]() {
-            return iterable;
-        }
+        [Symbol.asyncIterator]: channel[Symbol.asyncIterator].bind(channel),
     };
 }

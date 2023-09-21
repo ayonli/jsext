@@ -1,4 +1,4 @@
-import { Constructor } from "./index.ts";
+import type { Constructor } from "./index.ts";
 
 /**
  * Checks if a class is a subclass of another class.

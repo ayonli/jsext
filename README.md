@@ -24,6 +24,7 @@ import jsext from "https://deno.land/x/ayonli_jsext/index.ts"; // since v0.5.0
 - [jsext.throttle](#jsextthrottle)
 - [jsext.mixins](#jsextmixins)
 - [jsext.isSubclassOf](#jsextissubclassof)
+- [jsext.chan](#jsextchan)
 - [jsext.read](#jsextread)
 - [jsext.run](#jsextrun)
 - [jsext.example](#jsextexample)
@@ -357,6 +358,92 @@ console.assert(isSubclassOf(Moment, Object)); // all classes are subclasses of O
 
 ---
 
+### jsext.chan
+
+```ts
+function chan<T>(capacity?: number): Channel<T>;
+```
+
+Inspired by Golang, cerates a channel that can be used to transfer data within the program.
+
+Unlike `EventEmitter` or `EventTarget`, `Channel` guarantees the data will always be delivered,
+even if there is no receiver at the moment.
+
+If `capacity` is not set, a non-buffered channel will be created. For a non-buffered channel,
+the sender and receiver must be present at the same time (theoretically), otherwise, the
+channel will block (non-IO aspect).
+
+If `capacity` is set, a buffered channel will be created. For a buffered channel, data will
+be queued in the buffer first and then consumed by the receiver in FIFO order. Once the
+buffer size reaches the capacity limit, no more data will be sent unless there is new room
+available.
+
+It is possible to set the `capacity` to `Infinity` to allow the channel to never block
+and behave like a message queue.
+
+---
+
+**Example**
+
+```ts
+const channel = chan<number>();
+
+(async () => {
+    await channel.push(123);
+})();
+
+const num = await channel.pop();
+console.log(num);
+// output:
+// 123
+```
+
+**Example (buffered)**
+
+```ts
+const channel = chan<number>(3);
+
+await channel.push(123);
+await channel.push(456);
+await channel.push(789);
+
+const num1 = await channel.pop();
+const num2 = await channel.pop();
+const num3 = await channel.pop();
+
+console.log(num1);
+console.log(num2);
+console.log(num3);
+// output:
+// 123
+// 456
+// 789
+```
+
+**Example (iterable)**
+
+```ts
+const channel = chan<number>();
+
+(async () => {
+    for (const num of Number.sequence(1, 5)) {
+        await channel.push(num);
+    }
+
+    await channel.close();
+})();
+
+for await (const num of channel) {
+    console.log(num);
+}
+// output:
+// 1
+// 2
+// 3
+// 4
+// 5
+```
+
 ### jsext.read
 
 ```ts
@@ -375,7 +462,7 @@ function read<T>(target: NodeJS.EventEmitter, eventMap?: {
 }): AsyncIterable<T>;
 ```
 
-Wraps a source as an AsyncIterable object that can be used in the `for...await...` loop
+Wraps a source as an AsyncIterable object that can be used in the `for await...of...` loop
 for reading streaming data.
 
 **Example (EventSource)**
@@ -548,6 +635,7 @@ it("should output as expected", example(console => {
 
 ## Types
 
+- `Channel`
 - `AsyncFunction`
 - `AsyncGeneratorFunction`
 - `AsyncFunctionConstructor`

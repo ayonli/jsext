@@ -1,8 +1,7 @@
 import type { Worker as NodeWorker } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
 import { sequence } from "./number/index.ts";
-import { isFunction } from "./try.ts";
-import read from "./read.ts";
+import chan, { Channel } from "./chan.ts";
 
 const isNode = typeof process === "object" && !!process.versions?.node;
 declare var Deno: any;
@@ -128,16 +127,13 @@ export default async function run<T, A extends any[] = any[]>(
         msg.baseUrl = location.href;
     }
 
-    // `buffer` is used to store data pieces yielded by generator functions before they are
-    // consumed. `error` and `result` serves similar purposes for function results.
-    const buffer: any[] = [];
     let error: Error | null = null;
     let result: { value: any; } | undefined;
     let resolver: {
         resolve: (data: any) => void;
         reject: (err: unknown) => void;
     } | undefined;
-    let iterator: EventTarget | NodeJS.EventEmitter | undefined;
+    let channel: Channel<T> | undefined = undefined;
     let workerId: number | undefined;
     let poolRecord: typeof workerPool[0] | undefined;
     let release: () => void;
@@ -181,17 +177,7 @@ export default async function run<T, A extends any[] = any[]>(
                     // The final message of yield event is the return value.
                     handleMessage({ type: "return", value: msg.value });
                 } else {
-                    if (iterator) {
-                        if (isFunction((iterator as EventTarget).dispatchEvent)) {
-                            (iterator as EventTarget).dispatchEvent(
-                                new MessageEvent("message", { data: msg.value })
-                            );
-                        } else {
-                            (iterator as NodeJS.EventEmitter).emit("data", msg.value);
-                        }
-                    } else {
-                        buffer.push(msg.value);
-                    }
+                    channel?.push(msg.value);
                 }
             }
         }
@@ -200,14 +186,8 @@ export default async function run<T, A extends any[] = any[]>(
     const handleError = (err: Error | null) => {
         if (resolver) {
             resolver.reject(err);
-        } else if (iterator) {
-            if (isFunction((iterator as EventTarget).dispatchEvent)) {
-                (iterator as EventTarget).dispatchEvent(
-                    new MessageEvent("error", { data: err })
-                );
-            } else {
-                (iterator as NodeJS.EventEmitter).emit("error", err);
-            }
+        } else if (channel) {
+            channel.close(err);
         } else {
             error = err;
         }
@@ -225,12 +205,8 @@ export default async function run<T, A extends any[] = any[]>(
 
         if (resolver) {
             resolver.resolve(void 0);
-        } else if (iterator) {
-            if (isFunction((iterator as EventTarget).dispatchEvent)) {
-                (iterator as EventTarget).dispatchEvent(new MessageEvent("close"));
-            } else {
-                (iterator as NodeJS.EventEmitter).emit("close");
-            }
+        } else if (channel) {
+            channel.close();
         } else if (!error && !result) {
             result = { value: void 0 };
         }
@@ -454,49 +430,18 @@ export default async function run<T, A extends any[] = any[]>(
                 }
             });
         },
-        async *iterate() {
+        iterate() {
             if (resolver) {
                 throw new Error("result() has been called");
             } else if (result) {
                 throw new TypeError("the response is not iterable");
             }
 
-            if (typeof MessageEvent === "function" && typeof EventTarget === "function") {
-                iterator = new EventTarget();
+            channel = chan<T>(Infinity);
 
-                if (buffer.length) {
-                    (async () => {
-                        await Promise.resolve(null);
-                        let msg: any;
-
-                        while (msg = buffer.shift()) {
-                            iterator.dispatchEvent(new MessageEvent("message", { data: msg }));
-                        }
-                    })().catch(console.error);
-                }
-
-                for await (const msg of read<any>(iterator)) {
-                    yield msg;
-                }
-            } else {
-                const { EventEmitter } = await import("events");
-                iterator = new EventEmitter();
-
-                if (buffer.length) {
-                    (async () => {
-                        await Promise.resolve(null);
-                        let msg: any;
-
-                        while (msg = buffer.shift()) {
-                            iterator.emit("data", msg);
-                        }
-                    })().catch(console.error);
-                }
-
-                for await (const msg of read<any>(iterator)) {
-                    yield msg;
-                }
-            }
+            return {
+                [Symbol.asyncIterator]: channel[Symbol.asyncIterator].bind(channel),
+            };
         },
     };
 }
