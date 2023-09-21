@@ -62,12 +62,21 @@ describe("jsext.example", () => {
             err6?.message,
             "there can only be one output comment in the example");
 
-        const [err7] = await jsext.try(jsext.example(function (this: Mocha.Context, console) {
+        const [err7] = await jsext.try(jsext.example(console => {
+            console.log(typeof this.timeout);
+            // output:
+            //function
+        }, { suppress: true })());
+        assert.strictEqual(
+            err7?.message,
+            "the output comment must start with '// '");
+
+        const [err8] = await jsext.try(jsext.example(function (this: Mocha.Context, console) {
             console.log(typeof this.timeout);
             // output:
             // function
         }, { suppress: true }).apply(this));
-        assert.strictEqual(err7, null);
+        assert.strictEqual(err8, null);
     });
 
     it("async function", async function () {
@@ -134,12 +143,22 @@ describe("jsext.example", () => {
             err6?.message,
             "there can only be one output comment in the example");
 
-        const [err7] = await jsext.try(jsext.example(async function (this: Mocha.Context, console) {
+        const [err7] = await jsext.try(jsext.example(async console => {
+            await Promise.resolve(null);
+            console.log(typeof this.timeout);
+            // output:
+            //function
+        }, { suppress: true })());
+        assert.strictEqual(
+            err7?.message,
+            "the output comment must start with '// '");
+
+        const [err8] = await jsext.try(jsext.example(async function (this: Mocha.Context, console) {
             await Promise.resolve(null);
             console.log(typeof this.timeout);
             // output:
             // function
         }, { suppress: true }).apply(this));
-        assert.strictEqual(err7, null);
+        assert.strictEqual(err8, null);
     });
 });

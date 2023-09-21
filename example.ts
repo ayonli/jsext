@@ -56,6 +56,10 @@ export default function example<T, A extends any[] = any[]>(
             line = line.trimStart();
 
             if (line.startsWith("//")) {
+                if (line[2] && line[2] !== " ") {
+                    throw new Error("the output comment must start with '// '");
+                }
+
                 expected.push(line.slice(3));
             } else {
                 throw new Error("the output comment must be at the end of the example");

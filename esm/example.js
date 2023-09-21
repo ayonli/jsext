@@ -41,6 +41,9 @@ function example(fn, options = undefined) {
         for (let line of lines) {
             line = line.trimStart();
             if (line.startsWith("//")) {
+                if (line[2] && line[2] !== " ") {
+                    throw new Error("the output comment must start with '// '");
+                }
                 expected.push(line.slice(3));
             }
             else {
