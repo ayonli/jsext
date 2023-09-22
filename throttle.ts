@@ -2,6 +2,7 @@ type ThrottleCache = {
     for: any;
     expires?: number;
     result?: { value?: any; error?: unknown; };
+    pending?: Promise<any>;
 };
 const throttleCaches = new Map<any, ThrottleCache>();
 
@@ -10,6 +11,10 @@ const throttleCaches = new Map<any, ThrottleCache>();
  * 
  * If a subsequent call happens within the `duration`, the previous result will be returned and
  * the `handler` function will not be invoked.
+ * 
+ * If the `handler` function returns a promise, and two or more calls happen simultaneously,
+ * the later calls will try to resolve with the previous result immediately instead of waiting
+ * the pending call to complete.
  * 
  * @example
  * ```ts
@@ -62,19 +67,38 @@ export default function throttle(handler: (this: any, ...args: any[]) => any, op
         cache: ThrottleCache,
         ...args: any[]
     ) {
-        if (cache.result && Date.now() < (cache.expires ?? 0)) {
+        if (cache.result && (cache.pending || Date.now() < (cache.expires ?? 0))) {
             if (cache.result.error) {
                 throw cache.result.error;
             } else {
                 return cache.result.value;
             }
+        } else if (cache.pending) {
+            return cache.pending;
         }
 
         try {
-            const returns = handler.call(this, ...args);
-            cache.result = { value: returns };
-            cache.expires = Date.now() + duration;
-            return returns;
+            let returns = handler.call(this, ...args);
+
+            if (typeof returns?.then === "function") {
+                cache.pending = returns = (returns as Promise<any>).then(value => {
+                    cache.pending = undefined;
+                    cache.result = { value };
+                    cache.expires = Date.now() + duration;
+                    return value;
+                }).catch(error => {
+                    cache.pending = undefined;
+                    cache.result = { error };
+                    cache.expires = Date.now() + duration;
+                    throw error;
+                });
+
+                return returns;
+            } else {
+                cache.result = { value: returns };
+                cache.expires = Date.now() + duration;
+                return returns;
+            }
         } catch (error) {
             cache.result = { error };
             cache.expires = Date.now() + duration;

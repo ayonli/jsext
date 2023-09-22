@@ -4,7 +4,7 @@ function throttle(handler, options) {
     const duration = typeof options === "number" ? options : options.duration;
     const handleCall = function (cache, ...args) {
         var _a;
-        if (cache.result && Date.now() < ((_a = cache.expires) !== null && _a !== void 0 ? _a : 0)) {
+        if (cache.result && (cache.pending || Date.now() < ((_a = cache.expires) !== null && _a !== void 0 ? _a : 0))) {
             if (cache.result.error) {
                 throw cache.result.error;
             }
@@ -12,11 +12,30 @@ function throttle(handler, options) {
                 return cache.result.value;
             }
         }
+        else if (cache.pending) {
+            return cache.pending;
+        }
         try {
-            const returns = handler.call(this, ...args);
-            cache.result = { value: returns };
-            cache.expires = Date.now() + duration;
-            return returns;
+            let returns = handler.call(this, ...args);
+            if (typeof (returns === null || returns === void 0 ? void 0 : returns.then) === "function") {
+                cache.pending = returns = returns.then(value => {
+                    cache.pending = undefined;
+                    cache.result = { value };
+                    cache.expires = Date.now() + duration;
+                    return value;
+                }).catch(error => {
+                    cache.pending = undefined;
+                    cache.result = { error };
+                    cache.expires = Date.now() + duration;
+                    throw error;
+                });
+                return returns;
+            }
+            else {
+                cache.result = { value: returns };
+                cache.expires = Date.now() + duration;
+                return returns;
+            }
         }
         catch (error) {
             cache.result = { error };

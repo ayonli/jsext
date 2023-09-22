@@ -264,6 +264,10 @@ Creates a throttled function that will only be run once in a certain amount of t
 If a subsequent call happens within the `duration`, the previous result will be returned and
 the `handler` function will not be invoked.
 
+If the `handler` function returns a promise, and two or more calls happen simultaneously,
+the later calls will try to resolve with the previous result immediately instead of waiting
+the pending call to complete.
+
 **Example**
 
 ```ts
