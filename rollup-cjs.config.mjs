@@ -38,7 +38,7 @@ export default {
         }
     },
     plugins: [
-        typescript({ module: "esnext", moduleResolution: "bundler" }),
+        typescript({ moduleResolution: "bundler" }),
         resolve({ preferBuiltins: true }),
         commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
     ],

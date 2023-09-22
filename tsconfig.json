@@ -6,11 +6,11 @@
         "newLine": "LF",
         "importHelpers": true,
         "sourceMap": true,
-        "strict": true,
         "noEmit": true,
         "allowImportingTsExtensions": true,
-        "esModuleInterop": true,
         "moduleResolution": "NodeNext",
+        "esModuleInterop": true,
+        "strict": true,
         "noUnusedParameters": true,
         "noUnusedLocals": true,
         "noImplicitAny": true,
@@ -36,10 +36,5 @@
     ],
     "exclude": [
         "node_modules"
-    ],
-    "bun": {
-        "compilerOptions": {
-            "removeComments": false
-        }
-    }
+    ]
 }
