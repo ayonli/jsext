@@ -14,7 +14,7 @@ function compare(str1, str2) {
         return 0;
     }
 }
-/** Returns a random string, the charset matches `/[0-9a-zA-Z]/` */
+/** Returns a random string, the charset matches `/[0-9a-zA-Z]/`. */
 function random(length) {
     const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     let str = "";

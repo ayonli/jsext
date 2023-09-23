@@ -13,7 +13,7 @@ export function compare(str1: string, str2: string): -1 | 0 | 1 {
     }
 }
 
-/** Returns a random string, the charset matches `/[0-9a-zA-Z]/` */
+/** Returns a random string, the charset matches `/[0-9a-zA-Z]/`. */
 export function random(length: number): string {
     const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     let str = "";
