@@ -27,12 +27,8 @@ async function sleep(ms) {
 }
 /** Blocks the context until the test is passed. */
 async function until(test) {
-    if (typeof globalThis.setImmediate === "undefined") {
-        // @ts-ignore
-        globalThis.setImmediate = (cb) => setTimeout(cb, 0);
-    }
     do {
-        await new Promise(globalThis.setImmediate);
+        await new Promise(resolve => setTimeout(resolve));
     } while ((await test()) == false);
 }
 

@@ -35,7 +35,7 @@ export function isBetween(value: number, [min, max]: [number, number]): boolean 
     return value >= min && value <= max;
 }
 
-/** Returns a random integer ranged from `min` to `max`. */
+/** Returns a random integer ranged from `min` to `max` (inclusive). */
 export function random(min: number, max: number): number {
     return min + Math.floor(Math.random() * (max - min + 1));
 }

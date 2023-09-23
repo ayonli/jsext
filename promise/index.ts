@@ -30,10 +30,7 @@ export async function sleep(ms: number): Promise<void> {
 
 /** Blocks the context until the test is passed. */
 export async function until(test: () => boolean | Promise<boolean>): Promise<void> {
-    if (typeof globalThis.setImmediate === "undefined") {
-        // @ts-ignore
-        globalThis.setImmediate = (cb: () => void) => setTimeout(cb, 0);
-    }
-
-    do { await new Promise<void>(globalThis.setImmediate); } while ((await test()) == false);
+    do {
+        await new Promise<void>(resolve => setTimeout(resolve));
+    } while ((await test()) == false);
 }
