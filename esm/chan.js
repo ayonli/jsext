@@ -63,9 +63,14 @@ class Channel {
      */
     pop() {
         if (this.buffer.length) {
-            return Promise.resolve(this.buffer.shift());
+            const data = this.buffer.shift();
+            if (this.state === 2 && !this.buffer.length) {
+                this.state = 0;
+            }
+            return Promise.resolve(data);
         }
         else if (this.pub) {
+            this.state === 2 && (this.state = 0);
             return Promise.resolve(this.pub());
         }
         else if (this.state === 0) {
@@ -78,9 +83,14 @@ class Channel {
             this.error = undefined;
             return Promise.reject(error);
         }
+        else if (this.state === 2) {
+            this.state = 0;
+            return Promise.resolve(undefined);
+        }
         else {
             return new Promise((resolve, reject) => {
                 this.sub = (err, data) => {
+                    this.state === 2 && (this.state = 0);
                     this.sub = undefined;
                     err ? reject(err) : resolve(data);
                 };
@@ -97,15 +107,10 @@ class Channel {
      * `for await...of...` loop, closing the channel will allow the loop to break automatically.
      */
     close(err = null) {
+        var _a;
         this.state = 2;
         this.error = err;
-        // Delay the closure till the next event loop so that `sub` can be bound in the
-        // `for await...of...` loop and the last message can be delivered.
-        setTimeout(() => {
-            var _a;
-            this.state = 0;
-            (_a = this.sub) === null || _a === void 0 ? void 0 : _a.call(this, err, undefined);
-        });
+        (_a = this.sub) === null || _a === void 0 ? void 0 : _a.call(this, err, undefined);
     }
     [Symbol.asyncIterator]() {
         const channel = this;

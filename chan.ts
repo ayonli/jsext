@@ -68,8 +68,15 @@ export class Channel<T> implements AsyncIterable<T> {
      */
     pop(): Promise<T | void> {
         if (this.buffer.length) {
-            return Promise.resolve(this.buffer.shift());
+            const data = this.buffer.shift();
+
+            if (this.state === 2 && !this.buffer.length) {
+                this.state = 0;
+            }
+
+            return Promise.resolve(data);
         } else if (this.pub) {
+            this.state === 2 && (this.state = 0);
             return Promise.resolve(this.pub());
         } else if (this.state === 0) {
             return Promise.resolve(undefined);
@@ -79,9 +86,13 @@ export class Channel<T> implements AsyncIterable<T> {
             this.state = 0;
             this.error = undefined;
             return Promise.reject(error);
+        } else if (this.state === 2) {
+            this.state = 0;
+            return Promise.resolve(undefined);
         } else {
             return new Promise<T>((resolve, reject) => {
                 this.sub = (err: unknown, data?: T) => {
+                    this.state === 2 && (this.state = 0);
                     this.sub = undefined;
                     err ? reject(err) : resolve(data as T);
                 };
@@ -101,13 +112,7 @@ export class Channel<T> implements AsyncIterable<T> {
     close(err: Error | null = null) {
         this.state = 2;
         this.error = err;
-
-        // Delay the closure till the next event loop so that `sub` can be bound in the
-        // `for await...of...` loop and the last message can be delivered.
-        setTimeout(() => {
-            this.state = 0;
-            this.sub?.(err, undefined);
-        });
+        this.sub?.(err, undefined);
     }
 
     [Symbol.asyncIterator]() {
