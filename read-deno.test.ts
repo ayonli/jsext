@@ -85,3 +85,12 @@ describe("jsext.read", () => {
         deepStrictEqual(messages2, ["foo", "bar"]);
     });
 });
+
+describe("jsext.readAll", () => {
+    it("jsext.readAll", async () => {
+        const file = await Deno.open("./package.json", { read: true });
+        const chunks = await jsext.readAll(file.readable);
+
+        ok(chunks.length > 0);
+    });
+});

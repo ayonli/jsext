@@ -217,3 +217,22 @@ export default function read<T>(source: any, eventMap: {
         [Symbol.asyncIterator]: channel[Symbol.asyncIterator].bind(channel),
     };
 }
+
+/**
+ * Reads all values from the iterable object at once.
+ * 
+ * @example
+ * ```ts
+ * const file = fs.createReadStream("./package.json");
+ * const chunks = await readAll(file);
+ * ```
+ */
+export async function readAll<T>(iterable: AsyncIterable<T>): Promise<T[]> {
+    const list: T[] = [];
+
+    for await (const chunk of iterable) {
+        list.push(chunk)
+    }
+
+    return list;
+}

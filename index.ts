@@ -2,10 +2,9 @@ import _try from "./try.ts";
 import func from "./func.ts";
 import wrap from "./wrap.ts";
 import throttle from "./throttle.ts";
-import mixins from "./mixins.ts";
-import isSubclassOf from "./isSubclassOf.ts";
+import mixins, { isSubclassOf } from "./mixins.ts";
 import chan, { Channel } from "./chan.ts";
-import read from "./read.ts";
+import read, { readAll } from "./read.ts";
 import run from "./run.ts";
 import example from "./example.ts";
 
@@ -53,6 +52,7 @@ const jsext = {
     isSubclassOf,
     chan,
     read,
+    readAll,
     run,
     example,
 };
@@ -67,6 +67,7 @@ export {
     isSubclassOf,
     chan,
     read,
+    readAll,
     run,
     example,
 };

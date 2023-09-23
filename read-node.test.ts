@@ -197,3 +197,12 @@ describe("jsext.read", () => {
         deepStrictEqual(messages2, ["foo", "bar"]);
     });
 });
+
+describe("jsext.readAll", () => {
+    it("jsext.readAll", async () => {
+        const file = createReadStream("./package.json");
+        const chunks = await jsext.readAll(file);
+
+        ok(chunks.length > 0);
+    });
+});

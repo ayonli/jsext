@@ -2,11 +2,10 @@ import _try from './try.js';
 import func from './func.js';
 import wrap from './wrap.js';
 import throttle from './throttle.js';
-import mixins from './mixins.js';
-import isSubclassOf from './isSubclassOf.js';
+import mixins, { isSubclassOf } from './mixins.js';
 import chan from './chan.js';
 export { Channel } from './chan.js';
-import read from './read.js';
+import read, { readAll } from './read.js';
 import run from './run.js';
 import example from './example.js';
 
@@ -24,9 +23,10 @@ const jsext = {
     isSubclassOf,
     chan,
     read,
+    readAll,
     run,
     example,
 };
 
-export { AsyncFunction, AsyncGeneratorFunction, _try, chan, jsext as default, example, func, isSubclassOf, mixins, read, run, throttle, wrap };
+export { AsyncFunction, AsyncGeneratorFunction, _try, chan, jsext as default, example, func, isSubclassOf, mixins, read, readAll, run, throttle, wrap };
 //# sourceMappingURL=index.js.map

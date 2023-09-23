@@ -26,6 +26,7 @@ import jsext from "https://deno.land/x/ayonli_jsext/index.ts"; // since v0.5.0
 - [jsext.isSubclassOf](#jsextissubclassof)
 - [jsext.chan](#jsextchan)
 - [jsext.read](#jsextread)
+- [jsext.readAll](#jsextreadall)
 - [jsext.run](#jsextrun)
 - [jsext.example](#jsextexample)
 
@@ -516,6 +517,23 @@ for await (const msg of read(process)) {
     console.log("receive message from the parent process:", msg);
 }
 ```
+---
+
+### jsext.readAll
+
+```ts
+function readAll<T>(iterable: AsyncIterable<T>): Promise<T[]>;
+```
+
+Reads all values from the iterable object at once.
+
+**Example**
+
+```ts
+const file = fs.createReadStream("./package.json");
+const chunks = await readAll(file);
+```
+
 ---
 
 ### jsext.run

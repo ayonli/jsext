@@ -144,6 +144,22 @@ function read(source, eventMap = undefined) {
         [Symbol.asyncIterator]: channel[Symbol.asyncIterator].bind(channel),
     };
 }
+/**
+ * Reads all values from the iterable object at once.
+ *
+ * @example
+ * ```ts
+ * const file = fs.createReadStream("./package.json");
+ * const chunks = await readAll(file);
+ * ```
+ */
+async function readAll(iterable) {
+    const list = [];
+    for await (const chunk of iterable) {
+        list.push(chunk);
+    }
+    return list;
+}
 
-export { read as default };
+export { read as default, readAll };
 //# sourceMappingURL=read.js.map

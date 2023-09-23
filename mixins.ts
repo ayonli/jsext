@@ -114,3 +114,20 @@ export default function mixins(base: Constructor<any>, ...mixins: any[]) {
 
     return obj.ctor as Constructor<any>;
 }
+
+/**
+ * Checks if a class is a subclass of another class.
+ * 
+ * @example
+ * ```ts
+ * class Moment extends Date {}
+ * 
+ * console.assert(isSubclassOf(Moment, Date));
+ * console.assert(isSubclassOf(Moment, Object)); // all classes are subclasses of Object
+ * ```
+ */
+export function isSubclassOf<T, B>(ctor1: Constructor<T>, ctor2: Constructor<B>): boolean {
+    return typeof ctor1 === "function"
+        && typeof ctor2 === "function"
+        && ctor1.prototype instanceof ctor2;
+}
