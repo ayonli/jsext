@@ -17,7 +17,7 @@ class Channel {
      *
      * - If this is a buffered channel, then:
      *      - If the buffer size is within the capacity, the data will be pushed to the buffer.
-     *      - Otherwise, this function will block until there is new room for the data in the
+     *      - Otherwise, this function will block until there is new space for the data in the
      *          buffer.
      */
     push(data) {
@@ -135,7 +135,7 @@ class Channel {
  *
  * If `capacity` is set, a buffered channel will be created. For a buffered channel, data will
  * be queued in the buffer first and then consumed by the receiver in FIFO order. Once the
- * buffer size reaches the capacity limit, no more data will be sent unless there is new room
+ * buffer size reaches the capacity limit, no more data will be sent unless there is new space
  * available.
  *
  * It is possible to set the `capacity` to `Infinity` to allow the channel to never block and

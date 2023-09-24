@@ -380,13 +380,11 @@ channel will block (non-IO aspect).
 
 If `capacity` is set, a buffered channel will be created. For a buffered channel, data will
 be queued in the buffer first and then consumed by the receiver in FIFO order. Once the
-buffer size reaches the capacity limit, no more data will be sent unless there is new room
+buffer size reaches the capacity limit, no more data will be sent unless there is new space
 available.
 
 It is possible to set the `capacity` to `Infinity` to allow the channel to never block
 and behave like a message queue.
-
----
 
 **Example**
 
@@ -448,6 +446,45 @@ for await (const num of channel) {
 // 4
 // 5
 ```
+
+---
+
+### jsext.queue
+
+```ts
+function queue<T>(handler: (data: T) => Promise<void>, bufferSize?: number): Queue<T>
+```
+
+Processes data sequentially by the given `handler` function and prevents concurrency
+conflicts, it returns a queue instance that we can push data into.
+
+`bufferSize` is the maximum capacity of the underlying channel, once reached, the push
+operation will block until there is new space available. Bu default, this option is not set and
+use a non-buffered channel instead.
+
+**Example**
+
+```ts
+const list: string[] = [];
+const q = queue(async (str: string) => {
+    await Promise.resolve(null);
+    list.push(str);
+});
+
+q.onError(err => {
+    console.error(err);
+});
+
+await q.push("foo");
+await q.push("foo");
+
+console.log(list.length);
+q.close();
+// output:
+// 2
+```
+
+---
 
 ### jsext.read
 
@@ -657,7 +694,8 @@ it("should output as expected", example(console => {
 
 ## Types
 
-- `Channel`
+- `Channel<T>`
+- `Queue<T>`
 - `AsyncFunction`
 - `AsyncGeneratorFunction`
 - `AsyncFunctionConstructor`
@@ -667,7 +705,7 @@ it("should output as expected", example(console => {
 - `Ensured<T, K extends keyof T>`
 
 When [augment](./augment.ts)ing, these types will be exposed to the global scope (except for
-`Channel`).
+`Channel` and `Queue`).
 
 ## Sub-packages
 

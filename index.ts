@@ -4,11 +4,12 @@ import wrap from "./wrap.ts";
 import throttle from "./throttle.ts";
 import mixins, { isSubclassOf } from "./mixins.ts";
 import chan, { Channel } from "./chan.ts";
+import queue, { Queue } from "./queue.ts";
 import read, { readAll } from "./read.ts";
 import run from "./run.ts";
 import example from "./example.ts";
 
-export { Channel };
+export { Channel, Queue };
 export const AsyncFunction = (async function () { }).constructor as AsyncFunctionConstructor;
 export const AsyncGeneratorFunction = (async function* () { }).constructor as AsyncGeneratorFunctionConstructor;
 
@@ -51,6 +52,7 @@ const jsext = {
     mixins,
     isSubclassOf,
     chan,
+    queue,
     read,
     readAll,
     run,
@@ -66,6 +68,7 @@ export {
     mixins,
     isSubclassOf,
     chan,
+    queue,
     read,
     readAll,
     run,
