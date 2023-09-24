@@ -25,6 +25,7 @@ import jsext from "https://deno.land/x/ayonli_jsext/index.ts"; // since v0.5.0
 - [jsext.mixins](#jsextmixins)
 - [jsext.isSubclassOf](#jsextissubclassof)
 - [jsext.chan](#jsextchan)
+- [jsext.queue](#jsextqueue)
 - [jsext.read](#jsextread)
 - [jsext.readAll](#jsextreadall)
 - [jsext.run](#jsextrun)
