@@ -258,17 +258,18 @@ function throttle<T, Fn extends (this: T, ...args: any[]) => any>(handler: Fn, o
      * possible.
      */
     for?: any;
+    /**
+     * When turned on, respond with the last cache (if available) immediately, even if it has
+     * expired, and update the cache in the background.
+     */
+    noWait?: boolean;
 }): Fn;
 ```
 
 Creates a throttled function that will only be run once in a certain amount of time.
 
-If a subsequent call happens within the `duration`, the previous result will be returned and
-the `handler` function will not be invoked.
-
-If the `handler` function returns a promise, and two or more calls happen simultaneously,
-the later calls will try to resolve with the previous result immediately instead of waiting
-the pending call to complete.
+If a subsequent call happens within the `duration` (in milliseconds), the previous result will
+be returned and the `handler` function will not be invoked.
 
 **Example**
 

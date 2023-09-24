@@ -2,9 +2,10 @@ const throttleCaches = new Map();
 function throttle(handler, options) {
     const key = typeof options === "number" ? null : options.for;
     const duration = typeof options === "number" ? options : options.duration;
+    const noWait = typeof options === "number" ? false : !!(options === null || options === void 0 ? void 0 : options.noWait);
     const handleCall = function (cache, ...args) {
         var _a;
-        if (cache.result && (cache.pending || Date.now() < ((_a = cache.expires) !== null && _a !== void 0 ? _a : 0))) {
+        if (cache.result && ((cache.pending && noWait) || Date.now() < ((_a = cache.expires) !== null && _a !== void 0 ? _a : 0))) {
             if (cache.result.error) {
                 throw cache.result.error;
             }
@@ -16,9 +17,9 @@ function throttle(handler, options) {
             return cache.pending;
         }
         try {
-            let returns = handler.call(this, ...args);
+            const returns = handler.call(this, ...args);
             if (typeof (returns === null || returns === void 0 ? void 0 : returns.then) === "function") {
-                cache.pending = returns = returns.then(value => {
+                cache.pending = returns.then(value => {
                     cache.pending = undefined;
                     cache.result = { value };
                     cache.expires = Date.now() + duration;
@@ -29,7 +30,17 @@ function throttle(handler, options) {
                     cache.expires = Date.now() + duration;
                     throw error;
                 });
-                return returns;
+                if (noWait && cache.result) {
+                    if (cache.result.error) {
+                        throw cache.result.error;
+                    }
+                    else {
+                        return cache.result.value;
+                    }
+                }
+                else {
+                    return cache.pending;
+                }
             }
             else {
                 cache.result = { value: returns };

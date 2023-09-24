@@ -9,12 +9,8 @@ const throttleCaches = new Map<any, ThrottleCache>();
 /**
  * Creates a throttled function that will only be run once in a certain amount of time.
  * 
- * If a subsequent call happens within the `duration`, the previous result will be returned and
- * the `handler` function will not be invoked.
- * 
- * If the `handler` function returns a promise, and two or more calls happen simultaneously,
- * the later calls will try to resolve with the previous result immediately instead of waiting
- * the pending call to complete.
+ * If a subsequent call happens within the `duration` (in milliseconds), the previous result will
+ * be returned and the `handler` function will not be invoked.
  * 
  * @example
  * ```ts
@@ -54,20 +50,27 @@ export default function throttle<T, Fn extends (this: T, ...args: any[]) => any>
      * possible.
      */
     for?: any;
+    /**
+     * When turned on, respond with the last cache (if available) immediately, even if it has
+     * expired, and update the cache in the background.
+     */
+    noWait?: boolean;
 }): Fn;
 export default function throttle(handler: (this: any, ...args: any[]) => any, options: number | {
     duration: number;
     for?: any;
+    noWait?: boolean;
 }) {
     const key = typeof options === "number" ? null : options.for;
     const duration = typeof options === "number" ? options : options.duration;
+    const noWait = typeof options === "number" ? false : !!options?.noWait;
 
     const handleCall = function (
         this: any,
         cache: ThrottleCache,
         ...args: any[]
     ) {
-        if (cache.result && (cache.pending || Date.now() < (cache.expires ?? 0))) {
+        if (cache.result && ((cache.pending && noWait) || Date.now() < (cache.expires ?? 0))) {
             if (cache.result.error) {
                 throw cache.result.error;
             } else {
@@ -78,10 +81,10 @@ export default function throttle(handler: (this: any, ...args: any[]) => any, op
         }
 
         try {
-            let returns = handler.call(this, ...args);
+            const returns = handler.call(this, ...args);
 
             if (typeof returns?.then === "function") {
-                cache.pending = returns = (returns as Promise<any>).then(value => {
+                cache.pending = (returns as Promise<any>).then(value => {
                     cache.pending = undefined;
                     cache.result = { value };
                     cache.expires = Date.now() + duration;
@@ -93,7 +96,15 @@ export default function throttle(handler: (this: any, ...args: any[]) => any, op
                     throw error;
                 });
 
-                return returns;
+                if (noWait && cache.result) {
+                    if (cache.result.error) {
+                        throw cache.result.error;
+                    } else {
+                        return cache.result.value;
+                    }
+                } else {
+                    return cache.pending;
+                }
             } else {
                 cache.result = { value: returns };
                 cache.expires = Date.now() + duration;

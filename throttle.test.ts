@@ -122,12 +122,6 @@ describe("jsext.throttle", () => {
                 const res3 = await fn({ bar: "world" });
                 deepStrictEqual(res3, { bar: "world" });
                 ok(res1 !== res3);
-                await sleep(6);
-
-                const promise1 = fn({ foo1: "hello" });
-                const promise2 = fn({ bar1: "world" });
-                ok((await promise2) === (res3 as any));
-                deepStrictEqual(await promise1, { foo1: "hello" });
             });
 
             it("error", async () => {
@@ -151,6 +145,22 @@ describe("jsext.throttle", () => {
                 const [err3] = await jsext.try(fn({ bar: "world" }));
                 deepStrictEqual(err3, new Error("something went wrong"));
                 ok(err1 !== err3);
+            });
+
+            it("noWait", async () => {
+                const fn = jsext.throttle(<T>(obj: T) => Promise.resolve(obj), {
+                    duration: 5,
+                    noWait: true,
+                });
+                const res1 = await fn({ foo: "hello", bar: "world" });
+
+                await sleep(6);
+                const res2 = await fn({ foo: "hello" });
+                ok(res1 === res2);
+
+                await sleep(1);
+                const res3 = await fn({ bar: "world" });
+                deepStrictEqual(res3, { foo: "hello" });
             });
         });
 
@@ -177,17 +187,6 @@ describe("jsext.throttle", () => {
                 deepStrictEqual(res3, { bar: "world" });
                 ok(res1 !== res3);
                 await sleep(6);
-
-                const promise1 = jsext.throttle(<T>(obj: T) => Promise.resolve(obj), {
-                    duration: 5,
-                    for: "fooAsync",
-                })({ foo1: "hello" });
-                const promise2 = jsext.throttle(<T>(obj: T) => Promise.resolve(obj), {
-                    duration: 5,
-                    for: "fooAsync",
-                })({ bar1: "world" });
-                ok((await promise2) === (res3 as any));
-                deepStrictEqual(await promise1, { foo1: "hello" });
             });
 
             it("error", async () => {
@@ -231,6 +230,30 @@ describe("jsext.throttle", () => {
                 })({ bar: "world" }));
                 deepStrictEqual(err3, new Error("something went wrong"));
                 ok(err1 !== err3);
+            });
+
+            it("noWait", async () => {
+                const res1 = await jsext.throttle(<T>(obj: T) => Promise.resolve(obj), {
+                    duration: 5,
+                    for: "noWait",
+                    noWait: true,
+                })({ foo: "hello", bar: "world" });
+
+                await sleep(6);
+                const res2 = await jsext.throttle(<T>(obj: T) => Promise.resolve(obj), {
+                    duration: 5,
+                    for: "noWait",
+                    noWait: true,
+                })({ foo: "hello" });
+                ok(res1 === res2);
+
+                await sleep(1);
+                const res3 = await jsext.throttle(<T>(obj: T) => Promise.resolve(obj), {
+                    duration: 5,
+                    for: "noWait",
+                    noWait: true,
+                })({ bar: "world" });
+                deepStrictEqual(res3, { foo: "hello" });
             });
         });
     });
