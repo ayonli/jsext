@@ -30,7 +30,7 @@ export async function sleep(ms: number): Promise<void> {
 
 /** Blocks the context until the test is passed. */
 export async function until(test: () => boolean | Promise<boolean>): Promise<void> {
-    do {
+    while ((await test()) === false) {
         await new Promise<void>(resolve => setTimeout(resolve));
-    } while ((await test()) == false);
+    }
 }

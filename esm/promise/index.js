@@ -27,9 +27,9 @@ async function sleep(ms) {
 }
 /** Blocks the context until the test is passed. */
 async function until(test) {
-    do {
+    while ((await test()) === false) {
         await new Promise(resolve => setTimeout(resolve));
-    } while ((await test()) == false);
+    }
 }
 
 export { after, sleep, timeout, until };
