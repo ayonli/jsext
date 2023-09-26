@@ -8,8 +8,6 @@
         "sourceMap": true,
         "noEmit": true,
         "allowImportingTsExtensions": true,
-        "moduleResolution": "NodeNext",
-        "esModuleInterop": true,
         "strict": true,
         "noUnusedParameters": true,
         "noUnusedLocals": true,
@@ -27,6 +25,9 @@
         "paths": {
             "@ayonli/jsext": [
                 "."
+            ],
+            "tslib": [
+                "./node_modules/tslib/index.d.ts"
             ]
         }
     },
@@ -35,6 +36,14 @@
         "*/**.ts"
     ],
     "exclude": [
-        "node_modules"
-    ]
+        "node_modules",
+        "test-*.ts",
+        "*deno.test.ts"
+    ],
+    "ts-node": {
+        "compilerOptions": {
+            "moduleResolution": "NodeNext",
+            "esModuleInterop": true
+        }
+    }
 }

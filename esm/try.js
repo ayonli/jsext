@@ -13,6 +13,7 @@ function _try(fn, ...args) {
     let returns = fn;
     // Implementation details should be ordered from complex to simple.
     if (isAsyncGenerator(returns)) {
+        // @ts-ignore
         return (async function* () {
             let input;
             let result;

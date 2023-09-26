@@ -147,6 +147,7 @@ export default function _try(fn: any, ...args: any[]) {
     // Implementation details should be ordered from complex to simple.
 
     if (isAsyncGenerator(returns)) {
+        // @ts-ignore
         return (async function* () {
             let input: unknown;
             let result: any;

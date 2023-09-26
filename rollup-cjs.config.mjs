@@ -10,6 +10,7 @@ export default {
     input: Object.fromEntries(
         glob.sync("**/*.ts", {
             ignore: [
+                "**/*.d.ts",
                 "node_modules/**",
                 "**/*.test.ts",
                 "**/test-*.ts",
