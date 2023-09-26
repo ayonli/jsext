@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.5.4",
+    "version": "0.5.5",
     "description": "Additional functions for JavaScript programming in practice.",
     "exports": {
         ".": {
@@ -16,6 +16,76 @@
             "require": "./cjs/augment.js",
             "import": "./esm/augment.js",
             "default": "./augment.ts"
+        },
+        "./chan": {
+            "types": "./types/chan.d.ts",
+            "bun": "./chan.ts",
+            "require": "./cjs/chan.js",
+            "import": "./esm/chan.js",
+            "default": "./chan.ts"
+        },
+        "./example": {
+            "types": "./types/example.d.ts",
+            "bun": "./example.ts",
+            "require": "./cjs/example.js",
+            "import": "./esm/example.js",
+            "default": "./example.ts"
+        },
+        "./func": {
+            "types": "./types/func.d.ts",
+            "bun": "./func.ts",
+            "require": "./cjs/func.js",
+            "import": "./esm/func.js",
+            "default": "./func.ts"
+        },
+        "./mixins": {
+            "types": "./types/mixins.d.ts",
+            "bun": "./mixins.ts",
+            "require": "./cjs/mixins.js",
+            "import": "./esm/mixins.js",
+            "default": "./mixins.ts"
+        },
+        "./queue": {
+            "types": "./types/queue.d.ts",
+            "bun": "./queue.ts",
+            "require": "./cjs/queue.js",
+            "import": "./esm/queue.js",
+            "default": "./queue.ts"
+        },
+        "./read": {
+            "types": "./types/read.d.ts",
+            "bun": "./read.ts",
+            "require": "./cjs/read.js",
+            "import": "./esm/read.js",
+            "default": "./read.ts"
+        },
+        "./run": {
+            "types": "./types/run.d.ts",
+            "bun": "./run.ts",
+            "require": "./cjs/run.js",
+            "import": "./esm/run.js",
+            "default": "./run.ts"
+        },
+        "./throttle": {
+            "types": "./types/throttle.d.ts",
+            "bun": "./throttle.ts",
+            "require": "./cjs/throttle.js",
+            "import": "./esm/throttle.js",
+            "default": "./throttle.ts"
+        },
+        "./try": {
+            "types": "./types/try.d.ts",
+            "bun": "./try.ts",
+            "require": "./cjs/try.js",
+            "import": "./esm/try.js",
+            "default": "./try.ts"
+        },
+        "./wrap": {
+            "types": "./types/wrap.d.ts",
+            "bun": "./wrap.ts",
+            "require": "./cjs/wrap.js",
+            "import": "./esm/wrap.js",
+            "default": "./wrap.ts"
         },
         "./array": {
             "types": "./types/array/index.d.ts",
@@ -109,7 +179,7 @@
             "default": "./number/augment.ts"
         },
         "./object": {
-            "types": "./types/object/index.ts",
+            "types": "./types/object/index.d.ts",
             "bun": "./object/index.ts",
             "require": "./cjs/object/index.js",
             "import": "./esm/object/index.js",
