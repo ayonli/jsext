@@ -7,6 +7,7 @@ node_modules/
 *.config.mjs
 bundle.ts
 tsconfig.json
+*.tscofnig.json
 pretest.cjs
 posttest.cjs
 test-deno.ts

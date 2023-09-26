@@ -16,6 +16,11 @@ import jsext from "@ayonli/jsext";
 import jsext from "https://deno.land/x/ayonli_jsext/index.ts"; // since v0.5.0
 ```
 
+**NOTE**
+
+Configure `tsconfig.json` to set `compilerOptions.module` as `NodeNext` or `ESNext`
+instead of `CommonJS`.
+
 ## Functions
 
 - [jsext.try](#jsexttry)
