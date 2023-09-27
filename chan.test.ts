@@ -1,5 +1,7 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
-import { sequence } from "./number/index.ts";
+import { sleep } from "./promise/index.ts";
+import { random, sequence } from "./number/index.ts";
+import { sum } from "./math/index.ts";
 import jsext from "./index.ts";
 
 describe("jsext.chan", () => {
@@ -15,19 +17,36 @@ describe("jsext.chan", () => {
     });
 
     it("buffered channel", async () => {
-        const channel = jsext.chan<number>(3);
+        const channel = jsext.chan<number>(4);
 
-        await channel.push(123);
-        await channel.push(456);
-        await channel.push(789);
+        (async () => {
+            await sleep(random(1, 5));
+            await channel.push(1);
+        })();
 
-        const num1 = await channel.pop();
-        const num2 = await channel.pop();
-        const num3 = await channel.pop();
+        (async () => {
+            await sleep(random(1, 5));
+            await channel.push(2);
+        })();
 
-        strictEqual(num1, 123);
-        strictEqual(num2, 456);
-        strictEqual(num3, 789);
+        (async () => {
+            await sleep(random(1, 5));
+            await channel.push(3);
+        })();
+
+        (async () => {
+            await sleep(random(1, 5));
+            await channel.push(4);
+        })();
+
+        const numbers = await Promise.all([
+            channel.pop(),
+            channel.pop(),
+            channel.pop(),
+            channel.pop(),
+        ]) as number[];
+
+        strictEqual(sum(...numbers), 10);
     });
 
     it("iterable", async () => {

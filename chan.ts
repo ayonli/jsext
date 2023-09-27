@@ -2,8 +2,8 @@ export class Channel<T> implements AsyncIterable<T> {
     /** The capacity is the maximum number of data allowed to be buffered. */
     readonly capacity: number;
     private buffer: T[] = [];
-    private pub?: () => T;
-    private sub?: (err: Error | null, data?: T) => void;
+    private producers: (() => T)[] = [];
+    private consumers: ((err: Error | null, data?: T) => void)[] = [];
     private error?: Error | null;
     private state: 0 | 1 | 2 = 1;
 
@@ -31,26 +31,25 @@ export class Channel<T> implements AsyncIterable<T> {
     push(data: T): Promise<void> {
         if (this.state !== 1) {
             throw new Error("the channel is closed");
-        } else if (this.sub) {
-            return Promise.resolve(this.sub(null, data));
+        } else if (this.consumers.length) {
+            const consume = this.consumers.shift() as (err: Error | null, data?: T) => void;
+            return Promise.resolve(consume(null, data));
         } else if (this.capacity && this.buffer.length < this.capacity) {
             this.buffer.push(data);
             return Promise.resolve(undefined);
         } else {
             return new Promise<void>(resolve => {
-                this.pub = () => {
+                this.producers.push(() => {
                     if (this.capacity) {
                         const _data = this.buffer.shift();
                         this.buffer.push(data);
-                        this.pub = undefined;
                         resolve();
                         return _data as T;
                     } else {
-                        this.pub = undefined;
                         resolve();
                         return data;
                     }
-                };
+                });
             });
         }
     }
@@ -75,9 +74,14 @@ export class Channel<T> implements AsyncIterable<T> {
             }
 
             return Promise.resolve(data);
-        } else if (this.pub) {
-            this.state === 2 && (this.state = 0);
-            return Promise.resolve(this.pub());
+        } else if (this.producers.length) {
+            const produce = this.producers.shift() as () => T;
+
+            if (this.state === 2 && !this.producers.length) {
+                this.state = 0;
+            }
+
+            return Promise.resolve(produce());
         } else if (this.state === 0) {
             return Promise.resolve(undefined);
         } else if (this.error) {
@@ -91,11 +95,13 @@ export class Channel<T> implements AsyncIterable<T> {
             return Promise.resolve(undefined);
         } else {
             return new Promise<T>((resolve, reject) => {
-                this.sub = (err: unknown, data?: T) => {
-                    this.state === 2 && (this.state = 0);
-                    this.sub = undefined;
+                this.consumers.push((err: unknown, data?: T) => {
+                    if (this.state === 2 && !this.consumers.length) {
+                        this.state = 0;
+                    }
+
                     err ? reject(err) : resolve(data as T);
-                };
+                });
             });
         }
     }
@@ -112,7 +118,11 @@ export class Channel<T> implements AsyncIterable<T> {
     close(err: Error | null = null) {
         this.state = 2;
         this.error = err;
-        this.sub?.(err, undefined);
+        let consume: ((err: Error | null, data?: T) => void) | undefined;
+
+        while (consume = this.consumers.shift()) {
+            consume(err, undefined);
+        }
     }
 
     [Symbol.asyncIterator]() {

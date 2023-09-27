@@ -5,7 +5,7 @@ export function sum(...values: number[]): number {
 
 /** Returns the average value of the given values. */
 export function avg(...values: number[]): number {
-    return Math.sum(...values) / values.length;
+    return sum(...values) / values.length;
 };
 
 /** Returns a the product value multiplied by the given values. */

@@ -1,6 +1,8 @@
 class Channel {
     constructor(capacity = 0) {
         this.buffer = [];
+        this.producers = [];
+        this.consumers = [];
         this.state = 1;
         if (capacity < 0) {
             throw new RangeError("the capacity of a channel must not be negative");
@@ -24,8 +26,9 @@ class Channel {
         if (this.state !== 1) {
             throw new Error("the channel is closed");
         }
-        else if (this.sub) {
-            return Promise.resolve(this.sub(null, data));
+        else if (this.consumers.length) {
+            const consume = this.consumers.shift();
+            return Promise.resolve(consume(null, data));
         }
         else if (this.capacity && this.buffer.length < this.capacity) {
             this.buffer.push(data);
@@ -33,20 +36,18 @@ class Channel {
         }
         else {
             return new Promise(resolve => {
-                this.pub = () => {
+                this.producers.push(() => {
                     if (this.capacity) {
                         const _data = this.buffer.shift();
                         this.buffer.push(data);
-                        this.pub = undefined;
                         resolve();
                         return _data;
                     }
                     else {
-                        this.pub = undefined;
                         resolve();
                         return data;
                     }
-                };
+                });
             });
         }
     }
@@ -69,9 +70,12 @@ class Channel {
             }
             return Promise.resolve(data);
         }
-        else if (this.pub) {
-            this.state === 2 && (this.state = 0);
-            return Promise.resolve(this.pub());
+        else if (this.producers.length) {
+            const produce = this.producers.shift();
+            if (this.state === 2 && !this.producers.length) {
+                this.state = 0;
+            }
+            return Promise.resolve(produce());
         }
         else if (this.state === 0) {
             return Promise.resolve(undefined);
@@ -89,11 +93,12 @@ class Channel {
         }
         else {
             return new Promise((resolve, reject) => {
-                this.sub = (err, data) => {
-                    this.state === 2 && (this.state = 0);
-                    this.sub = undefined;
+                this.consumers.push((err, data) => {
+                    if (this.state === 2 && !this.consumers.length) {
+                        this.state = 0;
+                    }
                     err ? reject(err) : resolve(data);
-                };
+                });
             });
         }
     }
@@ -107,10 +112,12 @@ class Channel {
      * `for await...of...` loop, closing the channel will allow the loop to break automatically.
      */
     close(err = null) {
-        var _a;
         this.state = 2;
         this.error = err;
-        (_a = this.sub) === null || _a === void 0 ? void 0 : _a.call(this, err, undefined);
+        let consume;
+        while (consume = this.consumers.shift()) {
+            consume(err, undefined);
+        }
     }
     [Symbol.asyncIterator]() {
         const channel = this;

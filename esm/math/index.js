@@ -4,7 +4,7 @@ function sum(...values) {
 }
 /** Returns the average value of the given values. */
 function avg(...values) {
-    return Math.sum(...values) / values.length;
+    return sum(...values) / values.length;
 }
 /** Returns a the product value multiplied by the given values. */
 function product(...values) {
