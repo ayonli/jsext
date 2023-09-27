@@ -16,11 +16,6 @@ import jsext from "@ayonli/jsext";
 import jsext from "https://deno.land/x/ayonli_jsext/index.ts"; // since v0.5.0
 ```
 
-**NOTE**
-
-Configure `tsconfig.json` to set `compilerOptions.module` as `NodeNext` or `ESNext`
-instead of `CommonJS`.
-
 ## Functions
 
 - [jsext.try](#jsexttry)
@@ -715,6 +710,9 @@ When [augment](./augment.ts)ing, these types will be exposed to the global scope
 `Channel` and `Queue`).
 
 ## Sub-packages
+
+**NOTE:** Configure `tsconfig.json` to set `compilerOptions.module` as `NodeNext` or `ESNext`
+instead of `CommonJS` in order to use sub-packages.
 
 ### [string](./string/index.ts)
 
