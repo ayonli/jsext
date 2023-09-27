@@ -39,6 +39,7 @@ describe("jsext.chan", () => {
             await channel.push(4);
         })();
 
+        await sleep(random(1, 5));
         const numbers = await Promise.all([
             channel.pop(),
             channel.pop(),
