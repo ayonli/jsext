@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.5.7",
+    "version": "0.6.0",
     "description": "Additional functions for JavaScript programming in practice.",
     "main": "./cjs/index.js",
     "module": "./esm/index.js",
@@ -152,6 +152,20 @@
             "require": "./cjs/error/Exception.js",
             "import": "./esm/error/Exception.js",
             "default": "./error/Exception.ts"
+        },
+        "./json": {
+            "types": "./types/json/index.d.ts",
+            "bun": "./json/index.ts",
+            "require": "./cjs/json/index.js",
+            "import": "./esm/json/index.js",
+            "default": "./json/index.ts"
+        },
+        "./json/augment": {
+            "types": "./types/json/augment.d.ts",
+            "bun": "./json/augment.ts",
+            "require": "./cjs/json/augment.js",
+            "import": "./esm/json/augment.js",
+            "default": "./json/augment.ts"
         },
         "./math": {
             "types": "./types/math/index.d.ts",

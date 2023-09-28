@@ -947,6 +947,24 @@ import "@ayonli/jsext/error/augment";
     - `prototype`
         - `toJSON(): { [x: string | symbol]: any; }`
 
+### [json](./json/index.ts)
+
+```ts
+import { parseAs } from "@ayonli/jsext/json";
+// or
+import "@ayonli/jsext/json/augment";
+```
+
+**Functions**
+
+- `parseAs(text: string, type: StringConstructor): string | null`
+- `parseAs(text: string, type: NumberConstructor): number | null`
+- `parseAs(text: string, type: BigIntConstructor): bigint | null`
+- `parseAs(text: string, type: BooleanConstructor): boolean | null`
+- `parseAs<T>(text: string, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
+
+*When [augment](./collections/augment.ts)ing, these functions will be attached to the `JSON` namespace.*
+
 ## Import all sub-package augmentations at once
 
 ```js

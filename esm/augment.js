@@ -7,6 +7,7 @@ import './math/augment.js';
 import './promise/augment.js';
 import './collections/augment.js';
 import './error/augment.js';
+import './json/augment.js';
 import { AsyncFunction, AsyncGeneratorFunction } from './index.js';
 
 // @ts-ignore

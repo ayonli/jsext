@@ -7,6 +7,7 @@ import "./math/augment.ts";
 import "./promise/augment.ts";
 import "./collections/augment.ts";
 import "./error/augment.ts";
+import "./json/augment.ts";
 import { AsyncFunction, AsyncGeneratorFunction } from "./index.ts";
 
 declare global {
