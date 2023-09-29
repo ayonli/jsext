@@ -312,10 +312,10 @@ async function run(script, args = undefined, options = undefined) {
             }
             else {
                 const _url = (options === null || options === void 0 ? void 0 : options.workerEntry)
-                    || "https://raw.githubusercontent.com/ayonli/jsext/main/bundle/worker-web.mjs";
+                    || "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
                 const res = await fetch(_url);
                 let blob;
-                if ((_b = res.headers.get("content-type")) === null || _b === void 0 ? void 0 : _b.startsWith("application/javascript")) {
+                if ((_b = res.headers.get("content-type")) === null || _b === void 0 ? void 0 : _b.includes("/javascript")) {
                     blob = await res.blob();
                 }
                 else {

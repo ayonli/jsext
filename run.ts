@@ -366,11 +366,11 @@ export default async function run<T, A extends any[] = any[]>(
                 ].join("/");
             } else {
                 const _url = options?.workerEntry
-                    || "https://raw.githubusercontent.com/ayonli/jsext/main/bundle/worker-web.mjs";
+                    || "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
                 const res = await fetch(_url);
                 let blob: Blob;
 
-                if (res.headers.get("content-type")?.startsWith("application/javascript")) {
+                if (res.headers.get("content-type")?.includes("/javascript")) {
                     blob = await res.blob();
                 } else {
                     const buf = await res.arrayBuffer();

@@ -13,7 +13,7 @@ npm i @ayonli/jsext
 ```js
 import jsext from "@ayonli/jsext";
 // Or in Deno
-import jsext from "https://deno.land/x/ayonli_jsext/index.ts"; // since v0.5.0
+import jsext from "https://ayonli.github.io/jsext/index.ts"; // since v0.5.0
 ```
 
 ## Functions
@@ -991,18 +991,18 @@ This is the same as above, but requires a module bundler such as webpack.
 
 ```html
 <script type="module">
-    import jsext from "https://deno.land/x/ayonli_jsext/esm/index.js";
-    import "https://deno.land/x/ayonli_jsext/esm/augment.js";
+    import jsext from "https://ayonli.github.io/jsext/esm/index.js";
+    import "https://ayonli.github.io/jsext/esm/augment.js";
     // or sub-packages
-    import { isFloat, isNumeric } from "https://deno.land/x/ayonli_jsext/esm/number/index.js";
-    import "https://deno.land/x/ayonli_jsext/esm/number/augment.js";
+    import { isFloat, isNumeric } from "https://ayonli.github.io/jsext/esm/number/index.js";
+    import "https://ayonli.github.io/jsext/esm/number/augment.js";
 </script>
 ```
 
 3. Include Bundle
 
 ```html
-<script src="https://deno.land/x/ayonli_jsext/bundle/index.js"></script>
+<script src="https://ayonli.github.io/jsext/bundle/index.js"></script>
 <script>
     const jsext = window["@ayonli/jsext"];
     // this will also include the augmentations
