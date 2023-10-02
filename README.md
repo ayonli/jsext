@@ -12,9 +12,22 @@ npm i @ayonli/jsext
 
 ```js
 import jsext from "@ayonli/jsext";
-// Or in Deno
+// or in Deno
 import jsext from "https://ayonli.github.io/jsext/index.ts"; // since v0.5.0
+// or in browser
+import jsext from "https://ayonli.github.io/jsext/esm/index.js";
 ```
+
+There is also a bundled version that can be loaded via a `<script>` tag in the browser.
+
+```html
+<script src="https://ayonli.github.io/jsext/bundle/index.js"></script>
+<script>
+    const jsext = window["@ayonli/jsext"];
+    // this will also include the sub-packages and augmentations
+<script>
+```
+
 
 ## Functions
 
@@ -714,6 +727,13 @@ When [augment](./augment.ts)ing, these types will be exposed to the global scope
 **NOTE:** Configure `tsconfig.json` to set `compilerOptions.module` as `NodeNext` or `ESNext`
 instead of `CommonJS` in order to use sub-packages.
 
+**NOTE:** The following examples of import IDs uses Node.js style, but they have Deno and browser
+equivalents, like this:
+
+- Node.js `@ayonli/jsext/string`
+- Deno: `https://ayonli.github.io/jsext/string/index.ts`
+- Browser: `https://ayonli.github.io/jsext/esm/string/index.js`
+
 ### [string](./string/index.ts)
 
 ```js
@@ -978,33 +998,3 @@ better not to use augmentations, but use the corresponding functions from the su
 
 But if we're developing private projects, using augmentations can save a lot of time, it's easier to
 read and write, and make sense.
-
-## Web Support
-
-When using this package in the browser, there are three ways to import this package.
-
-1. Import From `node_modules`
-
-This is the same as above, but requires a module bundler such as webpack.
-
-2. Import ES Module
-
-```html
-<script type="module">
-    import jsext from "https://ayonli.github.io/jsext/esm/index.js";
-    import "https://ayonli.github.io/jsext/esm/augment.js";
-    // or sub-packages
-    import { isFloat, isNumeric } from "https://ayonli.github.io/jsext/esm/number/index.js";
-    import "https://ayonli.github.io/jsext/esm/number/augment.js";
-</script>
-```
-
-3. Include Bundle
-
-```html
-<script src="https://ayonli.github.io/jsext/bundle/index.js"></script>
-<script>
-    const jsext = window["@ayonli/jsext"];
-    // this will also include the augmentations
-<script>
-```

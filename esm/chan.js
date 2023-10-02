@@ -3,6 +3,7 @@ class Channel {
         this.buffer = [];
         this.producers = [];
         this.consumers = [];
+        this.error = null;
         this.state = 1;
         if (capacity < 0) {
             throw new RangeError("the capacity of a channel must not be negative");
@@ -84,7 +85,7 @@ class Channel {
             // Error can only be consumed once, after that, that closure will be complete.
             const { error } = this;
             this.state = 0;
-            this.error = undefined;
+            this.error = null;
             return Promise.reject(error);
         }
         else if (this.state === 2) {

@@ -4,7 +4,7 @@ export class Channel<T> implements AsyncIterable<T> {
     private buffer: T[] = [];
     private producers: (() => T)[] = [];
     private consumers: ((err: Error | null, data?: T) => void)[] = [];
-    private error?: Error | null;
+    private error?: Error | null = null;
     private state: 0 | 1 | 2 = 1;
 
     constructor(capacity = 0) {
@@ -88,7 +88,7 @@ export class Channel<T> implements AsyncIterable<T> {
             // Error can only be consumed once, after that, that closure will be complete.
             const { error } = this;
             this.state = 0;
-            this.error = undefined;
+            this.error = null;
             return Promise.reject(error);
         } else if (this.state === 2) {
             this.state = 0;

@@ -11,13 +11,12 @@
         "strict": true,
         "noUnusedParameters": true,
         "noUnusedLocals": true,
-        "noImplicitAny": true,
-        "noImplicitThis": true,
         "noImplicitOverride": true,
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,
         "noPropertyAccessFromIndexSignature": true,
         "noUncheckedIndexedAccess": true,
+        "exactOptionalPropertyTypes": true,
         "types": [
             "node",
             "mocha"

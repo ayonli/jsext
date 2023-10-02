@@ -2,7 +2,7 @@ type ThrottleCache = {
     for: any;
     expires?: number;
     result?: { value?: any; error?: unknown; };
-    pending?: Promise<any>;
+    pending?: Promise<any> | undefined;
 };
 const throttleCaches = new Map<any, ThrottleCache>();
 
