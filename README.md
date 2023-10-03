@@ -11,17 +11,20 @@ npm i @ayonli/jsext
 ## Usages
 
 ```js
+// Node.js
 import jsext from "@ayonli/jsext";
-// or in Deno
-import jsext from "https://ayonli.github.io/jsext/index.ts"; // since v0.5.0
-// or in browser
-import jsext from "https://ayonli.github.io/jsext/esm/index.js";
+
+// Deno
+import jsext from "https://lib.deno.dev/x/ayonli_jsext@latest/index.ts"; // since v0.5.0
+
+// Browser
+import jsext from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/index.js";
 ```
 
 There is also a bundled version that can be loaded via a `<script>` tag in the browser.
 
 ```html
-<script src="https://ayonli.github.io/jsext/bundle/index.js"></script>
+<script src="https://lib.deno.dev/x/ayonli_jsext@latest/bundle/index.js"></script>
 <script>
     const jsext = window["@ayonli/jsext"];
     // this will also include the sub-packages and augmentations
@@ -731,8 +734,8 @@ instead of `CommonJS` in order to use sub-packages.
 equivalents, like this:
 
 - Node.js `@ayonli/jsext/string`
-- Deno: `https://ayonli.github.io/jsext/string/index.ts`
-- Browser: `https://ayonli.github.io/jsext/esm/string/index.js`
+- Deno: `https://lib.deno.dev/x/ayonli_jsext@latest/string/index.ts`
+- Browser: `https://lib.deno.dev/x/ayonli_jsext@latest/esm/string/index.js`
 
 ### [string](./string/index.ts)
 
