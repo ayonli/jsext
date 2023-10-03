@@ -258,10 +258,7 @@
         "test": "node --no-warnings=ExperimentalWarning --loader=ts-node/esm ./node_modules/mocha/bin/mocha",
         "test:bun": "bun run ./node_modules/mocha/bin/mocha",
         "test:deno": "deno run --allow-read --allow-net test-deno.ts",
-        "build:esm": "rollup -c rollup-esm.config.mjs",
-        "build:cjs": "rollup -c rollup-cjs.config.mjs",
-        "build:bundle": "rollup -c rollup-bundle.config.mjs",
-        "build": "npm run build:esm && npm run build:cjs && npm run build:bundle",
+        "build": "rollup -c rollup.config.mjs && echo '{\"type\":\"module\"}' > ./esm/package.json",
         "prepublishOnly": "npm run build && tsc -p types.tsconfig.json",
         "postpublish": "rm -rf types"
     },
