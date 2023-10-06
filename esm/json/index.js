@@ -1,8 +1,12 @@
 import { isValid } from '../object/index.js';
 import { fromObject } from '../error/index.js';
 
+const typeRegistry = new Map();
 function parseAs(text, type) {
     const data = JSON.parse(text);
+    return as(data, type);
+}
+function as(data, type) {
     if (data === null) {
         return null;
     }
@@ -73,7 +77,7 @@ function parseAs(text, type) {
             return null;
         }
     }
-    else if (![String, Number, Boolean, Date, Array].includes(type)) {
+    else if (data && ![String, Number, Boolean, Date, Array].includes(type)) {
         if (typeof Buffer === "function" &&
             type === Buffer &&
             data.type === "Buffer" &&
@@ -85,7 +89,9 @@ function parseAs(text, type) {
                 return null;
             }
         }
-        else if (type === Uint8Array && data.type === "Buffer" && Array.isArray(data.data)) {
+        else if (type === Uint8Array &&
+            data.type === "Buffer" &&
+            Array.isArray(data.data)) {
             try {
                 // convert Node.js Buffer to Uint8Array
                 return Uint8Array.from(data.data);
@@ -108,13 +114,50 @@ function parseAs(text, type) {
             return fromObject(data);
         }
         else {
-            return Object.assign(Object.create(type.prototype), data);
+            const ins = Object.create(type.prototype);
+            const typeRecords = typeRegistry.get(type.prototype);
+            if (typeRecords) {
+                for (const key of Reflect.ownKeys(data)) {
+                    const ctor = typeRecords[key];
+                    ins[key] = ctor ? as(data[key], ctor) : data[key];
+                }
+            }
+            else {
+                Object.assign(ins, data);
+            }
+            return ins;
         }
     }
     else {
         return null;
     }
 }
+/**
+ * A decorator to instruct that the target property in the class is of a specific type.
+ *
+ * When parsing JSON via `parseAs`, this property is guaranteed to be of the given type.
+ *
+ * NOTE: this decorator only supports TypeScript's `experimentalDecorators`.
+ *
+ * @example
+ * ```ts
+ * class Example {
+ *     \@type(Date)
+ *     date: Date;
+ * }
+ * ```
+ */
+function type(ctor) {
+    return (proto, prop) => {
+        const record = typeRegistry.get(proto);
+        if (record) {
+            record[prop] = ctor;
+        }
+        else {
+            typeRegistry.set(proto, { [prop]: ctor });
+        }
+    };
+}
 
-export { parseAs };
+export { as, parseAs, type };
 //# sourceMappingURL=index.js.map

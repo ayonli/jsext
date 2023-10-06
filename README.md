@@ -991,6 +991,12 @@ import "@ayonli/jsext/json/augment";
 - `parseAs(text: string, type: BigIntConstructor): bigint | null`
 - `parseAs(text: string, type: BooleanConstructor): boolean | null`
 - `parseAs<T>(text: string, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
+- `as(data: unknown, type: StringConstructor): string | null`
+- `as(data: unknown, type: NumberConstructor): number | null`
+- `as(data: unknown, type: BigIntConstructor): bigint | null`
+- `as(data: unknown, type: BooleanConstructor): boolean | null`
+- `as<T>(data: unknown, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
+- `type(ctor: Constructor<any>): PropertyDecorator`
 
 *When [augment](./collections/augment.ts)ing, these functions will be attached to the `JSON` namespace.*
 

@@ -17,6 +17,7 @@
         "noPropertyAccessFromIndexSignature": true,
         "noUncheckedIndexedAccess": true,
         "exactOptionalPropertyTypes": true,
+        "experimentalDecorators": true,
         "types": [
             "node",
             "mocha"
