@@ -70,11 +70,45 @@ function truncate(str, length) {
         return str.slice(0, length) + "...";
     }
 }
+const _trim = String.prototype.trim;
+const _trimEnd = String.prototype.trimEnd;
+const _trimStart = String.prototype.trimStart;
+/** Removes leading and trailing spaces or custom characters of the string. */
+function trim(str, chars = "") {
+    if (!chars) {
+        return _trim.call(str);
+    }
+    else {
+        return trimEnd(trimStart(str, chars), chars);
+    }
+}
+/** Removes trailing spaces or custom characters of the string. */
+function trimEnd(str, chars = "") {
+    if (!chars) {
+        return _trimEnd.call(str);
+    }
+    else {
+        let i = str.length;
+        while (i-- && chars.indexOf(str[i]) !== -1) { }
+        return str.substring(0, i + 1);
+    }
+}
+/** Removes leading spaces or custom characters of the string. */
+function trimStart(str, chars = "") {
+    if (!chars) {
+        return _trimStart.call(str);
+    }
+    else {
+        let i = 0;
+        do { } while (chars.indexOf(str[i]) !== -1 && ++i);
+        return str.substring(i);
+    }
+}
 const encoder = new TextEncoder();
 /** Returns the byte length of the string. */
 function byteLength(str) {
     return encoder.encode(str).byteLength;
 }
 
-export { byteLength, capitalize, chunk, compare, count, hyphenate, random, truncate, words };
+export { byteLength, capitalize, chunk, compare, count, hyphenate, random, trim, trimEnd, trimStart, truncate, words };
 //# sourceMappingURL=index.js.map

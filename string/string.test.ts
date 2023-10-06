@@ -53,6 +53,21 @@ describe("String", () => {
         strictEqual(str.truncate(-1), ""); // negative indexing isn't supported
     });
 
+    it("String.prototype.trim", () => {
+        strictEqual("  Hello, World!  ".trim(), "Hello, World!");
+        strictEqual("!!!Hello, World!!!".trim("!"), "Hello, World");
+    });
+
+    it("String.prototype.trimEnd", () => {
+        strictEqual("  Hello, World!  ".trimEnd(), "  Hello, World!");
+        strictEqual("!!!Hello, World!!!".trimEnd("!"), "!!!Hello, World");
+    });
+
+    it("String.prototype.trimStart", () => {
+        strictEqual("  Hello, World!  ".trimStart(), "Hello, World!  ");
+        strictEqual("!!!Hello, World!!!".trimStart("!"), "Hello, World!!!");
+    });
+
     it("String.prototype.byteLength", () => {
         strictEqual("Hello, World!".byteLength(), 13);
         strictEqual("你好，世界！".byteLength(), 18);

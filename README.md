@@ -755,6 +755,9 @@ import "@ayonli/jsext/string/augment";
 - `words(str: string): string[]`
 - `chunk(str: string, length: number): string[]`
 - `truncate(str: string, length: number): string`
+- `trim(str: string, chars?: string): string`
+- `trimEnd(str: string, chars?: string): string`
+- `trimStart(str: string, chars?: string): string`
 - `byteLength(str: string): number`
 
 **[Augmentation](./string/augment.ts)**
@@ -769,6 +772,9 @@ import "@ayonli/jsext/string/augment";
         - `words(): string[]`
         - `chunk(length: number): string[]`
         - `truncate(length: number): string`
+        - `trim(chars?: string): string`
+        - `trimEnd(chars?: string): string`
+        - `trimStart(chars?: string): string`
         - `byteLength(): number`
 
 ### [number](./number/index.ts)

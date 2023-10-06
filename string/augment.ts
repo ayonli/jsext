@@ -7,7 +7,10 @@ import {
     count as _count,
     hyphenate as _hyphenate,
     truncate as _truncate,
-    words as _words
+    words as _words,
+    trim as _trim,
+    trimEnd as _trimEnd,
+    trimStart as _trimStart
 } from "./index.ts";
 
 declare global {
@@ -36,6 +39,12 @@ declare global {
         chunk(length: number): string[];
         /** Truncates the string to the given length (including the ending `...`). */
         truncate(length: number): string;
+        /** Removes leading and trailing spaces or custom characters of the string. */
+        trim(chars?: string): string;
+        /** Removes trailing spaces or custom characters of the string. */
+        trimEnd(chars?: string): string;
+        /** Removes leading spaces or custom characters of the string. */
+        trimStart(chars?: string): string;
         /** Returns the byte length of the string. */
         byteLength(): number;
     }
@@ -66,6 +75,18 @@ String.prototype.chunk = function chunk(length) {
 
 String.prototype.truncate = function truncate(length) {
     return _truncate(String(this), length);
+};
+
+String.prototype.trim = function trim(chars: string = "") {
+    return _trim(String(this), chars);
+};
+
+String.prototype.trimEnd = function trimEnd(chars: string = "") {
+    return _trimEnd(String(this), chars);
+};
+
+String.prototype.trimStart = function trimStart(chars: string = "") {
+    return _trimStart(String(this), chars);
 };
 
 String.prototype.byteLength = function byteLength() {

@@ -76,6 +76,41 @@ export function truncate(str: string, length: number): string {
     }
 }
 
+const _trim = String.prototype.trim;
+const _trimEnd = String.prototype.trimEnd;
+const _trimStart = String.prototype.trimStart;
+
+/** Removes leading and trailing spaces or custom characters of the string. */
+export function trim(str: string, chars = ""): string {
+    if (!chars) {
+        return _trim.call(str);
+    } else {
+        return trimEnd(trimStart(str, chars), chars);
+    }
+}
+
+/** Removes trailing spaces or custom characters of the string. */
+export function trimEnd(str: string, chars = ""): string {
+    if (!chars) {
+        return _trimEnd.call(str);
+    } else {
+        let i = str.length;
+        while (i-- && chars.indexOf(str[i] as string) !== -1) { }
+        return str.substring(0, i + 1);
+    }
+}
+
+/** Removes leading spaces or custom characters of the string. */
+export function trimStart(str: string, chars = ""): string {
+    if (!chars) {
+        return _trimStart.call(str);
+    } else {
+        let i = 0;
+        do { } while (chars.indexOf(str[i] as string) !== -1 && ++i);
+        return str.substring(i);
+    }
+}
+
 const encoder = new TextEncoder();
 /** Returns the byte length of the string. */
 export function byteLength(str: string): number {

@@ -1,4 +1,4 @@
-import { compare, random, count, capitalize, hyphenate, words, chunk, truncate, byteLength } from './index.js';
+import { compare, random, count, capitalize, hyphenate, words, chunk, truncate, trim, trimEnd, trimStart, byteLength } from './index.js';
 
 String.compare = compare;
 String.random = random;
@@ -19,6 +19,15 @@ String.prototype.chunk = function chunk$1(length) {
 };
 String.prototype.truncate = function truncate$1(length) {
     return truncate(String(this), length);
+};
+String.prototype.trim = function trim$1(chars = "") {
+    return trim(String(this), chars);
+};
+String.prototype.trimEnd = function trimEnd$1(chars = "") {
+    return trimEnd(String(this), chars);
+};
+String.prototype.trimStart = function trimStart$1(chars = "") {
+    return trimStart(String(this), chars);
 };
 String.prototype.byteLength = function byteLength$1() {
     return byteLength(String(this));
