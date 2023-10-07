@@ -112,6 +112,7 @@ async function run<T, A extends any[] = any[]>(
         deprecate("options.workerEntry", run, "set `run.workerEntry` instead");
     }
 
+    let entry = options?.workerEntry || run.workerEntry;
     let error: Error | null = null;
     let result: { value: any; } | undefined;
     let resolver: {
@@ -198,22 +199,23 @@ async function run<T, A extends any[] = any[]>(
     };
 
     if (isNode) {
-        let entry = options?.workerEntry || run.workerEntry;
-
         if (!entry) {
             const path = await import("path");
             const { fileURLToPath } = await import("url");
-            const dirname = path.dirname(fileURLToPath(import.meta.url));
+            const _filename = fileURLToPath(import.meta.url);
+            const _dirname = path.dirname(_filename);
 
-            if (["cjs", "esm", "bundle"].includes(path.basename(dirname))) { // compiled
-                entry = path.join(path.dirname(dirname), "bundle", "worker.mjs");
-            } else {
-                entry = path.join(dirname, "worker.mjs");
-            }
-
-            if (!entry.includes("node_modules")) {
+            if (_filename === process.argv[1]) {
                 // The code is bundled, try the worker entry in node_modules (if it exists).
                 entry = "./node_modules/@ayonli/jsext/bundle/worker.mjs";
+            } else if ([
+                path.join("jsext", "cjs"),
+                path.join("jsext", "esm"),
+                path.join("jsext", "bundle")
+            ].some(path => _dirname.endsWith(path))) { // compiled
+                entry = path.join(path.dirname(_dirname), "bundle", "worker.mjs");
+            } else {
+                entry = path.join(_dirname, "worker.mjs");
             }
         }
 
@@ -350,13 +352,19 @@ async function run<T, A extends any[] = any[]>(
 
             if (typeof Deno === "object") {
                 // Deno can load the module regardless of MINE type.
-                url = [
-                    ...(import.meta.url.split("/").slice(0, -1)),
-                    "worker-web.mjs"
-                ].join("/");
+                if (entry) {
+                    url = entry;
+                } else if ((import.meta as any)["main"]) {
+                    // code is bundled, try the remote URL
+                    url = "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
+                } else {
+                    url = [
+                        ...(import.meta.url.split("/").slice(0, -1)),
+                        "worker-web.mjs"
+                    ].join("/");
+                }
             } else {
-                const _url = options?.workerEntry
-                    || "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
+                const _url = entry || "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
                 const res = await fetch(_url);
                 let blob: Blob;
 

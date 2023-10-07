@@ -69,6 +69,7 @@ async function run(script, args = undefined, options = undefined) {
     if (options === null || options === void 0 ? void 0 : options.workerEntry) {
         deprecate("options.workerEntry", run, "set `run.workerEntry` instead");
     }
+    let entry = (options === null || options === void 0 ? void 0 : options.workerEntry) || run.workerEntry;
     let error = null;
     let result;
     let resolver;
@@ -155,20 +156,24 @@ async function run(script, args = undefined, options = undefined) {
         }
     };
     if (isNode) {
-        let entry = (options === null || options === void 0 ? void 0 : options.workerEntry) || run.workerEntry;
         if (!entry) {
             const path = await import('path');
             const { fileURLToPath } = await import('url');
-            const dirname = path.dirname(fileURLToPath(import.meta.url));
-            if (["cjs", "esm", "bundle"].includes(path.basename(dirname))) { // compiled
-                entry = path.join(path.dirname(dirname), "bundle", "worker.mjs");
-            }
-            else {
-                entry = path.join(dirname, "worker.mjs");
-            }
-            if (!entry.includes("node_modules")) {
+            const _filename = fileURLToPath(import.meta.url);
+            const _dirname = path.dirname(_filename);
+            if (_filename === process.argv[1]) {
                 // The code is bundled, try the worker entry in node_modules (if it exists).
                 entry = "./node_modules/@ayonli/jsext/bundle/worker.mjs";
+            }
+            else if ([
+                path.join("jsext", "cjs"),
+                path.join("jsext", "esm"),
+                path.join("jsext", "bundle")
+            ].some(path => _dirname.endsWith(path))) { // compiled
+                entry = path.join(path.dirname(_dirname), "bundle", "worker.mjs");
+            }
+            else {
+                entry = path.join(_dirname, "worker.mjs");
             }
         }
         if ((options === null || options === void 0 ? void 0 : options.adapter) === "child_process") {
@@ -302,14 +307,22 @@ async function run(script, args = undefined, options = undefined) {
             let url;
             if (typeof Deno === "object") {
                 // Deno can load the module regardless of MINE type.
-                url = [
-                    ...(import.meta.url.split("/").slice(0, -1)),
-                    "worker-web.mjs"
-                ].join("/");
+                if (entry) {
+                    url = entry;
+                }
+                else if (import.meta["main"]) {
+                    // code is bundled, try the remote URL
+                    url = "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
+                }
+                else {
+                    url = [
+                        ...(import.meta.url.split("/").slice(0, -1)),
+                        "worker-web.mjs"
+                    ].join("/");
+                }
             }
             else {
-                const _url = (options === null || options === void 0 ? void 0 : options.workerEntry)
-                    || "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
+                const _url = entry || "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
                 const res = await fetch(_url);
                 let blob;
                 if ((_b = res.headers.get("content-type")) === null || _b === void 0 ? void 0 : _b.includes("/javascript")) {
