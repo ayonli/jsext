@@ -44,7 +44,7 @@ export function parseAs<T>(
 /**
  * Converts the data into the given type.
  * 
- * This function is primarily used in `parseAs` and shares the same conversion rules, but it
+ * This function is primarily used in {@link parseAs} and shares the same conversion rules, but it
  * can be used in other scenarios too, for example, inside the `fromJSON` function.
  */
 export function as(data: unknown, type: StringConstructor): string | null;
@@ -161,7 +161,7 @@ export function as(data: unknown, type: any): any {
 /**
  * A decorator to instruct that the target property in the class is of a specific type.
  * 
- * When parsing JSON via `parseAs`, this property is guaranteed to be of the given type.
+ * When parsing JSON via {@link parseAs}, this property is guaranteed to be of the given type.
  * 
  * NOTE: this decorator only supports TypeScript's `experimentalDecorators`.
  * 

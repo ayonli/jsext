@@ -45,7 +45,7 @@ declare global {
         as(value: unknown, type: SymbolConstructor): symbol | null;
         as<T>(value: unknown, type: Constructor<T>): T | null;
         /**
-         * Returns `true` if the given value is valid. Thee following values are considered invalid:
+         * Returns `true` if the given value is valid. The following values are considered invalid:
          * 
          * - `undefined`
          * - `null`

@@ -135,7 +135,7 @@ function as(data, type) {
 /**
  * A decorator to instruct that the target property in the class is of a specific type.
  *
- * When parsing JSON via `parseAs`, this property is guaranteed to be of the given type.
+ * When parsing JSON via {@link parseAs}, this property is guaranteed to be of the given type.
  *
  * NOTE: this decorator only supports TypeScript's `experimentalDecorators`.
  *

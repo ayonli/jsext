@@ -1,3 +1,7 @@
+/**
+ * Returns `true` if the specified object has the indicated property as its own property.
+ * If the property is inherited, or does not exist, the function returns `false`.
+ */
 function hasOwn(obj, key) {
     return Object.prototype.hasOwnProperty.call(obj, key);
 }
@@ -74,7 +78,7 @@ function as(value, type) {
     return null;
 }
 /**
- * Returns `true` if the given value is valid. Thee following values are considered invalid:
+ * Returns `true` if the given value is valid. The following values are considered invalid:
  *
  * - `undefined`
  * - `null`

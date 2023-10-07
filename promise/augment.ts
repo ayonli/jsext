@@ -8,7 +8,7 @@ declare global {
         after<T>(value: T | PromiseLike<T>, ms: number): Promise<T>;
         /** Blocks the context for a given time. */
         sleep(ms: number): Promise<void>;
-        /** Blocks the context until the test is passed. */
+        /** Blocks the context until the test passes. */
         until(test: () => boolean | Promise<boolean>): Promise<void>;
     }
 }

@@ -1,5 +1,9 @@
 import type { Constructor } from "../index.ts";
 
+/**
+ * Returns `true` if the specified object has the indicated property as its own property.
+ * If the property is inherited, or does not exist, the function returns `false`.
+ */
 export function hasOwn(obj: any, key: string | number | symbol): boolean {
     return Object.prototype.hasOwnProperty.call(obj, key);
 };
@@ -87,7 +91,7 @@ export function omit(obj: any, keys: (string | symbol)[]) {
  * otherwise returns `null`. This function is mainly used for the optional chaining syntax.
  * @example
  * ```ts
- * Object.as(bar, SomeType)?.doSomething();
+ * as(bar, SomeType)?.doSomething();
  * ```
  */
 export function as(value: unknown, type: StringConstructor): string | null;
@@ -124,7 +128,7 @@ export function as(value: any, type: any): any {
 }
 
 /**
- * Returns `true` if the given value is valid. Thee following values are considered invalid:
+ * Returns `true` if the given value is valid. The following values are considered invalid:
  * 
  * - `undefined`
  * - `null`

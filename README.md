@@ -807,7 +807,7 @@ console.log(pow(2, 3));
 - `Optional<T, K extends keyof T>`
 - `Ensured<T, K extends keyof T>`
 
-When [augment](./augment.ts)ing, these types will be exposed to the global scope (except for
+When [augment](./augment.ts)ing, these types are exposed to the global scope (except for
 `Channel` and `Queue`).
 
 ## Sub-packages
@@ -822,7 +822,7 @@ equivalents, like this:
 - Deno: `https://lib.deno.dev/x/ayonli_jsext@latest/string/index.ts`
 - Browser: `https://lib.deno.dev/x/ayonli_jsext@latest/esm/string/index.js`
 
-### [string](./string/index.ts)
+### [string](https://deno.land/x/ayonli_jsext/string/index.ts)
 
 ```js
 import { compare, random, /* ... */ } from "@ayonli/jsext/string";
@@ -862,7 +862,7 @@ import "@ayonli/jsext/string/augment";
         - `trimStart(chars?: string): string`
         - `byteLength(): number`
 
-### [number](./number/index.ts)
+### [number](https://deno.land/x/ayonli_jsext/number/index.ts)
 
 ```js
 import { isFloat, isNumeric, /* ... */ } from "@ayonli/jsext/number";
@@ -878,9 +878,9 @@ import "@ayonli/jsext/number/augment";
 - `random(min: number, max: number): number`
 - `sequence(min: number, max: number, step?: number, loop?: boolean): Generator<number, void, unknown>`
 
-*When [augment](./number/augment.ts)ing, these functions will be attached to the `Number` constructor.*
+*When [augment](./number/augment.ts)ing, these functions are attached to the `Number` constructor.*
 
-### [array](./array/index.ts)
+### [array](https://deno.land/x/ayonli_jsext/array/index.ts)
 
 ```js
 import { count, equals, /* ... */ } from "@ayonli/jsext/array";
@@ -919,7 +919,7 @@ import "@ayonli/jsext/array/augment";
         - `groupBy(fn: (item: T, i: number) => string | symbol, type?: ObjectConstructor): Record<string | symbol, T[]>`
         - `groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
 
-### [uint8array](/uint8array/index.ts)
+### [uint8array](https://deno.land/x/ayonli_jsext/uint8array/index.ts)
 
 ```js
 import { compare, equals, /* ... */ } from "@ayonli/jsext/uint8array";
@@ -943,7 +943,7 @@ import "@ayonli/jsext/uint8array/augment";
         - `split(delimiter: number): this[]`
         - `chunk(length: number): this[]`
 
-### [object](./object/index.ts)
+### [object](https://deno.land/x/ayonli_jsext/object/index.ts)
 
 ```js
 import { hasOwn, hasOwnMethod, /* ... */ } from "@ayonli/jsext/object";
@@ -971,9 +971,9 @@ import "@ayonli/jsext/object/augment";
 - `as<T>(value: unknown, type: Constructor<T>): T | null`
 - `isValid(value: unknown): boolean`
 
-*When [augment](./object/augment.ts)ing, these functions will be attached to the `Object` constructor.*
+*When [augment](./object/augment.ts)ing, these functions are attached to the `Object` constructor.*
 
-### [math](./math/index.ts)
+### [math](https://deno.land/x/ayonli_jsext/math/index.ts)
 
 ```js
 import { sum, avg, /* ... */ } from "@ayonli/jsext/math";
@@ -987,9 +987,9 @@ import "@ayonli/jsext/math/augment";
 - `avg(...values: number[]): number`
 - `product(...values: number[]): number`
 
-*When [augment](./math/augment.ts)ing, these functions will be attached to the `Math` namespace.*
+*When [augment](./math/augment.ts)ing, these functions are attached to the `Math` namespace.*
 
-### [promise](./promise/index.ts)
+### [promise](https://deno.land/x/ayonli_jsext/promise/index.ts)
 
 ```js
 import { timeout, after, /* ... */ } from "@ayonli/jsext/promise";
@@ -1004,9 +1004,9 @@ import "@ayonli/jsext/promise/augment";
 - `sleep(ms: number): Promise<void>`
 - `until(test: () => boolean | Promise<boolean>): Promise<void>`
 
-*When [augment](./promise/augment.ts)ing, these functions will be attached to the `Promise` constructor.*
+*When [augment](./promise/augment.ts)ing, these functions are attached to the `Promise` constructor.*
 
-### [collections](./collections/index.ts)
+### [collections](https://deno.land/x/ayonli_jsext/collections/index.ts)
 
 ```js
 import BiMap from "@ayonli/jsext/collections/BiMap";
@@ -1028,9 +1028,9 @@ import "@ayonli/jsext/collections/augment";
 - `CiMap<K extends string, V>` (implements `Map<K, V>`) Case-insensitive map, keys are
     case-insensitive.
 
-*When [augment](./collections/augment.ts)ing, these types will be exposed to the global scope.*
+*When [augment](./collections/augment.ts)ing, these types are exposed to the global scope.*
 
-### [error](./error/index.ts)
+### [error](https://deno.land/x/ayonli_jsext/error/index.ts)
 
 ```js
 import Exception from "@ayonli/jsext/error/Exception";
@@ -1046,7 +1046,7 @@ import "@ayonli/jsext/error/augment";
     - `cause?: unknown`
     - `code: number`
 
-*When [augment](./error/augment.ts)ing, these types will be exposed to the global scope.*
+*When [augment](./error/augment.ts)ing, these types are exposed to the global scope.*
 
 **Functions**
 
@@ -1061,7 +1061,7 @@ import "@ayonli/jsext/error/augment";
     - `prototype`
         - `toJSON(): { [x: string | symbol]: any; }`
 
-### [json](./json/index.ts)
+### [json](https://deno.land/x/ayonli_jsext/json/index.ts)
 
 ```ts
 import { parseAs } from "@ayonli/jsext/json";
@@ -1083,7 +1083,7 @@ import "@ayonli/jsext/json/augment";
 - `as<T>(data: unknown, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
 - `type(ctor: Constructor<any>): PropertyDecorator`
 
-*When [augment](./collections/augment.ts)ing, these functions will be attached to the `JSON` namespace.*
+*When [augment](./json/augment.ts)ing, these functions are attached to the `JSON` namespace.*
 
 ## Import all sub-package augmentations at once
 
@@ -1093,8 +1093,8 @@ import "@ayonli/jsext/augment";
 
 ## When to use augmentations
 
-If we're developing libraries and share them openly on NPM, in order to prevent collision, it's
-better not to use augmentations, but use the corresponding functions from the sub-packages instead.
+If we're developing libraries and share them publicly, in order to prevent collision, it's better
+not to use augmentations, but use the corresponding functions from the sub-packages instead.
 
-But if we're developing private projects, using augmentations can save a lot of time, it's easier to
-read and write, and make sense.
+But if we're developing private application, using augmentations can save a lot of time, it's easier
+to read and write, and make sense.
