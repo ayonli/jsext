@@ -595,7 +595,7 @@ const chunks = await readAll(file);
 ### jsext.run
 
 ```ts
-function run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
+function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
     /** If not set, invoke the default function, otherwise invoke the specified function. */
     fn?: string;
     /** Automatically abort the task when timeout (in milliseconds). */
@@ -617,9 +617,24 @@ function run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
     /** Terminates the worker and abort the task. */
     abort(): Promise<void>;
     /** Retrieves the return value of the function that has been called.. */
-    result(): Promise<T>;
+    result(): Promise<R>;
     /** Iterates the yield value if the function returns a generator. */
-    iterate(): AsyncIterable<T>;
+    iterate(): AsyncIterable<R>;
+}>;
+function run<M extends { [x: string]: any; }, A extends Parameters<M[Fn]>, Fn extends keyof M = "default">(
+    script: () => Promise<M>,
+    args?: A,
+    options?: {
+        fn?: Fn;
+        timeout?: number;
+        keepAlive?: boolean;
+        adapter?: "worker_threads" | "child_process";
+    }
+): Promise<{
+    workerId: number;
+    abort(): Promise<void>;
+    result(): Promise<ReturnType<M[Fn]> extends AsyncGenerator<any, infer R, any> ? R : Awaited<ReturnType<M[Fn]>>>;
+    iterate(): AsyncIterable<ReturnType<M[Fn]> extends AsyncGenerator<infer Y, any, any> ? Y : Awaited<ReturnType<M[Fn]>>>;
 }>;
 
 namespace run {
@@ -654,7 +669,7 @@ In browser and Deno, the `script` can only be an ES module, and is relative to t
 **Example (result)**
 
 ```ts
-const job1 = await run("./job-example.mjs", ["World"]);
+const job1 = await run<string, [string]>("./job-example.mjs", ["World"]);
 console.log(await job1.result()); // Hello, World
 ```
 
@@ -682,6 +697,13 @@ await job3.abort();
 const [err, res] = await _try(job3.result());
 console.assert(err === null);
 console.assert(res === undefined);
+```
+
+**Example (import expression)**
+
+```ts
+const job4 = await run(() => import("./job-example.mjs"), ["World"]);
+console.log(await job4.result()); // Hello, World
 ```
 
 ---

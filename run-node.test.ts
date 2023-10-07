@@ -6,16 +6,28 @@ describe("jsext.run", () => {
         it("CommonJS", async () => {
             const job = await jsext.run("job-example.cjs", ["World"]);
             strictEqual(await job.result(), "Hello, World");
+
+            // @ts-ignore
+            const job2 = await jsext.run(() => import("./job-example.cjs"), ["World"]);
+            strictEqual(await job2.result(), "Hello, World");
         });
 
         it("ES Module", async () => {
-            const job = await jsext.run("./job-example.mjs", ["World"]);
+            const job = await jsext.run("job-example.mjs", ["World"]);
             strictEqual(await job.result(), "Hello, World");
+
+            // @ts-ignore
+            const job2 = await jsext.run(() => import("./job-example.mjs"), ["World"]);
+            strictEqual(await job2.result(), "Hello, World");
         });
 
         it("custom function", async () => {
             const job = await jsext.run("job-example.mjs", ["World"], { fn: "greet" });
             strictEqual(await job.result(), "Hi, World");
+
+            // @ts-ignore
+            const job2 = await jsext.run(() => import("./job-example.mjs"), ["World"], { fn: "greet" });
+            strictEqual(await job2.result(), "Hi, World");
         });
 
         it("timeout", async () => {
@@ -50,6 +62,19 @@ describe("jsext.run", () => {
 
             deepStrictEqual(words, ["foo", "bar"]);
             strictEqual(await job.result(), "foo, bar");
+
+            // @ts-ignore
+            const job2 = await jsext.run(() => import("./job-example.mjs"), [["foo", "bar"]], {
+                fn: "sequence",
+            });
+            const words2: string[] = [];
+
+            for await (const word of job2.iterate()) {
+                words2.push(word);
+            }
+
+            deepStrictEqual(words2, ["foo", "bar"]);
+            strictEqual(await job2.result(), "foo, bar");
         });
 
         it("keep alive", async () => {
@@ -72,13 +97,25 @@ describe("jsext.run", () => {
                 adapter: "child_process",
             });
             strictEqual(await job.result(), "Hello, World");
+
+            // @ts-ignore
+            const job2 = await jsext.run(() => import("./job-example.cjs"), ["World"], {
+                adapter: "child_process",
+            });
+            strictEqual(await job2.result(), "Hello, World");
         });
 
         it("ES Module", async () => {
-            const job = await jsext.run("./job-example.mjs", ["World"], {
+            const job = await jsext.run("job-example.mjs", ["World"], {
                 adapter: "child_process",
             });
             strictEqual(await job.result(), "Hello, World");
+
+            // @ts-ignore
+            const job2 = await jsext.run(() => import("./job-example.mjs"), ["World"], {
+                adapter: "child_process",
+            });
+            strictEqual(await job2.result(), "Hello, World");
         });
 
         it("custom function", async () => {
@@ -87,6 +124,13 @@ describe("jsext.run", () => {
                 adapter: "child_process",
             });
             strictEqual(await job.result(), "Hi, World");
+
+            // @ts-ignore
+            const job2 = await jsext.run(() => import("./job-example.mjs"), ["World"], {
+                fn: "greet",
+                adapter: "child_process",
+            });
+            strictEqual(await job2.result(), "Hi, World");
         });
 
         it("timeout", async () => {
@@ -114,6 +158,7 @@ describe("jsext.run", () => {
         it("iterate", async () => {
             const job = await jsext.run<string, [string[]]>("job-example.mjs", [["foo", "bar"]], {
                 fn: "sequence",
+                adapter: "child_process",
             });
             const words: string[] = [];
 
@@ -123,17 +168,39 @@ describe("jsext.run", () => {
 
             deepStrictEqual(words, ["foo", "bar"]);
             strictEqual(await job.result(), "foo, bar");
+
+            // @ts-ignore
+            const job2 = await jsext.run<string, [string[]]>(() => import("./job-example.mjs"), [["foo", "bar"]], {
+                fn: "sequence",
+                adapter: "child_process",
+            });
+            const words2: string[] = [];
+
+            for await (const word of job2.iterate()) {
+                words2.push(word);
+            }
+
+            deepStrictEqual(words2, ["foo", "bar"]);
+            strictEqual(await job2.result(), "foo, bar");
         });
 
         it("keep alive", async () => {
-            const job1 = await jsext.run("job-example.mjs", ["World"], { keepAlive: true });
+            const job1 = await jsext.run("job-example.mjs", ["World"], {
+                keepAlive: true,
+                adapter: "child_process",
+            });
             strictEqual(await job1.result(), "Hello, World");
 
-            const job2 = await jsext.run("job-example.mjs", ["World"], { fn: "greet" });
+            const job2 = await jsext.run("job-example.mjs", ["World"], {
+                fn: "greet",
+                adapter: "child_process",
+            });
             strictEqual(job2.workerId, job1.workerId);
             strictEqual(await job2.result(), "Hi, World");
 
-            const job3 = await jsext.run("job-example.mjs", ["World"]);
+            const job3 = await jsext.run("job-example.mjs", ["World"], {
+                adapter: "child_process",
+            });
             ok(job2.workerId !== job3.workerId);
             strictEqual(await job3.result(), "Hello, World");
         });

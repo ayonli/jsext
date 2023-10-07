@@ -1,6 +1,7 @@
 import type { Worker as NodeWorker } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
 import { sequence } from "./number/index.ts";
+import { trim } from "./string/index.ts";
 import chan, { Channel } from "./chan.ts";
 import deprecate from "./deprecate.ts";
 
@@ -58,10 +59,10 @@ const workerConsumerQueue: (() => void)[] = [];
  * console.assert(res === undefined);
  * ```
  */
-async function run<T, A extends any[] = any[]>(
+async function run<R, A extends any[] = any[]>(
     script: string,
-    args: A | undefined = undefined,
-    options: {
+    args?: A,
+    options?: {
         /** If not set, invoke the default function, otherwise invoke the specified function. */
         fn?: string;
         /** Automatically abort the task when timeout (in milliseconds). */
@@ -82,19 +83,80 @@ async function run<T, A extends any[] = any[]>(
          * @deprecated set `run.workerEntry` instead.
          */
         workerEntry?: string;
+    }
+): Promise<{
+    workerId: number;
+    /** Terminates the worker and abort the task. */
+    abort(): Promise<void>;
+    /** Retrieves the return value of the function that has been called. */
+    result(): Promise<R>;
+    /** Iterates the yield value if the function returns a generator. */
+    iterate(): AsyncIterable<R>;
+}>;
+/**
+ * @param script A function containing a dynamic import expression, only used for TypeScript to
+ *  infer types in the given module, the module is never imported into the current program.
+ * 
+ * @example
+ * ```ts
+ * const job4 = await run(() => import("./job-example.mjs"), ["World"]);
+ * console.log(await job4.result()); // Hello, World
+ * ```
+ */
+async function run<M extends { [x: string]: any; }, A extends Parameters<M[Fn]>, Fn extends keyof M = "default">(
+    script: () => Promise<M>,
+    args?: A,
+    options?: {
+        fn?: Fn;
+        timeout?: number;
+        keepAlive?: boolean;
+        adapter?: "worker_threads" | "child_process";
+    }
+): Promise<{
+    workerId: number;
+    abort(): Promise<void>;
+    result(): Promise<ReturnType<M[Fn]> extends AsyncGenerator<any, infer R, any> ? R : Awaited<ReturnType<M[Fn]>>>;
+    iterate(): AsyncIterable<ReturnType<M[Fn]> extends AsyncGenerator<infer Y, any, any> ? Y : Awaited<ReturnType<M[Fn]>>>;
+}>;
+async function run<R, A extends any[] = any[]>(
+    script: string | (() => Promise<any>),
+    args: A | undefined = undefined,
+    options: {
+        fn?: string;
+        timeout?: number;
+        keepAlive?: boolean;
+        adapter?: "worker_threads" | "child_process";
+        workerEntry?: string;
     } | undefined = undefined
 ): Promise<{
     workerId: number;
     /** Terminates the worker and abort the task. */
     abort(): Promise<void>;
     /** Retrieves the return value of the function that has been called. */
-    result(): Promise<T>;
+    result(): Promise<R>;
     /** Iterates the yield value if the function returns a generator. */
-    iterate(): AsyncIterable<T>;
+    iterate(): AsyncIterable<R>;
 }> {
+    let _script = "";
+
+    if (typeof script === "function") {
+        let str = script.toString();
+        let start = str.lastIndexOf("(");
+
+        if (start === -1) {
+            throw new TypeError("the given script is not a dynamic import expression");
+        } else {
+            start += 1;
+            const end = str.indexOf(")", start);
+            _script = trim(str.slice(start, end), ` '"\'`);
+        }
+    } else {
+        _script = script;
+    }
+
     const msg = {
         type: "ffi",
-        script,
+        script: _script,
         baseUrl: "",
         fn: options?.fn || "default",
         args: args ?? [],
@@ -119,7 +181,7 @@ async function run<T, A extends any[] = any[]>(
         resolve: (data: any) => void;
         reject: (err: unknown) => void;
     } | undefined;
-    let channel: Channel<T> | undefined = undefined;
+    let channel: Channel<R> | undefined = undefined;
     let workerId: number | undefined;
     let poolRecord: typeof workerPool[0] | undefined;
     let release: () => void;
@@ -267,7 +329,7 @@ async function run<T, A extends any[] = any[]>(
                 // retry.
                 return new Promise<void>((resolve) => {
                     workerConsumerQueue.push(resolve);
-                }).then(() => run(script, args, options));
+                }).then(() => run(_script, args, options));
             }
 
             release = () => {
@@ -320,7 +382,7 @@ async function run<T, A extends any[] = any[]>(
             } else {
                 return new Promise<void>((resolve) => {
                     workerConsumerQueue.push(resolve);
-                }).then(() => run(script, args, options));
+                }).then(() => run(_script, args, options));
             }
 
             release = () => {
@@ -391,7 +453,7 @@ async function run<T, A extends any[] = any[]>(
         } else {
             return new Promise<void>((resolve) => {
                 workerConsumerQueue.push(resolve);
-            }).then(() => run(script, args, options));
+            }).then(() => run(_script, args, options));
         }
 
         release = () => {
@@ -435,7 +497,7 @@ async function run<T, A extends any[] = any[]>(
                 throw new TypeError("the response is not iterable");
             }
 
-            channel = chan<T>(Infinity);
+            channel = chan<R>(Infinity);
 
             return {
                 [Symbol.asyncIterator]: channel[Symbol.asyncIterator].bind(channel),

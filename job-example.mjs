@@ -24,7 +24,7 @@ export async function takeTooLong(text) {
 }
 
 /**
- * @param {string} words 
+ * @param {string[]} words 
  */
 export async function* sequence(words) {
     for (const word of words) {

@@ -1,4 +1,5 @@
 import { sequence } from './number/index.js';
+import { trim } from './string/index.js';
 import chan from './chan.js';
 import deprecate from './deprecate.js';
 
@@ -9,50 +10,27 @@ let workerPool = [];
 // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
 // pop a consumer and run the callback, which will retry gaining the worker and retry the task.
 const workerConsumerQueue = [];
-/**
- * Runs the given `script` in a worker thread or child process for CPU-intensive or abortable tasks.
- *
- * In Node.js and Bun, the `script` can be either a CommonJS module or an ES module, and is relative
- * to the current working directory if not absolute.
- *
- * In browser and Deno, the `script` can only be an ES module, and is relative to the current URL
- * (or working directory for Deno) if not absolute.
- *
- * @example
- * ```ts
- * const job1 = await run("./job-example.mjs", ["World"]);
- * console.log(await job1.result()); // Hello, World
- * ```
- *
- * @example
- * ```ts
- * const job2 = await run<string, [string[]]>("./job-example.mjs", [["foo", "bar"]], {
- *     fn: "sequence",
- * });
- * for await (const word of job2.iterate()) {
- *     console.log(word);
- * }
- * // output:
- * // foo
- * // bar
- * ```
- *
- * @example
- * ```ts
- * const job3 = await run<string, [string]>("./job-example.mjs", ["foobar"], {
- *    fn: "takeTooLong",
- * });
- * await job3.abort();
- * const [err, res] = await _try(job3.result());
- * console.assert(err === null);
- * console.assert(res === undefined);
- * ```
- */
 async function run(script, args = undefined, options = undefined) {
     var _a, _b;
+    let _script = "";
+    if (typeof script === "function") {
+        let str = script.toString();
+        let start = str.lastIndexOf("(");
+        if (start === -1) {
+            throw new TypeError("the given script is not a dynamic import expression");
+        }
+        else {
+            start += 1;
+            const end = str.indexOf(")", start);
+            _script = trim(str.slice(start, end), ` '"\'`);
+        }
+    }
+    else {
+        _script = script;
+    }
     const msg = {
         type: "ffi",
-        script,
+        script: _script,
         baseUrl: "",
         fn: (options === null || options === void 0 ? void 0 : options.fn) || "default",
         args: args !== null && args !== void 0 ? args : [],
@@ -224,7 +202,7 @@ async function run(script, args = undefined, options = undefined) {
                 // retry.
                 return new Promise((resolve) => {
                     workerConsumerQueue.push(resolve);
-                }).then(() => run(script, args, options));
+                }).then(() => run(_script, args, options));
             }
             release = () => {
                 // Remove the event listener so that later calls will not mess up.
@@ -277,7 +255,7 @@ async function run(script, args = undefined, options = undefined) {
             else {
                 return new Promise((resolve) => {
                     workerConsumerQueue.push(resolve);
-                }).then(() => run(script, args, options));
+                }).then(() => run(_script, args, options));
             }
             release = () => {
                 worker.off("message", handleMessage);
@@ -348,7 +326,7 @@ async function run(script, args = undefined, options = undefined) {
         else {
             return new Promise((resolve) => {
                 workerConsumerQueue.push(resolve);
-            }).then(() => run(script, args, options));
+            }).then(() => run(_script, args, options));
         }
         release = () => {
             worker.onmessage = null;
