@@ -34,8 +34,9 @@ declare global {
         /**
          * Converts the data into the given type.
          * 
-         * This function is primarily used in `parseAs` and shares the same conversion rules, but it
-         * can be used in other scenarios too, for example, inside the `fromJSON` function.
+         * This function is primarily used in {@link JSON.parseAs} and shares the same conversion
+         * rules, but it can be used in other scenarios too, for example, inside the `fromJSON`
+         * function.
          */
         as(data: unknown, type: StringConstructor): string | null;
         as(data: unknown, type: NumberConstructor): number | null;
@@ -45,7 +46,8 @@ declare global {
         /**
          * A decorator to instruct that the target property in the class is of a specific type.
          * 
-         * When parsing JSON via `JSON.parseAs`, this property is guaranteed to be of the given type.
+         * When parsing JSON via {@link JSON.parseAs}, this property is guaranteed to be of the
+         * given type.
          * 
          * NOTE: this decorator only supports TypeScript's `experimentalDecorators`.
          * 

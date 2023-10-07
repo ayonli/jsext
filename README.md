@@ -807,8 +807,8 @@ console.log(pow(2, 3));
 - `Optional<T, K extends keyof T>`
 - `Ensured<T, K extends keyof T>`
 
-When [augment](./augment.ts)ing, these types are exposed to the global scope (except for
-`Channel` and `Queue`).
+When [augment](https://github.com/ayonli/jsext/blob/main/augment.ts)ing, these types are exposed to
+the global scope (except for `Channel` and `Queue`).
 
 ## Sub-packages
 
@@ -845,7 +845,7 @@ import "@ayonli/jsext/string/augment";
 - `trimStart(str: string, chars?: string): string`
 - `byteLength(str: string): number`
 
-**[Augmentation](./string/augment.ts)**
+**[Augmentation](https://github.com/ayonli/jsext/blob/main/string/augment.ts)**
 
 - `String`
     - `compare(str1: string, str2: string): -1 | 0 | 1`
@@ -878,7 +878,8 @@ import "@ayonli/jsext/number/augment";
 - `random(min: number, max: number): number`
 - `sequence(min: number, max: number, step?: number, loop?: boolean): Generator<number, void, unknown>`
 
-*When [augment](./number/augment.ts)ing, these functions are attached to the `Number` constructor.*
+*When [augment](https://github.com/ayonli/jsext/blob/main/number/augment.ts)ing, these functions*
+*are attached to the `Number` constructor.*
 
 ### [array](https://deno.land/x/ayonli_jsext/array/index.ts)
 
@@ -900,7 +901,7 @@ import "@ayonli/jsext/array/augment";
 - `groupBy<T>(arr: T[], fn: (item: T, i: number) => string | symbol, type?: ObjectConstructor): Record<string | symbol, T[]>`
 - `groupBy<T, K extends string>(arr: T[], fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
 
-**[Augmentation](./array/augment.ts)**
+**[Augmentation](https://github.com/ayonli/jsext/blob/main/array/augment.ts)**
 
 - `Array<T>`
     - `prototype`
@@ -934,7 +935,7 @@ import "@ayonli/jsext/uint8array/augment";
 - `split<T extends Uint8Array>(arr: T, delimiter: number): T[]`
 - `chunk<T extends Uint8Array>(arr: T, length: number): T[]`
 
-**[Augmentation](./uint8array/augment.ts)**
+**[Augmentation](https://github.com/ayonli/jsext/blob/main/uint8array/augment.ts)**
 
 - `Uint8Array`
     - `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
@@ -971,7 +972,8 @@ import "@ayonli/jsext/object/augment";
 - `as<T>(value: unknown, type: Constructor<T>): T | null`
 - `isValid(value: unknown): boolean`
 
-*When [augment](./object/augment.ts)ing, these functions are attached to the `Object` constructor.*
+*When [augment](https://github.com/ayonli/jsext/blob/main/object/augment.ts)ing, these functions*
+*are attached to the `Object` constructor.*
 
 ### [math](https://deno.land/x/ayonli_jsext/math/index.ts)
 
@@ -987,7 +989,8 @@ import "@ayonli/jsext/math/augment";
 - `avg(...values: number[]): number`
 - `product(...values: number[]): number`
 
-*When [augment](./math/augment.ts)ing, these functions are attached to the `Math` namespace.*
+*When [augment](https://github.com/ayonli/jsext/blob/main/math/augment.ts)ing, these functions*
+*are attached to the `Math` namespace.*
 
 ### [promise](https://deno.land/x/ayonli_jsext/promise/index.ts)
 
@@ -1004,7 +1007,8 @@ import "@ayonli/jsext/promise/augment";
 - `sleep(ms: number): Promise<void>`
 - `until(test: () => boolean | Promise<boolean>): Promise<void>`
 
-*When [augment](./promise/augment.ts)ing, these functions are attached to the `Promise` constructor.*
+*When [augment](https://github.com/ayonli/jsext/blob/main/promise/augment.ts)ing, these functions*
+*are attached to the `Promise` constructor.*
 
 ### [collections](https://deno.land/x/ayonli_jsext/collections/index.ts)
 
@@ -1028,7 +1032,8 @@ import "@ayonli/jsext/collections/augment";
 - `CiMap<K extends string, V>` (implements `Map<K, V>`) Case-insensitive map, keys are
     case-insensitive.
 
-*When [augment](./collections/augment.ts)ing, these types are exposed to the global scope.*
+*When [augment](https://github.com/ayonli/jsext/blob/main/collections/augment.ts)ing, these types*
+*are exposed to the global scope.*
 
 ### [error](https://deno.land/x/ayonli_jsext/error/index.ts)
 
@@ -1046,14 +1051,15 @@ import "@ayonli/jsext/error/augment";
     - `cause?: unknown`
     - `code: number`
 
-*When [augment](./error/augment.ts)ing, these types are exposed to the global scope.*
+*When [augment](https://github.com/ayonli/jsext/blob/main/error/augment.ts)ing, these types*
+*are exposed to the global scope.*
 
 **Functions**
 
 - `toObject<T extends Error>(err: T): { [x: string | symbol]: any; }`
 - `fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T`
 
-**[Augmentation](./error/augment.ts)**
+**[Augmentation](https://github.com/ayonli/jsext/blob/main/error/augment.ts)**
 
 - `Error`
     - `toObject<T extends Error>(err: T): { [x: string | symbol]: any; }`
@@ -1083,7 +1089,8 @@ import "@ayonli/jsext/json/augment";
 - `as<T>(data: unknown, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
 - `type(ctor: Constructor<any>): PropertyDecorator`
 
-*When [augment](./json/augment.ts)ing, these functions are attached to the `JSON` namespace.*
+*When [augment](https://github.com/ayonli/jsext/blob/main/json/augment.ts)ing, these functions*
+*are attached to the `JSON` namespace.*
 
 ## Import all sub-package augmentations at once
 
