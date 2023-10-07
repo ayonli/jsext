@@ -2,21 +2,10 @@ import type { Worker as NodeWorker } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
 import { sequence } from "./number/index.ts";
 import chan, { Channel } from "./chan.ts";
+import deprecate from "./deprecate.ts";
 
 const isNode = typeof process === "object" && !!process.versions?.node;
 declare var Deno: any;
-
-/**
- * The maximum number of workers allowed to exist at the same time.
- * 
- * The primary purpose of the workers is not mean to run tasks in parallel, but run them in separate
- * from the main thread, so that aborting tasks can be achieved by terminating the worker thread and
- * it will not affect the main thread.
- * 
- * That said, the worker thread can still be used to achieve parallelism, but it should be noticed
- * that only the numbers of tasks that equals to the CPU core numbers will be run at the same time.
- */
-const maxWorkerNum = 16;
 
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 let workerPool: {
@@ -31,7 +20,7 @@ let workerPool: {
 const workerConsumerQueue: (() => void)[] = [];
 
 /**
- * Runs a `script` in a worker thread or child process that can be aborted during runtime.
+ * Runs the given `script` in a worker thread or child process for CPU-intensive or abortable tasks.
  * 
  * In Node.js and Bun, the `script` can be either a CommonJS module or an ES module, and is relative
  * to the current working directory if not absolute.
@@ -69,7 +58,7 @@ const workerConsumerQueue: (() => void)[] = [];
  * console.assert(res === undefined);
  * ```
  */
-export default async function run<T, A extends any[] = any[]>(
+async function run<T, A extends any[] = any[]>(
     script: string,
     args: A | undefined = undefined,
     options: {
@@ -90,15 +79,7 @@ export default async function run<T, A extends any[] = any[]>(
          */
         adapter?: "worker_threads" | "child_process";
         /**
-         * In browser, by default, the program loads the worker entry directly from GitHub,
-         * which could be slow due to poor internet connection, we can copy the entry file
-         * `bundle/worker-web.mjs` to a local path of our website and set this option to that path
-         * so that it can be loaded locally.
-         * 
-         * Or, if the code is bundled, the program won't be able to automatically locate the entry
-         * file in the file system, in such case, we can also copy the entry file
-         * (`bundle/worker.mjs` for Node.js and Bun, `bundle/worker-web.mjs` for browser and Deno)
-         * to a local directory and supply this option instead.
+         * @deprecated set `run.workerEntry` instead.
          */
         workerEntry?: string;
     } | undefined = undefined
@@ -125,6 +106,10 @@ export default async function run<T, A extends any[] = any[]>(
         msg.baseUrl = "file://" + process.cwd() + "/";
     } else if (typeof location === "object") {
         msg.baseUrl = location.href;
+    }
+
+    if (options?.workerEntry) {
+        deprecate("options.workerEntry", run, "set `run.workerEntry` instead");
     }
 
     let error: Error | null = null;
@@ -213,17 +198,22 @@ export default async function run<T, A extends any[] = any[]>(
     };
 
     if (isNode) {
-        let entry = options?.workerEntry;
+        let entry = options?.workerEntry || run.workerEntry;
 
         if (!entry) {
             const path = await import("path");
             const { fileURLToPath } = await import("url");
             const dirname = path.dirname(fileURLToPath(import.meta.url));
 
-            if (["cjs", "esm"].includes(path.basename(dirname))) { // compiled
+            if (["cjs", "esm", "bundle"].includes(path.basename(dirname))) { // compiled
                 entry = path.join(path.dirname(dirname), "bundle", "worker.mjs");
             } else {
                 entry = path.join(dirname, "worker.mjs");
+            }
+
+            if (!entry.includes("node_modules")) {
+                // The code is bundled, try the worker entry in node_modules (if it exists).
+                entry = "./node_modules/@ayonli/jsext/bundle/worker.mjs";
             }
         }
 
@@ -238,7 +228,7 @@ export default async function run<T, A extends any[] = any[]>(
                 worker = poolRecord.worker as ChildProcess;
                 workerId = poolRecord.workerId;
                 poolRecord.busy = true;
-            } else if (workerPool.length < maxWorkerNum) {
+            } else if (workerPool.length < run.maxWorkers) {
                 const { fork } = await import("child_process");
                 const isPrior14 = parseInt(process.version.slice(1)) < 14;
                 worker = fork(entry, {
@@ -302,7 +292,7 @@ export default async function run<T, A extends any[] = any[]>(
                 worker = poolRecord.worker as NodeWorker;
                 workerId = poolRecord.workerId;
                 poolRecord.busy = true;
-            } else if (workerPool.length < maxWorkerNum) {
+            } else if (workerPool.length < run.maxWorkers) {
                 const { Worker } = await import("worker_threads");
                 worker = new Worker(entry);
                 // `threadId` may not exist in Bun.
@@ -355,7 +345,7 @@ export default async function run<T, A extends any[] = any[]>(
             worker = poolRecord.worker as Worker;
             workerId = poolRecord.workerId;
             poolRecord.busy = true;
-        } else if (workerPool.length < maxWorkerNum) {
+        } else if (workerPool.length < run.maxWorkers) {
             let url: string;
 
             if (typeof Deno === "object") {
@@ -445,3 +435,25 @@ export default async function run<T, A extends any[] = any[]>(
         },
     };
 }
+
+namespace run {
+    /**
+     * The maximum number of workers allowed to exist at the same time.
+     */
+    export var maxWorkers = 16;
+
+    /**
+     * In browser, by default, the program loads the worker entry directly from GitHub,
+     * which could be slow due to poor internet connection, we can copy the entry file
+     * `bundle/worker-web.mjs` to a local path of our website and set this option to that path
+     * so that it can be loaded locally.
+     * 
+     * Or, if the code is bundled, the program won't be able to automatically locate the entry
+     * file in the file system, in such case, we can also copy the entry file
+     * (`bundle/worker.mjs` for Node.js and Bun, `bundle/worker-web.mjs` for browser and Deno)
+     * to a local directory and supply this option instead.
+     */
+    export var workerEntry: string | undefined;
+}
+
+export default run;

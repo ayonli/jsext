@@ -10,6 +10,7 @@ export { Queue } from './queue.js';
 import read, { readAll } from './read.js';
 import run from './run.js';
 import example from './example.js';
+import deprecate from './deprecate.js';
 
 const AsyncFunction = (async function () { }).constructor;
 const AsyncGeneratorFunction = (async function* () { }).constructor;
@@ -29,7 +30,8 @@ const jsext = {
     readAll,
     run,
     example,
+    deprecate,
 };
 
-export { AsyncFunction, AsyncGeneratorFunction, _try, chan, jsext as default, example, func, isSubclassOf, mixins, queue, read, readAll, run, throttle, wrap };
+export { AsyncFunction, AsyncGeneratorFunction, _try, chan, jsext as default, deprecate, example, func, isSubclassOf, mixins, queue, read, readAll, run, throttle, wrap };
 //# sourceMappingURL=index.js.map

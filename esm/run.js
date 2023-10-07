@@ -1,26 +1,16 @@
 import { sequence } from './number/index.js';
 import chan from './chan.js';
+import deprecate from './deprecate.js';
 
 var _a;
 const isNode = typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
-/**
- * The maximum number of workers allowed to exist at the same time.
- *
- * The primary purpose of the workers is not mean to run tasks in parallel, but run them in separate
- * from the main thread, so that aborting tasks can be achieved by terminating the worker thread and
- * it will not affect the main thread.
- *
- * That said, the worker thread can still be used to achieve parallelism, but it should be noticed
- * that only the numbers of tasks that equals to the CPU core numbers will be run at the same time.
- */
-const maxWorkerNum = 16;
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 let workerPool = [];
 // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
 // pop a consumer and run the callback, which will retry gaining the worker and retry the task.
 const workerConsumerQueue = [];
 /**
- * Runs a `script` in a worker thread or child process that can be aborted during runtime.
+ * Runs the given `script` in a worker thread or child process for CPU-intensive or abortable tasks.
  *
  * In Node.js and Bun, the `script` can be either a CommonJS module or an ES module, and is relative
  * to the current working directory if not absolute.
@@ -75,6 +65,9 @@ async function run(script, args = undefined, options = undefined) {
     }
     else if (typeof location === "object") {
         msg.baseUrl = location.href;
+    }
+    if (options === null || options === void 0 ? void 0 : options.workerEntry) {
+        deprecate("options.workerEntry", run, "set `run.workerEntry` instead");
     }
     let error = null;
     let result;
@@ -162,16 +155,20 @@ async function run(script, args = undefined, options = undefined) {
         }
     };
     if (isNode) {
-        let entry = options === null || options === void 0 ? void 0 : options.workerEntry;
+        let entry = (options === null || options === void 0 ? void 0 : options.workerEntry) || run.workerEntry;
         if (!entry) {
             const path = await import('path');
             const { fileURLToPath } = await import('url');
             const dirname = path.dirname(fileURLToPath(import.meta.url));
-            if (["cjs", "esm"].includes(path.basename(dirname))) { // compiled
+            if (["cjs", "esm", "bundle"].includes(path.basename(dirname))) { // compiled
                 entry = path.join(path.dirname(dirname), "bundle", "worker.mjs");
             }
             else {
                 entry = path.join(dirname, "worker.mjs");
+            }
+            if (!entry.includes("node_modules")) {
+                // The code is bundled, try the worker entry in node_modules (if it exists).
+                entry = "./node_modules/@ayonli/jsext/bundle/worker.mjs";
             }
         }
         if ((options === null || options === void 0 ? void 0 : options.adapter) === "child_process") {
@@ -185,7 +182,7 @@ async function run(script, args = undefined, options = undefined) {
                 workerId = poolRecord.workerId;
                 poolRecord.busy = true;
             }
-            else if (workerPool.length < maxWorkerNum) {
+            else if (workerPool.length < run.maxWorkers) {
                 const { fork } = await import('child_process');
                 const isPrior14 = parseInt(process.version.slice(1)) < 14;
                 worker = fork(entry, {
@@ -248,7 +245,7 @@ async function run(script, args = undefined, options = undefined) {
                 workerId = poolRecord.workerId;
                 poolRecord.busy = true;
             }
-            else if (workerPool.length < maxWorkerNum) {
+            else if (workerPool.length < run.maxWorkers) {
                 const { Worker } = await import('worker_threads');
                 worker = new Worker(entry);
                 // `threadId` may not exist in Bun.
@@ -301,7 +298,7 @@ async function run(script, args = undefined, options = undefined) {
             workerId = poolRecord.workerId;
             poolRecord.busy = true;
         }
-        else if (workerPool.length < maxWorkerNum) {
+        else if (workerPool.length < run.maxWorkers) {
             let url;
             if (typeof Deno === "object") {
                 // Deno can load the module regardless of MINE type.
@@ -388,6 +385,13 @@ async function run(script, args = undefined, options = undefined) {
         },
     };
 }
+(function (run) {
+    /**
+     * The maximum number of workers allowed to exist at the same time.
+     */
+    run.maxWorkers = 16;
+})(run || (run = {}));
+var run$1 = run;
 
-export { run as default };
+export { run$1 as default };
 //# sourceMappingURL=run.js.map

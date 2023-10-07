@@ -612,6 +612,22 @@ function run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
      * In browser or Deno, this option is ignored and will always use the web worker.
      */
     adapter?: "worker_threads" | "child_process";
+}): Promise<{
+    workerId: number;
+    /** Terminates the worker and abort the task. */
+    abort(): Promise<void>;
+    /** Retrieves the return value of the function that has been called.. */
+    result(): Promise<T>;
+    /** Iterates the yield value if the function returns a generator. */
+    iterate(): AsyncIterable<T>;
+}>;
+
+namespace run {
+    /**
+     * The maximum number of workers allowed to exist at the same time.
+     */
+    export var maxWorkers = 16;
+
     /**
      * In browser, by default, the program loads the worker entry directly from GitHub,
      * which could be slow due to poor internet connection, we can copy the entry file
@@ -623,19 +639,11 @@ function run<T, A extends any[] = any[]>(script: string, args?: A, options?: {
      * (`bundle/worker.mjs` for Node.js and Bun, `bundle/worker-web.mjs` for browser and Deno)
      * to a local directory and supply this option instead.
      */
-    workerEntry?: string;
-}): Promise<{
-    workerId: number;
-    /** Terminates the worker and abort the task. */
-    abort(): Promise<void>;
-    /** Retrieves the return value of the function that has been called.. */
-    result(): Promise<T>;
-    /** Iterates the yield value if the function returns a generator. */
-    iterate(): AsyncIterable<T>;
-}>;
+    export var workerEntry: string | undefined;
+}
 ```
 
-Runs a `script` in a worker thread or child process that can be aborted during runtime.
+Runs the given `script` in a worker thread or child process for CPU-intensive or abortable tasks.
 
 In Node.js and Bun, the `script` can be either a CommonJS module or an ES module, and is relative to
 the current working directory if not absolute.
