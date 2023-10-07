@@ -19,6 +19,10 @@ const warnedRecord = new Map<Function, boolean>();
  * const sum = deprecate(function sum(a: number, b: number) {
  *     return a + b;
  * }, "use `a + b` instead");
+ * console.log(sum(1, 2));
+ * // output:
+ * // DeprecationWarning: sum() is deprecated, use `a + b` instead (at <anonymous>:4:13)
+ * // 3
  * ```
  */
 export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any>(
@@ -40,6 +44,10 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
  *     deprecate("pow()", pow, "use `a ** b` instead");
  *     return a ** b;
  * };
+ * console.log(pow(2, 3));
+ * // output:
+ * // DeprecationWarning: pow() is deprecated, use `a ** b` instead (at <anonymous>:5:13)
+ * // 3
  * ```
  */
 export default function deprecate(target: string, forFn: Function, tip?: string, once?: boolean): void;

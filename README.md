@@ -767,6 +767,10 @@ NOTE: the original function must have a name.
 const sum = deprecate(function sum(a: number, b: number) {
     return a + b;
 }, "use `a + b` instead");
+console.log(sum(1, 2));
+// output:
+// DeprecationWarning: sum() is deprecated, use `a + b` instead (at <anonymous>:4:13)
+// 3
 ```
 
 ---
@@ -785,6 +789,10 @@ const pow = function pow(a: number, b: number) {
     deprecate("pow()", pow, "use `a ** b` instead");
     return a ** b;
 };
+console.log(pow(2, 3));
+// output:
+// DeprecationWarning: pow() is deprecated, use `a ** b` instead (at <anonymous>:5:13)
+// 8
 ```
 
 ## Types

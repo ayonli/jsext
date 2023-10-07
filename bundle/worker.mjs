@@ -2,12 +2,14 @@ import { resolve } from 'path';
 import { isMainThread, parentPort } from 'worker_threads';
 
 if (!Symbol.asyncIterator) {
+    // @ts-ignore
     Symbol.asyncIterator = Symbol("Symbol.asyncIterator");
 }
 
 /**
  * Checks if the given object is an IteratorLike (implemented `next`).
- * @returns {obj is { next: Function }}
+ * @param {any} obj
+ * @returns {obj is { [x: string | symbol]: any; next: Function }}
  */
 function isIteratorLike(obj) {
     // An iterable object has a 'next' method, however including a 'next' method
@@ -20,6 +22,7 @@ function isIteratorLike(obj) {
 /**
  * Checks if the given object is an IterableIterator (implemented both
  * `@@iterator` and `next`).
+ * @param {any} obj
  */
 function isIterableIterator(obj) {
     return isIteratorLike(obj)
@@ -29,6 +32,7 @@ function isIterableIterator(obj) {
 /**
  * Checks if the given object is an AsyncIterableIterator (implemented
  * both `@@asyncIterator` and `next`).
+ * @param {any} obj
  * @returns {obj is AsyncIterableIterator<any>}
  */
 function isAsyncIterableIterator(obj) {
@@ -38,6 +42,7 @@ function isAsyncIterableIterator(obj) {
 
 /**
  * Checks if the given object is a Generator.
+ * @param {any} obj
  * @returns {obj is Generator}
  */
 function isGenerator(obj) {
@@ -47,6 +52,7 @@ function isGenerator(obj) {
 
 /**
  * Checks if the given object is an AsyncGenerator.
+ * @param {any} obj
  * @returns {obj is AsyncGenerator}
  */
 function isAsyncGenerator(obj) {
@@ -54,11 +60,22 @@ function isAsyncGenerator(obj) {
         && hasGeneratorSpecials(obj);
 }
 
+/**
+ * @param {any} obj 
+ */
 function hasGeneratorSpecials(obj) {
     return typeof obj.return === "function"
         && typeof obj.throw === "function";
 }
 
+/**
+ * @typedef {{type: string; script: string; baseUrl: string; fn: string; args: any[]}} FFIMessage
+ */
+
+/**
+ * @param {any} msg
+ * @returns {msg is FFIMessage}
+ */
 function isFFIMessage(msg) {
     return msg && typeof msg === "object" &&
         msg.type === "ffi" &&
@@ -68,9 +85,8 @@ function isFFIMessage(msg) {
 }
 
 /**
- * @param {{type: string; script: string; baseUrl: string; fn: string; args: any[]}} msg 
- * @param {(reply: { type: string; value?: any; error?: unknown; done?: boolean }) => void} send
- * @param {string} cwd
+ * @param {FFIMessage} msg 
+ * @param {(reply: { type: string; value?: any; error?: unknown; done?: boolean | undefined }) => void} send
  */
 async function handleMessage(msg, send) {
     try {
@@ -105,16 +121,18 @@ async function handleMessage(msg, send) {
 }
 
 if (!isMainThread && parentPort) {
+    const send = parentPort.postMessage.bind(parentPort);
     parentPort.on("message", async (msg) => {
         if (isFFIMessage(msg)) {
-            await handleMessage(msg, parentPort.postMessage.bind(parentPort));
+            await handleMessage(msg, send);
         }
     });
 } else if (process.send) {
-    process.send("ready"); // notify the parent process that the worker is ready;
+    const send = process.send.bind(process);
+    send("ready"); // notify the parent process that the worker is ready;
     process.on("message", async (msg) => {
         if (isFFIMessage(msg)) {
-            await handleMessage(msg, process.send.bind(process));
+            await handleMessage(msg, send);
         }
     });
 }
