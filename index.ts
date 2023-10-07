@@ -8,6 +8,7 @@ import queue, { Queue } from "./queue.ts";
 import read, { readAll } from "./read.ts";
 import run from "./run.ts";
 import example from "./example.ts";
+import deprecate from "./deprecate.ts";
 
 export { Channel, Queue };
 export const AsyncFunction = (async function () { }).constructor as AsyncFunctionConstructor;
@@ -57,6 +58,7 @@ const jsext = {
     readAll,
     run,
     example,
+    deprecate,
 };
 
 export {
@@ -73,4 +75,5 @@ export {
     readAll,
     run,
     example,
+    deprecate,
 };

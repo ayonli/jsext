@@ -46,6 +46,7 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 - [jsext.readAll](#jsextreadall)
 - [jsext.run](#jsextrun)
 - [jsext.example](#jsextexample)
+- [jsext.deprecate](#jsextdeprecate)
 
 And other functions in [sub-packages](#sub-packages).
 
@@ -708,6 +709,50 @@ it("should output as expected", example(console => {
     // output:
     // Hello, World!
 }));
+```
+
+---
+
+### jsext.deprecate
+
+```ts
+function deprecate<T, Fn extends (this: T, ...args: any[]) => any>(
+    fn: Fn,
+    tip?: string,
+    once?: boolean
+): Fn;
+```
+
+Marks a function as deprecated and returns a wrapped function.
+
+When the wrapped function is called, a deprecation warning will be emitted to the stdout.
+
+NOTE: the original function must have a name.
+
+**Example**
+
+```ts
+const sum = deprecate(function sum(a: number, b: number) {
+    return a + b;
+}, "use `a + b` instead");
+```
+
+---
+
+```ts
+function deprecate(target: string, forFn: Function, tip?: string, once?: boolean): void;
+```
+
+Emits a deprecation warning for the target, usually a parameter, an option, or the function's name,
+etc.
+
+**Example**
+
+```ts
+const pow = function pow(a: number, b: number) {
+    deprecate("pow()", pow, "use `a ** b` instead");
+    return a ** b;
+};
 ```
 
 ## Types
