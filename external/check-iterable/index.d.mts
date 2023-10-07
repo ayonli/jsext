@@ -9,7 +9,7 @@ export declare function isAsyncIterable(obj: any): obj is AsyncIterable<any>;
 /**
  * Checks if the given object is an IteratorLike (implemented `next`).
  */
-export declare function isIteratorLike(obj: any): obj is { next: Function; };
+export declare function isIteratorLike(obj: any): obj is { [x: string | symbol]: any; next: Function; };
 /**
  * Checks if the given object is an IterableIterator (implemented both
  * `@@iterator` and `next`).

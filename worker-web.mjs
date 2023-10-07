@@ -4,6 +4,14 @@ import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.m
 /** @type {Map<string, any>} */
 const cache = new Map();
 
+/**
+ * @typedef {{type: string; script: string; baseUrl: string; fn: string; args: any[]}} FFIMessage
+ */
+
+/**
+ * @param {any} msg
+ * @returns {msg is FFIMessage}
+ */
 function isFFIMessage(msg) {
     return msg && typeof msg === "object" &&
         msg.type === "ffi" &&
@@ -13,8 +21,8 @@ function isFFIMessage(msg) {
 }
 
 /**
- * @param {{type: string; script: string; baseUrl: string; fn: string; args: any[]}} msg 
- * @param {(reply: { type: string; value?: any; error?: unknown; done?: boolean }) => void} send
+ * @param {FFIMessage} msg 
+ * @param {(reply: { type: string; value?: any; error?: unknown; done?: boolean | undefined }) => void} send
  */
 async function handleMessage(msg, send) {
     try {

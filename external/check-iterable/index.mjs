@@ -1,9 +1,11 @@
 if (!Symbol.asyncIterator) {
+    // @ts-ignore
     Symbol.asyncIterator = Symbol("Symbol.asyncIterator");
 }
 
 /**
  * Checks if the given object is an Iterable (implemented `@@iterator`).
+ * @param {any} obj
  * @returns {obj is Iterable<any>}
  */
 export function isIterable(obj) {
@@ -14,6 +16,7 @@ export function isIterable(obj) {
 
 /**
  * Checks if the given object is an AsyncIterable (implemented `@@asyncIterator`).
+ * @param {any} obj
  * @returns {obj is AsyncIterable<any>}
  */
 export function isAsyncIterable(obj) {
@@ -24,7 +27,8 @@ export function isAsyncIterable(obj) {
 
 /**
  * Checks if the given object is an IteratorLike (implemented `next`).
- * @returns {obj is { next: Function }}
+ * @param {any} obj
+ * @returns {obj is { [x: string | symbol]: any; next: Function }}
  */
 export function isIteratorLike(obj) {
     // An iterable object has a 'next' method, however including a 'next' method
@@ -37,6 +41,7 @@ export function isIteratorLike(obj) {
 /**
  * Checks if the given object is an IterableIterator (implemented both
  * `@@iterator` and `next`).
+ * @param {any} obj
  */
 export function isIterableIterator(obj) {
     return isIteratorLike(obj)
@@ -46,6 +51,7 @@ export function isIterableIterator(obj) {
 /**
  * Checks if the given object is an AsyncIterableIterator (implemented
  * both `@@asyncIterator` and `next`).
+ * @param {any} obj
  * @returns {obj is AsyncIterableIterator<any>}
  */
 export function isAsyncIterableIterator(obj) {
@@ -55,6 +61,7 @@ export function isAsyncIterableIterator(obj) {
 
 /**
  * Checks if the given object is a Generator.
+ * @param {any} obj
  * @returns {obj is Generator}
  */
 export function isGenerator(obj) {
@@ -64,6 +71,7 @@ export function isGenerator(obj) {
 
 /**
  * Checks if the given object is an AsyncGenerator.
+ * @param {any} obj
  * @returns {obj is AsyncGenerator}
  */
 export function isAsyncGenerator(obj) {
@@ -71,6 +79,9 @@ export function isAsyncGenerator(obj) {
         && hasGeneratorSpecials(obj);
 }
 
+/**
+ * @param {any} obj 
+ */
 function hasGeneratorSpecials(obj) {
     return typeof obj.return === "function"
         && typeof obj.throw === "function";

@@ -170,7 +170,7 @@ describe("jsext.run", () => {
             strictEqual(await job.result(), "foo, bar");
 
             // @ts-ignore
-            const job2 = await jsext.run<string, [string[]]>(() => import("./job-example.mjs"), [["foo", "bar"]], {
+            const job2 = await jsext.run(() => import("./job-example.mjs"), [["foo", "bar"]], {
                 fn: "sequence",
                 adapter: "child_process",
             });

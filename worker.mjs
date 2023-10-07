@@ -3,6 +3,14 @@ import { isMainThread, parentPort } from "worker_threads";
 // @ts-ignore
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
 
+/**
+ * @typedef {{type: string; script: string; baseUrl: string; fn: string; args: any[]}} FFIMessage
+ */
+
+/**
+ * @param {any} msg
+ * @returns {msg is FFIMessage}
+ */
 function isFFIMessage(msg) {
     return msg && typeof msg === "object" &&
         msg.type === "ffi" &&
@@ -12,9 +20,8 @@ function isFFIMessage(msg) {
 }
 
 /**
- * @param {{type: string; script: string; baseUrl: string; fn: string; args: any[]}} msg 
- * @param {(reply: { type: string; value?: any; error?: unknown; done?: boolean }) => void} send
- * @param {string} cwd
+ * @param {FFIMessage} msg 
+ * @param {(reply: { type: string; value?: any; error?: unknown; done?: boolean | undefined }) => void} send
  */
 async function handleMessage(msg, send) {
     try {
@@ -49,16 +56,18 @@ async function handleMessage(msg, send) {
 }
 
 if (!isMainThread && parentPort) {
+    const send = parentPort.postMessage.bind(parentPort);
     parentPort.on("message", async (msg) => {
         if (isFFIMessage(msg)) {
-            await handleMessage(msg, parentPort.postMessage.bind(parentPort));
+            await handleMessage(msg, send);
         }
     });
 } else if (process.send) {
-    process.send("ready"); // notify the parent process that the worker is ready;
+    const send = process.send.bind(process);
+    send("ready"); // notify the parent process that the worker is ready;
     process.on("message", async (msg) => {
         if (isFFIMessage(msg)) {
-            await handleMessage(msg, process.send.bind(process));
+            await handleMessage(msg, send);
         }
     });
 }
