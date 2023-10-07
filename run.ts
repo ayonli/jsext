@@ -29,6 +29,8 @@ const workerConsumerQueue: (() => void)[] = [];
  * In browser and Deno, the `script` can only be an ES module, and is relative to the current URL
  * (or working directory for Deno) if not absolute.
  * 
+ * In Bun and Deno, the `script` can also be a TypeScript file.
+ * 
  * @example
  * ```ts
  * const job1 = await run("./job-example.mjs", ["World"]);
