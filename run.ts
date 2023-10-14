@@ -11,6 +11,7 @@ import {
 
 const isNode = typeof process === "object" && !!process.versions?.node;
 declare var Deno: any;
+declare var Bun: any;
 
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 let workerPool: {
@@ -161,6 +162,14 @@ async function run<R, A extends any[] = any[]>(
         }
     } else {
         _script = script;
+    }
+
+    if (isNode && !/\.[cm]?(js|ts|)x?$/.test(_script)) {
+        if (typeof Bun === "object") {
+            _script += ".ts";
+        } else {
+            _script += ".js";
+        }
     }
 
     const msg = {

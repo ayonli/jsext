@@ -29,6 +29,14 @@ async function run(script, args = undefined, options = undefined) {
     else {
         _script = script;
     }
+    if (isNode && !/\.[cm]?(js|ts|)x?$/.test(_script)) {
+        if (typeof Bun === "object") {
+            _script += ".ts";
+        }
+        else {
+            _script += ".js";
+        }
+    }
     const msg = {
         type: "ffi",
         script: _script,
