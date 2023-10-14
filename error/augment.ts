@@ -17,7 +17,7 @@ declare global {
         fromObject<T extends { name: "TypeError"; }>(obj: T): TypeError;
         fromObject<T extends { name: "URIError"; }>(obj: T): URIError;
         fromObject<T extends { name: "Exception"; }>(obj: T): Exception;
-        fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T;
+        fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T | null;
     }
 
     class Exception extends Error {

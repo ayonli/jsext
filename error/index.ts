@@ -17,8 +17,13 @@ export function fromObject<T extends { name: "SyntaxError"; }>(obj: T): SyntaxEr
 export function fromObject<T extends { name: "TypeError"; }>(obj: T): TypeError;
 export function fromObject<T extends { name: "URIError"; }>(obj: T): URIError;
 export function fromObject<T extends { name: "Exception"; }>(obj: T): Exception;
-export function fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T;
-export function fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T {
+export function fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T | null;
+export function fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T | null {
+    // @ts-ignore
+    if (!obj?.name) {
+        return null;
+    }
+
     // @ts-ignore
     let ctor = globalThis[obj.name] as new (...args: any) => T;
 

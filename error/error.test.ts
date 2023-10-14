@@ -182,14 +182,16 @@ describe("Error", () => {
             code: 500,
         } as const;
         const err9 = Error.fromObject(obj9);
-        strictEqual(err9.constructor, Error);
-        strictEqual(err9.name, obj9.name);
-        strictEqual(err9.message, obj9.message);
-        strictEqual(err9.stack, obj9.stack);
+        strictEqual(err9?.constructor, Error);
+        strictEqual(err9?.name, obj9.name);
+        strictEqual(err9?.message, obj9.message);
+        strictEqual(err9?.stack, obj9.stack);
         // @ts-ignore
-        strictEqual(err9["cause"], obj9.cause);
+        strictEqual(err9?.["cause"], obj9.cause);
         // @ts-ignore
-        strictEqual(err9["code"], obj9.code);
+        strictEqual(err9?.["code"], obj9.code);
+
+        strictEqual(Error.fromObject({ foo: "bar" }), null);
     });
 
     it("Error.prototype.toJSON", () => {
