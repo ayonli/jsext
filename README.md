@@ -621,7 +621,7 @@ function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
 }): Promise<{
     workerId: number;
     /** Terminates the worker and abort the task. */
-    abort(): Promise<void>;
+    abort(reason?: unknown): Promise<void>;
     /** Retrieves the return value of the function that has been called.. */
     result(): Promise<R>;
     /** Iterates the yield value if the function returns a generator. */
@@ -638,7 +638,7 @@ function run<M extends { [x: string]: any; }, A extends Parameters<M[Fn]>, Fn ex
     }
 ): Promise<{
     workerId: number;
-    abort(): Promise<void>;
+    abort(reason?: unknown): Promise<void>;
     result(): Promise<ReturnType<M[Fn]> extends AsyncGenerator<any, infer R, any> ? R : Awaited<ReturnType<M[Fn]>>>;
     iterate(): AsyncIterable<ReturnType<M[Fn]> extends AsyncGenerator<infer Y, any, any> ? Y : Awaited<ReturnType<M[Fn]>>>;
 }>;
