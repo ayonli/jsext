@@ -282,13 +282,13 @@ async function run<R, A extends any[] = any[]>(
         }
 
         if (resolver) {
-            resolver.resolve(void 0);
+            error ? resolver.reject(error) : resolver.resolve(void 0);
         } else if (!error && !result) {
             result = { value: void 0 };
         }
 
         if (channel) {
-            channel.close();
+            channel.close(error);
         }
     };
 
@@ -509,7 +509,6 @@ async function run<R, A extends any[] = any[]>(
         workerId,
         async abort(reason = undefined) {
             timeout && clearTimeout(timeout);
-            await terminate();
 
             if (reason) {
                 if (reason instanceof Error) {
@@ -521,6 +520,8 @@ async function run<R, A extends any[] = any[]>(
                     error = new Error("operation aborted", { cause: reason });
                 }
             }
+
+            await terminate();
         },
         async result() {
             return await new Promise<any>((resolve, reject) => {

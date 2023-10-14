@@ -139,13 +139,13 @@ async function run(script, args = undefined, options = undefined) {
             }
         }
         if (resolver) {
-            resolver.resolve(void 0);
+            error ? resolver.reject(error) : resolver.resolve(void 0);
         }
         else if (!error && !result) {
             result = { value: void 0 };
         }
         if (channel) {
-            channel.close();
+            channel.close(error);
         }
     };
     if (isNode) {
@@ -362,7 +362,6 @@ async function run(script, args = undefined, options = undefined) {
         workerId,
         async abort(reason = undefined) {
             timeout && clearTimeout(timeout);
-            await terminate();
             if (reason) {
                 if (reason instanceof Error) {
                     error = reason;
@@ -375,6 +374,7 @@ async function run(script, args = undefined, options = undefined) {
                     error = new Error("operation aborted", { cause: reason });
                 }
             }
+            await terminate();
         },
         async result() {
             return await new Promise((resolve, reject) => {
