@@ -179,7 +179,6 @@ async function run(script, args = undefined, options = undefined) {
                     stdio: "inherit",
                     serialization: isPrior14 ? "advanced" : "json",
                 });
-                worker.unref();
                 workerId = worker.pid;
                 ok = await new Promise((resolve) => {
                     worker.once("exit", () => {
@@ -239,7 +238,6 @@ async function run(script, args = undefined, options = undefined) {
             else if (workerPool.length < run.maxWorkers) {
                 const { Worker } = await import('worker_threads');
                 worker = new Worker(entry);
-                worker.unref();
                 // `threadId` may not exist in Bun.
                 workerId = (_a = worker.threadId) !== null && _a !== void 0 ? _a : workerIdCounter.next().value;
                 ok = await new Promise((resolve) => {
@@ -418,35 +416,39 @@ var run$1 = run;
 function link(mod, options = {}) {
     return new Proxy(Object.create(null), {
         get: (_, prop) => {
-            return (...args) => {
-                let job;
-                let iter;
-                return new ThenableAsyncGenerator({
-                    async next() {
-                        var _a;
-                        job !== null && job !== void 0 ? job : (job = await run(mod, args, {
-                            ...options,
-                            fn: prop,
-                            keepAlive: (_a = options.keepAlive) !== null && _a !== void 0 ? _a : true,
-                        }));
-                        iter !== null && iter !== void 0 ? iter : (iter = job.iterate()[Symbol.asyncIterator]());
-                        let { done = false, value } = await iter.next();
-                        if (done) {
-                            // HACK: this will set the internal result of ThenableAsyncGenerator
-                            // to the result of the job.
-                            value = await job.result();
-                        }
-                        return Promise.resolve({ done, value });
-                    },
-                    async then(onfulfilled, onrejected) {
-                        job !== null && job !== void 0 ? job : (job = await run(mod, args, {
-                            ...options,
-                            fn: prop,
-                        }));
-                        return job.result().then(onfulfilled, onrejected);
-                    },
-                });
+            const obj = {
+                // This syntax will give our remote function a name.
+                [prop]: (...args) => {
+                    let job;
+                    let iter;
+                    return new ThenableAsyncGenerator({
+                        async next() {
+                            var _a;
+                            job !== null && job !== void 0 ? job : (job = await run(mod, args, {
+                                ...options,
+                                fn: prop,
+                                keepAlive: (_a = options.keepAlive) !== null && _a !== void 0 ? _a : true,
+                            }));
+                            iter !== null && iter !== void 0 ? iter : (iter = job.iterate()[Symbol.asyncIterator]());
+                            let { done = false, value } = await iter.next();
+                            if (done) {
+                                // HACK: this will set the internal result of ThenableAsyncGenerator
+                                // to the result of the job.
+                                value = await job.result();
+                            }
+                            return Promise.resolve({ done, value });
+                        },
+                        async then(onfulfilled, onrejected) {
+                            job !== null && job !== void 0 ? job : (job = await run(mod, args, {
+                                ...options,
+                                fn: prop,
+                            }));
+                            return job.result().then(onfulfilled, onrejected);
+                        },
+                    });
+                }
             };
+            return obj[prop];
         }
     });
 }

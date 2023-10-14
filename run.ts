@@ -77,8 +77,8 @@ async function run<R, A extends any[] = any[]>(
          * Instead of dropping the worker after the task has completed, keep it alive so that it can
          * be reused by other tasks.
          * 
-         * Be aware, keep-alive with `child_process` adapter will prevent the main process to exit in
-         * Node.js.
+         * Be aware, keep-alive with `child_process` adapter will prevent the main process to exit
+         * in Node.js.
          */
         keepAlive?: boolean;
         /**
@@ -322,7 +322,6 @@ async function run<R, A extends any[] = any[]>(
                     stdio: "inherit",
                     serialization: isPrior14 ? "advanced" : "json",
                 });
-                worker.unref();
                 workerId = worker.pid as number;
                 ok = await new Promise<boolean>((resolve) => {
                     worker.once("exit", () => {
@@ -383,7 +382,6 @@ async function run<R, A extends any[] = any[]>(
             } else if (workerPool.length < run.maxWorkers) {
                 const { Worker } = await import("worker_threads");
                 worker = new Worker(entry);
-                worker.unref();
                 // `threadId` may not exist in Bun.
                 workerId = worker.threadId ?? workerIdCounter.next().value as number;
                 ok = await new Promise<boolean>((resolve) => {
@@ -599,39 +597,44 @@ export function link<M extends { [x: string]: any; }>(mod: () => Promise<M>, opt
     adapter?: "worker_threads" | "child_process";
 } = {}): AsyncFunctionProperties<M> {
     return new Proxy(Object.create(null), {
-        get: (_, prop) => {
-            return (...args: Parameters<M["_"]>) => {
-                let job: Awaited<ReturnType<typeof run>>;
-                let iter: AsyncIterator<unknown>;
+        get: (_, prop: string) => {
+            const obj = {
+                // This syntax will give our remote function a name.
+                [prop]: (...args: Parameters<M["_"]>) => {
+                    let job: Awaited<ReturnType<typeof run>>;
+                    let iter: AsyncIterator<unknown>;
 
-                return new ThenableAsyncGenerator({
-                    async next() {
-                        job ??= await run(mod, args, {
-                            ...options,
-                            fn: prop as "_",
-                            keepAlive: options.keepAlive ?? true,
-                        });
+                    return new ThenableAsyncGenerator({
+                        async next() {
+                            job ??= await run(mod, args, {
+                                ...options,
+                                fn: prop as "_",
+                                keepAlive: options.keepAlive ?? true,
+                            });
 
-                        iter ??= job.iterate()[Symbol.asyncIterator]();
-                        let { done = false, value } = await iter.next();
+                            iter ??= job.iterate()[Symbol.asyncIterator]();
+                            let { done = false, value } = await iter.next();
 
-                        if (done) {
-                            // HACK: this will set the internal result of ThenableAsyncGenerator
-                            // to the result of the job.
-                            value = await job.result();
-                        }
+                            if (done) {
+                                // HACK: this will set the internal result of ThenableAsyncGenerator
+                                // to the result of the job.
+                                value = await job.result();
+                            }
 
-                        return Promise.resolve({ done, value });
-                    },
-                    async then(onfulfilled, onrejected) {
-                        job ??= await run(mod, args, {
-                            ...options,
-                            fn: prop as "_",
-                        });
-                        return job.result().then(onfulfilled, onrejected);
-                    },
-                } satisfies ThenableAsyncGeneratorLike);
+                            return Promise.resolve({ done, value });
+                        },
+                        async then(onfulfilled, onrejected) {
+                            job ??= await run(mod, args, {
+                                ...options,
+                                fn: prop as "_",
+                            });
+                            return job.result().then(onfulfilled, onrejected);
+                        },
+                    } satisfies ThenableAsyncGeneratorLike);
+                }
             };
+
+            return obj[prop];
         }
     }) as any;
 }

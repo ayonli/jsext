@@ -134,9 +134,6 @@ class Channel {
 /**
  * Inspired by Golang, cerates a channel that can be used to transfer data within the program.
  *
- * Unlike `EventEmitter` or `EventTarget`, `Channel` guarantees the data will always be delivered,
- * even if there is no receiver at the moment.
- *
  * If `capacity` is not set, a non-buffered channel will be created. For a non-buffered channel,
  * the sender and receiver must be present at the same time (theoretically), otherwise, the
  * channel will block (non-IO aspect).
@@ -148,6 +145,11 @@ class Channel {
  *
  * It is possible to set the `capacity` to `Infinity` to allow the channel to never block and
  * behave like a message queue.
+ *
+ * Unlike `EventEmitter` or `EventTarget`, `Channel` guarantees the data will always be delivered,
+ * even if there is no receiver at the moment.
+ *
+ * Also, unlike Golang, `await channel.pop()` does not prevent the process from exiting.
  *
  * @example
  * ```ts

@@ -255,8 +255,8 @@
     "scripts": {
         "pretest": "node pretest.cjs",
         "posttest": "node posttest.cjs",
-        "test": "node --no-warnings=ExperimentalWarning --loader=ts-node/esm ./node_modules/mocha/bin/mocha",
-        "test:bun": "bun run ./node_modules/mocha/bin/mocha",
+        "test": "node --no-warnings=ExperimentalWarning --loader=ts-node/esm ./node_modules/mocha/bin/mocha --exit",
+        "test:bun": "bun run ./node_modules/mocha/bin/mocha --exit",
         "test:deno": "deno run --allow-read --allow-net test-deno.ts",
         "build": "rollup -c rollup.config.mjs && echo '{\"type\":\"module\"}' > ./esm/package.json && echo '{\"type\":\"commonjs\"}' > ./cjs/package.json",
         "prepublishOnly": "npm run build && tsc -p types.tsconfig.json",
