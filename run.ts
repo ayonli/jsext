@@ -576,7 +576,7 @@ export default run;
  * // bar
  * ```
  */
-export function link<M extends { [x: string]: any; }>(importFn: () => Promise<M>, options: {
+export function link<M extends { [x: string]: any; }>(mod: () => Promise<M>, options: {
     /** Automatically abort the task when timeout (in milliseconds). */
     timeout?: number;
     /**
@@ -606,7 +606,7 @@ export function link<M extends { [x: string]: any; }>(importFn: () => Promise<M>
 
                 return new ThenableAsyncGenerator({
                     async next() {
-                        job ??= await run(importFn, args, {
+                        job ??= await run(mod, args, {
                             ...options,
                             fn: prop as "_",
                             keepAlive: options.keepAlive ?? true,
@@ -624,7 +624,7 @@ export function link<M extends { [x: string]: any; }>(importFn: () => Promise<M>
                         return Promise.resolve({ done, value });
                     },
                     async then(onfulfilled, onrejected) {
-                        job ??= await run(importFn, args, {
+                        job ??= await run(mod, args, {
                             ...options,
                             fn: prop as "_",
                         });

@@ -415,7 +415,7 @@ var run$1 = run;
  * // bar
  * ```
  */
-function link(importFn, options = {}) {
+function link(mod, options = {}) {
     return new Proxy(Object.create(null), {
         get: (_, prop) => {
             return (...args) => {
@@ -424,7 +424,7 @@ function link(importFn, options = {}) {
                 return new ThenableAsyncGenerator({
                     async next() {
                         var _a;
-                        job !== null && job !== void 0 ? job : (job = await run(importFn, args, {
+                        job !== null && job !== void 0 ? job : (job = await run(mod, args, {
                             ...options,
                             fn: prop,
                             keepAlive: (_a = options.keepAlive) !== null && _a !== void 0 ? _a : true,
@@ -439,7 +439,7 @@ function link(importFn, options = {}) {
                         return Promise.resolve({ done, value });
                     },
                     async then(onfulfilled, onrejected) {
-                        job !== null && job !== void 0 ? job : (job = await run(importFn, args, {
+                        job !== null && job !== void 0 ? job : (job = await run(mod, args, {
                             ...options,
                             fn: prop,
                         }));

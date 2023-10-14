@@ -717,7 +717,7 @@ console.log(await job4.result()); // Hello, World
 ### jsext.link
 
 ```ts
-function link<M extends { [x: string]: any; }>(importFn: () => Promise<M>, options?: {
+function link<M extends { [x: string]: any; }>(mod: () => Promise<M>, options?: {
     /** Automatically abort the task when timeout (in milliseconds). */
     timeout?: number;
     /**
