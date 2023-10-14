@@ -360,9 +360,21 @@ async function run(script, args = undefined, options = undefined) {
     }
     return {
         workerId,
-        async abort() {
+        async abort(reason = undefined) {
             timeout && clearTimeout(timeout);
             await terminate();
+            if (reason) {
+                if (reason instanceof Error) {
+                    error = reason;
+                }
+                else if (typeof reason === "string") {
+                    error = new Error(reason);
+                }
+                else {
+                    // @ts-ignore
+                    error = new Error("operation aborted", { cause: reason });
+                }
+            }
         },
         async result() {
             return await new Promise((resolve, reject) => {
@@ -445,6 +457,14 @@ function link(mod, options = {}) {
                                 value = await job.result();
                             }
                             return Promise.resolve({ done, value });
+                        },
+                        async throw(err) {
+                            await (job === null || job === void 0 ? void 0 : job.abort(err));
+                            throw err;
+                        },
+                        async return(value) {
+                            await (job === null || job === void 0 ? void 0 : job.abort());
+                            return { value, done: true };
                         },
                         async then(onfulfilled, onrejected) {
                             job !== null && job !== void 0 ? job : (job = await run(mod, args, {

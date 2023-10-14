@@ -97,7 +97,7 @@ async function run<R, A extends any[] = any[]>(
 ): Promise<{
     workerId: number;
     /** Terminates the worker and abort the task. */
-    abort(): Promise<void>;
+    abort(reason?: unknown): Promise<void>;
     /** Retrieves the return value of the function that has been called. */
     result(): Promise<R>;
     /** Iterates the yield value if the function returns a generator. */
@@ -124,7 +124,7 @@ async function run<M extends { [x: string]: any; }, A extends Parameters<M[Fn]>,
     }
 ): Promise<{
     workerId: number;
-    abort(): Promise<void>;
+    abort(reason?: unknown): Promise<void>;
     result(): Promise<ReturnType<M[Fn]> extends AsyncGenerator<any, infer R, any> ? R : Awaited<ReturnType<M[Fn]>>>;
     iterate(): AsyncIterable<ReturnType<M[Fn]> extends AsyncGenerator<infer Y, any, any> ? Y : Awaited<ReturnType<M[Fn]>>>;
 }>;
@@ -141,7 +141,7 @@ async function run<R, A extends any[] = any[]>(
 ): Promise<{
     workerId: number;
     /** Terminates the worker and abort the task. */
-    abort(): Promise<void>;
+    abort(reason?: unknown): Promise<void>;
     /** Retrieves the return value of the function that has been called. */
     result(): Promise<R>;
     /** Iterates the yield value if the function returns a generator. */
@@ -507,9 +507,20 @@ async function run<R, A extends any[] = any[]>(
 
     return {
         workerId,
-        async abort() {
+        async abort(reason = undefined) {
             timeout && clearTimeout(timeout);
             await terminate();
+
+            if (reason) {
+                if (reason instanceof Error) {
+                    error = reason;
+                } else if (typeof reason === "string") {
+                    error = new Error(reason);
+                } else {
+                    // @ts-ignore
+                    error = new Error("operation aborted", { cause: reason });
+                }
+            }
         },
         async result() {
             return await new Promise<any>((resolve, reject) => {
@@ -631,6 +642,14 @@ export function link<M extends { [x: string]: any; }>(mod: () => Promise<M>, opt
                             }
 
                             return Promise.resolve({ done, value });
+                        },
+                        async throw(err: unknown) {
+                            await job?.abort(err);
+                            throw err;
+                        },
+                        async return(value) {
+                            await job?.abort();
+                            return { value, done: true };
                         },
                         async then(onfulfilled, onrejected) {
                             job ??= await run(mod, args, {

@@ -36,6 +36,14 @@ describe("jsext.run", () => {
         const [err, res] = await jsext.try(job.result());
         strictEqual(res, undefined);
         deepStrictEqual(err, null);
+
+        const job2 = await jsext.run<string, [string]>("job-example.mjs", ["foobar"], {
+            fn: "takeTooLong",
+        });
+        await job2.abort(new Error("something went wrong"));
+        const [err2, res2] = await jsext.try(job2.result());
+        strictEqual(res2, undefined);
+        deepStrictEqual(err2, new Error("something went wrong"));
     });
 
     it("iterate", async () => {

@@ -48,6 +48,14 @@ describe("jsext.run", () => {
             const [err, res] = await jsext.try(job.result());
             strictEqual(res, undefined);
             deepStrictEqual(err, null);
+
+            const job2 = await jsext.run<string, [string]>("job-example.mjs", ["foobar"], {
+                fn: "takeTooLong",
+            });
+            await job2.abort(new Error("something went wrong"));
+            const [err2, res2] = await jsext.try(job2.result());
+            strictEqual(res2, undefined);
+            deepStrictEqual(err2, new Error("something went wrong"));
         });
 
         it("iterate", async () => {
@@ -56,6 +64,7 @@ describe("jsext.run", () => {
             });
             const words: string[] = [];
 
+            // @ts-ignore
             for await (const word of job.iterate()) {
                 words.push(word);
             }
@@ -153,6 +162,15 @@ describe("jsext.run", () => {
             const [err, res] = await jsext.try(job.result());
             strictEqual(res, undefined);
             deepStrictEqual(err, null);
+
+            const job2 = await jsext.run<string, [string]>("job-example.mjs", ["foobar"], {
+                fn: "takeTooLong",
+                adapter: "child_process",
+            });
+            await job2.abort(new Error("something went wrong"));
+            const [err2, res2] = await jsext.try(job2.result());
+            strictEqual(res2, undefined);
+            deepStrictEqual(err2, new Error("something went wrong"));
         });
 
         it("iterate", async () => {
