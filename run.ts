@@ -4,6 +4,10 @@ import { sequence } from "./number/index.ts";
 import { trim } from "./string/index.ts";
 import chan, { Channel } from "./chan.ts";
 import deprecate from "./deprecate.ts";
+import {
+    ThenableAsyncGenerator,
+    ThenableAsyncGeneratorLike
+} from "./external/thenable-generator/index.ts";
 
 const isNode = typeof process === "object" && !!process.versions?.node;
 declare var Deno: any;
@@ -72,6 +76,9 @@ async function run<R, A extends any[] = any[]>(
         /**
          * Instead of dropping the worker after the task has completed, keep it alive so that it can
          * be reused by other tasks.
+         * 
+         * Be aware, keep-alive with `child_process` adapter will prevent the main process to exit in
+         * Node.js.
          */
         keepAlive?: boolean;
         /**
@@ -202,6 +209,8 @@ async function run<R, A extends any[] = any[]>(
 
     const handleMessage = (msg: any) => {
         if (msg && typeof msg === "object" && typeof msg.type === "string") {
+            timeout && clearTimeout(timeout);
+
             if (msg.type === "error") {
                 return handleError(msg.error);
             } else if (msg.type === "return") {
@@ -222,6 +231,10 @@ async function run<R, A extends any[] = any[]>(
                 } else {
                     result = { value: msg.value };
                 }
+
+                if (channel) {
+                    channel.close();
+                }
             } else if (msg.type === "yield") {
                 if (msg.done) {
                     // The final message of yield event is the return value.
@@ -234,15 +247,21 @@ async function run<R, A extends any[] = any[]>(
     };
 
     const handleError = (err: Error | null) => {
+        timeout && clearTimeout(timeout);
+
         if (resolver) {
             resolver.reject(err);
-        } else if (channel) {
-            channel.close(err);
         } else {
             error = err;
         }
+
+        if (channel) {
+            channel.close(err);
+        }
     };
     const handleExit = () => {
+        timeout && clearTimeout(timeout);
+
         if (poolRecord) {
             // Clean the pool before resolve.
             workerPool = workerPool.filter(record => record !== poolRecord);
@@ -255,10 +274,12 @@ async function run<R, A extends any[] = any[]>(
 
         if (resolver) {
             resolver.resolve(void 0);
-        } else if (channel) {
-            channel.close();
         } else if (!error && !result) {
             result = { value: void 0 };
+        }
+
+        if (channel) {
+            channel.close();
         }
     };
 
@@ -301,6 +322,7 @@ async function run<R, A extends any[] = any[]>(
                     stdio: "inherit",
                     serialization: isPrior14 ? "advanced" : "json",
                 });
+                worker.unref();
                 workerId = worker.pid as number;
                 ok = await new Promise<boolean>((resolve) => {
                     worker.once("exit", () => {
@@ -317,7 +339,7 @@ async function run<R, A extends any[] = any[]>(
 
                 // Fill the worker pool regardless the current call should keep-alive or not,
                 // this will make sure that the total number of workers will not exceed the
-                // maxWorkerNum. If the the call doesn't keep-alive the worker, it will be
+                // `run.maxWorkers`. If the the call doesn't keep-alive the worker, it will be
                 // cleaned after the call.
                 ok && workerPool.push(poolRecord = {
                     workerId,
@@ -361,6 +383,7 @@ async function run<R, A extends any[] = any[]>(
             } else if (workerPool.length < run.maxWorkers) {
                 const { Worker } = await import("worker_threads");
                 worker = new Worker(entry);
+                worker.unref();
                 // `threadId` may not exist in Bun.
                 workerId = worker.threadId ?? workerIdCounter.next().value as number;
                 ok = await new Promise<boolean>((resolve) => {
@@ -529,3 +552,91 @@ namespace run {
 }
 
 export default run;
+
+/**
+ * Creates a remote module wrapper whose functions are run in another thread.
+ * 
+ * This function uses `run()` under the hood, and the remote function must be async.
+ * 
+ * @example
+ * ```ts
+ * const mod = link(() => import("./job-example.mjs"));
+ * console.log(await mod.greet("World")); // Hi, World
+ * ```
+ * 
+ * @example
+ * ```ts
+ * const mod = link(() => import("./job-example.mjs"));
+ * 
+ * for await (const word of mod.sequence(["foo", "bar"])) {
+ *     console.log(word);
+ * }
+ * // output:
+ * // foo
+ * // bar
+ * ```
+ */
+export function link<M extends { [x: string]: any; }>(importFn: () => Promise<M>, options: {
+    /** Automatically abort the task when timeout (in milliseconds). */
+    timeout?: number;
+    /**
+     * Instead of dropping the worker after the task has completed, keep it alive so that it can
+     * be reused by other tasks.
+     * 
+     * Be aware, keep-alive with `child_process` adapter will prevent the main process to exit in
+     * Node.js.
+     * 
+     * Unlink `run()`, this option is enabled by default in `link()`, set its value to `false` if
+     * we want to disable it.
+     */
+    keepAlive?: boolean;
+    /**
+     * Choose whether to use `worker_threads` or `child_process` for running the script.
+     * The default setting is `worker_threads`.
+     * 
+     * In browser or Deno, this option is ignored and will always use the web worker.
+     */
+    adapter?: "worker_threads" | "child_process";
+} = {}): AsyncFunctionProperties<M> {
+    return new Proxy(Object.create(null), {
+        get: (_, prop) => {
+            return (...args: Parameters<M["_"]>) => {
+                let job: Awaited<ReturnType<typeof run>>;
+                let iter: AsyncIterator<unknown>;
+
+                return new ThenableAsyncGenerator({
+                    async next() {
+                        job ??= await run(importFn, args, {
+                            ...options,
+                            fn: prop as "_",
+                            keepAlive: options.keepAlive ?? true,
+                        });
+
+                        iter ??= job.iterate()[Symbol.asyncIterator]();
+                        let { done = false, value } = await iter.next();
+
+                        if (done) {
+                            // HACK: this will set the internal result of ThenableAsyncGenerator
+                            // to the result of the job.
+                            value = await job.result();
+                        }
+
+                        return Promise.resolve({ done, value });
+                    },
+                    async then(onfulfilled, onrejected) {
+                        job ??= await run(importFn, args, {
+                            ...options,
+                            fn: prop as "_",
+                        });
+                        return job.result().then(onfulfilled, onrejected);
+                    },
+                } satisfies ThenableAsyncGeneratorLike);
+            };
+        }
+    }) as any;
+}
+
+export type AsyncFunctionProperties<T> = Readonly<Pick<T, AsyncFunctionPropertyNames<T>>>;
+export type AsyncFunctionPropertyNames<T> = {
+    [K in keyof T]: T[K] extends (...args: any[]) => (Promise<any> | AsyncGenerator) ? K : never;
+}[keyof T];

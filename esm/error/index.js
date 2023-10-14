@@ -8,6 +8,10 @@ function toObject(err) {
 function fromObject(obj) {
     var _a;
     // @ts-ignore
+    if (!(obj === null || obj === void 0 ? void 0 : obj.name)) {
+        return null;
+    }
+    // @ts-ignore
     let ctor = globalThis[obj.name];
     if (!ctor) {
         if (obj["name"] === "Exception") {

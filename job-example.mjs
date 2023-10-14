@@ -2,7 +2,7 @@
  * @param {string} name 
  * @returns 
  */
-export default function (name) {
+export default async function (name) {
     return "Hello, " + name;
 }
 
@@ -10,7 +10,7 @@ export default function (name) {
  * @param {string} name 
  * @returns 
  */
-export function greet(name) {
+export async function greet(name) {
     return "Hi, " + name;
 }
 
@@ -19,7 +19,7 @@ export function greet(name) {
  * @returns 
  */
 export async function takeTooLong(text) {
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     return text;
 }
 
@@ -33,3 +33,7 @@ export async function* sequence(words) {
 
     return words.join(", ");
 };
+
+export function foo() {
+    return "";
+}

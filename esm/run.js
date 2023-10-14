@@ -2,6 +2,7 @@ import { sequence } from './number/index.js';
 import { trim } from './string/index.js';
 import chan from './chan.js';
 import deprecate from './deprecate.js';
+import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
 
 var _a;
 const isNode = typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
@@ -69,6 +70,7 @@ async function run(script, args = undefined, options = undefined) {
     const handleMessage = (msg) => {
         var _a;
         if (msg && typeof msg === "object" && typeof msg.type === "string") {
+            timeout && clearTimeout(timeout);
             if (msg.type === "error") {
                 return handleError(msg.error);
             }
@@ -90,6 +92,9 @@ async function run(script, args = undefined, options = undefined) {
                 else {
                     result = { value: msg.value };
                 }
+                if (channel) {
+                    channel.close();
+                }
             }
             else if (msg.type === "yield") {
                 if (msg.done) {
@@ -103,18 +108,20 @@ async function run(script, args = undefined, options = undefined) {
         }
     };
     const handleError = (err) => {
+        timeout && clearTimeout(timeout);
         if (resolver) {
             resolver.reject(err);
-        }
-        else if (channel) {
-            channel.close(err);
         }
         else {
             error = err;
         }
+        if (channel) {
+            channel.close(err);
+        }
     };
     const handleExit = () => {
         var _a;
+        timeout && clearTimeout(timeout);
         if (poolRecord) {
             // Clean the pool before resolve.
             workerPool = workerPool.filter(record => record !== poolRecord);
@@ -126,11 +133,11 @@ async function run(script, args = undefined, options = undefined) {
         if (resolver) {
             resolver.resolve(void 0);
         }
-        else if (channel) {
-            channel.close();
-        }
         else if (!error && !result) {
             result = { value: void 0 };
+        }
+        if (channel) {
+            channel.close();
         }
     };
     if (isNode) {
@@ -172,6 +179,7 @@ async function run(script, args = undefined, options = undefined) {
                     stdio: "inherit",
                     serialization: isPrior14 ? "advanced" : "json",
                 });
+                worker.unref();
                 workerId = worker.pid;
                 ok = await new Promise((resolve) => {
                     worker.once("exit", () => {
@@ -187,7 +195,7 @@ async function run(script, args = undefined, options = undefined) {
                 });
                 // Fill the worker pool regardless the current call should keep-alive or not,
                 // this will make sure that the total number of workers will not exceed the
-                // maxWorkerNum. If the the call doesn't keep-alive the worker, it will be
+                // `run.maxWorkers`. If the the call doesn't keep-alive the worker, it will be
                 // cleaned after the call.
                 ok && workerPool.push(poolRecord = {
                     workerId,
@@ -231,6 +239,7 @@ async function run(script, args = undefined, options = undefined) {
             else if (workerPool.length < run.maxWorkers) {
                 const { Worker } = await import('worker_threads');
                 worker = new Worker(entry);
+                worker.unref();
                 // `threadId` may not exist in Bun.
                 workerId = (_a = worker.threadId) !== null && _a !== void 0 ? _a : workerIdCounter.next().value;
                 ok = await new Promise((resolve) => {
@@ -383,6 +392,64 @@ async function run(script, args = undefined, options = undefined) {
     run.maxWorkers = 16;
 })(run || (run = {}));
 var run$1 = run;
+/**
+ * Creates a remote module wrapper whose functions are run in another thread.
+ *
+ * This function uses `run()` under the hood, and the remote function must be async.
+ *
+ * @example
+ * ```ts
+ * const mod = link(() => import("./job-example.mjs"));
+ * console.log(await mod.greet("World")); // Hi, World
+ * ```
+ *
+ * @example
+ * ```ts
+ * const mod = link(() => import("./job-example.mjs"));
+ *
+ * for await (const word of mod.sequence(["foo", "bar"])) {
+ *     console.log(word);
+ * }
+ * // output:
+ * // foo
+ * // bar
+ * ```
+ */
+function link(importFn, options = {}) {
+    return new Proxy(Object.create(null), {
+        get: (_, prop) => {
+            return (...args) => {
+                let job;
+                let iter;
+                return new ThenableAsyncGenerator({
+                    async next() {
+                        var _a;
+                        job !== null && job !== void 0 ? job : (job = await run(importFn, args, {
+                            ...options,
+                            fn: prop,
+                            keepAlive: (_a = options.keepAlive) !== null && _a !== void 0 ? _a : true,
+                        }));
+                        iter !== null && iter !== void 0 ? iter : (iter = job.iterate()[Symbol.asyncIterator]());
+                        let { done = false, value } = await iter.next();
+                        if (done) {
+                            // HACK: this will set the internal result of ThenableAsyncGenerator
+                            // to the result of the job.
+                            value = await job.result();
+                        }
+                        return Promise.resolve({ done, value });
+                    },
+                    async then(onfulfilled, onrejected) {
+                        job !== null && job !== void 0 ? job : (job = await run(importFn, args, {
+                            ...options,
+                            fn: prop,
+                        }));
+                        return job.result().then(onfulfilled, onrejected);
+                    },
+                });
+            };
+        }
+    });
+}
 
-export { run$1 as default };
+export { run$1 as default, link };
 //# sourceMappingURL=run.js.map

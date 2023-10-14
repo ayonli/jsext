@@ -45,6 +45,7 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 - [jsext.read](#jsextread)
 - [jsext.readAll](#jsextreadall)
 - [jsext.run](#jsextrun)
+- [jsext.link](#jsextlink)
 - [jsext.example](#jsextexample)
 - [jsext.deprecate](#jsextdeprecate)
 
@@ -603,6 +604,9 @@ function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
     /**
      * Instead of dropping the worker after the task has completed, keep it alive so that it can
      * be reused by other tasks.
+     * 
+     * Be aware, keep-alive with `child_process` adapter will prevent the main process to exit in
+     * Node.js.
      */
     keepAlive?: boolean;
     /**
@@ -706,6 +710,59 @@ console.assert(res === undefined);
 ```ts
 const job4 = await run(() => import("./job-example.mjs"), ["World"]);
 console.log(await job4.result()); // Hello, World
+```
+
+---
+
+### jsext.link
+
+```ts
+function link<M extends { [x: string]: any; }>(importFn: () => Promise<M>, options?: {
+    /** Automatically abort the task when timeout (in milliseconds). */
+    timeout?: number;
+    /**
+     * Instead of dropping the worker after the task has completed, keep it alive so that it can
+     * be reused by other tasks.
+     * 
+     * Be aware, keep-alive with `child_process` adapter will prevent the main process to exit in
+     * Node.js.
+     * 
+     * Unlink `run()`, this option is enabled by default in `link()`, set its value to `false` if
+     * we want to disable it.
+     */
+    keepAlive?: boolean;
+    /**
+     * Choose whether to use `worker_threads` or `child_process` for running the script.
+     * The default setting is `worker_threads`.
+     * 
+     * In browser or Deno, this option is ignored and will always use the web worker.
+     */
+    adapter?: "worker_threads" | "child_process";
+}): AsyncFunctionProperties<M>;
+```
+
+Creates a remote module wrapper whose functions are run in another thread.
+
+This function uses `run()` under the hood, and the remote function must be async.
+
+**Example (async function)**
+
+```ts
+const mod = link(() => import("./job-example.mjs"));
+console.log(await mod.greet("World")); // Hi, World
+```
+
+**Example (async generator function)**
+
+```ts
+const mod = link(() => import("./job-example.mjs"));
+
+for await (const word of mod.sequence(["foo", "bar"])) {
+    console.log(word);
+}
+// output:
+// foo
+// bar
 ```
 
 ---
