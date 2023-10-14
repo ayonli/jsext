@@ -53,7 +53,7 @@ export function as(data: unknown, type: BigIntConstructor): bigint | null;
 export function as(data: unknown, type: BooleanConstructor): boolean | null;
 export function as<T>(data: unknown, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null;
 export function as(data: unknown, type: any): any {
-    if (data === null) {
+    if (data === null || data === undefined) {
         return null;
     } else if (typeof type.fromJSON === "function") {
         return type.fromJSON(data);
@@ -106,38 +106,61 @@ export function as(data: unknown, type: any): any {
         } else {
             return null;
         }
-    } else if (data && !([String, Number, Boolean, Date, Array] as Function[]).includes(type)) {
-        if (typeof Buffer === "function" &&
-            type === Buffer &&
-            (data as any).type === "Buffer" &&
-            Array.isArray((data as any).data)
-        ) {
-            try {
-                return Buffer.from((data as any).data);
-            } catch {
+    } else if (!([String, Number, Boolean, Date, Array] as Function[]).includes(type)) {
+        if ((data as any).type === "Buffer" && Array.isArray((data as any).data)) { // Node.js Buffer
+            if (typeof Buffer === "function" && type === Buffer) {
+                try {
+                    return Buffer.from((data as any).data);
+                } catch {
+                    return null;
+                }
+            } else if (typeof (type.prototype as any)[Symbol.iterator] === "function"
+                && typeof (type as any)["from"] === "function"
+            ) {
+                try {
+                    // Convert Node.js Buffer to TypedArray.
+                    return (type as ArrayConstructor).from((data as any).data);
+                } catch {
+                    return null;
+                }
+            } else {
                 return null;
             }
-        } else if (type === Uint8Array &&
-            (data as any).type === "Buffer" &&
-            Array.isArray((data as any).data)
+        }
+
+        const keys = Object.getOwnPropertyNames(data);
+        const values = Object.values(data);
+
+        if (keys.slice(0, 50).map(Number).every(i => !Number.isNaN(i)) &&
+            values.slice(0, 50).map(Number).every(i => !Number.isNaN(i)) &&
+            typeof (type.prototype as any)[Symbol.iterator] === "function" &&
+            typeof (type as any)["from"] === "function"
         ) {
-            try {
-                // convert Node.js Buffer to Uint8Array
-                return Uint8Array.from((data as any).data);
-            } catch {
-                return null;
-            }
-        } else if (typeof (type.prototype as any)[Symbol.iterator] === "function" &&
-            typeof (type as any)["from"] === "function" &&
-            Object.getOwnPropertyNames(data).map(Number).every(i => !Number.isNaN(i))
-        ) { // TypedArray
+            // Assert the data is a TypedArray.
             try {
                 return (type as ArrayConstructor).from(Object.values(data));
             } catch {
                 return null;
             }
         } else if (type.prototype instanceof Error) {
-            return fromObject(data);
+            const err = fromObject(data);
+
+            if (err) {
+                // Support @JSON.type() decorator in Error constructors.
+                const typeRecords = typeRegistry.get(type.prototype as Object);
+
+                if (typeRecords) {
+                    for (const key of Reflect.ownKeys(data)) {
+                        const ctor = typeRecords[key];
+
+                        if (ctor) {
+                            (err as any)[key] = as((data as any)[key], ctor);
+                        }
+                    }
+                }
+            }
+
+            return err;
         } else {
             const ins = Object.create(type.prototype as Object);
             const typeRecords = typeRegistry.get(type.prototype as Object);
