@@ -1,6 +1,6 @@
 // @ts-ignore
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
-import { ThenableAsyncGenerator, source } from "./external/thenable-generator/index.ts";
+import { ThenableAsyncGenerator } from "./external/thenable-generator/index.ts";
 
 // The following declarations shall be order from complex to simple, otherwise TypeScript won't work
 // well.
@@ -24,10 +24,10 @@ import { ThenableAsyncGenerator, source } from "./external/thenable-generator/in
  * }
  * ```
  */
-export default function _try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
+export default function _try<E = unknown, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
     fn: (...args: A) => AsyncGenerator<T, TReturn, TNext>,
     ...args: A
-): AsyncGenerator<[E | null, T], [E | null, TReturn], TNext>;
+): AsyncGenerator<[E, T], [E, TReturn], TNext>;
 /**
  * Invokes a generator function and renders its yield value and result in an `[err, val]` tuple.
  * 
@@ -46,10 +46,10 @@ export default function _try<E = Error, T = any, A extends any[] = any[], TRetur
  * }
  * ```
  */
-export default function _try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
+export default function _try<E = unknown, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
     fn: (...args: A) => Generator<T, TReturn, TNext>,
     ...args: A
-): Generator<[E | null, T], [E | null, TReturn], TNext>;
+): Generator<[E, T], [E, TReturn], TNext>;
 /**
  * Invokes an async function and renders its result in an `[err, res]` tuple.
  * 
@@ -64,10 +64,10 @@ export default function _try<E = Error, T = any, A extends any[] = any[], TRetur
  * }
  * ```
  */
-export default function _try<E = Error, R = any, A extends any[] = any[]>(
+export default function _try<E = unknown, R = any, A extends any[] = any[]>(
     fn: (...args: A) => Promise<R>,
     ...args: A
-): Promise<[E | null, R]>;
+): Promise<[E, R]>;
 /**
  * Invokes a function and renders its result in an `[err, res]` tuple.
  * 
@@ -78,10 +78,10 @@ export default function _try<E = Error, R = any, A extends any[] = any[]>(
  * });
  * ```
  */
-export default function _try<E = Error, R = any, A extends any[] = any[]>(
+export default function _try<E = unknown, R = any, A extends any[] = any[]>(
     fn: (...args: A) => R,
     ...args: A
-): [E | null, R];
+): [E, R];
 /**
  * Resolves an async generator and renders its yield value and result in an `[err, val]` tuple.
  * 
@@ -100,9 +100,9 @@ export default function _try<E = Error, R = any, A extends any[] = any[]>(
  * }
  * ```
  */
-export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>(
+export default function _try<E = unknown, T = any, TReturn = any, TNext = unknown>(
     gen: AsyncGenerator<T, TReturn, TNext>
-): AsyncGenerator<[E | null, T], [E | null, TReturn], TNext>;
+): AsyncGenerator<[E, T], [E, TReturn], TNext>;
 /**
  * Resolves a generator and renders its yield value and result in an `[err, val]` tuple.
  * 
@@ -119,9 +119,9 @@ export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>
  * }
  * ```
  */
-export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>(
+export default function _try<E = unknown, T = any, TReturn = any, TNext = unknown>(
     gen: Generator<T, TReturn, TNext>
-): Generator<[E | null, T], [E | null, TReturn], TNext>;
+): Generator<[E, T], [E, TReturn], TNext>;
 /**
  * Resolves a promise and renders its result in an `[err, res]` tuple.
  * 
@@ -134,7 +134,7 @@ export default function _try<E = Error, T = any, TReturn = any, TNext = unknown>
  * }
  * ```
  */
-export default function _try<E = Error, R = any>(job: PromiseLike<R>): Promise<[E | null, R]>;
+export default function _try<E = unknown, R = any>(job: PromiseLike<R>): Promise<[E, R]>;
 export default function _try(fn: any, ...args: any[]) {
     if (isFunction(fn)) {
         try {
@@ -147,7 +147,7 @@ export default function _try(fn: any, ...args: any[]) {
     let returns = fn;
     // Implementation details should be ordered from complex to simple.
 
-    if (returns instanceof ThenableAsyncGenerator && !(typeof returns[source].throw === "function")) {
+    if (returns instanceof ThenableAsyncGenerator) {
         // special case
         returns = (returns as PromiseLike<any>).then((value: any) => [null, value]);
         return Promise.resolve(returns).catch((err: unknown) => [err, undefined]) as any;

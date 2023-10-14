@@ -1,5 +1,5 @@
 import { isAsyncGenerator, isGenerator } from './external/check-iterable/index.js';
-import { ThenableAsyncGenerator, source } from './external/thenable-generator/index.js';
+import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
 
 // @ts-ignore
 function _try(fn, ...args) {
@@ -13,7 +13,7 @@ function _try(fn, ...args) {
     }
     let returns = fn;
     // Implementation details should be ordered from complex to simple.
-    if (returns instanceof ThenableAsyncGenerator && !(typeof returns[source].throw === "function")) {
+    if (returns instanceof ThenableAsyncGenerator) {
         // special case
         returns = returns.then((value) => [null, value]);
         return Promise.resolve(returns).catch((err) => [err, undefined]);

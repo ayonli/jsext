@@ -43,7 +43,7 @@ describe("jsext.try", () => {
         }
 
         const res = jsext.try(check, "Hello, World!");
-        const errors: Error[] = [];
+        const errors: unknown[] = [];
         let str = "";
 
         while (true) {
@@ -63,7 +63,7 @@ describe("jsext.try", () => {
         strictEqual(str, "Hello, World!OK");
 
         const res2 = jsext.try(check(""));
-        const errors2: Error[] = [];
+        const errors2: unknown[] = [];
         let str2 = "";
 
         while (true) {
@@ -84,6 +84,7 @@ describe("jsext.try", () => {
     });
 
     it("async generator function", async () => {
+        // @ts-ignore
         async function* check(str: string) {
             if (str.length === 0) {
                 throw EmptyStringError;
@@ -97,7 +98,7 @@ describe("jsext.try", () => {
         }
 
         const res = jsext.try(check, "Hello, World!");
-        const errors: Error[] = [];
+        const errors: unknown[] = [];
         let str = "";
 
         while (true) {
@@ -117,7 +118,7 @@ describe("jsext.try", () => {
         strictEqual(str, "Hello, World!OK");
 
         const res2 = jsext.try(check(""));
-        const errors2: Error[] = [];
+        const errors2: unknown[] = [];
         let str2 = "";
 
         while (true) {
@@ -163,7 +164,7 @@ describe("jsext.try", () => {
 
             return String(count);
         }, "Hello, World!");
-        const errors: Error[] = [];
+        const errors: unknown[] = [];
         let str = "";
 
         while (true) {
@@ -197,7 +198,7 @@ describe("jsext.try", () => {
 
             return String(count);
         }, "Hello, World!");
-        const errors: Error[] = [];
+        const errors: unknown[] = [];
         let str = "";
 
         while (true) {

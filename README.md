@@ -54,14 +54,14 @@ And other functions in [sub-packages](#sub-packages).
 ### jsext.try
 
 ```ts
-function _try<E = Error, R = any, A extends any[] = any[]>(
+function _try<E = unknown, R = any, A extends any[] = any[]>(
     fn: (...args: A) => R,
     ...args: A
-): [E | null, R];
-function _try<E = Error, R = any, A extends any[] = any[]>(
+): [E, R];
+function _try<E = unknown, R = any, A extends any[] = any[]>(
     fn: (...args: A) => Promise<R>,
     ...args: A
-): Promise<[E | null, R]>;
+): Promise<[E, R]>;
 ```
 
 Invokes a regular function or an async function and renders its result in an `[err, res]` tuple.
@@ -89,7 +89,7 @@ if (err) {
 ---
 
 ```ts
-function _try<E = Error, R = any>(job: Promise<R>): Promise<[E | null, R]>;
+function _try<E = unknown, R = any>(job: Promise<R>): Promise<[E, R]>;
 ```
 
 Resolves a promise and renders its result in an `[err, res]` tuple.
@@ -107,14 +107,14 @@ if (err) {
 ---
 
 ```ts
-function _try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
+function _try<E = unknown, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
     fn: (...args: A) => Generator<T, TReturn, TNext>,
     ...args: A
-): Generator<[E | null, T], [E | null, TReturn], TNext>;
-function _try<E = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
+): Generator<[E, T], [E, TReturn], TNext>;
+function _try<E = unknown, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
     fn: (...args: A) => AsyncGenerator<T, TReturn, TNext>,
     ...args: A
-): AsyncGenerator<[E | null, T], [E | null, TReturn], TNext>;
+): AsyncGenerator<[E, T], [E, TReturn], TNext>;
 ```
 
 Invokes a generator function or an async generator function and renders its yield value and result
@@ -155,12 +155,12 @@ for await (const [err, val] of iter) {
 ---
 
 ```ts
-function _try<E = Error, T = any, TReturn = any, TNext = unknown>(
+function _try<E = unknown, T = any, TReturn = any, TNext = unknown>(
     gen: Generator<T, TReturn, TNext>
-): Generator<[E | null, T], [E | null, TReturn], TNext>;
-function _try<E = Error, T = any, TReturn = any, TNext = unknown>(
+): Generator<[E, T], [E, TReturn], TNext>;
+function _try<E = unknown, T = any, TReturn = any, TNext = unknown>(
     gen: AsyncGenerator<T, TReturn, TNext>
-): AsyncGenerator<[E | null, T], [E | null, TReturn], TNext>;
+): AsyncGenerator<[E, T], [E, TReturn], TNext>;
 ```
 
 Resolves a generator or an async generator and renders its yield value and result in an `[err, val]`

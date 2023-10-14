@@ -1,6 +1,5 @@
 import "../augment.ts";
 import { deepStrictEqual, strictEqual } from "node:assert";
-import _try from "../try.ts";
 
 describe("JSON", () => {
     describe("JSON.parseAs", () => {

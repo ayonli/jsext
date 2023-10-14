@@ -46,7 +46,7 @@ describe("jsext.example", () => {
             // output:
             // 2
         }, { suppress: true })());
-        strictEqual(err4?.message, "\nexpected:\n2\n\ngot:\n1");
+        strictEqual((err4 as Error)?.message, "\nexpected:\n2\n\ngot:\n1");
 
         const [err5] = await jsext.try(jsext.example(console => {
             console.log(1);
@@ -55,7 +55,7 @@ describe("jsext.example", () => {
             console.log(2);
         }, { suppress: true })());
         strictEqual(
-            err5?.message,
+            (err5 as Error)?.message,
             "the output comment must be at the end of the example");
 
         const [err6] = await jsext.try(jsext.example(console => {
@@ -67,7 +67,7 @@ describe("jsext.example", () => {
             // 2
         }, { suppress: true })());
         strictEqual(
-            err6?.message,
+            (err6 as Error)?.message,
             "there can only be one output comment in the example");
 
         const [err7] = await jsext.try(jsext.example(console => {
@@ -76,7 +76,7 @@ describe("jsext.example", () => {
             //function
         }, { suppress: true })());
         strictEqual(
-            err7?.message,
+            (err7 as Error)?.message,
             "the output comment must start with '// '");
 
         const [err8] = await jsext.try(jsext.example(function (this: Mocha.Context, console) {
@@ -125,7 +125,7 @@ describe("jsext.example", () => {
             // output:
             // 2
         }, { suppress: true })());
-        strictEqual(err4?.message, "\nexpected:\n2\n\ngot:\n1");
+        strictEqual((err4 as Error)?.message, "\nexpected:\n2\n\ngot:\n1");
 
         const [err5] = await jsext.try(jsext.example(async console => {
             await Promise.resolve(null);
@@ -135,7 +135,7 @@ describe("jsext.example", () => {
             console.log(2);
         }, { suppress: true })());
         strictEqual(
-            err5?.message,
+            (err5 as Error)?.message,
             "the output comment must be at the end of the example");
 
         const [err6] = await jsext.try(jsext.example(async console => {
@@ -148,7 +148,7 @@ describe("jsext.example", () => {
             // 2
         }, { suppress: true })());
         strictEqual(
-            err6?.message,
+            (err6 as Error)?.message,
             "there can only be one output comment in the example");
 
         const [err7] = await jsext.try(jsext.example(async console => {
@@ -158,7 +158,7 @@ describe("jsext.example", () => {
             //function
         }, { suppress: true })());
         strictEqual(
-            err7?.message,
+            (err7 as Error)?.message,
             "the output comment must start with '// '");
 
         const [err8] = await jsext.try(jsext.example(async function (this: Mocha.Context, console) {
