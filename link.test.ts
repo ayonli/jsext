@@ -41,7 +41,7 @@ describe("jsext.link", () => {
 
             const [[err, res]] = await Promise.all([
                 jsext.try(job),
-                sleep(50).then(() => job.abort()),
+                sleep(300).then(() => job.abort()),
             ]);
             strictEqual(res, undefined);
             deepStrictEqual(err, null);
@@ -50,7 +50,7 @@ describe("jsext.link", () => {
             const job2 = mod.takeTooLong("foobar") as Promise<string> & Abortable;
             const [[err2, res2]] = await Promise.all([
                 jsext.try(job2),
-                sleep(50).then(() => job2.abort(new Error("something went wrong"))),
+                sleep(300).then(() => job2.abort(new Error("something went wrong"))),
             ]);
             strictEqual(res2, undefined);
             deepStrictEqual(err2, new Error("something went wrong"));
@@ -66,7 +66,6 @@ describe("jsext.link", () => {
         const mod = jsext.link(() => import("./job-example.mjs"), {
             timeout: 500,
             adapter: "child_process",
-            keepAlive: false,
         });
 
         it("return", async () => {
@@ -100,7 +99,7 @@ describe("jsext.link", () => {
 
             const [[err, res]] = await Promise.all([
                 jsext.try(job),
-                sleep(400).then(() => job.abort()),
+                sleep(300).then(() => job.abort()),
             ]);
             strictEqual(res, undefined);
             deepStrictEqual(err, null);
