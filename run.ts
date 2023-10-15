@@ -1,34 +1,11 @@
 import type { Worker as NodeWorker } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
-import { fromObject } from "./error/index.ts";
-import { sequence } from "./number/index.ts";
-import { trim } from "./string/index.ts";
+import parallel, { FFIResponse, createFFIRequest, createWorker, isFFIResponse, sanitizeModuleId } from "./parallel.ts";
 import chan, { Channel } from "./chan.ts";
 import deprecate from "./deprecate.ts";
+import { fromObject } from "./error/index.ts";
 
-export type FFIRequest = {
-    type: "ffi" | "next" | "return" | "throw";
-    script: string;
-    baseUrl: string;
-    fn: string;
-    args: any[];
-    taskId?: number | undefined;
-};
-
-export type FFIResponse = {
-    type: "return" | "yield" | "error" | "gen";
-    taskId?: number | undefined;
-    value?: any;
-    error?: Object;
-    done?: boolean | undefined;
-};
-
-const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
 const isNode = typeof process === "object" && !!process.versions?.node;
-declare var Deno: any;
-declare var Bun: any;
-
-const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 let workerPool: {
     workerId: number;
     worker: Worker | NodeWorker | ChildProcess;
@@ -40,176 +17,8 @@ let workerPool: {
 // pop a consumer and run the callback, which will retry gaining the worker and retry the task.
 const workerConsumerQueue: (() => void)[] = [];
 
-export function sanitizeModuleId(id: string | (() => Promise<any>), strict = false): string {
-    let _id = "";
-
-    if (typeof id === "function") {
-        let str = id.toString();
-        let start = str.lastIndexOf("(");
-
-        if (start === -1) {
-            throw new TypeError("the given script is not a dynamic import expression");
-        } else {
-            start += 1;
-            const end = str.indexOf(")", start);
-            _id = trim(str.slice(start, end), ` '"\'`);
-        }
-    } else {
-        _id = id;
-    }
-
-    if (isNode &&
-        !/\.[cm]?(js|ts|)x?$/.test(_id) &&              // omit suffix
-        IsPath.test(_id) // relative or absolute path
-    ) {
-        if (typeof Bun === "object") {
-            _id += ".ts";
-        } else {
-            _id += ".js";
-        }
-    }
-
-    if (!IsPath.test(_id) && !strict) {
-        _id = "./" + _id;
-    }
-
-    return _id;
-}
-
-export function createFFIRequest(
-    script: string,
-    fn: string,
-    args: any[],
-    taskId: number | undefined = undefined,
-    type: "ffi" | "next" | "return" | "throw" = "ffi"
-): FFIRequest {
-    const msg: FFIRequest = { type, baseUrl: "", script, fn, args, taskId };
-
-    if (typeof Deno === "object") {
-        msg.baseUrl = "file://" + Deno.cwd() + "/";
-    } else if (isNode) {
-        if (IsPath.test(script)) {
-            msg.baseUrl = process.cwd();
-        }
-    } else if (typeof location === "object") {
-        msg.baseUrl = location.href;
-    }
-
-    return msg;
-}
-
-export function isFFIResponse(msg: any): msg is FFIResponse {
-    return msg && typeof msg === "object" && ["return", "yield", "error", "gen"].includes(msg.type);
-}
-
-export async function createWorker(options: {
-    entry?: string | undefined;
-    adapter?: "worker_threads" | "child_process";
-} = {}): Promise<{
-    worker: Worker;
-    workerId: number;
-    kind: "web_worker";
-} | {
-    worker: NodeWorker;
-    workerId: number;
-    kind: "node_worker";
-} | {
-    worker: ChildProcess;
-    workerId: number;
-    kind: "node_process";
-}> {
-    let { entry, adapter } = options;
-
-    if (isNode) {
-        if (!entry) {
-            const path = await import("path");
-            const { fileURLToPath } = await import("url");
-            const _filename = fileURLToPath(import.meta.url);
-            const _dirname = path.dirname(_filename);
-
-            if (_filename === process.argv[1]) {
-                // The code is bundled, try the worker entry in node_modules (if it exists).
-                entry = "./node_modules/@ayonli/jsext/bundle/worker.mjs";
-            } else if ([
-                path.join("jsext", "cjs"),
-                path.join("jsext", "esm"),
-                path.join("jsext", "bundle")
-            ].some(path => _dirname.endsWith(path))) { // compiled
-                entry = path.join(path.dirname(_dirname), "bundle", "worker.mjs");
-            } else {
-                entry = path.join(_dirname, "worker.mjs");
-            }
-        }
-
-        if (adapter === "child_process") {
-            const { fork } = await import("child_process");
-            const isPrior14 = parseInt(process.version.slice(1)) < 14;
-            const worker = fork(entry, {
-                stdio: "inherit",
-                serialization: isPrior14 ? "advanced" : "json",
-            });
-            const workerId = worker.pid as number;
-
-            return {
-                worker,
-                workerId,
-                kind: "node_process",
-            };
-        } else {
-            const { Worker } = await import("worker_threads");
-            const worker = new Worker(entry);
-            // `threadId` may not exist in Bun.
-            const workerId = worker.threadId ?? workerIdCounter.next().value as number;
-
-            return {
-                worker,
-                workerId,
-                kind: "node_worker",
-            };
-        }
-    } else {
-        if (!entry) {
-            if (typeof Deno === "object") {
-                if ((import.meta as any)["main"]) {
-                    // code is bundled, try the remote URL
-                    entry = "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
-                } else {
-                    entry = [
-                        ...(import.meta.url.split("/").slice(0, -1)),
-                        "worker-web.mjs"
-                    ].join("/");
-                }
-            } else {
-                const url = entry || "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
-                const res = await fetch(url);
-                let blob: Blob;
-
-                if (res.headers.get("content-type")?.includes("/javascript")) {
-                    blob = await res.blob();
-                } else {
-                    const buf = await res.arrayBuffer();
-                    blob = new Blob([new Uint8Array(buf)], {
-                        type: "application/javascript",
-                    });
-                }
-
-                entry = URL.createObjectURL(blob);
-            }
-        }
-
-        const worker = new Worker(entry, { type: "module" });
-        const workerId = workerIdCounter.next().value as number;
-
-        return {
-            worker,
-            workerId,
-            kind: "web_worker",
-        };
-    }
-}
-
 /**
- * Runs the given `script` in a worker thread or child process for CPU-intensive or abortable tasks.
+ * Runs the given `script` in a worker thread or child process.
  * 
  * In Node.js and Bun, the `script` can be either a CommonJS module or an ES module, and is relative
  * to the current working directory if not absolute.
@@ -218,6 +27,9 @@ export async function createWorker(options: {
  * (or working directory for Deno) if not absolute.
  * 
  * In Bun and Deno, the `script` can also be a TypeScript file.
+ * 
+ * NOTE: This function also uses `parallel.maxWorkers` and `parallel.workerEntry` for worker
+ * configuration.
  * 
  * @example
  * ```ts
@@ -334,7 +146,7 @@ async function run<R, A extends any[] = any[]>(
 
     let modId = sanitizeModuleId(script);
     const msg = createFFIRequest(modId, options?.fn || "default", args ?? []);
-    const entry = options?.workerEntry || run.workerEntry;
+    const entry = options?.workerEntry || parallel.workerEntry;
     let error: unknown = null;
     let result: { value: any; } | undefined;
     let resolver: {
@@ -447,7 +259,7 @@ async function run<R, A extends any[] = any[]>(
                 worker = poolRecord.worker as ChildProcess;
                 workerId = poolRecord.workerId;
                 poolRecord.busy = true;
-            } else if (workerPool.length < run.maxWorkers) {
+            } else if (workerPool.length < parallel.maxWorkers) {
                 const res = await createWorker({ entry, adapter: "child_process" });
                 worker = res.worker as ChildProcess;
                 workerId = res.workerId;
@@ -507,7 +319,7 @@ async function run<R, A extends any[] = any[]>(
                 worker = poolRecord.worker as NodeWorker;
                 workerId = poolRecord.workerId;
                 poolRecord.busy = true;
-            } else if (workerPool.length < run.maxWorkers) {
+            } else if (workerPool.length < parallel.maxWorkers) {
                 const res = await createWorker({ entry, adapter: "worker_threads" });
                 worker = res.worker as NodeWorker;
                 workerId = res.workerId;
@@ -559,7 +371,7 @@ async function run<R, A extends any[] = any[]>(
             worker = poolRecord.worker as Worker;
             workerId = poolRecord.workerId;
             poolRecord.busy = true;
-        } else if (workerPool.length < run.maxWorkers) {
+        } else if (workerPool.length < parallel.maxWorkers) {
             const res = await createWorker({ entry });
             worker = res.worker as Worker;
             workerId = res.workerId;
@@ -637,24 +449,30 @@ async function run<R, A extends any[] = any[]>(
     };
 }
 
-namespace run {
-    /**
-     * The maximum number of workers allowed to exist at the same time.
-     */
-    export var maxWorkers = 16;
-
-    /**
-     * In browser, by default, the program loads the worker entry directly from GitHub,
-     * which could be slow due to poor internet connection, we can copy the entry file
-     * `bundle/worker-web.mjs` to a local path of our website and set this option to that path
-     * so that it can be loaded locally.
-     * 
-     * Or, if the code is bundled, the program won't be able to automatically locate the entry
-     * file in the file system, in such case, we can also copy the entry file
-     * (`bundle/worker.mjs` for Node.js and Bun, `bundle/worker-web.mjs` for browser and Deno)
-     * to a local directory and supply this option instead.
-     */
-    export var workerEntry: string | undefined;
+declare namespace run {
+    /** @deprecated set `parallel.maxWorkers` instead */
+    var maxWorkers: number;
+    /** @deprecated set `parallel.workerEntry` instead */
+    var workerEntry: string;
 }
+// backward compatibility
+Object.defineProperties(run, {
+    maxWorkers: {
+        set(v) {
+            parallel.maxWorkers = v;
+        },
+        get() {
+            return parallel.maxWorkers;
+        },
+    },
+    workerEntry: {
+        set(v) {
+            parallel.workerEntry = v;
+        },
+        get() {
+            return parallel.workerEntry;
+        },
+    },
+});
 
 export default run;

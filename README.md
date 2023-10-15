@@ -595,6 +595,64 @@ const chunks = await readAll(file);
 
 ---
 
+### jsext.parallel
+
+```ts
+function parallel<M extends { [x: string]: any; }>(mod: () => Promise<M>): ThreadedFunctions<M>;
+
+namespace parallel {
+    /**
+     * The maximum number of workers allowed to exist at the same time.
+     */
+    export var maxWorkers = 16;
+
+    /**
+     * In browser, by default, the program loads the worker entry directly from GitHub,
+     * which could be slow due to poor internet connection, we can copy the entry file
+     * `bundle/worker-web.mjs` to a local path of our website and set this option to that path
+     * so that it can be loaded locally.
+     * 
+     * Or, if the code is bundled, the program won't be able to automatically locate the entry
+     * file in the file system, in such case, we can also copy the entry file
+     * (`bundle/worker.mjs` for Node.js and Bun, `bundle/worker-web.mjs` for browser and Deno)
+     * to a local directory and supply this option instead.
+     */
+    export var workerEntry: string | undefined;
+}
+```
+
+Wraps a module and run its functions in worker threads.
+
+In Node.js and Bun, the `module` can be either a CommonJS module or an ES module,
+**node_modules** and built-in modules are also supported.
+
+In browser and Deno, the `module` can only be an ES module, and is relative to the current URL
+(or working directory for Deno) if not absolute.
+
+In Bun and Deno, the `module` can also be a TypeScript file.
+
+**Example (async function)**
+
+```ts
+const mod = parallel(() => import("./job-example.mjs"));
+console.log(await mod.greet("World")); // Hi, World
+```
+
+**Example (async generator function)**
+
+```ts
+const mod = parallel(() => import("./job-example.mjs"));
+
+for await (const word of mod.sequence(["foo", "bar"])) {
+    console.log(word);
+}
+// output:
+// foo
+// bar
+```
+
+---
+
 ### jsext.run
 
 ```ts
@@ -624,7 +682,9 @@ function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
     result(): Promise<R>;
     /** Iterates the yield value if the function returns a generator. */
     iterate(): AsyncIterable<R>;
-} & Abortable>;
+    /** Terminates the worker thread and aborts the task. */
+    abort(reason?: unknown): Promise<void>;
+}>;
 function run<M extends { [x: string]: any; }, A extends Parameters<M[Fn]>, Fn extends keyof M = "default">(
     script: () => Promise<M>,
     args?: A,
@@ -638,30 +698,11 @@ function run<M extends { [x: string]: any; }, A extends Parameters<M[Fn]>, Fn ex
     workerId: number;
     result(): Promise<ReturnType<M[Fn]> extends AsyncGenerator<any, infer R, any> ? R : Awaited<ReturnType<M[Fn]>>>;
     iterate(): AsyncIterable<ReturnType<M[Fn]> extends AsyncGenerator<infer Y, any, any> ? Y : Awaited<ReturnType<M[Fn]>>>;
-} & Abortable>;
-
-namespace run {
-    /**
-     * The maximum number of workers allowed to exist at the same time.
-     */
-    export var maxWorkers = 16;
-
-    /**
-     * In browser, by default, the program loads the worker entry directly from GitHub,
-     * which could be slow due to poor internet connection, we can copy the entry file
-     * `bundle/worker-web.mjs` to a local path of our website and set this option to that path
-     * so that it can be loaded locally.
-     * 
-     * Or, if the code is bundled, the program won't be able to automatically locate the entry
-     * file in the file system, in such case, we can also copy the entry file
-     * (`bundle/worker.mjs` for Node.js and Bun, `bundle/worker-web.mjs` for browser and Deno)
-     * to a local directory and supply this option instead.
-     */
-    export var workerEntry: string | undefined;
-}
+    abort(reason?: unknown): Promise<void>;
+}>;
 ```
 
-Runs the given `script` in a worker thread or child process for CPU-intensive or abortable tasks.
+Runs the given `script` in a worker thread or child process.
 
 In Node.js and Bun, the `script` can be either a CommonJS module or an ES module, and is relative to
 the current working directory if not absolute.
@@ -670,6 +711,9 @@ In browser and Deno, the `script` can only be an ES module, and is relative to t
 (or working directory for Deno) if not absolute.
 
 In Bun and Deno, the `script` can also be a TypeScript file.
+
+NOTE: This function also uses `parallel.maxWorkers` and `parallel.workerEntry` for worker
+configuration.
 
 **Example (result)**
 
@@ -709,38 +753,6 @@ console.assert(res === undefined);
 ```ts
 const job4 = await run(() => import("./job-example.mjs"), ["World"]);
 console.log(await job4.result()); // Hello, World
-```
-
----
-
-### jsext.parallel
-
-```ts
-function parallel<M extends { [x: string]: any; }>(mod: () => Promise<M>): ThreadedFunctions<M>;
-```
-
-Links a module whose functions are run in worker threads.
-
-NOTE: This function also uses `run.maxWorkers` and `run.workerEntry` for worker configuration.
-
-**Example (async function)**
-
-```ts
-const mod = parallel(() => import("./job-example.mjs"));
-console.log(await mod.greet("World")); // Hi, World
-```
-
-**Example (async generator function)**
-
-```ts
-const mod = parallel(() => import("./job-example.mjs"));
-
-for await (const word of mod.sequence(["foo", "bar"])) {
-    console.log(word);
-}
-// output:
-// foo
-// bar
 ```
 
 ---
