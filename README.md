@@ -44,8 +44,8 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 - [jsext.queue](#jsextqueue)
 - [jsext.read](#jsextread)
 - [jsext.readAll](#jsextreadall)
-- [jsext.run](#jsextrun)
 - [jsext.parallel](#jsextparallel)
+- [jsext.run](#jsextrun)
 - [jsext.example](#jsextexample)
 - [jsext.deprecate](#jsextdeprecate)
 
