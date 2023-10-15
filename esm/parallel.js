@@ -1,7 +1,7 @@
 import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
-import { sequence } from './number/index.js';
 import run, { sanitizeModuleId, createFFIRequest, createWorker, isFFIResponse } from './run.js';
 import chan from './chan.js';
+import { sequence } from './number/index.js';
 import { fromObject } from './error/index.js';
 
 var _a;
@@ -190,19 +190,19 @@ function createCall(script, fn, args) {
     });
 }
 /**
- * Dynamically links a module whose functions are run in worker threads.
+ * Links a module whose functions are run in worker threads.
  *
  * NOTE: This function also uses `run.maxWorkers` and `run.workerEntry` for worker configuration.
  *
  * @example
  * ```ts
- * const mod = link(() => import("./job-example.mjs"));
+ * const mod = parallel(() => import("./job-example.mjs"));
  * console.log(await mod.greet("World")); // Hi, World
  * ```
  *
  * @example
  * ```ts
- * const mod = link(() => import("./job-example.mjs"));
+ * const mod = parallel(() => import("./job-example.mjs"));
  *
  * for await (const word of mod.sequence(["foo", "bar"])) {
  *     console.log(word);
@@ -212,7 +212,7 @@ function createCall(script, fn, args) {
  * // bar
  * ```
  */
-function link(mod) {
+function parallel(mod) {
     return new Proxy(Object.create(null), {
         get: (_, prop) => {
             const obj = {
@@ -225,8 +225,6 @@ function link(mod) {
         }
     });
 }
-link.workerPool = workerPool;
-link.tasks = tasks;
 
-export { link as default };
-//# sourceMappingURL=link.js.map
+export { parallel as default };
+//# sourceMappingURL=parallel.js.map

@@ -1,14 +1,29 @@
 import type { Worker as NodeWorker } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
+import { fromObject } from "./error/index.ts";
 import { sequence } from "./number/index.ts";
 import { trim } from "./string/index.ts";
 import chan, { Channel } from "./chan.ts";
 import deprecate from "./deprecate.ts";
 
-export interface Abortable {
-    abort(reason?: unknown): Promise<void>;
-}
+export type FFIRequest = {
+    type: "ffi" | "next" | "return" | "throw";
+    script: string;
+    baseUrl: string;
+    fn: string;
+    args: any[];
+    taskId?: number | undefined;
+};
 
+export type FFIResponse = {
+    type: "return" | "yield" | "error" | "gen";
+    taskId?: number | undefined;
+    value?: any;
+    error?: Object;
+    done?: boolean | undefined;
+};
+
+const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
 const isNode = typeof process === "object" && !!process.versions?.node;
 declare var Deno: any;
 declare var Bun: any;
@@ -24,6 +39,174 @@ let workerPool: {
 // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
 // pop a consumer and run the callback, which will retry gaining the worker and retry the task.
 const workerConsumerQueue: (() => void)[] = [];
+
+export function sanitizeModuleId(id: string | (() => Promise<any>), strict = false): string {
+    let _id = "";
+
+    if (typeof id === "function") {
+        let str = id.toString();
+        let start = str.lastIndexOf("(");
+
+        if (start === -1) {
+            throw new TypeError("the given script is not a dynamic import expression");
+        } else {
+            start += 1;
+            const end = str.indexOf(")", start);
+            _id = trim(str.slice(start, end), ` '"\'`);
+        }
+    } else {
+        _id = id;
+    }
+
+    if (isNode &&
+        !/\.[cm]?(js|ts|)x?$/.test(_id) &&              // omit suffix
+        IsPath.test(_id) // relative or absolute path
+    ) {
+        if (typeof Bun === "object") {
+            _id += ".ts";
+        } else {
+            _id += ".js";
+        }
+    }
+
+    if (!IsPath.test(_id) && !strict) {
+        _id = "./" + _id;
+    }
+
+    return _id;
+}
+
+export function createFFIRequest(
+    script: string,
+    fn: string,
+    args: any[],
+    taskId: number | undefined = undefined,
+    type: "ffi" | "next" | "return" | "throw" = "ffi"
+): FFIRequest {
+    const msg: FFIRequest = { type, baseUrl: "", script, fn, args, taskId };
+
+    if (typeof Deno === "object") {
+        msg.baseUrl = "file://" + Deno.cwd() + "/";
+    } else if (isNode) {
+        if (IsPath.test(script)) {
+            msg.baseUrl = process.cwd();
+        }
+    } else if (typeof location === "object") {
+        msg.baseUrl = location.href;
+    }
+
+    return msg;
+}
+
+export function isFFIResponse(msg: any): msg is FFIResponse {
+    return msg && typeof msg === "object" && ["return", "yield", "error", "gen"].includes(msg.type);
+}
+
+export async function createWorker(options: {
+    entry?: string | undefined;
+    adapter?: "worker_threads" | "child_process";
+} = {}): Promise<{
+    worker: Worker;
+    workerId: number;
+    kind: "web_worker";
+} | {
+    worker: NodeWorker;
+    workerId: number;
+    kind: "node_worker";
+} | {
+    worker: ChildProcess;
+    workerId: number;
+    kind: "node_process";
+}> {
+    let { entry, adapter } = options;
+
+    if (isNode) {
+        if (!entry) {
+            const path = await import("path");
+            const { fileURLToPath } = await import("url");
+            const _filename = fileURLToPath(import.meta.url);
+            const _dirname = path.dirname(_filename);
+
+            if (_filename === process.argv[1]) {
+                // The code is bundled, try the worker entry in node_modules (if it exists).
+                entry = "./node_modules/@ayonli/jsext/bundle/worker.mjs";
+            } else if ([
+                path.join("jsext", "cjs"),
+                path.join("jsext", "esm"),
+                path.join("jsext", "bundle")
+            ].some(path => _dirname.endsWith(path))) { // compiled
+                entry = path.join(path.dirname(_dirname), "bundle", "worker.mjs");
+            } else {
+                entry = path.join(_dirname, "worker.mjs");
+            }
+        }
+
+        if (adapter === "child_process") {
+            const { fork } = await import("child_process");
+            const isPrior14 = parseInt(process.version.slice(1)) < 14;
+            const worker = fork(entry, {
+                stdio: "inherit",
+                serialization: isPrior14 ? "advanced" : "json",
+            });
+            const workerId = worker.pid as number;
+
+            return {
+                worker,
+                workerId,
+                kind: "node_process",
+            };
+        } else {
+            const { Worker } = await import("worker_threads");
+            const worker = new Worker(entry);
+            // `threadId` may not exist in Bun.
+            const workerId = worker.threadId ?? workerIdCounter.next().value as number;
+
+            return {
+                worker,
+                workerId,
+                kind: "node_worker",
+            };
+        }
+    } else {
+        if (!entry) {
+            if (typeof Deno === "object") {
+                if ((import.meta as any)["main"]) {
+                    // code is bundled, try the remote URL
+                    entry = "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
+                } else {
+                    entry = [
+                        ...(import.meta.url.split("/").slice(0, -1)),
+                        "worker-web.mjs"
+                    ].join("/");
+                }
+            } else {
+                const url = entry || "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
+                const res = await fetch(url);
+                let blob: Blob;
+
+                if (res.headers.get("content-type")?.includes("/javascript")) {
+                    blob = await res.blob();
+                } else {
+                    const buf = await res.arrayBuffer();
+                    blob = new Blob([new Uint8Array(buf)], {
+                        type: "application/javascript",
+                    });
+                }
+
+                entry = URL.createObjectURL(blob);
+            }
+        }
+
+        const worker = new Worker(entry, { type: "module" });
+        const workerId = workerIdCounter.next().value as number;
+
+        return {
+            worker,
+            workerId,
+            kind: "web_worker",
+        };
+    }
+}
 
 /**
  * Runs the given `script` in a worker thread or child process for CPU-intensive or abortable tasks.
@@ -100,7 +283,9 @@ async function run<R, A extends any[] = any[]>(
     result(): Promise<R>;
     /** Iterates the yield value if the function returns a generator. */
     iterate(): AsyncIterable<R>;
-} & Abortable>;
+    /** Terminates the worker thread and aborts the task. */
+    abort(reason?: unknown): Promise<void>;
+}>;
 /**
  * @param script A function containing a dynamic import expression, only used for TypeScript to
  *  infer types in the given module, the module is never imported into the current program.
@@ -124,7 +309,8 @@ async function run<M extends { [x: string]: any; }, A extends Parameters<M[Fn]>,
     workerId: number;
     result(): Promise<ReturnType<M[Fn]> extends AsyncGenerator<any, infer R, any> ? R : Awaited<ReturnType<M[Fn]>>>;
     iterate(): AsyncIterable<ReturnType<M[Fn]> extends AsyncGenerator<infer Y, any, any> ? Y : Awaited<ReturnType<M[Fn]>>>;
-} & Abortable>;
+    abort(reason?: unknown): Promise<void>;
+}>;
 async function run<R, A extends any[] = any[]>(
     script: string | (() => Promise<any>),
     args: A | undefined = undefined,
@@ -133,60 +319,23 @@ async function run<R, A extends any[] = any[]>(
         timeout?: number;
         keepAlive?: boolean;
         adapter?: "worker_threads" | "child_process";
+        /** @deprecated */
         workerEntry?: string;
     } | undefined = undefined
 ): Promise<{
     workerId: number;
     result(): Promise<R>;
     iterate(): AsyncIterable<R>;
-} & Abortable> {
-    let _script = "";
-
-    if (typeof script === "function") {
-        let str = script.toString();
-        let start = str.lastIndexOf("(");
-
-        if (start === -1) {
-            throw new TypeError("the given script is not a dynamic import expression");
-        } else {
-            start += 1;
-            const end = str.indexOf(")", start);
-            _script = trim(str.slice(start, end), ` '"\'`);
-        }
-    } else {
-        _script = script;
-    }
-
-    if (isNode && !/\.[cm]?(js|ts|)x?$/.test(_script)) {
-        if (typeof Bun === "object") {
-            _script += ".ts";
-        } else {
-            _script += ".js";
-        }
-    }
-
-    const msg = {
-        type: "ffi",
-        script: _script,
-        baseUrl: "",
-        fn: options?.fn || "default",
-        args: args ?? [],
-    };
-
-    if (typeof Deno === "object") {
-        msg.baseUrl = "file://" + Deno.cwd() + "/";
-    } else if (isNode) {
-        msg.baseUrl = "file://" + process.cwd() + "/";
-    } else if (typeof location === "object") {
-        msg.baseUrl = location.href;
-    }
-
+    abort(reason?: unknown): Promise<void>;
+}> {
     if (options?.workerEntry) {
         deprecate("options.workerEntry", run, "set `run.workerEntry` instead");
     }
 
-    let entry = options?.workerEntry || run.workerEntry;
-    let error: Error | null = null;
+    let modId = sanitizeModuleId(script);
+    const msg = createFFIRequest(modId, options?.fn || "default", args ?? []);
+    const entry = options?.workerEntry || run.workerEntry;
+    let error: unknown = null;
     let result: { value: any; } | undefined;
     let resolver: {
         resolve: (data: any) => void;
@@ -210,7 +359,7 @@ async function run<R, A extends any[] = any[]>(
     }, options.timeout) : null;
 
     const handleMessage = (msg: any) => {
-        if (msg && typeof msg === "object" && typeof msg.type === "string") {
+        if (isFFIResponse(msg)) {
             timeout && clearTimeout(timeout);
 
             if (msg.type === "error") {
@@ -240,25 +389,26 @@ async function run<R, A extends any[] = any[]>(
             } else if (msg.type === "yield") {
                 if (msg.done) {
                     // The final message of yield event is the return value.
-                    handleMessage({ type: "return", value: msg.value });
+                    handleMessage({ type: "return", value: msg.value } satisfies FFIResponse);
                 } else {
                     channel?.push(msg.value);
                 }
             }
         }
     };
-
-    const handleError = (err: Error | null) => {
+    const handleError = (err: unknown) => {
+        err = err instanceof Error
+            ? err
+            : (typeof err === "object" ? fromObject(err as Object) : err);
+        error = err;
         timeout && clearTimeout(timeout);
 
         if (resolver) {
             resolver.reject(err);
-        } else {
-            error = err;
         }
 
         if (channel) {
-            channel.close(err);
+            channel.close(err as Error);
         }
     };
     const handleExit = () => {
@@ -281,31 +431,11 @@ async function run<R, A extends any[] = any[]>(
         }
 
         if (channel) {
-            channel.close(error);
+            channel.close(error as Error);
         }
     };
 
     if (isNode) {
-        if (!entry) {
-            const path = await import("path");
-            const { fileURLToPath } = await import("url");
-            const _filename = fileURLToPath(import.meta.url);
-            const _dirname = path.dirname(_filename);
-
-            if (_filename === process.argv[1]) {
-                // The code is bundled, try the worker entry in node_modules (if it exists).
-                entry = "./node_modules/@ayonli/jsext/bundle/worker.mjs";
-            } else if ([
-                path.join("jsext", "cjs"),
-                path.join("jsext", "esm"),
-                path.join("jsext", "bundle")
-            ].some(path => _dirname.endsWith(path))) { // compiled
-                entry = path.join(path.dirname(_dirname), "bundle", "worker.mjs");
-            } else {
-                entry = path.join(_dirname, "worker.mjs");
-            }
-        }
-
         if (options?.adapter === "child_process") {
             let worker: ChildProcess;
             let ok = true;
@@ -318,13 +448,9 @@ async function run<R, A extends any[] = any[]>(
                 workerId = poolRecord.workerId;
                 poolRecord.busy = true;
             } else if (workerPool.length < run.maxWorkers) {
-                const { fork } = await import("child_process");
-                const isPrior14 = parseInt(process.version.slice(1)) < 14;
-                worker = fork(entry, {
-                    stdio: "inherit",
-                    serialization: isPrior14 ? "advanced" : "json",
-                });
-                workerId = worker.pid as number;
+                const res = await createWorker({ entry, adapter: "child_process" });
+                worker = res.worker as ChildProcess;
+                workerId = res.workerId;
                 ok = await new Promise<boolean>((resolve) => {
                     worker.once("exit", () => {
                         if (error) {
@@ -354,7 +480,7 @@ async function run<R, A extends any[] = any[]>(
                 // retry.
                 return new Promise<void>((resolve) => {
                     workerConsumerQueue.push(resolve);
-                }).then(() => run(_script, args, options));
+                }).then(() => run(modId, args, options));
             }
 
             release = () => {
@@ -382,10 +508,9 @@ async function run<R, A extends any[] = any[]>(
                 workerId = poolRecord.workerId;
                 poolRecord.busy = true;
             } else if (workerPool.length < run.maxWorkers) {
-                const { Worker } = await import("worker_threads");
-                worker = new Worker(entry);
-                // `threadId` may not exist in Bun.
-                workerId = worker.threadId ?? workerIdCounter.next().value as number;
+                const res = await createWorker({ entry, adapter: "worker_threads" });
+                worker = res.worker as NodeWorker;
+                workerId = res.workerId;
                 ok = await new Promise<boolean>((resolve) => {
                     worker.once("exit", () => {
                         if (error) {
@@ -407,7 +532,7 @@ async function run<R, A extends any[] = any[]>(
             } else {
                 return new Promise<void>((resolve) => {
                     workerConsumerQueue.push(resolve);
-                }).then(() => run(_script, args, options));
+                }).then(() => run(modId, args, options));
             }
 
             release = () => {
@@ -435,40 +560,9 @@ async function run<R, A extends any[] = any[]>(
             workerId = poolRecord.workerId;
             poolRecord.busy = true;
         } else if (workerPool.length < run.maxWorkers) {
-            let url: string;
-
-            if (typeof Deno === "object") {
-                // Deno can load the module regardless of MINE type.
-                if (entry) {
-                    url = entry;
-                } else if ((import.meta as any)["main"]) {
-                    // code is bundled, try the remote URL
-                    url = "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
-                } else {
-                    url = [
-                        ...(import.meta.url.split("/").slice(0, -1)),
-                        "worker-web.mjs"
-                    ].join("/");
-                }
-            } else {
-                const _url = entry || "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
-                const res = await fetch(_url);
-                let blob: Blob;
-
-                if (res.headers.get("content-type")?.includes("/javascript")) {
-                    blob = await res.blob();
-                } else {
-                    const buf = await res.arrayBuffer();
-                    blob = new Blob([new Uint8Array(buf)], {
-                        type: "application/javascript",
-                    });
-                }
-
-                url = URL.createObjectURL(blob);
-            }
-
-            worker = new Worker(url, { type: "module" });
-            workerId = workerIdCounter.next().value as number;
+            const res = await createWorker({ entry });
+            worker = res.worker as Worker;
+            workerId = res.workerId;
             workerPool.push(poolRecord = {
                 workerId,
                 worker,
@@ -478,7 +572,7 @@ async function run<R, A extends any[] = any[]>(
         } else {
             return new Promise<void>((resolve) => {
                 workerConsumerQueue.push(resolve);
-            }).then(() => run(_script, args, options));
+            }).then(() => run(modId, args, options));
         }
 
         release = () => {

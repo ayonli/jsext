@@ -7,7 +7,7 @@ import chan, { Channel } from "./chan.ts";
 import queue, { Queue } from "./queue.ts";
 import read, { readAll } from "./read.ts";
 import run from "./run.ts";
-import link from "./link.ts";
+import parallel from "./parallel.ts";
 import example from "./example.ts";
 import deprecate from "./deprecate.ts";
 
@@ -58,7 +58,7 @@ const jsext = {
     read,
     readAll,
     run,
-    link,
+    parallel,
     example,
     deprecate,
 };
@@ -76,7 +76,7 @@ export {
     read,
     readAll,
     run,
-    link,
+    parallel,
     example,
     deprecate,
 };

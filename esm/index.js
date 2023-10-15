@@ -9,7 +9,7 @@ import queue from './queue.js';
 export { Queue } from './queue.js';
 import read, { readAll } from './read.js';
 import run from './run.js';
-import link from './link.js';
+import parallel from './parallel.js';
 import example from './example.js';
 import deprecate from './deprecate.js';
 
@@ -30,10 +30,10 @@ const jsext = {
     read,
     readAll,
     run,
-    link,
+    parallel,
     example,
     deprecate,
 };
 
-export { AsyncFunction, AsyncGeneratorFunction, _try, chan, jsext as default, deprecate, example, func, isSubclassOf, link, mixins, queue, read, readAll, run, throttle, wrap };
+export { AsyncFunction, AsyncGeneratorFunction, _try, chan, jsext as default, deprecate, example, func, isSubclassOf, mixins, parallel, queue, read, readAll, run, throttle, wrap };
 //# sourceMappingURL=index.js.map

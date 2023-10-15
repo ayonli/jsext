@@ -41,19 +41,19 @@
             "import": "./esm/func.js",
             "default": "./func.ts"
         },
-        "./link": {
-            "types": "./types/link.d.ts",
-            "bun": "./link.ts",
-            "require": "./cjs/link.js",
-            "import": "./esm/link.js",
-            "default": "./link.ts"
-        },
         "./mixins": {
             "types": "./types/mixins.d.ts",
             "bun": "./mixins.ts",
             "require": "./cjs/mixins.js",
             "import": "./esm/mixins.js",
             "default": "./mixins.ts"
+        },
+        "./parallel": {
+            "types": "./types/parallel.d.ts",
+            "bun": "./parallel.ts",
+            "require": "./cjs/parallel.js",
+            "import": "./esm/parallel.js",
+            "default": "./parallel.ts"
         },
         "./queue": {
             "types": "./types/queue.d.ts",
@@ -334,7 +334,7 @@
         "@types/node": "^20.6.0",
         "@types/ws": "^8.5.5",
         "eventsource": "1.1",
-        "glob": "^10.3.4",
+        "glob": "^10.3.10",
         "isomorphic-ws": "^5.0.0",
         "mocha": "^10.2.0",
         "rollup": "^3.29.2",
