@@ -45,5 +45,12 @@ describe("jsext.parallel", () => {
             const files = await mod2.sync("*.ts");
             ok(files.length > 0);
         });
+
+        it("traditional CommonJS", async () => {
+            // @ts-ignore
+            const mod2 = jsext.parallel(() => import("string-hash"));
+            // @ts-ignore
+            ok((await mod2.default("Hello, World!")) > 0)
+        });
     }
 });

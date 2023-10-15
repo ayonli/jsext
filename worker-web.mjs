@@ -95,8 +95,8 @@ export async function handleMessage(msg, reply) {
             }
         }
 
-        if (typeof module.default === "object" && typeof module.default.default === "function") {
-            module = module.default; // CommonJS module
+        if (typeof module.default === "object" && typeof module.default.default !== "undefined") {
+            module = module.default; // CommonJS module with exports.default
         }
 
         const returns = await module[msg.fn](...msg.args);
