@@ -41,6 +41,13 @@
             "import": "./esm/func.js",
             "default": "./func.ts"
         },
+        "./link": {
+            "types": "./types/link.d.ts",
+            "bun": "./link.ts",
+            "require": "./cjs/link.js",
+            "import": "./esm/link.js",
+            "default": "./link.ts"
+        },
         "./mixins": {
             "types": "./types/mixins.d.ts",
             "bun": "./mixins.ts",

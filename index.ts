@@ -6,7 +6,8 @@ import mixins, { isSubclassOf } from "./mixins.ts";
 import chan, { Channel } from "./chan.ts";
 import queue, { Queue } from "./queue.ts";
 import read, { readAll } from "./read.ts";
-import run, { link } from "./run.ts";
+import run from "./run.ts";
+import link from "./link.ts";
 import example from "./example.ts";
 import deprecate from "./deprecate.ts";
 

@@ -85,29 +85,3 @@ describe("jsext.run", () => {
         strictEqual(await job3.result(), "Hello, World");
     });
 });
-
-describe("jsext.link", () => {
-    const mod = jsext.link(() => import("./job-example.mjs"), { timeout: 500 });
-
-    it("call", async () => {
-        strictEqual(await mod.greet("World"), "Hi, World");
-    });
-
-    it("timeout", async () => {
-        const [err, res] = await jsext.try(mod.takeTooLong("foobar"));
-        strictEqual(res, undefined);
-        deepStrictEqual(err, new Error("operation timeout after 500ms"));
-    });
-
-    it("iterate", async () => {
-        const iter = mod.sequence(["foo", "bar"]);
-        const words: string[] = [];
-
-        for await (const word of iter) {
-            words.push(word);
-        }
-
-        deepStrictEqual(words, ["foo", "bar"]);
-        strictEqual(await Promise.resolve(iter), "foo, bar");
-    });
-});

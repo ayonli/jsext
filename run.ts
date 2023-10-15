@@ -4,10 +4,10 @@ import { sequence } from "./number/index.ts";
 import { trim } from "./string/index.ts";
 import chan, { Channel } from "./chan.ts";
 import deprecate from "./deprecate.ts";
-import {
-    ThenableAsyncGenerator,
-    ThenableAsyncGeneratorLike
-} from "./external/thenable-generator/index.ts";
+
+export interface Abortable {
+    abort(reason?: unknown): Promise<void>;
+}
 
 const isNode = typeof process === "object" && !!process.versions?.node;
 declare var Deno: any;
@@ -96,13 +96,11 @@ async function run<R, A extends any[] = any[]>(
     }
 ): Promise<{
     workerId: number;
-    /** Terminates the worker and abort the task. */
-    abort(reason?: unknown): Promise<void>;
     /** Retrieves the return value of the function that has been called. */
     result(): Promise<R>;
     /** Iterates the yield value if the function returns a generator. */
     iterate(): AsyncIterable<R>;
-}>;
+} & Abortable>;
 /**
  * @param script A function containing a dynamic import expression, only used for TypeScript to
  *  infer types in the given module, the module is never imported into the current program.
@@ -124,10 +122,9 @@ async function run<M extends { [x: string]: any; }, A extends Parameters<M[Fn]>,
     }
 ): Promise<{
     workerId: number;
-    abort(reason?: unknown): Promise<void>;
     result(): Promise<ReturnType<M[Fn]> extends AsyncGenerator<any, infer R, any> ? R : Awaited<ReturnType<M[Fn]>>>;
     iterate(): AsyncIterable<ReturnType<M[Fn]> extends AsyncGenerator<infer Y, any, any> ? Y : Awaited<ReturnType<M[Fn]>>>;
-}>;
+} & Abortable>;
 async function run<R, A extends any[] = any[]>(
     script: string | (() => Promise<any>),
     args: A | undefined = undefined,
@@ -140,13 +137,9 @@ async function run<R, A extends any[] = any[]>(
     } | undefined = undefined
 ): Promise<{
     workerId: number;
-    /** Terminates the worker and abort the task. */
-    abort(reason?: unknown): Promise<void>;
-    /** Retrieves the return value of the function that has been called. */
     result(): Promise<R>;
-    /** Iterates the yield value if the function returns a generator. */
     iterate(): AsyncIterable<R>;
-}> {
+} & Abortable> {
     let _script = "";
 
     if (typeof script === "function") {
@@ -571,104 +564,3 @@ namespace run {
 }
 
 export default run;
-
-/**
- * Creates a remote module wrapper whose functions are run in another thread.
- * 
- * This function uses `run()` under the hood, and the remote function must be async.
- * 
- * @example
- * ```ts
- * const mod = link(() => import("./job-example.mjs"));
- * console.log(await mod.greet("World")); // Hi, World
- * ```
- * 
- * @example
- * ```ts
- * const mod = link(() => import("./job-example.mjs"));
- * 
- * for await (const word of mod.sequence(["foo", "bar"])) {
- *     console.log(word);
- * }
- * // output:
- * // foo
- * // bar
- * ```
- */
-export function link<M extends { [x: string]: any; }>(mod: () => Promise<M>, options: {
-    /** Automatically abort the task when timeout (in milliseconds). */
-    timeout?: number;
-    /**
-     * Instead of dropping the worker after the task has completed, keep it alive so that it can
-     * be reused by other tasks.
-     * 
-     * Be aware, keep-alive with `child_process` adapter will prevent the main process to exit in
-     * Node.js.
-     * 
-     * Unlink `run()`, this option is enabled by default in `link()`, set its value to `false` if
-     * we want to disable it.
-     */
-    keepAlive?: boolean;
-    /**
-     * Choose whether to use `worker_threads` or `child_process` for running the script.
-     * The default setting is `worker_threads`.
-     * 
-     * In browser or Deno, this option is ignored and will always use the web worker.
-     */
-    adapter?: "worker_threads" | "child_process";
-} = {}): AsyncFunctionProperties<M> {
-    return new Proxy(Object.create(null), {
-        get: (_, prop: string) => {
-            const obj = {
-                // This syntax will give our remote function a name.
-                [prop]: (...args: Parameters<M["_"]>) => {
-                    let job: Awaited<ReturnType<typeof run>>;
-                    let iter: AsyncIterator<unknown>;
-
-                    return new ThenableAsyncGenerator({
-                        async next() {
-                            job ??= await run(mod, args, {
-                                ...options,
-                                fn: prop as "_",
-                                keepAlive: options.keepAlive ?? true,
-                            });
-
-                            iter ??= job.iterate()[Symbol.asyncIterator]();
-                            let { done = false, value } = await iter.next();
-
-                            if (done) {
-                                // HACK: this will set the internal result of ThenableAsyncGenerator
-                                // to the result of the job.
-                                value = await job.result();
-                            }
-
-                            return Promise.resolve({ done, value });
-                        },
-                        async throw(err: unknown) {
-                            await job?.abort(err);
-                            throw err;
-                        },
-                        async return(value) {
-                            await job?.abort();
-                            return { value, done: true };
-                        },
-                        async then(onfulfilled, onrejected) {
-                            job ??= await run(mod, args, {
-                                ...options,
-                                fn: prop as "_",
-                            });
-                            return job.result().then(onfulfilled, onrejected);
-                        },
-                    } satisfies ThenableAsyncGeneratorLike);
-                }
-            };
-
-            return obj[prop];
-        }
-    }) as any;
-}
-
-export type AsyncFunctionProperties<T> = Readonly<Pick<T, AsyncFunctionPropertyNames<T>>>;
-export type AsyncFunctionPropertyNames<T> = {
-    [K in keyof T]: T[K] extends (...args: any[]) => (Promise<any> | AsyncGenerator) ? K : never;
-}[keyof T];

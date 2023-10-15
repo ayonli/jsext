@@ -8,7 +8,8 @@ export { Channel } from './chan.js';
 import queue from './queue.js';
 export { Queue } from './queue.js';
 import read, { readAll } from './read.js';
-import run, { link } from './run.js';
+import run from './run.js';
+import link from './link.js';
 import example from './example.js';
 import deprecate from './deprecate.js';
 

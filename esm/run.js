@@ -2,7 +2,6 @@ import { sequence } from './number/index.js';
 import { trim } from './string/index.js';
 import chan from './chan.js';
 import deprecate from './deprecate.js';
-import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
 
 var _a;
 const isNode = typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
@@ -410,76 +409,6 @@ async function run(script, args = undefined, options = undefined) {
     run.maxWorkers = 16;
 })(run || (run = {}));
 var run$1 = run;
-/**
- * Creates a remote module wrapper whose functions are run in another thread.
- *
- * This function uses `run()` under the hood, and the remote function must be async.
- *
- * @example
- * ```ts
- * const mod = link(() => import("./job-example.mjs"));
- * console.log(await mod.greet("World")); // Hi, World
- * ```
- *
- * @example
- * ```ts
- * const mod = link(() => import("./job-example.mjs"));
- *
- * for await (const word of mod.sequence(["foo", "bar"])) {
- *     console.log(word);
- * }
- * // output:
- * // foo
- * // bar
- * ```
- */
-function link(mod, options = {}) {
-    return new Proxy(Object.create(null), {
-        get: (_, prop) => {
-            const obj = {
-                // This syntax will give our remote function a name.
-                [prop]: (...args) => {
-                    let job;
-                    let iter;
-                    return new ThenableAsyncGenerator({
-                        async next() {
-                            var _a;
-                            job !== null && job !== void 0 ? job : (job = await run(mod, args, {
-                                ...options,
-                                fn: prop,
-                                keepAlive: (_a = options.keepAlive) !== null && _a !== void 0 ? _a : true,
-                            }));
-                            iter !== null && iter !== void 0 ? iter : (iter = job.iterate()[Symbol.asyncIterator]());
-                            let { done = false, value } = await iter.next();
-                            if (done) {
-                                // HACK: this will set the internal result of ThenableAsyncGenerator
-                                // to the result of the job.
-                                value = await job.result();
-                            }
-                            return Promise.resolve({ done, value });
-                        },
-                        async throw(err) {
-                            await (job === null || job === void 0 ? void 0 : job.abort(err));
-                            throw err;
-                        },
-                        async return(value) {
-                            await (job === null || job === void 0 ? void 0 : job.abort());
-                            return { value, done: true };
-                        },
-                        async then(onfulfilled, onrejected) {
-                            job !== null && job !== void 0 ? job : (job = await run(mod, args, {
-                                ...options,
-                                fn: prop,
-                            }));
-                            return job.result().then(onfulfilled, onrejected);
-                        },
-                    });
-                }
-            };
-            return obj[prop];
-        }
-    });
-}
 
-export { run$1 as default, link };
+export { run$1 as default };
 //# sourceMappingURL=run.js.map
