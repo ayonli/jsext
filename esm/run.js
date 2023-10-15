@@ -156,12 +156,14 @@ async function run(script, args = undefined, options = undefined) {
                 }).then(() => run(modId, args, options));
             }
             release = () => {
+                worker.unref(); // allow the main thread to exit if the event loop is empty
                 // Remove the event listener so that later calls will not mess up.
                 worker.off("message", handleMessage);
                 poolRecord && (poolRecord.busy = false);
             };
             terminate = () => Promise.resolve(void worker.kill(1));
             if (ok) {
+                worker.ref(); // prevent premature exit in the main thread
                 worker.send(msg);
                 worker.on("message", handleMessage);
                 worker.once("error", handleError);
@@ -208,11 +210,13 @@ async function run(script, args = undefined, options = undefined) {
                 }).then(() => run(modId, args, options));
             }
             release = () => {
+                worker.unref();
                 worker.off("message", handleMessage);
                 poolRecord && (poolRecord.busy = false);
             };
             terminate = async () => void (await worker.terminate());
             if (ok) {
+                worker.ref();
                 worker.postMessage(msg);
                 worker.on("message", handleMessage);
                 worker.once("error", handleError);

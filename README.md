@@ -664,9 +664,6 @@ function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
     /**
      * Instead of dropping the worker after the task has completed, keep it alive so that it can
      * be reused by other tasks.
-     * 
-     * Be aware, keep-alive with `child_process` adapter will prevent the main process to exit in
-     * Node.js.
      */
     keepAlive?: boolean;
     /**

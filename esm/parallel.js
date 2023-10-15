@@ -195,6 +195,12 @@ async function acquireWorker(taskId) {
                     }
                     if (poolRecord) {
                         poolRecord.tasks.delete(msg.taskId);
+                        if (!poolRecord.tasks.size) {
+                            if (isNode) {
+                                // Allow the main thread to exit if the event loop is empty.
+                                worker.unref();
+                            }
+                        }
                         { // GC: clean long-time unused workers
                             const now = Date.now();
                             const idealItems = [];
@@ -246,6 +252,10 @@ async function acquireWorker(taskId) {
         worker = poolRecord.worker;
     }
     poolRecord.tasks.add(taskId);
+    if (isNode) {
+        // Prevent premature exit in the main thread.
+        worker.ref();
+    }
     return worker;
 }
 function createCall(script, fn, args) {

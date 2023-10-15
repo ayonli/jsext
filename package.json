@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.6.5",
+    "version": "0.6.6",
     "description": "Additional functions for JavaScript programming in practice.",
     "main": "./cjs/index.js",
     "module": "./esm/index.js",
@@ -262,8 +262,8 @@
     "scripts": {
         "pretest": "node pretest.cjs",
         "posttest": "node posttest.cjs",
-        "test": "node --no-warnings=ExperimentalWarning --loader=ts-node/esm ./node_modules/mocha/bin/mocha --exit",
-        "test:bun": "bun run ./node_modules/mocha/bin/mocha --exit",
+        "test": "node --no-warnings=ExperimentalWarning --loader=ts-node/esm ./node_modules/mocha/bin/mocha",
+        "test:bun": "bun run ./node_modules/mocha/bin/mocha",
         "test:deno": "deno run --allow-read --allow-net test-deno.ts",
         "build": "rollup -c rollup.config.mjs && echo '{\"type\":\"module\"}' > ./esm/package.json && echo '{\"type\":\"commonjs\"}' > ./cjs/package.json",
         "prepublishOnly": "npm run build && tsc -p types.tsconfig.json",
