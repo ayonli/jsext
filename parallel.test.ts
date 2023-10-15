@@ -30,6 +30,12 @@ describe("jsext.parallel", () => {
             const mod2 = jsext.parallel(() => import("path"));
             const dir = await mod2.dirname("/usr/bin/curl");
             strictEqual(dir, "/usr/bin");
+
+            if (parseInt(process.version.slice(1)) >= 16) {
+                const mod3 = jsext.parallel(() => import("node:path"));
+                const dir = await mod3.dirname("/usr/bin/curl");
+                strictEqual(dir, "/usr/bin");
+            }
         });
 
         it("3-party module", async () => {
