@@ -5,7 +5,7 @@ export { Exception };
 
 /** Transform the error to a plain object. */
 export function toObject<T extends Error>(err: T): { [x: string | symbol]: any; } {
-    return omit(err, []);
+    return omit(err, ["toString", "toJSON"]);
 }
 
 /** Reverse a plain object to a specific error type according to the `name` property. */

@@ -3,7 +3,7 @@ import Exception from './Exception.js';
 
 /** Transform the error to a plain object. */
 function toObject(err) {
-    return omit(err, []);
+    return omit(err, ["toString", "toJSON"]);
 }
 function fromObject(obj) {
     var _a;
