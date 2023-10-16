@@ -23,6 +23,10 @@ const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
 declare var Deno: any;
 declare var Bun: any;
 
+const isMainThread = isNode
+    ? (!process.argv.includes("--worker-thread") && !process.env["__WORKER_THREAD"])
+    // @ts-ignore
+    : typeof WorkerGlobalScope === "undefined";
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 type RemoteTask = {
@@ -607,7 +611,7 @@ function parallel<M extends { [x: string]: any; }>(
             const obj = {
                 // This syntax will give our remote function a name.
                 [prop]: (...args: Parameters<M["_"]>) => {
-                    if (parallel.isMainThread) {
+                    if (isMainThread) {
                         return createRemoteCall(modId, prop, args, baseUrl);
                     } else {
                         return createLocalCall(modId, prop, args, baseUrl);
@@ -638,14 +642,6 @@ namespace parallel {
      * to a local directory and supply this option instead.
      */
     export var workerEntry: string | undefined;
-
-    /**
-     * Whether the current thread is the main thread.
-     */
-    export const isMainThread = isNode
-        ? (!process.argv.includes("--worker-thread") && !process.env["__WORKER_THREAD"])
-        // @ts-ignore
-        : typeof WorkerGlobalScope === "undefined";
 }
 
 export default parallel;

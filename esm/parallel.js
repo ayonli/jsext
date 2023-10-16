@@ -6,6 +6,10 @@ import { toObject, fromObject } from './error/index.js';
 import { isNode, resolveModule } from './util.js';
 
 const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
+const isMainThread = isNode
+    ? (!process.argv.includes("--worker-thread") && !process.env["__WORKER_THREAD"])
+    // @ts-ignore
+    : typeof WorkerGlobalScope === "undefined";
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const tasks = new Map;
@@ -501,7 +505,7 @@ function parallel(module) {
             const obj = {
                 // This syntax will give our remote function a name.
                 [prop]: (...args) => {
-                    if (parallel.isMainThread) {
+                    if (isMainThread) {
                         return createRemoteCall(modId, prop, args, baseUrl);
                     }
                     else {
@@ -518,13 +522,6 @@ function parallel(module) {
      * The maximum number of workers allowed to exist at the same time.
      */
     parallel.maxWorkers = 16;
-    /**
-     * Whether the current thread is the main thread.
-     */
-    parallel.isMainThread = isNode
-        ? (!process.argv.includes("--worker-thread") && !process.env["__WORKER_THREAD"])
-        // @ts-ignore
-        : typeof WorkerGlobalScope === "undefined";
 })(parallel || (parallel = {}));
 var parallel$1 = parallel;
 
