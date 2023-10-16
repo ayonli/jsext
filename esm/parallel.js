@@ -451,7 +451,6 @@ function parallel(module) {
             baseUrl = extractBaseUrl(trace.stack);
         }
     }
-    console.log(baseUrl);
     return new Proxy(Object.create(null), {
         get: (_, prop) => {
             const obj = {
