@@ -113,6 +113,9 @@ class Channel {
      * `for await...of...` loop, closing the channel will allow the loop to break automatically.
      */
     close(err = null) {
+        if (this.state !== 1) {
+            return;
+        }
         this.state = 2;
         this.error = err;
         let consume;

@@ -116,6 +116,10 @@ export class Channel<T> implements AsyncIterable<T> {
      * `for await...of...` loop, closing the channel will allow the loop to break automatically.
      */
     close(err: Error | null = null) {
+        if (this.state !== 1) {
+            return;
+        }
+
         this.state = 2;
         this.error = err;
         let consume: ((err: Error | null, data?: T) => void) | undefined;

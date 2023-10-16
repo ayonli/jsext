@@ -120,8 +120,8 @@ async function run<M extends { [x: string]: any; }, A extends Parameters<M[Fn]>,
     }
 ): Promise<{
     workerId: number;
-    result(): Promise<ReturnType<M[Fn]> extends AsyncGenerator<any, infer R, any> ? R : Awaited<ReturnType<M[Fn]>>>;
-    iterate(): AsyncIterable<ReturnType<M[Fn]> extends AsyncGenerator<infer Y, any, any> ? Y : Awaited<ReturnType<M[Fn]>>>;
+    result(): Promise<ReturnType<M[Fn]> extends (AsyncGenerator<any, infer R, any> | Generator<any, infer R, any>) ? R : Awaited<ReturnType<M[Fn]>>>;
+    iterate(): AsyncIterable<ReturnType<M[Fn]> extends (AsyncGenerator<infer Y, any, any> | Generator<infer Y, any, any>) ? Y : Awaited<ReturnType<M[Fn]>>>;
     abort(reason?: unknown): Promise<void>;
 }>;
 async function run<R, A extends any[] = any[]>(
@@ -200,9 +200,7 @@ async function run<R, A extends any[] = any[]>(
                     result = { value: msg.value };
                 }
 
-                if (channel) {
-                    channel.close();
-                }
+                channel?.close();
             } else if (msg.type === "yield") {
                 if (msg.done) {
                     // The final message of yield event is the return value.
@@ -224,9 +222,7 @@ async function run<R, A extends any[] = any[]>(
             resolver.reject(err);
         }
 
-        if (channel) {
-            channel.close(err as Error);
-        }
+        channel?.close(err as Error);
     };
     const handleExit = () => {
         timeout && clearTimeout(timeout);
@@ -247,9 +243,7 @@ async function run<R, A extends any[] = any[]>(
             result = { value: void 0 };
         }
 
-        if (channel) {
-            channel.close(error as Error);
-        }
+        channel?.close(error as Error);
     };
 
     if (isNode) {

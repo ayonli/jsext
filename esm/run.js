@@ -62,9 +62,7 @@ async function run(script, args = undefined, options = undefined) {
                 else {
                     result = { value: msg.value };
                 }
-                if (channel) {
-                    channel.close();
-                }
+                channel === null || channel === void 0 ? void 0 : channel.close();
             }
             else if (msg.type === "yield") {
                 if (msg.done) {
@@ -86,9 +84,7 @@ async function run(script, args = undefined, options = undefined) {
         if (resolver) {
             resolver.reject(err);
         }
-        if (channel) {
-            channel.close(err);
-        }
+        channel === null || channel === void 0 ? void 0 : channel.close(err);
     };
     const handleExit = () => {
         var _a;
@@ -107,9 +103,7 @@ async function run(script, args = undefined, options = undefined) {
         else if (!error && !result) {
             result = { value: void 0 };
         }
-        if (channel) {
-            channel.close(error);
-        }
+        channel === null || channel === void 0 ? void 0 : channel.close(error);
     };
     if (isNode) {
         if ((options === null || options === void 0 ? void 0 : options.adapter) === "child_process") {
