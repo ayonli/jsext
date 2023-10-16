@@ -1,5 +1,5 @@
 import { isMainThread, parentPort } from "worker_threads";
-import { handleMessage, isFFIRequest } from "./worker-web.mjs";
+import { handleMessage, isFFIRequest } from "./worker-web.ts";
 
 if (!isMainThread && parentPort) {
     const reply = parentPort.postMessage.bind(parentPort);

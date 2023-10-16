@@ -1,15 +1,11 @@
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
-import { fromObject, toObject } from "./esm/error/index.js";
-import { isNode, resolveModule } from "./esm/util.js";
+import { fromObject, toObject } from "./error/index.ts";
+import { isNode, resolveModule } from "./util.ts";
+import type { FFIRequest, FFIResponse } from "./parallel.ts";
 
-/** @type {Map<number, AsyncGenerator | Generator>} */
-const pendingTasks = new Map();
+const pendingTasks = new Map<number, AsyncGenerator | Generator>();
 
-/**
- * @param {any} msg
- * @returns {msg is import("./parallel.ts").FFIRequest}
- */
-export function isFFIRequest(msg) {
+export function isFFIRequest(msg: any): msg is FFIRequest {
     return msg && typeof msg === "object" &&
         ["ffi", "next", "return", "throw"].includes(msg.type) &&
         typeof msg.script === "string" &&
@@ -17,11 +13,7 @@ export function isFFIRequest(msg) {
         Array.isArray(msg.args);
 }
 
-/**
- * @param {import("./parallel.ts").FFIRequest} msg 
- * @param {(reply: import("./parallel.ts").FFIResponse) => void} reply
- */
-export async function handleMessage(msg, reply) {
+export async function handleMessage(msg: FFIRequest, reply: (res: FFIResponse) => void) {
     try {
         if (msg.taskId) {
             const task = pendingTasks.get(msg.taskId);
@@ -34,21 +26,21 @@ export async function handleMessage(msg, reply) {
                             : fromObject(msg.args[0]);
                         await task.throw(err);
                     } catch (err) {
-                        reply({ type: "error", error: toObject(err), taskId: msg.taskId });
+                        reply({ type: "error", error: toObject(err as Error), taskId: msg.taskId });
                     }
                 } else if (msg.type === "return") {
                     try {
                         const res = await task.return(msg.args[0]);
                         reply({ type: "yield", ...res, taskId: msg.taskId });
                     } catch (err) {
-                        reply({ type: "error", error: toObject(err), taskId: msg.taskId });
+                        reply({ type: "error", error: toObject(err as Error), taskId: msg.taskId });
                     }
                 } else if (msg.type === "next") {
                     try {
                         const res = await task.next(msg.args[0]);
                         reply({ type: "yield", ...res, taskId: msg.taskId });
                     } catch (err) {
-                        reply({ type: "error", error: toObject(err), taskId: msg.taskId });
+                        reply({ type: "error", error: toObject(err as Error), taskId: msg.taskId });
                     }
                 }
 
@@ -73,7 +65,7 @@ export async function handleMessage(msg, reply) {
                             break;
                         }
                     } catch (err) {
-                        reply({ type: "error", error: toObject(err) });
+                        reply({ type: "error", error: toObject(err as Error) });
                         break;
                     }
                 }
@@ -82,7 +74,7 @@ export async function handleMessage(msg, reply) {
             reply({ type: "return", value: returns, taskId: msg.taskId });
         }
     } catch (err) {
-        reply({ type: "error", error: toObject(err), taskId: msg.taskId });
+        reply({ type: "error", error: toObject(err as Error), taskId: msg.taskId });
     }
 }
 

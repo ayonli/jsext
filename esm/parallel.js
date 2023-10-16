@@ -65,27 +65,34 @@ function isFFIResponse(msg) {
     return msg && typeof msg === "object" && ["return", "yield", "error", "gen"].includes(msg.type);
 }
 async function createWorker(options = {}) {
-    var _a, _b;
+    var _a;
     let { entry, adapter } = options;
     if (isNode) {
         if (!entry) {
             const path = await import('path');
             const { fileURLToPath } = await import('url');
             const _filename = fileURLToPath(import.meta.url);
-            const _dirname = path.dirname(_filename);
             if (_filename === process.argv[1]) {
-                // The code is bundled, try the worker entry in node_modules (if it exists).
+                // The code is bundled, try the worker entry in node_modules (hope it exists).
                 entry = "./node_modules/@ayonli/jsext/bundle/worker.mjs";
             }
-            else if ([
-                path.join("jsext", "cjs"),
-                path.join("jsext", "esm"),
-                path.join("jsext", "bundle")
-            ].some(path => _dirname.endsWith(path))) { // compiled
-                entry = path.join(path.dirname(_dirname), "bundle", "worker.mjs");
-            }
             else {
-                entry = path.join(_dirname, "worker.mjs");
+                let _dirname = path.dirname(_filename);
+                if ([
+                    path.join("jsext", "cjs"),
+                    path.join("jsext", "esm"),
+                    path.join("jsext", "bundle")
+                ].some(path => _dirname.endsWith(path))) {
+                    // The application imports the compiled version of this module,
+                    // redirect to the root directory of this package.
+                    _dirname = path.dirname(_dirname);
+                }
+                if (typeof Bun === "object") {
+                    entry = path.join(_dirname, "worker.ts");
+                }
+                else {
+                    entry = path.join(_dirname, "bundle", "worker.mjs");
+                }
             }
         }
         if (adapter === "child_process") {
@@ -118,38 +125,23 @@ async function createWorker(options = {}) {
         if (!entry) {
             if (typeof Deno === "object") {
                 if (import.meta["main"]) {
-                    // code is bundled, try the remote URL
+                    // The code is bundled, try the remote worker entry.
                     entry = "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
                 }
                 else {
                     entry = [
                         ...(import.meta.url.split("/").slice(0, -1)),
-                        "worker-web.mjs"
+                        "worker-web.ts"
                     ].join("/");
-                    // The code uses ESM version instead of TS version, redirect
-                    // to the root path.
-                    if (entry.endsWith("/jsext/esm/worker-web.mjs")) {
-                        entry = entry.slice(0, -25) + "/jsext/worker-web.mjs";
-                    }
-                    else if (entry.endsWith("\\jsext\\esm\\worker-web.mjs")) {
-                        entry = entry.slice(0, -25) + "\\jsext\\worker-web.mjs";
+                    // The application imports the compiled version of this module,
+                    // redirect to the source worker entry.
+                    if (entry.endsWith("/esm/worker-web.ts")) {
+                        entry = entry.slice(0, -18) + "/worker-web.ts";
                     }
                 }
             }
             else {
-                const url = entry || "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
-                const res = await fetch(url);
-                let blob;
-                if ((_b = res.headers.get("content-type")) === null || _b === void 0 ? void 0 : _b.includes("/javascript")) {
-                    blob = await res.blob();
-                }
-                else {
-                    const buf = await res.arrayBuffer();
-                    blob = new Blob([new Uint8Array(buf)], {
-                        type: "application/javascript",
-                    });
-                }
-                entry = URL.createObjectURL(blob);
+                entry = "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
             }
         }
         const worker = new Worker(entry, { type: "module" });

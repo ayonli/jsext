@@ -73,23 +73,25 @@ export default [
         ],
     },
     { // Worker for Node.js
-        input: "worker.mjs",
+        input: "worker.ts",
         output: {
             file: "bundle/worker.mjs",
             format: "esm",
         },
         plugins: [
+            typescript({ moduleResolution: "bundler" }),
             resolve({ preferBuiltins: true }),
             commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
         ],
     },
     { // Worker for web
-        input: "worker-web.mjs",
+        input: "worker-web.ts",
         output: {
             file: "bundle/worker-web.mjs",
             format: "esm",
         },
         plugins: [
+            typescript({ moduleResolution: "bundler" }),
             resolve({ preferBuiltins: true }),
             commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
         ],
