@@ -312,6 +312,7 @@
         "queue",
         "channel",
         "worker",
+        "parallel",
         "asyncIterator",
         "json",
         "BiMap",
