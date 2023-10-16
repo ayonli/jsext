@@ -65,7 +65,7 @@ function isFFIResponse(msg) {
     return msg && typeof msg === "object" && ["return", "yield", "error", "gen"].includes(msg.type);
 }
 async function createWorker(options = {}) {
-    var _a;
+    var _a, _b;
     let { entry, adapter } = options;
     if (isNode) {
         if (!entry) {
@@ -122,8 +122,8 @@ async function createWorker(options = {}) {
         }
     }
     else {
-        if (!entry) {
-            if (typeof Deno === "object") {
+        if (typeof Deno === "object") {
+            if (!entry) {
                 if (import.meta["main"]) {
                     // The code is bundled, try the remote worker entry.
                     entry = "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
@@ -140,9 +140,23 @@ async function createWorker(options = {}) {
                     }
                 }
             }
-            else {
-                entry = "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
+        }
+        else {
+            // Use fetch to download the script and compose an object URL can bypass CORS
+            // security constraint in the browser.
+            const url = entry || "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
+            const res = await fetch(url);
+            let blob;
+            if ((_b = res.headers.get("content-type")) === null || _b === void 0 ? void 0 : _b.includes("/javascript")) {
+                blob = await res.blob();
             }
+            else {
+                const buf = await res.arrayBuffer();
+                blob = new Blob([new Uint8Array(buf)], {
+                    type: "application/javascript",
+                });
+            }
+            entry = URL.createObjectURL(blob);
         }
         const worker = new Worker(entry, { type: "module" });
         const workerId = workerIdCounter.next().value;

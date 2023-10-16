@@ -193,8 +193,8 @@ export async function createWorker(options: {
             };
         }
     } else {
-        if (!entry) {
-            if (typeof Deno === "object") {
+        if (typeof Deno === "object") {
+            if (!entry) {
                 if ((import.meta as any)["main"]) {
                     // The code is bundled, try the remote worker entry.
                     entry = "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
@@ -210,9 +210,24 @@ export async function createWorker(options: {
                         entry = entry.slice(0, -18) + "/worker-web.ts";
                     }
                 }
-            } else {
-                entry = "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
             }
+        } else {
+            // Use fetch to download the script and compose an object URL can bypass CORS
+            // security constraint in the browser.
+            const url = entry || "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
+            const res = await fetch(url);
+            let blob: Blob;
+
+            if (res.headers.get("content-type")?.includes("/javascript")) {
+                blob = await res.blob();
+            } else {
+                const buf = await res.arrayBuffer();
+                blob = new Blob([new Uint8Array(buf)], {
+                    type: "application/javascript",
+                });
+            }
+
+            entry = URL.createObjectURL(blob);
         }
 
         const worker = new Worker(entry, { type: "module" });
