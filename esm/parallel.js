@@ -111,7 +111,16 @@ async function createWorker(options = {}) {
         }
         else {
             const { Worker } = await import('worker_threads');
-            const worker = new Worker(entry, { argv: ["--worker-thread"] });
+            const options = {};
+            if (typeof Bun === "object") {
+                // Currently, Bun doesn't support `argv` option, use `env` for compatibility
+                // support.
+                options.env = { ...process.env, __WORKER_THREAD: "true" };
+            }
+            else {
+                options.argv = ["--worker-thread"];
+            }
+            const worker = new Worker(entry, options);
             // `threadId` may not exist in Bun.
             const workerId = (_a = worker.threadId) !== null && _a !== void 0 ? _a : workerIdCounter.next().value;
             return {
@@ -513,7 +522,7 @@ function parallel(module) {
      * Whether the current thread is the main thread.
      */
     parallel.isMainThread = isNode
-        ? !process.argv.includes("--worker-thread")
+        ? (!process.argv.includes("--worker-thread") && !process.env["__WORKER_THREAD"])
         // @ts-ignore
         : typeof WorkerGlobalScope === "undefined";
 })(parallel || (parallel = {}));

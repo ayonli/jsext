@@ -1,4 +1,4 @@
-import type { Worker as NodeWorker } from "node:worker_threads";
+import type { Worker as NodeWorker, WorkerOptions } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
 import { ThenableAsyncGenerator, ThenableAsyncGeneratorLike } from "./external/thenable-generator/index.ts";
 import chan, { Channel } from "./chan.ts";
@@ -182,7 +182,17 @@ export async function createWorker(options: {
             };
         } else {
             const { Worker } = await import("worker_threads");
-            const worker = new Worker(entry, { argv: ["--worker-thread"] });
+            const options: WorkerOptions = {};
+
+            if (typeof Bun === "object") {
+                // Currently, Bun doesn't support `argv` option, use `env` for compatibility
+                // support.
+                options.env = { ...process.env, __WORKER_THREAD: "true" };
+            } else {
+                options.argv = ["--worker-thread"];
+            }
+
+            const worker = new Worker(entry, options);
             // `threadId` may not exist in Bun.
             const workerId = worker.threadId ?? workerIdCounter.next().value as number;
 
@@ -633,7 +643,7 @@ namespace parallel {
      * Whether the current thread is the main thread.
      */
     export const isMainThread = isNode
-        ? !process.argv.includes("--worker-thread")
+        ? (!process.argv.includes("--worker-thread") && !process.env["__WORKER_THREAD"])
         // @ts-ignore
         : typeof WorkerGlobalScope === "undefined";
 }
