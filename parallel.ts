@@ -466,9 +466,9 @@ function extractBaseUrl(stackTrace: string): string | undefined {
     let callSite: string;
 
     if (lines[0]?.startsWith("Error")) { // chromium browsers
-        callSite = stackTrace.split("\n")[2] as string;
+        callSite = lines[2] as string;
     } else {
-        callSite = stackTrace.split("\n")[1] as string;
+        callSite = lines[1] as string;
     }
 
     let baseUrl: string | undefined;

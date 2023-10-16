@@ -379,10 +379,10 @@ function extractBaseUrl(stackTrace) {
     const lines = stackTrace.split("\n");
     let callSite;
     if ((_a = lines[0]) === null || _a === void 0 ? void 0 : _a.startsWith("Error")) { // chromium browsers
-        callSite = stackTrace.split("\n")[2];
+        callSite = lines[2];
     }
     else {
-        callSite = stackTrace.split("\n")[1];
+        callSite = lines[1];
     }
     let baseUrl;
     if (callSite) {
