@@ -4,7 +4,8 @@ import { ThenableAsyncGenerator, ThenableAsyncGeneratorLike } from "./external/t
 import chan, { Channel } from "./chan.ts";
 import { sequence } from "./number/index.ts";
 import { trim } from "./string/index.ts";
-import { fromObject } from "./error/index.ts";
+import { fromObject, toObject } from "./error/index.ts";
+import type { Optional } from "./index.ts";
 
 export type FunctionPropertyNames<T> = {
     [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
@@ -17,8 +18,8 @@ export type ThreadedFunctions<M, T extends FunctionProperties<M> = FunctionPrope
     : T[K];
 };
 
-const isNode = typeof process === "object" && !!process.versions?.node;
 const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
+const isNode = typeof process === "object" && !!process.versions?.node;
 declare var Deno: any;
 declare var Bun: any;
 
@@ -86,24 +87,20 @@ export type FFIRequest = {
     taskId?: number | undefined;
 };
 
-export function createFFIRequest(
-    script: string,
-    fn: string,
-    args: any[],
-    taskId: number | undefined = undefined,
-    type: "ffi" | "next" | "return" | "throw" = "ffi"
-): FFIRequest {
-    const msg: FFIRequest = { type, baseUrl: "", script, fn, args, taskId };
+export function createFFIRequest(init: Optional<FFIRequest, "type" | "baseUrl">): FFIRequest {
+    const msg = { ...init, type: init.type || "ffi" } as FFIRequest;
 
-    if (typeof Deno === "object") {
-        msg.baseUrl = "file://" + Deno.cwd() + "/";
-    } else if (isNode) {
-        if (IsPath.test(script)) {
-            // Only set baseUrl for relative modules, don't set it for node modules.
-            msg.baseUrl = process.cwd();
+    if (!msg.baseUrl) {
+        if (typeof Deno === "object") {
+            msg.baseUrl = "file://" + Deno.cwd() + "/";
+        } else if (isNode) {
+            if (IsPath.test(msg.script)) {
+                // Only set baseUrl for relative modules, don't set it for node modules.
+                msg.baseUrl = "file://" + process.cwd() + "/";
+            }
+        } else if (typeof location === "object") {
+            msg.baseUrl = location.href;
         }
-    } else if (typeof location === "object") {
-        msg.baseUrl = location.href;
     }
 
     return msg;
@@ -197,6 +194,14 @@ export async function createWorker(options: {
                         ...(import.meta.url.split("/").slice(0, -1)),
                         "worker-web.mjs"
                     ].join("/");
+
+                    // The code uses ESM version instead of TS version, redirect
+                    // to the root path.
+                    if (entry.endsWith("/jsext/esm/worker-web.mjs")) {
+                        entry = entry.slice(0, -25) + "/jsext/worker-web.mjs";
+                    } else if (entry.endsWith("\\jsext\\esm\\worker-web.mjs")) {
+                        entry = entry.slice(0, -25) + "\\jsext\\worker-web.mjs";
+                    }
                 }
             } else {
                 const url = entry || "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
@@ -343,11 +348,11 @@ async function acquireWorker(taskId: number) {
 }
 
 function createCall(
-    script: string | (() => Promise<any>),
+    modId: string,
     fn: string,
-    args: any[]
+    args: any[],
+    baseUrl: string | undefined = undefined
 ) {
-    const modId = sanitizeModuleId(script, true);
     const taskId = taskIdCounter.next().value as number;
     const task: RemoteTask = {};
     let worker: Worker | NodeWorker;
@@ -358,7 +363,13 @@ function createCall(
         async then(onfulfilled, onrejected) {
             if (!worker) {
                 worker = await acquireWorker(taskId);
-                worker.postMessage(createFFIRequest(modId, fn, args, taskId));
+                worker.postMessage(createFFIRequest({
+                    script: modId,
+                    fn,
+                    args,
+                    taskId,
+                    baseUrl: baseUrl as string
+                }));
             }
 
             const task = tasks.get(taskId) as RemoteTask;
@@ -398,29 +409,82 @@ function createCall(
             } else {
                 if (!worker) {
                     worker = await acquireWorker(taskId);
-                    worker.postMessage(createFFIRequest(modId, fn, args, taskId));
+                    worker.postMessage(createFFIRequest({
+                        script: modId,
+                        fn,
+                        args,
+                        taskId,
+                        baseUrl: baseUrl as string
+                    }));
                     await new Promise<void>((resolve) => {
                         task.generate = resolve;
                     });
                 }
 
                 task.channel ??= chan(Infinity);
-                worker.postMessage(createFFIRequest(modId, fn, [input], taskId, "next"));
+                worker.postMessage(createFFIRequest({
+                    script: modId,
+                    fn,
+                    args: [input],
+                    taskId,
+                    type: "next",
+                    baseUrl: baseUrl as string,
+                }));
 
                 return await task.channel.pop();
             }
         },
         async return(value) {
-            worker?.postMessage(createFFIRequest(modId, fn, [value], taskId, "return"));
+            worker?.postMessage(createFFIRequest({
+                script: modId,
+                fn,
+                args: [value],
+                taskId,
+                type: "return",
+                baseUrl: baseUrl as string,
+            }));
             tasks.delete(taskId);
             return { value, done: true };
         },
         async throw(err) {
-            worker?.postMessage(createFFIRequest(modId, fn, [err], taskId, "throw"));
+            worker?.postMessage(createFFIRequest({
+                script: modId,
+                fn,
+                args: [toObject(err)],
+                taskId,
+                type: "throw",
+                baseUrl: baseUrl as string,
+            }));
             tasks.delete(taskId);
             throw err;
         },
     } as ThenableAsyncGeneratorLike);
+}
+
+function extractBaseUrl(stackTrace: string): string | undefined {
+    let callSite = stackTrace.split("\n")[2];
+    let baseUrl: string | undefined;
+
+    if (callSite) {
+        let start = callSite.lastIndexOf("(");
+        let end = 0;
+
+        if (start !== -1) {
+            start += 1;
+            end = callSite.indexOf(")", start);
+            callSite = callSite.slice(start, end);
+        } else {
+            callSite = callSite.slice(7); // remove leading `    at `
+        }
+
+        baseUrl = callSite.replace(/:\d+:\d+$/, "");
+
+        if (!/^(https?|file):/.test(baseUrl)) {
+            baseUrl = "file://" + baseUrl;
+        }
+    }
+
+    return baseUrl;
 }
 
 /**
@@ -429,8 +493,7 @@ function createCall(
  * In Node.js and Bun, the `module` can be either a CommonJS module or an ES module,
  * **node_modules** and built-in modules are also supported.
  * 
- * In browser and Deno, the `module` can only be an ES module, and is relative to the current URL
- * (or working directory for Deno) if not absolute.
+ * In browser and Deno, the `module` can only be an ES module.
  * 
  * In Bun and Deno, the `module` can also be a TypeScript file.
  * 
@@ -453,12 +516,26 @@ function createCall(
  * ```
  */
 function parallel<M extends { [x: string]: any; }>(module: () => Promise<M>): ThreadedFunctions<M> {
+    const modId = sanitizeModuleId(module, true);
+    let baseUrl: string | undefined;
+
+    if (IsPath.test(modId)) {
+        if (typeof Error.captureStackTrace === "function") {
+            const trace: { stack?: string; } = {};
+            Error.captureStackTrace(trace);
+            baseUrl = extractBaseUrl(trace.stack as string);
+        } else {
+            const trace = new Error("");
+            baseUrl = extractBaseUrl(trace.stack as string);
+        }
+    }
+
     return new Proxy(Object.create(null), {
         get: (_, prop: string) => {
             const obj = {
                 // This syntax will give our remote function a name.
                 [prop]: (...args: Parameters<M["_"]>) => {
-                    return createCall(module, prop, args);
+                    return createCall(modId, prop, args, baseUrl);
                 }
             };
 

@@ -99,9 +99,93 @@ function omit(obj, keys) {
     return result;
 }
 
+class Exception extends Error {
+    constructor(message, options = 0) {
+        super(message);
+        this.code = 0;
+        if (typeof options === "number") {
+            this.code = options;
+        }
+        else {
+            if (options.cause) {
+                Object.defineProperty(this, "cause", {
+                    configurable: true,
+                    enumerable: false,
+                    writable: true,
+                    value: options.cause,
+                });
+            }
+            if (options.code) {
+                this.code = options.code;
+            }
+        }
+    }
+}
+Object.defineProperty(Exception.prototype, "name", {
+    configurable: true,
+    enumerable: false,
+    writable: true,
+    value: "Exception",
+});
+
 /** Transform the error to a plain object. */
 function toObject(err) {
-    return omit(err, []);
+    return omit(err, ["toString", "toJSON"]);
+}
+function fromObject(obj) {
+    var _a;
+    // @ts-ignore
+    if (!(obj === null || obj === void 0 ? void 0 : obj.name)) {
+        return null;
+    }
+    // @ts-ignore
+    let ctor = globalThis[obj.name];
+    if (!ctor) {
+        if (obj["name"] === "Exception") {
+            ctor = Exception;
+        }
+        else {
+            ctor = Error;
+        }
+    }
+    const err = Object.create(ctor.prototype, {
+        message: {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: (_a = obj["message"]) !== null && _a !== void 0 ? _a : "",
+        },
+    });
+    if (err.name !== obj["name"]) {
+        Object.defineProperty(err, "name", {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: obj["name"],
+        });
+    }
+    if (obj["stack"] !== undefined) {
+        Object.defineProperty(err, "stack", {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: obj["stack"],
+        });
+    }
+    if (obj["cause"] != undefined) {
+        Object.defineProperty(err, "cause", {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: obj["cause"],
+        });
+    }
+    const otherKeys = Reflect.ownKeys(obj).filter(key => !["name", "message", "stack", "cause"].includes(key));
+    otherKeys.forEach(key => {
+        // @ts-ignore
+        err[key] = obj[key];
+    });
+    return err;
 }
 
 const isNode = typeof process === "object" && !!process.versions?.node;
@@ -136,7 +220,10 @@ async function handleMessage(msg, reply) {
             if (task) {
                 if (msg.type === "throw") {
                     try {
-                        await task.throw(msg.args[0]);
+                        const err = msg.args[0] instanceof Error
+                            ? msg.args[0]
+                            : fromObject(msg.args[0]);
+                        await task.throw(err);
                     } catch (err) {
                         reply({ type: "error", error: toObject(err), taskId: msg.taskId });
                     }
@@ -163,8 +250,11 @@ async function handleMessage(msg, reply) {
         let module;
 
         if (isNode) {
-            const path = await import('path');
-            module = await import(msg.baseUrl ? path.resolve(msg.baseUrl, msg.script) : msg.script);
+            const { fileURLToPath } = await import('url');
+            const path = msg.baseUrl
+                ? fileURLToPath(new URL(msg.script, msg.baseUrl).href)
+                : msg.script;
+            module = await import(path);
         } else {
             const url = new URL(msg.script, msg.baseUrl).href;
             module = moduleCache.get(url);

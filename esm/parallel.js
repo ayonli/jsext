@@ -2,11 +2,11 @@ import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
 import chan from './chan.js';
 import { sequence } from './number/index.js';
 import { trim } from './string/index.js';
-import { fromObject } from './error/index.js';
+import { toObject, fromObject } from './error/index.js';
 
 var _a;
-const isNode = typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
 const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
+const isNode = typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const tasks = new Map;
@@ -44,19 +44,21 @@ function sanitizeModuleId(id, strict = false) {
     }
     return _id;
 }
-function createFFIRequest(script, fn, args, taskId = undefined, type = "ffi") {
-    const msg = { type, baseUrl: "", script, fn, args, taskId };
-    if (typeof Deno === "object") {
-        msg.baseUrl = "file://" + Deno.cwd() + "/";
-    }
-    else if (isNode) {
-        if (IsPath.test(script)) {
-            // Only set baseUrl for relative modules, don't set it for node modules.
-            msg.baseUrl = process.cwd();
+function createFFIRequest(init) {
+    const msg = { ...init, type: init.type || "ffi" };
+    if (!msg.baseUrl) {
+        if (typeof Deno === "object") {
+            msg.baseUrl = "file://" + Deno.cwd() + "/";
         }
-    }
-    else if (typeof location === "object") {
-        msg.baseUrl = location.href;
+        else if (isNode) {
+            if (IsPath.test(msg.script)) {
+                // Only set baseUrl for relative modules, don't set it for node modules.
+                msg.baseUrl = "file://" + process.cwd() + "/";
+            }
+        }
+        else if (typeof location === "object") {
+            msg.baseUrl = location.href;
+        }
     }
     return msg;
 }
@@ -125,6 +127,14 @@ async function createWorker(options = {}) {
                         ...(import.meta.url.split("/").slice(0, -1)),
                         "worker-web.mjs"
                     ].join("/");
+                    // The code uses ESM version instead of TS version, redirect
+                    // to the root path.
+                    if (entry.endsWith("/jsext/esm/worker-web.mjs")) {
+                        entry = entry.slice(0, -25) + "/jsext/worker-web.mjs";
+                    }
+                    else if (entry.endsWith("\\jsext\\esm\\worker-web.mjs")) {
+                        entry = entry.slice(0, -25) + "\\jsext\\worker-web.mjs";
+                    }
                 }
             }
             else {
@@ -258,8 +268,7 @@ async function acquireWorker(taskId) {
     }
     return worker;
 }
-function createCall(script, fn, args) {
-    const modId = sanitizeModuleId(script, true);
+function createCall(modId, fn, args, baseUrl = undefined) {
     const taskId = taskIdCounter.next().value;
     const task = {};
     let worker;
@@ -268,7 +277,13 @@ function createCall(script, fn, args) {
         async then(onfulfilled, onrejected) {
             if (!worker) {
                 worker = await acquireWorker(taskId);
-                worker.postMessage(createFFIRequest(modId, fn, args, taskId));
+                worker.postMessage(createFFIRequest({
+                    script: modId,
+                    fn,
+                    args,
+                    taskId,
+                    baseUrl: baseUrl
+                }));
             }
             const task = tasks.get(taskId);
             if (task.error) {
@@ -310,27 +325,75 @@ function createCall(script, fn, args) {
             else {
                 if (!worker) {
                     worker = await acquireWorker(taskId);
-                    worker.postMessage(createFFIRequest(modId, fn, args, taskId));
+                    worker.postMessage(createFFIRequest({
+                        script: modId,
+                        fn,
+                        args,
+                        taskId,
+                        baseUrl: baseUrl
+                    }));
                     await new Promise((resolve) => {
                         task.generate = resolve;
                     });
                 }
                 (_a = task.channel) !== null && _a !== void 0 ? _a : (task.channel = chan(Infinity));
-                worker.postMessage(createFFIRequest(modId, fn, [input], taskId, "next"));
+                worker.postMessage(createFFIRequest({
+                    script: modId,
+                    fn,
+                    args: [input],
+                    taskId,
+                    type: "next",
+                    baseUrl: baseUrl,
+                }));
                 return await task.channel.pop();
             }
         },
         async return(value) {
-            worker === null || worker === void 0 ? void 0 : worker.postMessage(createFFIRequest(modId, fn, [value], taskId, "return"));
+            worker === null || worker === void 0 ? void 0 : worker.postMessage(createFFIRequest({
+                script: modId,
+                fn,
+                args: [value],
+                taskId,
+                type: "return",
+                baseUrl: baseUrl,
+            }));
             tasks.delete(taskId);
             return { value, done: true };
         },
         async throw(err) {
-            worker === null || worker === void 0 ? void 0 : worker.postMessage(createFFIRequest(modId, fn, [err], taskId, "throw"));
+            worker === null || worker === void 0 ? void 0 : worker.postMessage(createFFIRequest({
+                script: modId,
+                fn,
+                args: [toObject(err)],
+                taskId,
+                type: "throw",
+                baseUrl: baseUrl,
+            }));
             tasks.delete(taskId);
             throw err;
         },
     });
+}
+function extractBaseUrl(stackTrace) {
+    let callSite = stackTrace.split("\n")[2];
+    let baseUrl;
+    if (callSite) {
+        let start = callSite.lastIndexOf("(");
+        let end = 0;
+        if (start !== -1) {
+            start += 1;
+            end = callSite.indexOf(")", start);
+            callSite = callSite.slice(start, end);
+        }
+        else {
+            callSite = callSite.slice(7); // remove leading `    at `
+        }
+        baseUrl = callSite.replace(/:\d+:\d+$/, "");
+        if (!/^(https?|file):/.test(baseUrl)) {
+            baseUrl = "file://" + baseUrl;
+        }
+    }
+    return baseUrl;
 }
 /**
  * Wraps a module and run its functions in worker threads.
@@ -338,8 +401,7 @@ function createCall(script, fn, args) {
  * In Node.js and Bun, the `module` can be either a CommonJS module or an ES module,
  * **node_modules** and built-in modules are also supported.
  *
- * In browser and Deno, the `module` can only be an ES module, and is relative to the current URL
- * (or working directory for Deno) if not absolute.
+ * In browser and Deno, the `module` can only be an ES module.
  *
  * In Bun and Deno, the `module` can also be a TypeScript file.
  *
@@ -362,12 +424,25 @@ function createCall(script, fn, args) {
  * ```
  */
 function parallel(module) {
+    const modId = sanitizeModuleId(module, true);
+    let baseUrl;
+    if (IsPath.test(modId)) {
+        if (typeof Error.captureStackTrace === "function") {
+            const trace = {};
+            Error.captureStackTrace(trace);
+            baseUrl = extractBaseUrl(trace.stack);
+        }
+        else {
+            const trace = new Error("");
+            baseUrl = extractBaseUrl(trace.stack);
+        }
+    }
     return new Proxy(Object.create(null), {
         get: (_, prop) => {
             const obj = {
                 // This syntax will give our remote function a name.
                 [prop]: (...args) => {
-                    return createCall(module, prop, args);
+                    return createCall(modId, prop, args, baseUrl);
                 }
             };
             return obj[prop];

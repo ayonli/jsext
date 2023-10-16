@@ -12,6 +12,7 @@ const moduleEntries = Object.fromEntries(
         ignore: [
             "**/*.d.ts",
             "node_modules/**",
+            "examples/**",
             "**/*.test.ts",
             "**/test-*.ts",
             "bundle.ts",

@@ -33,13 +33,13 @@ const workerConsumerQueue: (() => void)[] = [];
  * 
  * @example
  * ```ts
- * const job1 = await run("./job-example.mjs", ["World"]);
+ * const job1 = await run("job-example.mjs", ["World"]);
  * console.log(await job1.result()); // Hello, World
  * ```
  * 
  * @example
  * ```ts
- * const job2 = await run<string, [string[]]>("./job-example.mjs", [["foo", "bar"]], {
+ * const job2 = await run<string, [string[]]>("job-example.mjs", [["foo", "bar"]], {
  *     fn: "sequence",
  * });
  * for await (const word of job2.iterate()) {
@@ -52,7 +52,7 @@ const workerConsumerQueue: (() => void)[] = [];
  * 
  * @example
  * ```ts
- * const job3 = await run<string, [string]>("./job-example.mjs", ["foobar"], {
+ * const job3 = await run<string, [string]>("job-example.mjs", ["foobar"], {
  *    fn: "takeTooLong",
  * });
  * await job3.abort();
@@ -96,6 +96,10 @@ async function run<R, A extends any[] = any[]>(
     abort(reason?: unknown): Promise<void>;
 }>;
 /**
+ * @deprecated
+ * This function signature is deprecated, because it's confuses people for reading
+ * the purpose of the function call and the real path of the script is controversial.
+ * 
  * @param script A function containing a dynamic import expression, only used for TypeScript to
  *  infer types in the given module, the module is never imported into the current program.
  * 
@@ -141,8 +145,12 @@ async function run<R, A extends any[] = any[]>(
         deprecate("options.workerEntry", run, "set `run.workerEntry` instead");
     }
 
-    let modId = sanitizeModuleId(script);
-    const msg = createFFIRequest(modId, options?.fn || "default", args ?? []);
+    const modId = sanitizeModuleId(script);
+    const msg = createFFIRequest({
+        script: modId,
+        fn: options?.fn || "default",
+        args: args ?? [],
+    });
     const entry = options?.workerEntry || parallel.workerEntry;
     let error: unknown = null;
     let result: { value: any; } | undefined;

@@ -13,8 +13,12 @@ async function run(script, args = undefined, options = undefined) {
     if (options === null || options === void 0 ? void 0 : options.workerEntry) {
         deprecate("options.workerEntry", run, "set `run.workerEntry` instead");
     }
-    let modId = sanitizeModuleId(script);
-    const msg = createFFIRequest(modId, (options === null || options === void 0 ? void 0 : options.fn) || "default", args !== null && args !== void 0 ? args : []);
+    const modId = sanitizeModuleId(script);
+    const msg = createFFIRequest({
+        script: modId,
+        fn: (options === null || options === void 0 ? void 0 : options.fn) || "default",
+        args: args !== null && args !== void 0 ? args : [],
+    });
     const entry = (options === null || options === void 0 ? void 0 : options.workerEntry) || parallel.workerEntry;
     let error = null;
     let result;

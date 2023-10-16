@@ -265,9 +265,8 @@
         "test": "node --no-warnings=ExperimentalWarning --loader=ts-node/esm ./node_modules/mocha/bin/mocha",
         "test:bun": "bun run ./node_modules/mocha/bin/mocha",
         "test:deno": "deno run --allow-read --allow-net test-deno.ts",
-        "build": "rollup -c rollup.config.mjs && echo '{\"type\":\"module\"}' > ./esm/package.json && echo '{\"type\":\"commonjs\"}' > ./cjs/package.json",
-        "prepublishOnly": "npm run build && tsc -p types.tsconfig.json",
-        "postpublish": "rm -rf types"
+        "build": "rollup -c rollup.config.mjs && echo '{\"type\":\"module\"}' > ./esm/package.json && echo '{\"type\":\"commonjs\"}' > ./cjs/package.json && tsc -p types.tsconfig.json",
+        "prepublishOnly": "npm run build"
     },
     "repository": {
         "type": "git",

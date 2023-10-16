@@ -2,10 +2,11 @@ import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import jsext from "./index.ts";
 
 declare var Deno: any;
+declare var Bun: any;
 
 describe("jsext.parallel", () => {
     // @ts-ignore
-    const mod = jsext.parallel(() => import("./job-example.mjs"));
+    const mod = jsext.parallel(() => import("./examples/worker.mjs"));
 
     it("return", async () => {
         // @ts-ignore
@@ -24,6 +25,20 @@ describe("jsext.parallel", () => {
         deepStrictEqual(words, ["foo", "bar"]);
         strictEqual(await Promise.resolve(iter), "foo, bar");
     });
+
+    it("in js dependencies", async () => {
+        // @ts-ignore
+        const { default: avg } = await import("./examples/avg.js");
+        strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
+    });
+
+    if (typeof Deno === "object" || typeof Bun === "object") {
+        it("in ts dependencies", async () => {
+            // @ts-ignore
+            const { default: avg } = await import("./examples/avg.ts");
+            strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
+        });
+    }
 
     if (typeof Deno !== "object") {
         it("builtin module", async () => {
@@ -50,7 +65,7 @@ describe("jsext.parallel", () => {
             // @ts-ignore
             const mod2 = jsext.parallel(() => import("string-hash"));
             // @ts-ignore
-            ok((await mod2.default("Hello, World!")) > 0)
+            ok((await mod2.default("Hello, World!")) > 0);
         });
     }
 });

@@ -1,6 +1,7 @@
 .vscode/
 .github/
 node_modules/
+examples/
 *.test.ts
 *.tgz
 *.config.js
@@ -11,8 +12,6 @@ tsconfig.json
 pretest.cjs
 posttest.cjs
 test-deno.ts
-job-example.cjs
-job-example.mjs
 bundle/index.js
 bundle/index.js.map
 !bundle/worker.mjs

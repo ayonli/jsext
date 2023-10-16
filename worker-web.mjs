@@ -1,5 +1,5 @@
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
-import { toObject } from "./esm/error/index.js";
+import { fromObject, toObject } from "./esm/error/index.js";
 
 const isNode = typeof process === "object" && !!process.versions?.node;
 
@@ -33,7 +33,10 @@ export async function handleMessage(msg, reply) {
             if (task) {
                 if (msg.type === "throw") {
                     try {
-                        await task.throw(msg.args[0]);
+                        const err = msg.args[0] instanceof Error
+                            ? msg.args[0]
+                            : fromObject(msg.args[0]);
+                        await task.throw(err);
                     } catch (err) {
                         reply({ type: "error", error: toObject(err), taskId: msg.taskId });
                     }
@@ -60,8 +63,11 @@ export async function handleMessage(msg, reply) {
         let module;
 
         if (isNode) {
-            const path = await import("path");
-            module = await import(msg.baseUrl ? path.resolve(msg.baseUrl, msg.script) : msg.script);
+            const { fileURLToPath } = await import("url");
+            const path = msg.baseUrl
+                ? fileURLToPath(new URL(msg.script, msg.baseUrl).href)
+                : msg.script;
+            module = await import(path);
         } else {
             const url = new URL(msg.script, msg.baseUrl).href;
             module = moduleCache.get(url);

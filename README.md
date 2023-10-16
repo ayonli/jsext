@@ -626,8 +626,7 @@ Wraps a module and run its functions in worker threads.
 In Node.js and Bun, the `module` can be either a CommonJS module or an ES module,
 **node_modules** and built-in modules are also supported.
 
-In browser and Deno, the `module` can only be an ES module, and is relative to the current URL
-(or working directory for Deno) if not absolute.
+In browser and Deno, the `module` can only be an ES module.
 
 In Bun and Deno, the `module` can also be a TypeScript file.
 
@@ -682,21 +681,6 @@ function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
     /** Terminates the worker thread and aborts the task. */
     abort(reason?: unknown): Promise<void>;
 }>;
-function run<M extends { [x: string]: any; }, A extends Parameters<M[Fn]>, Fn extends keyof M = "default">(
-    script: () => Promise<M>,
-    args?: A,
-    options?: {
-        fn?: Fn;
-        timeout?: number;
-        keepAlive?: boolean;
-        adapter?: "worker_threads" | "child_process";
-    }
-): Promise<{
-    workerId: number;
-    result(): Promise<ReturnType<M[Fn]> extends AsyncGenerator<any, infer R, any> ? R : Awaited<ReturnType<M[Fn]>>>;
-    iterate(): AsyncIterable<ReturnType<M[Fn]> extends AsyncGenerator<infer Y, any, any> ? Y : Awaited<ReturnType<M[Fn]>>>;
-    abort(reason?: unknown): Promise<void>;
-}>;
 ```
 
 Runs the given `script` in a worker thread or child process.
@@ -715,14 +699,14 @@ configuration.
 **Example (result)**
 
 ```ts
-const job1 = await run<string, [string]>("./job-example.mjs", ["World"]);
+const job1 = await run<string, [string]>("job-example.mjs", ["World"]);
 console.log(await job1.result()); // Hello, World
 ```
 
 **Example (iterate)**
 
 ```ts
-const job2 = await run<string, [string[]]>("./job-example.mjs", [["foo", "bar"]], {
+const job2 = await run<string, [string[]]>("job-example.mjs", [["foo", "bar"]], {
     fn: "sequence",
 });
 for await (const word of job2.iterate()) {
@@ -736,7 +720,7 @@ for await (const word of job2.iterate()) {
 **Example (abort)**
 
 ```ts
-const job3 = await run<string, [string]>("./job-example.mjs", ["foobar"], {
+const job3 = await run<string, [string]>("job-example.mjs", ["foobar"], {
     fn: "takeTooLong",
 });
 await job3.abort();
@@ -748,7 +732,7 @@ console.assert(res === undefined);
 **Example (import expression)**
 
 ```ts
-const job4 = await run(() => import("./job-example.mjs"), ["World"]);
+const job4 = await run(() => import("job-example.mjs"), ["World"]);
 console.log(await job4.result()); // Hello, World
 ```
 
