@@ -618,6 +618,11 @@ namespace parallel {
      * to a local directory and supply this option instead.
      */
     export var workerEntry: string | undefined;
+
+    /**
+     * Whether the current thread is the main thread.
+     */
+    export const isMainThread: boolean;
 }
 ```
 

@@ -91,7 +91,7 @@ async function createWorker(options = {}) {
         if (adapter === "child_process") {
             const { fork } = await import('child_process');
             const isPrior14 = parseInt(process.version.slice(1)) < 14;
-            const worker = fork(entry, {
+            const worker = fork(entry, ["--worker-thread"], {
                 stdio: "inherit",
                 serialization: isPrior14 ? "advanced" : "json",
             });
@@ -104,7 +104,7 @@ async function createWorker(options = {}) {
         }
         else {
             const { Worker } = await import('worker_threads');
-            const worker = new Worker(entry);
+            const worker = new Worker(entry, { argv: ["--worker-thread"] });
             // `threadId` may not exist in Bun.
             const workerId = (_a = worker.threadId) !== null && _a !== void 0 ? _a : workerIdCounter.next().value;
             return {
@@ -267,30 +267,13 @@ async function acquireWorker(taskId) {
     }
     return worker;
 }
-async function isWorkerThread() {
-    let isMainThread = false;
-    if (isNode) {
-        isMainThread = (await import('worker_threads')).isMainThread;
-    }
-    else {
-        // @ts-ignore
-        isMainThread = !(typeof WorkerGlobalScope !== "undefined");
-    }
-    return !isMainThread;
-}
-function createCall(modId, fn, args, baseUrl = undefined) {
-    const taskId = taskIdCounter.next().value;
-    let generator;
+function createRemoteCall(modId, fn, args, baseUrl = undefined) {
     let worker;
+    const taskId = taskIdCounter.next().value;
     tasks.set(taskId, {});
     return new ThenableAsyncGenerator({
         async then(onfulfilled, onrejected) {
-            if (await isWorkerThread()) {
-                tasks.delete(taskId);
-                const module = await resolveModule(modId, baseUrl);
-                return Promise.resolve(module[fn](...args)).then(onfulfilled, onrejected);
-            }
-            else if (!worker) {
+            if (!worker) {
                 worker = await acquireWorker(taskId);
                 worker.postMessage(createFFIRequest({
                     script: modId,
@@ -326,15 +309,6 @@ function createCall(modId, fn, args, baseUrl = undefined) {
         },
         async next(input) {
             var _a;
-            if (generator) {
-                return await generator.next(input);
-            }
-            else if (await isWorkerThread()) {
-                tasks.delete(taskId);
-                const module = await resolveModule(modId, baseUrl);
-                generator = module[fn](...args);
-                return await generator.next(input);
-            }
             const task = tasks.get(taskId);
             if (task.error) {
                 const err = task.error;
@@ -374,9 +348,6 @@ function createCall(modId, fn, args, baseUrl = undefined) {
         },
         async return(value) {
             tasks.delete(taskId);
-            if (generator) {
-                return await generator.return(value);
-            }
             worker === null || worker === void 0 ? void 0 : worker.postMessage(createFFIRequest({
                 script: modId,
                 fn,
@@ -389,9 +360,6 @@ function createCall(modId, fn, args, baseUrl = undefined) {
         },
         async throw(err) {
             tasks.delete(taskId);
-            if (generator) {
-                return await generator.throw(err);
-            }
             worker === null || worker === void 0 ? void 0 : worker.postMessage(createFFIRequest({
                 script: modId,
                 fn,
@@ -401,6 +369,38 @@ function createCall(modId, fn, args, baseUrl = undefined) {
                 baseUrl: baseUrl,
             }));
             throw err;
+        },
+    });
+}
+function createLocalCall(modId, fn, args, baseUrl = undefined) {
+    let generator;
+    return new ThenableAsyncGenerator({
+        async then(onfulfilled, onrejected) {
+            const module = await resolveModule(modId, baseUrl);
+            return Promise.resolve(module[fn](...args)).then(onfulfilled, onrejected);
+        },
+        async next(input) {
+            if (!generator) {
+                const module = await resolveModule(modId, baseUrl);
+                generator = module[fn](...args);
+            }
+            return await generator.next(input);
+        },
+        async return(value) {
+            if (generator) {
+                return await generator.return(value);
+            }
+            else {
+                return { value, done: true };
+            }
+        },
+        async throw(err) {
+            if (generator) {
+                return await generator.throw(err);
+            }
+            else {
+                throw err;
+            }
         },
     });
 }
@@ -486,7 +486,12 @@ function parallel(module) {
             const obj = {
                 // This syntax will give our remote function a name.
                 [prop]: (...args) => {
-                    return createCall(modId, prop, args, baseUrl);
+                    if (parallel.isMainThread) {
+                        return createRemoteCall(modId, prop, args, baseUrl);
+                    }
+                    else {
+                        return createLocalCall(modId, prop, args, baseUrl);
+                    }
                 }
             };
             return obj[prop];
@@ -498,6 +503,13 @@ function parallel(module) {
      * The maximum number of workers allowed to exist at the same time.
      */
     parallel.maxWorkers = 16;
+    /**
+     * Whether the current thread is the main thread.
+     */
+    parallel.isMainThread = isNode
+        ? !process.argv.includes("--worker-thread")
+        // @ts-ignore
+        : typeof WorkerGlobalScope === "undefined";
 })(parallel || (parallel = {}));
 var parallel$1 = parallel;
 
