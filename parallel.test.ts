@@ -26,19 +26,27 @@ describe("jsext.parallel", () => {
         strictEqual(await Promise.resolve(iter), "foo, bar");
     });
 
-    it("in js dependencies", async () => {
+    it("in dependencies", async () => {
         // @ts-ignore
         const { default: avg } = await import("./examples/avg.js");
         strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
-    });
 
-    if (typeof Deno === "object" || typeof Bun === "object") {
-        it("in ts dependencies", async () => {
+        if (typeof Deno === "object" || typeof Bun === "object") {
             // @ts-ignore
             const { default: avg } = await import("./examples/avg.ts");
             strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
-        });
-    }
+        }
+    });
+
+    it("in worker", async () => {
+        const { default: avg } = jsext.parallel(() => import("./examples/avg.js"));
+        strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
+
+        if (typeof Deno === "object" || typeof Bun === "object") {
+            const { default: avg } = jsext.parallel(() => import("./examples/avg.ts"));
+            strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
+        }
+    });
 
     if (typeof Deno !== "object") {
         it("builtin module", async () => {

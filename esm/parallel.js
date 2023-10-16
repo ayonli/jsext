@@ -3,10 +3,9 @@ import chan from './chan.js';
 import { sequence } from './number/index.js';
 import { trim } from './string/index.js';
 import { toObject, fromObject } from './error/index.js';
+import { isNode, resolveModule } from './util.js';
 
-var _a;
 const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
-const isNode = typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const tasks = new Map;
@@ -268,14 +267,30 @@ async function acquireWorker(taskId) {
     }
     return worker;
 }
+async function isWorkerThread() {
+    let isMainThread = false;
+    if (isNode) {
+        isMainThread = (await import('worker_threads')).isMainThread;
+    }
+    else {
+        // @ts-ignore
+        isMainThread = !(typeof WorkerGlobalScope !== "undefined");
+    }
+    return !isMainThread;
+}
 function createCall(modId, fn, args, baseUrl = undefined) {
     const taskId = taskIdCounter.next().value;
-    const task = {};
+    let generator;
     let worker;
-    tasks.set(taskId, task);
+    tasks.set(taskId, {});
     return new ThenableAsyncGenerator({
         async then(onfulfilled, onrejected) {
-            if (!worker) {
+            if (await isWorkerThread()) {
+                tasks.delete(taskId);
+                const module = await resolveModule(modId, baseUrl);
+                return Promise.resolve(module[fn](...args)).then(onfulfilled, onrejected);
+            }
+            else if (!worker) {
                 worker = await acquireWorker(taskId);
                 worker.postMessage(createFFIRequest({
                     script: modId,
@@ -311,6 +326,15 @@ function createCall(modId, fn, args, baseUrl = undefined) {
         },
         async next(input) {
             var _a;
+            if (generator) {
+                return await generator.next(input);
+            }
+            else if (await isWorkerThread()) {
+                tasks.delete(taskId);
+                const module = await resolveModule(modId, baseUrl);
+                generator = module[fn](...args);
+                return await generator.next(input);
+            }
             const task = tasks.get(taskId);
             if (task.error) {
                 const err = task.error;
@@ -349,6 +373,10 @@ function createCall(modId, fn, args, baseUrl = undefined) {
             }
         },
         async return(value) {
+            tasks.delete(taskId);
+            if (generator) {
+                return await generator.return(value);
+            }
             worker === null || worker === void 0 ? void 0 : worker.postMessage(createFFIRequest({
                 script: modId,
                 fn,
@@ -357,10 +385,13 @@ function createCall(modId, fn, args, baseUrl = undefined) {
                 type: "return",
                 baseUrl: baseUrl,
             }));
-            tasks.delete(taskId);
             return { value, done: true };
         },
         async throw(err) {
+            tasks.delete(taskId);
+            if (generator) {
+                return await generator.throw(err);
+            }
             worker === null || worker === void 0 ? void 0 : worker.postMessage(createFFIRequest({
                 script: modId,
                 fn,
@@ -369,7 +400,6 @@ function createCall(modId, fn, args, baseUrl = undefined) {
                 type: "throw",
                 baseUrl: baseUrl,
             }));
-            tasks.delete(taskId);
             throw err;
         },
     });

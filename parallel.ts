@@ -6,6 +6,7 @@ import { sequence } from "./number/index.ts";
 import { trim } from "./string/index.ts";
 import { fromObject, toObject } from "./error/index.ts";
 import type { Optional } from "./index.ts";
+import { isNode, resolveModule } from "./util.ts";
 
 export type FunctionPropertyNames<T> = {
     [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
@@ -19,7 +20,6 @@ export type ThreadedFunctions<M, T extends FunctionProperties<M> = FunctionPrope
 };
 
 const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
-const isNode = typeof process === "object" && !!process.versions?.node;
 declare var Deno: any;
 declare var Bun: any;
 
@@ -347,6 +347,19 @@ async function acquireWorker(taskId: number) {
     return worker;
 }
 
+async function isWorkerThread() {
+    let isMainThread = false;
+
+    if (isNode) {
+        isMainThread = (await import("worker_threads")).isMainThread;
+    } else {
+        // @ts-ignore
+        isMainThread = !(typeof WorkerGlobalScope !== "undefined");
+    }
+
+    return !isMainThread;
+}
+
 function createCall(
     modId: string,
     fn: string,
@@ -354,14 +367,18 @@ function createCall(
     baseUrl: string | undefined = undefined
 ) {
     const taskId = taskIdCounter.next().value as number;
-    const task: RemoteTask = {};
+    let generator: Generator | AsyncGenerator;
     let worker: Worker | NodeWorker;
 
-    tasks.set(taskId, task);
+    tasks.set(taskId, {});
 
     return new ThenableAsyncGenerator({
         async then(onfulfilled, onrejected) {
-            if (!worker) {
+            if (await isWorkerThread()) {
+                tasks.delete(taskId);
+                const module = await resolveModule(modId, baseUrl);
+                return Promise.resolve(module[fn](...args)).then(onfulfilled, onrejected);
+            } else if (!worker) {
                 worker = await acquireWorker(taskId);
                 worker.postMessage(createFFIRequest({
                     script: modId,
@@ -396,6 +413,16 @@ function createCall(
             }
         },
         async next(input) {
+            if (generator) {
+                return await generator.next(input);
+            } else if (await isWorkerThread()) {
+                tasks.delete(taskId);
+                const module = await resolveModule(modId, baseUrl);
+                generator = module[fn](...args);
+
+                return await generator.next(input);
+            }
+
             const task = tasks.get(taskId) as RemoteTask;
 
             if (task.error) {
@@ -435,6 +462,12 @@ function createCall(
             }
         },
         async return(value) {
+            tasks.delete(taskId);
+
+            if (generator) {
+                return await generator.return(value);
+            }
+
             worker?.postMessage(createFFIRequest({
                 script: modId,
                 fn,
@@ -443,10 +476,15 @@ function createCall(
                 type: "return",
                 baseUrl: baseUrl as string,
             }));
-            tasks.delete(taskId);
             return { value, done: true };
         },
         async throw(err) {
+            tasks.delete(taskId);
+
+            if (generator) {
+                return await generator.throw(err);
+            }
+
             worker?.postMessage(createFFIRequest({
                 script: modId,
                 fn,
@@ -455,7 +493,6 @@ function createCall(
                 type: "throw",
                 baseUrl: baseUrl as string,
             }));
-            tasks.delete(taskId);
             throw err;
         },
     } as ThenableAsyncGeneratorLike);

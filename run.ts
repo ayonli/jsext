@@ -4,8 +4,8 @@ import parallel, { FFIResponse, createFFIRequest, createWorker, isFFIResponse, s
 import chan, { Channel } from "./chan.ts";
 import deprecate from "./deprecate.ts";
 import { fromObject } from "./error/index.ts";
+import { isNode } from "./util.ts";
 
-const isNode = typeof process === "object" && !!process.versions?.node;
 let workerPool: {
     workerId: number;
     worker: Worker | NodeWorker | ChildProcess;

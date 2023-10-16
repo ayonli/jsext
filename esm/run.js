@@ -2,9 +2,8 @@ import parallel, { sanitizeModuleId, createFFIRequest, createWorker, isFFIRespon
 import chan from './chan.js';
 import deprecate from './deprecate.js';
 import { fromObject } from './error/index.js';
+import { isNode } from './util.js';
 
-var _a;
-const isNode = typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
 let workerPool = [];
 // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
 // pop a consumer and run the callback, which will retry gaining the worker and retry the task.

@@ -186,17 +186,61 @@ function fromObject(obj) {
     return err;
 }
 
-const isNode = typeof process === "object" && !!process.versions?.node;
-
-/** @type {Map<string, any>} */
+var _a;
+const isNode = typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
 const moduleCache = new Map();
+async function resolveModule(modId, baseUrl = undefined) {
+    let module;
+    if (isNode) {
+        const { fileURLToPath } = await import('url');
+        const path = baseUrl ? fileURLToPath(new URL(modId, baseUrl).href) : modId;
+        module = await import(path);
+    }
+    else {
+        const url = new URL(modId, baseUrl).href;
+        module = moduleCache.get(url);
+        if (!module) {
+            if (typeof Deno === "object") {
+                module = await import(url);
+                moduleCache.set(url, module);
+            }
+            else {
+                try {
+                    module = await import(url);
+                    moduleCache.set(url, module);
+                }
+                catch (err) {
+                    if (String(err).includes("Failed")) {
+                        // The content-type of the response isn't application/javascript, try to
+                        // download it and load it with object URL.
+                        const res = await fetch(url);
+                        const buf = await res.arrayBuffer();
+                        const blob = new Blob([new Uint8Array(buf)], {
+                            type: "application/javascript",
+                        });
+                        const _url = URL.createObjectURL(blob);
+                        module = await import(_url);
+                        moduleCache.set(url, module);
+                    }
+                    else {
+                        throw err;
+                    }
+                }
+            }
+        }
+    }
+    if (typeof module["default"] === "object" && typeof module["default"].default !== "undefined") {
+        module = module["default"]; // CommonJS module with exports.default
+    }
+    return module;
+}
 
 /** @type {Map<number, AsyncGenerator | Generator>} */
 const pendingTasks = new Map();
 
 /**
  * @param {any} msg
- * @returns {msg is import("./run.ts").FFIRequest}
+ * @returns {msg is import("./parallel.ts").FFIRequest}
  */
 function isFFIRequest(msg) {
     return msg && typeof msg === "object" &&
@@ -207,8 +251,8 @@ function isFFIRequest(msg) {
 }
 
 /**
- * @param {import("./run.ts").FFIRequest} msg 
- * @param {(reply: import("./run.ts").FFIResponse) => void} reply
+ * @param {import("./parallel.ts").FFIRequest} msg 
+ * @param {(reply: import("./parallel.ts").FFIResponse) => void} reply
  */
 async function handleMessage(msg, reply) {
     try {
@@ -245,51 +289,7 @@ async function handleMessage(msg, reply) {
             }
         }
 
-        let module;
-
-        if (isNode) {
-            const { fileURLToPath } = await import('url');
-            const path = msg.baseUrl
-                ? fileURLToPath(new URL(msg.script, msg.baseUrl).href)
-                : msg.script;
-            module = await import(path);
-        } else {
-            const url = new URL(msg.script, msg.baseUrl).href;
-            module = moduleCache.get(url);
-
-            if (!module) {
-                if (typeof Deno === "object") {
-                    module = await import(url);
-                    moduleCache.set(url, module);
-                } else {
-                    try {
-                        module = await import(url);
-                        moduleCache.set(url, module);
-                    } catch (err) {
-                        if (String(err).includes("Failed")) {
-                            // The content-type of the response isn't application/javascript, try to
-                            // download it and load it with object URL.
-                            const res = await fetch(url);
-                            const buf = await res.arrayBuffer();
-                            const blob = new Blob([new Uint8Array(buf)], {
-                                type: "application/javascript",
-                            });
-                            const _url = URL.createObjectURL(blob);
-
-                            module = await import(_url);
-                            moduleCache.set(url, module);
-                        } else {
-                            throw err;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (typeof module.default === "object" && typeof module.default.default !== "undefined") {
-            module = module.default; // CommonJS module with exports.default
-        }
-
+        const module = await resolveModule(msg.script, msg.baseUrl);
         const returns = await module[msg.fn](...msg.args);
 
         if (isAsyncGenerator(returns) || isGenerator(returns)) {

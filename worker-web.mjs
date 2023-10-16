@@ -1,17 +1,13 @@
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
 import { fromObject, toObject } from "./esm/error/index.js";
-
-const isNode = typeof process === "object" && !!process.versions?.node;
-
-/** @type {Map<string, any>} */
-const moduleCache = new Map();
+import { isNode, resolveModule } from "./esm/util.js";
 
 /** @type {Map<number, AsyncGenerator | Generator>} */
 const pendingTasks = new Map();
 
 /**
  * @param {any} msg
- * @returns {msg is import("./run.ts").FFIRequest}
+ * @returns {msg is import("./parallel.ts").FFIRequest}
  */
 export function isFFIRequest(msg) {
     return msg && typeof msg === "object" &&
@@ -22,8 +18,8 @@ export function isFFIRequest(msg) {
 }
 
 /**
- * @param {import("./run.ts").FFIRequest} msg 
- * @param {(reply: import("./run.ts").FFIResponse) => void} reply
+ * @param {import("./parallel.ts").FFIRequest} msg 
+ * @param {(reply: import("./parallel.ts").FFIResponse) => void} reply
  */
 export async function handleMessage(msg, reply) {
     try {
@@ -60,51 +56,7 @@ export async function handleMessage(msg, reply) {
             }
         }
 
-        let module;
-
-        if (isNode) {
-            const { fileURLToPath } = await import("url");
-            const path = msg.baseUrl
-                ? fileURLToPath(new URL(msg.script, msg.baseUrl).href)
-                : msg.script;
-            module = await import(path);
-        } else {
-            const url = new URL(msg.script, msg.baseUrl).href;
-            module = moduleCache.get(url);
-
-            if (!module) {
-                if (typeof Deno === "object") {
-                    module = await import(url);
-                    moduleCache.set(url, module);
-                } else {
-                    try {
-                        module = await import(url);
-                        moduleCache.set(url, module);
-                    } catch (err) {
-                        if (String(err).includes("Failed")) {
-                            // The content-type of the response isn't application/javascript, try to
-                            // download it and load it with object URL.
-                            const res = await fetch(url);
-                            const buf = await res.arrayBuffer();
-                            const blob = new Blob([new Uint8Array(buf)], {
-                                type: "application/javascript",
-                            });
-                            const _url = URL.createObjectURL(blob);
-
-                            module = await import(_url);
-                            moduleCache.set(url, module);
-                        } else {
-                            throw err;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (typeof module.default === "object" && typeof module.default.default !== "undefined") {
-            module = module.default; // CommonJS module with exports.default
-        }
-
+        const module = await resolveModule(msg.script, msg.baseUrl);
         const returns = await module[msg.fn](...msg.args);
 
         if (isAsyncGenerator(returns) || isGenerator(returns)) {
