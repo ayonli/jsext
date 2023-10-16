@@ -375,7 +375,15 @@ function createCall(modId, fn, args, baseUrl = undefined) {
     });
 }
 function extractBaseUrl(stackTrace) {
-    let callSite = stackTrace.split("\n")[2];
+    var _a, _b, _c;
+    const lines = stackTrace.split("\n");
+    let callSite;
+    if ((_a = lines[0]) === null || _a === void 0 ? void 0 : _a.startsWith("Error")) { // chromium browsers
+        callSite = stackTrace.split("\n")[2];
+    }
+    else {
+        callSite = stackTrace.split("\n")[1];
+    }
     let baseUrl;
     if (callSite) {
         let start = callSite.lastIndexOf("(");
@@ -385,8 +393,14 @@ function extractBaseUrl(stackTrace) {
             end = callSite.indexOf(")", start);
             callSite = callSite.slice(start, end);
         }
-        else {
+        else if (callSite.startsWith("    at ")) {
             callSite = callSite.slice(7); // remove leading `    at `
+        }
+        else if (typeof location === "object") { // general browsers
+            start = (_c = (_b = callSite.match(/(https?|file):/)) === null || _b === void 0 ? void 0 : _b.index) !== null && _c !== void 0 ? _c : -1;
+            if (start > 0) {
+                callSite = callSite.slice(start);
+            }
         }
         baseUrl = callSite.replace(/:\d+:\d+$/, "");
         if (!/^(https?|file):/.test(baseUrl)) {
@@ -437,6 +451,7 @@ function parallel(module) {
             baseUrl = extractBaseUrl(trace.stack);
         }
     }
+    console.log(baseUrl);
     return new Proxy(Object.create(null), {
         get: (_, prop) => {
             const obj = {

@@ -462,7 +462,15 @@ function createCall(
 }
 
 function extractBaseUrl(stackTrace: string): string | undefined {
-    let callSite = stackTrace.split("\n")[2];
+    const lines = stackTrace.split("\n");
+    let callSite: string;
+
+    if (lines[0]?.startsWith("Error")) { // chromium browsers
+        callSite = stackTrace.split("\n")[2] as string;
+    } else {
+        callSite = stackTrace.split("\n")[1] as string;
+    }
+
     let baseUrl: string | undefined;
 
     if (callSite) {
@@ -473,8 +481,14 @@ function extractBaseUrl(stackTrace: string): string | undefined {
             start += 1;
             end = callSite.indexOf(")", start);
             callSite = callSite.slice(start, end);
-        } else {
+        } else if (callSite.startsWith("    at ")) {
             callSite = callSite.slice(7); // remove leading `    at `
+        } else if (typeof location === "object") { // general browsers
+            start = callSite.match(/(https?|file):/)?.index ?? -1;
+
+            if (start > 0) {
+                callSite = callSite.slice(start);
+            }
         }
 
         baseUrl = callSite.replace(/:\d+:\d+$/, "");
