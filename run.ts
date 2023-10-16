@@ -33,13 +33,13 @@ const workerConsumerQueue: (() => void)[] = [];
  * 
  * @example
  * ```ts
- * const job1 = await run("job-example.mjs", ["World"]);
+ * const job1 = await run("examples/worker.mjs", ["World"]);
  * console.log(await job1.result()); // Hello, World
  * ```
  * 
  * @example
  * ```ts
- * const job2 = await run<string, [string[]]>("job-example.mjs", [["foo", "bar"]], {
+ * const job2 = await run<string, [string[]]>("examples/worker.mjs", [["foo", "bar"]], {
  *     fn: "sequence",
  * });
  * for await (const word of job2.iterate()) {
@@ -52,7 +52,7 @@ const workerConsumerQueue: (() => void)[] = [];
  * 
  * @example
  * ```ts
- * const job3 = await run<string, [string]>("job-example.mjs", ["foobar"], {
+ * const job3 = await run<string, [string]>("examples/worker.mjs", ["foobar"], {
  *    fn: "takeTooLong",
  * });
  * await job3.abort();
@@ -105,7 +105,7 @@ async function run<R, A extends any[] = any[]>(
  * 
  * @example
  * ```ts
- * const job4 = await run(() => import("./job-example.mjs"), ["World"]);
+ * const job4 = await run(() => import("./examples/worker.mjs"), ["World"]);
  * console.log(await job4.result()); // Hello, World
  * ```
  */

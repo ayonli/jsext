@@ -550,13 +550,13 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * 
  * @example
  * ```ts
- * const mod = parallel(() => import("./job-example.mjs"));
+ * const mod = parallel(() => import("./examples/worker.mjs"));
  * console.log(await mod.greet("World")); // Hi, World
  * ```
  * 
  * @example
  * ```ts
- * const mod = parallel(() => import("./job-example.mjs"));
+ * const mod = parallel(() => import("./examples/worker.mjs"));
  * 
  * for await (const word of mod.sequence(["foo", "bar"])) {
  *     console.log(word);
@@ -566,7 +566,9 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * // bar
  * ```
  */
-function parallel<M extends { [x: string]: any; }>(module: () => Promise<M>): ThreadedFunctions<M> {
+function parallel<M extends { [x: string]: any; }>(
+    module: string | (() => Promise<M>)
+): ThreadedFunctions<M> {
     const modId = sanitizeModuleId(module, true);
     let baseUrl: string | undefined;
 

@@ -598,7 +598,7 @@ const chunks = await readAll(file);
 ### jsext.parallel
 
 ```ts
-function parallel<M extends { [x: string]: any; }>(mod: () => Promise<M>): ThreadedFunctions<M>;
+function parallel<M extends { [x: string]: any; }>(mod: string | (() => Promise<M>)): ThreadedFunctions<M>;
 
 namespace parallel {
     /**
@@ -633,14 +633,14 @@ In Bun and Deno, the `module` can also be a TypeScript file.
 **Example (async function)**
 
 ```ts
-const mod = parallel(() => import("./job-example.mjs"));
+const mod = parallel(() => import("./examples/worker.mjs"));
 console.log(await mod.greet("World")); // Hi, World
 ```
 
 **Example (async generator function)**
 
 ```ts
-const mod = parallel(() => import("./job-example.mjs"));
+const mod = parallel(() => import("./examples/worker.mjs"));
 
 for await (const word of mod.sequence(["foo", "bar"])) {
     console.log(word);
@@ -648,6 +648,13 @@ for await (const word of mod.sequence(["foo", "bar"])) {
 // output:
 // foo
 // bar
+```
+
+NOTE: if the application is to be bundled, use the following syntax to link the module instead,
+it will prevent the bundler from including the file and rewriting the path.
+
+```ts
+const mod = parallel<typeof import("./examples/worker.mjs")>("./examples/worker.mjs");
 ```
 
 ---
@@ -699,14 +706,14 @@ configuration.
 **Example (result)**
 
 ```ts
-const job1 = await run<string, [string]>("job-example.mjs", ["World"]);
+const job1 = await run<string, [string]>("examples/worker.mjs", ["World"]);
 console.log(await job1.result()); // Hello, World
 ```
 
 **Example (iterate)**
 
 ```ts
-const job2 = await run<string, [string[]]>("job-example.mjs", [["foo", "bar"]], {
+const job2 = await run<string, [string[]]>("examples/worker.mjs", [["foo", "bar"]], {
     fn: "sequence",
 });
 for await (const word of job2.iterate()) {
@@ -720,20 +727,13 @@ for await (const word of job2.iterate()) {
 **Example (abort)**
 
 ```ts
-const job3 = await run<string, [string]>("job-example.mjs", ["foobar"], {
+const job3 = await run<string, [string]>("examples/worker.mjs", ["foobar"], {
     fn: "takeTooLong",
 });
 await job3.abort();
 const [err, res] = await _try(job3.result());
 console.assert(err === null);
 console.assert(res === undefined);
-```
-
-**Example (import expression)**
-
-```ts
-const job4 = await run(() => import("job-example.mjs"), ["World"]);
-console.log(await job4.result()); // Hello, World
 ```
 
 ---
