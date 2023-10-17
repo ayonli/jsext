@@ -1,4 +1,4 @@
-import type { Channel } from "../../index.ts";
+import type { Channel } from "https://ayonli.github.io/jsext/index.ts";
 import { readChannel, wireChannel } from "./util.ts";
 import handle from "./handler.ts";
 

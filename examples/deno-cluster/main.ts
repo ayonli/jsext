@@ -1,5 +1,4 @@
-import chan from "../../chan.ts";
-import { parallel } from "../../index.ts";
+import { parallel, chan } from "https://ayonli.github.io/jsext/index.ts";
 import { readChannel, wireChannel } from "./util.ts";
 const { handleRequest } = parallel(() => import("./worker.ts"));
 

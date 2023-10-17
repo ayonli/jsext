@@ -1,4 +1,4 @@
-import type { Channel } from "../../index.ts";
+import type { Channel } from "https://ayonli.github.io/jsext/index.ts";;
 
 export async function wireChannel<T = Uint8Array>(
     stream: ReadableStream<T>,
