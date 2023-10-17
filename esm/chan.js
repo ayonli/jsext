@@ -1,5 +1,11 @@
+import { sequence } from './number/index.js';
+
+var _a;
+const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER);
+const id = Symbol.for("id");
 class Channel {
     constructor(capacity = 0) {
+        this[_a] = idGenerator.next().value;
         this.buffer = [];
         this.producers = [];
         this.consumers = [];
@@ -114,6 +120,7 @@ class Channel {
      */
     close(err = null) {
         if (this.state !== 1) {
+            // prevent duplicated call
             return;
         }
         this.state = 2;
@@ -123,13 +130,17 @@ class Channel {
             consume(err, undefined);
         }
     }
-    [Symbol.asyncIterator]() {
+    [(_a = id, Symbol.asyncIterator)]() {
         const channel = this;
         return {
             async next() {
                 const bufSize = channel.buffer.length;
+                const queueSize = channel.producers.length;
                 const value = await channel.pop();
-                return { value: value, done: channel.state === 0 && !bufSize };
+                return {
+                    value: value,
+                    done: channel.state === 0 && !bufSize && !queueSize,
+                };
             }
         };
     }
@@ -216,5 +227,5 @@ function chan(capacity = 0) {
     return new Channel(capacity);
 }
 
-export { Channel, chan as default };
+export { Channel, chan as default, id };
 //# sourceMappingURL=chan.js.map

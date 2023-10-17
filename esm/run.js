@@ -1,4 +1,4 @@
-import parallel, { sanitizeModuleId, createFFIRequest, createWorker, isFFIResponse } from './parallel.js';
+import parallel, { sanitizeModuleId, createCallRequest, createWorker, isCallResponse } from './parallel.js';
 import chan from './chan.js';
 import deprecate from './deprecate.js';
 import { fromObject } from './error/index.js';
@@ -13,7 +13,7 @@ async function run(script, args = undefined, options = undefined) {
         deprecate("options.workerEntry", run, "set `run.workerEntry` instead");
     }
     const modId = sanitizeModuleId(script);
-    const msg = createFFIRequest({
+    const msg = createCallRequest({
         script: modId,
         fn: (options === null || options === void 0 ? void 0 : options.fn) || "default",
         args: args !== null && args !== void 0 ? args : [],
@@ -39,7 +39,7 @@ async function run(script, args = undefined, options = undefined) {
     }, options.timeout) : null;
     const handleMessage = (msg) => {
         var _a;
-        if (isFFIResponse(msg)) {
+        if (isCallResponse(msg)) {
             timeout && clearTimeout(timeout);
             if (msg.type === "error") {
                 return handleError(msg.error);

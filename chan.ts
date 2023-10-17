@@ -1,4 +1,10 @@
+import { sequence } from "./number/index.ts";
+
+const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER);
+export const id = Symbol.for("id");
+
 export class Channel<T> implements AsyncIterable<T> {
+    readonly [id] = idGenerator.next().value;
     /** The capacity is the maximum number of data allowed to be buffered. */
     readonly capacity: number;
     private buffer: T[] = [];
@@ -117,6 +123,7 @@ export class Channel<T> implements AsyncIterable<T> {
      */
     close(err: Error | null = null) {
         if (this.state !== 1) {
+            // prevent duplicated call
             return;
         }
 
@@ -134,8 +141,12 @@ export class Channel<T> implements AsyncIterable<T> {
         return {
             async next(): Promise<IteratorResult<T>> {
                 const bufSize = channel.buffer.length;
+                const queueSize = channel.producers.length;
                 const value = await channel.pop();
-                return { value: value as T, done: channel.state === 0 && !bufSize };
+                return {
+                    value: value as T,
+                    done: channel.state === 0 && !bufSize && !queueSize,
+                };
             }
         };
     }

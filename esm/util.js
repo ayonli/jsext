@@ -46,6 +46,12 @@ async function resolveModule(modId, baseUrl = undefined) {
     }
     return module;
 }
+function isChannelMessage(msg) {
+    return msg
+        && typeof msg === "object"
+        && ["push", "close"].includes(msg.type)
+        && typeof msg.channelId === "number";
+}
 
-export { isNode, resolveModule };
+export { isChannelMessage, isNode, resolveModule };
 //# sourceMappingURL=util.js.map

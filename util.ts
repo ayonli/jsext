@@ -49,3 +49,16 @@ export async function resolveModule(modId: string, baseUrl: string | undefined =
 
     return module;
 }
+
+export type ChannelMessage = {
+    type: "push" | "close";
+    value?: any;
+    channelId: number;
+};
+
+export function isChannelMessage(msg: any): msg is ChannelMessage {
+    return msg
+        && typeof msg === "object"
+        && ["push", "close"].includes(msg.type)
+        && typeof msg.channelId === "number";
+}

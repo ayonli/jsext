@@ -33,3 +33,40 @@ export function* sequence(words) {
 
     return words.join(", ");
 };
+
+/**
+ * @param {Error} err 
+ */
+export function transferError(err) {
+    return err;
+}
+
+/**
+ * @param {string} msg 
+ */
+export function throwError(msg) {
+    throw new Error(msg);
+}
+
+/**
+ * @param {import("../chan.ts").Channel<{ value: number; done: boolean }>} channel 
+ */
+export async function twoTimesValues(channel) {
+    /** @type {{ value: number; done: boolean }[]} */
+    const data = [];
+
+    for await (const { value, done } of channel) {
+        data.push({ value: value * 2, done });
+
+        if (done) {
+            break;
+        }
+    }
+
+    for (const item of data) {
+        await channel.push(item);
+    }
+
+    channel.close();
+    return data.length;
+}

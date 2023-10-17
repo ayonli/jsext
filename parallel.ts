@@ -1,12 +1,11 @@
 import type { Worker as NodeWorker, WorkerOptions } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
 import { ThenableAsyncGenerator, ThenableAsyncGeneratorLike } from "./external/thenable-generator/index.ts";
-import chan, { Channel } from "./chan.ts";
+import chan, { Channel, id } from "./chan.ts";
 import { sequence } from "./number/index.ts";
 import { trim } from "./string/index.ts";
-import { fromObject, toObject } from "./error/index.ts";
 import type { Optional } from "./index.ts";
-import { isNode, resolveModule } from "./util.ts";
+import { ChannelMessage, isChannelMessage, isNode, resolveModule } from "./util.ts";
 
 export type FunctionPropertyNames<T> = {
     [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
@@ -45,6 +44,7 @@ let workerPool: {
     tasks: Set<number>;
     lastAccess: number;
 }[] = [];
+const channelStore = new Map<number, { channel: Channel<any>, raw: Pick<Channel<any>, "push" | "close">; }>();
 
 export function sanitizeModuleId(id: string | (() => Promise<any>), strict = false): string {
     let _id = "";
@@ -82,8 +82,8 @@ export function sanitizeModuleId(id: string | (() => Promise<any>), strict = fal
     return _id;
 }
 
-export type FFIRequest = {
-    type: "ffi" | "next" | "return" | "throw";
+export type CallRequest = {
+    type: "call" | "next" | "return" | "throw";
     script: string;
     baseUrl: string;
     fn: string;
@@ -91,8 +91,8 @@ export type FFIRequest = {
     taskId?: number | undefined;
 };
 
-export function createFFIRequest(init: Optional<FFIRequest, "type" | "baseUrl">): FFIRequest {
-    const msg = { ...init, type: init.type || "ffi" } as FFIRequest;
+export function createCallRequest(init: Optional<CallRequest, "type" | "baseUrl">): CallRequest {
+    const msg = { ...init, type: init.type || "call" } as CallRequest;
 
     if (!msg.baseUrl) {
         if (typeof Deno === "object") {
@@ -110,15 +110,15 @@ export function createFFIRequest(init: Optional<FFIRequest, "type" | "baseUrl">)
     return msg;
 }
 
-export type FFIResponse = {
+export type CallResponse = {
     type: "return" | "yield" | "error" | "gen";
     taskId?: number | undefined;
     value?: any;
-    error?: Object;
+    error?: unknown;
     done?: boolean | undefined;
 };
 
-export function isFFIResponse(msg: any): msg is FFIResponse {
+export function isCallResponse(msg: any): msg is CallResponse {
     return msg && typeof msg === "object" && ["return", "yield", "error", "gen"].includes(msg.type);
 }
 
@@ -267,34 +267,47 @@ async function acquireWorker(taskId: number) {
         worker = res.worker as Worker | NodeWorker;
 
         const handleMessage = (msg: any) => {
-            if (isFFIResponse(msg) && msg.taskId) {
+            if (isChannelMessage(msg)) {
+                const channel = channelStore.get(msg.channelId);
+
+                if (!channel)
+                    return;
+
+                if (msg.type === "push") {
+                    channel.raw.push(msg.value);
+                } else if (msg.type === "close") {
+                    channel.raw.close(msg.value);
+                    channelStore.delete(msg.channelId);
+                }
+            } else if (isCallResponse(msg) && msg.taskId) {
                 const task = tasks.get(msg.taskId);
 
-                if (!task) {
+                if (!task)
                     return;
-                }
 
-                if (msg.type === "error") {
-                    const err = msg.error instanceof Error
-                        ? msg.error
-                        : fromObject(msg.error as Object);
+                if (msg.type === "return" || msg.type === "error") {
+                    if (msg.type === "error") {
+                        if (task.resolver) {
+                            task.resolver.reject(msg.error);
 
-                    if (task.resolver) {
-                        task.resolver.reject(err);
-                    } else if (task.channel) {
-                        task.channel.close(err);
+                            if (task.channel) {
+                                task.channel.close();
+                            }
+                        } else if (task.channel) {
+                            task.channel.close(msg.error as Error);
+                        } else {
+                            task.error = msg.error;
+                        }
                     } else {
-                        task.error = err;
-                    }
-                } else if (msg.type === "return") {
-                    if (task.resolver) {
-                        task.resolver.resolve(msg.value);
-                    } else {
-                        task.result = { value: msg.value };
-                    }
+                        if (task.resolver) {
+                            task.resolver.resolve(msg.value);
+                        } else {
+                            task.result = { value: msg.value };
+                        }
 
-                    if (task.channel) {
-                        task.channel.close();
+                        if (task.channel) {
+                            task.channel.close();
+                        }
                     }
 
                     if (poolRecord) {
@@ -334,7 +347,7 @@ async function acquireWorker(taskId: number) {
                             type: "return",
                             value: msg.value,
                             taskId: msg.taskId,
-                        } satisfies FFIResponse);
+                        } satisfies CallResponse);
                     }
                 } else if (msg.type === "gen") {
                     task.generate?.();
@@ -370,30 +383,100 @@ async function acquireWorker(taskId: number) {
     return worker;
 }
 
+function wrapChannel(
+    channel: Channel<any>,
+    channelWrite: (type: "push" | "close", msg: any, channelId: number) => void
+): object {
+    const channelId = channel[id] as number;
+
+    if (!channelStore.has(channelId)) {
+        const push = channel.push.bind(channel);
+        const close = channel.close.bind(channel);
+
+        channelStore.set(channelId, { channel, raw: { push, close } });
+    }
+
+    Object.defineProperties(channel, {
+        push: {
+            configurable: true,
+            writable: true,
+            value: async (value: any) => {
+                if (channel["state"] !== 1) {
+                    throw new Error("the channel is closed");
+                }
+
+                await Promise.resolve(channelWrite("push", value, channelId));
+            },
+        },
+        close: {
+            configurable: true,
+            writable: true,
+            value: (err: Error | null = null) => {
+                const record = channelStore.get(channelId);
+                record?.raw.close(err);
+                channelWrite("close", err, channelId);
+                channelStore.delete(channelId);
+
+                if (record) {
+                    // recover to the original methods
+                    Object.defineProperties(channel, {
+                        push: {
+                            configurable: true,
+                            writable: true,
+                            value: record.raw.push,
+                        },
+                        close: {
+                            configurable: true,
+                            writable: true,
+                            value: record.raw.close,
+                        },
+                    });
+                }
+            },
+        },
+    });
+
+    return { "@@type": "Channel", "@@id": channelId, "capacity": channel.capacity };
+}
+
 function createRemoteCall(
     modId: string,
     fn: string,
     args: any[],
     baseUrl: string | undefined = undefined
 ) {
-    let worker: Worker | NodeWorker;
-    const taskId = taskIdCounter.next().value as number;
+    args = args.map(arg => {
+        if (arg instanceof Channel) {
+            return wrapChannel(arg, (type, msg, channelId) => {
+                getWorker.then(worker => {
+                    worker.postMessage({
+                        type,
+                        value: msg,
+                        channelId,
+                    } satisfies ChannelMessage);
+                });
+            });
+        } else {
+            return arg;
+        }
+    });
 
+    const taskId = taskIdCounter.next().value as number;
     tasks.set(taskId, {});
 
-    return new ThenableAsyncGenerator({
-        async then(onfulfilled, onrejected) {
-            if (!worker) {
-                worker = await acquireWorker(taskId);
-                worker.postMessage(createFFIRequest({
-                    script: modId,
-                    fn,
-                    args,
-                    taskId,
-                    baseUrl: baseUrl as string
-                }));
-            }
+    const getWorker = acquireWorker(taskId).then((worker) => {
+        worker.postMessage(createCallRequest({
+            script: modId,
+            fn,
+            args,
+            taskId,
+            baseUrl: baseUrl as string
+        }));
+        return worker;
+    });
 
+    return new ThenableAsyncGenerator({
+        then(onfulfilled, onrejected) {
             const task = tasks.get(taskId) as RemoteTask;
 
             if (task.error) {
@@ -429,22 +512,16 @@ function createRemoteCall(
                 tasks.delete(taskId);
                 return { value, done: true };
             } else {
-                if (!worker) {
-                    worker = await acquireWorker(taskId);
-                    worker.postMessage(createFFIRequest({
-                        script: modId,
-                        fn,
-                        args,
-                        taskId,
-                        baseUrl: baseUrl as string
-                    }));
-                    await new Promise<void>((resolve) => {
+                task.channel ??= chan(Infinity);
+                const worker = await getWorker;
+
+                if (!task.generate) {
+                    await new Promise<void>(resolve => {
                         task.generate = resolve;
                     });
                 }
 
-                task.channel ??= chan(Infinity);
-                worker.postMessage(createFFIRequest({
+                worker.postMessage(createCallRequest({
                     script: modId,
                     fn,
                     args: [input],
@@ -458,7 +535,8 @@ function createRemoteCall(
         },
         async return(value) {
             tasks.delete(taskId);
-            worker?.postMessage(createFFIRequest({
+            const worker = await getWorker;
+            worker.postMessage(createCallRequest({
                 script: modId,
                 fn,
                 args: [value],
@@ -466,18 +544,21 @@ function createRemoteCall(
                 type: "return",
                 baseUrl: baseUrl as string,
             }));
+
             return { value, done: true };
         },
         async throw(err) {
             tasks.delete(taskId);
-            worker?.postMessage(createFFIRequest({
+            const worker = await getWorker;
+            worker.postMessage(createCallRequest({
                 script: modId,
                 fn,
-                args: [toObject(err)],
+                args: [err],
                 taskId,
                 type: "throw",
                 baseUrl: baseUrl as string,
             }));
+
             throw err;
         },
     } as ThenableAsyncGeneratorLike);
@@ -489,34 +570,25 @@ function createLocalCall(
     args: any[],
     baseUrl: string | undefined = undefined
 ) {
-    let generator: Generator | AsyncGenerator;
+    const getReturns = resolveModule(modId, baseUrl).then(module => {
+        return module[fn](...args);
+    });
 
     return new ThenableAsyncGenerator({
-        async then(onfulfilled, onrejected) {
-            const module = await resolveModule(modId, baseUrl);
-            return Promise.resolve(module[fn](...args)).then(onfulfilled, onrejected);
+        then(onfulfilled, onrejected) {
+            return getReturns.then(onfulfilled, onrejected);
         },
         async next(input) {
-            if (!generator) {
-                const module = await resolveModule(modId, baseUrl);
-                generator = module[fn](...args);
-            }
-
-            return await generator.next(input);
+            const gen: Generator | AsyncGenerator = await getReturns;
+            return await gen.next(input);
         },
         async return(value) {
-            if (generator) {
-                return await generator.return(value);
-            } else {
-                return { value, done: true };
-            }
+            const gen: Generator | AsyncGenerator = await getReturns;
+            return await gen.return(value);
         },
         async throw(err) {
-            if (generator) {
-                return await generator.throw(err);
-            } else {
-                throw err;
-            }
+            const gen: Generator | AsyncGenerator = await getReturns;
+            return gen.throw(err);
         },
     } as ThenableAsyncGeneratorLike);
 }
@@ -564,12 +636,27 @@ function extractBaseUrl(stackTrace: string): string | undefined {
 /**
  * Wraps a module and run its functions in worker threads.
  * 
- * In Node.js and Bun, the `module` can be either a CommonJS module or an ES module,
+ * In Node.js and Bun, the `module` can be either an ES module or a CommonJS module,
  * **node_modules** and built-in modules are also supported.
  * 
- * In browser and Deno, the `module` can only be an ES module.
+ * In browsers and Deno, the `module` can only be an ES module.
  * 
  * In Bun and Deno, the `module` can also be a TypeScript file.
+ * 
+ * Data are cloned and transferred between threads via **Structured Clone Algorithm**.
+ * 
+ * Apart from the standard data types supported by the algorithm, {@link Channel} can also be
+ * used to transfer data between threads. To do so, just passed a channel instance to the threaded
+ * function.
+ * 
+ * But be aware, channel can only be used as a parameter, return a channel from the threaded
+ * function is not allowed. And the channel can only be used for one threaded function at a
+ * specific time, once passed, the data can only be transferred into and out-from the function.
+ * 
+ * The difference between using channel and generator function for streaming processing is, for a
+ * generator function, `next(value)` is coupled with a `yield value`, the process is blocked
+ * between **next** calls, channel doesn't have this limitation, we can use it to stream all
+ * the data into the function before processing and receiving any result.
  * 
  * @example
  * ```ts
@@ -587,6 +674,25 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * // output:
  * // foo
  * // bar
+ * ```
+ * 
+ * @example
+ * ```ts
+ * const mod = parallel(() => import("./examples/worker.mjs"));
+ * 
+ * const channel = chan<number>();
+ * const length = mod.twoTimesValues(channel);
+ * 
+ * for (const value of Number.sequence(0, 9)) {
+ *     await channel.push({ value, done: value === 9 });
+ * }
+ * 
+ * const results = (await readAll(channel)).map(item => item.value);
+ * console.log(results);
+ * console.log(await length);
+ * // output:
+ * // [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+ * // 10
  * ```
  */
 function parallel<M extends { [x: string]: any; }>(
@@ -627,11 +733,16 @@ function parallel<M extends { [x: string]: any; }>(
 namespace parallel {
     /**
      * The maximum number of workers allowed to exist at the same time.
+     * 
+     * In Bun, Deno and browsers, the default value is equivalent to
+     * `navigator.hardwareConcurrency`.
+     * 
+     * In Node.js, the default value is `16`.
      */
-    export var maxWorkers = 16;
+    export var maxWorkers = typeof navigator === "object" ? navigator.hardwareConcurrency : 16;
 
     /**
-     * In browser, by default, the program loads the worker entry directly from GitHub,
+     * In browsers, by default, the program loads the worker entry directly from GitHub,
      * which could be slow due to poor internet connection, we can copy the entry file
      * `bundle/worker-web.mjs` to a local path of our website and set this option to that path
      * so that it can be loaded locally.

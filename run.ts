@@ -1,6 +1,6 @@
 import type { Worker as NodeWorker } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
-import parallel, { FFIResponse, createFFIRequest, createWorker, isFFIResponse, sanitizeModuleId } from "./parallel.ts";
+import parallel, { CallResponse, createCallRequest, createWorker, isCallResponse, sanitizeModuleId } from "./parallel.ts";
 import chan, { Channel } from "./chan.ts";
 import deprecate from "./deprecate.ts";
 import { fromObject } from "./error/index.ts";
@@ -23,7 +23,7 @@ const workerConsumerQueue: (() => void)[] = [];
  * In Node.js and Bun, the `script` can be either a CommonJS module or an ES module, and is relative
  * to the current working directory if not absolute.
  * 
- * In browser and Deno, the `script` can only be an ES module, and is relative to the current URL
+ * In browsers and Deno, the `script` can only be an ES module, and is relative to the current URL
  * (or working directory for Deno) if not absolute.
  * 
  * In Bun and Deno, the `script` can also be a TypeScript file.
@@ -78,7 +78,7 @@ async function run<R, A extends any[] = any[]>(
          * Choose whether to use `worker_threads` or `child_process` for running the script.
          * The default setting is `worker_threads`.
          * 
-         * In browser or Deno, this option is ignored and will always use the web worker.
+         * In browsers and Deno, this option is ignored and will always use the web worker.
          */
         adapter?: "worker_threads" | "child_process";
         /**
@@ -146,7 +146,7 @@ async function run<R, A extends any[] = any[]>(
     }
 
     const modId = sanitizeModuleId(script);
-    const msg = createFFIRequest({
+    const msg = createCallRequest({
         script: modId,
         fn: options?.fn || "default",
         args: args ?? [],
@@ -176,7 +176,7 @@ async function run<R, A extends any[] = any[]>(
     }, options.timeout) : null;
 
     const handleMessage = (msg: any) => {
-        if (isFFIResponse(msg)) {
+        if (isCallResponse(msg)) {
             timeout && clearTimeout(timeout);
 
             if (msg.type === "error") {
@@ -204,7 +204,7 @@ async function run<R, A extends any[] = any[]>(
             } else if (msg.type === "yield") {
                 if (msg.done) {
                     // The final message of yield event is the return value.
-                    handleMessage({ type: "return", value: msg.value } satisfies FFIResponse);
+                    handleMessage({ type: "return", value: msg.value } satisfies CallResponse);
                 } else {
                     channel?.push(msg.value);
                 }

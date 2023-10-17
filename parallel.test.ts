@@ -1,20 +1,21 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import jsext from "./index.ts";
+import jsext, { chan, readAll } from "./index.ts";
+import { sequence } from "./number/index.ts";
 
 declare var Deno: any;
 declare var Bun: any;
 
 describe("jsext.parallel", () => {
-    // @ts-ignore
+    // @ts-ignore because allowJs is not turned on
     const mod = jsext.parallel(() => import("./examples/worker.mjs"));
 
     it("return", async () => {
-        // @ts-ignore
+        // @ts-ignore because allowJs is not turned on
         strictEqual(await mod.greet("World"), "Hi, World");
     });
 
     it("yield", async () => {
-        // @ts-ignore
+        // @ts-ignore because allowJs is not turned on
         const iter = mod.sequence(["foo", "bar"]);
         const words: string[] = [];
 
@@ -26,13 +27,41 @@ describe("jsext.parallel", () => {
         strictEqual(await Promise.resolve(iter), "foo, bar");
     });
 
+    it("use error", async () => {
+        const err = new Error("something went wrong");
+        // @ts-ignore because allowJs is not turned on
+        const returns = await mod.transferError(err);
+        ok(returns instanceof Error);
+        strictEqual(returns.message, err.message);
+        strictEqual(returns.stack, err.stack);
+
+        // @ts-ignore because allowJs is not turned on
+        const [err2] = await jsext.try(mod.throwError("not good"));
+        ok(err2 instanceof Error);
+        strictEqual(err2.message, "not good");
+    });
+
+    it("use channel", async () => {
+        const channel = chan<{ value: number; done: boolean; }>();
+        // @ts-ignore because allowJs is not turned on
+        const length = mod.twoTimesValues(channel);
+
+        for (const value of sequence(0, 9)) {
+            await channel.push({ value, done: value === 9 });
+        }
+
+        const results = (await readAll(channel)).map(item => item.value);
+        deepStrictEqual(results, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]);
+        strictEqual(await length, 10);
+    });
+
     it("in dependencies", async () => {
-        // @ts-ignore
+        // @ts-ignore because allowJs is not turned on
         const { default: avg } = await import("./examples/avg.js");
         strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
 
         if (typeof Deno === "object" || typeof Bun === "object") {
-            // @ts-ignore
+            // @ts-ignore because allowJs is not turned on
             const { default: avg } = await import("./examples/avg.ts");
             strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
         }
@@ -62,17 +91,17 @@ describe("jsext.parallel", () => {
         });
 
         it("3-party module", async () => {
-            // @ts-ignore
+            // @ts-ignore because allowJs is not turned on
             const mod2 = jsext.parallel(() => import("glob"));
-            // @ts-ignore
+            // @ts-ignore because allowJs is not turned on
             const files = await mod2.sync("*.ts");
             ok(files.length > 0);
         });
 
         it("traditional CommonJS", async () => {
-            // @ts-ignore
+            // @ts-ignore because allowJs is not turned on
             const mod2 = jsext.parallel(() => import("string-hash"));
-            // @ts-ignore
+            // @ts-ignore because allowJs is not turned on
             ok((await mod2.default("Hello, World!")) > 0);
         });
     }

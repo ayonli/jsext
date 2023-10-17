@@ -603,11 +603,16 @@ function parallel<M extends { [x: string]: any; }>(mod: string | (() => Promise<
 namespace parallel {
     /**
      * The maximum number of workers allowed to exist at the same time.
+     * 
+     * In Bun, Deno and browsers, the default value is equivalent to
+     * `navigator.hardwareConcurrency`.
+     * 
+     * In Node.js, the default value is `16`.
      */
-    export var maxWorkers = 16;
+    export var maxWorkers: number;
 
     /**
-     * In browser, by default, the program loads the worker entry directly from GitHub,
+     * In browsers, by default, the program loads the worker entry directly from GitHub,
      * which could be slow due to poor internet connection, we can copy the entry file
      * `bundle/worker-web.mjs` to a local path of our website and set this option to that path
      * so that it can be loaded locally.
@@ -623,12 +628,27 @@ namespace parallel {
 
 Wraps a module and run its functions in worker threads.
 
-In Node.js and Bun, the `module` can be either a CommonJS module or an ES module,
+In Node.js and Bun, the `module` can be either an ES module or a CommonJS module,
 **node_modules** and built-in modules are also supported.
 
-In browser and Deno, the `module` can only be an ES module.
+In browsers and Deno, the `module` can only be an ES module.
 
 In Bun and Deno, the `module` can also be a TypeScript file.
+
+Data are cloned and transferred between threads via **Structured Clone Algorithm**.
+
+Apart from the standard data types supported by the algorithm, {@link Channel} can also be
+used to transfer data between threads. To do so, just passed a channel instance to the threaded
+function.
+
+But be aware, channel can only be used as a parameter, return a channel from the threaded
+function is not allowed. And the channel can only be used for one threaded function at a
+specific time, once passed, the data can only be transferred into and out-from the function.
+
+The difference between using channel and generator function for streaming processing is, for a
+generator function, `next(value)` is coupled with a `yield value`, the process is blocked
+between **next** calls, channel doesn't have this limitation, we can use it to stream all
+the data into the function before processing and receiving any result.
 
 **Example (async function)**
 
@@ -648,6 +668,26 @@ for await (const word of mod.sequence(["foo", "bar"])) {
 // output:
 // foo
 // bar
+```
+
+**Example (use channel)**
+
+```ts
+const mod = parallel(() => import("./examples/worker.mjs"));
+
+const channel = chan<number>();
+const length = mod.twoTimesValues(channel);
+
+for (const value of Number.sequence(0, 9)) {
+    await channel.push({ value, done: value === 9 });
+}
+
+const results = (await readAll(channel)).map(item => item.value);
+console.log(results);
+console.log(await length);
+// output:
+// [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+// 10
 ```
 
 NOTE: if the application is to be bundled, use the following syntax to link the module instead,
@@ -676,7 +716,7 @@ function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
      * Choose whether to use `worker_threads` or `child_process` for running the script.
      * The default setting is `worker_threads`.
      * 
-     * In browser or Deno, this option is ignored and will always use the web worker.
+     * In browsers and Deno, this option is ignored and will always use the web worker.
      */
     adapter?: "worker_threads" | "child_process";
 }): Promise<{
@@ -695,7 +735,7 @@ Runs the given `script` in a worker thread or child process.
 In Node.js and Bun, the `script` can be either a CommonJS module or an ES module, and is relative to
 the current working directory if not absolute.
 
-In browser and Deno, the `script` can only be an ES module, and is relative to the current URL
+In browsers and Deno, the `script` can only be an ES module, and is relative to the current URL
 (or working directory for Deno) if not absolute.
 
 In Bun and Deno, the `script` can also be a TypeScript file.
