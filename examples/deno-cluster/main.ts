@@ -1,6 +1,6 @@
 import chan from "../../chan.ts";
 import { parallel } from "../../index.ts";
-import { readChannel, wireChannel } from "./common.ts";
+import { readChannel, wireChannel } from "./util.ts";
 const { handleRequest } = parallel(() => import("./worker.ts"));
 
 Deno.serve(async req => {

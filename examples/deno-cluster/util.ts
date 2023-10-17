@@ -1,17 +1,5 @@
 import type { Channel } from "../../index.ts";
 
-export interface RequestMessage extends Omit<RequestInit, "body" | "signal"> {
-    url: string;
-    headers: Record<string, string>;
-    hasBody: boolean;
-}
-
-export interface ResponseMessage extends ResponseInit {
-    url: string;
-    headers: Record<string, string>;
-    hasBody: boolean;
-}
-
 export async function wireChannel<T = Uint8Array>(
     stream: ReadableStream<T>,
     channel: Channel<{ value: T | undefined; done: boolean; }>

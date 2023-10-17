@@ -1,5 +1,18 @@
 import type { Channel } from "../../index.ts";
-import { readChannel, wireChannel, type RequestMessage, type ResponseMessage } from "./common.ts";
+import { readChannel, wireChannel } from "./util.ts";
+import handle from "./handler.ts";
+
+export interface RequestMessage extends Omit<RequestInit, "body" | "signal"> {
+    url: string;
+    headers: Record<string, string>;
+    hasBody: boolean;
+}
+
+export interface ResponseMessage extends ResponseInit {
+    url: string;
+    headers: Record<string, string>;
+    hasBody: boolean;
+}
 
 export async function handleRequest(
     reqMsg: RequestMessage,
@@ -11,8 +24,7 @@ export async function handleRequest(
         body: hasBody ? readChannel(channel) : null,
     });
 
-    const text = await req.text();
-    const res = new Response("The client sent: " + text);
+    const res = await handle(req);
 
     res.body && wireChannel(res.body, channel);
 
