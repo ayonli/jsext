@@ -19,6 +19,8 @@ export async function handleRequest(
     channel: Channel<{ value: Uint8Array | undefined, done: boolean; }>
 ): Promise<ResponseMessage> {
     const { url, hasBody, ...init } = reqMsg;
+
+    // Rebuild the request object in the worker.
     const req = new Request(url, {
         ...init,
         body: hasBody ? readChannel(channel) : null,

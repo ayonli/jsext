@@ -254,6 +254,9 @@ class Channel {
      * Explicitly closing the channel is not required, if the channel is no longer used, it
      * will be automatically released by the GC. However, if the channel is used in a
      * `for await...of...` loop, closing the channel will allow the loop to break automatically.
+     *
+     * Moreover, if the channel is used between parallel threads, it will no longer be able to
+     * release automatically, must explicitly call this function in order to release for GC.
      */
     close(err = null) {
         if (this.state !== 1) {

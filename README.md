@@ -408,6 +408,10 @@ even if there is no receiver at the moment.
 
 Also, unlike Golang, `await channel.pop()` does not prevent the process from exiting.
 
+Channel can be used to send and receive streaming data in worker threads, but once it has been
+used that way, `channel.close()` must be explicitly called in order to release the channel for
+garbage collection.
+
 **Example**
 
 ```ts

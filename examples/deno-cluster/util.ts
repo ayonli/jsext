@@ -18,7 +18,8 @@ export async function wireChannel<T = Uint8Array>(
 }
 
 export function readChannel<T = Uint8Array>(
-    channel: Channel<{ value: T | undefined; done: boolean; }>
+    channel: Channel<{ value: T | undefined; done: boolean; }>,
+    closeAfterRead = false
 ) {
     return new ReadableStream({
         async start(controller) {
@@ -29,6 +30,12 @@ export function readChannel<T = Uint8Array>(
                 } else {
                     controller.enqueue(value as Uint8Array);
                 }
+            }
+
+            if (closeAfterRead) {
+                // This will release the channel for GC, only close
+                // in the response stream
+                channel.close();
             }
         }
     });

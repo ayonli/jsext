@@ -117,6 +117,9 @@ class Channel {
      * Explicitly closing the channel is not required, if the channel is no longer used, it
      * will be automatically released by the GC. However, if the channel is used in a
      * `for await...of...` loop, closing the channel will allow the loop to break automatically.
+     *
+     * Moreover, if the channel is used between parallel threads, it will no longer be able to
+     * release automatically, must explicitly call this function in order to release for GC.
      */
     close(err = null) {
         if (this.state !== 1) {
@@ -164,6 +167,10 @@ class Channel {
  * even if there is no receiver at the moment.
  *
  * Also, unlike Golang, `await channel.pop()` does not prevent the process from exiting.
+ *
+ * Channel can be used to send and receive streaming data in worker threads, but once it has been
+ * used that way, `channel.close()` must be explicitly called in order to release the channel for
+ * garbage collection.
  *
  * @example
  * ```ts

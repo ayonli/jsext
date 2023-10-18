@@ -4,6 +4,9 @@ const { handleRequest } = parallel(() => import("./worker.ts"));
 
 Deno.serve(async req => {
     const channel = chan<{ value: Uint8Array | undefined; done: boolean; }>();
+
+    // Pass the request information and the channel to the threaded function
+    // so it can rebuild the request object in the worker thread for use.
     const getResMsg = handleRequest({
         url: req.url,
         method: req.method,
@@ -17,11 +20,11 @@ Deno.serve(async req => {
         redirect: req.redirect,
         referrer: req.referrer,
         referrerPolicy: req.referrerPolicy,
-    }, channel);
+    }, channel); // pass channel as argument to the threaded function
 
     req.body && wireChannel(req.body, channel);
 
     const { hasBody, ...init } = await getResMsg;
 
-    return new Response(hasBody ? readChannel(channel) : null, init);
+    return new Response(hasBody ? readChannel(channel, true) : null, init);
 });
