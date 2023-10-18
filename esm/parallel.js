@@ -1,9 +1,10 @@
 import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
-import chan, { Channel, id } from './chan.js';
+import chan, { Channel } from './chan.js';
 import { sequence } from './number/index.js';
 import { trim } from './string/index.js';
-import { isNode, resolveModule, isChannelMessage } from './util.js';
+import { isNode, wrapChannel, resolveModule, isChannelMessage, handleChannelMessage } from './util.js';
 
+const shouldTransfer = Symbol.for("shouldTransfer");
 const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
 const isMainThread = isNode
     ? (!process.argv.includes("--worker-thread") && !process.env["__WORKER_THREAD"])
@@ -13,7 +14,6 @@ const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const tasks = new Map;
 let workerPool = [];
-const channelStore = new Map();
 function sanitizeModuleId(id, strict = false) {
     let _id = "";
     if (typeof id === "function") {
@@ -193,16 +193,7 @@ async function acquireWorker(taskId) {
         const handleMessage = (msg) => {
             var _a, _b;
             if (isChannelMessage(msg)) {
-                const channel = channelStore.get(msg.channelId);
-                if (!channel)
-                    return;
-                if (msg.type === "push") {
-                    channel.raw.push(msg.value);
-                }
-                else if (msg.type === "close") {
-                    channel.raw.close(msg.value);
-                    channelStore.delete(msg.channelId);
-                }
+                handleChannelMessage(msg);
             }
             else if (isCallResponse(msg) && msg.taskId) {
                 const task = tasks.get(msg.taskId);
@@ -299,79 +290,52 @@ async function acquireWorker(taskId) {
     }
     return worker;
 }
-function wrapChannel(channel, channelWrite) {
-    const channelId = channel[id];
-    if (!channelStore.has(channelId)) {
-        const push = channel.push.bind(channel);
-        const close = channel.close.bind(channel);
-        channelStore.set(channelId, { channel, raw: { push, close } });
-    }
-    Object.defineProperties(channel, {
-        push: {
-            configurable: true,
-            writable: true,
-            value: async (value) => {
-                if (channel["state"] !== 1) {
-                    throw new Error("the channel is closed");
-                }
-                await Promise.resolve(channelWrite("push", value, channelId));
-            },
-        },
-        close: {
-            configurable: true,
-            writable: true,
-            value: (err = null) => {
-                const record = channelStore.get(channelId);
-                record === null || record === void 0 ? void 0 : record.raw.close(err);
-                channelWrite("close", err, channelId);
-                channelStore.delete(channelId);
-                if (record) {
-                    // recover to the original methods
-                    Object.defineProperties(channel, {
-                        push: {
-                            configurable: true,
-                            writable: true,
-                            value: record.raw.push,
-                        },
-                        close: {
-                            configurable: true,
-                            writable: true,
-                            value: record.raw.close,
-                        },
-                    });
-                }
-            },
-        },
-    });
-    return { "@@type": "Channel", "@@id": channelId, "capacity": channel.capacity };
-}
-function createRemoteCall(modId, fn, args, baseUrl = undefined) {
+function wrapArgs(args, getWorker) {
+    const transferable = [];
     args = args.map(arg => {
         if (arg instanceof Channel) {
             return wrapChannel(arg, (type, msg, channelId) => {
                 getWorker.then(worker => {
-                    worker.postMessage({
-                        type,
-                        value: msg,
-                        channelId,
-                    });
+                    if (typeof worker["postMessage"] === "function") {
+                        worker.postMessage({
+                            type,
+                            value: msg,
+                            channelId,
+                        });
+                    }
+                    else {
+                        worker.send({
+                            type,
+                            value: msg,
+                            channelId,
+                        });
+                    }
                 });
             });
+        }
+        else if (arg[shouldTransfer]) {
+            transferable.push(arg);
+            return arg;
         }
         else {
             return arg;
         }
     });
+    return { args, transferable };
+}
+function createRemoteCall(modId, fn, args, baseUrl = undefined) {
     const taskId = taskIdCounter.next().value;
     tasks.set(taskId, {});
-    const getWorker = acquireWorker(taskId).then((worker) => {
+    let getWorker = acquireWorker(taskId);
+    const { args: _args, transferable } = wrapArgs(args, getWorker);
+    getWorker = getWorker.then((worker) => {
         worker.postMessage(createCallRequest({
             script: modId,
             fn,
-            args,
+            args: _args,
             taskId,
             baseUrl: baseUrl
-        }));
+        }), transferable);
         return worker;
     });
     return new ThenableAsyncGenerator({
@@ -428,7 +392,7 @@ function createRemoteCall(modId, fn, args, baseUrl = undefined) {
                     taskId,
                     type: "next",
                     baseUrl: baseUrl,
-                }));
+                }), transferable);
                 return await task.channel.pop();
             }
         },
@@ -442,7 +406,7 @@ function createRemoteCall(modId, fn, args, baseUrl = undefined) {
                 taskId,
                 type: "return",
                 baseUrl: baseUrl,
-            }));
+            }), transferable);
             return { value, done: true };
         },
         async throw(err) {
@@ -455,7 +419,7 @@ function createRemoteCall(modId, fn, args, baseUrl = undefined) {
                 taskId,
                 type: "throw",
                 baseUrl: baseUrl,
-            }));
+            }), transferable);
             throw err;
         },
     });
@@ -534,8 +498,8 @@ function extractBaseUrl(stackTrace) {
  * function.
  *
  * But be aware, channel can only be used as a parameter, return a channel from the threaded
- * function is not allowed. And the channel can only be used for one threaded function at a
- * specific time, once passed, the data can only be transferred into and out-from the function.
+ * function is not allowed. And the channel can only be used for one threaded function at a time,
+ * once passed, the data can only be transferred into and out-from the function.
  *
  * The difference between using channel and generator function for streaming processing is, for a
  * generator function, `next(value)` is coupled with a `yield value`, the process is blocked
@@ -614,14 +578,40 @@ function parallel(module) {
     /**
      * The maximum number of workers allowed to exist at the same time.
      *
-     * In Bun, Deno and browsers, the default value is equivalent to
+     * In Bun, Deno and browsers, the default value is set to
      * `navigator.hardwareConcurrency`.
      *
      * In Node.js, the default value is `16`.
      */
     parallel.maxWorkers = typeof navigator === "object" ? navigator.hardwareConcurrency : 16;
+    /**
+     * Marks the given data to be transferred instead of cloned to the worker thread.
+     *
+     * Currently, only `ArrayBuffer` are guaranteed to be transferable across all supported
+     * JavaScript runtimes.
+     *
+     * Be aware, the transferable object can only be used as a parameter, return a transferable
+     * object from the threaded function is not supported and will always be cloned.
+     *
+     * @example
+     * ```ts
+     * const mod = parallel(() => import("./examples/worker.mjs"));
+     *
+     * const arr = Uint8Array.from([0, 1, 2]);
+     * const length = await mod.transfer(parallel.transfer(arr.buffer));
+     *
+     * console.assert(length === 3);
+     * console.assert(arr.byteLength === 0);
+     * ```
+     */
+    function transfer(data) {
+        // @ts-ignore
+        data[shouldTransfer] = true;
+        return data;
+    }
+    parallel.transfer = transfer;
 })(parallel || (parallel = {}));
 var parallel$1 = parallel;
 
-export { createCallRequest, createWorker, parallel$1 as default, isCallResponse, sanitizeModuleId };
+export { createCallRequest, createWorker, parallel$1 as default, isCallResponse, sanitizeModuleId, wrapArgs };
 //# sourceMappingURL=parallel.js.map

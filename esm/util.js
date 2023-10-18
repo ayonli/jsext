@@ -1,6 +1,9 @@
+import { id, Channel } from './chan.js';
+
 var _a;
 const isNode = typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
 const moduleCache = new Map();
+const channelStore = new Map();
 async function resolveModule(modId, baseUrl = undefined) {
     let module;
     if (isNode) {
@@ -52,6 +55,123 @@ function isChannelMessage(msg) {
         && ["push", "close"].includes(msg.type)
         && typeof msg.channelId === "number";
 }
+async function handleChannelMessage(msg) {
+    const channel = channelStore.get(msg.channelId);
+    if (!channel)
+        return;
+    if (msg.type === "push") {
+        channel.raw.push(msg.value);
+    }
+    else if (msg.type === "close") {
+        channel.raw.close(msg.value);
+        channelStore.delete(msg.channelId);
+    }
+}
+function wrapChannel(channel, channelWrite) {
+    const channelId = channel[id];
+    if (!channelStore.has(channelId)) {
+        const push = channel.push.bind(channel);
+        const close = channel.close.bind(channel);
+        channelStore.set(channelId, { channel, raw: { push, close } });
+    }
+    Object.defineProperties(channel, {
+        push: {
+            configurable: true,
+            writable: true,
+            value: async (value) => {
+                if (channel["state"] !== 1) {
+                    throw new Error("the channel is closed");
+                }
+                await Promise.resolve(channelWrite("push", value, channelId));
+            },
+        },
+        close: {
+            configurable: true,
+            writable: true,
+            value: (err = null) => {
+                const record = channelStore.get(channelId);
+                record === null || record === void 0 ? void 0 : record.raw.close(err);
+                channelWrite("close", err, channelId);
+                channelStore.delete(channelId);
+                if (record) {
+                    // recover to the original methods
+                    Object.defineProperties(channel, {
+                        push: {
+                            configurable: true,
+                            writable: true,
+                            value: record.raw.push,
+                        },
+                        close: {
+                            configurable: true,
+                            writable: true,
+                            value: record.raw.close,
+                        },
+                    });
+                }
+            },
+        },
+    });
+    return { "@@type": "Channel", "@@id": channelId, "capacity": channel.capacity };
+}
+function unwrapChannel(obj, channelWrite) {
+    var _a;
+    const channelId = obj["@@id"];
+    let record = channelStore.get(channelId);
+    if (!record) {
+        const channel = Object.assign(Object.create(Channel.prototype), {
+            [id]: channelId,
+            capacity: (_a = obj.capacity) !== null && _a !== void 0 ? _a : 0,
+            buffer: [],
+            producers: [],
+            consumers: [],
+            error: null,
+            state: 1,
+        });
+        if (!channelStore.has(channelId)) {
+            const push = channel.push.bind(channel);
+            const close = channel.close.bind(channel);
+            channelStore.set(channelId, record = { channel, raw: { push, close } });
+        }
+        Object.defineProperties(channel, {
+            push: {
+                configurable: true,
+                writable: true,
+                value: async (value) => {
+                    if (channel["state"] !== 1) {
+                        throw new Error("the channel is closed");
+                    }
+                    await Promise.resolve(channelWrite("push", value, channelId));
+                },
+            },
+            close: {
+                configurable: true,
+                writable: true,
+                value: (err = null) => {
+                    const record = channelStore.get(channelId);
+                    record === null || record === void 0 ? void 0 : record.raw.close(err);
+                    channelWrite("close", err, channelId);
+                    channelStore.delete(channelId);
+                    if (record) {
+                        // recover to the original methods
+                        Object.defineProperties(channel, {
+                            push: {
+                                configurable: true,
+                                writable: true,
+                                value: record.raw.push,
+                            },
+                            close: {
+                                configurable: true,
+                                writable: true,
+                                value: record.raw.close,
+                            },
+                        });
+                    }
+                },
+            },
+        });
+    }
+    return record.channel;
+}
 
-export { isChannelMessage, isNode, resolveModule };
+export { handleChannelMessage, isChannelMessage, isNode, resolveModule, unwrapChannel, wrapChannel };
 //# sourceMappingURL=util.js.map

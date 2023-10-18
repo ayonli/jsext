@@ -1,5 +1,5 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import jsext, { chan, readAll } from "./index.ts";
+import jsext from "./index.ts";
 import { sequence } from "./number/index.ts";
 
 declare var Deno: any;
@@ -42,7 +42,7 @@ describe("jsext.parallel", () => {
     });
 
     it("use channel", async () => {
-        const channel = chan<{ value: number; done: boolean; }>();
+        const channel = jsext.chan<{ value: number; done: boolean; }>();
         // @ts-ignore because allowJs is not turned on
         const length = mod.twoTimesValues(channel);
 
@@ -50,9 +50,18 @@ describe("jsext.parallel", () => {
             await channel.push({ value, done: value === 9 });
         }
 
-        const results = (await readAll(channel)).map(item => item.value);
+        const results = (await jsext.readAll(channel)).map(item => item.value);
         deepStrictEqual(results, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]);
         strictEqual(await length, 10);
+    });
+
+    it("use transferable", async () => {
+        const arr = Uint8Array.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        // @ts-ignore because allowJs is not turned on
+        const length = await mod.transfer(jsext.parallel.transfer(arr.buffer));
+
+        deepStrictEqual(length, 10);
+        strictEqual(arr.byteLength, 0);
     });
 
     it("in dependencies", async () => {

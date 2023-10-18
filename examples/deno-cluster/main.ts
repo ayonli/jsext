@@ -3,7 +3,7 @@ import { readChannel, wireChannel } from "./util.ts";
 import { default as handle } from "./handler.ts";
 const { parallelHandle } = parallel(() => import("./worker.ts"));
 
-Deno.serve(async req => {
+Deno.serve(async (req: Request) => {
     if (!Deno.args.includes("--cluster")) {
         return await handle(req);
     }

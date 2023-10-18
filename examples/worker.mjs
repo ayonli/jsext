@@ -70,3 +70,10 @@ export async function twoTimesValues(channel) {
     channel.close();
     return data.length;
 }
+
+/**
+ * @param {ArrayBuffer} buf
+ */
+export async function transfer(buf) {
+    return buf.byteLength;
+}

@@ -1,11 +1,18 @@
 import type { Worker as NodeWorker, WorkerOptions } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
 import { ThenableAsyncGenerator, ThenableAsyncGeneratorLike } from "./external/thenable-generator/index.ts";
-import chan, { Channel, id } from "./chan.ts";
+import chan, { Channel } from "./chan.ts";
 import { sequence } from "./number/index.ts";
 import { trim } from "./string/index.ts";
 import type { Optional } from "./index.ts";
-import { ChannelMessage, isChannelMessage, isNode, resolveModule } from "./util.ts";
+import {
+    isNode,
+    resolveModule,
+    ChannelMessage,
+    isChannelMessage,
+    handleChannelMessage,
+    wrapChannel
+} from "./util.ts";
 
 export type FunctionPropertyNames<T> = {
     [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
@@ -18,6 +25,7 @@ export type ThreadedFunctions<M, T extends FunctionProperties<M> = FunctionPrope
     : T[K];
 };
 
+const shouldTransfer = Symbol.for("shouldTransfer");
 const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
 declare var Deno: any;
 declare var Bun: any;
@@ -44,7 +52,6 @@ let workerPool: {
     tasks: Set<number>;
     lastAccess: number;
 }[] = [];
-const channelStore = new Map<number, { channel: Channel<any>, raw: Pick<Channel<any>, "push" | "close">; }>();
 
 export function sanitizeModuleId(id: string | (() => Promise<any>), strict = false): string {
     let _id = "";
@@ -268,17 +275,7 @@ async function acquireWorker(taskId: number) {
 
         const handleMessage = (msg: any) => {
             if (isChannelMessage(msg)) {
-                const channel = channelStore.get(msg.channelId);
-
-                if (!channel)
-                    return;
-
-                if (msg.type === "push") {
-                    channel.raw.push(msg.value);
-                } else if (msg.type === "close") {
-                    channel.raw.close(msg.value);
-                    channelStore.delete(msg.channelId);
-                }
+                handleChannelMessage(msg);
             } else if (isCallResponse(msg) && msg.taskId) {
                 const task = tasks.get(msg.taskId);
 
@@ -383,60 +380,42 @@ async function acquireWorker(taskId: number) {
     return worker;
 }
 
-function wrapChannel(
-    channel: Channel<any>,
-    channelWrite: (type: "push" | "close", msg: any, channelId: number) => void
-): object {
-    const channelId = channel[id] as number;
+export function wrapArgs<A extends any[]>(
+    args: A,
+    getWorker: Promise<Worker | NodeWorker | ChildProcess>
+): {
+    args: A,
+    transferable: Transferable[];
+} {
+    const transferable: Transferable[] = [];
+    args = args.map(arg => {
+        if (arg instanceof Channel) {
+            return wrapChannel(arg, (type, msg, channelId) => {
+                getWorker.then(worker => {
+                    if (typeof (worker as any)["postMessage"] === "function") {
+                        (worker as Worker | NodeWorker).postMessage({
+                            type,
+                            value: msg,
+                            channelId,
+                        } satisfies ChannelMessage);
+                    } else {
+                        (worker as ChildProcess).send({
+                            type,
+                            value: msg,
+                            channelId,
+                        } satisfies ChannelMessage);
+                    }
+                });
+            });
+        } else if (arg[shouldTransfer]) {
+            transferable.push(arg);
+            return arg;
+        } else {
+            return arg;
+        }
+    }) as A;
 
-    if (!channelStore.has(channelId)) {
-        const push = channel.push.bind(channel);
-        const close = channel.close.bind(channel);
-
-        channelStore.set(channelId, { channel, raw: { push, close } });
-    }
-
-    Object.defineProperties(channel, {
-        push: {
-            configurable: true,
-            writable: true,
-            value: async (value: any) => {
-                if (channel["state"] !== 1) {
-                    throw new Error("the channel is closed");
-                }
-
-                await Promise.resolve(channelWrite("push", value, channelId));
-            },
-        },
-        close: {
-            configurable: true,
-            writable: true,
-            value: (err: Error | null = null) => {
-                const record = channelStore.get(channelId);
-                record?.raw.close(err);
-                channelWrite("close", err, channelId);
-                channelStore.delete(channelId);
-
-                if (record) {
-                    // recover to the original methods
-                    Object.defineProperties(channel, {
-                        push: {
-                            configurable: true,
-                            writable: true,
-                            value: record.raw.push,
-                        },
-                        close: {
-                            configurable: true,
-                            writable: true,
-                            value: record.raw.close,
-                        },
-                    });
-                }
-            },
-        },
-    });
-
-    return { "@@type": "Channel", "@@id": channelId, "capacity": channel.capacity };
+    return { args, transferable };
 }
 
 function createRemoteCall(
@@ -445,33 +424,20 @@ function createRemoteCall(
     args: any[],
     baseUrl: string | undefined = undefined
 ) {
-    args = args.map(arg => {
-        if (arg instanceof Channel) {
-            return wrapChannel(arg, (type, msg, channelId) => {
-                getWorker.then(worker => {
-                    worker.postMessage({
-                        type,
-                        value: msg,
-                        channelId,
-                    } satisfies ChannelMessage);
-                });
-            });
-        } else {
-            return arg;
-        }
-    });
-
     const taskId = taskIdCounter.next().value as number;
     tasks.set(taskId, {});
 
-    const getWorker = acquireWorker(taskId).then((worker) => {
+    let getWorker = acquireWorker(taskId);
+    const { args: _args, transferable } = wrapArgs(args, getWorker);
+
+    getWorker = getWorker.then((worker) => {
         worker.postMessage(createCallRequest({
             script: modId,
             fn,
-            args,
+            args: _args,
             taskId,
             baseUrl: baseUrl as string
-        }));
+        }), transferable as any[]);
         return worker;
     });
 
@@ -528,7 +494,7 @@ function createRemoteCall(
                     taskId,
                     type: "next",
                     baseUrl: baseUrl as string,
-                }));
+                }), transferable as any[]);
 
                 return await task.channel.pop();
             }
@@ -543,7 +509,7 @@ function createRemoteCall(
                 taskId,
                 type: "return",
                 baseUrl: baseUrl as string,
-            }));
+            }), transferable as any[]);
 
             return { value, done: true };
         },
@@ -557,7 +523,7 @@ function createRemoteCall(
                 taskId,
                 type: "throw",
                 baseUrl: baseUrl as string,
-            }));
+            }), transferable as any[]);
 
             throw err;
         },
@@ -650,8 +616,8 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * function.
  * 
  * But be aware, channel can only be used as a parameter, return a channel from the threaded
- * function is not allowed. And the channel can only be used for one threaded function at a
- * specific time, once passed, the data can only be transferred into and out-from the function.
+ * function is not allowed. And the channel can only be used for one threaded function at a time,
+ * once passed, the data can only be transferred into and out-from the function.
  * 
  * The difference between using channel and generator function for streaming processing is, for a
  * generator function, `next(value)` is coupled with a `yield value`, the process is blocked
@@ -734,7 +700,7 @@ namespace parallel {
     /**
      * The maximum number of workers allowed to exist at the same time.
      * 
-     * In Bun, Deno and browsers, the default value is equivalent to
+     * In Bun, Deno and browsers, the default value is set to
      * `navigator.hardwareConcurrency`.
      * 
      * In Node.js, the default value is `16`.
@@ -753,6 +719,32 @@ namespace parallel {
      * to a local directory and supply this option instead.
      */
     export var workerEntry: string | undefined;
+
+    /**
+     * Marks the given data to be transferred instead of cloned to the worker thread.
+     * 
+     * Currently, only `ArrayBuffer` are guaranteed to be transferable across all supported
+     * JavaScript runtimes.
+     * 
+     * Be aware, the transferable object can only be used as a parameter, return a transferable
+     * object from the threaded function is not supported and will always be cloned.
+     * 
+     * @example
+     * ```ts
+     * const mod = parallel(() => import("./examples/worker.mjs"));
+     * 
+     * const arr = Uint8Array.from([0, 1, 2]);
+     * const length = await mod.transfer(parallel.transfer(arr.buffer));
+     * 
+     * console.assert(length === 3);
+     * console.assert(arr.byteLength === 0);
+     * ```
+     */
+    export function transfer<T extends Transferable>(data: T): T {
+        // @ts-ignore
+        data[shouldTransfer] = true;
+        return data;
+    }
 }
 
 export default parallel;

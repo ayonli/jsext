@@ -1,10 +1,17 @@
 import type { Worker as NodeWorker } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
-import parallel, { CallResponse, createCallRequest, createWorker, isCallResponse, sanitizeModuleId } from "./parallel.ts";
 import chan, { Channel } from "./chan.ts";
 import deprecate from "./deprecate.ts";
 import { fromObject } from "./error/index.ts";
-import { isNode } from "./util.ts";
+import { handleChannelMessage, isChannelMessage, isNode } from "./util.ts";
+import parallel, {
+    sanitizeModuleId,
+    createCallRequest,
+    createWorker,
+    CallResponse,
+    isCallResponse,
+    wrapArgs
+} from "./parallel.ts";
 
 let workerPool: {
     workerId: number;
@@ -28,8 +35,11 @@ const workerConsumerQueue: (() => void)[] = [];
  * 
  * In Bun and Deno, the `script` can also be a TypeScript file.
  * 
- * NOTE: This function also uses `parallel.maxWorkers` and `parallel.workerEntry` for worker
+ * This function also uses {@link parallel.maxWorkers} and {@link parallel.workerEntry} for worker
  * configuration.
+ * 
+ * {@link parallel.transfer}() and {@link Channel} can also be used to transfer large or
+ * streaming data, but be aware transferable objects only work with `worker_threads` adapter.
  * 
  * @example
  * ```ts
@@ -176,7 +186,9 @@ async function run<R, A extends any[] = any[]>(
     }, options.timeout) : null;
 
     const handleMessage = (msg: any) => {
-        if (isCallResponse(msg)) {
+        if (isChannelMessage(msg)) {
+            handleChannelMessage(msg);
+        } else if (isCallResponse(msg)) {
             timeout && clearTimeout(timeout);
 
             if (msg.type === "error") {
@@ -303,6 +315,8 @@ async function run<R, A extends any[] = any[]>(
             terminate = () => Promise.resolve(void worker.kill(1));
 
             if (ok) {
+                const { args } = wrapArgs(msg.args, Promise.resolve(worker));
+                msg.args = args;
                 worker.ref(); // prevent premature exit in the main thread
                 worker.send(msg);
                 worker.on("message", handleMessage);
@@ -356,8 +370,10 @@ async function run<R, A extends any[] = any[]>(
             terminate = async () => void (await worker.terminate());
 
             if (ok) {
+                const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
+                msg.args = args;
                 worker.ref();
-                worker.postMessage(msg);
+                worker.postMessage(msg, transferable as any[]);
                 worker.on("message", handleMessage);
                 worker.once("error", handleError);
                 worker.once("messageerror", handleError);
@@ -399,7 +415,9 @@ async function run<R, A extends any[] = any[]>(
             handleExit();
         };
 
-        worker.postMessage(msg);
+        const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
+        msg.args = args;
+        worker.postMessage(msg, transferable as any[]);
         worker.onmessage = (ev) => handleMessage(ev.data);
         worker.onerror = (ev) => handleMessage(ev.error || new Error(ev.message));
         worker.onmessageerror = () => {

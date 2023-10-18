@@ -603,31 +603,6 @@ const chunks = await readAll(file);
 
 ```ts
 function parallel<M extends { [x: string]: any; }>(mod: string | (() => Promise<M>)): ThreadedFunctions<M>;
-
-namespace parallel {
-    /**
-     * The maximum number of workers allowed to exist at the same time.
-     * 
-     * In Bun, Deno and browsers, the default value is equivalent to
-     * `navigator.hardwareConcurrency`.
-     * 
-     * In Node.js, the default value is `16`.
-     */
-    export var maxWorkers: number;
-
-    /**
-     * In browsers, by default, the program loads the worker entry directly from GitHub,
-     * which could be slow due to poor internet connection, we can copy the entry file
-     * `bundle/worker-web.mjs` to a local path of our website and set this option to that path
-     * so that it can be loaded locally.
-     * 
-     * Or, if the code is bundled, the program won't be able to automatically locate the entry
-     * file in the file system, in such case, we can also copy the entry file
-     * (`bundle/worker.mjs` for Node.js and Bun, `bundle/worker-web.mjs` for browser and Deno)
-     * to a local directory and supply this option instead.
-     */
-    export var workerEntry: string | undefined;
-}
 ```
 
 Wraps a module and run its functions in worker threads.
@@ -641,13 +616,13 @@ In Bun and Deno, the `module` can also be a TypeScript file.
 
 Data are cloned and transferred between threads via **Structured Clone Algorithm**.
 
-Apart from the standard data types supported by the algorithm, {@link Channel} can also be
+Apart from the standard data types supported by the algorithm, `Channel` can also be
 used to transfer data between threads. To do so, just passed a channel instance to the threaded
 function.
 
 But be aware, channel can only be used as a parameter, return a channel from the threaded
-function is not allowed. And the channel can only be used for one threaded function at a
-specific time, once passed, the data can only be transferred into and out-from the function.
+function is not allowed. And the channel can only be used for one threaded function at a time,
+once passed, the data can only be transferred into and out-from the function.
 
 The difference between using channel and generator function for streaming processing is, for a
 generator function, `next(value)` is coupled with a `yield value`, the process is blocked
@@ -703,6 +678,58 @@ const mod = parallel<typeof import("./examples/worker.mjs")>("./examples/worker.
 
 ---
 
+```ts
+namespace parallel {
+    /**
+     * The maximum number of workers allowed to exist at the same time.
+     * 
+     * In Bun, Deno and browsers, the default value is set to
+     * `navigator.hardwareConcurrency`.
+     * 
+     * In Node.js, the default value is `16`.
+     */
+    export var maxWorkers: number;
+
+    /**
+     * In browsers, by default, the program loads the worker entry directly from GitHub,
+     * which could be slow due to poor internet connection, we can copy the entry file
+     * `bundle/worker-web.mjs` to a local path of our website and set this option to that path
+     * so that it can be loaded locally.
+     * 
+     * Or, if the code is bundled, the program won't be able to automatically locate the entry
+     * file in the file system, in such case, we can also copy the entry file
+     * (`bundle/worker.mjs` for Node.js and Bun, `bundle/worker-web.mjs` for browser and Deno)
+     * to a local directory and supply this option instead.
+     */
+    export var workerEntry: string | undefined;
+
+    /**
+     * Marks the given data to be transferred instead of cloned to the worker thread.
+     * 
+     * Currently, only `ArrayBuffer` are guaranteed to be transferable across all supported
+     * JavaScript runtimes.
+     * 
+     * Be aware, the transferable object can only be used as a parameter, return a transferable
+     * object from the threaded function is not supported and will always be cloned.
+     */
+    export function transfer<T extends Transferable>(data: T): T;
+}
+```
+
+**Example (use transferable)**
+
+```ts
+const mod = parallel(() => import("./examples/worker.mjs"));
+
+const arr = Uint8Array.from([0, 1, 2]);
+const length = await mod.transfer(parallel.transfer(arr.buffer));
+
+console.assert(length === 3);
+console.assert(arr.byteLength === 0);
+```
+
+---
+
 ### jsext.run
 
 ```ts
@@ -744,8 +771,11 @@ In browsers and Deno, the `script` can only be an ES module, and is relative to 
 
 In Bun and Deno, the `script` can also be a TypeScript file.
 
-NOTE: This function also uses `parallel.maxWorkers` and `parallel.workerEntry` for worker
+This function also uses `parallel.maxWorkers` and `parallel.workerEntry` for worker
 configuration.
+
+`parallel.transfer()` and `Channel` can also be used to transfer large or
+streaming data, but be aware transferable objects only work with `worker_threads` adapter.
 
 **Example (result)**
 

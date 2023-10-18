@@ -1,6 +1,6 @@
 import { isMainThread, parentPort } from "worker_threads";
-import { isChannelMessage } from "./util.ts";
-import { handleChannelMessage, handleCallRequest, isCallRequest } from "./worker-web.ts";
+import { isChannelMessage, handleChannelMessage } from "./util.ts";
+import { isCallRequest, handleCallRequest } from "./worker-web.ts";
 
 if (!isMainThread && parentPort) {
     const reply = parentPort.postMessage.bind(parentPort);

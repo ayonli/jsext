@@ -1,8 +1,8 @@
-import parallel, { sanitizeModuleId, createCallRequest, createWorker, isCallResponse } from './parallel.js';
 import chan from './chan.js';
 import deprecate from './deprecate.js';
 import { fromObject } from './error/index.js';
-import { isNode } from './util.js';
+import { isNode, isChannelMessage, handleChannelMessage } from './util.js';
+import parallel, { sanitizeModuleId, createCallRequest, createWorker, wrapArgs, isCallResponse } from './parallel.js';
 
 let workerPool = [];
 // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
@@ -39,7 +39,10 @@ async function run(script, args = undefined, options = undefined) {
     }, options.timeout) : null;
     const handleMessage = (msg) => {
         var _a;
-        if (isCallResponse(msg)) {
+        if (isChannelMessage(msg)) {
+            handleChannelMessage(msg);
+        }
+        else if (isCallResponse(msg)) {
             timeout && clearTimeout(timeout);
             if (msg.type === "error") {
                 return handleError(msg.error);
@@ -160,6 +163,8 @@ async function run(script, args = undefined, options = undefined) {
             };
             terminate = () => Promise.resolve(void worker.kill(1));
             if (ok) {
+                const { args } = wrapArgs(msg.args, Promise.resolve(worker));
+                msg.args = args;
                 worker.ref(); // prevent premature exit in the main thread
                 worker.send(msg);
                 worker.on("message", handleMessage);
@@ -213,8 +218,10 @@ async function run(script, args = undefined, options = undefined) {
             };
             terminate = async () => void (await worker.terminate());
             if (ok) {
+                const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
+                msg.args = args;
                 worker.ref();
-                worker.postMessage(msg);
+                worker.postMessage(msg, transferable);
                 worker.on("message", handleMessage);
                 worker.once("error", handleError);
                 worker.once("messageerror", handleError);
@@ -256,7 +263,9 @@ async function run(script, args = undefined, options = undefined) {
             await Promise.resolve(worker.terminate());
             handleExit();
         };
-        worker.postMessage(msg);
+        const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
+        msg.args = args;
+        worker.postMessage(msg, transferable);
         worker.onmessage = (ev) => handleMessage(ev.data);
         worker.onerror = (ev) => handleMessage(ev.error || new Error(ev.message));
         worker.onmessageerror = () => {
