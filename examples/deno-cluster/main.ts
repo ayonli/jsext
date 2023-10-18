@@ -1,10 +1,10 @@
-import { parallel, chan } from "https://ayonli.github.io/jsext/index.ts";
+import { parallel, chan } from "../../index.ts";
 import { readChannel, wireChannel } from "./util.ts";
 import { default as handle } from "./handler.ts";
 const { parallelHandle } = parallel(() => import("./worker.ts"));
 
 Deno.serve(async req => {
-    if (!Deno.args.includes("--parallel")) {
+    if (!Deno.args.includes("--cluster")) {
         return await handle(req);
     }
 
