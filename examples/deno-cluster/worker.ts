@@ -14,7 +14,7 @@ export interface ResponseMessage extends ResponseInit {
     hasBody: boolean;
 }
 
-export async function handleRequest(
+export async function parallelHandle(
     reqMsg: RequestMessage,
     channel: Channel<{ value: Uint8Array | undefined, done: boolean; }>
 ): Promise<ResponseMessage> {

@@ -1,13 +1,18 @@
 import { parallel, chan } from "https://ayonli.github.io/jsext/index.ts";
 import { readChannel, wireChannel } from "./util.ts";
-const { handleRequest } = parallel(() => import("./worker.ts"));
+import { default as handle } from "./handler.ts";
+const { parallelHandle } = parallel(() => import("./worker.ts"));
 
 Deno.serve(async req => {
+    if (!Deno.args.includes("--parallel")) {
+        return await handle(req);
+    }
+
     const channel = chan<{ value: Uint8Array | undefined; done: boolean; }>();
 
     // Pass the request information and the channel to the threaded function
     // so it can rebuild the request object in the worker thread for use.
-    const getResMsg = handleRequest({
+    const getResMsg = parallelHandle({
         url: req.url,
         method: req.method,
         headers: Object.fromEntries(req.headers.entries()),
