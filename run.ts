@@ -3,7 +3,7 @@ import type { ChildProcess } from "node:child_process";
 import chan, { Channel } from "./chan.ts";
 import deprecate from "./deprecate.ts";
 import { fromObject } from "./error/index.ts";
-import { handleChannelMessage, isChannelMessage, isNode, isBun } from "./util.ts";
+import { handleChannelMessage, isChannelMessage, isNode, isBun, isBeforeNode14 } from "./util.ts";
 import parallel, {
     BunWorker,
     sanitizeModuleId,
@@ -17,6 +17,7 @@ import parallel, {
 let workerPool: {
     getWorker: Promise<{ worker: Worker | BunWorker | NodeWorker | ChildProcess; workerId: number; }>;
     adapter: "worker_threads" | "child_process";
+    serialization: "advanced" | "json";
     busy: boolean;
 }[] = [];
 
@@ -92,6 +93,15 @@ async function run<R, A extends any[] = any[]>(
          */
         adapter?: "worker_threads" | "child_process";
         /**
+         * When using `child_process` adapter, this option instructs which serialization algorithm
+         * should be used to serialize the data for transferring between the parent and the child
+         * process. The default setting is `advanced` (structured clone algorithm).
+         * 
+         * NOTE: this option only works in Node.js, Bun doesn't support `json` serialization and
+         * will always use `advanced`.
+         */
+        serialization?: "advanced" | "json";
+        /**
          * @deprecated set `run.workerEntry` instead.
          */
         workerEntry?: string;
@@ -127,6 +137,7 @@ async function run<M extends { [x: string]: any; }, A extends Parameters<M[Fn]>,
         timeout?: number;
         keepAlive?: boolean;
         adapter?: "worker_threads" | "child_process";
+        serialization?: "advanced" | "json";
     }
 ): Promise<{
     workerId: number;
@@ -142,6 +153,7 @@ async function run<R, A extends any[] = any[]>(
         timeout?: number;
         keepAlive?: boolean;
         adapter?: "worker_threads" | "child_process";
+        serialization?: "advanced" | "json";
         /** @deprecated */
         workerEntry?: string;
     } | undefined = undefined
@@ -162,6 +174,38 @@ async function run<R, A extends any[] = any[]>(
         args: args ?? [],
     });
     const entry = options?.workerEntry || parallel.workerEntry;
+    const adapter = options?.adapter || "worker_threads";
+    const serialization = adapter === "worker_threads"
+        ? "advanced"
+        : (options?.serialization || (isBeforeNode14 ? "json" : "advanced"));
+    let poolRecord = workerPool.find(item => {
+        return item.adapter === adapter
+            && item.serialization === serialization
+            && !item.busy;
+    });
+
+    if (poolRecord) {
+        poolRecord.busy = true;
+    } else if (workerPool.length < parallel.maxWorkers) {
+        // Fill the worker pool regardless the current call should keep-alive or not,
+        // this will make sure that the total number of workers will not exceed the
+        // `run.maxWorkers`. If the the call doesn't keep-alive the worker, it will be
+        // cleaned after the call.
+        workerPool.push(poolRecord = {
+            getWorker: createWorker({ entry, adapter, serialization }),
+            adapter,
+            serialization,
+            busy: true,
+        });
+    } else {
+        // Put the current call in the consumer queue if there are no workers available,
+        // once an existing call finishes, the queue will pop the its head consumer and
+        // retry.
+        return new Promise<void>((resolve) => {
+            workerConsumerQueue.push(resolve);
+        }).then(() => run(modId, args, options));
+    }
+
     let error: unknown = null;
     let result: { value: any; } | undefined;
     let resolver: {
@@ -169,8 +213,7 @@ async function run<R, A extends any[] = any[]>(
         reject: (err: unknown) => void;
     } | undefined;
     let channel: Channel<R> | undefined = undefined;
-    let workerId: number | undefined;
-    let poolRecord: typeof workerPool[0] | undefined;
+    let workerId: number;
     let release: () => void;
     let terminate = () => Promise.resolve<void>(void 0);
     const timeout = options?.timeout ? setTimeout(() => {
@@ -258,39 +301,10 @@ async function run<R, A extends any[] = any[]>(
     };
 
     if (isNode || isBun) {
-        if (options?.adapter === "child_process") {
-            let worker: ChildProcess;
-            poolRecord = workerPool.find(item => {
-                return item.adapter === "child_process" && !item.busy;
-            });
-
-            if (poolRecord) {
-                const res = await poolRecord.getWorker;
-                worker = res.worker as ChildProcess;
-                workerId = res.workerId;
-                poolRecord.busy = true;
-            } else if (workerPool.length < parallel.maxWorkers) {
-                // Fill the worker pool regardless the current call should keep-alive or not,
-                // this will make sure that the total number of workers will not exceed the
-                // `run.maxWorkers`. If the the call doesn't keep-alive the worker, it will be
-                // cleaned after the call.
-                workerPool.push(poolRecord = {
-                    getWorker: createWorker({ entry, adapter: "child_process" }),
-                    adapter: "child_process",
-                    busy: true,
-                });
-
-                const res = await poolRecord.getWorker;
-                worker = res.worker as ChildProcess;
-                workerId = res.workerId;
-            } else {
-                // Put the current call in the consumer queue if there are no workers available,
-                // once an existing call finishes, the queue will pop the its head consumer and
-                // retry.
-                return new Promise<void>((resolve) => {
-                    workerConsumerQueue.push(resolve);
-                }).then(() => run(modId, args, options));
-            }
+        if (adapter === "child_process") {
+            const record = await poolRecord.getWorker;
+            const worker = record.worker as ChildProcess;
+            workerId = record.workerId;
 
             release = () => {
                 worker.unref(); // allow the main thread to exit if the event loop is empty
@@ -314,31 +328,9 @@ async function run<R, A extends any[] = any[]>(
             msg.args = args;
             worker.send(msg);
         } else if (isNode) {
-            let worker: NodeWorker;
-            poolRecord = workerPool.find(item => {
-                return item.adapter === "worker_threads" && !item.busy;
-            });
-
-            if (poolRecord) {
-                const res = await poolRecord.getWorker;
-                worker = res.worker as NodeWorker;
-                workerId = res.workerId;
-                poolRecord.busy = true;
-            } else if (workerPool.length < parallel.maxWorkers) {
-                workerPool.push(poolRecord = {
-                    getWorker: createWorker({ entry, adapter: "worker_threads" }),
-                    adapter: "worker_threads",
-                    busy: true,
-                });
-
-                const res = await poolRecord.getWorker;
-                worker = res.worker as NodeWorker;
-                workerId = res.workerId;
-            } else {
-                return new Promise<void>((resolve) => {
-                    workerConsumerQueue.push(resolve);
-                }).then(() => run(modId, args, options));
-            }
+            const record = await poolRecord.getWorker;
+            const worker = record.worker as NodeWorker;
+            workerId = record.workerId;
 
             release = () => {
                 worker.unref();
@@ -361,31 +353,9 @@ async function run<R, A extends any[] = any[]>(
             msg.args = args;
             worker.postMessage(msg, transferable as any[]);
         } else { // isBun
-            let worker: BunWorker;
-            poolRecord = workerPool.find(item => {
-                return item.adapter === "worker_threads" && !item.busy;
-            });
-
-            if (poolRecord) {
-                const res = await poolRecord.getWorker;
-                worker = res.worker as BunWorker;
-                workerId = res.workerId;
-                poolRecord.busy = true;
-            } else if (workerPool.length < parallel.maxWorkers) {
-                workerPool.push(poolRecord = {
-                    getWorker: createWorker({ entry }),
-                    adapter: "worker_threads",
-                    busy: true,
-                });
-
-                const res = await poolRecord.getWorker;
-                worker = res.worker as BunWorker;
-                workerId = res.workerId;
-            } else {
-                return new Promise<void>((resolve) => {
-                    workerConsumerQueue.push(resolve);
-                }).then(() => run(modId, args, options));
-            }
+            const record = await poolRecord.getWorker;
+            const worker = record.worker as BunWorker;
+            workerId = record.workerId;
 
             release = () => {
                 worker.onmessage = null;
@@ -411,31 +381,9 @@ async function run<R, A extends any[] = any[]>(
             worker.postMessage(msg, transferable);
         }
     } else {
-        let worker: Worker;
-        poolRecord = workerPool.find(item => {
-            return item.adapter === "worker_threads" && !item.busy;
-        });
-
-        if (poolRecord) {
-            const res = await poolRecord.getWorker;
-            worker = res.worker as Worker;
-            workerId = res.workerId;
-            poolRecord.busy = true;
-        } else if (workerPool.length < parallel.maxWorkers) {
-            workerPool.push(poolRecord = {
-                getWorker: createWorker({ entry }),
-                adapter: "worker_threads",
-                busy: true,
-            });
-
-            const res = await poolRecord.getWorker;
-            worker = res.worker as Worker;
-            workerId = res.workerId;
-        } else {
-            return new Promise<void>((resolve) => {
-                workerConsumerQueue.push(resolve);
-            }).then(() => run(modId, args, options));
-        }
+        const record = await poolRecord.getWorker;
+        const worker = record.worker as Worker;
+        workerId = record.workerId;
 
         release = () => {
             worker.onmessage = null;

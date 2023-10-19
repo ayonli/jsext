@@ -4,6 +4,7 @@ var _a;
 const isDeno = typeof Deno === "object";
 const isBun = typeof Bun === "object";
 const isNode = !isDeno && !isBun && typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
+const isBeforeNode14 = isNode && parseInt(process.version.slice(1)) < 14;
 const moduleCache = new Map();
 const channelStore = new Map();
 async function resolveModule(modId, baseUrl = undefined) {
@@ -175,5 +176,5 @@ function unwrapChannel(obj, channelWrite) {
     return record.channel;
 }
 
-export { handleChannelMessage, isBun, isChannelMessage, isDeno, isNode, resolveModule, unwrapChannel, wrapChannel };
+export { handleChannelMessage, isBeforeNode14, isBun, isChannelMessage, isDeno, isNode, resolveModule, unwrapChannel, wrapChannel };
 //# sourceMappingURL=util.js.map

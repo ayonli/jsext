@@ -2,16 +2,27 @@ import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
 import chan, { Channel } from './chan.js';
 import { sequence } from './number/index.js';
 import { trim } from './string/index.js';
-import { isNode, isBun, isDeno, wrapChannel, resolveModule, isChannelMessage, handleChannelMessage } from './util.js';
+import { fromObject } from './error/index.js';
+import { isNode, isBun, isDeno, wrapChannel, isBeforeNode14, resolveModule, isChannelMessage, handleChannelMessage } from './util.js';
 
+/**
+ * The `[Symbol.for("terminate")]()` function of the threaded module should only be used for
+ * testing purposes. When using `child_process` adapter, the program will not be able exit
+ * automatically after the test because there is an active IPC channel between the parent and
+ * the child process. Calling the terminate function will force to kill the child process and
+ * allow the program to exit.
+ */
+const terminate = Symbol.for("terminate");
 const shouldTransfer = Symbol.for("shouldTransfer");
 const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
-const isMainThread = isNode
-    ? !process.argv.includes("--worker-thread")
-    : (isBun ? Bun.isMainThread : typeof WorkerGlobalScope === "undefined");
-const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
+// In Node.js, `process.argv` contains `--worker-thread` when the current thread is used as
+// a worker. In Bun, this option only presents when using `child_process` adapter.
+const isWorkerThread = (isNode || isBun) && process.argv.includes("--worker-thread");
+const isMainThread = !isWorkerThread
+    && (isBun ? Bun.isMainThread : typeof WorkerGlobalScope === "undefined");
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const tasks = new Map;
+const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 let workerPool = [];
 function sanitizeModuleId(id, strict = false) {
     let _id = "";
@@ -67,9 +78,9 @@ function createCallRequest(init) {
 function isCallResponse(msg) {
     return msg && typeof msg === "object" && ["return", "yield", "error", "gen"].includes(msg.type);
 }
-async function createWorker(options = {}) {
+async function createWorker(options) {
     var _a;
-    let { entry, adapter } = options;
+    let { entry, adapter, serialization } = options;
     if (isNode || isBun) {
         if (!entry) {
             const path = await import('path');
@@ -105,10 +116,9 @@ async function createWorker(options = {}) {
         }
         if (adapter === "child_process") {
             const { fork } = await import('child_process');
-            const isPrior14 = parseInt(process.version.slice(1)) < 14;
             const worker = fork(entry, ["--worker-thread"], {
                 stdio: "inherit",
-                serialization: isPrior14 ? "advanced" : "json",
+                serialization,
             });
             const workerId = worker.pid;
             await new Promise((resolve, reject) => {
@@ -206,8 +216,13 @@ async function createWorker(options = {}) {
         };
     }
 }
-async function acquireWorker(taskId) {
-    let poolRecord = workerPool.find(item => !item.tasks.size);
+async function acquireWorker(taskId, options) {
+    const { adapter, serialization } = options;
+    let poolRecord = workerPool.find(item => {
+        return item.adapter === adapter
+            && item.serialization === serialization
+            && !item.tasks.size;
+    });
     if (poolRecord) {
         poolRecord.lastAccess = Date.now();
     }
@@ -216,11 +231,12 @@ async function acquireWorker(taskId) {
             getWorker: (async () => {
                 const res = await createWorker({
                     entry: parallel.workerEntry,
-                    adapter: "worker_threads"
+                    adapter,
+                    serialization,
                 });
                 let worker = res.worker;
                 const handleMessage = (msg) => {
-                    var _a, _b;
+                    var _a, _b, _c, _d;
                     if (isChannelMessage(msg)) {
                         handleChannelMessage(msg);
                     }
@@ -230,17 +246,20 @@ async function acquireWorker(taskId) {
                             return;
                         if (msg.type === "return" || msg.type === "error") {
                             if (msg.type === "error") {
+                                const err = ((_a = msg.error) === null || _a === void 0 ? void 0 : _a.constructor) === Object
+                                    ? ((_b = fromObject(msg.error)) !== null && _b !== void 0 ? _b : msg.error)
+                                    : msg.error;
                                 if (task.resolver) {
-                                    task.resolver.reject(msg.error);
+                                    task.resolver.reject(err);
                                     if (task.channel) {
                                         task.channel.close();
                                     }
                                 }
                                 else if (task.channel) {
-                                    task.channel.close(msg.error);
+                                    task.channel.close(err);
                                 }
                                 else {
-                                    task.error = msg.error;
+                                    task.error = err;
                                 }
                             }
                             else {
@@ -275,13 +294,18 @@ async function acquireWorker(taskId) {
                                     });
                                     idealItems.forEach(async (item) => {
                                         const worker = await item.getWorker;
-                                        worker.terminate();
+                                        if (typeof worker["terminate"] === "function") {
+                                            await worker.terminate();
+                                        }
+                                        else {
+                                            worker.kill();
+                                        }
                                     });
                                 }
                             }
                         }
                         else if (msg.type === "yield") {
-                            (_a = task.channel) === null || _a === void 0 ? void 0 : _a.push({ value: msg.value, done: msg.done });
+                            (_c = task.channel) === null || _c === void 0 ? void 0 : _c.push({ value: msg.value, done: msg.done });
                             if (msg.done) {
                                 // The final message of yield event is the return value.
                                 handleMessage({
@@ -292,7 +316,7 @@ async function acquireWorker(taskId) {
                             }
                         }
                         else if (msg.type === "gen") {
-                            (_b = task.generate) === null || _b === void 0 ? void 0 : _b.call(task);
+                            (_d = task.generate) === null || _d === void 0 ? void 0 : _d.call(task);
                         }
                     }
                 };
@@ -300,13 +324,20 @@ async function acquireWorker(taskId) {
                     worker.on("message", handleMessage);
                 }
                 else if (isBun) {
-                    worker.onmessage = (ev) => handleMessage(ev.data);
+                    if (adapter === "child_process") {
+                        worker.on("message", handleMessage);
+                    }
+                    else {
+                        worker.onmessage = (ev) => handleMessage(ev.data);
+                    }
                 }
                 else {
                     worker.onmessage = (ev) => handleMessage(ev.data);
                 }
                 return worker;
             })(),
+            adapter,
+            serialization,
             tasks: new Set(),
             lastAccess: Date.now(),
         });
@@ -326,7 +357,10 @@ async function acquireWorker(taskId) {
 function wrapArgs(args, getWorker) {
     const transferable = [];
     args = args.map(arg => {
-        if (arg instanceof Channel) {
+        if (!arg || typeof arg !== "object" || Array.isArray(arg)) {
+            return arg;
+        }
+        else if (arg instanceof Channel) {
             return wrapChannel(arg, (type, msg, channelId) => {
                 getWorker.then(worker => {
                     if (typeof worker["postMessage"] === "function") {
@@ -356,19 +390,25 @@ function wrapArgs(args, getWorker) {
     });
     return { args, transferable };
 }
-function createRemoteCall(modId, fn, args, baseUrl = undefined) {
+function createRemoteCall(modId, fn, args, baseUrl = undefined, options) {
     const taskId = taskIdCounter.next().value;
     tasks.set(taskId, {});
-    let getWorker = acquireWorker(taskId);
+    let getWorker = acquireWorker(taskId, options);
     const { args: _args, transferable } = wrapArgs(args, getWorker);
     getWorker = getWorker.then((worker) => {
-        worker.postMessage(createCallRequest({
+        const req = createCallRequest({
             script: modId,
             fn,
             args: _args,
             taskId,
             baseUrl: baseUrl
-        }), transferable);
+        });
+        if (typeof worker["postMessage"] === "function") {
+            worker.postMessage(req, transferable);
+        }
+        else {
+            worker.send(req);
+        }
         return worker;
     });
     return new ThenableAsyncGenerator({
@@ -418,41 +458,61 @@ function createRemoteCall(modId, fn, args, baseUrl = undefined) {
                         task.generate = resolve;
                     });
                 }
-                worker.postMessage(createCallRequest({
+                const { args, transferable } = wrapArgs([input], getWorker);
+                const req = createCallRequest({
                     script: modId,
                     fn,
-                    args: [input],
+                    args: args,
                     taskId,
                     type: "next",
                     baseUrl: baseUrl,
-                }), transferable);
+                });
+                if (typeof worker["postMessage"] === "function") {
+                    worker.postMessage(req, transferable);
+                }
+                else {
+                    worker.send(req);
+                }
                 return await task.channel.pop();
             }
         },
         async return(value) {
             tasks.delete(taskId);
             const worker = await getWorker;
-            worker.postMessage(createCallRequest({
+            const { args, transferable } = wrapArgs([value], getWorker);
+            const req = createCallRequest({
                 script: modId,
                 fn,
-                args: [value],
+                args: args,
                 taskId,
                 type: "return",
                 baseUrl: baseUrl,
-            }), transferable);
+            });
+            if (typeof worker["postMessage"] === "function") {
+                worker.postMessage(req, transferable);
+            }
+            else {
+                worker.send(req);
+            }
             return { value, done: true };
         },
         async throw(err) {
             tasks.delete(taskId);
             const worker = await getWorker;
-            worker.postMessage(createCallRequest({
+            const req = createCallRequest({
                 script: modId,
                 fn,
                 args: [err],
                 taskId,
                 type: "throw",
                 baseUrl: baseUrl,
-            }), transferable);
+            });
+            if (typeof worker["postMessage"] === "function") {
+                worker.postMessage(req);
+            }
+            else {
+                worker.send(req);
+            }
             throw err;
         },
     });
@@ -576,7 +636,11 @@ function extractBaseUrl(stackTrace) {
  * // 10
  * ```
  */
-function parallel(module) {
+function parallel(module, options = {}) {
+    const adapter = (options === null || options === void 0 ? void 0 : options.adapter) || "worker_threads";
+    const serialization = adapter === "worker_threads"
+        ? "advanced"
+        : ((options === null || options === void 0 ? void 0 : options.serialization) || (isBeforeNode14 ? "json" : "advanced"));
     const modId = sanitizeModuleId(module, true);
     let baseUrl;
     if (IsPath.test(modId)) {
@@ -590,13 +654,42 @@ function parallel(module) {
             baseUrl = extractBaseUrl(trace.stack);
         }
     }
-    return new Proxy(Object.create(null), {
-        get: (_, prop) => {
+    return new Proxy({
+        [terminate]: async () => {
+            const toRemoveItems = [];
+            workerPool = workerPool.filter(item => {
+                const ok = item.adapter === adapter && item.serialization === serialization;
+                if (ok) {
+                    toRemoveItems.push(item);
+                }
+                return !ok;
+            });
+            for (const { getWorker } of toRemoveItems) {
+                const worker = await getWorker;
+                if (typeof worker["terminate"] === "function") {
+                    await worker.terminate();
+                }
+                else {
+                    worker.kill();
+                }
+            }
+        },
+    }, {
+        get: (target, prop) => {
+            if (Reflect.has(target, prop)) {
+                return target[prop];
+            }
+            else if (typeof prop === "symbol") {
+                return undefined;
+            }
             const obj = {
                 // This syntax will give our remote function a name.
                 [prop]: (...args) => {
                     if (isMainThread) {
-                        return createRemoteCall(modId, prop, args, baseUrl);
+                        return createRemoteCall(modId, prop, args, baseUrl, {
+                            adapter,
+                            serialization,
+                        });
                     }
                     else {
                         return createLocalCall(modId, prop, args, baseUrl);
@@ -619,12 +712,17 @@ function parallel(module) {
     parallel.maxWorkers = typeof navigator === "object" ? navigator.hardwareConcurrency : 16;
     /**
      * Marks the given data to be transferred instead of cloned to the worker thread.
+     * Once transferred, the data is no longer available on the sending end.
      *
      * Currently, only `ArrayBuffer` are guaranteed to be transferable across all supported
      * JavaScript runtimes.
      *
      * Be aware, the transferable object can only be used as a parameter, return a transferable
      * object from the threaded function is not supported and will always be cloned.
+     *
+     * NOTE: always prefer channel for transferring large amount of data in streaming fashion
+     * than sending them as transferrable objects, it consumes less memory and does not transfer
+     * the ownership of the data.
      *
      * @example
      * ```ts
@@ -646,5 +744,5 @@ function parallel(module) {
 })(parallel || (parallel = {}));
 var parallel$1 = parallel;
 
-export { createCallRequest, createWorker, parallel$1 as default, isCallResponse, sanitizeModuleId, wrapArgs };
+export { createCallRequest, createWorker, parallel$1 as default, isCallResponse, sanitizeModuleId, terminate, wrapArgs };
 //# sourceMappingURL=parallel.js.map

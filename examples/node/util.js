@@ -1,3 +1,5 @@
+import { as } from "../../esm/json/index.js";
+
 /**
  * 
  * @param {ReadableStream<Uint8Array>} stream 
@@ -7,7 +9,7 @@ export async function wireChannel(stream, channel) {
     const reader = stream.getReader();
 
     while (true) {
-        const { value, done } = await reader.read();
+        let { value, done } = await reader.read();
 
         await channel.push({ value, done });
 
@@ -26,7 +28,15 @@ export async function wireChannel(stream, channel) {
 export function readChannel(channel, closeAfterRead = false) {
     return new ReadableStream({
         async start(controller) {
-            for await (const { value, done } of channel) {
+            for await (let { value, done } of channel) {
+                if (!(value instanceof Uint8Array)) {
+                    if (Buffer.isBuffer(value)) {
+                        value = Uint8Array.from(value);
+                    } else {
+                        value = as(value, Uint8Array);
+                    }
+                }
+
                 if (done) {
                     controller.close();
                     break;

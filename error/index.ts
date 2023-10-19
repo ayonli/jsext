@@ -1,3 +1,4 @@
+import { Constructor } from "../index.ts";
 import { omit } from "../object/index.ts";
 import Exception from "./Exception.ts";
 
@@ -5,6 +6,10 @@ export { Exception };
 
 /** Transform the error to a plain object. */
 export function toObject<T extends Error>(err: T): { [x: string | symbol]: any; } {
+    if (!(err instanceof Error) && err["name"] && err["message"]) { // Error-like
+        err = fromObject(err, Error) as any;
+    }
+
     return omit(err, ["toString", "toJSON"]);
 }
 
@@ -17,15 +22,18 @@ export function fromObject<T extends { name: "SyntaxError"; }>(obj: T): SyntaxEr
 export function fromObject<T extends { name: "TypeError"; }>(obj: T): TypeError;
 export function fromObject<T extends { name: "URIError"; }>(obj: T): URIError;
 export function fromObject<T extends { name: "Exception"; }>(obj: T): Exception;
-export function fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T | null;
-export function fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T | null {
+export function fromObject<T extends Error>(obj: { [x: string | symbol]: any; }, ctor?: Constructor<Error>): T | null;
+export function fromObject<T extends Error>(
+    obj: { [x: string | symbol]: any; },
+    ctor: Function | undefined = undefined
+): T | null {
     // @ts-ignore
     if (!obj?.name) {
         return null;
     }
 
     // @ts-ignore
-    let ctor = globalThis[obj.name] as new (...args: any) => T;
+    ctor ||= globalThis[obj.name] as new (...args: any) => T;
 
     if (!ctor) {
         if (obj["name"] === "Exception") {

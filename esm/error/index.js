@@ -3,16 +3,19 @@ import Exception from './Exception.js';
 
 /** Transform the error to a plain object. */
 function toObject(err) {
+    if (!(err instanceof Error) && err["name"] && err["message"]) { // Error-like
+        err = fromObject(err, Error);
+    }
     return omit(err, ["toString", "toJSON"]);
 }
-function fromObject(obj) {
+function fromObject(obj, ctor = undefined) {
     var _a;
     // @ts-ignore
     if (!(obj === null || obj === void 0 ? void 0 : obj.name)) {
         return null;
     }
     // @ts-ignore
-    let ctor = globalThis[obj.name];
+    ctor || (ctor = globalThis[obj.name]);
     if (!ctor) {
         if (obj["name"] === "Exception") {
             ctor = Exception;

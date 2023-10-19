@@ -74,6 +74,13 @@ export async function twoTimesValues(channel) {
 /**
  * @param {ArrayBuffer} buf
  */
-export async function transfer(buf) {
+export function transfer(buf) {
     return buf.byteLength;
+}
+
+/**
+ * @param {import("../index.ts").TypedArray} arr 
+ */
+export function transferTypedArray(arr) {
+    return arr;
 }

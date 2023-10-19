@@ -1,4 +1,5 @@
 import { Exception, fromObject, toObject } from "./index.ts";
+import { Constructor } from "../index.ts";
 
 declare global {
     interface Error {
@@ -16,7 +17,7 @@ declare global {
         fromObject<T extends { name: "SyntaxError"; }>(obj: T): SyntaxError;
         fromObject<T extends { name: "TypeError"; }>(obj: T): TypeError;
         fromObject<T extends { name: "URIError"; }>(obj: T): URIError;
-        fromObject<T extends { name: "Exception"; }>(obj: T): Exception;
+        fromObject<T extends { name: "Exception"; }>(obj: T, ctor?: Constructor<Error>): Exception;
         fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T | null;
     }
 

@@ -170,6 +170,7 @@ var _a;
 const isDeno = typeof Deno === "object";
 const isBun = typeof Bun === "object";
 const isNode = !isDeno && !isBun && typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
+isNode && parseInt(process.version.slice(1)) < 14;
 const moduleCache = new Map();
 const channelStore = new Map();
 async function resolveModule(modId, baseUrl = undefined) {
@@ -362,6 +363,130 @@ function hasGeneratorSpecials(obj) {
         && typeof obj.throw === "function";
 }
 
+/**
+ * Returns `true` if the specified object has the indicated property as its own property.
+ * If the property is inherited, or does not exist, the function returns `false`.
+ */
+function hasOwn(obj, key) {
+    return Object.prototype.hasOwnProperty.call(obj, key);
+}
+function pick(obj, keys) {
+    return keys.reduce((result, key) => {
+        if (key in obj && obj[key] !== undefined) {
+            result[key] = obj[key];
+        }
+        return result;
+    }, {});
+}
+function omit(obj, keys) {
+    const allKeys = Reflect.ownKeys(obj);
+    const keptKeys = allKeys.filter(key => !keys.includes(key));
+    const result = pick(obj, keptKeys);
+    // special treatment for Error types
+    if (obj instanceof Error) {
+        ["name", "message", "cause"].forEach(key => {
+            if (!keys.includes(key) &&
+                obj[key] !== undefined &&
+                !hasOwn(result, key)) {
+                result[key] = obj[key];
+            }
+        });
+    }
+    return result;
+}
+
+class Exception extends Error {
+    constructor(message, options = 0) {
+        super(message);
+        this.code = 0;
+        if (typeof options === "number") {
+            this.code = options;
+        }
+        else {
+            if (options.cause) {
+                Object.defineProperty(this, "cause", {
+                    configurable: true,
+                    enumerable: false,
+                    writable: true,
+                    value: options.cause,
+                });
+            }
+            if (options.code) {
+                this.code = options.code;
+            }
+        }
+    }
+}
+Object.defineProperty(Exception.prototype, "name", {
+    configurable: true,
+    enumerable: false,
+    writable: true,
+    value: "Exception",
+});
+
+/** Transform the error to a plain object. */
+function toObject(err) {
+    if (!(err instanceof Error) && err["name"] && err["message"]) { // Error-like
+        err = fromObject(err, Error);
+    }
+    return omit(err, ["toString", "toJSON"]);
+}
+function fromObject(obj, ctor = undefined) {
+    var _a;
+    // @ts-ignore
+    if (!(obj === null || obj === void 0 ? void 0 : obj.name)) {
+        return null;
+    }
+    // @ts-ignore
+    ctor || (ctor = globalThis[obj.name]);
+    if (!ctor) {
+        if (obj["name"] === "Exception") {
+            ctor = Exception;
+        }
+        else {
+            ctor = Error;
+        }
+    }
+    const err = Object.create(ctor.prototype, {
+        message: {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: (_a = obj["message"]) !== null && _a !== void 0 ? _a : "",
+        },
+    });
+    if (err.name !== obj["name"]) {
+        Object.defineProperty(err, "name", {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: obj["name"],
+        });
+    }
+    if (obj["stack"] !== undefined) {
+        Object.defineProperty(err, "stack", {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: obj["stack"],
+        });
+    }
+    if (obj["cause"] != undefined) {
+        Object.defineProperty(err, "cause", {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: obj["cause"],
+        });
+    }
+    const otherKeys = Reflect.ownKeys(obj).filter(key => !["name", "message", "stack", "cause"].includes(key));
+    otherKeys.forEach(key => {
+        // @ts-ignore
+        err[key] = obj[key];
+    });
+    return err;
+}
+
 const pendingTasks = new Map();
 function unwrapArgs(args, channelWrite) {
     return args.map(arg => {
@@ -384,6 +509,25 @@ function isCallRequest(msg) {
         Array.isArray(msg.args);
 }
 async function handleCallRequest(msg, reply) {
+    const _reply = reply;
+    reply = (res) => {
+        if (res.type === "error") {
+            try {
+                return _reply(res);
+            }
+            catch (_a) {
+                // In case the error cannot be cloned directly, fallback to transferring it as
+                // an object and rebuild in the main thread.
+                return _reply({
+                    ...res,
+                    error: toObject(res.error)
+                });
+            }
+        }
+        else {
+            return _reply(res);
+        }
+    };
     msg.args = unwrapArgs(msg.args, (type, msg, channelId) => {
         reply({ type, value: msg, channelId });
     });
