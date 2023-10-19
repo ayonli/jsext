@@ -32,13 +32,19 @@ describe("jsext.run", () => {
         });
 
         it("timeout", async () => {
-            const job = await jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
+            const [err, job] = await jsext.try(jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
                 fn: "takeTooLong",
                 timeout: 50,
-            });
-            const [err, res] = await jsext.try(job.result());
-            strictEqual(res, undefined);
-            deepStrictEqual(err, new Error("operation timeout after 50ms"));
+            }));
+
+            if (err) {
+                strictEqual(job, undefined);
+                deepStrictEqual(err, new Error("operation timeout after 50ms"));
+            } else {
+                const [err2, res] = await jsext.try(job.result());
+                strictEqual(res, undefined);
+                deepStrictEqual(err2, new Error("operation timeout after 50ms"));
+            }
         });
 
         it("abort", async () => {
