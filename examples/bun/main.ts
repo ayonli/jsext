@@ -1,7 +1,7 @@
 import { parallel, chan } from "../../index.ts";
-import { readChannel, wireChannel } from "../deno-cluster/util.ts";
-import { default as handle } from "../deno-cluster/handler.ts";
-const { parallelHandle } = parallel(() => import("../deno-cluster/worker.ts"));
+import { readChannel, wireChannel } from "../deno/util.ts";
+import { default as handle } from "../deno/handler.ts";
+const { parallelHandle } = parallel(() => import("../deno/worker.ts"));
 
 Bun.serve({
     port: 8000,
@@ -36,3 +36,4 @@ Bun.serve({
         return new Response(hasBody ? readChannel(channel, true) : null, init);
     }
 });
+console.log(`Listening on http://localhost:${8000}/`);

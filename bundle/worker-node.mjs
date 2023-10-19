@@ -1,69 +1,4 @@
-if (!Symbol.asyncIterator) {
-    // @ts-ignore
-    Symbol.asyncIterator = Symbol("Symbol.asyncIterator");
-}
-
-/**
- * Checks if the given object is an IteratorLike (implemented `next`).
- * @param {any} obj
- * @returns {obj is { [x: string | symbol]: any; next: Function }}
- */
-function isIteratorLike(obj) {
-    // An iterable object has a 'next' method, however including a 'next' method
-    // doesn't ensure the object is an iterator, it is only iterator-like.
-    return typeof obj === "object"
-        && obj !== null
-        && typeof obj.next === "function";
-}
-
-/**
- * Checks if the given object is an IterableIterator (implemented both
- * `@@iterator` and `next`).
- * @param {any} obj
- */
-function isIterableIterator(obj) {
-    return isIteratorLike(obj)
-        && typeof obj[Symbol.iterator] === "function";
-}
-
-/**
- * Checks if the given object is an AsyncIterableIterator (implemented
- * both `@@asyncIterator` and `next`).
- * @param {any} obj
- * @returns {obj is AsyncIterableIterator<any>}
- */
-function isAsyncIterableIterator(obj) {
-    return isIteratorLike(obj)
-        && typeof obj[Symbol.asyncIterator] === "function";
-}
-
-/**
- * Checks if the given object is a Generator.
- * @param {any} obj
- * @returns {obj is Generator}
- */
-function isGenerator(obj) {
-    return isIterableIterator(obj)
-        && hasGeneratorSpecials(obj);
-}
-
-/**
- * Checks if the given object is an AsyncGenerator.
- * @param {any} obj
- * @returns {obj is AsyncGenerator}
- */
-function isAsyncGenerator(obj) {
-    return isAsyncIterableIterator(obj)
-        && hasGeneratorSpecials(obj);
-}
-
-/**
- * @param {any} obj 
- */
-function hasGeneratorSpecials(obj) {
-    return typeof obj.return === "function"
-        && typeof obj.throw === "function";
-}
+import { isMainThread, parentPort } from 'worker_threads';
 
 /** Returns `true` if the given value is a float number, `false` otherwise. */
 /** Creates a generator that produces sequential numbers from `min` to `max` (inclusive). */
@@ -232,12 +167,14 @@ class Channel {
 }
 
 var _a;
-const isNode = typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
+const isDeno = typeof Deno === "object";
+const isBun = typeof Bun === "object";
+const isNode = !isDeno && !isBun && typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
 const moduleCache = new Map();
 const channelStore = new Map();
 async function resolveModule(modId, baseUrl = undefined) {
     let module;
-    if (isNode) {
+    if (isNode || isBun) {
         const { fileURLToPath } = await import('url');
         const path = baseUrl ? fileURLToPath(new URL(modId, baseUrl).href) : modId;
         module = await import(path);
@@ -246,7 +183,7 @@ async function resolveModule(modId, baseUrl = undefined) {
         const url = new URL(modId, baseUrl).href;
         module = moduleCache.get(url);
         if (!module) {
-            if (typeof Deno === "object") {
+            if (isDeno) {
                 module = await import(url);
                 moduleCache.set(url, module);
             }
@@ -358,6 +295,73 @@ function unwrapChannel(obj, channelWrite) {
     return record.channel;
 }
 
+if (!Symbol.asyncIterator) {
+    // @ts-ignore
+    Symbol.asyncIterator = Symbol("Symbol.asyncIterator");
+}
+
+/**
+ * Checks if the given object is an IteratorLike (implemented `next`).
+ * @param {any} obj
+ * @returns {obj is { [x: string | symbol]: any; next: Function }}
+ */
+function isIteratorLike(obj) {
+    // An iterable object has a 'next' method, however including a 'next' method
+    // doesn't ensure the object is an iterator, it is only iterator-like.
+    return typeof obj === "object"
+        && obj !== null
+        && typeof obj.next === "function";
+}
+
+/**
+ * Checks if the given object is an IterableIterator (implemented both
+ * `@@iterator` and `next`).
+ * @param {any} obj
+ */
+function isIterableIterator(obj) {
+    return isIteratorLike(obj)
+        && typeof obj[Symbol.iterator] === "function";
+}
+
+/**
+ * Checks if the given object is an AsyncIterableIterator (implemented
+ * both `@@asyncIterator` and `next`).
+ * @param {any} obj
+ * @returns {obj is AsyncIterableIterator<any>}
+ */
+function isAsyncIterableIterator(obj) {
+    return isIteratorLike(obj)
+        && typeof obj[Symbol.asyncIterator] === "function";
+}
+
+/**
+ * Checks if the given object is a Generator.
+ * @param {any} obj
+ * @returns {obj is Generator}
+ */
+function isGenerator(obj) {
+    return isIterableIterator(obj)
+        && hasGeneratorSpecials(obj);
+}
+
+/**
+ * Checks if the given object is an AsyncGenerator.
+ * @param {any} obj
+ * @returns {obj is AsyncGenerator}
+ */
+function isAsyncGenerator(obj) {
+    return isAsyncIterableIterator(obj)
+        && hasGeneratorSpecials(obj);
+}
+
+/**
+ * @param {any} obj 
+ */
+function hasGeneratorSpecials(obj) {
+    return typeof obj.return === "function"
+        && typeof obj.throw === "function";
+}
+
 const pendingTasks = new Map();
 function unwrapArgs(args, channelWrite) {
     return args.map(arg => {
@@ -447,7 +451,22 @@ async function handleCallRequest(msg, reply) {
         reply({ type: "error", error, taskId: msg.taskId });
     }
 }
-if (typeof self === "object" && !isNode) {
+if (isBun
+    && Bun.isMainThread
+    && typeof process === "object"
+    && typeof process.send === "function") { // Bun with child_process
+    const reply = process.send.bind(process);
+    reply("ready"); // notify the parent process that the worker is ready;
+    process.on("message", async (msg) => {
+        if (isCallRequest(msg)) {
+            await handleCallRequest(msg, reply);
+        }
+        else if (isChannelMessage(msg)) {
+            handleChannelMessage(msg);
+        }
+    });
+}
+else if (!isNode && typeof self === "object") {
     const reply = self.postMessage.bind(self);
     self.onmessage = async ({ data: msg }) => {
         if (isCallRequest(msg)) {
@@ -459,4 +478,28 @@ if (typeof self === "object" && !isNode) {
     };
 }
 
-export { handleCallRequest, isCallRequest };
+if (isNode) {
+    if (!isMainThread && parentPort) {
+        const reply = parentPort.postMessage.bind(parentPort);
+        parentPort.on("message", async (msg) => {
+            if (isCallRequest(msg)) {
+                await handleCallRequest(msg, reply);
+            }
+            else if (isChannelMessage(msg)) {
+                handleChannelMessage(msg);
+            }
+        });
+    }
+    else if (process.send) {
+        const reply = process.send.bind(process);
+        reply("ready"); // notify the parent process that the worker is ready;
+        process.on("message", async (msg) => {
+            if (isCallRequest(msg)) {
+                await handleCallRequest(msg, reply);
+            }
+            else if (isChannelMessage(msg)) {
+                handleChannelMessage(msg);
+            }
+        });
+    }
+}

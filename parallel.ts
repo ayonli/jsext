@@ -1,4 +1,4 @@
-import type { Worker as NodeWorker, WorkerOptions } from "node:worker_threads";
+import type { Worker as NodeWorker } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
 import { ThenableAsyncGenerator, ThenableAsyncGeneratorLike } from "./external/thenable-generator/index.ts";
 import chan, { Channel } from "./chan.ts";
@@ -7,12 +7,19 @@ import { trim } from "./string/index.ts";
 import type { Optional } from "./index.ts";
 import {
     isNode,
+    isDeno,
+    isBun,
     resolveModule,
     ChannelMessage,
     isChannelMessage,
     handleChannelMessage,
     wrapChannel
 } from "./util.ts";
+
+export interface BunWorker extends Worker {
+    ref(): void;
+    unref(): void;
+}
 
 export type FunctionPropertyNames<T> = {
     [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
@@ -29,11 +36,11 @@ const shouldTransfer = Symbol.for("shouldTransfer");
 const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
 declare var Deno: any;
 declare var Bun: any;
+declare var WorkerGlobalScope: object;
 
 const isMainThread = isNode
-    ? (!process.argv.includes("--worker-thread") && !process.env["__WORKER_THREAD"])
-    // @ts-ignore
-    : typeof WorkerGlobalScope === "undefined";
+    ? !process.argv.includes("--worker-thread")
+    : (isBun ? Bun.isMainThread : typeof WorkerGlobalScope === "undefined");
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 type RemoteTask = {
@@ -48,7 +55,7 @@ type RemoteTask = {
 };
 const tasks = new Map<number, RemoteTask>;
 let workerPool: {
-    worker: Worker | NodeWorker;
+    getWorker: Promise<Worker | BunWorker | NodeWorker>;
     tasks: Set<number>;
     lastAccess: number;
 }[] = [];
@@ -75,7 +82,7 @@ export function sanitizeModuleId(id: string | (() => Promise<any>), strict = fal
         !/\.[cm]?(js|ts|)x?$/.test(_id) && // omit suffix
         IsPath.test(_id)                   // relative or absolute path
     ) {
-        if (typeof Bun === "object") {
+        if (isBun) {
             _id += ".ts";
         } else {
             _id += ".js";
@@ -102,9 +109,9 @@ export function createCallRequest(init: Optional<CallRequest, "type" | "baseUrl"
     const msg = { ...init, type: init.type || "call" } as CallRequest;
 
     if (!msg.baseUrl) {
-        if (typeof Deno === "object") {
+        if (isDeno) {
             msg.baseUrl = "file://" + Deno.cwd() + "/";
-        } else if (isNode) {
+        } else if (isNode || isBun) {
             if (IsPath.test(msg.script)) {
                 // Only set baseUrl for relative modules, don't set it for node modules.
                 msg.baseUrl = "file://" + process.cwd() + "/";
@@ -133,7 +140,7 @@ export async function createWorker(options: {
     entry?: string | undefined;
     adapter?: "worker_threads" | "child_process";
 } = {}): Promise<{
-    worker: Worker;
+    worker: Worker | BunWorker;
     workerId: number;
     kind: "web_worker";
 } | {
@@ -147,7 +154,7 @@ export async function createWorker(options: {
 }> {
     let { entry, adapter } = options;
 
-    if (isNode) {
+    if (isNode || isBun) {
         if (!entry) {
             const path = await import("path");
             const { fileURLToPath } = await import("url");
@@ -155,7 +162,11 @@ export async function createWorker(options: {
 
             if (_filename === process.argv[1]) {
                 // The code is bundled, try the worker entry in node_modules (hope it exists).
-                entry = "./node_modules/@ayonli/jsext/bundle/worker.mjs";
+                if (isBun) {
+                    entry = "./node_modules/@ayonli/jsext/worker.ts";
+                } else {
+                    entry = "./node_modules/@ayonli/jsext/bundle/worker-node.mjs";
+                }
             } else {
                 let _dirname = path.dirname(_filename);
 
@@ -169,10 +180,10 @@ export async function createWorker(options: {
                     _dirname = path.dirname(_dirname);
                 }
 
-                if (typeof Bun === "object") {
+                if (isBun) {
                     entry = path.join(_dirname, "worker.ts");
                 } else {
-                    entry = path.join(_dirname, "bundle", "worker.mjs");
+                    entry = path.join(_dirname, "bundle", "worker-node.mjs");
                 }
             }
         }
@@ -186,56 +197,80 @@ export async function createWorker(options: {
             });
             const workerId = worker.pid as number;
 
+            await new Promise<void>((resolve, reject) => {
+                worker.once("error", reject);
+                worker.once("message", () => {
+                    worker.off("error", reject);
+                    resolve();
+                });
+            });
+
             return {
                 worker,
                 workerId,
                 kind: "node_process",
             };
-        } else {
+        } else if (isNode) {
             const { Worker } = await import("worker_threads");
-            const options: WorkerOptions = {};
+            const worker = new Worker(entry, { argv: ["--worker-thread"] });
+            const workerId = worker.threadId;
 
-            if (typeof Bun === "object") {
-                // Currently, Bun doesn't support `argv` option, use `env` for compatibility
-                // support.
-                options.env = { ...process.env, __WORKER_THREAD: "true" };
-            } else {
-                options.argv = ["--worker-thread"];
-            }
-
-            const worker = new Worker(entry, options);
-            // `threadId` may not exist in Bun.
-            const workerId = worker.threadId ?? workerIdCounter.next().value as number;
+            await new Promise<void>((resolve, reject) => {
+                worker.once("error", reject);
+                worker.once("online", () => {
+                    worker.off("error", reject);
+                    resolve();
+                });
+            });
 
             return {
                 worker,
                 workerId,
                 kind: "node_worker",
             };
+        } else { // isBun
+            const worker = new Worker(entry, { type: "module" });
+            const workerId = workerIdCounter.next().value as number;
+
+            await new Promise<void>((resolve, reject) => {
+                worker.onerror = (ev) => {
+                    reject(new Error(ev.message || "unable to start the worker"));
+                };
+                worker.addEventListener("open", () => {
+                    worker.onerror = null;
+                    resolve();
+                });
+            });
+
+            return {
+                worker,
+                workerId,
+                kind: "web_worker",
+            };
         }
-    } else {
-        if (typeof Deno === "object") {
+    } else { // Deno and browsers
+        if (isDeno) {
             if (!entry) {
                 if ((import.meta as any)["main"]) {
                     // The code is bundled, try the remote worker entry.
-                    entry = "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
+                    entry = "https://ayonli.github.io/jsext/bundle/worker.mjs";
                 } else {
                     entry = [
                         ...(import.meta.url.split("/").slice(0, -1)),
-                        "worker-web.ts"
+                        "worker.ts"
                     ].join("/");
 
                     // The application imports the compiled version of this module,
                     // redirect to the source worker entry.
-                    if (entry.endsWith("/esm/worker-web.ts")) {
-                        entry = entry.slice(0, -18) + "/worker-web.ts";
+                    if (entry.endsWith("/esm/worker.ts")) {
+                        entry = entry.slice(0, -14) + "/worker.ts";
                     }
                 }
             }
         } else {
             // Use fetch to download the script and compose an object URL can bypass CORS
             // security constraint in the browser.
-            const url = entry || "https://ayonli.github.io/jsext/bundle/worker-web.mjs";
+            const url = entry || "https://ayonli.github.io/jsext/bundle/worker.mjs";
             const res = await fetch(url);
             let blob: Blob;
 
@@ -264,125 +299,132 @@ export async function createWorker(options: {
 
 async function acquireWorker(taskId: number) {
     let poolRecord = workerPool.find(item => !item.tasks.size);
-    let worker: Worker | NodeWorker;
 
     if (poolRecord) {
         poolRecord.lastAccess = Date.now();
-        worker = poolRecord.worker as NodeWorker;
     } else if (workerPool.length < parallel.maxWorkers) {
-        const res = await createWorker({ entry: parallel.workerEntry, adapter: "worker_threads" });
-        worker = res.worker as Worker | NodeWorker;
+        workerPool.push(poolRecord = {
+            getWorker: (async () => {
+                const res = await createWorker({
+                    entry: parallel.workerEntry,
+                    adapter: "worker_threads"
+                });
+                let worker = res.worker as Worker | BunWorker | NodeWorker;
 
-        const handleMessage = (msg: any) => {
-            if (isChannelMessage(msg)) {
-                handleChannelMessage(msg);
-            } else if (isCallResponse(msg) && msg.taskId) {
-                const task = tasks.get(msg.taskId);
+                const handleMessage = (msg: any) => {
+                    if (isChannelMessage(msg)) {
+                        handleChannelMessage(msg);
+                    } else if (isCallResponse(msg) && msg.taskId) {
+                        const task = tasks.get(msg.taskId);
 
-                if (!task)
-                    return;
+                        if (!task)
+                            return;
 
-                if (msg.type === "return" || msg.type === "error") {
-                    if (msg.type === "error") {
-                        if (task.resolver) {
-                            task.resolver.reject(msg.error);
+                        if (msg.type === "return" || msg.type === "error") {
+                            if (msg.type === "error") {
+                                if (task.resolver) {
+                                    task.resolver.reject(msg.error);
 
-                            if (task.channel) {
-                                task.channel.close();
-                            }
-                        } else if (task.channel) {
-                            task.channel.close(msg.error as Error);
-                        } else {
-                            task.error = msg.error;
-                        }
-                    } else {
-                        if (task.resolver) {
-                            task.resolver.resolve(msg.value);
-                        } else {
-                            task.result = { value: msg.value };
-                        }
-
-                        if (task.channel) {
-                            task.channel.close();
-                        }
-                    }
-
-                    if (poolRecord) {
-                        poolRecord.tasks.delete(msg.taskId);
-
-                        if (!poolRecord.tasks.size) {
-                            if (isNode) {
-                                // Allow the main thread to exit if the event loop is empty.
-                                (worker as NodeWorker).unref();
-                            }
-                        }
-
-                        { // GC: clean long-time unused workers
-                            const now = Date.now();
-                            const idealItems: typeof workerPool = [];
-                            workerPool = workerPool.filter(item => {
-                                const ideal = !item.tasks.size && (now - item.lastAccess) >= 300_000;
-
-                                if (ideal) {
-                                    idealItems.push(item);
+                                    if (task.channel) {
+                                        task.channel.close();
+                                    }
+                                } else if (task.channel) {
+                                    task.channel.close(msg.error as Error);
+                                } else {
+                                    task.error = msg.error;
+                                }
+                            } else {
+                                if (task.resolver) {
+                                    task.resolver.resolve(msg.value);
+                                } else {
+                                    task.result = { value: msg.value };
                                 }
 
-                                return !ideal;
-                            });
+                                if (task.channel) {
+                                    task.channel.close();
+                                }
+                            }
 
-                            idealItems.forEach(item => {
-                                item.worker.terminate();
-                            });
+                            if (poolRecord) {
+                                poolRecord.tasks.delete(msg.taskId);
+
+                                if (!poolRecord.tasks.size) {
+                                    if (isNode || isBun) {
+                                        // Allow the main thread to exit if the event loop is empty.
+                                        (worker as NodeWorker | BunWorker).unref();
+                                    }
+                                }
+
+                                { // GC: clean long-time unused workers
+                                    const now = Date.now();
+                                    const idealItems: typeof workerPool = [];
+                                    workerPool = workerPool.filter(item => {
+                                        const ideal = !item.tasks.size
+                                            && (now - item.lastAccess) >= 300_000;
+
+                                        if (ideal) {
+                                            idealItems.push(item);
+                                        }
+
+                                        return !ideal;
+                                    });
+
+                                    idealItems.forEach(async item => {
+                                        const worker = await item.getWorker;
+                                        worker.terminate();
+                                    });
+                                }
+                            }
+                        } else if (msg.type === "yield") {
+                            task.channel?.push({ value: msg.value, done: msg.done as boolean });
+
+                            if (msg.done) {
+                                // The final message of yield event is the return value.
+                                handleMessage({
+                                    type: "return",
+                                    value: msg.value,
+                                    taskId: msg.taskId,
+                                } satisfies CallResponse);
+                            }
+                        } else if (msg.type === "gen") {
+                            task.generate?.();
                         }
                     }
-                } else if (msg.type === "yield") {
-                    task.channel?.push({ value: msg.value, done: msg.done as boolean });
+                };
 
-                    if (msg.done) {
-                        // The final message of yield event is the return value.
-                        handleMessage({
-                            type: "return",
-                            value: msg.value,
-                            taskId: msg.taskId,
-                        } satisfies CallResponse);
-                    }
-                } else if (msg.type === "gen") {
-                    task.generate?.();
+                if (isNode) {
+                    (worker as NodeWorker).on("message", handleMessage);
+                } else if (isBun) {
+                    (worker as BunWorker).onmessage = (ev) => handleMessage(ev.data);
+                } else {
+                    (worker as Worker).onmessage = (ev) => handleMessage(ev.data);
                 }
-            }
-        };
 
-        if (isNode) {
-            (worker as NodeWorker).on("message", handleMessage);
-            await new Promise<void>(resolve => (worker as NodeWorker).once("online", resolve));
-        } else {
-            (worker as Worker).onmessage = (ev) => handleMessage(ev.data);
-        }
-
-        workerPool.push(poolRecord = {
-            worker,
+                return worker;
+            })(),
             tasks: new Set(),
             lastAccess: Date.now(),
         });
     } else {
         poolRecord = workerPool[taskId % workerPool.length];
         poolRecord!.lastAccess = Date.now();
-        worker = poolRecord!.worker as NodeWorker;
     }
 
     poolRecord!.tasks.add(taskId);
 
-    if (isNode) {
+    const worker = await poolRecord!.getWorker;
+
+    if (isNode || isBun) {
         // Prevent premature exit in the main thread.
-        (worker as NodeWorker).ref();
+        (worker as NodeWorker | BunWorker).ref();
     }
 
-    return worker;
+    return worker as Worker | BunWorker | NodeWorker;
 }
 
 export function wrapArgs<A extends any[]>(
     args: A,
-    getWorker: Promise<Worker | NodeWorker | ChildProcess>
+    getWorker: Promise<Worker | BunWorker | NodeWorker | ChildProcess>
 ): {
     args: A,
     transferable: Transferable[];
@@ -393,7 +435,7 @@ export function wrapArgs<A extends any[]>(
             return wrapChannel(arg, (type, msg, channelId) => {
                 getWorker.then(worker => {
                     if (typeof (worker as any)["postMessage"] === "function") {
-                        (worker as Worker | NodeWorker).postMessage({
+                        (worker as Worker).postMessage({
                             type,
                             value: msg,
                             channelId,
@@ -431,13 +473,13 @@ function createRemoteCall(
     const { args: _args, transferable } = wrapArgs(args, getWorker);
 
     getWorker = getWorker.then((worker) => {
-        worker.postMessage(createCallRequest({
+        (worker as Worker).postMessage(createCallRequest({
             script: modId,
             fn,
             args: _args,
             taskId,
             baseUrl: baseUrl as string
-        }), transferable as any[]);
+        }), transferable);
         return worker;
     });
 
@@ -487,14 +529,14 @@ function createRemoteCall(
                     });
                 }
 
-                worker.postMessage(createCallRequest({
+                (worker as Worker).postMessage(createCallRequest({
                     script: modId,
                     fn,
                     args: [input],
                     taskId,
                     type: "next",
                     baseUrl: baseUrl as string,
-                }), transferable as any[]);
+                }), transferable);
 
                 return await task.channel.pop();
             }
@@ -502,28 +544,28 @@ function createRemoteCall(
         async return(value) {
             tasks.delete(taskId);
             const worker = await getWorker;
-            worker.postMessage(createCallRequest({
+            (worker as Worker).postMessage(createCallRequest({
                 script: modId,
                 fn,
                 args: [value],
                 taskId,
                 type: "return",
                 baseUrl: baseUrl as string,
-            }), transferable as any[]);
+            }), transferable);
 
             return { value, done: true };
         },
         async throw(err) {
             tasks.delete(taskId);
             const worker = await getWorker;
-            worker.postMessage(createCallRequest({
+            (worker as Worker).postMessage(createCallRequest({
                 script: modId,
                 fn,
                 args: [err],
                 taskId,
                 type: "throw",
                 baseUrl: baseUrl as string,
-            }), transferable as any[]);
+            }), transferable);
 
             throw err;
         },
@@ -710,12 +752,12 @@ namespace parallel {
     /**
      * In browsers, by default, the program loads the worker entry directly from GitHub,
      * which could be slow due to poor internet connection, we can copy the entry file
-     * `bundle/worker-web.mjs` to a local path of our website and set this option to that path
+     * `bundle/worker.mjs` to a local path of our website and set this option to that path
      * so that it can be loaded locally.
      * 
      * Or, if the code is bundled, the program won't be able to automatically locate the entry
      * file in the file system, in such case, we can also copy the entry file
-     * (`bundle/worker.mjs` for Node.js and Bun, `bundle/worker-web.mjs` for browser and Deno)
+     * (`bundle/worker.mjs` for Bun, Deno and the browser, `bundle/worker-node.mjs` for Node.js)
      * to a local directory and supply this option instead.
      */
     export var workerEntry: string | undefined;

@@ -1,12 +1,14 @@
 import { id, Channel } from './chan.js';
 
 var _a;
-const isNode = typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
+const isDeno = typeof Deno === "object";
+const isBun = typeof Bun === "object";
+const isNode = !isDeno && !isBun && typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
 const moduleCache = new Map();
 const channelStore = new Map();
 async function resolveModule(modId, baseUrl = undefined) {
     let module;
-    if (isNode) {
+    if (isNode || isBun) {
         const { fileURLToPath } = await import('url');
         const path = baseUrl ? fileURLToPath(new URL(modId, baseUrl).href) : modId;
         module = await import(path);
@@ -15,7 +17,7 @@ async function resolveModule(modId, baseUrl = undefined) {
         const url = new URL(modId, baseUrl).href;
         module = moduleCache.get(url);
         if (!module) {
-            if (typeof Deno === "object") {
+            if (isDeno) {
                 module = await import(url);
                 moduleCache.set(url, module);
             }
@@ -173,5 +175,5 @@ function unwrapChannel(obj, channelWrite) {
     return record.channel;
 }
 
-export { handleChannelMessage, isChannelMessage, isNode, resolveModule, unwrapChannel, wrapChannel };
+export { handleChannelMessage, isBun, isChannelMessage, isDeno, isNode, resolveModule, unwrapChannel, wrapChannel };
 //# sourceMappingURL=util.js.map

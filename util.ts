@@ -1,7 +1,10 @@
 import { Channel, id } from "./chan.ts";
 
-export const isNode = typeof process === "object" && !!process.versions?.node;
 declare var Deno: any;
+declare var Bun: any;
+export const isDeno = typeof Deno === "object";
+export const isBun = typeof Bun === "object";
+export const isNode = !isDeno && !isBun && typeof process === "object" && !!process.versions?.node;
 
 const moduleCache = new Map();
 const channelStore = new Map<number, { channel: Channel<any>, raw: Pick<Channel<any>, "push" | "close">; }>();
@@ -9,7 +12,7 @@ const channelStore = new Map<number, { channel: Channel<any>, raw: Pick<Channel<
 export async function resolveModule(modId: string, baseUrl: string | undefined = undefined) {
     let module: { [x: string]: any; };
 
-    if (isNode) {
+    if (isNode || isBun) {
         const { fileURLToPath } = await import("url");
         const path = baseUrl ? fileURLToPath(new URL(modId, baseUrl).href) : modId;
         module = await import(path);
@@ -18,7 +21,7 @@ export async function resolveModule(modId: string, baseUrl: string | undefined =
         module = moduleCache.get(url);
 
         if (!module) {
-            if (typeof Deno === "object") {
+            if (isDeno) {
                 module = await import(url);
                 moduleCache.set(url, module);
             } else {
@@ -137,7 +140,7 @@ export function wrapChannel(
 }
 
 export function unwrapChannel(
-    obj: { "@@type": "Channel", "@@id": number; capacity?: number },
+    obj: { "@@type": "Channel", "@@id": number; capacity?: number; },
     channelWrite: (type: "push" | "close", msg: any, channelId: number) => void
 ) {
     const channelId = obj["@@id"];

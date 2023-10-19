@@ -17,7 +17,7 @@ const moduleEntries = Object.fromEntries(
             "**/test-*.ts",
             "bundle.ts",
             "worker.ts",
-            "worker-web.ts"
+            "worker-node.ts"
         ],
     }).map(file => [
         file.slice(0, file.length - extname(file).length),
@@ -72,7 +72,7 @@ export default [
             terser()
         ],
     },
-    { // Worker for Node.js
+    { // Worker for Bun, Deno and the browser
         input: "worker.ts",
         output: {
             file: "bundle/worker.mjs",
@@ -84,10 +84,10 @@ export default [
             commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
         ],
     },
-    { // Worker for web
-        input: "worker-web.ts",
+    { // Worker for Node.js
+        input: "worker-node.ts",
         output: {
-            file: "bundle/worker-web.mjs",
+            file: "bundle/worker-node.mjs",
             format: "esm",
         },
         plugins: [

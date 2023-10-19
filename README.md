@@ -693,12 +693,12 @@ namespace parallel {
     /**
      * In browsers, by default, the program loads the worker entry directly from GitHub,
      * which could be slow due to poor internet connection, we can copy the entry file
-     * `bundle/worker-web.mjs` to a local path of our website and set this option to that path
+     * `bundle/worker.mjs` to a local path of our website and set this option to that path
      * so that it can be loaded locally.
      * 
      * Or, if the code is bundled, the program won't be able to automatically locate the entry
      * file in the file system, in such case, we can also copy the entry file
-     * (`bundle/worker.mjs` for Node.js and Bun, `bundle/worker-web.mjs` for browser and Deno)
+     * (`bundle/worker.mjs` for Bun, Deno and the browser, `bundle/worker-node.mjs` for Node.js)
      * to a local directory and supply this option instead.
      */
     export var workerEntry: string | undefined;

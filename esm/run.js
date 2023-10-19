@@ -1,7 +1,7 @@
 import chan from './chan.js';
 import deprecate from './deprecate.js';
 import { fromObject } from './error/index.js';
-import { isNode, isChannelMessage, handleChannelMessage } from './util.js';
+import { isNode, isBun, isChannelMessage, handleChannelMessage } from './util.js';
 import parallel, { sanitizeModuleId, createCallRequest, createWorker, wrapArgs, isCallResponse } from './parallel.js';
 
 let workerPool = [];
@@ -29,11 +29,9 @@ async function run(script, args = undefined, options = undefined) {
     let terminate = () => Promise.resolve(void 0);
     const timeout = (options === null || options === void 0 ? void 0 : options.timeout) ? setTimeout(() => {
         const err = new Error(`operation timeout after ${options.timeout}ms`);
+        error = err;
         if (resolver) {
             resolver.reject(err);
-        }
-        else {
-            error = err;
         }
         terminate();
     }, options.timeout) : null;
@@ -108,44 +106,31 @@ async function run(script, args = undefined, options = undefined) {
         }
         channel === null || channel === void 0 ? void 0 : channel.close(error);
     };
-    if (isNode) {
+    if (isNode || isBun) {
         if ((options === null || options === void 0 ? void 0 : options.adapter) === "child_process") {
             let worker;
-            let ok = true;
             poolRecord = workerPool.find(item => {
                 return item.adapter === "child_process" && !item.busy;
             });
             if (poolRecord) {
-                worker = poolRecord.worker;
-                workerId = poolRecord.workerId;
+                const res = await poolRecord.getWorker;
+                worker = res.worker;
+                workerId = res.workerId;
                 poolRecord.busy = true;
             }
             else if (workerPool.length < parallel.maxWorkers) {
-                const res = await createWorker({ entry, adapter: "child_process" });
-                worker = res.worker;
-                workerId = res.workerId;
-                ok = await new Promise((resolve) => {
-                    worker.once("exit", () => {
-                        if (error) {
-                            // The child process took too long to start and cause timeout error.
-                            resolve(false);
-                        }
-                    });
-                    worker.once("message", () => {
-                        worker.removeAllListeners("exit");
-                        resolve(true);
-                    });
-                });
                 // Fill the worker pool regardless the current call should keep-alive or not,
                 // this will make sure that the total number of workers will not exceed the
                 // `run.maxWorkers`. If the the call doesn't keep-alive the worker, it will be
                 // cleaned after the call.
-                ok && workerPool.push(poolRecord = {
-                    workerId,
-                    worker,
+                workerPool.push(poolRecord = {
+                    getWorker: createWorker({ entry, adapter: "child_process" }),
                     adapter: "child_process",
                     busy: true,
                 });
+                const res = await poolRecord.getWorker;
+                worker = res.worker;
+                workerId = res.workerId;
             }
             else {
                 // Put the current call in the consumer queue if there are no workers available,
@@ -162,49 +147,39 @@ async function run(script, args = undefined, options = undefined) {
                 poolRecord && (poolRecord.busy = false);
             };
             terminate = () => Promise.resolve(void worker.kill(1));
-            if (ok) {
-                const { args } = wrapArgs(msg.args, Promise.resolve(worker));
-                msg.args = args;
-                worker.ref(); // prevent premature exit in the main thread
-                worker.send(msg);
-                worker.on("message", handleMessage);
-                worker.once("error", handleError);
-                worker.once("exit", handleExit);
+            worker.ref(); // prevent premature exit in the main thread
+            worker.on("message", handleMessage);
+            worker.once("error", handleError);
+            worker.once("exit", handleExit);
+            if (error) {
+                // The worker take too long to start and timeout error already thrown.
+                await terminate();
+                throw error;
             }
+            const { args } = wrapArgs(msg.args, Promise.resolve(worker));
+            msg.args = args;
+            worker.send(msg);
         }
-        else {
+        else if (isNode) {
             let worker;
-            let ok = true;
             poolRecord = workerPool.find(item => {
                 return item.adapter === "worker_threads" && !item.busy;
             });
             if (poolRecord) {
-                worker = poolRecord.worker;
-                workerId = poolRecord.workerId;
+                const res = await poolRecord.getWorker;
+                worker = res.worker;
+                workerId = res.workerId;
                 poolRecord.busy = true;
             }
             else if (workerPool.length < parallel.maxWorkers) {
-                const res = await createWorker({ entry, adapter: "worker_threads" });
-                worker = res.worker;
-                workerId = res.workerId;
-                ok = await new Promise((resolve) => {
-                    worker.once("exit", () => {
-                        if (error) {
-                            // The child process took too long to start and cause timeout error.
-                            resolve(false);
-                        }
-                    });
-                    worker.once("online", () => {
-                        worker.removeAllListeners("exit");
-                        resolve(true);
-                    });
-                });
-                ok && workerPool.push(poolRecord = {
-                    workerId,
-                    worker,
+                workerPool.push(poolRecord = {
+                    getWorker: createWorker({ entry, adapter: "worker_threads" }),
                     adapter: "worker_threads",
                     busy: true,
                 });
+                const res = await poolRecord.getWorker;
+                worker = res.worker;
+                workerId = res.workerId;
             }
             else {
                 return new Promise((resolve) => {
@@ -217,16 +192,65 @@ async function run(script, args = undefined, options = undefined) {
                 poolRecord && (poolRecord.busy = false);
             };
             terminate = async () => void (await worker.terminate());
-            if (ok) {
-                const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
-                msg.args = args;
-                worker.ref();
-                worker.postMessage(msg, transferable);
-                worker.on("message", handleMessage);
-                worker.once("error", handleError);
-                worker.once("messageerror", handleError);
-                worker.once("exit", handleExit);
+            worker.ref();
+            worker.on("message", handleMessage);
+            worker.once("error", handleError);
+            worker.once("messageerror", handleError);
+            worker.once("exit", handleExit);
+            if (error) {
+                await terminate();
+                throw error;
             }
+            const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
+            msg.args = args;
+            worker.postMessage(msg, transferable);
+        }
+        else { // isBun
+            let worker;
+            poolRecord = workerPool.find(item => {
+                return item.adapter === "worker_threads" && !item.busy;
+            });
+            if (poolRecord) {
+                const res = await poolRecord.getWorker;
+                worker = res.worker;
+                workerId = res.workerId;
+                poolRecord.busy = true;
+            }
+            else if (workerPool.length < parallel.maxWorkers) {
+                workerPool.push(poolRecord = {
+                    getWorker: createWorker({ entry }),
+                    adapter: "worker_threads",
+                    busy: true,
+                });
+                const res = await poolRecord.getWorker;
+                worker = res.worker;
+                workerId = res.workerId;
+            }
+            else {
+                return new Promise((resolve) => {
+                    workerConsumerQueue.push(resolve);
+                }).then(() => run(modId, args, options));
+            }
+            release = () => {
+                worker.onmessage = null;
+                poolRecord && (poolRecord.busy = false);
+            };
+            terminate = async () => {
+                await Promise.resolve(worker.terminate());
+                handleExit();
+            };
+            worker.onmessage = (ev) => handleMessage(ev.data);
+            worker.onerror = (ev) => handleMessage(ev.error || new Error(ev.message));
+            worker.onmessageerror = () => {
+                handleError(new Error("unable to deserialize the message"));
+            };
+            if (error) {
+                await terminate();
+                throw error;
+            }
+            const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
+            msg.args = args;
+            worker.postMessage(msg, transferable);
         }
     }
     else {
@@ -235,20 +259,20 @@ async function run(script, args = undefined, options = undefined) {
             return item.adapter === "worker_threads" && !item.busy;
         });
         if (poolRecord) {
-            worker = poolRecord.worker;
-            workerId = poolRecord.workerId;
+            const res = await poolRecord.getWorker;
+            worker = res.worker;
+            workerId = res.workerId;
             poolRecord.busy = true;
         }
         else if (workerPool.length < parallel.maxWorkers) {
-            const res = await createWorker({ entry });
-            worker = res.worker;
-            workerId = res.workerId;
             workerPool.push(poolRecord = {
-                workerId,
-                worker,
+                getWorker: createWorker({ entry }),
                 adapter: "worker_threads",
                 busy: true,
             });
+            const res = await poolRecord.getWorker;
+            worker = res.worker;
+            workerId = res.workerId;
         }
         else {
             return new Promise((resolve) => {
@@ -263,14 +287,18 @@ async function run(script, args = undefined, options = undefined) {
             await Promise.resolve(worker.terminate());
             handleExit();
         };
-        const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
-        msg.args = args;
-        worker.postMessage(msg, transferable);
         worker.onmessage = (ev) => handleMessage(ev.data);
         worker.onerror = (ev) => handleMessage(ev.error || new Error(ev.message));
         worker.onmessageerror = () => {
             handleError(new Error("unable to deserialize the message"));
         };
+        if (error) {
+            await terminate();
+            throw error;
+        }
+        const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
+        msg.args = args;
+        worker.postMessage(msg, transferable);
     }
     return {
         workerId,

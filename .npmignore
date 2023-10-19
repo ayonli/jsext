@@ -15,4 +15,4 @@ test-deno.ts
 bundle/index.js
 bundle/index.js.map
 !bundle/worker.mjs
-!bundle/worker-web.mjs
+!bundle/worker-node.mjs
