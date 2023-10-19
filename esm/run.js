@@ -2,7 +2,7 @@ import chan from './chan.js';
 import deprecate from './deprecate.js';
 import { fromObject } from './error/index.js';
 import { isBeforeNode14, isNode, isBun, isChannelMessage, handleChannelMessage } from './util.js';
-import parallel, { sanitizeModuleId, createCallRequest, createWorker, wrapArgs, isCallResponse } from './parallel.js';
+import parallel, { getConcurrencyNumber, sanitizeModuleId, createCallRequest, createWorker, wrapArgs, isCallResponse } from './parallel.js';
 
 let workerPool = [];
 // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
@@ -12,6 +12,7 @@ async function run(script, args = undefined, options = undefined) {
     if (options === null || options === void 0 ? void 0 : options.workerEntry) {
         deprecate("options.workerEntry", run, "set `run.workerEntry` instead");
     }
+    const maxWorkers = parallel.maxWorkers || await getConcurrencyNumber;
     const modId = sanitizeModuleId(script);
     const msg = createCallRequest({
         script: modId,
@@ -31,7 +32,7 @@ async function run(script, args = undefined, options = undefined) {
     if (poolRecord) {
         poolRecord.busy = true;
     }
-    else if (workerPool.length < parallel.maxWorkers) {
+    else if (workerPool.length < maxWorkers) {
         // Fill the worker pool regardless the current call should keep-alive or not,
         // this will make sure that the total number of workers will not exceed the
         // `run.maxWorkers`. If the the call doesn't keep-alive the worker, it will be

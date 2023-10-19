@@ -6,7 +6,7 @@ import { fromObject } from './error/index.js';
 import { isNode, isBun, isDeno, wrapChannel, isBeforeNode14, resolveModule, isChannelMessage, handleChannelMessage } from './util.js';
 
 /**
- * The `[Symbol.for("terminate")]()` function of the threaded module should only be used for
+ * The `[terminate]()` function of the threaded module should only be used for
  * testing purposes. When using `child_process` adapter, the program will not be able exit
  * automatically after the test because there is an active IPC channel between the parent and
  * the child process. Calling the terminate function will force to kill the child process and
@@ -24,6 +24,23 @@ const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const tasks = new Map;
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 let workerPool = [];
+const getConcurrencyNumber = (async () => {
+    if (isNode) {
+        const os = await import('os');
+        if (typeof os.availableParallelism === "function") {
+            return os.availableParallelism();
+        }
+        else {
+            return os.cpus().length;
+        }
+    }
+    else if (typeof navigator === "object" && navigator.hardwareConcurrency) {
+        return navigator.hardwareConcurrency;
+    }
+    else {
+        return 8;
+    }
+})();
 function sanitizeModuleId(id, strict = false) {
     let _id = "";
     if (typeof id === "function") {
@@ -166,7 +183,7 @@ async function createWorker(options) {
             return {
                 worker,
                 workerId,
-                kind: "web_worker",
+                kind: "bun_worker",
             };
         }
     }
@@ -217,6 +234,7 @@ async function createWorker(options) {
     }
 }
 async function acquireWorker(taskId, options) {
+    const maxWorkers = parallel.maxWorkers || await getConcurrencyNumber;
     const { adapter, serialization } = options;
     let poolRecord = workerPool.find(item => {
         return item.adapter === adapter
@@ -226,15 +244,14 @@ async function acquireWorker(taskId, options) {
     if (poolRecord) {
         poolRecord.lastAccess = Date.now();
     }
-    else if (workerPool.length < parallel.maxWorkers) {
+    else if (workerPool.length < maxWorkers) {
         workerPool.push(poolRecord = {
             getWorker: (async () => {
-                const res = await createWorker({
+                const { worker } = await createWorker({
                     entry: parallel.workerEntry,
                     adapter,
                     serialization,
                 });
-                let worker = res.worker;
                 const handleMessage = (msg) => {
                     var _a, _b, _c, _d;
                     if (isChannelMessage(msg)) {
@@ -702,14 +719,22 @@ function parallel(module, options = {}) {
 }
 (function (parallel) {
     /**
-     * The maximum number of workers allowed to exist at the same time.
-     *
-     * In Bun, Deno and browsers, the default value is set to
-     * `navigator.hardwareConcurrency`.
-     *
-     * In Node.js, the default value is `16`.
+     * The maximum number of workers allowed to exist at the same time. If not set, the program
+     * by default uses CPU core numbers as the limit.
      */
-    parallel.maxWorkers = typeof navigator === "object" ? navigator.hardwareConcurrency : 16;
+    parallel.maxWorkers = undefined;
+    /**
+     * In browsers, by default, the program loads the worker entry directly from GitHub,
+     * which could be slow due to poor internet connection, we can copy the entry file
+     * `bundle/worker.mjs` to a local path of our website and set this option to that path
+     * so that it can be loaded locally.
+     *
+     * Or, if the code is bundled, the program won't be able to automatically locate the entry
+     * file in the file system, in such case, we can also copy the entry file
+     * (`bundle/worker.mjs` for Bun, Deno and the browser, `bundle/worker-node.mjs` for Node.js)
+     * to a local directory and supply this option instead.
+     */
+    parallel.workerEntry = undefined;
     /**
      * Marks the given data to be transferred instead of cloned to the worker thread.
      * Once transferred, the data is no longer available on the sending end.
@@ -744,5 +769,5 @@ function parallel(module, options = {}) {
 })(parallel || (parallel = {}));
 var parallel$1 = parallel;
 
-export { createCallRequest, createWorker, parallel$1 as default, isCallResponse, sanitizeModuleId, terminate, wrapArgs };
+export { createCallRequest, createWorker, parallel$1 as default, getConcurrencyNumber, isCallResponse, sanitizeModuleId, terminate, wrapArgs };
 //# sourceMappingURL=parallel.js.map

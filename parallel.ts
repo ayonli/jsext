@@ -35,7 +35,7 @@ export type ThreadedFunctions<M, T extends FunctionProperties<M> = FunctionPrope
 };
 
 /**
- * The `[Symbol.for("terminate")]()` function of the threaded module should only be used for
+ * The `[terminate]()` function of the threaded module should only be used for
  * testing purposes. When using `child_process` adapter, the program will not be able exit
  * automatically after the test because there is an active IPC channel between the parent and
  * the child process. Calling the terminate function will force to kill the child process and
@@ -76,6 +76,22 @@ let workerPool: {
     tasks: Set<number>;
     lastAccess: number;
 }[] = [];
+
+export const getConcurrencyNumber = (async () => {
+    if (isNode) {
+        const os = await import("os");
+
+        if (typeof os.availableParallelism === "function") {
+            return os.availableParallelism();
+        } else {
+            return os.cpus().length;
+        }
+    } else if (typeof navigator === "object" && navigator.hardwareConcurrency) {
+        return navigator.hardwareConcurrency;
+    } else {
+        return 8;
+    }
+})();
 
 export function sanitizeModuleId(id: string | (() => Promise<any>), strict = false): string {
     let _id = "";
@@ -158,17 +174,9 @@ export async function createWorker(options: {
     adapter: "worker_threads" | "child_process";
     serialization: "advanced" | "json";
 }): Promise<{
-    worker: Worker | BunWorker;
+    worker: Worker | BunWorker | NodeWorker | ChildProcess;
     workerId: number;
-    kind: "web_worker";
-} | {
-    worker: NodeWorker;
-    workerId: number;
-    kind: "node_worker";
-} | {
-    worker: ChildProcess;
-    workerId: number;
-    kind: "node_process";
+    kind: "web_worker" | "bun_worker" | "node_worker" | "node_process";
 }> {
     let { entry, adapter, serialization } = options;
 
@@ -263,7 +271,7 @@ export async function createWorker(options: {
             return {
                 worker,
                 workerId,
-                kind: "web_worker",
+                kind: "bun_worker",
             };
         }
     } else { // Deno and browsers
@@ -319,6 +327,7 @@ async function acquireWorker(taskId: number, options: {
     adapter: "worker_threads" | "child_process";
     serialization: "advanced" | "json";
 }) {
+    const maxWorkers = parallel.maxWorkers || await getConcurrencyNumber;
     const { adapter, serialization } = options;
     let poolRecord = workerPool.find(item => {
         return item.adapter === adapter
@@ -328,15 +337,14 @@ async function acquireWorker(taskId: number, options: {
 
     if (poolRecord) {
         poolRecord.lastAccess = Date.now();
-    } else if (workerPool.length < parallel.maxWorkers) {
+    } else if (workerPool.length < maxWorkers) {
         workerPool.push(poolRecord = {
             getWorker: (async () => {
-                const res = await createWorker({
+                const { worker } = await createWorker({
                     entry: parallel.workerEntry,
                     adapter,
                     serialization,
                 });
-                let worker = res.worker as Worker | BunWorker | NodeWorker | ChildProcess;
 
                 const handleMessage = (msg: any) => {
                     if (isChannelMessage(msg)) {
@@ -876,14 +884,10 @@ function parallel<M extends { [x: string]: any; }>(
 
 namespace parallel {
     /**
-     * The maximum number of workers allowed to exist at the same time.
-     * 
-     * In Bun, Deno and browsers, the default value is set to
-     * `navigator.hardwareConcurrency`.
-     * 
-     * In Node.js, the default value is `16`.
+     * The maximum number of workers allowed to exist at the same time. If not set, the program
+     * by default uses CPU core numbers as the limit.
      */
-    export var maxWorkers = typeof navigator === "object" ? navigator.hardwareConcurrency : 16;
+    export var maxWorkers: number | undefined = undefined;
 
     /**
      * In browsers, by default, the program loads the worker entry directly from GitHub,
@@ -896,7 +900,7 @@ namespace parallel {
      * (`bundle/worker.mjs` for Bun, Deno and the browser, `bundle/worker-node.mjs` for Node.js)
      * to a local directory and supply this option instead.
      */
-    export var workerEntry: string | undefined;
+    export var workerEntry: string | undefined = undefined;
 
     /**
      * Marks the given data to be transferred instead of cloned to the worker thread.

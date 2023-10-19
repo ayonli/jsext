@@ -6,6 +6,7 @@ import { fromObject } from "./error/index.ts";
 import { handleChannelMessage, isChannelMessage, isNode, isBun, isBeforeNode14 } from "./util.ts";
 import parallel, {
     BunWorker,
+    getConcurrencyNumber,
     sanitizeModuleId,
     createCallRequest,
     createWorker,
@@ -167,6 +168,7 @@ async function run<R, A extends any[] = any[]>(
         deprecate("options.workerEntry", run, "set `run.workerEntry` instead");
     }
 
+    const maxWorkers = parallel.maxWorkers || await getConcurrencyNumber;
     const modId = sanitizeModuleId(script);
     const msg = createCallRequest({
         script: modId,
@@ -186,7 +188,7 @@ async function run<R, A extends any[] = any[]>(
 
     if (poolRecord) {
         poolRecord.busy = true;
-    } else if (workerPool.length < parallel.maxWorkers) {
+    } else if (workerPool.length < maxWorkers) {
         // Fill the worker pool regardless the current call should keep-alive or not,
         // this will make sure that the total number of workers will not exceed the
         // `run.maxWorkers`. If the the call doesn't keep-alive the worker, it will be

@@ -706,14 +706,10 @@ const mod = parallel<typeof import("./examples/worker.mjs")>("./examples/worker.
 ```ts
 namespace parallel {
     /**
-     * The maximum number of workers allowed to exist at the same time.
-     * 
-     * In Bun, Deno and browsers, the default value is set to
-     * `navigator.hardwareConcurrency`.
-     * 
-     * In Node.js, the default value is `16`.
+     * The maximum number of workers allowed to exist at the same time. If not set, the program
+     * by default uses CPU core numbers as the limit.
      */
-    export var maxWorkers: number;
+    export var maxWorkers: number | undefined;
 
     /**
      * In browsers, by default, the program loads the worker entry directly from GitHub,

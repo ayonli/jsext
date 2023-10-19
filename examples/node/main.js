@@ -1,5 +1,4 @@
 import * as http from "node:http";
-import { availableParallelism  } from "node:os";
 import { parallel, chan } from "../../esm/index.js";
 import { readChannel, wireChannel } from "./util.js";
 import { default as handle } from "./handler.js";
@@ -12,7 +11,6 @@ const { parallelHandle: parallelHandle3 } = parallel(() => import("./worker.js")
     serialization: "json",
 });
 
-parallel.maxWorkers = availableParallelism();
 
 const server = http.createServer(async (_req, _res) => {
     const req = new Request(new URL(_req.url, "http://" + (_req.headers["host"] || "localhost:8000")), {
