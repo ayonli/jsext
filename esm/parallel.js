@@ -241,6 +241,9 @@ async function acquireWorker(taskId, options) {
             && item.serialization === serialization
             && !item.tasks.size;
     });
+    if (adapter === "child_process" && serialization === "json") {
+        console.log(poolRecord, maxWorkers);
+    }
     if (poolRecord) {
         poolRecord.lastAccess = Date.now();
     }
@@ -660,7 +663,6 @@ function parallel(module, options = {}) {
         : ((options === null || options === void 0 ? void 0 : options.serialization) || (isBeforeNode14 ? "json" : "advanced"));
     const modId = sanitizeModuleId(module, true);
     let baseUrl;
-    console.log(adapter, serialization, isMainThread);
     if (IsPath.test(modId)) {
         if (typeof Error.captureStackTrace === "function") {
             const trace = {};

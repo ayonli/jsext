@@ -335,6 +335,10 @@ async function acquireWorker(taskId: number, options: {
             && !item.tasks.size;
     });
 
+    if (adapter === "child_process" && serialization === "json") {
+        console.log(poolRecord, maxWorkers);
+    }
+
     if (poolRecord) {
         poolRecord.lastAccess = Date.now();
     } else if (workerPool.length < maxWorkers) {
@@ -469,7 +473,7 @@ async function acquireWorker(taskId: number, options: {
         (worker as NodeWorker | BunWorker | ChildProcess).ref();
     }
 
-    return worker as Worker | BunWorker | NodeWorker | ChildProcess;
+    return worker;
 }
 
 export function wrapArgs<A extends any[]>(
@@ -820,8 +824,6 @@ function parallel<M extends { [x: string]: any; }>(
         : (options?.serialization || (isBeforeNode14 ? "json" : "advanced"));
     const modId = sanitizeModuleId(module, true);
     let baseUrl: string | undefined;
-
-    console.log(adapter, serialization, isMainThread);
 
     if (IsPath.test(modId)) {
         if (typeof Error.captureStackTrace === "function") {
