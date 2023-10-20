@@ -1,6 +1,6 @@
 import { sequence } from "./number/index.ts";
 
-const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER);
+const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 export const id = Symbol.for("id");
 
 export class Channel<T> implements AsyncIterable<T> {
@@ -156,7 +156,7 @@ export class Channel<T> implements AsyncIterable<T> {
 }
 
 /**
- * Inspired by Golang, cerates a channel that can be used to transfer data within the program.
+ * Inspired by Golang, cerates a {@link Channel} that can be used to transfer data within the program.
  * 
  * If `capacity` is not set, a non-buffered channel will be created. For a non-buffered channel,
  * the sender and receiver must be present at the same time (theoretically), otherwise, the
@@ -175,9 +175,9 @@ export class Channel<T> implements AsyncIterable<T> {
  * 
  * Also, unlike Golang, `await channel.pop()` does not prevent the process from exiting.
  * 
- * Channel can be used to send and receive streaming data in worker threads, but once it has been
- * used that way, `channel.close()` must be explicitly called in order to release the channel for
- * garbage collection.
+ * Channels can be used to send and receive streaming data in worker threads wrapped by
+ * `parallel()`, but once used that way, `channel.close()` must be explicitly called in order to
+ * release the channel for garbage collection.
  * 
  * @example
  * ```ts

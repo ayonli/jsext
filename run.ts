@@ -33,11 +33,11 @@ const workerConsumerQueue: (() => void)[] = [];
 /**
  * Runs the given `script` in a worker thread or child process.
  * 
- * In Node.js and Bun, the `script` can be either a CommonJS module or an ES module, and is relative
- * to the current working directory if not absolute.
+ * In Node.js and Bun, the `script` can be either an ES module or a CommonJS module, and is
+ * relative to the current working directory if not absolute.
  * 
  * In browsers and Deno, the `script` can only be an ES module, and is relative to the current URL
- * (or working directory for Deno) if not absolute.
+ * (or working directory in Deno) if not absolute.
  * 
  * In Bun and Deno, the `script` can also be a TypeScript file.
  * 
@@ -288,7 +288,15 @@ async function run<R, A extends any[] = any[]>(
 
         if (poolRecord) {
             // Clean the pool before resolve.
-            workerPools.set(poolKey, workerPool.filter(record => record !== poolRecord));
+            // The `workerPool` of this key in the pool map may have been modified by other
+            // routines, we need to retrieve the newest value.
+            const remainItems = workerPools.get(poolKey)?.filter(record => record !== poolRecord);
+
+            if (remainItems?.length) {
+                workerPools.set(poolKey, remainItems);
+            } else {
+                workerPools.delete(poolKey);
+            }
 
             if (workerConsumerQueue.length) {
                 // Queued consumer now has chance to create new worker.
@@ -313,11 +321,15 @@ async function run<R, A extends any[] = any[]>(
 
             release = () => {
                 worker.unref(); // allow the main thread to exit if the event loop is empty
+
                 // Remove the event listener so that later calls will not mess up.
                 worker.off("message", handleMessage);
+                worker.off("error", handleError);
+                worker.off("exit", handleExit);
                 poolRecord && (poolRecord.busy = false);
             };
             terminate = () => Promise.resolve(void worker.kill(1));
+
             worker.ref(); // prevent premature exit in the main thread
             worker.on("message", handleMessage);
             worker.once("error", handleError);
@@ -340,9 +352,13 @@ async function run<R, A extends any[] = any[]>(
             release = () => {
                 worker.unref();
                 worker.off("message", handleMessage);
+                worker.off("error", handleError);
+                worker.off("messageerror", handleError);
+                worker.off("exit", handleExit);
                 poolRecord && (poolRecord.busy = false);
             };
             terminate = async () => void (await worker.terminate());
+
             worker.ref();
             worker.on("message", handleMessage);
             worker.once("error", handleError);
@@ -363,18 +379,25 @@ async function run<R, A extends any[] = any[]>(
             workerId = record.workerId;
 
             release = () => {
+                worker.unref();
                 worker.onmessage = null;
+                worker.onerror = null;
+                worker.onmessageerror = null;
+                worker.removeEventListener("close", handleExit);
                 poolRecord && (poolRecord.busy = false);
             };
             terminate = async () => {
                 await Promise.resolve(worker.terminate());
                 handleExit();
             };
+
+            worker.ref();
             worker.onmessage = (ev) => handleMessage(ev.data);
-            worker.onerror = (ev) => handleMessage(ev.error || new Error(ev.message));
+            worker.onerror = (ev) => handleError(ev.error || new Error(ev.message));
             worker.onmessageerror = () => {
                 handleError(new Error("unable to deserialize the message"));
             };
+            worker.addEventListener("close", handleExit);
 
             if (error) {
                 await terminate();
@@ -392,6 +415,8 @@ async function run<R, A extends any[] = any[]>(
 
         release = () => {
             worker.onmessage = null;
+            worker.onerror = null;
+            worker.onmessageerror = null;
             poolRecord && (poolRecord.busy = false);
         };
         terminate = async () => {
@@ -400,7 +425,7 @@ async function run<R, A extends any[] = any[]>(
         };
 
         worker.onmessage = (ev) => handleMessage(ev.data);
-        worker.onerror = (ev) => handleMessage(ev.error || new Error(ev.message));
+        worker.onerror = (ev) => handleError(ev.error || new Error(ev.message));
         worker.onmessageerror = () => {
             handleError(new Error("unable to deserialize the message"));
         };

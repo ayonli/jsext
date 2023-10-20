@@ -207,7 +207,7 @@ function* sequence(min, max, step = 1, loop = false) {
 }
 
 var _a$1;
-const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER);
+const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const id = Symbol.for("id");
 class Channel {
     constructor(capacity = 0) {

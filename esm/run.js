@@ -119,14 +119,22 @@ async function run(script, args = undefined, options = undefined) {
         channel === null || channel === void 0 ? void 0 : channel.close(err);
     };
     const handleExit = () => {
-        var _a;
+        var _a, _b;
         timeout && clearTimeout(timeout);
         if (poolRecord) {
             // Clean the pool before resolve.
-            workerPools.set(poolKey, workerPool.filter(record => record !== poolRecord));
+            // The `workerPool` of this key in the pool map may have been modified by other
+            // routines, we need to retrieve the newest value.
+            const remainItems = (_a = workerPools.get(poolKey)) === null || _a === void 0 ? void 0 : _a.filter(record => record !== poolRecord);
+            if (remainItems === null || remainItems === void 0 ? void 0 : remainItems.length) {
+                workerPools.set(poolKey, remainItems);
+            }
+            else {
+                workerPools.delete(poolKey);
+            }
             if (workerConsumerQueue.length) {
                 // Queued consumer now has chance to create new worker.
-                (_a = workerConsumerQueue.shift()) === null || _a === void 0 ? void 0 : _a();
+                (_b = workerConsumerQueue.shift()) === null || _b === void 0 ? void 0 : _b();
             }
         }
         if (resolver) {
@@ -146,6 +154,8 @@ async function run(script, args = undefined, options = undefined) {
                 worker.unref(); // allow the main thread to exit if the event loop is empty
                 // Remove the event listener so that later calls will not mess up.
                 worker.off("message", handleMessage);
+                worker.off("error", handleError);
+                worker.off("exit", handleExit);
                 poolRecord && (poolRecord.busy = false);
             };
             terminate = () => Promise.resolve(void worker.kill(1));
@@ -169,6 +179,9 @@ async function run(script, args = undefined, options = undefined) {
             release = () => {
                 worker.unref();
                 worker.off("message", handleMessage);
+                worker.off("error", handleError);
+                worker.off("messageerror", handleError);
+                worker.off("exit", handleExit);
                 poolRecord && (poolRecord.busy = false);
             };
             terminate = async () => void (await worker.terminate());
@@ -190,18 +203,24 @@ async function run(script, args = undefined, options = undefined) {
             const worker = record.worker;
             workerId = record.workerId;
             release = () => {
+                worker.unref();
                 worker.onmessage = null;
+                worker.onerror = null;
+                worker.onmessageerror = null;
+                worker.removeEventListener("close", handleExit);
                 poolRecord && (poolRecord.busy = false);
             };
             terminate = async () => {
                 await Promise.resolve(worker.terminate());
                 handleExit();
             };
+            worker.ref();
             worker.onmessage = (ev) => handleMessage(ev.data);
-            worker.onerror = (ev) => handleMessage(ev.error || new Error(ev.message));
+            worker.onerror = (ev) => handleError(ev.error || new Error(ev.message));
             worker.onmessageerror = () => {
                 handleError(new Error("unable to deserialize the message"));
             };
+            worker.addEventListener("close", handleExit);
             if (error) {
                 await terminate();
                 throw error;
@@ -217,6 +236,8 @@ async function run(script, args = undefined, options = undefined) {
         workerId = record.workerId;
         release = () => {
             worker.onmessage = null;
+            worker.onerror = null;
+            worker.onmessageerror = null;
             poolRecord && (poolRecord.busy = false);
         };
         terminate = async () => {
@@ -224,7 +245,7 @@ async function run(script, args = undefined, options = undefined) {
             handleExit();
         };
         worker.onmessage = (ev) => handleMessage(ev.data);
-        worker.onerror = (ev) => handleMessage(ev.error || new Error(ev.message));
+        worker.onerror = (ev) => handleError(ev.error || new Error(ev.message));
         worker.onmessageerror = () => {
             handleError(new Error("unable to deserialize the message"));
         };

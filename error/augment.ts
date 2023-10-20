@@ -8,7 +8,7 @@ declare global {
 
     interface ErrorConstructor {
         /** Transform the error to a plain object. */
-        toObject<T extends Error>(err: T): { [x: string | symbol]: any; }
+        toObject<T extends Error>(err: T): { [x: string | symbol]: any; };
         /** Reverse a plain object to a specific error type according to the `name` property. */
         fromObject<T extends { name: "Error"; }>(obj: T): Error;
         fromObject<T extends { name: "EvalError"; }>(obj: T): EvalError;
@@ -17,8 +17,8 @@ declare global {
         fromObject<T extends { name: "SyntaxError"; }>(obj: T): SyntaxError;
         fromObject<T extends { name: "TypeError"; }>(obj: T): TypeError;
         fromObject<T extends { name: "URIError"; }>(obj: T): URIError;
-        fromObject<T extends { name: "Exception"; }>(obj: T, ctor?: Constructor<Error>): Exception;
-        fromObject<T extends Error>(obj: { [x: string | symbol]: any; }): T | null;
+        fromObject<T extends { name: "Exception"; }>(obj: T): Exception;
+        fromObject<T extends Error>(obj: { [x: string | symbol]: any; }, ctor?: Constructor<Error>): T | null;
     }
 
     class Exception extends Error {
@@ -32,7 +32,7 @@ declare global {
 //@ts-ignore
 globalThis["Exception"] = Exception;
 
-Error.toObject = toObject
+Error.toObject = toObject;
 Error.fromObject = fromObject;
 
 Error.prototype.toJSON = function toJSON() {

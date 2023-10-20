@@ -252,7 +252,7 @@ async function acquireWorker(taskId, options) {
                     serialization,
                 });
                 const handleMessage = (msg) => {
-                    var _a, _b, _c, _d;
+                    var _a, _b, _c, _d, _e;
                     if (isChannelMessage(msg)) {
                         handleChannelMessage(msg);
                     }
@@ -300,7 +300,10 @@ async function acquireWorker(taskId, options) {
                                 { // GC: clean long-time unused workers
                                     const now = Date.now();
                                     const idealItems = [];
-                                    const remainItems = workerPool.filter(item => {
+                                    // The `workerPool` of this key in the pool map may have been
+                                    // modified by other routines, we need to retrieve the newest
+                                    // value.
+                                    const remainItems = (_c = workerPools.get(poolKey)) === null || _c === void 0 ? void 0 : _c.filter(item => {
                                         const ideal = !item.tasks.size
                                             && (now - item.lastAccess) >= 300000;
                                         if (ideal) {
@@ -308,7 +311,7 @@ async function acquireWorker(taskId, options) {
                                         }
                                         return !ideal;
                                     });
-                                    if (remainItems.length) {
+                                    if (remainItems === null || remainItems === void 0 ? void 0 : remainItems.length) {
                                         workerPools.set(poolKey, remainItems);
                                     }
                                     else {
@@ -327,7 +330,7 @@ async function acquireWorker(taskId, options) {
                             }
                         }
                         else if (msg.type === "yield") {
-                            (_c = task.channel) === null || _c === void 0 ? void 0 : _c.push({ value: msg.value, done: msg.done });
+                            (_d = task.channel) === null || _d === void 0 ? void 0 : _d.push({ value: msg.value, done: msg.done });
                             if (msg.done) {
                                 // The final message of yield event is the return value.
                                 handleMessage({
@@ -338,7 +341,7 @@ async function acquireWorker(taskId, options) {
                             }
                         }
                         else if (msg.type === "gen") {
-                            (_d = task.generate) === null || _d === void 0 ? void 0 : _d.call(task);
+                            (_e = task.generate) === null || _e === void 0 ? void 0 : _e.call(task);
                         }
                     }
                 };
@@ -606,7 +609,7 @@ function extractBaseUrl(stackTrace) {
  *
  * In Bun and Deno, the `module` can also be a TypeScript file.
  *
- * Data are cloned and transferred between threads via **Structured Clone Algorithm**.
+ * Data are cloned and transferred between threads via **Structured Clone Algorithm** (by default).
  *
  * Apart from the standard data types supported by the algorithm, {@link Channel} can also be
  * used to transfer data between threads. To do so, just passed a channel instance to the threaded
@@ -618,8 +621,8 @@ function extractBaseUrl(stackTrace) {
  *
  * The difference between using channel and generator function for streaming processing is, for a
  * generator function, `next(value)` is coupled with a `yield value`, the process is blocked
- * between **next** calls, channel doesn't have this limitation, we can use it to stream all
- * the data into the function before processing and receiving any result.
+ * between **next** calls, channel doesn't have this limit, we can use it to stream all the data
+ * into the function before processing and receiving any result.
  *
  * @example
  * ```ts
@@ -741,15 +744,16 @@ function parallel(module, options = {}) {
      * Marks the given data to be transferred instead of cloned to the worker thread.
      * Once transferred, the data is no longer available on the sending end.
      *
-     * Currently, only `ArrayBuffer` are guaranteed to be transferable across all supported
+     * Currently, only `ArrayBuffer` is guaranteed to be transferable across all supported
      * JavaScript runtimes.
      *
-     * Be aware, the transferable object can only be used as a parameter, return a transferable
-     * object from the threaded function is not supported and will always be cloned.
+     * Be aware, the transferable object can only be used as a parameter and only works with
+     * `worker_threads` adapter, return a transferable object from the threaded function is
+     * not supported at the moment and will always be cloned.
      *
      * NOTE: always prefer channel for transferring large amount of data in streaming fashion
      * than sending them as transferrable objects, it consumes less memory and does not transfer
-     * the ownership of the data.
+     * the ownership of the data, and supports `child_process` adapter as well.
      *
      * @example
      * ```ts

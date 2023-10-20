@@ -397,7 +397,11 @@ async function acquireWorker(taskId: number, options: {
                                 { // GC: clean long-time unused workers
                                     const now = Date.now();
                                     const idealItems: PoolRecord[] = [];
-                                    const remainItems = workerPool.filter(item => {
+
+                                    // The `workerPool` of this key in the pool map may have been
+                                    // modified by other routines, we need to retrieve the newest
+                                    // value.
+                                    const remainItems = workerPools.get(poolKey)?.filter(item => {
                                         const ideal = !item.tasks.size
                                             && (now - item.lastAccess) >= 300_000;
 
@@ -408,7 +412,7 @@ async function acquireWorker(taskId: number, options: {
                                         return !ideal;
                                     });
 
-                                    if (remainItems.length) {
+                                    if (remainItems?.length) {
                                         workerPools.set(poolKey, remainItems);
                                     } else {
                                         workerPools.delete(poolKey);
@@ -740,7 +744,7 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * 
  * In Bun and Deno, the `module` can also be a TypeScript file.
  * 
- * Data are cloned and transferred between threads via **Structured Clone Algorithm**.
+ * Data are cloned and transferred between threads via **Structured Clone Algorithm** (by default).
  * 
  * Apart from the standard data types supported by the algorithm, {@link Channel} can also be
  * used to transfer data between threads. To do so, just passed a channel instance to the threaded
@@ -752,8 +756,8 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * 
  * The difference between using channel and generator function for streaming processing is, for a
  * generator function, `next(value)` is coupled with a `yield value`, the process is blocked
- * between **next** calls, channel doesn't have this limitation, we can use it to stream all
- * the data into the function before processing and receiving any result.
+ * between **next** calls, channel doesn't have this limit, we can use it to stream all the data
+ * into the function before processing and receiving any result.
  * 
  * @example
  * ```ts
@@ -908,15 +912,16 @@ namespace parallel {
      * Marks the given data to be transferred instead of cloned to the worker thread.
      * Once transferred, the data is no longer available on the sending end.
      * 
-     * Currently, only `ArrayBuffer` are guaranteed to be transferable across all supported
+     * Currently, only `ArrayBuffer` is guaranteed to be transferable across all supported
      * JavaScript runtimes.
      * 
-     * Be aware, the transferable object can only be used as a parameter, return a transferable
-     * object from the threaded function is not supported and will always be cloned.
+     * Be aware, the transferable object can only be used as a parameter and only works with
+     * `worker_threads` adapter, return a transferable object from the threaded function is
+     * not supported at the moment and will always be cloned.
      * 
      * NOTE: always prefer channel for transferring large amount of data in streaming fashion
      * than sending them as transferrable objects, it consumes less memory and does not transfer
-     * the ownership of the data.
+     * the ownership of the data, and supports `child_process` adapter as well.
      * 
      * @example
      * ```ts
