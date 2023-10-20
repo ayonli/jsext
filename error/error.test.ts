@@ -1,5 +1,6 @@
 import "../augment.ts";
-import { strictEqual } from "node:assert";
+import { ok, strictEqual } from "node:assert";
+import { isNode, isBun } from "../util.ts";
 
 describe("Error", () => {
     it("Error.toObject", () => {
@@ -229,5 +230,107 @@ describe("Error", () => {
         strictEqual(obj3["stack"], err3.stack);
         strictEqual(obj3["cause"], err3.cause);
         strictEqual(obj3["code"], err3.code);
+    });
+
+    it("Error.toErrorEvent", function () {
+        if (isNode) { // Node.js doesn't support ErrorEvent at the moment
+            this.skip();
+        }
+
+        const err = new Error("something went wrong");
+        const event = Error.toErrorEvent(err);
+
+        strictEqual(event.error, err);
+        strictEqual(event.message, err.message);
+        strictEqual(
+            event.filename.replace(/^(file|https?):\/\//, ""),
+            import.meta.url.replace(/^(file|https?):\/\//, ""));
+
+        if (isBun) { // Bun has issue to locate line number at the moment.
+            ok(event.lineno > 0);
+            ok(event.colno > 0);
+        } else {
+            strictEqual(event.lineno, 240);
+            strictEqual(event.colno, 21);
+        }
+
+        const err2 = new Error("something went wrong");
+        err2.stack = (err2.stack as string).split("\n").map(line => {
+            // In Firefox and Safari, the call-site uses `@` prefix, we should simulate
+            // and test that.
+            return line.replace("    at ", "@");
+        }).join("\n");
+        const event2 = Error.toErrorEvent(err2);
+
+        strictEqual(event2.error, err2);
+        strictEqual(event2.message, err.message);
+        strictEqual(
+            event2.filename.replace(/^(file|https?):\/\//, ""),
+            import.meta.url.replace(/^(file|https?):\/\//, ""));
+
+        if (isBun) {
+            ok(event2.lineno > 0);
+            ok(event2.colno > 0);
+        } else {
+            strictEqual(event2.lineno, 257);
+            strictEqual(event2.colno, 22);
+        }
+
+        // Even more edge scenarios
+        const err3 = new Error("something went wrong");
+        err3.stack = [
+            "foo@debugger eval code:2:9",
+            "@debugger eval code:1:7"
+        ].join("\n");
+        const event3 = Error.toErrorEvent(err3, "messageerror");
+
+        strictEqual(event3.error, err3);
+        strictEqual(event3.message, err3.message);
+        strictEqual(event3.filename, "debugger eval code");
+        strictEqual(event3.lineno, 2);
+        strictEqual(event3.colno, 9);
+        strictEqual(event3.type, "messageerror");
+    });
+
+    it("Error.fromErrorEvent", function () {
+        if (isNode) { // Node.js doesn't support ErrorEvent at the moment
+            this.skip();
+        }
+
+        const filename = import.meta.url.replace(/^(file|https?):\/\//, "");
+        const err = new Error("something went wrong");
+
+        const event = new ErrorEvent("error", {
+            error: err,
+            message: err.message,
+            filename,
+            lineno: 301,
+            colno: 21,
+        });
+
+        const err1 = Error.fromErrorEvent(event);
+        strictEqual(err1, err);
+
+        const event2 = new ErrorEvent("error", {
+            message: err.message,
+            filename,
+            lineno: 301,
+            colno: 21,
+        });
+        const err2 = Error.fromErrorEvent(event2);
+        strictEqual(err2?.message, err.message);
+        strictEqual(err2?.stack, `Error: ${err.message}\n    at ${filename}:${301}:21`);
+
+        const event3 = new ErrorEvent("error", {
+            error: Error.toObject(err),
+            message: err.message,
+            filename,
+            lineno: 301,
+            colno: 21,
+        });
+        const err3 = Error.fromErrorEvent(event3);
+        strictEqual(err3?.name, err.name);
+        strictEqual(err3?.message, err.message);
+        strictEqual(err3?.stack, err.stack);
     });
 });

@@ -43,14 +43,20 @@ export function fromObject<T extends Error>(
         }
     }
 
-    const err: T = Object.create(ctor.prototype, {
-        message: {
-            configurable: true,
-            enumerable: false,
-            writable: true,
-            value: obj["message"] ?? "",
-        },
-    });
+    let err: T;
+
+    if (ctor.name === "DOMException") {
+        err = new (ctor as typeof DOMException)(obj["message"] ?? "", obj["name"]) as any;
+    } else {
+        err = Object.create(ctor.prototype, {
+            message: {
+                configurable: true,
+                enumerable: false,
+                writable: true,
+                value: obj["message"] ?? "",
+            },
+        });
+    }
 
     if (err.name !== obj["name"]) {
         Object.defineProperty(err, "name", {
@@ -85,8 +91,108 @@ export function fromObject<T extends Error>(
 
     otherKeys.forEach(key => {
         // @ts-ignore
-        err[key] = obj[key];
+        err[key] ??= obj[key];
     });
+
+    return err;
+}
+
+/** Creates an `ErrorEvent` instance based on the given error. */
+export function toErrorEvent(err: Error, type: string = "error"): ErrorEvent {
+    let filename = "";
+    let lineno = 0;
+    let colno = 0;
+
+    if (err.stack) {
+        const lines = err.stack.split("\n").map(line => line.trim());
+        let callSite = lines.find(line => line.startsWith("at "));
+
+        if (callSite) {
+            callSite = callSite.slice(3);
+        } else if (callSite = lines.find(line => line.includes("@") && line.length > 1)) {
+            callSite = callSite.slice(callSite.indexOf("@") + 1);
+        }
+
+        if (callSite) {
+            let start = callSite.lastIndexOf("(");
+            let end = 0;
+
+            if (start !== -1) {
+                start += 1;
+                end = callSite.indexOf(")", start);
+                callSite = callSite.slice(start, end);
+            }
+
+            const matches = callSite.match(/:(\d+):(\d+)$/);
+
+            if (matches) {
+                filename = callSite.slice(0, matches.index);
+                lineno = parseInt(matches[1] as string);
+                colno = parseInt(matches[2] as string);
+            }
+        }
+    }
+
+    return new ErrorEvent(type, {
+        error: err,
+        message: err.message,
+        filename,
+        lineno,
+        colno,
+    });
+}
+
+const isFirefoxOrSafari = typeof navigator === "object" && /Firefox|Safari/.test(navigator.userAgent);
+
+/** Creates an error instance based on the given `ErrorEvent` instance. */
+export function fromErrorEvent<T extends Error>(event: ErrorEvent): T | null {
+    if (event.error instanceof Error) {
+        return event.error as T;
+    }
+
+    let err: T;
+    let shouldPatchStack = false;
+
+    if (event.error
+        && typeof event.error === "object"
+        && event.error["name"]
+        && event.error["message"]
+    ) { // Error-like
+        err = fromObject(event.error, Error) as T;
+        shouldPatchStack = !err.stack;
+    } else if (event.message) {
+        err = new Error(event.message) as T;
+        shouldPatchStack = true;
+    } else {
+        return null;
+    }
+
+    if (shouldPatchStack) {
+        let stack = "";
+
+        if (event.filename) {
+            if (isFirefoxOrSafari) {
+                stack = "@" + event.filename;
+            } else {
+                stack = `Error: ${event.message}\n    at ${event.filename}`;
+            }
+
+            if (event.lineno) {
+                stack += ":" + event.lineno;
+            }
+
+            if (event.colno) {
+                stack += ":" + event.colno;
+            }
+        }
+
+        Object.defineProperty(err, "stack", {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: stack,
+        });
+    }
 
     return err;
 }

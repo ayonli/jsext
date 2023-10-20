@@ -1196,12 +1196,16 @@ import "@ayonli/jsext/error/augment";
 
 - `toObject<T extends Error>(err: T): { [x: string | symbol]: any; }`
 - `fromObject<T extends Error>(obj: { [x: string | symbol]: any; }, ctor?: Constructor<T>): T`
+- `toErrorEvent(err: Error, type?: string): ErrorEvent`
+- `fromErrorEvent<T extends Error>(event: ErrorEvent): T | null`
 
 **[Augmentation](https://github.com/ayonli/jsext/blob/main/error/augment.ts)**
 
 - `Error`
     - `toObject<T extends Error>(err: T): { [x: string | symbol]: any; }`
     - `fromObject<T extends Error>(obj: { [x: string | symbol]: any; }, ctor?: Constructor<T>): T`
+    - `toErrorEvent(err: Error, type?: string): ErrorEvent`
+    - `fromErrorEvent<T extends Error>(event: ErrorEvent): T | null`
     - `prototype`
         - `toJSON(): { [x: string | symbol]: any; }`
 

@@ -1,4 +1,4 @@
-import { Exception, fromObject, toObject } from "./index.ts";
+import { Exception, toErrorEvent, fromObject, toObject, fromErrorEvent } from "./index.ts";
 import { Constructor } from "../index.ts";
 
 declare global {
@@ -19,6 +19,11 @@ declare global {
         fromObject<T extends { name: "URIError"; }>(obj: T): URIError;
         fromObject<T extends { name: "Exception"; }>(obj: T): Exception;
         fromObject<T extends Error>(obj: { [x: string | symbol]: any; }, ctor?: Constructor<Error>): T | null;
+
+        /** Creates an `ErrorEvent` instance based on the given error. */
+        toErrorEvent(err: Error, type?: string): ErrorEvent;
+        /** Creates an error instance based on the given `ErrorEvent` instance. */
+        fromErrorEvent<T extends Error>(event: ErrorEvent): T | null;
     }
 
     class Exception extends Error {
@@ -34,6 +39,8 @@ globalThis["Exception"] = Exception;
 
 Error.toObject = toObject;
 Error.fromObject = fromObject;
+Error.toErrorEvent = toErrorEvent;
+Error.fromErrorEvent = fromErrorEvent;
 
 Error.prototype.toJSON = function toJSON() {
     return toObject(this);
