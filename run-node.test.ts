@@ -1,6 +1,9 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import jsext from "./index.ts";
 import { sequence } from "./number/index.ts";
+import { fromObject } from "./error/index.ts";
+
+declare var Bun: any;
 
 describe("jsext.run", () => {
     describe("worker_threads", () => {
@@ -131,6 +134,35 @@ describe("jsext.run", () => {
 
             deepStrictEqual(await job.result(), 10);
             strictEqual(arr.byteLength, 0);
+        });
+
+        it("send unserializable", async () => {
+            const [_err] = await jsext.try(async () => await jsext.run<number, [any]>("examples/worker.mjs", [
+                () => null
+            ], {
+                fn: "throwUnserializableError",
+            }));
+            const err = _err instanceof Error ? _err : fromObject(_err as any, Error);
+
+            if (typeof Bun === "object") {
+                // Currently Bun/JSCore has problem capturing the call stack in async functions,
+                // so the stack may not include the current filename, we just have to test
+                // if the error is captured.
+                ok(err instanceof Error);
+            } else {
+                ok(err?.stack?.includes(import.meta.url.replace(/^(file|https?):\/\//, "")));
+            }
+        });
+
+        it("receive unserializable", async () => {
+            const job = await jsext.run<number, [any]>("examples/worker.mjs", [
+                1
+            ], {
+                fn: "throwUnserializableError",
+            });
+            const [err] = await jsext.try(job.result());
+
+            ok((err as DOMException)?.stack?.includes("examples/worker.mjs"));
         });
     });
 
@@ -277,6 +309,64 @@ describe("jsext.run", () => {
             const results = (await jsext.readAll(channel)).map(item => item.value);
             deepStrictEqual(results, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]);
             strictEqual(await job1.result(), 10);
+        });
+
+        it("send unserializable", async () => {
+            const [_err] = await jsext.try(async () => await jsext.run<number, [any]>("examples/worker.mjs", [
+                () => null
+            ], {
+                fn: "throwUnserializableError",
+                adapter: "child_process",
+            }));
+            const err = _err instanceof Error ? _err : fromObject(_err as any, Error);
+
+            if (typeof Bun === "object") {
+                // Currently Bun/JSCore has problem capturing the call stack in async functions,
+                // so the stack may not include the current filename, we just have to test
+                // if the error is captured.
+                ok(err instanceof Error);
+
+                return;
+            } else {
+                ok(err?.stack?.includes(import.meta.url.replace(/^(file|https?):\/\//, "")));
+            }
+
+            const [_err2] = await jsext.try(async () => await jsext.run<number, [any]>("examples/worker.mjs", [
+                BigInt(1)
+            ], {
+                fn: "throwUnserializableError",
+                adapter: "child_process",
+                serialization: "json",
+            }));
+            const err2 = _err2 instanceof Error ? _err2 : fromObject(_err2 as any, Error);
+            ok(err2?.stack?.includes(import.meta.url.replace(/^(file|https?):\/\//, "")));
+        });
+
+        it("receive unserializable", async () => {
+            const job = await jsext.run<number, [any]>("examples/worker.mjs", [
+                1
+            ], {
+                fn: "throwUnserializableError",
+                adapter: "child_process",
+            });
+            const [err] = await jsext.try(job.result());
+
+            ok((err as DOMException)?.stack?.includes("examples/worker.mjs"));
+
+            if (typeof Bun === "object") {
+                return;
+            }
+
+            const job2 = await jsext.run<number, [any]>("examples/worker.mjs", [
+                1
+            ], {
+                fn: "throwUnserializableError",
+                adapter: "child_process",
+                serialization: "json",
+            });
+            const [err2] = await jsext.try(job2.result());
+
+            ok((err2 as TypeError)?.stack?.includes("examples/worker.mjs"));
         });
     });
 });

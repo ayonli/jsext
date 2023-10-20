@@ -7,6 +7,8 @@ declare var Deno: any;
 declare var Bun: any;
 
 describe("jsext.parallel", () => {
+    const modUrl = new URL("./examples/worker.mjs", import.meta.url).href;
+
     describe("worker_threads", () => {
         // @ts-ignore because allowJs is not turned on
         const mod = jsext.parallel(() => import("./examples/worker.mjs"));
@@ -64,6 +66,28 @@ describe("jsext.parallel", () => {
 
             deepStrictEqual(length, 10);
             strictEqual(arr.byteLength, 0);
+        });
+
+        it("send unserializable", async () => {
+            // @ts-ignore because allowJs is not turned on
+            const [err] = await jsext.try(async () => await mod.throwUnserializableError(() => null));
+
+            if (typeof Bun === "object") {
+                // Currently Bun/JSCore has problem capturing the call stack in async functions,
+                // so the stack may not include the current filename, we just have to test
+                // if the error is captured.
+                ok(err instanceof Error);
+            } else {
+                ok((err as DOMException)?.stack?.includes(import.meta.url.replace(/^(file|https?):\/\//, "")));
+            }
+        });
+
+        it("receive unserializable", async () => {
+            // @ts-ignore because allowJs is not turned on
+            const [err, res] = await jsext.try(async () => await mod.throwUnserializableError(1));
+
+            strictEqual((err as DOMException)?.name, "DOMException");
+            ok((err as DOMException)?.stack?.includes(modUrl));
         });
 
         it("in dependencies", async () => {
@@ -201,6 +225,54 @@ describe("jsext.parallel", () => {
                 const res = await mod.transferTypedArray(arr);
 
                 deepStrictEqual(res, JSON.parse(JSON.stringify(arr)));
+            }));
+
+            it("send unserializable", jsext.func(async (defer) => {
+                // @ts-ignore because allowJs is not turned on
+                const [err] = await jsext.try(async () => await mod.throwUnserializableError(() => null));
+
+                if (typeof Bun === "object") {
+                    // Currently Bun/JSCore has problem capturing the call stack in async functions,
+                    // so the stack may not include the current filename, we just have to test
+                    // if the error is captured.
+                    ok(err instanceof Error);
+
+                    return;
+                } else {
+                    ok((err as DOMException)?.stack?.includes(import.meta.url.replace(/^(file|https?):\/\//, "")));
+                }
+
+                // @ts-ignore because allowJs is not turned on
+                const mod2 = jsext.parallel(() => import("./examples/worker.mjs"), {
+                    adapter: "child_process",
+                    serialization: "json",
+                });
+                defer(() => mod2[terminate]());
+
+                // @ts-ignore because allowJs is not turned on
+                const [err2] = await jsext.try(async () => await mod2.throwUnserializableError(BigInt(1)));
+                ok((err2 as DOMException)?.stack?.includes(import.meta.url.replace(/^(file|https?):\/\//, "")));
+            }));
+
+            it("receive unserializable", jsext.func(async (defer) => {
+                // @ts-ignore because allowJs is not turned on
+                const [err] = await jsext.try(async () => await mod.throwUnserializableError(1));
+                ok((err as DOMException)?.stack?.includes(modUrl));
+
+                if (typeof Bun === "object") {
+                    return;
+                }
+
+                // @ts-ignore because allowJs is not turned on
+                const mod2 = jsext.parallel(() => import("./examples/worker.mjs"), {
+                    adapter: "child_process",
+                    serialization: "json",
+                });
+                defer(() => mod2[terminate]());
+
+                // @ts-ignore because allowJs is not turned on
+                const [err2] = await jsext.try(async () => await mod2.throwUnserializableError(1));
+                ok((err as DOMException)?.stack?.includes(modUrl));
             }));
 
             it("in dependencies", async () => {

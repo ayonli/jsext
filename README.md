@@ -1178,7 +1178,7 @@ import "@ayonli/jsext/collections/augment";
 ```js
 import Exception from "@ayonli/jsext/error/Exception";
 // or
-import { Exception } from "@ayonli/jsext/error";
+import { Exception, toObject, /* ... */ } from "@ayonli/jsext/error";
 // or
 import "@ayonli/jsext/error/augment";
 ```

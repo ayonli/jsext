@@ -1,6 +1,7 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import jsext from "./index.ts";
 import { sequence } from "./number/index.ts";
+import { fromObject } from "./error/index.ts";
 
 describe("jsext.run", () => {
     it("ES Module", async () => {
@@ -111,5 +112,25 @@ describe("jsext.run", () => {
 
         deepStrictEqual(await job.result(), 10);
         strictEqual(arr.byteLength, 0);
+    });
+
+    it("send unserializable", async () => {
+        const [err] = await jsext.try(async () => await jsext.run<number, [any]>("examples/worker.mjs", [
+            () => null
+        ], {
+            fn: "throwUnserializableError",
+        }));
+        ok((err as DOMException)?.stack?.includes(import.meta.url.replace(/^(file|https?):\/\//, "")));
+    });
+
+    it("receive unserializable", async () => {
+        const job = await jsext.run<number, [any]>("examples/worker.mjs", [
+            1
+        ], {
+            fn: "throwUnserializableError",
+        });
+        const [err] = await jsext.try(job.result());
+
+        ok((err as DOMException)?.stack?.includes("examples/worker.mjs"));
     });
 });

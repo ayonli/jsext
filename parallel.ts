@@ -57,6 +57,8 @@ const isMainThread = !isWorkerThread
 
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 type RemoteTask = {
+    module: string;
+    fn: string;
     error?: unknown;
     result?: { value: any; };
     resolver?: {
@@ -78,7 +80,7 @@ type PoolRecord = {
 };
 const workerPools = new Map<string, PoolRecord[]>();
 
-export const getConcurrencyNumber = (async () => {
+export const getMaxParallelism = (async () => {
     if (isNode) {
         const os = await import("os");
 
@@ -218,7 +220,7 @@ export async function createWorker(options: {
         if (adapter === "child_process") {
             const { fork } = await import("child_process");
 
-            const worker = fork(entry, ["--worker-thread"], {
+            const worker = fork(entry, ["--worker-thread", "--serialization=" + serialization], {
                 stdio: "inherit",
                 serialization,
             });
@@ -328,7 +330,7 @@ async function acquireWorker(taskId: number, options: {
     adapter: "worker_threads" | "child_process";
     serialization: "advanced" | "json";
 }) {
-    const maxWorkers = parallel.maxWorkers || await getConcurrencyNumber;
+    const maxWorkers = parallel.maxWorkers || await getMaxParallelism;
     const { adapter, serialization } = options;
     const poolKey = adapter + ":" + serialization;
     const workerPool = workerPools.get(poolKey)
@@ -360,6 +362,21 @@ async function acquireWorker(taskId: number, options: {
                                 const err = msg.error?.constructor === Object
                                     ? (fromObject(msg.error) ?? msg.error)
                                     : msg.error;
+
+                                if (err instanceof Error &&
+                                    (err.name === "DOMException" || adapter === "child_process") &&
+                                    (err.message.includes("not be cloned") ||
+                                        err.message.includes("Do not know how to serialize")
+                                    )
+                                ) {
+                                    Object.defineProperty(err, "stack", {
+                                        configurable: true,
+                                        enumerable: false,
+                                        writable: true,
+                                        value: (err.stack ? err.stack + "\n    " : "")
+                                            + `at ${task.fn} (${task.module})`,
+                                    });
+                                }
 
                                 if (task.resolver) {
                                     task.resolver.reject(err);
@@ -522,6 +539,31 @@ export function wrapArgs<A extends any[]>(
     return { args, transferable };
 }
 
+async function safeRemoteCall(
+    worker: Worker | BunWorker | NodeWorker | ChildProcess,
+    req: CallRequest,
+    transferable: Transferable[] = [],
+    taskId: number = 0
+) {
+    try {
+        if (typeof (worker as any)["postMessage"] === "function") {
+            (worker as Worker).postMessage(req, transferable);
+        } else {
+            await new Promise<void>((resolve, reject) => {
+                (worker as ChildProcess).send(req, err => err ? reject(err) : resolve());
+            });
+        }
+    } catch (err) {
+        taskId && tasks.delete(taskId);
+
+        if (typeof (worker as any)["unref"] === "function") {
+            (worker as BunWorker | NodeWorker | ChildProcess).unref();
+        }
+
+        throw err;
+    }
+}
+
 function createRemoteCall(
     modId: string,
     fn: string,
@@ -533,12 +575,12 @@ function createRemoteCall(
     }
 ) {
     const taskId = taskIdCounter.next().value as number;
-    tasks.set(taskId, {});
+    tasks.set(taskId, { module: baseUrl ? new URL(modId, baseUrl).href : modId, fn });
 
     let getWorker = acquireWorker(taskId, options);
     const { args: _args, transferable } = wrapArgs(args, getWorker);
 
-    getWorker = getWorker.then((worker) => {
+    getWorker = getWorker.then(async (worker) => {
         const req = createCallRequest({
             script: modId,
             fn,
@@ -547,11 +589,7 @@ function createRemoteCall(
             baseUrl: baseUrl as string
         });
 
-        if (typeof (worker as any)["postMessage"] === "function") {
-            (worker as Worker).postMessage(req, transferable);
-        } else {
-            (worker as ChildProcess).send(req);
-        }
+        await safeRemoteCall(worker, req, transferable, taskId);
 
         return worker;
     });
@@ -567,7 +605,7 @@ function createRemoteCall(
                 tasks.delete(taskId);
                 return onfulfilled?.(task.result.value);
             } else {
-                return new Promise((resolve, reject) => {
+                return getWorker.then(() => new Promise((resolve, reject) => {
                     task.resolver = {
                         resolve: (value) => {
                             tasks.delete(taskId);
@@ -578,7 +616,7 @@ function createRemoteCall(
                             reject(err);
                         }
                     };
-                }).then(onfulfilled, onrejected);
+                })).then(onfulfilled, onrejected);
             }
         },
         async next(input) {
@@ -612,11 +650,7 @@ function createRemoteCall(
                     baseUrl: baseUrl as string,
                 });
 
-                if (typeof (worker as any)["postMessage"] === "function") {
-                    (worker as Worker).postMessage(req, transferable);
-                } else {
-                    (worker as ChildProcess).send(req);
-                }
+                await safeRemoteCall(worker, req, transferable, taskId);
 
                 return await task.channel.pop();
             }
@@ -634,11 +668,7 @@ function createRemoteCall(
                 baseUrl: baseUrl as string,
             });
 
-            if (typeof (worker as any)["postMessage"] === "function") {
-                (worker as Worker).postMessage(req, transferable);
-            } else {
-                (worker as ChildProcess).send(req);
-            }
+            await safeRemoteCall(worker, req, transferable, taskId);
 
             return { value, done: true };
         },
@@ -654,11 +684,7 @@ function createRemoteCall(
                 baseUrl: baseUrl as string,
             });
 
-            if (typeof (worker as any)["postMessage"] === "function") {
-                (worker as Worker).postMessage(req);
-            } else {
-                (worker as ChildProcess).send(req);
-            }
+            await safeRemoteCall(worker, req, transferable, taskId);
 
             throw err;
         },

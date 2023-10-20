@@ -6,10 +6,11 @@ import { fromObject } from "./error/index.ts";
 import { handleChannelMessage, isChannelMessage, isNode, isBun, isBeforeNode14 } from "./util.ts";
 import parallel, {
     BunWorker,
-    getConcurrencyNumber,
+    getMaxParallelism,
     sanitizeModuleId,
     createCallRequest,
     createWorker,
+    CallRequest,
     CallResponse,
     isCallResponse,
     wrapArgs
@@ -172,11 +173,12 @@ async function run<R, A extends any[] = any[]>(
         deprecate("options.workerEntry", run, "set `run.workerEntry` instead");
     }
 
-    const maxWorkers = parallel.maxWorkers || await getConcurrencyNumber;
+    const maxWorkers = parallel.maxWorkers || await getMaxParallelism;
     const modId = sanitizeModuleId(script);
+    const fn = options?.fn || "default";
     const msg = createCallRequest({
         script: modId,
-        fn: options?.fn || "default",
+        fn,
         args: args ?? [],
     });
     const entry = options?.workerEntry || parallel.workerEntry;
@@ -221,6 +223,7 @@ async function run<R, A extends any[] = any[]>(
     let workerId: number;
     let release: () => void;
     let terminate = () => Promise.resolve<void>(void 0);
+
     const timeout = options?.timeout ? setTimeout(() => {
         const err = new Error(`operation timeout after ${options.timeout}ms`);
         error = err;
@@ -232,34 +235,59 @@ async function run<R, A extends any[] = any[]>(
         terminate();
     }, options.timeout) : null;
 
+    const settle = () => {
+        if (options?.keepAlive) {
+            // Release before resolve.
+            release?.();
+
+            if (workerConsumerQueue.length) {
+                // Queued consumer now has chance to gain the worker.
+                workerConsumerQueue.shift()?.();
+            }
+        } else {
+            terminate();
+        }
+    };
+
     const handleMessage = (msg: any) => {
         if (isChannelMessage(msg)) {
             handleChannelMessage(msg);
         } else if (isCallResponse(msg)) {
             timeout && clearTimeout(timeout);
 
-            if (msg.type === "error") {
-                return handleError(msg.error);
-            } else if (msg.type === "return") {
-                if (options?.keepAlive) {
-                    // Release before resolve.
-                    release?.();
+            if (msg.type === "return" || msg.type === "error") {
+                settle();
 
-                    if (workerConsumerQueue.length) {
-                        // Queued consumer now has chance to gain the worker.
-                        workerConsumerQueue.shift()?.();
+                if (msg.type === "error") {
+                    const err = msg.error?.constructor === Object
+                        ? (fromObject(msg.error) ?? msg.error)
+                        : msg.error;
+
+                    if (err instanceof Error &&
+                        (err.name === "DOMException" || adapter === "child_process") &&
+                        (err.message.includes("not be cloned") ||
+                            err.message.includes("Do not know how to serialize")
+                        )
+                    ) {
+                        Object.defineProperty(err, "stack", {
+                            configurable: true,
+                            enumerable: false,
+                            writable: true,
+                            value: (err.stack ? err.stack + "\n    " : "")
+                                + `at ${fn} (${modId})`,
+                        });
                     }
-                } else {
-                    terminate();
-                }
 
-                if (resolver) {
-                    resolver.resolve(msg.value);
+                    handleError(err);
                 } else {
-                    result = { value: msg.value };
-                }
+                    if (resolver) {
+                        resolver.resolve(msg.value);
+                    } else {
+                        result = { value: msg.value };
+                    }
 
-                channel?.close();
+                    channel?.close();
+                }
             } else if (msg.type === "yield") {
                 if (msg.done) {
                     // The final message of yield event is the return value.
@@ -270,6 +298,7 @@ async function run<R, A extends any[] = any[]>(
             }
         }
     };
+
     const handleError = (err: unknown) => {
         err = err instanceof Error
             ? err
@@ -283,6 +312,7 @@ async function run<R, A extends any[] = any[]>(
 
         channel?.close(err as Error);
     };
+
     const handleExit = () => {
         timeout && clearTimeout(timeout);
 
@@ -311,6 +341,30 @@ async function run<R, A extends any[] = any[]>(
         }
 
         channel?.close(error as Error);
+    };
+
+    const safeRemoteCall = async (
+        worker: Worker | BunWorker | NodeWorker | ChildProcess,
+        req: CallRequest,
+        transferable: Transferable[] = [],
+    ) => {
+        try {
+            if (typeof (worker as any)["postMessage"] === "function") {
+                (worker as Worker).postMessage(req, transferable);
+            } else {
+                await new Promise<void>((resolve, reject) => {
+                    (worker as ChildProcess).send(req, err => err ? reject(err) : resolve());
+                });
+            }
+        } catch (err) {
+            if (typeof (worker as any)["unref"] === "function") {
+                (worker as BunWorker | NodeWorker | ChildProcess).unref();
+            }
+
+            settle();
+
+            throw err;
+        }
     };
 
     if (isNode || isBun) {
@@ -343,7 +397,7 @@ async function run<R, A extends any[] = any[]>(
 
             const { args } = wrapArgs(msg.args, Promise.resolve(worker));
             msg.args = args;
-            worker.send(msg);
+            await safeRemoteCall(worker, msg);
         } else if (isNode) {
             const record = await poolRecord.getWorker;
             const worker = record.worker as NodeWorker;
@@ -372,7 +426,7 @@ async function run<R, A extends any[] = any[]>(
 
             const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
             msg.args = args;
-            worker.postMessage(msg, transferable as any[]);
+            await safeRemoteCall(worker, msg, transferable);
         } else { // isBun
             const record = await poolRecord.getWorker;
             const worker = record.worker as BunWorker;
@@ -406,7 +460,7 @@ async function run<R, A extends any[] = any[]>(
 
             const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
             msg.args = args;
-            worker.postMessage(msg, transferable);
+            await safeRemoteCall(worker, msg, transferable);
         }
     } else {
         const record = await poolRecord.getWorker;
@@ -437,7 +491,7 @@ async function run<R, A extends any[] = any[]>(
 
         const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
         msg.args = args;
-        worker.postMessage(msg, transferable);
+        await safeRemoteCall(worker, msg, transferable);
     }
 
     return {

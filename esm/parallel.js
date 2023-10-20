@@ -24,7 +24,7 @@ const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const tasks = new Map;
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const workerPools = new Map();
-const getConcurrencyNumber = (async () => {
+const getMaxParallelism = (async () => {
     if (isNode) {
         const os = await import('os');
         if (typeof os.availableParallelism === "function") {
@@ -133,7 +133,7 @@ async function createWorker(options) {
         }
         if (adapter === "child_process") {
             const { fork } = await import('child_process');
-            const worker = fork(entry, ["--worker-thread"], {
+            const worker = fork(entry, ["--worker-thread", "--serialization=" + serialization], {
                 stdio: "inherit",
                 serialization,
             });
@@ -235,7 +235,7 @@ async function createWorker(options) {
 }
 async function acquireWorker(taskId, options) {
     var _a;
-    const maxWorkers = parallel.maxWorkers || await getConcurrencyNumber;
+    const maxWorkers = parallel.maxWorkers || await getMaxParallelism;
     const { adapter, serialization } = options;
     const poolKey = adapter + ":" + serialization;
     const workerPool = (_a = workerPools.get(poolKey)) !== null && _a !== void 0 ? _a : workerPools.set(poolKey, []).get(poolKey);
@@ -265,6 +265,18 @@ async function acquireWorker(taskId, options) {
                                 const err = ((_a = msg.error) === null || _a === void 0 ? void 0 : _a.constructor) === Object
                                     ? ((_b = fromObject(msg.error)) !== null && _b !== void 0 ? _b : msg.error)
                                     : msg.error;
+                                if (err instanceof Error &&
+                                    (err.name === "DOMException" || adapter === "child_process") &&
+                                    (err.message.includes("not be cloned") ||
+                                        err.message.includes("Do not know how to serialize"))) {
+                                    Object.defineProperty(err, "stack", {
+                                        configurable: true,
+                                        enumerable: false,
+                                        writable: true,
+                                        value: (err.stack ? err.stack + "\n    " : "")
+                                            + `at ${task.fn} (${task.module})`,
+                                    });
+                                }
                                 if (task.resolver) {
                                     task.resolver.reject(err);
                                     if (task.channel) {
@@ -415,12 +427,31 @@ function wrapArgs(args, getWorker) {
     });
     return { args, transferable };
 }
+async function safeRemoteCall(worker, req, transferable = [], taskId = 0) {
+    try {
+        if (typeof worker["postMessage"] === "function") {
+            worker.postMessage(req, transferable);
+        }
+        else {
+            await new Promise((resolve, reject) => {
+                worker.send(req, err => err ? reject(err) : resolve());
+            });
+        }
+    }
+    catch (err) {
+        taskId && tasks.delete(taskId);
+        if (typeof worker["unref"] === "function") {
+            worker.unref();
+        }
+        throw err;
+    }
+}
 function createRemoteCall(modId, fn, args, baseUrl = undefined, options) {
     const taskId = taskIdCounter.next().value;
-    tasks.set(taskId, {});
+    tasks.set(taskId, { module: baseUrl ? new URL(modId, baseUrl).href : modId, fn });
     let getWorker = acquireWorker(taskId, options);
     const { args: _args, transferable } = wrapArgs(args, getWorker);
-    getWorker = getWorker.then((worker) => {
+    getWorker = getWorker.then(async (worker) => {
         const req = createCallRequest({
             script: modId,
             fn,
@@ -428,12 +459,7 @@ function createRemoteCall(modId, fn, args, baseUrl = undefined, options) {
             taskId,
             baseUrl: baseUrl
         });
-        if (typeof worker["postMessage"] === "function") {
-            worker.postMessage(req, transferable);
-        }
-        else {
-            worker.send(req);
-        }
+        await safeRemoteCall(worker, req, transferable, taskId);
         return worker;
     });
     return new ThenableAsyncGenerator({
@@ -448,7 +474,7 @@ function createRemoteCall(modId, fn, args, baseUrl = undefined, options) {
                 return onfulfilled === null || onfulfilled === void 0 ? void 0 : onfulfilled(task.result.value);
             }
             else {
-                return new Promise((resolve, reject) => {
+                return getWorker.then(() => new Promise((resolve, reject) => {
                     task.resolver = {
                         resolve: (value) => {
                             tasks.delete(taskId);
@@ -459,7 +485,7 @@ function createRemoteCall(modId, fn, args, baseUrl = undefined, options) {
                             reject(err);
                         }
                     };
-                }).then(onfulfilled, onrejected);
+                })).then(onfulfilled, onrejected);
             }
         },
         async next(input) {
@@ -492,12 +518,7 @@ function createRemoteCall(modId, fn, args, baseUrl = undefined, options) {
                     type: "next",
                     baseUrl: baseUrl,
                 });
-                if (typeof worker["postMessage"] === "function") {
-                    worker.postMessage(req, transferable);
-                }
-                else {
-                    worker.send(req);
-                }
+                await safeRemoteCall(worker, req, transferable, taskId);
                 return await task.channel.pop();
             }
         },
@@ -513,12 +534,7 @@ function createRemoteCall(modId, fn, args, baseUrl = undefined, options) {
                 type: "return",
                 baseUrl: baseUrl,
             });
-            if (typeof worker["postMessage"] === "function") {
-                worker.postMessage(req, transferable);
-            }
-            else {
-                worker.send(req);
-            }
+            await safeRemoteCall(worker, req, transferable, taskId);
             return { value, done: true };
         },
         async throw(err) {
@@ -532,12 +548,7 @@ function createRemoteCall(modId, fn, args, baseUrl = undefined, options) {
                 type: "throw",
                 baseUrl: baseUrl,
             });
-            if (typeof worker["postMessage"] === "function") {
-                worker.postMessage(req);
-            }
-            else {
-                worker.send(req);
-            }
+            await safeRemoteCall(worker, req, transferable, taskId);
             throw err;
         },
     });
@@ -775,5 +786,5 @@ function parallel(module, options = {}) {
 })(parallel || (parallel = {}));
 var parallel$1 = parallel;
 
-export { createCallRequest, createWorker, parallel$1 as default, getConcurrencyNumber, isCallResponse, sanitizeModuleId, terminate, wrapArgs };
+export { createCallRequest, createWorker, parallel$1 as default, getMaxParallelism, isCallResponse, sanitizeModuleId, terminate, wrapArgs };
 //# sourceMappingURL=parallel.js.map

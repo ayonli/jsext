@@ -46,6 +46,27 @@ export async function handleCallRequest(
     const _reply = reply;
     reply = (res) => {
         if (res.type === "error") {
+            if (isNode && process.argv.includes("--serialization=json")) {
+                return _reply({
+                    ...res,
+                    error: toObject(res.error as Error)
+                } as CallResponse | ChannelMessage);
+            }
+
+            if (typeof DOMException === "function" && res.error instanceof DOMException) {
+                // DOMException cannot be cloned properly, fallback to transferring it as
+                // an object and rebuild in the main thread.
+                return _reply({
+                    ...res,
+                    error: {
+                        ...toObject(res.error as Error),
+                        // In Node.js, the default name of DOMException is incorrect,
+                        // we need to set it right.
+                        name: "DOMException",
+                    },
+                } as CallResponse | ChannelMessage);
+            }
+
             try {
                 return _reply(res);
             } catch {

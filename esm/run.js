@@ -2,7 +2,7 @@ import chan from './chan.js';
 import deprecate from './deprecate.js';
 import { fromObject } from './error/index.js';
 import { isBeforeNode14, isNode, isBun, isChannelMessage, handleChannelMessage } from './util.js';
-import parallel, { getConcurrencyNumber, sanitizeModuleId, createCallRequest, createWorker, wrapArgs, isCallResponse } from './parallel.js';
+import parallel, { getMaxParallelism, sanitizeModuleId, createCallRequest, createWorker, wrapArgs, isCallResponse } from './parallel.js';
 
 const workerPools = new Map();
 // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
@@ -13,11 +13,12 @@ async function run(script, args = undefined, options = undefined) {
     if (options === null || options === void 0 ? void 0 : options.workerEntry) {
         deprecate("options.workerEntry", run, "set `run.workerEntry` instead");
     }
-    const maxWorkers = parallel.maxWorkers || await getConcurrencyNumber;
+    const maxWorkers = parallel.maxWorkers || await getMaxParallelism;
     const modId = sanitizeModuleId(script);
+    const fn = (options === null || options === void 0 ? void 0 : options.fn) || "default";
     const msg = createCallRequest({
         script: modId,
-        fn: (options === null || options === void 0 ? void 0 : options.fn) || "default",
+        fn,
         args: args !== null && args !== void 0 ? args : [],
     });
     const entry = (options === null || options === void 0 ? void 0 : options.workerEntry) || parallel.workerEntry;
@@ -66,35 +67,56 @@ async function run(script, args = undefined, options = undefined) {
         }
         terminate();
     }, options.timeout) : null;
-    const handleMessage = (msg) => {
+    const settle = () => {
         var _a;
+        if (options === null || options === void 0 ? void 0 : options.keepAlive) {
+            // Release before resolve.
+            release === null || release === void 0 ? void 0 : release();
+            if (workerConsumerQueue.length) {
+                // Queued consumer now has chance to gain the worker.
+                (_a = workerConsumerQueue.shift()) === null || _a === void 0 ? void 0 : _a();
+            }
+        }
+        else {
+            terminate();
+        }
+    };
+    const handleMessage = (msg) => {
+        var _a, _b;
         if (isChannelMessage(msg)) {
             handleChannelMessage(msg);
         }
         else if (isCallResponse(msg)) {
             timeout && clearTimeout(timeout);
-            if (msg.type === "error") {
-                return handleError(msg.error);
-            }
-            else if (msg.type === "return") {
-                if (options === null || options === void 0 ? void 0 : options.keepAlive) {
-                    // Release before resolve.
-                    release === null || release === void 0 ? void 0 : release();
-                    if (workerConsumerQueue.length) {
-                        // Queued consumer now has chance to gain the worker.
-                        (_a = workerConsumerQueue.shift()) === null || _a === void 0 ? void 0 : _a();
+            if (msg.type === "return" || msg.type === "error") {
+                settle();
+                if (msg.type === "error") {
+                    const err = ((_a = msg.error) === null || _a === void 0 ? void 0 : _a.constructor) === Object
+                        ? ((_b = fromObject(msg.error)) !== null && _b !== void 0 ? _b : msg.error)
+                        : msg.error;
+                    if (err instanceof Error &&
+                        (err.name === "DOMException" || adapter === "child_process") &&
+                        (err.message.includes("not be cloned") ||
+                            err.message.includes("Do not know how to serialize"))) {
+                        Object.defineProperty(err, "stack", {
+                            configurable: true,
+                            enumerable: false,
+                            writable: true,
+                            value: (err.stack ? err.stack + "\n    " : "")
+                                + `at ${fn} (${modId})`,
+                        });
                     }
+                    handleError(err);
                 }
                 else {
-                    terminate();
+                    if (resolver) {
+                        resolver.resolve(msg.value);
+                    }
+                    else {
+                        result = { value: msg.value };
+                    }
+                    channel === null || channel === void 0 ? void 0 : channel.close();
                 }
-                if (resolver) {
-                    resolver.resolve(msg.value);
-                }
-                else {
-                    result = { value: msg.value };
-                }
-                channel === null || channel === void 0 ? void 0 : channel.close();
             }
             else if (msg.type === "yield") {
                 if (msg.done) {
@@ -145,6 +167,25 @@ async function run(script, args = undefined, options = undefined) {
         }
         channel === null || channel === void 0 ? void 0 : channel.close(error);
     };
+    const safeRemoteCall = async (worker, req, transferable = []) => {
+        try {
+            if (typeof worker["postMessage"] === "function") {
+                worker.postMessage(req, transferable);
+            }
+            else {
+                await new Promise((resolve, reject) => {
+                    worker.send(req, err => err ? reject(err) : resolve());
+                });
+            }
+        }
+        catch (err) {
+            if (typeof worker["unref"] === "function") {
+                worker.unref();
+            }
+            settle();
+            throw err;
+        }
+    };
     if (isNode || isBun) {
         if (adapter === "child_process") {
             const record = await poolRecord.getWorker;
@@ -170,7 +211,7 @@ async function run(script, args = undefined, options = undefined) {
             }
             const { args } = wrapArgs(msg.args, Promise.resolve(worker));
             msg.args = args;
-            worker.send(msg);
+            await safeRemoteCall(worker, msg);
         }
         else if (isNode) {
             const record = await poolRecord.getWorker;
@@ -196,7 +237,7 @@ async function run(script, args = undefined, options = undefined) {
             }
             const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
             msg.args = args;
-            worker.postMessage(msg, transferable);
+            await safeRemoteCall(worker, msg, transferable);
         }
         else { // isBun
             const record = await poolRecord.getWorker;
@@ -227,7 +268,7 @@ async function run(script, args = undefined, options = undefined) {
             }
             const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
             msg.args = args;
-            worker.postMessage(msg, transferable);
+            await safeRemoteCall(worker, msg, transferable);
         }
     }
     else {
@@ -255,7 +296,7 @@ async function run(script, args = undefined, options = undefined) {
         }
         const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
         msg.args = args;
-        worker.postMessage(msg, transferable);
+        await safeRemoteCall(worker, msg, transferable);
     }
     return {
         workerId,

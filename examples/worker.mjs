@@ -45,7 +45,19 @@ export function transferError(err) {
  * @param {string} msg 
  */
 export function throwError(msg) {
-    throw new Error(msg);
+    throw new TypeError(msg);
+}
+
+/**
+ * @param {any} value 
+ */
+export function throwUnserializableError(value) {
+    return {
+        int: BigInt(1),
+        foo() {
+            return null;
+        },
+    };
 }
 
 /**

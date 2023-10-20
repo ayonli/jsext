@@ -134,7 +134,7 @@ function toObject(err) {
     return omit(err, ["toString", "toJSON"]);
 }
 function fromObject(obj, ctor = undefined) {
-    var _a;
+    var _a, _b;
     // @ts-ignore
     if (!(obj === null || obj === void 0 ? void 0 : obj.name)) {
         return null;
@@ -149,14 +149,20 @@ function fromObject(obj, ctor = undefined) {
             ctor = Error;
         }
     }
-    const err = Object.create(ctor.prototype, {
-        message: {
-            configurable: true,
-            enumerable: false,
-            writable: true,
-            value: (_a = obj["message"]) !== null && _a !== void 0 ? _a : "",
-        },
-    });
+    let err;
+    if (ctor.name === "DOMException") {
+        err = new ctor((_a = obj["message"]) !== null && _a !== void 0 ? _a : "", obj["name"]);
+    }
+    else {
+        err = Object.create(ctor.prototype, {
+            message: {
+                configurable: true,
+                enumerable: false,
+                writable: true,
+                value: (_b = obj["message"]) !== null && _b !== void 0 ? _b : "",
+            },
+        });
+    }
     if (err.name !== obj["name"]) {
         Object.defineProperty(err, "name", {
             configurable: true,
@@ -183,8 +189,9 @@ function fromObject(obj, ctor = undefined) {
     }
     const otherKeys = Reflect.ownKeys(obj).filter(key => !["name", "message", "stack", "cause"].includes(key));
     otherKeys.forEach(key => {
+        var _a;
         // @ts-ignore
-        err[key] = obj[key];
+        (_a = err[key]) !== null && _a !== void 0 ? _a : (err[key] = obj[key]);
     });
     return err;
 }
@@ -510,6 +517,25 @@ async function handleCallRequest(msg, reply) {
     const _reply = reply;
     reply = (res) => {
         if (res.type === "error") {
+            if (isNode && process.argv.includes("--serialization=json")) {
+                return _reply({
+                    ...res,
+                    error: toObject(res.error)
+                });
+            }
+            if (typeof DOMException === "function" && res.error instanceof DOMException) {
+                // DOMException cannot be cloned properly, fallback to transferring it as
+                // an object and rebuild in the main thread.
+                return _reply({
+                    ...res,
+                    error: {
+                        ...toObject(res.error),
+                        // In Node.js, the default name of DOMException is incorrect,
+                        // we need to set it right.
+                        name: "DOMException",
+                    },
+                });
+            }
             try {
                 return _reply(res);
             }
