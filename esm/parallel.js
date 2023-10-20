@@ -660,6 +660,7 @@ function parallel(module, options = {}) {
         : ((options === null || options === void 0 ? void 0 : options.serialization) || (isBeforeNode14 ? "json" : "advanced"));
     const modId = sanitizeModuleId(module, true);
     let baseUrl;
+    console.log(adapter, serialization, isMainThread);
     if (IsPath.test(modId)) {
         if (typeof Error.captureStackTrace === "function") {
             const trace = {};

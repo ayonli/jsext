@@ -53,7 +53,7 @@ declare var WorkerGlobalScope: object;
 // a worker. In Bun, this option only presents when using `child_process` adapter.
 const isWorkerThread = (isNode || isBun) && process.argv.includes("--worker-thread");
 const isMainThread = !isWorkerThread
-    && (isBun ? Bun.isMainThread : typeof WorkerGlobalScope === "undefined");
+    && (isBun ? (Bun.isMainThread as boolean) : typeof WorkerGlobalScope === "undefined");
 
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 type RemoteTask = {
@@ -230,8 +230,6 @@ export async function createWorker(options: {
                     resolve();
                 });
             });
-
-            console.log(serialization);
 
             return {
                 worker,
@@ -822,6 +820,8 @@ function parallel<M extends { [x: string]: any; }>(
         : (options?.serialization || (isBeforeNode14 ? "json" : "advanced"));
     const modId = sanitizeModuleId(module, true);
     let baseUrl: string | undefined;
+
+    console.log(adapter, serialization, isMainThread);
 
     if (IsPath.test(modId)) {
         if (typeof Error.captureStackTrace === "function") {
