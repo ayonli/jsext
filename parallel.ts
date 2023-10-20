@@ -231,6 +231,8 @@ export async function createWorker(options: {
                 });
             });
 
+            console.log(serialization);
+
             return {
                 worker,
                 workerId,
