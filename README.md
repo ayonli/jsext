@@ -808,7 +808,7 @@ In browsers and Deno, the `script` can only be an ES module, and is relative to 
 In Bun and Deno, the `script` can also be a TypeScript file.
 
 This function also uses `parallel.maxWorkers` and `parallel.workerEntry` for worker
-configuration.
+configuration by default.
 
 `parallel.transfer()` and `Channel` can also be used to transfer large or
 streaming data, but be aware transferable objects only work with `worker_threads` adapter.
@@ -844,6 +844,18 @@ await job3.abort();
 const [err, res] = await _try(job3.result());
 console.assert(err === null);
 console.assert(res === undefined);
+```
+
+---
+
+```ts
+namespace run {
+    /**
+     * The maximum number of workers allowed to exist at the same time. If not set, use the same
+     * setting as {@link parallel.maxWorkers}.
+     */
+    var maxWorkers: number | undefined;
+}
 ```
 
 ---

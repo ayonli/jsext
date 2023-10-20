@@ -1,8 +1,7 @@
 import chan from './chan.js';
-import deprecate from './deprecate.js';
-import { fromObject } from './error/index.js';
-import { isBeforeNode14, isNode, isBun, isChannelMessage, handleChannelMessage } from './util.js';
-import parallel, { getMaxParallelism, sanitizeModuleId, createCallRequest, createWorker, wrapArgs, isCallResponse } from './parallel.js';
+import { fromErrorEvent, fromObject } from './error/index.js';
+import { isDeno, isNode, isBun, IsPath, isBeforeNode14, isChannelMessage, handleChannelMessage } from './util.js';
+import parallel, { getMaxParallelism, sanitizeModuleId, createWorker, wrapArgs, isCallResponse } from './parallel.js';
 
 const workerPools = new Map();
 // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
@@ -10,18 +9,31 @@ const workerPools = new Map();
 const workerConsumerQueue = [];
 async function run(script, args = undefined, options = undefined) {
     var _a;
-    if (options === null || options === void 0 ? void 0 : options.workerEntry) {
-        deprecate("options.workerEntry", run, "set `run.workerEntry` instead");
-    }
-    const maxWorkers = parallel.maxWorkers || await getMaxParallelism;
-    const modId = sanitizeModuleId(script);
+    const maxWorkers = run.maxWorkers || parallel.maxWorkers || await getMaxParallelism;
     const fn = (options === null || options === void 0 ? void 0 : options.fn) || "default";
-    const msg = createCallRequest({
-        script: modId,
+    let modId = sanitizeModuleId(script);
+    let baseUrl = undefined;
+    if (isDeno) {
+        baseUrl = "file://" + Deno.cwd() + "/";
+    }
+    else if (isNode || isBun) {
+        if (IsPath.test(modId)) {
+            // Only set baseUrl for relative modules, don't set it for node modules.
+            baseUrl = "file://" + process.cwd() + "/";
+        }
+    }
+    else if (typeof location === "object") {
+        baseUrl = location.href;
+    }
+    if (baseUrl) {
+        modId = new URL(modId, baseUrl).href;
+    }
+    const req = {
+        type: "call",
+        module: modId,
         fn,
         args: args !== null && args !== void 0 ? args : [],
-    });
-    const entry = (options === null || options === void 0 ? void 0 : options.workerEntry) || parallel.workerEntry;
+    };
     const adapter = (options === null || options === void 0 ? void 0 : options.adapter) || "worker_threads";
     const serialization = adapter === "worker_threads"
         ? "advanced"
@@ -38,7 +50,7 @@ async function run(script, args = undefined, options = undefined) {
         // `run.maxWorkers`. If the the call doesn't keep-alive the worker, it will be
         // cleaned after the call.
         workerPool.push(poolRecord = {
-            getWorker: createWorker({ entry, adapter, serialization }),
+            getWorker: createWorker({ entry: parallel.workerEntry, adapter, serialization }),
             adapter,
             serialization,
             busy: true,
@@ -59,29 +71,13 @@ async function run(script, args = undefined, options = undefined) {
     let workerId;
     let release;
     let terminate = () => Promise.resolve(void 0);
-    const timeout = (options === null || options === void 0 ? void 0 : options.timeout) ? setTimeout(() => {
+    const timeout = (options === null || options === void 0 ? void 0 : options.timeout) ? setTimeout(async () => {
         const err = new Error(`operation timeout after ${options.timeout}ms`);
         error = err;
-        if (resolver) {
-            resolver.reject(err);
-        }
-        terminate();
+        await terminate();
+        handleClose(err, true);
     }, options.timeout) : null;
-    const settle = () => {
-        var _a;
-        if (options === null || options === void 0 ? void 0 : options.keepAlive) {
-            // Release before resolve.
-            release === null || release === void 0 ? void 0 : release();
-            if (workerConsumerQueue.length) {
-                // Queued consumer now has chance to gain the worker.
-                (_a = workerConsumerQueue.shift()) === null || _a === void 0 ? void 0 : _a();
-            }
-        }
-        else {
-            terminate();
-        }
-    };
-    const handleMessage = (msg) => {
+    const handleMessage = async (msg) => {
         var _a, _b;
         if (isChannelMessage(msg)) {
             handleChannelMessage(msg);
@@ -89,7 +85,6 @@ async function run(script, args = undefined, options = undefined) {
         else if (isCallResponse(msg)) {
             timeout && clearTimeout(timeout);
             if (msg.type === "return" || msg.type === "error") {
-                settle();
                 if (msg.type === "error") {
                     const err = ((_a = msg.error) === null || _a === void 0 ? void 0 : _a.constructor) === Object
                         ? ((_b = fromObject(msg.error)) !== null && _b !== void 0 ? _b : msg.error)
@@ -106,17 +101,13 @@ async function run(script, args = undefined, options = undefined) {
                                 + `at ${fn} (${modId})`,
                         });
                     }
-                    handleError(err);
+                    error = err;
                 }
                 else {
-                    if (resolver) {
-                        resolver.resolve(msg.value);
-                    }
-                    else {
-                        result = { value: msg.value };
-                    }
-                    channel === null || channel === void 0 ? void 0 : channel.close();
+                    result = { value: msg.value };
                 }
+                (options === null || options === void 0 ? void 0 : options.keepAlive) || await terminate();
+                handleClose(null, !(options === null || options === void 0 ? void 0 : options.keepAlive));
             }
             else if (msg.type === "yield") {
                 if (msg.done) {
@@ -129,25 +120,22 @@ async function run(script, args = undefined, options = undefined) {
             }
         }
     };
-    const handleError = (err) => {
-        err = err instanceof Error
-            ? err
-            : (typeof err === "object" ? fromObject(err) : err);
-        error = err;
+    const handleClose = (err, terminated = false) => {
+        var _a, _b, _c;
         timeout && clearTimeout(timeout);
-        if (resolver) {
-            resolver.reject(err);
+        if (!terminated) {
+            // Release before resolve.
+            release === null || release === void 0 ? void 0 : release();
+            if (workerConsumerQueue.length) {
+                // Queued consumer now has chance to gain the worker.
+                (_a = workerConsumerQueue.shift()) === null || _a === void 0 ? void 0 : _a();
+            }
         }
-        channel === null || channel === void 0 ? void 0 : channel.close(err);
-    };
-    const handleExit = () => {
-        var _a, _b;
-        timeout && clearTimeout(timeout);
-        if (poolRecord) {
+        else if (poolRecord) {
             // Clean the pool before resolve.
             // The `workerPool` of this key in the pool map may have been modified by other
             // routines, we need to retrieve the newest value.
-            const remainItems = (_a = workerPools.get(poolKey)) === null || _a === void 0 ? void 0 : _a.filter(record => record !== poolRecord);
+            const remainItems = (_b = workerPools.get(poolKey)) === null || _b === void 0 ? void 0 : _b.filter(record => record !== poolRecord);
             if (remainItems === null || remainItems === void 0 ? void 0 : remainItems.length) {
                 workerPools.set(poolKey, remainItems);
             }
@@ -156,16 +144,32 @@ async function run(script, args = undefined, options = undefined) {
             }
             if (workerConsumerQueue.length) {
                 // Queued consumer now has chance to create new worker.
-                (_b = workerConsumerQueue.shift()) === null || _b === void 0 ? void 0 : _b();
+                (_c = workerConsumerQueue.shift()) === null || _c === void 0 ? void 0 : _c();
             }
         }
-        if (resolver) {
-            error ? resolver.reject(error) : resolver.resolve(void 0);
+        if (err) {
+            error !== null && error !== void 0 ? error : (error = err);
         }
-        else if (!error && !result) {
-            result = { value: void 0 };
+        if (error) {
+            if (resolver) {
+                resolver.reject(error);
+                if (channel) {
+                    channel.close();
+                }
+            }
+            else if (channel) {
+                channel.close(error);
+            }
         }
-        channel === null || channel === void 0 ? void 0 : channel.close(error);
+        else {
+            result !== null && result !== void 0 ? result : (result = { value: void 0 });
+            if (resolver) {
+                resolver.resolve(result.value);
+            }
+            if (channel) {
+                channel.close();
+            }
+        }
     };
     const safeRemoteCall = async (worker, req, transferable = []) => {
         try {
@@ -182,7 +186,9 @@ async function run(script, args = undefined, options = undefined) {
             if (typeof worker["unref"] === "function") {
                 worker.unref();
             }
-            settle();
+            error = err;
+            (options === null || options === void 0 ? void 0 : options.keepAlive) || await terminate();
+            handleClose(null, !(options === null || options === void 0 ? void 0 : options.keepAlive));
             throw err;
         }
     };
@@ -191,112 +197,112 @@ async function run(script, args = undefined, options = undefined) {
             const record = await poolRecord.getWorker;
             const worker = record.worker;
             workerId = record.workerId;
+            worker.ref(); // prevent premature exit in the main thread
+            worker.on("message", handleMessage);
+            worker.once("exit", (code, signal) => {
+                if (!error && !result) {
+                    handleClose(new Error(`worker exited (${code !== null && code !== void 0 ? code : signal})`), true);
+                }
+            });
             release = () => {
                 worker.unref(); // allow the main thread to exit if the event loop is empty
                 // Remove the event listener so that later calls will not mess up.
                 worker.off("message", handleMessage);
-                worker.off("error", handleError);
-                worker.off("exit", handleExit);
+                worker.removeAllListeners("exit");
                 poolRecord && (poolRecord.busy = false);
             };
             terminate = () => Promise.resolve(void worker.kill(1));
-            worker.ref(); // prevent premature exit in the main thread
-            worker.on("message", handleMessage);
-            worker.once("error", handleError);
-            worker.once("exit", handleExit);
             if (error) {
                 // The worker take too long to start and timeout error already thrown.
                 await terminate();
                 throw error;
             }
-            const { args } = wrapArgs(msg.args, Promise.resolve(worker));
-            msg.args = args;
-            await safeRemoteCall(worker, msg);
+            const { args } = wrapArgs(req.args, Promise.resolve(worker));
+            req.args = args;
+            await safeRemoteCall(worker, req);
         }
         else if (isNode) {
             const record = await poolRecord.getWorker;
             const worker = record.worker;
+            const handleErrorEvent = (err) => {
+                if (!error && !result) {
+                    handleClose(err, true); // In Node.js, worker will exit once erred.
+                }
+            };
             workerId = record.workerId;
+            worker.ref();
+            worker.on("message", handleMessage);
+            worker.once("error", handleErrorEvent);
             release = () => {
                 worker.unref();
                 worker.off("message", handleMessage);
-                worker.off("error", handleError);
-                worker.off("messageerror", handleError);
-                worker.off("exit", handleExit);
+                worker.off("error", handleErrorEvent);
                 poolRecord && (poolRecord.busy = false);
             };
             terminate = async () => void (await worker.terminate());
-            worker.ref();
-            worker.on("message", handleMessage);
-            worker.once("error", handleError);
-            worker.once("messageerror", handleError);
-            worker.once("exit", handleExit);
             if (error) {
                 await terminate();
                 throw error;
             }
-            const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
-            msg.args = args;
-            await safeRemoteCall(worker, msg, transferable);
+            const { args, transferable } = wrapArgs(req.args, Promise.resolve(worker));
+            req.args = args;
+            await safeRemoteCall(worker, req, transferable);
         }
         else { // isBun
             const record = await poolRecord.getWorker;
             const worker = record.worker;
+            const handleCloseEvent = ((ev) => {
+                if (!error && !result) {
+                    handleClose(new Error(ev.reason + " (" + ev.code + ")"), true);
+                }
+            });
             workerId = record.workerId;
+            worker.ref();
+            worker.onmessage = (ev) => handleMessage(ev.data);
+            worker.onerror = () => void worker.terminate(); // terminate once erred
+            worker.addEventListener("close", handleCloseEvent);
             release = () => {
                 worker.unref();
                 worker.onmessage = null;
                 worker.onerror = null;
-                worker.onmessageerror = null;
-                worker.removeEventListener("close", handleExit);
+                worker.removeEventListener("close", handleCloseEvent);
                 poolRecord && (poolRecord.busy = false);
             };
-            terminate = async () => {
-                await Promise.resolve(worker.terminate());
-                handleExit();
-            };
-            worker.ref();
-            worker.onmessage = (ev) => handleMessage(ev.data);
-            worker.onerror = (ev) => handleError(ev.error || new Error(ev.message));
-            worker.onmessageerror = () => {
-                handleError(new Error("unable to deserialize the message"));
-            };
-            worker.addEventListener("close", handleExit);
+            terminate = () => Promise.resolve(worker.terminate());
             if (error) {
                 await terminate();
                 throw error;
             }
-            const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
-            msg.args = args;
-            await safeRemoteCall(worker, msg, transferable);
+            const { args, transferable } = wrapArgs(req.args, Promise.resolve(worker));
+            req.args = args;
+            await safeRemoteCall(worker, req, transferable);
         }
     }
     else {
         const record = await poolRecord.getWorker;
         const worker = record.worker;
         workerId = record.workerId;
+        worker.onmessage = (ev) => handleMessage(ev.data);
+        worker.onerror = (ev) => {
+            var _a;
+            if (!error && !result) {
+                worker.terminate(); // ensure termination
+                handleClose((_a = fromErrorEvent(ev)) !== null && _a !== void 0 ? _a : new Error("worker exited"), true);
+            }
+        };
         release = () => {
             worker.onmessage = null;
             worker.onerror = null;
-            worker.onmessageerror = null;
             poolRecord && (poolRecord.busy = false);
         };
-        terminate = async () => {
-            await Promise.resolve(worker.terminate());
-            handleExit();
-        };
-        worker.onmessage = (ev) => handleMessage(ev.data);
-        worker.onerror = (ev) => handleError(ev.error || new Error(ev.message));
-        worker.onmessageerror = () => {
-            handleError(new Error("unable to deserialize the message"));
-        };
+        terminate = () => Promise.resolve(worker.terminate());
         if (error) {
             await terminate();
             throw error;
         }
-        const { args, transferable } = wrapArgs(msg.args, Promise.resolve(worker));
-        msg.args = args;
-        await safeRemoteCall(worker, msg, transferable);
+        const { args, transferable } = wrapArgs(req.args, Promise.resolve(worker));
+        req.args = args;
+        await safeRemoteCall(worker, req, transferable);
     }
     return {
         workerId,
@@ -314,7 +320,11 @@ async function run(script, args = undefined, options = undefined) {
                     error = new Error("operation aborted", { cause: reason });
                 }
             }
+            else {
+                result = { value: void 0 };
+            }
             await terminate();
+            handleClose(null, true);
         },
         async result() {
             return await new Promise((resolve, reject) => {
@@ -343,16 +353,15 @@ async function run(script, args = undefined, options = undefined) {
         },
     };
 }
+(function (run) {
+    /**
+     * The maximum number of workers allowed to exist at the same time. If not set, use the same
+     * setting as {@link parallel.maxWorkers}.
+     */
+    run.maxWorkers = undefined;
+})(run || (run = {}));
 // backward compatibility
 Object.defineProperties(run, {
-    maxWorkers: {
-        set(v) {
-            parallel.maxWorkers = v;
-        },
-        get() {
-            return parallel.maxWorkers;
-        },
-    },
     workerEntry: {
         set(v) {
             parallel.workerEntry = v;
@@ -362,6 +371,7 @@ Object.defineProperties(run, {
         },
     },
 });
+var run$1 = run;
 
-export { run as default };
+export { run$1 as default };
 //# sourceMappingURL=run.js.map

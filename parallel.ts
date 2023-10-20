@@ -4,13 +4,13 @@ import { ThenableAsyncGenerator, ThenableAsyncGeneratorLike } from "./external/t
 import chan, { Channel } from "./chan.ts";
 import { sequence } from "./number/index.ts";
 import { trim } from "./string/index.ts";
-import { fromObject } from "./error/index.ts";
-import type { Optional } from "./index.ts";
+import { fromErrorEvent, fromObject } from "./error/index.ts";
 import {
     isNode,
     isDeno,
     isBun,
     isBeforeNode14,
+    IsPath,
     resolveModule,
     ChannelMessage,
     isChannelMessage,
@@ -44,7 +44,6 @@ export type ThreadedFunctions<M, T extends FunctionProperties<M> = FunctionPrope
 export const terminate = Symbol.for("terminate");
 
 const shouldTransfer = Symbol.for("shouldTransfer");
-const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
 declare var Deno: any;
 declare var Bun: any;
 declare var WorkerGlobalScope: object;
@@ -68,7 +67,7 @@ type RemoteTask = {
     channel?: Channel<IteratorResult<any>>;
     generate?: () => void;
 };
-const tasks = new Map<number, RemoteTask>;
+const remoteTasks = new Map<number, RemoteTask>;
 
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 type PoolRecord = {
@@ -133,32 +132,16 @@ export function sanitizeModuleId(id: string | (() => Promise<any>), strict = fal
 }
 
 export type CallRequest = {
-    type: "call" | "next" | "return" | "throw";
-    script: string;
-    baseUrl: string;
+    type: "call";
+    module: string;
     fn: string;
     args: any[];
     taskId?: number | undefined;
+} | {
+    type: | "next" | "return" | "throw";
+    args: any[];
+    taskId: number;
 };
-
-export function createCallRequest(init: Optional<CallRequest, "type" | "baseUrl">): CallRequest {
-    const msg = { ...init, type: init.type || "call" } as CallRequest;
-
-    if (!msg.baseUrl) {
-        if (isDeno) {
-            msg.baseUrl = "file://" + Deno.cwd() + "/";
-        } else if (isNode || isBun) {
-            if (IsPath.test(msg.script)) {
-                // Only set baseUrl for relative modules, don't set it for node modules.
-                msg.baseUrl = "file://" + process.cwd() + "/";
-            }
-        } else if (typeof location === "object") {
-            msg.baseUrl = location.href;
-        }
-    }
-
-    return msg;
-}
 
 export type CallResponse = {
     type: "return" | "yield" | "error" | "gen";
@@ -335,7 +318,7 @@ async function acquireWorker(taskId: number, options: {
     const poolKey = adapter + ":" + serialization;
     const workerPool = workerPools.get(poolKey)
         ?? (workerPools.set(poolKey, []).get(poolKey) as PoolRecord[]);
-    let poolRecord = workerPool.find(item => !item.tasks.size);
+    let poolRecord = workerPool.find(item => !item.tasks.size) as PoolRecord;
 
     if (poolRecord) {
         poolRecord.lastAccess = Date.now();
@@ -352,7 +335,7 @@ async function acquireWorker(taskId: number, options: {
                     if (isChannelMessage(msg)) {
                         handleChannelMessage(msg);
                     } else if (isCallResponse(msg) && msg.taskId) {
-                        const task = tasks.get(msg.taskId);
+                        const task = remoteTasks.get(msg.taskId);
 
                         if (!task)
                             return;
@@ -401,50 +384,48 @@ async function acquireWorker(taskId: number, options: {
                                 }
                             }
 
-                            if (poolRecord) {
-                                poolRecord.tasks.delete(msg.taskId);
+                            poolRecord.tasks.delete(msg.taskId);
 
-                                if (!poolRecord.tasks.size) {
-                                    if (isNode || isBun) {
-                                        // Allow the main thread to exit if the event loop is empty.
-                                        (worker as NodeWorker | BunWorker | ChildProcess).unref();
+                            if (!poolRecord.tasks.size) {
+                                if (isNode || isBun) {
+                                    // Allow the main thread to exit if the event loop is empty.
+                                    (worker as NodeWorker | BunWorker | ChildProcess).unref();
+                                }
+                            }
+
+                            { // GC: clean long-time unused workers
+                                const now = Date.now();
+                                const idealItems: PoolRecord[] = [];
+
+                                // The `workerPool` of this key in the pool map may have been
+                                // modified by other routines, we need to retrieve the newest
+                                // value.
+                                const remainItems = workerPools.get(poolKey)?.filter(item => {
+                                    const ideal = !item.tasks.size
+                                        && (now - item.lastAccess) >= 300_000;
+
+                                    if (ideal) {
+                                        idealItems.push(item);
                                     }
+
+                                    return !ideal;
+                                });
+
+                                if (remainItems?.length) {
+                                    workerPools.set(poolKey, remainItems);
+                                } else {
+                                    workerPools.delete(poolKey);
                                 }
 
-                                { // GC: clean long-time unused workers
-                                    const now = Date.now();
-                                    const idealItems: PoolRecord[] = [];
+                                idealItems.forEach(async item => {
+                                    const worker = await item.getWorker;
 
-                                    // The `workerPool` of this key in the pool map may have been
-                                    // modified by other routines, we need to retrieve the newest
-                                    // value.
-                                    const remainItems = workerPools.get(poolKey)?.filter(item => {
-                                        const ideal = !item.tasks.size
-                                            && (now - item.lastAccess) >= 300_000;
-
-                                        if (ideal) {
-                                            idealItems.push(item);
-                                        }
-
-                                        return !ideal;
-                                    });
-
-                                    if (remainItems?.length) {
-                                        workerPools.set(poolKey, remainItems);
+                                    if (typeof (worker as any)["terminate"] === "function") {
+                                        await (worker as Worker | BunWorker | NodeWorker).terminate();
                                     } else {
-                                        workerPools.delete(poolKey);
+                                        (worker as ChildProcess).kill();
                                     }
-
-                                    idealItems.forEach(async item => {
-                                        const worker = await item.getWorker;
-
-                                        if (typeof (worker as any)["terminate"] === "function") {
-                                            await (worker as Worker | BunWorker | NodeWorker).terminate();
-                                        } else {
-                                            (worker as ChildProcess).kill();
-                                        }
-                                    });
-                                }
+                                });
                             }
                         } else if (msg.type === "yield") {
                             task.channel?.push({ value: msg.value, done: msg.done as boolean });
@@ -463,16 +444,69 @@ async function acquireWorker(taskId: number, options: {
                     }
                 };
 
+                const handleClose = (err: Error) => {
+                    for (const taskId of poolRecord.tasks) {
+                        poolRecord.tasks.delete(taskId);
+                        const task = remoteTasks.get(taskId);
+
+                        if (task) {
+                            if (task.resolver) {
+                                task.resolver.reject(err);
+
+                                if (task.channel) {
+                                    task.channel.close();
+                                }
+                            } else if (task.channel) {
+                                task.channel.close(err);
+                            } else {
+                                task.error = err;
+                            }
+                        }
+                    }
+
+                    const remainItems = workerPools.get(poolKey)?.filter(item => item !== poolRecord);
+
+                    if (remainItems?.length) {
+                        workerPools.set(poolKey, remainItems);
+                    } else {
+                        workerPools.delete(poolKey);
+                    }
+                };
+
                 if (isNode) {
                     (worker as NodeWorker | ChildProcess).on("message", handleMessage);
+
+                    if (adapter === "child_process") {
+                        (worker as ChildProcess).on("exit", (code, signal) => {
+                            handleClose(new Error(`worker exited (${code ?? signal})`));
+                        });
+                    } else {
+                        // In Node.js, worker will exit once erred.
+                        (worker as NodeWorker).on("error", handleClose);
+                    }
                 } else if (isBun) {
                     if (adapter === "child_process") {
-                        (worker as ChildProcess).on("message", handleMessage);
+                        (worker as ChildProcess).on("message", handleMessage)
+                            .on("exit", (code, signal) => {
+                                handleClose(new Error(`worker exited (${code ?? signal})`));
+                            });
                     } else {
-                        (worker as BunWorker).onmessage = (ev) => handleMessage(ev.data);
+                        const _worker = worker as BunWorker;
+
+                        _worker.onmessage = (ev) => handleMessage(ev.data);
+                        _worker.onerror = () => _worker.terminate(); // terminate once erred
+                        _worker.addEventListener("close", ((ev: CloseEvent) => {
+                            handleClose(new Error(ev.reason + " (" + ev.code + ")"));
+                        }) as EventListener);
                     }
                 } else {
-                    (worker as Worker).onmessage = (ev) => handleMessage(ev.data);
+                    const _worker = worker as Worker;
+
+                    _worker.onmessage = (ev) => handleMessage(ev.data);
+                    _worker.onerror = (ev) => {
+                        _worker.terminate(); // ensure termination
+                        handleClose(fromErrorEvent(ev) ?? new Error("worker exited"));
+                    };
                 }
 
                 return worker;
@@ -483,13 +517,13 @@ async function acquireWorker(taskId: number, options: {
             lastAccess: Date.now(),
         });
     } else {
-        poolRecord = workerPool[taskId % workerPool.length];
-        poolRecord!.lastAccess = Date.now();
+        poolRecord = workerPool[taskId % workerPool.length] as PoolRecord;
+        poolRecord.lastAccess = Date.now();
     }
 
-    poolRecord!.tasks.add(taskId);
+    poolRecord.tasks.add(taskId);
 
-    const worker = await poolRecord!.getWorker;
+    const worker = await poolRecord.getWorker;
 
     if (isNode || isBun) {
         // Prevent premature exit in the main thread.
@@ -554,7 +588,7 @@ async function safeRemoteCall(
             });
         }
     } catch (err) {
-        taskId && tasks.delete(taskId);
+        taskId && remoteTasks.delete(taskId);
 
         if (typeof (worker as any)["unref"] === "function") {
             (worker as BunWorker | NodeWorker | ChildProcess).unref();
@@ -565,54 +599,51 @@ async function safeRemoteCall(
 }
 
 function createRemoteCall(
-    modId: string,
+    module: string,
     fn: string,
     args: any[],
-    baseUrl: string | undefined = undefined,
     options: {
         adapter: "worker_threads" | "child_process";
         serialization: "advanced" | "json";
     }
 ) {
     const taskId = taskIdCounter.next().value as number;
-    tasks.set(taskId, { module: baseUrl ? new URL(modId, baseUrl).href : modId, fn });
+    remoteTasks.set(taskId, { module, fn });
 
     let getWorker = acquireWorker(taskId, options);
     const { args: _args, transferable } = wrapArgs(args, getWorker);
 
     getWorker = getWorker.then(async (worker) => {
-        const req = createCallRequest({
-            script: modId,
+        await safeRemoteCall(worker, {
+            type: "call",
+            module,
             fn,
             args: _args,
             taskId,
-            baseUrl: baseUrl as string
-        });
-
-        await safeRemoteCall(worker, req, transferable, taskId);
+        }, transferable, taskId);
 
         return worker;
     });
 
     return new ThenableAsyncGenerator({
         then(onfulfilled, onrejected) {
-            const task = tasks.get(taskId) as RemoteTask;
+            const task = remoteTasks.get(taskId) as RemoteTask;
 
             if (task.error) {
-                tasks.delete(taskId);
+                remoteTasks.delete(taskId);
                 return onrejected?.(task.error);
             } else if (task.result) {
-                tasks.delete(taskId);
+                remoteTasks.delete(taskId);
                 return onfulfilled?.(task.result.value);
             } else {
                 return getWorker.then(() => new Promise((resolve, reject) => {
                     task.resolver = {
                         resolve: (value) => {
-                            tasks.delete(taskId);
+                            remoteTasks.delete(taskId);
                             resolve(value);
                         },
                         reject: (err) => {
-                            tasks.delete(taskId);
+                            remoteTasks.delete(taskId);
                             reject(err);
                         }
                     };
@@ -620,15 +651,15 @@ function createRemoteCall(
             }
         },
         async next(input) {
-            const task = tasks.get(taskId) as RemoteTask;
+            const task = remoteTasks.get(taskId) as RemoteTask;
 
             if (task.error) {
                 const err = task.error;
-                tasks.delete(taskId);
+                remoteTasks.delete(taskId);
                 throw err;
             } else if (task.result) {
                 const value = task.result.value;
-                tasks.delete(taskId);
+                remoteTasks.delete(taskId);
                 return { value, done: true };
             } else {
                 task.channel ??= chan(Infinity);
@@ -641,64 +672,47 @@ function createRemoteCall(
                 }
 
                 const { args, transferable } = wrapArgs([input], getWorker);
-                const req = createCallRequest({
-                    script: modId,
-                    fn,
+
+                await safeRemoteCall(worker, {
+                    type: "next",
                     args: args,
                     taskId,
-                    type: "next",
-                    baseUrl: baseUrl as string,
-                });
-
-                await safeRemoteCall(worker, req, transferable, taskId);
+                }, transferable, taskId);
 
                 return await task.channel.pop();
             }
         },
         async return(value) {
-            tasks.delete(taskId);
+            remoteTasks.delete(taskId);
             const worker = await getWorker;
             const { args, transferable } = wrapArgs([value], getWorker);
-            const req = createCallRequest({
-                script: modId,
-                fn,
+
+            await safeRemoteCall(worker, {
+                type: "return",
                 args: args,
                 taskId,
-                type: "return",
-                baseUrl: baseUrl as string,
-            });
-
-            await safeRemoteCall(worker, req, transferable, taskId);
+            }, transferable, taskId);
 
             return { value, done: true };
         },
         async throw(err) {
-            tasks.delete(taskId);
+            remoteTasks.delete(taskId);
             const worker = await getWorker;
-            const req = createCallRequest({
-                script: modId,
-                fn,
+
+            await safeRemoteCall(worker, {
+                type: "throw",
                 args: [err],
                 taskId,
-                type: "throw",
-                baseUrl: baseUrl as string,
-            });
-
-            await safeRemoteCall(worker, req, transferable, taskId);
+            }, transferable, taskId);
 
             throw err;
         },
     } as ThenableAsyncGeneratorLike);
 }
 
-function createLocalCall(
-    modId: string,
-    fn: string,
-    args: any[],
-    baseUrl: string | undefined = undefined
-) {
-    const getReturns = resolveModule(modId, baseUrl).then(module => {
-        return module[fn](...args);
+function createLocalCall(module: string, fn: string, args: any[]) {
+    const getReturns = resolveModule(module).then(mod => {
+        return mod[fn](...args);
     });
 
     return new ThenableAsyncGenerator({
@@ -854,7 +868,7 @@ function parallel<M extends { [x: string]: any; }>(
     const serialization = adapter === "worker_threads"
         ? "advanced"
         : (options?.serialization || (isBeforeNode14 ? "json" : "advanced"));
-    const modId = sanitizeModuleId(module, true);
+    let modId = sanitizeModuleId(module, true);
     let baseUrl: string | undefined;
 
     if (IsPath.test(modId)) {
@@ -866,6 +880,10 @@ function parallel<M extends { [x: string]: any; }>(
             const trace = new Error("");
             baseUrl = extractBaseUrl(trace.stack as string);
         }
+    }
+
+    if (baseUrl) {
+        modId = new URL(modId, baseUrl).href;
     }
 
     return new Proxy({
@@ -899,12 +917,12 @@ function parallel<M extends { [x: string]: any; }>(
                 // This syntax will give our remote function a name.
                 [prop]: (...args: Parameters<M["_"]>) => {
                     if (isMainThread) {
-                        return createRemoteCall(modId, prop, args, baseUrl, {
+                        return createRemoteCall(modId, prop, args, {
                             adapter,
                             serialization,
                         });
                     } else {
-                        return createLocalCall(modId, prop, args, baseUrl);
+                        return createLocalCall(modId, prop, args);
                     }
                 }
             };

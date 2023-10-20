@@ -32,11 +32,10 @@ function unwrapArgs(
 }
 
 export function isCallRequest(msg: any): msg is CallRequest {
-    return msg && typeof msg === "object" &&
-        ["call", "next", "return", "throw"].includes(msg.type) &&
-        typeof msg.script === "string" &&
-        typeof msg.fn === "string" &&
-        Array.isArray(msg.args);
+    return msg && typeof msg === "object"
+        && ((msg.type === "call" && typeof msg.module === "string" && typeof msg.fn === "string") ||
+            (["next", "return", "throw"].includes(msg.type) && typeof msg.taskId === "number"))
+        && Array.isArray(msg.args);
 }
 
 export async function handleCallRequest(
@@ -87,43 +86,61 @@ export async function handleCallRequest(
     });
 
     try {
-        if (msg.taskId) {
-            const task = pendingTasks.get(msg.taskId);
+        if (msg.taskId && ["next", "return", "throw"].includes(msg.type)) {
+            const req = msg as {
+                type: | "next" | "return" | "throw";
+                args: any[];
+                taskId: number;
+            };
+            const task = pendingTasks.get(req.taskId);
 
             if (task) {
-                if (msg.type === "throw") {
+                if (req.type === "throw") {
                     try {
-                        await task.throw(msg.args[0]);
+                        await task.throw(req.args[0]);
                     } catch (error) {
-                        reply({ type: "error", error, taskId: msg.taskId });
+                        reply({ type: "error", error, taskId: req.taskId });
                     }
-                } else if (msg.type === "return") {
+                } else if (req.type === "return") {
                     try {
-                        const res = await task.return(msg.args[0]);
-                        reply({ type: "yield", ...res, taskId: msg.taskId });
+                        const res = await task.return(req.args[0]);
+                        reply({ type: "yield", ...res, taskId: req.taskId });
                     } catch (error) {
-                        reply({ type: "error", error, taskId: msg.taskId });
+                        reply({ type: "error", error, taskId: req.taskId });
                     }
-                } else if (msg.type === "next") {
+                } else { // req.type === "next"
                     try {
-                        const res = await task.next(msg.args[0]);
-                        reply({ type: "yield", ...res, taskId: msg.taskId });
+                        const res = await task.next(req.args[0]);
+                        reply({ type: "yield", ...res, taskId: req.taskId });
                     } catch (error) {
-                        reply({ type: "error", error, taskId: msg.taskId });
+                        reply({ type: "error", error, taskId: req.taskId });
                     }
                 }
-
-                return;
+            } else {
+                reply({
+                    type: "error",
+                    error: new ReferenceError(`task (${req.taskId}) doesn't exists`),
+                    taskId: req.taskId,
+                });
             }
+
+            return;
         }
 
-        const module = await resolveModule(msg.script, msg.baseUrl);
-        const returns = await module[msg.fn](...msg.args);
+        const req = msg as {
+            type: "call";
+            module: string;
+            fn: string;
+            args: any[];
+            taskId?: number | undefined;
+        };
+        const module = await resolveModule(req.module);
+        const returns = await module[req.fn](...req.args);
 
         if (isAsyncGenerator(returns) || isGenerator(returns)) {
-            if (msg.taskId) {
-                pendingTasks.set(msg.taskId, returns);
-                reply({ type: "gen", taskId: msg.taskId });
+            if (req.taskId) {
+                pendingTasks.set(req.taskId, returns);
+                reply({ type: "gen", taskId: req.taskId });
             } else {
                 while (true) {
                     try {
@@ -140,7 +157,7 @@ export async function handleCallRequest(
                 }
             }
         } else {
-            reply({ type: "return", value: returns, taskId: msg.taskId });
+            reply({ type: "return", value: returns, taskId: req.taskId });
         }
     } catch (error) {
         reply({ type: "error", error, taskId: msg.taskId });

@@ -2,8 +2,8 @@ import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
 import chan, { Channel } from './chan.js';
 import { sequence } from './number/index.js';
 import { trim } from './string/index.js';
-import { fromObject } from './error/index.js';
-import { isNode, isBun, isDeno, wrapChannel, isBeforeNode14, resolveModule, isChannelMessage, handleChannelMessage } from './util.js';
+import { fromErrorEvent, fromObject } from './error/index.js';
+import { isNode, isBun, isDeno, wrapChannel, isBeforeNode14, IsPath, resolveModule, isChannelMessage, handleChannelMessage } from './util.js';
 
 /**
  * The `[terminate]()` function of the threaded module should only be used for
@@ -14,14 +14,13 @@ import { isNode, isBun, isDeno, wrapChannel, isBeforeNode14, resolveModule, isCh
  */
 const terminate = Symbol.for("terminate");
 const shouldTransfer = Symbol.for("shouldTransfer");
-const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
 // In Node.js, `process.argv` contains `--worker-thread` when the current thread is used as
 // a worker. In Bun, this option only presents when using `child_process` adapter.
 const isWorkerThread = (isNode || isBun) && process.argv.includes("--worker-thread");
 const isMainThread = !isWorkerThread
     && (isBun ? Bun.isMainThread : typeof WorkerGlobalScope === "undefined");
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
-const tasks = new Map;
+const remoteTasks = new Map;
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const workerPools = new Map();
 const getMaxParallelism = (async () => {
@@ -73,24 +72,6 @@ function sanitizeModuleId(id, strict = false) {
         _id = "./" + _id;
     }
     return _id;
-}
-function createCallRequest(init) {
-    const msg = { ...init, type: init.type || "call" };
-    if (!msg.baseUrl) {
-        if (isDeno) {
-            msg.baseUrl = "file://" + Deno.cwd() + "/";
-        }
-        else if (isNode || isBun) {
-            if (IsPath.test(msg.script)) {
-                // Only set baseUrl for relative modules, don't set it for node modules.
-                msg.baseUrl = "file://" + process.cwd() + "/";
-            }
-        }
-        else if (typeof location === "object") {
-            msg.baseUrl = location.href;
-        }
-    }
-    return msg;
 }
 function isCallResponse(msg) {
     return msg && typeof msg === "object" && ["return", "yield", "error", "gen"].includes(msg.type);
@@ -257,7 +238,7 @@ async function acquireWorker(taskId, options) {
                         handleChannelMessage(msg);
                     }
                     else if (isCallResponse(msg) && msg.taskId) {
-                        const task = tasks.get(msg.taskId);
+                        const task = remoteTasks.get(msg.taskId);
                         if (!task)
                             return;
                         if (msg.type === "return" || msg.type === "error") {
@@ -301,44 +282,42 @@ async function acquireWorker(taskId, options) {
                                     task.channel.close();
                                 }
                             }
-                            if (poolRecord) {
-                                poolRecord.tasks.delete(msg.taskId);
-                                if (!poolRecord.tasks.size) {
-                                    if (isNode || isBun) {
-                                        // Allow the main thread to exit if the event loop is empty.
-                                        worker.unref();
-                                    }
+                            poolRecord.tasks.delete(msg.taskId);
+                            if (!poolRecord.tasks.size) {
+                                if (isNode || isBun) {
+                                    // Allow the main thread to exit if the event loop is empty.
+                                    worker.unref();
                                 }
-                                { // GC: clean long-time unused workers
-                                    const now = Date.now();
-                                    const idealItems = [];
-                                    // The `workerPool` of this key in the pool map may have been
-                                    // modified by other routines, we need to retrieve the newest
-                                    // value.
-                                    const remainItems = (_c = workerPools.get(poolKey)) === null || _c === void 0 ? void 0 : _c.filter(item => {
-                                        const ideal = !item.tasks.size
-                                            && (now - item.lastAccess) >= 300000;
-                                        if (ideal) {
-                                            idealItems.push(item);
-                                        }
-                                        return !ideal;
-                                    });
-                                    if (remainItems === null || remainItems === void 0 ? void 0 : remainItems.length) {
-                                        workerPools.set(poolKey, remainItems);
+                            }
+                            { // GC: clean long-time unused workers
+                                const now = Date.now();
+                                const idealItems = [];
+                                // The `workerPool` of this key in the pool map may have been
+                                // modified by other routines, we need to retrieve the newest
+                                // value.
+                                const remainItems = (_c = workerPools.get(poolKey)) === null || _c === void 0 ? void 0 : _c.filter(item => {
+                                    const ideal = !item.tasks.size
+                                        && (now - item.lastAccess) >= 300000;
+                                    if (ideal) {
+                                        idealItems.push(item);
+                                    }
+                                    return !ideal;
+                                });
+                                if (remainItems === null || remainItems === void 0 ? void 0 : remainItems.length) {
+                                    workerPools.set(poolKey, remainItems);
+                                }
+                                else {
+                                    workerPools.delete(poolKey);
+                                }
+                                idealItems.forEach(async (item) => {
+                                    const worker = await item.getWorker;
+                                    if (typeof worker["terminate"] === "function") {
+                                        await worker.terminate();
                                     }
                                     else {
-                                        workerPools.delete(poolKey);
+                                        worker.kill();
                                     }
-                                    idealItems.forEach(async (item) => {
-                                        const worker = await item.getWorker;
-                                        if (typeof worker["terminate"] === "function") {
-                                            await worker.terminate();
-                                        }
-                                        else {
-                                            worker.kill();
-                                        }
-                                    });
-                                }
+                                });
                             }
                         }
                         else if (msg.type === "yield") {
@@ -357,19 +336,70 @@ async function acquireWorker(taskId, options) {
                         }
                     }
                 };
+                const handleClose = (err) => {
+                    var _a;
+                    for (const taskId of poolRecord.tasks) {
+                        poolRecord.tasks.delete(taskId);
+                        const task = remoteTasks.get(taskId);
+                        if (task) {
+                            if (task.resolver) {
+                                task.resolver.reject(err);
+                                if (task.channel) {
+                                    task.channel.close();
+                                }
+                            }
+                            else if (task.channel) {
+                                task.channel.close(err);
+                            }
+                            else {
+                                task.error = err;
+                            }
+                        }
+                    }
+                    const remainItems = (_a = workerPools.get(poolKey)) === null || _a === void 0 ? void 0 : _a.filter(item => item !== poolRecord);
+                    if (remainItems === null || remainItems === void 0 ? void 0 : remainItems.length) {
+                        workerPools.set(poolKey, remainItems);
+                    }
+                    else {
+                        workerPools.delete(poolKey);
+                    }
+                };
                 if (isNode) {
                     worker.on("message", handleMessage);
+                    if (adapter === "child_process") {
+                        worker.on("exit", (code, signal) => {
+                            handleClose(new Error(`worker exited (${code !== null && code !== void 0 ? code : signal})`));
+                        });
+                    }
+                    else {
+                        // In Node.js, worker will exit once erred.
+                        worker.on("error", handleClose);
+                    }
                 }
                 else if (isBun) {
                     if (adapter === "child_process") {
-                        worker.on("message", handleMessage);
+                        worker.on("message", handleMessage)
+                            .on("exit", (code, signal) => {
+                            handleClose(new Error(`worker exited (${code !== null && code !== void 0 ? code : signal})`));
+                        });
                     }
                     else {
-                        worker.onmessage = (ev) => handleMessage(ev.data);
+                        const _worker = worker;
+                        _worker.onmessage = (ev) => handleMessage(ev.data);
+                        _worker.onerror = () => _worker.terminate(); // terminate once erred
+                        _worker.addEventListener("close", ((ev) => {
+                            handleClose(new Error(ev.reason + " (" + ev.code + ")"));
+                        }));
                     }
                 }
                 else {
-                    worker.onmessage = (ev) => handleMessage(ev.data);
+                    const _worker = worker;
+                    _worker.onmessage = (ev) => handleMessage(ev.data);
+                    _worker.onerror = (ev) => {
+                        var _a;
+                        _worker.terminate(); // ensure termination
+                        handleClose((_a = fromErrorEvent(ev)) !== null && _a !== void 0 ? _a : new Error("worker exited"));
+                    };
                 }
                 return worker;
             })(),
@@ -439,49 +469,48 @@ async function safeRemoteCall(worker, req, transferable = [], taskId = 0) {
         }
     }
     catch (err) {
-        taskId && tasks.delete(taskId);
+        taskId && remoteTasks.delete(taskId);
         if (typeof worker["unref"] === "function") {
             worker.unref();
         }
         throw err;
     }
 }
-function createRemoteCall(modId, fn, args, baseUrl = undefined, options) {
+function createRemoteCall(module, fn, args, options) {
     const taskId = taskIdCounter.next().value;
-    tasks.set(taskId, { module: baseUrl ? new URL(modId, baseUrl).href : modId, fn });
+    remoteTasks.set(taskId, { module, fn });
     let getWorker = acquireWorker(taskId, options);
     const { args: _args, transferable } = wrapArgs(args, getWorker);
     getWorker = getWorker.then(async (worker) => {
-        const req = createCallRequest({
-            script: modId,
+        await safeRemoteCall(worker, {
+            type: "call",
+            module,
             fn,
             args: _args,
             taskId,
-            baseUrl: baseUrl
-        });
-        await safeRemoteCall(worker, req, transferable, taskId);
+        }, transferable, taskId);
         return worker;
     });
     return new ThenableAsyncGenerator({
         then(onfulfilled, onrejected) {
-            const task = tasks.get(taskId);
+            const task = remoteTasks.get(taskId);
             if (task.error) {
-                tasks.delete(taskId);
+                remoteTasks.delete(taskId);
                 return onrejected === null || onrejected === void 0 ? void 0 : onrejected(task.error);
             }
             else if (task.result) {
-                tasks.delete(taskId);
+                remoteTasks.delete(taskId);
                 return onfulfilled === null || onfulfilled === void 0 ? void 0 : onfulfilled(task.result.value);
             }
             else {
                 return getWorker.then(() => new Promise((resolve, reject) => {
                     task.resolver = {
                         resolve: (value) => {
-                            tasks.delete(taskId);
+                            remoteTasks.delete(taskId);
                             resolve(value);
                         },
                         reject: (err) => {
-                            tasks.delete(taskId);
+                            remoteTasks.delete(taskId);
                             reject(err);
                         }
                     };
@@ -490,15 +519,15 @@ function createRemoteCall(modId, fn, args, baseUrl = undefined, options) {
         },
         async next(input) {
             var _a;
-            const task = tasks.get(taskId);
+            const task = remoteTasks.get(taskId);
             if (task.error) {
                 const err = task.error;
-                tasks.delete(taskId);
+                remoteTasks.delete(taskId);
                 throw err;
             }
             else if (task.result) {
                 const value = task.result.value;
-                tasks.delete(taskId);
+                remoteTasks.delete(taskId);
                 return { value, done: true };
             }
             else {
@@ -510,52 +539,40 @@ function createRemoteCall(modId, fn, args, baseUrl = undefined, options) {
                     });
                 }
                 const { args, transferable } = wrapArgs([input], getWorker);
-                const req = createCallRequest({
-                    script: modId,
-                    fn,
+                await safeRemoteCall(worker, {
+                    type: "next",
                     args: args,
                     taskId,
-                    type: "next",
-                    baseUrl: baseUrl,
-                });
-                await safeRemoteCall(worker, req, transferable, taskId);
+                }, transferable, taskId);
                 return await task.channel.pop();
             }
         },
         async return(value) {
-            tasks.delete(taskId);
+            remoteTasks.delete(taskId);
             const worker = await getWorker;
             const { args, transferable } = wrapArgs([value], getWorker);
-            const req = createCallRequest({
-                script: modId,
-                fn,
+            await safeRemoteCall(worker, {
+                type: "return",
                 args: args,
                 taskId,
-                type: "return",
-                baseUrl: baseUrl,
-            });
-            await safeRemoteCall(worker, req, transferable, taskId);
+            }, transferable, taskId);
             return { value, done: true };
         },
         async throw(err) {
-            tasks.delete(taskId);
+            remoteTasks.delete(taskId);
             const worker = await getWorker;
-            const req = createCallRequest({
-                script: modId,
-                fn,
+            await safeRemoteCall(worker, {
+                type: "throw",
                 args: [err],
                 taskId,
-                type: "throw",
-                baseUrl: baseUrl,
-            });
-            await safeRemoteCall(worker, req, transferable, taskId);
+            }, transferable, taskId);
             throw err;
         },
     });
 }
-function createLocalCall(modId, fn, args, baseUrl = undefined) {
-    const getReturns = resolveModule(modId, baseUrl).then(module => {
-        return module[fn](...args);
+function createLocalCall(module, fn, args) {
+    const getReturns = resolveModule(module).then(mod => {
+        return mod[fn](...args);
     });
     return new ThenableAsyncGenerator({
         then(onfulfilled, onrejected) {
@@ -677,7 +694,7 @@ function parallel(module, options = {}) {
     const serialization = adapter === "worker_threads"
         ? "advanced"
         : ((options === null || options === void 0 ? void 0 : options.serialization) || (isBeforeNode14 ? "json" : "advanced"));
-    const modId = sanitizeModuleId(module, true);
+    let modId = sanitizeModuleId(module, true);
     let baseUrl;
     if (IsPath.test(modId)) {
         if (typeof Error.captureStackTrace === "function") {
@@ -689,6 +706,9 @@ function parallel(module, options = {}) {
             const trace = new Error("");
             baseUrl = extractBaseUrl(trace.stack);
         }
+    }
+    if (baseUrl) {
+        modId = new URL(modId, baseUrl).href;
     }
     return new Proxy({
         [terminate]: async () => {
@@ -719,13 +739,13 @@ function parallel(module, options = {}) {
                 // This syntax will give our remote function a name.
                 [prop]: (...args) => {
                     if (isMainThread) {
-                        return createRemoteCall(modId, prop, args, baseUrl, {
+                        return createRemoteCall(modId, prop, args, {
                             adapter,
                             serialization,
                         });
                     }
                     else {
-                        return createLocalCall(modId, prop, args, baseUrl);
+                        return createLocalCall(modId, prop, args);
                     }
                 }
             };
@@ -786,5 +806,5 @@ function parallel(module, options = {}) {
 })(parallel || (parallel = {}));
 var parallel$1 = parallel;
 
-export { createCallRequest, createWorker, parallel$1 as default, getMaxParallelism, isCallResponse, sanitizeModuleId, terminate, wrapArgs };
+export { createWorker, parallel$1 as default, getMaxParallelism, isCallResponse, sanitizeModuleId, terminate, wrapArgs };
 //# sourceMappingURL=parallel.js.map
