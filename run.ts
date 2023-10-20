@@ -15,12 +15,16 @@ import parallel, {
     wrapArgs
 } from "./parallel.ts";
 
-let workerPool: {
-    getWorker: Promise<{ worker: Worker | BunWorker | NodeWorker | ChildProcess; workerId: number; }>;
+type PoolRecord = {
+    getWorker: Promise<{
+        worker: Worker | BunWorker | NodeWorker | ChildProcess;
+        workerId: number;
+    }>;
     adapter: "worker_threads" | "child_process";
     serialization: "advanced" | "json";
     busy: boolean;
-}[] = [];
+};
+const workerPools = new Map<string, PoolRecord[]>();
 
 // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
 // pop a consumer and run the callback, which will retry gaining the worker and retry the task.
@@ -180,11 +184,10 @@ async function run<R, A extends any[] = any[]>(
     const serialization = adapter === "worker_threads"
         ? "advanced"
         : (options?.serialization || (isBeforeNode14 ? "json" : "advanced"));
-    let poolRecord = workerPool.find(item => {
-        return item.adapter === adapter
-            && item.serialization === serialization
-            && !item.busy;
-    });
+    const poolKey = adapter + ":" + serialization;
+    const workerPool = workerPools.get(poolKey)
+        ?? (workerPools.set(poolKey, []).get(poolKey) as PoolRecord[]);
+    let poolRecord = workerPool.find(item => !item.busy);
 
     if (poolRecord) {
         poolRecord.busy = true;
@@ -285,7 +288,7 @@ async function run<R, A extends any[] = any[]>(
 
         if (poolRecord) {
             // Clean the pool before resolve.
-            workerPool = workerPool.filter(record => record !== poolRecord);
+            workerPools.set(poolKey, workerPool.filter(record => record !== poolRecord));
 
             if (workerConsumerQueue.length) {
                 // Queued consumer now has chance to create new worker.

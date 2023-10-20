@@ -23,7 +23,7 @@ const isMainThread = !isWorkerThread
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const tasks = new Map;
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
-let workerPool = [];
+const workerPools = new Map();
 const getConcurrencyNumber = (async () => {
     if (isNode) {
         const os = await import('os');
@@ -234,16 +234,12 @@ async function createWorker(options) {
     }
 }
 async function acquireWorker(taskId, options) {
+    var _a;
     const maxWorkers = parallel.maxWorkers || await getConcurrencyNumber;
     const { adapter, serialization } = options;
-    let poolRecord = workerPool.find(item => {
-        return item.adapter === adapter
-            && item.serialization === serialization
-            && !item.tasks.size;
-    });
-    if (adapter === "child_process" && serialization === "json") {
-        console.log(poolRecord, maxWorkers);
-    }
+    const poolKey = adapter + ":" + serialization;
+    const workerPool = (_a = workerPools.get(poolKey)) !== null && _a !== void 0 ? _a : workerPools.set(poolKey, []).get(poolKey);
+    let poolRecord = workerPool.find(item => !item.tasks.size);
     if (poolRecord) {
         poolRecord.lastAccess = Date.now();
     }
@@ -304,7 +300,7 @@ async function acquireWorker(taskId, options) {
                                 { // GC: clean long-time unused workers
                                     const now = Date.now();
                                     const idealItems = [];
-                                    workerPool = workerPool.filter(item => {
+                                    const remainItems = workerPool.filter(item => {
                                         const ideal = !item.tasks.size
                                             && (now - item.lastAccess) >= 300000;
                                         if (ideal) {
@@ -312,6 +308,12 @@ async function acquireWorker(taskId, options) {
                                         }
                                         return !ideal;
                                     });
+                                    if (remainItems.length) {
+                                        workerPools.set(poolKey, remainItems);
+                                    }
+                                    else {
+                                        workerPools.delete(poolKey);
+                                    }
                                     idealItems.forEach(async (item) => {
                                         const worker = await item.getWorker;
                                         if (typeof worker["terminate"] === "function") {
@@ -676,21 +678,18 @@ function parallel(module, options = {}) {
     }
     return new Proxy({
         [terminate]: async () => {
-            const toRemoveItems = [];
-            workerPool = workerPool.filter(item => {
-                const ok = item.adapter === adapter && item.serialization === serialization;
-                if (ok) {
-                    toRemoveItems.push(item);
-                }
-                return !ok;
-            });
-            for (const { getWorker } of toRemoveItems) {
-                const worker = await getWorker;
-                if (typeof worker["terminate"] === "function") {
-                    await worker.terminate();
-                }
-                else {
-                    worker.kill();
+            const poolKey = adapter + ":" + serialization;
+            const workerPool = workerPools.get(poolKey);
+            if (workerPool) {
+                workerPools.delete(poolKey);
+                for (const { getWorker } of workerPool) {
+                    const worker = await getWorker;
+                    if (typeof worker["terminate"] === "function") {
+                        await worker.terminate();
+                    }
+                    else {
+                        worker.kill();
+                    }
                 }
             }
         },

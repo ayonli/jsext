@@ -4,11 +4,12 @@ import { fromObject } from './error/index.js';
 import { isBeforeNode14, isNode, isBun, isChannelMessage, handleChannelMessage } from './util.js';
 import parallel, { getConcurrencyNumber, sanitizeModuleId, createCallRequest, createWorker, wrapArgs, isCallResponse } from './parallel.js';
 
-let workerPool = [];
+const workerPools = new Map();
 // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
 // pop a consumer and run the callback, which will retry gaining the worker and retry the task.
 const workerConsumerQueue = [];
 async function run(script, args = undefined, options = undefined) {
+    var _a;
     if (options === null || options === void 0 ? void 0 : options.workerEntry) {
         deprecate("options.workerEntry", run, "set `run.workerEntry` instead");
     }
@@ -24,11 +25,9 @@ async function run(script, args = undefined, options = undefined) {
     const serialization = adapter === "worker_threads"
         ? "advanced"
         : ((options === null || options === void 0 ? void 0 : options.serialization) || (isBeforeNode14 ? "json" : "advanced"));
-    let poolRecord = workerPool.find(item => {
-        return item.adapter === adapter
-            && item.serialization === serialization
-            && !item.busy;
-    });
+    const poolKey = adapter + ":" + serialization;
+    const workerPool = (_a = workerPools.get(poolKey)) !== null && _a !== void 0 ? _a : workerPools.set(poolKey, []).get(poolKey);
+    let poolRecord = workerPool.find(item => !item.busy);
     if (poolRecord) {
         poolRecord.busy = true;
     }
@@ -124,7 +123,7 @@ async function run(script, args = undefined, options = undefined) {
         timeout && clearTimeout(timeout);
         if (poolRecord) {
             // Clean the pool before resolve.
-            workerPool = workerPool.filter(record => record !== poolRecord);
+            workerPools.set(poolKey, workerPool.filter(record => record !== poolRecord));
             if (workerConsumerQueue.length) {
                 // Queued consumer now has chance to create new worker.
                 (_a = workerConsumerQueue.shift()) === null || _a === void 0 ? void 0 : _a();

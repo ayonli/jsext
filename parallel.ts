@@ -69,13 +69,14 @@ type RemoteTask = {
 const tasks = new Map<number, RemoteTask>;
 
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
-let workerPool: {
+type PoolRecord = {
     getWorker: Promise<Worker | BunWorker | NodeWorker | ChildProcess>;
     adapter: "worker_threads" | "child_process";
     serialization: "advanced" | "json";
     tasks: Set<number>;
     lastAccess: number;
-}[] = [];
+};
+const workerPools = new Map<string, PoolRecord[]>();
 
 export const getConcurrencyNumber = (async () => {
     if (isNode) {
@@ -329,15 +330,10 @@ async function acquireWorker(taskId: number, options: {
 }) {
     const maxWorkers = parallel.maxWorkers || await getConcurrencyNumber;
     const { adapter, serialization } = options;
-    let poolRecord = workerPool.find(item => {
-        return item.adapter === adapter
-            && item.serialization === serialization
-            && !item.tasks.size;
-    });
-
-    if (adapter === "child_process" && serialization === "json") {
-        console.log(poolRecord, maxWorkers);
-    }
+    const poolKey = adapter + ":" + serialization;
+    const workerPool = workerPools.get(poolKey)
+        ?? (workerPools.set(poolKey, []).get(poolKey) as PoolRecord[]);
+    let poolRecord = workerPool.find(item => !item.tasks.size);
 
     if (poolRecord) {
         poolRecord.lastAccess = Date.now();
@@ -400,8 +396,8 @@ async function acquireWorker(taskId: number, options: {
 
                                 { // GC: clean long-time unused workers
                                     const now = Date.now();
-                                    const idealItems: typeof workerPool = [];
-                                    workerPool = workerPool.filter(item => {
+                                    const idealItems: PoolRecord[] = [];
+                                    const remainItems = workerPool.filter(item => {
                                         const ideal = !item.tasks.size
                                             && (now - item.lastAccess) >= 300_000;
 
@@ -412,11 +408,17 @@ async function acquireWorker(taskId: number, options: {
                                         return !ideal;
                                     });
 
+                                    if (remainItems.length) {
+                                        workerPools.set(poolKey, remainItems);
+                                    } else {
+                                        workerPools.delete(poolKey);
+                                    }
+
                                     idealItems.forEach(async item => {
                                         const worker = await item.getWorker;
 
                                         if (typeof (worker as any)["terminate"] === "function") {
-                                            await (worker as Worker | NodeWorker).terminate();
+                                            await (worker as Worker | BunWorker | NodeWorker).terminate();
                                         } else {
                                             (worker as ChildProcess).kill();
                                         }
@@ -838,24 +840,20 @@ function parallel<M extends { [x: string]: any; }>(
 
     return new Proxy({
         [terminate]: async () => {
-            const toRemoveItems: typeof workerPool = [];
-            workerPool = workerPool.filter(item => {
-                const ok = item.adapter === adapter && item.serialization === serialization;
+            const poolKey = adapter + ":" + serialization;
+            const workerPool = workerPools.get(poolKey);
 
-                if (ok) {
-                    toRemoveItems.push(item);
-                }
+            if (workerPool) {
+                workerPools.delete(poolKey);
 
-                return !ok;
-            });
+                for (const { getWorker } of workerPool) {
+                    const worker = await getWorker;
 
-            for (const { getWorker } of toRemoveItems) {
-                const worker = await getWorker;
-
-                if (typeof (worker as any)["terminate"] === "function") {
-                    await (worker as Worker | NodeWorker).terminate();
-                } else {
-                    (worker as ChildProcess).kill();
+                    if (typeof (worker as any)["terminate"] === "function") {
+                        await (worker as Worker | BunWorker | NodeWorker).terminate();
+                    } else {
+                        (worker as ChildProcess).kill();
+                    }
                 }
             }
         },
