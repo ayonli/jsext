@@ -84,9 +84,7 @@ describe("jsext.parallel", () => {
 
         it("receive unserializable", async () => {
             // @ts-ignore because allowJs is not turned on
-            const [err, res] = await jsext.try(async () => await mod.throwUnserializableError(1));
-
-            strictEqual((err as DOMException)?.name, "DOMException");
+            const [err] = await jsext.try(async () => await mod.throwUnserializableError(1));
             ok((err as DOMException)?.stack?.includes(modUrl));
         });
 

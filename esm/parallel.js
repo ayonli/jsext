@@ -233,7 +233,7 @@ async function acquireWorker(taskId, options) {
                     serialization,
                 });
                 const handleMessage = (msg) => {
-                    var _a, _b, _c, _d, _e;
+                    var _a, _b, _c, _d, _e, _f;
                     if (isChannelMessage(msg)) {
                         handleChannelMessage(msg);
                     }
@@ -247,9 +247,10 @@ async function acquireWorker(taskId, options) {
                                     ? ((_b = fromObject(msg.error)) !== null && _b !== void 0 ? _b : msg.error)
                                     : msg.error;
                                 if (err instanceof Error &&
-                                    (err.name === "DOMException" || adapter === "child_process") &&
-                                    (err.message.includes("not be cloned") ||
-                                        err.message.includes("Do not know how to serialize"))) {
+                                    (err.message.includes("not be cloned")
+                                        || ((_c = err.stack) === null || _c === void 0 ? void 0 : _c.includes("not be cloned")) // Node.js v16-
+                                        || err.message.includes("Do not know how to serialize") // JSON error
+                                    )) {
                                     Object.defineProperty(err, "stack", {
                                         configurable: true,
                                         enumerable: false,
@@ -295,7 +296,7 @@ async function acquireWorker(taskId, options) {
                                 // The `workerPool` of this key in the pool map may have been
                                 // modified by other routines, we need to retrieve the newest
                                 // value.
-                                const remainItems = (_c = workerPools.get(poolKey)) === null || _c === void 0 ? void 0 : _c.filter(item => {
+                                const remainItems = (_d = workerPools.get(poolKey)) === null || _d === void 0 ? void 0 : _d.filter(item => {
                                     const ideal = !item.tasks.size
                                         && (now - item.lastAccess) >= 300000;
                                     if (ideal) {
@@ -321,7 +322,7 @@ async function acquireWorker(taskId, options) {
                             }
                         }
                         else if (msg.type === "yield") {
-                            (_d = task.channel) === null || _d === void 0 ? void 0 : _d.push({ value: msg.value, done: msg.done });
+                            (_e = task.channel) === null || _e === void 0 ? void 0 : _e.push({ value: msg.value, done: msg.done });
                             if (msg.done) {
                                 // The final message of yield event is the return value.
                                 handleMessage({
@@ -332,7 +333,7 @@ async function acquireWorker(taskId, options) {
                             }
                         }
                         else if (msg.type === "gen") {
-                            (_e = task.generate) === null || _e === void 0 ? void 0 : _e.call(task);
+                            (_f = task.generate) === null || _f === void 0 ? void 0 : _f.call(task);
                         }
                     }
                 };

@@ -347,9 +347,9 @@ async function acquireWorker(taskId: number, options: {
                                     : msg.error;
 
                                 if (err instanceof Error &&
-                                    (err.name === "DOMException" || adapter === "child_process") &&
-                                    (err.message.includes("not be cloned") ||
-                                        err.message.includes("Do not know how to serialize")
+                                    (err.message.includes("not be cloned")
+                                        || err.stack?.includes("not be cloned") // Node.js v16-
+                                        || err.message.includes("Do not know how to serialize") // JSON error
                                     )
                                 ) {
                                     Object.defineProperty(err, "stack", {

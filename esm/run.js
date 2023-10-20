@@ -78,7 +78,7 @@ async function run(script, args = undefined, options = undefined) {
         handleClose(err, true);
     }, options.timeout) : null;
     const handleMessage = async (msg) => {
-        var _a, _b;
+        var _a, _b, _c;
         if (isChannelMessage(msg)) {
             handleChannelMessage(msg);
         }
@@ -90,9 +90,10 @@ async function run(script, args = undefined, options = undefined) {
                         ? ((_b = fromObject(msg.error)) !== null && _b !== void 0 ? _b : msg.error)
                         : msg.error;
                     if (err instanceof Error &&
-                        (err.name === "DOMException" || adapter === "child_process") &&
-                        (err.message.includes("not be cloned") ||
-                            err.message.includes("Do not know how to serialize"))) {
+                        (err.message.includes("not be cloned")
+                            || ((_c = err.stack) === null || _c === void 0 ? void 0 : _c.includes("not be cloned")) // Node.js v16-
+                            || err.message.includes("Do not know how to serialize") // JSON error
+                        )) {
                         Object.defineProperty(err, "stack", {
                             configurable: true,
                             enumerable: false,
