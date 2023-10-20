@@ -312,6 +312,8 @@
         "channel",
         "worker",
         "parallel",
+        "multithreading",
+        "goroutine",
         "asyncIterator",
         "json",
         "BiMap",
