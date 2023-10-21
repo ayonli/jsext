@@ -52,7 +52,9 @@ export async function handleCallRequest(
                 } as CallResponse | ChannelMessage);
             }
 
-            if (typeof DOMException === "function" && res.error instanceof DOMException) {
+            if ((typeof DOMException === "function" && res.error instanceof DOMException) ||
+                (res.error instanceof Error && ["DOMException", "DataCloneError"].includes(res.error.name)) // Node v16-
+            ) {
                 // DOMException cannot be cloned properly, fallback to transferring it as
                 // an object and rebuild in the main thread.
                 return _reply({
@@ -61,7 +63,7 @@ export async function handleCallRequest(
                         ...toObject(res.error as Error),
                         // In Node.js, the default name of DOMException is incorrect,
                         // we need to set it right.
-                        name: "DOMException",
+                        name: res.error.name === "DataCloneError" ? "DataCloneError" : "DOMException",
                     },
                 } as CallResponse | ChannelMessage);
             }
