@@ -1,6 +1,7 @@
 import type { Worker as NodeWorker } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
 import chan, { Channel } from "./chan.ts";
+import { isPlainObject } from "./object/index.ts";
 import { fromErrorEvent, fromObject } from "./error/index.ts";
 import { handleChannelMessage, isChannelMessage, isNode, isBun, isDeno, IsPath } from "./util.ts";
 import parallel, {
@@ -42,10 +43,9 @@ const workerConsumerQueue: (() => void)[] = [];
  * In Bun and Deno, the `script` can also be a TypeScript file.
  * 
  * This function also uses {@link parallel.maxWorkers} and {@link parallel.workerEntry} for worker
- * configuration by default.
- * 
- * {@link parallel.transfer}() and {@link Channel} can also be used to transfer large or
- * streaming data, but be aware transferable objects only work with `worker_threads` adapter.
+ * configuration by default. {@link Channel} can also be used to transfer streaming data into the
+ * function being called. `ArrayBuffer`s are also supported as transferrable objects if they are
+ * presented as arguments or the return value (or their direct properties).
  * 
  * @example
  * ```ts
@@ -204,7 +204,7 @@ async function run<R, A extends any[] = any[]>(
 
             if (msg.type === "return" || msg.type === "error") {
                 if (msg.type === "error") {
-                    const err = msg.error?.constructor === Object
+                    const err = isPlainObject(msg.error)
                         ? (fromObject(msg.error) ?? msg.error)
                         : msg.error;
 

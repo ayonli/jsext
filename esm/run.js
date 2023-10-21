@@ -1,4 +1,5 @@
 import chan from './chan.js';
+import { isPlainObject } from './object/index.js';
 import { fromErrorEvent, fromObject } from './error/index.js';
 import { isDeno, isNode, isBun, IsPath, isChannelMessage, handleChannelMessage } from './util.js';
 import parallel, { getMaxParallelism, sanitizeModuleId, createWorker, wrapArgs, isCallResponse } from './parallel.js';
@@ -73,7 +74,7 @@ async function run(script, args = undefined, options = undefined) {
         handleClose(err, true);
     }, options.timeout) : null;
     const handleMessage = async (msg) => {
-        var _a, _b, _c;
+        var _a, _b;
         if (isChannelMessage(msg)) {
             handleChannelMessage(msg);
         }
@@ -81,12 +82,12 @@ async function run(script, args = undefined, options = undefined) {
             timeout && clearTimeout(timeout);
             if (msg.type === "return" || msg.type === "error") {
                 if (msg.type === "error") {
-                    const err = ((_a = msg.error) === null || _a === void 0 ? void 0 : _a.constructor) === Object
-                        ? ((_b = fromObject(msg.error)) !== null && _b !== void 0 ? _b : msg.error)
+                    const err = isPlainObject(msg.error)
+                        ? ((_a = fromObject(msg.error)) !== null && _a !== void 0 ? _a : msg.error)
                         : msg.error;
                     if (err instanceof Error &&
                         (err.message.includes("not be cloned")
-                            || ((_c = err.stack) === null || _c === void 0 ? void 0 : _c.includes("not be cloned")) // Node.js v16-
+                            || ((_b = err.stack) === null || _b === void 0 ? void 0 : _b.includes("not be cloned")) // Node.js v16-
                             || err.message.includes("Do not know how to serialize") // JSON error
                         )) {
                         Object.defineProperty(err, "stack", {

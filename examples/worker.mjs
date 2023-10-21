@@ -91,8 +91,8 @@ export function transfer(buf) {
 }
 
 /**
- * @param {import("../index.ts").TypedArray} arr 
+ * @param {{[x:string]:any}} obj 
  */
-export function transferTypedArray(arr) {
-    return arr;
+export function transferInObject(obj) {
+    return obj;
 }

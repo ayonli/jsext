@@ -631,6 +631,14 @@ generator function, `next(value)` is coupled with a `yield value`, the process i
 between **next** calls, channel doesn't have this limit, we can use it to stream all the data
 into the function before processing and receiving any result.
 
+Moreover, the threaded functions support `ArrayBuffer`s as transferable objects. If an
+array buffer is presented as an argument or the direct property of an argument (assume it's an
+plain object), or the array buffer is the return value or the direct property of the return value
+(assume it's an plain object), it automatically becomes a transferrable object and will be
+transferred to the other thread instead of being cloned. This strategy allows us easily to
+compose objects like `Request` and `Response` instances into plain objects and pass them to
+the worker thread without overhead.
+
 **Example (async function)**
 
 ```ts
@@ -700,31 +708,7 @@ namespace parallel {
      * to a local directory and supply this option instead.
      */
     export var workerEntry: string | undefined;
-
-    /**
-     * Marks the given data to be transferred instead of cloned to the worker thread.
-     * Once transferred, the data is no longer available on the sending end.
-     * 
-     * Currently, only `ArrayBuffer` is guaranteed to be transferable across all supported
-     * JavaScript runtimes.
-     * 
-     * Be aware, the transferable object can only be used as a parameter, return a transferable
-     * object from the threaded function is not supported at the moment and will always be cloned.
-     */
-    export function transfer<T extends Transferable>(data: T): T;
 }
-```
-
-**Example (use transferable)**
-
-```ts
-const mod = parallel(() => import("./examples/worker.mjs"));
-
-const arr = Uint8Array.from([0, 1, 2]);
-const length = await mod.transfer(parallel.transfer(arr.buffer));
-
-console.assert(length === 3);
-console.assert(arr.byteLength === 0);
 ```
 
 ---
@@ -774,10 +758,9 @@ In browsers and Deno, the `script` can only be an ES module, and is relative to 
 In Bun and Deno, the `script` can also be a TypeScript file.
 
 This function also uses `parallel.maxWorkers` and `parallel.workerEntry` for worker
-configuration by default.
-
-`parallel.transfer()` and `Channel` can also be used to transfer large or
-streaming data, but be aware transferable objects only work with `worker_threads` adapter.
+configuration by default. `Channel` can also be used to transfer streaming data into the
+function being called. `ArrayBuffer`s are also supported as transferrable objects if they are
+presented as arguments or the return value (or their direct properties).
 
 **Example (result)**
 
@@ -1087,6 +1070,7 @@ import "@ayonli/jsext/object/augment";
 - `as(value: unknown, type: SymbolConstructor): symbol | null`
 - `as<T>(value: unknown, type: Constructor<T>): T | null`
 - `isValid(value: unknown): boolean`
+- `isPlainObject(value: unknown): value is { [x: string | symbol]: any; }`
 
 *When [augment](https://github.com/ayonli/jsext/blob/main/object/augment.ts)ing, these functions*
 *are attached to the `Object` constructor.*

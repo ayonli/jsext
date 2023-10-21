@@ -102,7 +102,7 @@ describe("jsext.run", () => {
         it("use transferable", async () => {
             const arr = Uint8Array.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
             const job = await jsext.run<number, [ArrayBuffer]>("examples/worker.mjs", [
-                jsext.parallel.transfer(arr.buffer)
+                arr.buffer
             ], {
                 fn: "transfer",
             });

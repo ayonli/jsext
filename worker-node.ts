@@ -4,20 +4,22 @@ import { isCallRequest, handleCallRequest } from "./worker.ts";
 
 if (isNode) {
     if (!isMainThread && parentPort) {
-        const reply = parentPort.postMessage.bind(parentPort);
         parentPort.on("message", async (msg) => {
             if (isCallRequest(msg)) {
-                await handleCallRequest(msg, reply);
+                await handleCallRequest(msg, (res, transferable = []) => {
+                    parentPort!.postMessage(res, transferable);
+                });
             } else if (isChannelMessage(msg)) {
                 handleChannelMessage(msg);
             }
         });
     } else if (process.send) {
-        const reply = process.send.bind(process);
-        reply("ready"); // notify the parent process that the worker is ready;
+        process.send("ready"); // notify the parent process that the worker is ready;
         process.on("message", async (msg) => {
             if (isCallRequest(msg)) {
-                await handleCallRequest(msg, reply);
+                await handleCallRequest(msg, (res, _ = []) => {
+                    process.send!(res);
+                });
             } else if (isChannelMessage(msg)) {
                 handleChannelMessage(msg);
             }

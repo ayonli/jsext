@@ -1,5 +1,6 @@
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
 import { toObject } from "./error/index.ts";
+import { isPlainObject } from "./object/index.ts";
 import type { CallRequest, CallResponse } from "./parallel.ts";
 import {
     isNode,
@@ -19,16 +20,33 @@ function unwrapArgs(
     channelWrite: (type: "push" | "close", msg: any, channelId: number) => void
 ) {
     return args.map(arg => {
-        if (typeof arg === "object" && arg &&
-            (!arg.constructor || arg.constructor === Object) &&
+        if (isPlainObject(arg) &&
             arg["@@type"] === "Channel" &&
             typeof arg["@@id"] === "number"
         ) {
-            return unwrapChannel(arg, channelWrite);
+            return unwrapChannel(arg as any, channelWrite);
         } else {
             return arg;
         }
     });
+}
+
+function wrapReturnValue<T>(value: T): { value: T, transferable: ArrayBuffer[]; } {
+    const transferable: ArrayBuffer[] = [];
+
+    if (value instanceof ArrayBuffer) {
+        transferable.push(value);
+    } else if (isPlainObject(value)) {
+        for (const key of Object.getOwnPropertyNames(value)) {
+            const _value = value[key];
+
+            if (_value instanceof ArrayBuffer) {
+                transferable.push(_value);
+            }
+        }
+    }
+
+    return { value, transferable };
 }
 
 export function isCallRequest(msg: any): msg is CallRequest {
@@ -40,7 +58,7 @@ export function isCallRequest(msg: any): msg is CallRequest {
 
 export async function handleCallRequest(
     msg: CallRequest,
-    reply: (res: CallResponse | ChannelMessage) => void
+    reply: (res: CallResponse | ChannelMessage, transferable?: ArrayBuffer[]) => void
 ) {
     const _reply = reply;
     reply = (res) => {
@@ -106,14 +124,26 @@ export async function handleCallRequest(
                 } else if (req.type === "return") {
                     try {
                         const res = await task.return(req.args[0]);
-                        reply({ type: "yield", ...res, taskId: req.taskId });
+                        const { value, transferable } = wrapReturnValue(res.value);
+                        reply({
+                            type: "yield",
+                            value,
+                            done: res.done,
+                            taskId: req.taskId,
+                        }, transferable);
                     } catch (error) {
                         reply({ type: "error", error, taskId: req.taskId });
                     }
                 } else { // req.type === "next"
                     try {
                         const res = await task.next(req.args[0]);
-                        reply({ type: "yield", ...res, taskId: req.taskId });
+                        const { value, transferable } = wrapReturnValue(res.value);
+                        reply({
+                            type: "yield",
+                            value,
+                            done: res.done,
+                            taskId: req.taskId,
+                        }, transferable);
                     } catch (error) {
                         reply({ type: "error", error, taskId: req.taskId });
                     }
@@ -146,10 +176,11 @@ export async function handleCallRequest(
             } else {
                 while (true) {
                     try {
-                        const { value, done } = await returns.next();
-                        reply({ type: "yield", value, done });
+                        const res = await returns.next();
+                        const { value, transferable } = wrapReturnValue(res.value);
+                        reply({ type: "yield", value, done: res.done }, transferable);
 
-                        if (done) {
+                        if (res.done) {
                             break;
                         }
                     } catch (error) {
@@ -159,7 +190,8 @@ export async function handleCallRequest(
                 }
             }
         } else {
-            reply({ type: "return", value: returns, taskId: req.taskId });
+            const { value, transferable } = wrapReturnValue(returns);
+            reply({ type: "return", value, taskId: req.taskId }, transferable);
         }
     } catch (error) {
         reply({ type: "error", error, taskId: msg.taskId });
@@ -171,20 +203,22 @@ if (isBun
     && typeof process === "object"
     && typeof process.send === "function"
 ) { // Bun with child_process
-    const reply = process.send.bind(process);
-    reply("ready"); // notify the parent process that the worker is ready;
+    process.send("ready"); // notify the parent process that the worker is ready;
     process.on("message", async (msg) => {
         if (isCallRequest(msg)) {
-            await handleCallRequest(msg, reply);
+            await handleCallRequest(msg, (res, _ = []) => {
+                process.send!(res);
+            });
         } else if (isChannelMessage(msg)) {
             handleChannelMessage(msg);
         }
     });
 } else if (!isNode && typeof self === "object") {
-    const reply = self.postMessage.bind(self);
     self.onmessage = async ({ data: msg }) => {
         if (isCallRequest(msg)) {
-            await handleCallRequest(msg, reply);
+            await handleCallRequest(msg, (res, transferable = []) => {
+                self.postMessage(res, { transfer: transferable });
+            });
         } else if (isChannelMessage(msg)) {
             await handleChannelMessage(msg);
         }

@@ -59,10 +59,18 @@ describe("jsext.parallel", () => {
     it("use transferable", async () => {
         const arr = Uint8Array.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
         // @ts-ignore because allowJs is not turned on
-        const length = await mod.transfer(jsext.parallel.transfer(arr.buffer));
+        const length = await mod.transfer(arr.buffer);
 
         deepStrictEqual(length, 10);
         strictEqual(arr.byteLength, 0);
+
+        const arr2 = Uint8Array.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        // @ts-ignore because allowJs is not turned on
+        const res = await mod.transferInObject({ data: arr2.buffer });
+        strictEqual(arr2.byteLength, 0);
+        deepStrictEqual(res, {
+            data: Uint8Array.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).buffer,
+        });
     });
 
     it("send unserializable", async () => {

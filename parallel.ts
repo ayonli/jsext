@@ -4,6 +4,7 @@ import { ThenableAsyncGenerator, ThenableAsyncGeneratorLike } from "./external/t
 import chan, { Channel } from "./chan.ts";
 import { sequence } from "./number/index.ts";
 import { trim } from "./string/index.ts";
+import { isPlainObject } from "./object/index.ts";
 import { fromErrorEvent, fromObject } from "./error/index.ts";
 import {
     isNode,
@@ -34,7 +35,6 @@ export type ThreadedFunctions<M, T extends FunctionProperties<M> = FunctionPrope
     : T[K];
 };
 
-const shouldTransfer = Symbol.for("shouldTransfer");
 declare var Bun: any;
 declare var WorkerGlobalScope: object;
 
@@ -318,7 +318,7 @@ async function acquireWorker(taskId: number) {
 
                         if (msg.type === "return" || msg.type === "error") {
                             if (msg.type === "error") {
-                                const err = msg.error?.constructor === Object
+                                const err = isPlainObject(msg.error)
                                     ? (fromObject(msg.error) ?? msg.error)
                                     : msg.error;
 
@@ -485,13 +485,11 @@ export function wrapArgs<A extends any[]>(
     getWorker: Promise<Worker | BunWorker | NodeWorker | ChildProcess>
 ): {
     args: A,
-    transferable: Transferable[];
+    transferable: ArrayBuffer[];
 } {
-    const transferable: Transferable[] = [];
+    const transferable: ArrayBuffer[] = [];
     args = args.map(arg => {
-        if (!arg || typeof arg !== "object" || Array.isArray(arg)) {
-            return arg;
-        } else if (arg instanceof Channel) {
+        if (arg instanceof Channel) {
             return wrapChannel(arg, (type, msg, channelId) => {
                 getWorker.then(worker => {
                     if (typeof (worker as any)["postMessage"] === "function") {
@@ -509,12 +507,21 @@ export function wrapArgs<A extends any[]>(
                     }
                 });
             });
-        } else if (arg[shouldTransfer]) {
-            transferable.push(arg);
-            return arg;
-        } else {
-            return arg;
         }
+
+        if (arg instanceof ArrayBuffer) {
+            transferable.push(arg);
+        } else if (isPlainObject(arg)) {
+            for (const key of Object.getOwnPropertyNames(arg)) {
+                const value = arg[key];
+
+                if (value instanceof ArrayBuffer) {
+                    transferable.push(value);
+                }
+            }
+        }
+
+        return arg;
     }) as A;
 
     return { args, transferable };
@@ -523,7 +530,7 @@ export function wrapArgs<A extends any[]>(
 async function safeRemoteCall(
     worker: Worker | BunWorker | NodeWorker | ChildProcess,
     req: CallRequest,
-    transferable: Transferable[] = [],
+    transferable: ArrayBuffer[] = [],
     taskId: number = 0
 ) {
     try {
@@ -738,6 +745,14 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * between **next** calls, channel doesn't have this limit, we can use it to stream all the data
  * into the function before processing and receiving any result.
  * 
+ * Moreover, the threaded functions support `ArrayBuffer`s as transferable objects. If an
+ * array buffer is presented as an argument or the direct property of an argument (assume it's an
+ * plain object), or the array buffer is the return value or the direct property of the return value
+ * (assume it's an plain object), it automatically becomes a transferrable object and will be
+ * transferred to the other thread instead of being cloned. This strategy allows us easily to
+ * compose objects like `Request` and `Response` instances into plain objects and pass them to
+ * the worker thread without overhead.
+ * 
  * @example
  * ```ts
  * const mod = parallel(() => import("./examples/worker.mjs"));
@@ -839,33 +854,6 @@ namespace parallel {
      * to a local directory and supply this option instead.
      */
     export var workerEntry: string | undefined = undefined;
-
-    /**
-     * Marks the given data to be transferred instead of cloned to the worker thread.
-     * Once transferred, the data is no longer available on the sending end.
-     * 
-     * Currently, only `ArrayBuffer` is guaranteed to be transferable across all supported
-     * JavaScript runtimes.
-     * 
-     * Be aware, the transferable object can only be used as a parameter, return a transferable
-     * object from the threaded function is not supported at the moment and will always be cloned.
-     * 
-     * @example
-     * ```ts
-     * const mod = parallel(() => import("./examples/worker.mjs"));
-     * 
-     * const arr = Uint8Array.from([0, 1, 2]);
-     * const length = await mod.transfer(parallel.transfer(arr.buffer));
-     * 
-     * console.assert(length === 3);
-     * console.assert(arr.byteLength === 0);
-     * ```
-     */
-    export function transfer<T extends Transferable>(data: T): T {
-        // @ts-ignore
-        data[shouldTransfer] = true;
-        return data;
-    }
 }
 
 export default parallel;
