@@ -142,4 +142,12 @@ describe("Object", () => {
         ok(!Object.isValid(NaN));
         ok(!Object.isValid(new Date("foobar")));
     });
+
+    it("Object.isPlainObject", () => {
+        ok(Object.isPlainObject({}));
+        ok(Object.isPlainObject(Object.create(null)));
+        ok(!Object.isPlainObject([]));
+        ok(!Object.isPlainObject(""));
+        ok(!Object.isPlainObject(new Date()));
+    });
 });

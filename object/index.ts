@@ -141,3 +141,15 @@ export function isValid(value: unknown): boolean {
         && !Object.is(value, NaN)
         && !(value instanceof Date && value.toString() === "Invalid Date");
 }
+
+/**
+ * Returns `true` is the given value is a plain object, that is, an object created by
+ * the `Object` constructor or one with a `[[Prototype]]` of `null`.
+ */
+export function isPlainObject(value: unknown): value is { [x: string | symbol]: any; } {
+    if (typeof value !== "object" || value === null)
+        return false;
+
+    const proto = Object.getPrototypeOf(value);
+    return proto === null || proto.constructor === Object;
+}

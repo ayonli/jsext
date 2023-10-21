@@ -1,4 +1,4 @@
-import { hasOwn, hasOwnMethod, omit, patch, pick, as, isValid } from "./index.ts";
+import { hasOwn, hasOwnMethod, omit, patch, pick, as, isValid, isPlainObject } from "./index.ts";
 
 declare global {
     interface ObjectConstructor {
@@ -53,6 +53,11 @@ declare global {
          * - `Invalid Date`
          */
         isValid(value: unknown): boolean;
+        /**
+         * Returns `true` is the given value is a plain object, that is, an object created by
+         * the `Object` constructor or one with a `[[Prototype]]` of `null`.
+         */
+        isPlainObject(value: unknown): value is { [x: string | symbol]: any; };
     }
 }
 
@@ -69,3 +74,4 @@ Object.pick = pick;
 Object.omit = omit;
 Object.as = as;
 Object.isValid = isValid;
+Object.isPlainObject = isPlainObject;
