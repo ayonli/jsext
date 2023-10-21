@@ -603,30 +603,7 @@ const chunks = await readAll(file);
 
 ```ts
 function parallel<M extends { [x: string]: any; }>(
-    mod: string | (() => Promise<M>),
-    options?: {
-        /**
-         * Choose whether to use `worker_threads` or `child_process` for creating the worker
-         * thread. The default setting is `worker_threads`.
-         * 
-         * In browsers and Deno, this option is ignored and will always use the web worker.
-         * 
-         * We should always consider using `worker_threads` over `child_process` since it consumes
-         * less system resources. However, As I've tested, `process.send(json)` performs about
-         * 20% ~ 30% more efficient than `postMessage()`, so `child_process` along with `json`
-         * serialization may suits more for some edge scenarios. 
-         */
-        adapter?: "worker_threads" | "child_process";
-        /**
-         * When using `child_process` adapter, this option instructs which serialization algorithm
-         * should be used to serialize the data for transferring between the parent and the child
-         * process. The default setting is `advanced` (structured clone algorithm).
-         * 
-         * NOTE: this option only works in Node.js, Bun doesn't support `json` serialization and
-         * will always use `advanced`.
-         */
-        serialization?: "advanced" | "json";
-    }
+    mod: string | (() => Promise<M>)
 ): ThreadedFunctions<M>;
 ```
 
@@ -731,13 +708,8 @@ namespace parallel {
      * Currently, only `ArrayBuffer` is guaranteed to be transferable across all supported
      * JavaScript runtimes.
      * 
-     * Be aware, the transferable object can only be used as a parameter and only works with
-     * `worker_threads` adapter, return a transferable object from the threaded function is
-     * not supported at the moment and will always be cloned.
-     * 
-     * NOTE: always prefer channel for transferring large amount of data in streaming fashion
-     * than sending them as transferrable objects, it consumes less memory and does not transfer
-     * the ownership of the data, and supports `child_process` adapter as well.
+     * Be aware, the transferable object can only be used as a parameter, return a transferable
+     * object from the threaded function is not supported at the moment and will always be cloned.
      */
     export function transfer<T extends Transferable>(data: T): T;
 }
@@ -775,17 +747,11 @@ function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
      * The default setting is `worker_threads`.
      * 
      * In browsers and Deno, this option is ignored and will always use the web worker.
+     * 
+     * @deprecated Always prefer `worker_threads` over `child_process` since it consumes
+     * less system resources.
      */
     adapter?: "worker_threads" | "child_process";
-    /**
-     * When using `child_process` adapter, this option instructs which serialization algorithm
-     * should be used to serialize the data for transferring between the parent and the child
-     * process. The default setting is `advanced` (structured clone algorithm).
-     * 
-     * NOTE: this option only works in Node.js, Bun doesn't support `json` serialization and
-     * will always use `advanced`.
-     */
-    serialization?: "advanced" | "json";
 }): Promise<{
     workerId: number;
     /** Retrieves the return value of the function that has been called. */

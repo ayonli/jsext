@@ -2,7 +2,7 @@ import type { Worker as NodeWorker } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
 import chan, { Channel } from "./chan.ts";
 import { fromErrorEvent, fromObject } from "./error/index.ts";
-import { handleChannelMessage, isChannelMessage, isNode, isBun, isBeforeNode14, isDeno, IsPath } from "./util.ts";
+import { handleChannelMessage, isChannelMessage, isNode, isBun, isDeno, IsPath } from "./util.ts";
 import parallel, {
     BunWorker,
     getMaxParallelism,
@@ -22,7 +22,6 @@ type PoolRecord = {
         workerId: number;
     }>;
     adapter: "worker_threads" | "child_process";
-    serialization: "advanced" | "json";
     busy: boolean;
 };
 const workerPools = new Map<string, PoolRecord[]>();
@@ -96,21 +95,11 @@ async function run<R, A extends any[] = any[]>(
          * The default setting is `worker_threads`.
          * 
          * In browsers and Deno, this option is ignored and will always use the web worker.
+         * 
+         * @deprecated Always prefer `worker_threads` over `child_process` since it consumes
+         * less system resources.
          */
         adapter?: "worker_threads" | "child_process";
-        /**
-         * When using `child_process` adapter, this option instructs which serialization algorithm
-         * should be used to serialize the data for transferring between the parent and the child
-         * process. The default setting is `advanced` (structured clone algorithm).
-         * 
-         * NOTE: this option only works in Node.js, Bun doesn't support `json` serialization and
-         * will always use `advanced`.
-         */
-        serialization?: "advanced" | "json";
-        /**
-         * @deprecated set `run.workerEntry` instead.
-         */
-        workerEntry?: string;
     }
 ): Promise<{
     workerId: number;
@@ -128,8 +117,8 @@ async function run<R, A extends any[] = any[]>(
         fn?: string;
         timeout?: number;
         keepAlive?: boolean;
+        /** @deprecated */
         adapter?: "worker_threads" | "child_process";
-        serialization?: "advanced" | "json";
     } | undefined = undefined
 ): Promise<{
     workerId: number;
@@ -164,12 +153,8 @@ async function run<R, A extends any[] = any[]>(
         args: args ?? [],
     };
     const adapter = options?.adapter || "worker_threads";
-    const serialization = adapter === "worker_threads"
-        ? "advanced"
-        : (options?.serialization || (isBeforeNode14 ? "json" : "advanced"));
-    const poolKey = adapter + ":" + serialization;
-    const workerPool = workerPools.get(poolKey)
-        ?? (workerPools.set(poolKey, []).get(poolKey) as PoolRecord[]);
+    const workerPool = workerPools.get(adapter)
+        ?? (workerPools.set(adapter, []).get(adapter) as PoolRecord[]);
     let poolRecord = workerPool.find(item => !item.busy);
 
     if (poolRecord) {
@@ -180,9 +165,8 @@ async function run<R, A extends any[] = any[]>(
         // `run.maxWorkers`. If the the call doesn't keep-alive the worker, it will be
         // cleaned after the call.
         workerPool.push(poolRecord = {
-            getWorker: createWorker({ entry: parallel.workerEntry, adapter, serialization }),
+            getWorker: createWorker({ entry: parallel.workerEntry, adapter }),
             adapter,
-            serialization,
             busy: true,
         });
     } else {
@@ -272,12 +256,12 @@ async function run<R, A extends any[] = any[]>(
             // Clean the pool before resolve.
             // The `workerPool` of this key in the pool map may have been modified by other
             // routines, we need to retrieve the newest value.
-            const remainItems = workerPools.get(poolKey)?.filter(record => record !== poolRecord);
+            const remainItems = workerPools.get(adapter)?.filter(record => record !== poolRecord);
 
             if (remainItems?.length) {
-                workerPools.set(poolKey, remainItems);
+                workerPools.set(adapter, remainItems);
             } else {
-                workerPools.delete(poolKey);
+                workerPools.delete(adapter);
             }
 
             if (workerConsumerQueue.length) {

@@ -3,26 +3,18 @@ import chan, { Channel } from './chan.js';
 import { sequence } from './number/index.js';
 import { trim } from './string/index.js';
 import { fromErrorEvent, fromObject } from './error/index.js';
-import { isNode, isBun, isDeno, wrapChannel, isBeforeNode14, IsPath, resolveModule, isChannelMessage, handleChannelMessage } from './util.js';
+import { isNode, isBun, isDeno, wrapChannel, IsPath, isBeforeNode14, resolveModule, isChannelMessage, handleChannelMessage } from './util.js';
 
-/**
- * The `[terminate]()` function of the threaded module should only be used for
- * testing purposes. When using `child_process` adapter, the program will not be able exit
- * automatically after the test because there is an active IPC channel between the parent and
- * the child process. Calling the terminate function will force to kill the child process and
- * allow the program to exit.
- */
-const terminate = Symbol.for("terminate");
 const shouldTransfer = Symbol.for("shouldTransfer");
 // In Node.js, `process.argv` contains `--worker-thread` when the current thread is used as
-// a worker. In Bun, this option only presents when using `child_process` adapter.
-const isWorkerThread = (isNode || isBun) && process.argv.includes("--worker-thread");
+// a worker.
+const isWorkerThread = isNode && process.argv.includes("--worker-thread");
 const isMainThread = !isWorkerThread
     && (isBun ? Bun.isMainThread : typeof WorkerGlobalScope === "undefined");
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const remoteTasks = new Map;
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
-const workerPools = new Map();
+let workerPool = [];
 const getMaxParallelism = (async () => {
     if (isNode) {
         const os = await import('os');
@@ -78,7 +70,7 @@ function isCallResponse(msg) {
 }
 async function createWorker(options) {
     var _a;
-    let { entry, adapter, serialization } = options;
+    let { entry, adapter = "worker_threads" } = options;
     if (isNode || isBun) {
         if (!entry) {
             const path = await import('path');
@@ -114,6 +106,7 @@ async function createWorker(options) {
         }
         if (adapter === "child_process") {
             const { fork } = await import('child_process');
+            const serialization = isBeforeNode14 ? "json" : "advanced";
             const worker = fork(entry, ["--worker-thread", "--serialization=" + serialization], {
                 stdio: "inherit",
                 serialization,
@@ -214,12 +207,8 @@ async function createWorker(options) {
         };
     }
 }
-async function acquireWorker(taskId, options) {
-    var _a;
+async function acquireWorker(taskId) {
     const maxWorkers = parallel.maxWorkers || await getMaxParallelism;
-    const { adapter, serialization } = options;
-    const poolKey = adapter + ":" + serialization;
-    const workerPool = (_a = workerPools.get(poolKey)) !== null && _a !== void 0 ? _a : workerPools.set(poolKey, []).get(poolKey);
     let poolRecord = workerPool.find(item => !item.tasks.size);
     if (poolRecord) {
         poolRecord.lastAccess = Date.now();
@@ -227,13 +216,9 @@ async function acquireWorker(taskId, options) {
     else if (workerPool.length < maxWorkers) {
         workerPool.push(poolRecord = {
             getWorker: (async () => {
-                const { worker } = await createWorker({
-                    entry: parallel.workerEntry,
-                    adapter,
-                    serialization,
-                });
+                const { worker } = await createWorker({ entry: parallel.workerEntry });
                 const handleMessage = (msg) => {
-                    var _a, _b, _c, _d, _e, _f;
+                    var _a, _b, _c, _d, _e;
                     if (isChannelMessage(msg)) {
                         handleChannelMessage(msg);
                     }
@@ -249,7 +234,6 @@ async function acquireWorker(taskId, options) {
                                 if (err instanceof Error &&
                                     (err.message.includes("not be cloned")
                                         || ((_c = err.stack) === null || _c === void 0 ? void 0 : _c.includes("not be cloned")) // Node.js v16-
-                                        || err.message.includes("Do not know how to serialize") // JSON error
                                     )) {
                                     Object.defineProperty(err, "stack", {
                                         configurable: true,
@@ -296,7 +280,7 @@ async function acquireWorker(taskId, options) {
                                 // The `workerPool` of this key in the pool map may have been
                                 // modified by other routines, we need to retrieve the newest
                                 // value.
-                                const remainItems = (_d = workerPools.get(poolKey)) === null || _d === void 0 ? void 0 : _d.filter(item => {
+                                workerPool = workerPool.filter(item => {
                                     const ideal = !item.tasks.size
                                         && (now - item.lastAccess) >= 300000;
                                     if (ideal) {
@@ -304,12 +288,6 @@ async function acquireWorker(taskId, options) {
                                     }
                                     return !ideal;
                                 });
-                                if (remainItems === null || remainItems === void 0 ? void 0 : remainItems.length) {
-                                    workerPools.set(poolKey, remainItems);
-                                }
-                                else {
-                                    workerPools.delete(poolKey);
-                                }
                                 idealItems.forEach(async (item) => {
                                     const worker = await item.getWorker;
                                     if (typeof worker["terminate"] === "function") {
@@ -322,7 +300,7 @@ async function acquireWorker(taskId, options) {
                             }
                         }
                         else if (msg.type === "yield") {
-                            (_e = task.channel) === null || _e === void 0 ? void 0 : _e.push({ value: msg.value, done: msg.done });
+                            (_d = task.channel) === null || _d === void 0 ? void 0 : _d.push({ value: msg.value, done: msg.done });
                             if (msg.done) {
                                 // The final message of yield event is the return value.
                                 handleMessage({
@@ -333,12 +311,11 @@ async function acquireWorker(taskId, options) {
                             }
                         }
                         else if (msg.type === "gen") {
-                            (_f = task.generate) === null || _f === void 0 ? void 0 : _f.call(task);
+                            (_e = task.generate) === null || _e === void 0 ? void 0 : _e.call(task);
                         }
                     }
                 };
                 const handleClose = (err) => {
-                    var _a;
                     for (const taskId of poolRecord.tasks) {
                         poolRecord.tasks.delete(taskId);
                         const task = remoteTasks.get(taskId);
@@ -357,41 +334,19 @@ async function acquireWorker(taskId, options) {
                             }
                         }
                     }
-                    const remainItems = (_a = workerPools.get(poolKey)) === null || _a === void 0 ? void 0 : _a.filter(item => item !== poolRecord);
-                    if (remainItems === null || remainItems === void 0 ? void 0 : remainItems.length) {
-                        workerPools.set(poolKey, remainItems);
-                    }
-                    else {
-                        workerPools.delete(poolKey);
-                    }
+                    workerPool = workerPool.filter(item => item !== poolRecord);
                 };
                 if (isNode) {
-                    worker.on("message", handleMessage);
-                    if (adapter === "child_process") {
-                        worker.on("exit", (code, signal) => {
-                            handleClose(new Error(`worker exited (${code !== null && code !== void 0 ? code : signal})`));
-                        });
-                    }
-                    else {
-                        // In Node.js, worker will exit once erred.
-                        worker.on("error", handleClose);
-                    }
+                    worker.on("message", handleMessage)
+                        .on("error", handleClose); // In Node.js, worker will exit once erred.
                 }
                 else if (isBun) {
-                    if (adapter === "child_process") {
-                        worker.on("message", handleMessage)
-                            .on("exit", (code, signal) => {
-                            handleClose(new Error(`worker exited (${code !== null && code !== void 0 ? code : signal})`));
-                        });
-                    }
-                    else {
-                        const _worker = worker;
-                        _worker.onmessage = (ev) => handleMessage(ev.data);
-                        _worker.onerror = () => _worker.terminate(); // terminate once erred
-                        _worker.addEventListener("close", ((ev) => {
-                            handleClose(new Error(ev.reason + " (" + ev.code + ")"));
-                        }));
-                    }
+                    const _worker = worker;
+                    _worker.onmessage = (ev) => handleMessage(ev.data);
+                    _worker.onerror = () => _worker.terminate(); // terminate once erred
+                    _worker.addEventListener("close", ((ev) => {
+                        handleClose(new Error(ev.reason + " (" + ev.code + ")"));
+                    }));
                 }
                 else {
                     const _worker = worker;
@@ -404,8 +359,6 @@ async function acquireWorker(taskId, options) {
                 }
                 return worker;
             })(),
-            adapter,
-            serialization,
             tasks: new Set(),
             lastAccess: Date.now(),
         });
@@ -477,10 +430,10 @@ async function safeRemoteCall(worker, req, transferable = [], taskId = 0) {
         throw err;
     }
 }
-function createRemoteCall(module, fn, args, options) {
+function createRemoteCall(module, fn, args) {
     const taskId = taskIdCounter.next().value;
     remoteTasks.set(taskId, { module, fn });
-    let getWorker = acquireWorker(taskId, options);
+    let getWorker = acquireWorker(taskId);
     const { args: _args, transferable } = wrapArgs(args, getWorker);
     getWorker = getWorker.then(async (worker) => {
         await safeRemoteCall(worker, {
@@ -690,11 +643,7 @@ function extractBaseUrl(stackTrace) {
  * // 10
  * ```
  */
-function parallel(module, options = {}) {
-    const adapter = (options === null || options === void 0 ? void 0 : options.adapter) || "worker_threads";
-    const serialization = adapter === "worker_threads"
-        ? "advanced"
-        : ((options === null || options === void 0 ? void 0 : options.serialization) || (isBeforeNode14 ? "json" : "advanced"));
+function parallel(module) {
     let modId = sanitizeModuleId(module, true);
     let baseUrl;
     if (IsPath.test(modId)) {
@@ -711,24 +660,7 @@ function parallel(module, options = {}) {
     if (baseUrl) {
         modId = new URL(modId, baseUrl).href;
     }
-    return new Proxy({
-        [terminate]: async () => {
-            const poolKey = adapter + ":" + serialization;
-            const workerPool = workerPools.get(poolKey);
-            if (workerPool) {
-                workerPools.delete(poolKey);
-                for (const { getWorker } of workerPool) {
-                    const worker = await getWorker;
-                    if (typeof worker["terminate"] === "function") {
-                        await worker.terminate();
-                    }
-                    else {
-                        worker.kill();
-                    }
-                }
-            }
-        },
-    }, {
+    return new Proxy(Object.create(null), {
         get: (target, prop) => {
             if (Reflect.has(target, prop)) {
                 return target[prop];
@@ -740,10 +672,7 @@ function parallel(module, options = {}) {
                 // This syntax will give our remote function a name.
                 [prop]: (...args) => {
                     if (isMainThread) {
-                        return createRemoteCall(modId, prop, args, {
-                            adapter,
-                            serialization,
-                        });
+                        return createRemoteCall(modId, prop, args);
                     }
                     else {
                         return createLocalCall(modId, prop, args);
@@ -779,13 +708,8 @@ function parallel(module, options = {}) {
      * Currently, only `ArrayBuffer` is guaranteed to be transferable across all supported
      * JavaScript runtimes.
      *
-     * Be aware, the transferable object can only be used as a parameter and only works with
-     * `worker_threads` adapter, return a transferable object from the threaded function is
-     * not supported at the moment and will always be cloned.
-     *
-     * NOTE: always prefer channel for transferring large amount of data in streaming fashion
-     * than sending them as transferrable objects, it consumes less memory and does not transfer
-     * the ownership of the data, and supports `child_process` adapter as well.
+     * Be aware, the transferable object can only be used as a parameter, return a transferable
+     * object from the threaded function is not supported at the moment and will always be cloned.
      *
      * @example
      * ```ts
@@ -807,5 +731,5 @@ function parallel(module, options = {}) {
 })(parallel || (parallel = {}));
 var parallel$1 = parallel;
 
-export { createWorker, parallel$1 as default, getMaxParallelism, isCallResponse, sanitizeModuleId, terminate, wrapArgs };
+export { createWorker, parallel$1 as default, getMaxParallelism, isCallResponse, sanitizeModuleId, wrapArgs };
 //# sourceMappingURL=parallel.js.map

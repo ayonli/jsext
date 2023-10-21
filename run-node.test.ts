@@ -272,16 +272,6 @@ describe("jsext.run", () => {
             } else {
                 ok(err?.stack?.includes(import.meta.url.replace(/^(file|https?):\/\//, "")));
             }
-
-            const [_err2] = await jsext.try(async () => await jsext.run<number, [any]>("examples/worker.mjs", [
-                BigInt(1)
-            ], {
-                fn: "throwUnserializableError",
-                adapter: "child_process",
-                serialization: "json",
-            }));
-            const err2 = _err2 instanceof Error ? _err2 : fromObject(_err2 as any, Error);
-            ok(err2?.stack?.includes(import.meta.url.replace(/^(file|https?):\/\//, "")));
         });
 
         it("receive unserializable", async () => {
@@ -294,21 +284,6 @@ describe("jsext.run", () => {
             const [err] = await jsext.try(job.result());
 
             ok((err as DOMException)?.stack?.includes("examples/worker.mjs"));
-
-            if (typeof Bun === "object") {
-                return;
-            }
-
-            const job2 = await jsext.run<number, [any]>("examples/worker.mjs", [
-                1
-            ], {
-                fn: "throwUnserializableError",
-                adapter: "child_process",
-                serialization: "json",
-            });
-            const [err2] = await jsext.try(job2.result());
-
-            ok((err2 as TypeError)?.stack?.includes("examples/worker.mjs"));
         });
     });
 });

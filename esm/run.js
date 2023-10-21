@@ -1,6 +1,6 @@
 import chan from './chan.js';
 import { fromErrorEvent, fromObject } from './error/index.js';
-import { isDeno, isNode, isBun, IsPath, isBeforeNode14, isChannelMessage, handleChannelMessage } from './util.js';
+import { isDeno, isNode, isBun, IsPath, isChannelMessage, handleChannelMessage } from './util.js';
 import parallel, { getMaxParallelism, sanitizeModuleId, createWorker, wrapArgs, isCallResponse } from './parallel.js';
 
 const workerPools = new Map();
@@ -35,11 +35,7 @@ async function run(script, args = undefined, options = undefined) {
         args: args !== null && args !== void 0 ? args : [],
     };
     const adapter = (options === null || options === void 0 ? void 0 : options.adapter) || "worker_threads";
-    const serialization = adapter === "worker_threads"
-        ? "advanced"
-        : ((options === null || options === void 0 ? void 0 : options.serialization) || (isBeforeNode14 ? "json" : "advanced"));
-    const poolKey = adapter + ":" + serialization;
-    const workerPool = (_a = workerPools.get(poolKey)) !== null && _a !== void 0 ? _a : workerPools.set(poolKey, []).get(poolKey);
+    const workerPool = (_a = workerPools.get(adapter)) !== null && _a !== void 0 ? _a : workerPools.set(adapter, []).get(adapter);
     let poolRecord = workerPool.find(item => !item.busy);
     if (poolRecord) {
         poolRecord.busy = true;
@@ -50,9 +46,8 @@ async function run(script, args = undefined, options = undefined) {
         // `run.maxWorkers`. If the the call doesn't keep-alive the worker, it will be
         // cleaned after the call.
         workerPool.push(poolRecord = {
-            getWorker: createWorker({ entry: parallel.workerEntry, adapter, serialization }),
+            getWorker: createWorker({ entry: parallel.workerEntry, adapter }),
             adapter,
-            serialization,
             busy: true,
         });
     }
@@ -136,12 +131,12 @@ async function run(script, args = undefined, options = undefined) {
             // Clean the pool before resolve.
             // The `workerPool` of this key in the pool map may have been modified by other
             // routines, we need to retrieve the newest value.
-            const remainItems = (_b = workerPools.get(poolKey)) === null || _b === void 0 ? void 0 : _b.filter(record => record !== poolRecord);
+            const remainItems = (_b = workerPools.get(adapter)) === null || _b === void 0 ? void 0 : _b.filter(record => record !== poolRecord);
             if (remainItems === null || remainItems === void 0 ? void 0 : remainItems.length) {
-                workerPools.set(poolKey, remainItems);
+                workerPools.set(adapter, remainItems);
             }
             else {
-                workerPools.delete(poolKey);
+                workerPools.delete(adapter);
             }
             if (workerConsumerQueue.length) {
                 // Queued consumer now has chance to create new worker.

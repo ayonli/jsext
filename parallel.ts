@@ -34,23 +34,13 @@ export type ThreadedFunctions<M, T extends FunctionProperties<M> = FunctionPrope
     : T[K];
 };
 
-/**
- * The `[terminate]()` function of the threaded module should only be used for
- * testing purposes. When using `child_process` adapter, the program will not be able exit
- * automatically after the test because there is an active IPC channel between the parent and
- * the child process. Calling the terminate function will force to kill the child process and
- * allow the program to exit.
- */
-export const terminate = Symbol.for("terminate");
-
 const shouldTransfer = Symbol.for("shouldTransfer");
-declare var Deno: any;
 declare var Bun: any;
 declare var WorkerGlobalScope: object;
 
 // In Node.js, `process.argv` contains `--worker-thread` when the current thread is used as
-// a worker. In Bun, this option only presents when using `child_process` adapter.
-const isWorkerThread = (isNode || isBun) && process.argv.includes("--worker-thread");
+// a worker.
+const isWorkerThread = isNode && process.argv.includes("--worker-thread");
 const isMainThread = !isWorkerThread
     && (isBun ? (Bun.isMainThread as boolean) : typeof WorkerGlobalScope === "undefined");
 
@@ -72,12 +62,10 @@ const remoteTasks = new Map<number, RemoteTask>;
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 type PoolRecord = {
     getWorker: Promise<Worker | BunWorker | NodeWorker | ChildProcess>;
-    adapter: "worker_threads" | "child_process";
-    serialization: "advanced" | "json";
     tasks: Set<number>;
     lastAccess: number;
 };
-const workerPools = new Map<string, PoolRecord[]>();
+let workerPool: PoolRecord[] = [];
 
 export const getMaxParallelism = (async () => {
     if (isNode) {
@@ -157,14 +145,13 @@ export function isCallResponse(msg: any): msg is CallResponse {
 
 export async function createWorker(options: {
     entry?: string | undefined;
-    adapter: "worker_threads" | "child_process";
-    serialization: "advanced" | "json";
+    adapter?: "worker_threads" | "child_process";
 }): Promise<{
     worker: Worker | BunWorker | NodeWorker | ChildProcess;
     workerId: number;
     kind: "web_worker" | "bun_worker" | "node_worker" | "node_process";
 }> {
-    let { entry, adapter, serialization } = options;
+    let { entry, adapter = "worker_threads" } = options;
 
     if (isNode || isBun) {
         if (!entry) {
@@ -202,7 +189,7 @@ export async function createWorker(options: {
 
         if (adapter === "child_process") {
             const { fork } = await import("child_process");
-
+            const serialization = isBeforeNode14 ? "json" : "advanced";
             const worker = fork(entry, ["--worker-thread", "--serialization=" + serialization], {
                 stdio: "inherit",
                 serialization,
@@ -309,15 +296,8 @@ export async function createWorker(options: {
     }
 }
 
-async function acquireWorker(taskId: number, options: {
-    adapter: "worker_threads" | "child_process";
-    serialization: "advanced" | "json";
-}) {
+async function acquireWorker(taskId: number) {
     const maxWorkers = parallel.maxWorkers || await getMaxParallelism;
-    const { adapter, serialization } = options;
-    const poolKey = adapter + ":" + serialization;
-    const workerPool = workerPools.get(poolKey)
-        ?? (workerPools.set(poolKey, []).get(poolKey) as PoolRecord[]);
     let poolRecord = workerPool.find(item => !item.tasks.size) as PoolRecord;
 
     if (poolRecord) {
@@ -325,12 +305,7 @@ async function acquireWorker(taskId: number, options: {
     } else if (workerPool.length < maxWorkers) {
         workerPool.push(poolRecord = {
             getWorker: (async () => {
-                const { worker } = await createWorker({
-                    entry: parallel.workerEntry,
-                    adapter,
-                    serialization,
-                });
-
+                const { worker } = await createWorker({ entry: parallel.workerEntry });
                 const handleMessage = (msg: any) => {
                     if (isChannelMessage(msg)) {
                         handleChannelMessage(msg);
@@ -349,7 +324,6 @@ async function acquireWorker(taskId: number, options: {
                                 if (err instanceof Error &&
                                     (err.message.includes("not be cloned")
                                         || err.stack?.includes("not be cloned") // Node.js v16-
-                                        || err.message.includes("Do not know how to serialize") // JSON error
                                     )
                                 ) {
                                     Object.defineProperty(err, "stack", {
@@ -400,7 +374,7 @@ async function acquireWorker(taskId: number, options: {
                                 // The `workerPool` of this key in the pool map may have been
                                 // modified by other routines, we need to retrieve the newest
                                 // value.
-                                const remainItems = workerPools.get(poolKey)?.filter(item => {
+                                workerPool = workerPool.filter(item => {
                                     const ideal = !item.tasks.size
                                         && (now - item.lastAccess) >= 300_000;
 
@@ -410,12 +384,6 @@ async function acquireWorker(taskId: number, options: {
 
                                     return !ideal;
                                 });
-
-                                if (remainItems?.length) {
-                                    workerPools.set(poolKey, remainItems);
-                                } else {
-                                    workerPools.delete(poolKey);
-                                }
 
                                 idealItems.forEach(async item => {
                                     const worker = await item.getWorker;
@@ -464,41 +432,20 @@ async function acquireWorker(taskId: number, options: {
                         }
                     }
 
-                    const remainItems = workerPools.get(poolKey)?.filter(item => item !== poolRecord);
-
-                    if (remainItems?.length) {
-                        workerPools.set(poolKey, remainItems);
-                    } else {
-                        workerPools.delete(poolKey);
-                    }
+                    workerPool = workerPool.filter(item => item !== poolRecord);
                 };
 
                 if (isNode) {
-                    (worker as NodeWorker | ChildProcess).on("message", handleMessage);
-
-                    if (adapter === "child_process") {
-                        (worker as ChildProcess).on("exit", (code, signal) => {
-                            handleClose(new Error(`worker exited (${code ?? signal})`));
-                        });
-                    } else {
-                        // In Node.js, worker will exit once erred.
-                        (worker as NodeWorker).on("error", handleClose);
-                    }
+                    (worker as NodeWorker).on("message", handleMessage)
+                        .on("error", handleClose); // In Node.js, worker will exit once erred.
                 } else if (isBun) {
-                    if (adapter === "child_process") {
-                        (worker as ChildProcess).on("message", handleMessage)
-                            .on("exit", (code, signal) => {
-                                handleClose(new Error(`worker exited (${code ?? signal})`));
-                            });
-                    } else {
-                        const _worker = worker as BunWorker;
+                    const _worker = worker as BunWorker;
 
-                        _worker.onmessage = (ev) => handleMessage(ev.data);
-                        _worker.onerror = () => _worker.terminate(); // terminate once erred
-                        _worker.addEventListener("close", ((ev: CloseEvent) => {
-                            handleClose(new Error(ev.reason + " (" + ev.code + ")"));
-                        }) as EventListener);
-                    }
+                    _worker.onmessage = (ev) => handleMessage(ev.data);
+                    _worker.onerror = () => _worker.terminate(); // terminate once erred
+                    _worker.addEventListener("close", ((ev: CloseEvent) => {
+                        handleClose(new Error(ev.reason + " (" + ev.code + ")"));
+                    }) as EventListener);
                 } else {
                     const _worker = worker as Worker;
 
@@ -511,8 +458,6 @@ async function acquireWorker(taskId: number, options: {
 
                 return worker;
             })(),
-            adapter,
-            serialization,
             tasks: new Set(),
             lastAccess: Date.now(),
         });
@@ -598,19 +543,11 @@ async function safeRemoteCall(
     }
 }
 
-function createRemoteCall(
-    module: string,
-    fn: string,
-    args: any[],
-    options: {
-        adapter: "worker_threads" | "child_process";
-        serialization: "advanced" | "json";
-    }
-) {
+function createRemoteCall(module: string, fn: string, args: any[]) {
     const taskId = taskIdCounter.next().value as number;
     remoteTasks.set(taskId, { module, fn });
 
-    let getWorker = acquireWorker(taskId, options);
+    let getWorker = acquireWorker(taskId);
     const { args: _args, transferable } = wrapArgs(args, getWorker);
 
     getWorker = getWorker.then(async (worker) => {
@@ -837,37 +774,8 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * ```
  */
 function parallel<M extends { [x: string]: any; }>(
-    module: string | (() => Promise<M>),
-    options: {
-        /**
-         * Choose whether to use `worker_threads` or `child_process` for creating the worker
-         * thread. The default setting is `worker_threads`.
-         * 
-         * In browsers and Deno, this option is ignored and will always use the web worker.
-         * 
-         * We should always consider using `worker_threads` over `child_process` since it consumes
-         * less system resources. However, As I've tested, `process.send(json)` performs about
-         * 20% ~ 30% more efficient than `postMessage()`, so `child_process` along with `json`
-         * serialization may suits more for some edge scenarios. 
-         */
-        adapter?: "worker_threads" | "child_process";
-        /**
-         * When using `child_process` adapter, this option instructs which serialization algorithm
-         * should be used to serialize the data for transferring between the parent and the child
-         * process. The default setting is `advanced` (structured clone algorithm).
-         * 
-         * NOTE: this option only works in Node.js, Bun doesn't support `json` serialization and
-         * will always use `advanced`.
-         */
-        serialization?: "advanced" | "json";
-    } = {}
-): ThreadedFunctions<M> & {
-    [terminate]: () => Promise<void>;
-} {
-    const adapter = options?.adapter || "worker_threads";
-    const serialization = adapter === "worker_threads"
-        ? "advanced"
-        : (options?.serialization || (isBeforeNode14 ? "json" : "advanced"));
+    module: string | (() => Promise<M>)
+): ThreadedFunctions<M> {
     let modId = sanitizeModuleId(module, true);
     let baseUrl: string | undefined;
 
@@ -886,26 +794,7 @@ function parallel<M extends { [x: string]: any; }>(
         modId = new URL(modId, baseUrl).href;
     }
 
-    return new Proxy({
-        [terminate]: async () => {
-            const poolKey = adapter + ":" + serialization;
-            const workerPool = workerPools.get(poolKey);
-
-            if (workerPool) {
-                workerPools.delete(poolKey);
-
-                for (const { getWorker } of workerPool) {
-                    const worker = await getWorker;
-
-                    if (typeof (worker as any)["terminate"] === "function") {
-                        await (worker as Worker | BunWorker | NodeWorker).terminate();
-                    } else {
-                        (worker as ChildProcess).kill();
-                    }
-                }
-            }
-        },
-    } as any, {
+    return new Proxy(Object.create(null), {
         get: (target, prop: string | symbol) => {
             if (Reflect.has(target, prop)) {
                 return target[prop];
@@ -917,10 +806,7 @@ function parallel<M extends { [x: string]: any; }>(
                 // This syntax will give our remote function a name.
                 [prop]: (...args: Parameters<M["_"]>) => {
                     if (isMainThread) {
-                        return createRemoteCall(modId, prop, args, {
-                            adapter,
-                            serialization,
-                        });
+                        return createRemoteCall(modId, prop, args);
                     } else {
                         return createLocalCall(modId, prop, args);
                     }
@@ -959,13 +845,8 @@ namespace parallel {
      * Currently, only `ArrayBuffer` is guaranteed to be transferable across all supported
      * JavaScript runtimes.
      * 
-     * Be aware, the transferable object can only be used as a parameter and only works with
-     * `worker_threads` adapter, return a transferable object from the threaded function is
-     * not supported at the moment and will always be cloned.
-     * 
-     * NOTE: always prefer channel for transferring large amount of data in streaming fashion
-     * than sending them as transferrable objects, it consumes less memory and does not transfer
-     * the ownership of the data, and supports `child_process` adapter as well.
+     * Be aware, the transferable object can only be used as a parameter, return a transferable
+     * object from the threaded function is not supported at the moment and will always be cloned.
      * 
      * @example
      * ```ts
