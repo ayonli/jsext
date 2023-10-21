@@ -64,6 +64,7 @@ type PoolRecord = {
     getWorker: Promise<Worker | BunWorker | NodeWorker | ChildProcess>;
     tasks: Set<number>;
     lastAccess: number;
+    gcTimer: number | NodeJS.Timeout;
 };
 let workerPool: PoolRecord[] = [];
 
@@ -303,7 +304,7 @@ async function acquireWorker(taskId: number) {
     if (poolRecord) {
         poolRecord.lastAccess = Date.now();
     } else if (workerPool.length < maxWorkers) {
-        workerPool.push(poolRecord = {
+        poolRecord = {
             getWorker: (async () => {
                 const { worker } = await createWorker({ entry: parallel.workerEntry });
                 const handleMessage = (msg: any) => {
@@ -360,40 +361,9 @@ async function acquireWorker(taskId: number) {
 
                             poolRecord.tasks.delete(msg.taskId);
 
-                            if (!poolRecord.tasks.size) {
-                                if (isNode || isBun) {
-                                    // Allow the main thread to exit if the event loop is empty.
-                                    (worker as NodeWorker | BunWorker | ChildProcess).unref();
-                                }
-                            }
-
-                            { // GC: clean long-time unused workers
-                                const now = Date.now();
-                                const idealItems: PoolRecord[] = [];
-
-                                // The `workerPool` of this key in the pool map may have been
-                                // modified by other routines, we need to retrieve the newest
-                                // value.
-                                workerPool = workerPool.filter(item => {
-                                    const ideal = !item.tasks.size
-                                        && (now - item.lastAccess) >= 300_000;
-
-                                    if (ideal) {
-                                        idealItems.push(item);
-                                    }
-
-                                    return !ideal;
-                                });
-
-                                idealItems.forEach(async item => {
-                                    const worker = await item.getWorker;
-
-                                    if (typeof (worker as any)["terminate"] === "function") {
-                                        await (worker as Worker | BunWorker | NodeWorker).terminate();
-                                    } else {
-                                        (worker as ChildProcess).kill();
-                                    }
-                                });
+                            if (!poolRecord.tasks.size && (isNode || isBun)) {
+                                // Allow the main thread to exit if the event loop is empty.
+                                (worker as NodeWorker | BunWorker | ChildProcess).unref();
                             }
                         } else if (msg.type === "yield") {
                             task.channel?.push({ value: msg.value, done: msg.done as boolean });
@@ -460,7 +430,39 @@ async function acquireWorker(taskId: number) {
             })(),
             tasks: new Set(),
             lastAccess: Date.now(),
-        });
+            gcTimer: setInterval(() => {
+                // GC: clean long-time unused workers
+                const now = Date.now();
+                const idealItems: PoolRecord[] = [];
+
+                workerPool = workerPool.filter(item => {
+                    const ideal = !item.tasks.size
+                        && (now - item.lastAccess) >= 60_000;
+
+                    if (ideal) {
+                        idealItems.push(item);
+                    }
+
+                    return !ideal;
+                });
+
+                idealItems.forEach(async item => {
+                    const worker = await item.getWorker;
+
+                    if (typeof (worker as any)["terminate"] === "function") {
+                        await (worker as Worker | BunWorker | NodeWorker).terminate();
+                    } else {
+                        (worker as ChildProcess).kill();
+                    }
+                });
+            }, 60_000),
+        };
+
+        if (isNode || isBun) {
+            (poolRecord.gcTimer as NodeJS.Timeout).unref();
+        }
+
+        workerPool.push(poolRecord);
     } else {
         poolRecord = workerPool[taskId % workerPool.length] as PoolRecord;
         poolRecord.lastAccess = Date.now();

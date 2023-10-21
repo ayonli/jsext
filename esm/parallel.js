@@ -214,7 +214,7 @@ async function acquireWorker(taskId) {
         poolRecord.lastAccess = Date.now();
     }
     else if (workerPool.length < maxWorkers) {
-        workerPool.push(poolRecord = {
+        poolRecord = {
             getWorker: (async () => {
                 const { worker } = await createWorker({ entry: parallel.workerEntry });
                 const handleMessage = (msg) => {
@@ -268,35 +268,9 @@ async function acquireWorker(taskId) {
                                 }
                             }
                             poolRecord.tasks.delete(msg.taskId);
-                            if (!poolRecord.tasks.size) {
-                                if (isNode || isBun) {
-                                    // Allow the main thread to exit if the event loop is empty.
-                                    worker.unref();
-                                }
-                            }
-                            { // GC: clean long-time unused workers
-                                const now = Date.now();
-                                const idealItems = [];
-                                // The `workerPool` of this key in the pool map may have been
-                                // modified by other routines, we need to retrieve the newest
-                                // value.
-                                workerPool = workerPool.filter(item => {
-                                    const ideal = !item.tasks.size
-                                        && (now - item.lastAccess) >= 300000;
-                                    if (ideal) {
-                                        idealItems.push(item);
-                                    }
-                                    return !ideal;
-                                });
-                                idealItems.forEach(async (item) => {
-                                    const worker = await item.getWorker;
-                                    if (typeof worker["terminate"] === "function") {
-                                        await worker.terminate();
-                                    }
-                                    else {
-                                        worker.kill();
-                                    }
-                                });
+                            if (!poolRecord.tasks.size && (isNode || isBun)) {
+                                // Allow the main thread to exit if the event loop is empty.
+                                worker.unref();
                             }
                         }
                         else if (msg.type === "yield") {
@@ -361,7 +335,33 @@ async function acquireWorker(taskId) {
             })(),
             tasks: new Set(),
             lastAccess: Date.now(),
-        });
+            gcTimer: setInterval(() => {
+                // GC: clean long-time unused workers
+                const now = Date.now();
+                const idealItems = [];
+                workerPool = workerPool.filter(item => {
+                    const ideal = !item.tasks.size
+                        && (now - item.lastAccess) >= 60000;
+                    if (ideal) {
+                        idealItems.push(item);
+                    }
+                    return !ideal;
+                });
+                idealItems.forEach(async (item) => {
+                    const worker = await item.getWorker;
+                    if (typeof worker["terminate"] === "function") {
+                        await worker.terminate();
+                    }
+                    else {
+                        worker.kill();
+                    }
+                });
+            }, 60000),
+        };
+        if (isNode || isBun) {
+            poolRecord.gcTimer.unref();
+        }
+        workerPool.push(poolRecord);
     }
     else {
         poolRecord = workerPool[taskId % workerPool.length];
