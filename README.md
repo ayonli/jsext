@@ -2,13 +2,7 @@
 
 Additional functions for JavaScript to build strong applications.
 
-## Install
-
-```sh
-npm i @ayonli/jsext
-```
-
-## Usages
+## Import
 
 ```js
 // Node.js
@@ -918,11 +912,23 @@ the global scope (except for `Channel` and `Queue`).
 
 ## Sub-packages
 
+- [string](#string) Functions for dealing with strings.
+- [number](#number) Functions for dealing with numbers.
+- [array](#array) Functions for dealing with arrays.
+- [uint8array](#uint8array) Functions for dealing with `Uint8Array`s.
+- [object](#object) Functions for dealing with objects.
+- [json](#json) Functions for parsing JSONs to specific structures.
+- [math](#math) Functions for the mathematical calculations.
+- [promise](#promise) Functions for promise/async context handling.
+- [error](#error) Functions for transferring errors to/from other types of objects.
+- [collections](#collections) Additional collection data types.
+
+
 **NOTE:** Configure `tsconfig.json` to set `compilerOptions.module` as `NodeNext` or `ESNext`
 instead of `CommonJS` in order to use sub-packages.
 
-**NOTE:** The following examples of import IDs uses Node.js style, but they have Deno and browser
-equivalents, like this:
+**NOTE:** The following examples of module specifiers uses Node.js style, but they have Deno and
+browser equivalents, like this:
 
 - Node.js `@ayonli/jsext/string`
 - Deno: `https://lib.deno.dev/x/ayonli_jsext@latest/string/index.ts`
@@ -1086,6 +1092,31 @@ import "@ayonli/jsext/object/augment";
 *When [augment](https://github.com/ayonli/jsext/blob/main/object/augment.ts)ing, these functions*
 *are attached to the `Object` constructor.*
 
+### [json](https://deno.land/x/ayonli_jsext/json/index.ts)
+
+```ts
+import { parseAs } from "@ayonli/jsext/json";
+// or
+import "@ayonli/jsext/json/augment";
+```
+
+**Functions**
+
+- `parseAs(text: string, type: StringConstructor): string | null`
+- `parseAs(text: string, type: NumberConstructor): number | null`
+- `parseAs(text: string, type: BigIntConstructor): bigint | null`
+- `parseAs(text: string, type: BooleanConstructor): boolean | null`
+- `parseAs<T>(text: string, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
+- `as(data: unknown, type: StringConstructor): string | null`
+- `as(data: unknown, type: NumberConstructor): number | null`
+- `as(data: unknown, type: BigIntConstructor): bigint | null`
+- `as(data: unknown, type: BooleanConstructor): boolean | null`
+- `as<T>(data: unknown, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
+- `type(ctor: Constructor<any>): PropertyDecorator`
+
+*When [augment](https://github.com/ayonli/jsext/blob/main/json/augment.ts)ing, these functions*
+*are attached to the `JSON` namespace.*
+
 ### [math](https://deno.land/x/ayonli_jsext/math/index.ts)
 
 ```js
@@ -1120,31 +1151,6 @@ import "@ayonli/jsext/promise/augment";
 
 *When [augment](https://github.com/ayonli/jsext/blob/main/promise/augment.ts)ing, these functions*
 *are attached to the `Promise` constructor.*
-
-### [collections](https://deno.land/x/ayonli_jsext/collections/index.ts)
-
-```js
-import BiMap from "@ayonli/jsext/collections/BiMap";
-import CiMap from "@ayonli/jsext/collections/CiMap";
-// or
-import { BiMap, CiMap } from "@ayonli/jsext/collections";
-// or
-import "@ayonli/jsext/collections/augment";
-```
-
-**Types**
-
-- `BiMap<K, V>` (extends `Map<K, V>`) Bi-directional map, keys and values are unique and map to each
-    other.
-    - `prototype` (additional)
-        - `getKey(value: V): K | undefined`
-        - `hasValue(value: V): boolean`
-        - `deleteValue(value: V): boolean`
-- `CiMap<K extends string, V>` (implements `Map<K, V>`) Case-insensitive map, keys are
-    case-insensitive.
-
-*When [augment](https://github.com/ayonli/jsext/blob/main/collections/augment.ts)ing, these types*
-*are exposed to the global scope.*
 
 ### [error](https://deno.land/x/ayonli_jsext/error/index.ts)
 
@@ -1182,30 +1188,30 @@ import "@ayonli/jsext/error/augment";
     - `prototype`
         - `toJSON(): { [x: string | symbol]: any; }`
 
-### [json](https://deno.land/x/ayonli_jsext/json/index.ts)
+### [collections](https://deno.land/x/ayonli_jsext/collections/index.ts)
 
-```ts
-import { parseAs } from "@ayonli/jsext/json";
+```js
+import BiMap from "@ayonli/jsext/collections/BiMap";
+import CiMap from "@ayonli/jsext/collections/CiMap";
 // or
-import "@ayonli/jsext/json/augment";
+import { BiMap, CiMap } from "@ayonli/jsext/collections";
+// or
+import "@ayonli/jsext/collections/augment";
 ```
 
-**Functions**
+**Types**
 
-- `parseAs(text: string, type: StringConstructor): string | null`
-- `parseAs(text: string, type: NumberConstructor): number | null`
-- `parseAs(text: string, type: BigIntConstructor): bigint | null`
-- `parseAs(text: string, type: BooleanConstructor): boolean | null`
-- `parseAs<T>(text: string, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
-- `as(data: unknown, type: StringConstructor): string | null`
-- `as(data: unknown, type: NumberConstructor): number | null`
-- `as(data: unknown, type: BigIntConstructor): bigint | null`
-- `as(data: unknown, type: BooleanConstructor): boolean | null`
-- `as<T>(data: unknown, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
-- `type(ctor: Constructor<any>): PropertyDecorator`
+- `BiMap<K, V>` (extends `Map<K, V>`) Bi-directional map, keys and values are unique and map to each
+    other.
+    - `prototype` (additional)
+        - `getKey(value: V): K | undefined`
+        - `hasValue(value: V): boolean`
+        - `deleteValue(value: V): boolean`
+- `CiMap<K extends string, V>` (implements `Map<K, V>`) Case-insensitive map, keys are
+    case-insensitive.
 
-*When [augment](https://github.com/ayonli/jsext/blob/main/json/augment.ts)ing, these functions*
-*are attached to the `JSON` namespace.*
+*When [augment](https://github.com/ayonli/jsext/blob/main/collections/augment.ts)ing, these types*
+*are exposed to the global scope.*
 
 ## Import all sub-package augmentations at once
 
