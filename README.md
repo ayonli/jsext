@@ -664,7 +664,7 @@ for await (const word of mod.sequence(["foo", "bar"])) {
 ```ts
 const mod = parallel(() => import("./examples/worker.mjs"));
 
-const channel = chan<number>();
+const channel = chan<{ value: number; done: boolean; }>();
 const length = mod.twoTimesValues(channel);
 
 for (const value of Number.sequence(0, 9)) {
@@ -1029,6 +1029,8 @@ import "@ayonli/jsext/uint8array/augment";
 
 **Functions**
 
+- `copy(src: Uint8Array, dest: Uint8Array): number`
+- `concat<T extends Uint8Array>(...arrays: T[]): T`
 - `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
 - `equals(arr1: Uint8Array, arr2: Uint8Array): boolean`
 - `split<T extends Uint8Array>(arr: T, delimiter: number): T[]`
@@ -1037,6 +1039,8 @@ import "@ayonli/jsext/uint8array/augment";
 **[Augmentation](https://github.com/ayonli/jsext/blob/main/uint8array/augment.ts)**
 
 - `Uint8Array`
+    - `copy(src: Uint8Array, dest: Uint8Array): number`
+    - `concat<T extends Uint8Array>(...arrays: T[]): T`
     - `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
     - `prototype`
         - `equals(another: Uint8Array): boolean`

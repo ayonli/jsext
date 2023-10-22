@@ -1,5 +1,7 @@
-import { compare, equals, split, chunk } from './index.js';
+import { copy, concat, compare, equals, split, chunk } from './index.js';
 
+Uint8Array.copy = copy;
+Uint8Array.concat = concat;
 Uint8Array.compare = compare;
 Uint8Array.prototype.equals = function equals$1(another) {
     return equals(this, another);

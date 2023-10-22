@@ -638,7 +638,7 @@ function extractBaseUrl(stackTrace) {
  * ```ts
  * const mod = parallel(() => import("./examples/worker.mjs"));
  *
- * const channel = chan<number>();
+ * const channel = chan<{ value: number; done: boolean; }>();
  * const length = mod.twoTimesValues(channel);
  *
  * for (const value of Number.sequence(0, 9)) {

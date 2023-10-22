@@ -1,4 +1,30 @@
 import { equals as _equals, split as _split, chunk as _chunk } from "../array/index.ts";
+import { sum } from "../math/index.ts";
+
+/** Copies bytes from `src` array to `dest` and returns the number of bytes copied. */
+export function copy(src: Uint8Array, dest: Uint8Array): number {
+    if (src.length > dest.length) {
+        src = src.subarray(0, dest.length);
+    }
+
+    dest.set(src);
+    return src.length;
+}
+
+/** Like `Buffer.concat` but for pure `Uint8Array`. */
+export function concat<T extends Uint8Array>(...arrays: T[]): T {
+    const length = sum(...arrays.map(arr => arr.length));
+    const ctor = (arrays[0] as T).constructor as Constructor<T>;
+    const result = new ctor(length);
+    let offset = 0;
+
+    for (const arr of arrays) {
+        result.set(arr, offset);
+        offset += arr.length;
+    };
+
+    return result;
+}
 
 /** Like `Buffer.compare` but for pure `Uint8Array`. */
 export function compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1 {
@@ -23,7 +49,7 @@ export function compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1 {
 }
 
 /**
- * Compare this array to another array and see if it contains the same elements as
+ * Compares this array to another array and see if it contains the same elements as
  * this array.
  */
 export function equals(arr1: Uint8Array, arr2: Uint8Array): boolean {

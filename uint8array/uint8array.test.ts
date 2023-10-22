@@ -2,6 +2,48 @@ import "../augment.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 
 describe("Uint8Array", () => {
+    it("Uint8Array.copy", () => {
+        const arr1 = new Uint8Array([1, 2, 3, 4, 5]);
+        const arr2 = new Uint8Array(10);
+        const arr3 = new Uint8Array(3);
+
+        strictEqual(Uint8Array.copy(arr1, arr2), 5);
+        strictEqual(Uint8Array.copy(arr1, arr3), 3);
+
+        deepStrictEqual(arr2, new Uint8Array([1, 2, 3, 4, 5, 0, 0, 0, 0, 0]));
+        deepStrictEqual(arr3, new Uint8Array([1, 2, 3]));
+
+        if (typeof Buffer === "function") {
+            const buf1 = Buffer.from([1, 2, 3, 4, 5]);
+            const buf2 = Buffer.alloc(10);
+            const buf3 = Buffer.alloc(3);
+
+            strictEqual(Uint8Array.copy(buf1, buf2), 5);
+            strictEqual(Uint8Array.copy(buf1, buf3), 3);
+
+            deepStrictEqual(buf2, Buffer.from([1, 2, 3, 4, 5, 0, 0, 0, 0, 0]));
+            deepStrictEqual(buf3, Buffer.from([1, 2, 3]));
+        }
+    });
+
+    it("Uint8Array.concat", () => {
+        const arr1 = new Uint8Array([1, 2, 3]);
+        const arr2 = new Uint8Array([4, 5, 6]);
+        const arr3 = new Uint8Array([7, 8, 9]);
+        const arr = Uint8Array.concat(arr1, arr2, arr3);
+
+        deepStrictEqual(arr, new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+
+        if (typeof Buffer === "function") {
+            const buf1 = Buffer.from([1, 2, 3]);
+            const buf2 = Buffer.from([4, 5, 6]);
+            const buf3 = Buffer.from([7, 8, 9]);
+            const buf = Uint8Array.concat(buf1, buf2, buf3);
+
+            deepStrictEqual(buf, Buffer.from([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+        }
+    });
+
     it("Uint8Array.compare", () => {
         const arr1 = new Uint8Array([1, 2, 3, 4, 5]);
         const arr2 = new Uint8Array([1, 2, 3, 4, 5]);

@@ -1,14 +1,18 @@
-import { compare, equals as _equals, split as _split, chunk as _chunk } from "./index.ts";
+import { compare, equals as _equals, split as _split, chunk as _chunk, concat, copy } from "./index.ts";
 
 declare global {
     interface Uint8ArrayConstructor {
+        /** Copies bytes from `src` array to `dest` and returns the number of bytes copied. */
+        copy(src: Uint8Array, dest: Uint8Array): number;
+        /** Like `Buffer.concat` but for pure `Uint8Array`. */
+        concat<T extends Uint8Array>(...arrays: T[]): T;
         /** Like `Buffer.compare` but for pure `Uint8Array`. */
         compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1;
     }
 
     interface Uint8Array {
         /**
-         * Compare this array to another array and see if it contains the same elements as
+         * Compares this array to another array and see if it contains the same elements as
          * this array.
          */
         equals(another: Uint8Array): boolean;
@@ -19,6 +23,8 @@ declare global {
     }
 }
 
+Uint8Array.copy = copy;
+Uint8Array.concat = concat;
 Uint8Array.compare = compare;
 
 Uint8Array.prototype.equals = function equals(another) {
