@@ -1,6 +1,6 @@
 # JsExt
 
-Additional functions for JavaScript programming in practice.
+Additional functions for JavaScript to build strong applications.
 
 ## Install
 
@@ -15,7 +15,7 @@ npm i @ayonli/jsext
 import jsext from "@ayonli/jsext";
 
 // Deno
-import jsext from "https://lib.deno.dev/x/ayonli_jsext@latest/index.ts"; // since v0.5.0
+import jsext from "https://lib.deno.dev/x/ayonli_jsext@latest/index.ts";
 
 // Browser
 import jsext from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/index.js";
@@ -623,8 +623,8 @@ used to transfer data between threads. To do so, just passed a channel instance 
 function.
 
 But be aware, channel can only be used as a parameter, return a channel from the threaded
-function is not allowed. And the channel can only be used for one threaded function at a time,
-once passed, the data can only be transferred into and out-from the function.
+function is not allowed. Once passed, the data can only be transferred into and out-from the
+function.
 
 The difference between using channel and generator function for streaming processing is, for a
 generator function, `next(value)` is coupled with a `yield value`, the process is blocked
