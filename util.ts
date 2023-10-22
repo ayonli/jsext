@@ -7,7 +7,7 @@ export const isBun = typeof Bun === "object";
 export const isNode = !isDeno && !isBun && typeof process === "object" && !!process.versions?.node;
 export const isBeforeNode14 = isNode && parseInt(process.version.slice(1)) < 14;
 export const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
-declare var WorkerGlobalScope: object;
+declare var WorkerGlobalScope: any;
 
 // In Node.js, `process.argv` contains `--worker-thread` when the current thread is used as
 // a worker.

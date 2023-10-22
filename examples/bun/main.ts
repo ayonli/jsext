@@ -3,38 +3,80 @@ import { readChannel, wireChannel } from "../deno/util.ts";
 import { default as handle } from "../deno/handler.ts";
 const { parallelHandle } = parallel(() => import("../deno/worker.ts"));
 
-Bun.serve({
-    port: 8000,
-    hostname: "localhost",
-    async fetch(req: Request) {
-        if (!process.argv.includes("--cluster")) {
-            return await handle(req);
+declare var Bun: any;
+
+if (Bun.isMainThread) {
+    if (process.argv.includes("--cluster=reverse-proxy")) {
+        // This version causes 'segmentation fault`, cannot test.
+        const numCPUs = navigator.hardwareConcurrency;
+        let counter = 0;
+
+        for (let i = 0; i < numCPUs; i++) {
+            const worker = new Worker(import.meta.url, { type: "module" });
+            worker.postMessage({ port: 8001 + i });
         }
 
-        const channel = chan<{ value: Uint8Array | undefined; done: boolean; }>();
+        Bun.serve({
+            hostname: "localhost",
+            port: 8000,
+            async fetch(req: Request) {
+                const { pathname, search, hash } = new URL(req.url);
+                const url = `http://localhost:${8001 + (counter++ % numCPUs)}` + pathname + search + hash;
+                return await fetch(url, req);
+            },
+        });
+        console.log(`Listening on http://localhost:8000/`);
+    } else if (process.argv.includes("--cluster=parallel-threads")) {
+        // This version causes 'libc++abi: Pure virtual function called!`, cannot test.
+        Bun.serve({
+            hostname: "localhost",
+            port: 8000,
+            async fetch(req: Request) {
+                const channel = chan<{ value: Uint8Array | undefined; done: boolean; }>();
 
-        // Pass the request information and the channel to the threaded function
-        // so it can rebuild the request object in the worker thread for use.
-        const getResMsg = parallelHandle({
-            url: req.url,
-            method: req.method,
-            headers: Object.fromEntries(req.headers.entries()),
-            hasBody: !!req.body,
-            cache: req.cache,
-            credentials: req.credentials,
-            integrity: req.integrity,
-            keepalive: req.keepalive,
-            mode: req.mode,
-            redirect: req.redirect,
-            referrer: req.referrer,
-            referrerPolicy: req.referrerPolicy,
-        }, channel); // pass channel as argument to the threaded function
+                // Pass the request information and the channel to the threaded function
+                // so it can rebuild the request object in the worker thread for use.
+                const getResMsg = parallelHandle({
+                    url: req.url,
+                    method: req.method,
+                    headers: Object.fromEntries(req.headers.entries()),
+                    hasBody: !!req.body,
+                    cache: req.cache,
+                    credentials: req.credentials,
+                    integrity: req.integrity,
+                    keepalive: req.keepalive,
+                    mode: req.mode,
+                    redirect: req.redirect,
+                    referrer: req.referrer,
+                    referrerPolicy: req.referrerPolicy,
+                }, channel); // pass channel as argument to the threaded function
 
-        req.body && wireChannel(req.body, channel);
+                req.body && wireChannel(req.body, channel);
 
-        const { hasBody, ...init } = await getResMsg;
+                const { hasBody, ...init } = await getResMsg;
 
-        return new Response(hasBody ? readChannel(channel, true) : null, init);
+                return new Response(hasBody ? readChannel(channel, true) : null, init);
+            },
+        });
+        console.log(`Listening on http://localhost:8000/`);
+    } else {
+        // This is absolutely the best win. It seems Bun doesn't just run a single-threaded
+        // web server (like Node.js and Deno), it spawns multiple threads (= CPUs + 2) to
+        // handle connections internally, an they consume very little system memory.
+        Bun.serve({
+            hostname: "localhost",
+            port: 8000,
+            fetch: handle,
+        });
+        console.log(`Listening on http://localhost:8000/`);
     }
-});
-console.log(`Listening on http://localhost:${8000}/`);
+} else { // worker thread
+    self.onmessage = ({ data: { port } }: MessageEvent<{ port: number; }>) => {
+        Bun.serve({
+            hostname: "localhost",
+            port,
+            fetch: handle,
+        });
+        console.log(`Listening on http://localhost:${port}/`);
+    };
+}
