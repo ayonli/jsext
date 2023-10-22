@@ -35,18 +35,18 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 ## Functions
 
 - [jsext.try](#jsexttry) Call a function safely and return errors when captured.
-- [jsext.func](#jsextfunc) Define a function along with a `defer` keyword, just like Golang.
+- [jsext.func](#jsextfunc) Define a function along with a `defer` keyword, inspired by Golang.
 - [jsext.wrap](#jsextwrap) Wrap a function for decorator pattern but keep its signature.
 - [jsext.throttle](#jsextthrottle) Throttle function calls for frequent access.
+- [jsext.queue](#jsextqueue) Handle tasks sequentially and prevent concurrency issues.
 - [jsext.mixins](#jsextmixins) Define a class that inherits methods from multiple base classes.
 - [jsext.isSubclassOf](#jsextissubclassof) Check is a class is a subset of another class.
-- [jsext.chan](#jsextchan) Create a channel that transmits data across the application, even among
-    multiple threads.
-- [jsext.queue](#jsextqueue) Handle tasks sequentially and prevent concurrency issues.
 - [jsext.read](#jsextread) Make any streaming source readable via `for await ... of ...` syntax.
 - [jsext.readAll](#jsextreadall) Read all streaming data at once.
+- [jsext.chan](#jsextchan) Create a channel that transmits data across the application, even among
+    multiple threads, inspired by Golang.
 - [jsext.parallel](#jsextparallel) Run functions in parallel threads and take advantage of
-    multi-core CPUs.
+    multi-core CPUs, inspired by Golang.
 - [jsext.run](#jsextrun) Run a script in another thread and abort at any time.
 - [jsext.example](#jsextexample) Write unit tests as if writing examples, inspired by Golang.
 - [jsext.deprecate](#jsextdeprecate) Mark a function as deprecated and emit warnings when it is
@@ -319,6 +319,43 @@ console.log(out3); // bar
 
 ---
 
+### jsext.queue
+
+```ts
+function queue<T>(handler: (data: T) => Promise<void>, bufferSize?: number): Queue<T>
+```
+
+Processes data sequentially by the given `handler` function and prevents concurrency
+conflicts, it returns a `Queue` instance that we can push data into.
+
+`bufferSize` is the maximum capacity of the underlying channel, once reached, the push
+operation will block until there is new space available. Bu default, this option is not set and
+use a non-buffered channel instead.
+
+**Example**
+
+```ts
+const list: string[] = [];
+const q = queue(async (str: string) => {
+    await Promise.resolve(null);
+    list.push(str);
+});
+
+q.onError(err => {
+    console.error(err);
+});
+
+await q.push("foo");
+await q.push("foo");
+
+console.log(list.length);
+q.close();
+// output:
+// 2
+```
+
+---
+
 ### jsext.mixins
 
 ```ts
@@ -382,6 +419,93 @@ class Moment extends Date {}
 
 console.assert(isSubclassOf(Moment, Date));
 console.assert(isSubclassOf(Moment, Object)); // all classes are subclasses of Object
+```
+
+---
+
+### jsext.read
+
+```ts
+function read<I extends AsyncIterable<any>>(iterable: I): I;
+function read(es: EventSource, options?: { event?: string; }): AsyncIterable<string>;
+function read<T extends Uint8Array | string>(ws: WebSocket): AsyncIterable<T>;
+function read<T>(target: EventTarget, eventMap?: {
+    message?: string;
+    error?: string;
+    close?: string;
+}): AsyncIterable<T>;
+function read<T>(target: NodeJS.EventEmitter, eventMap?: {
+    data?: string;
+    error?: string;
+    close?: string;
+}): AsyncIterable<T>;
+```
+
+Wraps a source as an AsyncIterable object that can be used in the `for await...of...` loop
+for reading streaming data.
+
+**Example (EventSource)**
+
+```ts
+// listen to the `onmessage`
+const sse = new EventSource("/sse/message");
+
+for await (const msg of read(sse)) {
+    console.log("receive message:", msg);
+}
+
+// listen to a specific event
+const channel = new EventSource("/sse/broadcast");
+
+for await (const msg of read(channel, { event: "broadcast" })) {
+    console.log("receive message:", msg);
+}
+```
+
+**Example (WebSocket)**
+
+```ts
+const ws = new WebSocket("/ws");
+
+for await (const data of read(ws)) {
+    if (typeof data === "string") {
+        console.log("receive text message:", data);
+    } else {
+        console.log("receive binary data:", data);
+    }
+}
+```
+
+**Example (EventTarget)**
+
+```ts
+for await (const msg of read(self)) {
+    console.log("receive message from the parent window:", msg);
+}
+```
+
+**Example (EventEmitter)**
+
+```ts
+for await (const msg of read(process)) {
+    console.log("receive message from the parent process:", msg);
+}
+```
+---
+
+### jsext.readAll
+
+```ts
+function readAll<T>(iterable: AsyncIterable<T>): Promise<T[]>;
+```
+
+Reads all values from the iterable object at once.
+
+**Example**
+
+```ts
+const file = fs.createReadStream("./package.json");
+const chunks = await readAll(file);
 ```
 
 ---
@@ -474,130 +598,6 @@ for await (const num of channel) {
 // 3
 // 4
 // 5
-```
-
----
-
-### jsext.queue
-
-```ts
-function queue<T>(handler: (data: T) => Promise<void>, bufferSize?: number): Queue<T>
-```
-
-Processes data sequentially by the given `handler` function and prevents concurrency
-conflicts, it returns a `Queue` instance that we can push data into.
-
-`bufferSize` is the maximum capacity of the underlying channel, once reached, the push
-operation will block until there is new space available. Bu default, this option is not set and
-use a non-buffered channel instead.
-
-**Example**
-
-```ts
-const list: string[] = [];
-const q = queue(async (str: string) => {
-    await Promise.resolve(null);
-    list.push(str);
-});
-
-q.onError(err => {
-    console.error(err);
-});
-
-await q.push("foo");
-await q.push("foo");
-
-console.log(list.length);
-q.close();
-// output:
-// 2
-```
-
----
-
-### jsext.read
-
-```ts
-function read<I extends AsyncIterable<any>>(iterable: I): I;
-function read(es: EventSource, options?: { event?: string; }): AsyncIterable<string>;
-function read<T extends Uint8Array | string>(ws: WebSocket): AsyncIterable<T>;
-function read<T>(target: EventTarget, eventMap?: {
-    message?: string;
-    error?: string;
-    close?: string;
-}): AsyncIterable<T>;
-function read<T>(target: NodeJS.EventEmitter, eventMap?: {
-    data?: string;
-    error?: string;
-    close?: string;
-}): AsyncIterable<T>;
-```
-
-Wraps a source as an AsyncIterable object that can be used in the `for await...of...` loop
-for reading streaming data.
-
-**Example (EventSource)**
-
-```ts
-// listen to the `onmessage`
-const sse = new EventSource("/sse/message");
-
-for await (const msg of read(sse)) {
-    console.log("receive message:", msg);
-}
-
-// listen to a specific event
-const channel = new EventSource("/sse/broadcast");
-
-for await (const msg of read(channel, { event: "broadcast" })) {
-    console.log("receive message:", msg);
-}
-```
-
-**Example (WebSocket)**
-
-```ts
-const ws = new WebSocket("/ws");
-
-for await (const data of read(ws)) {
-    if (typeof data === "string") {
-        console.log("receive text message:", data);
-    } else {
-        console.log("receive binary data:", data);
-    }
-}
-```
-
-**Example (EventTarget)**
-
-```ts
-for await (const msg of read(self)) {
-    console.log("receive message from the parent window:", msg);
-}
-```
-
-**Example (EventEmitter)**
-
-```ts
-for await (const msg of read(process)) {
-    console.log("receive message from the parent process:", msg);
-}
-```
----
-
-### jsext.readAll
-
-```ts
-function readAll<T>(iterable: AsyncIterable<T>): Promise<T[]>;
-```
-
-Reads all values from the iterable object at once.
-
-**Example**
-
-```ts
-const file = fs.createReadStream("./package.json");
-const chunks = await readAll(file);
 ```
 
 ---
