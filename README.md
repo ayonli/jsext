@@ -34,20 +34,23 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 
 ## Functions
 
-- [jsext.try](#jsexttry)
-- [jsext.func](#jsextfunc)
-- [jsext.wrap](#jsextwrap)
-- [jsext.throttle](#jsextthrottle)
-- [jsext.mixins](#jsextmixins)
-- [jsext.isSubclassOf](#jsextissubclassof)
-- [jsext.chan](#jsextchan)
-- [jsext.queue](#jsextqueue)
-- [jsext.read](#jsextread)
-- [jsext.readAll](#jsextreadall)
-- [jsext.parallel](#jsextparallel)
-- [jsext.run](#jsextrun)
-- [jsext.example](#jsextexample)
-- [jsext.deprecate](#jsextdeprecate)
+- [jsext.try](#jsexttry) Call a function safely and return errors when captured.
+- [jsext.func](#jsextfunc) Define a function along with a `defer` keyword, just like Golang.
+- [jsext.wrap](#jsextwrap) Wrap a function for decorator pattern but keep its signature.
+- [jsext.throttle](#jsextthrottle) Throttle function calls for frequent access.
+- [jsext.mixins](#jsextmixins) Define a class that inherits methods from multiple base classes.
+- [jsext.isSubclassOf](#jsextissubclassof) Check is a class is a subset of another class.
+- [jsext.chan](#jsextchan) Create a channel that transmits data across the application, even among
+    multiple threads.
+- [jsext.queue](#jsextqueue) Handle tasks sequentially and prevent concurrency issues.
+- [jsext.read](#jsextread) Make any streaming source readable via `for await ... of ...` syntax.
+- [jsext.readAll](#jsextreadall) Read all streaming data at once.
+- [jsext.parallel](#jsextparallel) Run functions in parallel threads and take advantage of
+    multi-core CPUs.
+- [jsext.run](#jsextrun) Run a script in another thread and abort at any time.
+- [jsext.example](#jsextexample) Write unit tests as if writing examples, inspired by Golang.
+- [jsext.deprecate](#jsextdeprecate) Mark a function as deprecated and emit warnings when it is
+    called.
 
 And other functions in [sub-packages](#sub-packages).
 
