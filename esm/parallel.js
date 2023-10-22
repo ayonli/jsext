@@ -10,6 +10,7 @@ const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const remoteTasks = new Map;
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 let workerPool = [];
+let gcTimer;
 const getMaxParallelism = (async () => {
     if (isNode) {
         const os = await import('os');
@@ -209,7 +210,7 @@ async function acquireWorker(taskId) {
         poolRecord.lastAccess = Date.now();
     }
     else if (workerPool.length < maxWorkers) {
-        poolRecord = {
+        workerPool.push(poolRecord = {
             getWorker: (async () => {
                 const { worker } = await createWorker({ entry: parallel.workerEntry });
                 const handleMessage = (msg) => {
@@ -330,7 +331,9 @@ async function acquireWorker(taskId) {
             })(),
             tasks: new Set(),
             lastAccess: Date.now(),
-            gcTimer: setInterval(() => {
+        });
+        if (!gcTimer) {
+            gcTimer = setInterval(() => {
                 // GC: clean long-time unused workers
                 const now = Date.now();
                 const idealItems = [];
@@ -351,12 +354,14 @@ async function acquireWorker(taskId) {
                         worker.kill();
                     }
                 });
-            }, 60000),
-        };
-        if (isNode || isBun) {
-            poolRecord.gcTimer.unref();
+            }, 60000);
+            if (isNode || isBun) {
+                gcTimer.unref();
+            }
+            else if (isDeno) {
+                Deno.unrefTimer(gcTimer);
+            }
         }
-        workerPool.push(poolRecord);
     }
     else {
         poolRecord = workerPool[taskId % workerPool.length];

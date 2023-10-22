@@ -56,9 +56,10 @@ type PoolRecord = {
     getWorker: Promise<Worker | BunWorker | NodeWorker | ChildProcess>;
     tasks: Set<number>;
     lastAccess: number;
-    gcTimer: number | NodeJS.Timeout;
 };
 let workerPool: PoolRecord[] = [];
+let gcTimer: number | NodeJS.Timeout;
+declare var Deno: any;
 
 export const getMaxParallelism = (async () => {
     if (isNode) {
@@ -296,7 +297,7 @@ async function acquireWorker(taskId: number) {
     if (poolRecord) {
         poolRecord.lastAccess = Date.now();
     } else if (workerPool.length < maxWorkers) {
-        poolRecord = {
+        workerPool.push(poolRecord = {
             getWorker: (async () => {
                 const { worker } = await createWorker({ entry: parallel.workerEntry });
                 const handleMessage = (msg: any) => {
@@ -422,7 +423,10 @@ async function acquireWorker(taskId: number) {
             })(),
             tasks: new Set(),
             lastAccess: Date.now(),
-            gcTimer: setInterval(() => {
+        });
+
+        if (!gcTimer) {
+            gcTimer = setInterval(() => {
                 // GC: clean long-time unused workers
                 const now = Date.now();
                 const idealItems: PoolRecord[] = [];
@@ -447,14 +451,14 @@ async function acquireWorker(taskId: number) {
                         (worker as ChildProcess).kill();
                     }
                 });
-            }, 60_000),
-        };
+            }, 60_000);
 
-        if (isNode || isBun) {
-            (poolRecord.gcTimer as NodeJS.Timeout).unref();
+            if (isNode || isBun) {
+                (gcTimer as NodeJS.Timeout).unref();
+            } else if (isDeno) {
+                Deno.unrefTimer(gcTimer);
+            }
         }
-
-        workerPool.push(poolRecord);
     } else {
         poolRecord = workerPool[taskId % workerPool.length] as PoolRecord;
         poolRecord.lastAccess = Date.now();
