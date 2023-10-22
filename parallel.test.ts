@@ -115,13 +115,13 @@ describe("jsext.parallel", () => {
         // @ts-ignore because allowJs is not turned on
         const length = await mod.transfer(arr.buffer);
 
-        deepStrictEqual(length, 10);
-        strictEqual(arr.byteLength, 0);
+        strictEqual(length, 10);
+        strictEqual(arr.length, 0);
 
         const arr2 = Uint8Array.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
         // @ts-ignore because allowJs is not turned on
         const res = await mod.transferInObject({ data: arr2.buffer });
-        strictEqual(arr2.byteLength, 0);
+        strictEqual(arr2.length, 0);
         deepStrictEqual(res, {
             data: Uint8Array.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).buffer,
         });

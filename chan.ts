@@ -156,7 +156,7 @@ export class Channel<T> implements AsyncIterable<T> {
 }
 
 /**
- * Inspired by Golang, cerates a {@link Channel} that can be used to transfer data within the program.
+ * Inspired by Golang, cerates a {@link Channel} that can be used to transfer data across routines.
  * 
  * If `capacity` is not set, a non-buffered channel will be created. For a non-buffered channel,
  * the sender and receiver must be present at the same time (theoretically), otherwise, the
@@ -175,12 +175,13 @@ export class Channel<T> implements AsyncIterable<T> {
  * 
  * Also, unlike Golang, `await channel.pop()` does not prevent the process from exiting.
  * 
- * Channels can be used to send and receive streaming data in worker threads wrapped by
- * `parallel()`, but once used that way, `channel.close()` must be explicitly called in order to
- * release the channel for garbage collection.
+ * Channels can be used to send and receive streaming data between main thread and worker threads
+ * wrapped by `parallel()`, but once used that way, `channel.close()` must be explicitly called
+ * in order to release the channel for garbage collection.
  * 
  * @example
  * ```ts
+ * // non-buffered
  * const channel = chan<number>();
  * 
  * (async () => {
@@ -188,13 +189,14 @@ export class Channel<T> implements AsyncIterable<T> {
  * })();
  * 
  * const num = await channel.pop();
- * console.log(num);
+ * console.log(num); // 123
  * // output:
  * // 123
  * ```
  * 
  * @example
  * ```ts
+ * // buffered
  * const channel = chan<number>(3);
  * 
  * await channel.push(123);
@@ -205,17 +207,14 @@ export class Channel<T> implements AsyncIterable<T> {
  * const num2 = await channel.pop();
  * const num3 = await channel.pop();
  * 
- * console.log(num1);
- * console.log(num2);
- * console.log(num3);
- * // output:
- * // 123
- * // 456
- * // 789
+ * console.log(num1); // 123
+ * console.log(num2); // 456
+ * console.log(num3); // 789
  * ```
  * 
  * @example
  * ```ts
+ * // iterable
  * const channel = chan<number>();
  * 
  * (async () => {

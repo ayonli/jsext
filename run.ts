@@ -49,12 +49,14 @@ const workerConsumerQueue: (() => void)[] = [];
  * 
  * @example
  * ```ts
+ * // result
  * const job1 = await run("examples/worker.mjs", ["World"]);
  * console.log(await job1.result()); // Hello, World
  * ```
  * 
  * @example
  * ```ts
+ * // iterate
  * const job2 = await run<string, [string[]]>("examples/worker.mjs", [["foo", "bar"]], {
  *     fn: "sequence",
  * });
@@ -68,6 +70,7 @@ const workerConsumerQueue: (() => void)[] = [];
  * 
  * @example
  * ```ts
+ * // abort
  * const job3 = await run<string, [string]>("examples/worker.mjs", ["foobar"], {
  *    fn: "takeTooLong",
  * });
@@ -108,22 +111,6 @@ async function run<R, A extends any[] = any[]>(
     /** Iterates the yield value if the function returns a generator. */
     iterate(): AsyncIterable<R>;
     /** Terminates the worker thread and aborts the task. */
-    abort(reason?: unknown): Promise<void>;
-}>;
-async function run<R, A extends any[] = any[]>(
-    script: string | (() => Promise<any>),
-    args: A | undefined = undefined,
-    options: {
-        fn?: string;
-        timeout?: number;
-        keepAlive?: boolean;
-        /** @deprecated */
-        adapter?: "worker_threads" | "child_process";
-    } | undefined = undefined
-): Promise<{
-    workerId: number;
-    result(): Promise<R>;
-    iterate(): AsyncIterable<R>;
     abort(reason?: unknown): Promise<void>;
 }> {
     const maxWorkers = run.maxWorkers || parallel.maxWorkers || await getMaxParallelism;

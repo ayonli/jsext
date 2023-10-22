@@ -38,12 +38,12 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 - [jsext.func](#jsextfunc) Define a function along with a `defer` keyword, inspired by Golang.
 - [jsext.wrap](#jsextwrap) Wrap a function for decorator pattern but keep its signature.
 - [jsext.throttle](#jsextthrottle) Throttle function calls for frequent access.
-- [jsext.queue](#jsextqueue) Handle tasks sequentially and prevent concurrency issues.
+- [jsext.queue](#jsextqueue) Handle tasks sequentially and prevent concurrency conflicts.
 - [jsext.mixins](#jsextmixins) Define a class that inherits methods from multiple base classes.
-- [jsext.isSubclassOf](#jsextissubclassof) Check is a class is a subset of another class.
+- [jsext.isSubclassOf](#jsextissubclassof) Check if a class is a subset of another class.
 - [jsext.read](#jsextread) Make any streaming source readable via `for await ... of ...` syntax.
 - [jsext.readAll](#jsextreadall) Read all streaming data at once.
-- [jsext.chan](#jsextchan) Create a channel that transmits data across the application, even among
+- [jsext.chan](#jsextchan) Create a channel that transfers data across routines, even between
     multiple threads, inspired by Golang.
 - [jsext.parallel](#jsextparallel) Run functions in parallel threads and take advantage of
     multi-core CPUs, inspired by Golang.
@@ -69,7 +69,7 @@ function _try<E = unknown, R = any, A extends any[] = any[]>(
 
 Invokes a regular function or an async function and renders its result in an `[err, res]` tuple.
 
-**Example**
+**Example (regular function)**
 
 ```ts
 const [err, res] = _try(() => {
@@ -77,7 +77,7 @@ const [err, res] = _try(() => {
 });
 ```
 
-**Example (async)**
+**Example (async function)**
 
 ```ts
 let [err, res] = await _try(async () => {
@@ -97,7 +97,7 @@ function _try<E = unknown, R = any>(job: Promise<R>): Promise<[E, R]>;
 
 Resolves a promise and renders its result in an `[err, res]` tuple.
 
-**Example**
+**Example (promise)**
 
 ```ts
 let [err, res] = await _try(axios.get("https://example.org"));
@@ -123,7 +123,7 @@ function _try<E = unknown, T = any, A extends any[] = any[], TReturn = any, TNex
 Invokes a generator function or an async generator function and renders its yield value and result
 in an `[err, val]` tuple.
 
-**Example**
+**Example (generator function)**
 
 ```ts
 const iter = _try(function* () {
@@ -139,7 +139,7 @@ for (const [err, val] of iter) {
 }
 ```
 
-**Example (async)**
+**Example (async generator function)**
 
 ```ts
 const iter = _try(async function* () {
@@ -169,7 +169,7 @@ function _try<E = unknown, T = any, TReturn = any, TNext = unknown>(
 Resolves a generator or an async generator and renders its yield value and result in an `[err, val]`
 tuple.
 
-**Example**
+**Example (generator)**
 
 ```ts
 const iter = Number.sequence(1, 10);
@@ -183,7 +183,7 @@ for (const [err, val] of _try(iter)) {
 }
 ```
 
-**Example (async)**
+**Example (async generator)**
 
 ```ts
 async function* gen() {
@@ -516,7 +516,7 @@ const chunks = await readAll(file);
 function chan<T>(capacity?: number): Channel<T>;
 ```
 
-Inspired by Golang, cerates a `Channel` that can be used to transfer data within the program.
+Inspired by Golang, cerates a `Channel` that can be used to transfer data across routines.
 
 If `capacity` is not set, a non-buffered channel will be created. For a non-buffered channel,
 the sender and receiver must be present at the same time (theoretically), otherwise, the
@@ -535,11 +535,11 @@ even if there is no receiver at the moment.
 
 Also, unlike Golang, `await channel.pop()` does not prevent the process from exiting.
 
-Channels can be used to send and receive streaming data in worker threads wrapped by
-`parallel()`, but once used that way, `channel.close()` must be explicitly called in order to
-release the channel for garbage collection.
+Channels can be used to send and receive streaming data between main thread and worker threads
+wrapped by `parallel()`, but once used that way, `channel.close()` must be explicitly called
+in order to release the channel for garbage collection.
 
-**Example**
+**Example (non-buffered)**
 
 ```ts
 const channel = chan<number>();
@@ -549,9 +549,7 @@ const channel = chan<number>();
 })();
 
 const num = await channel.pop();
-console.log(num);
-// output:
-// 123
+console.log(num); // 123
 ```
 
 **Example (buffered)**
@@ -567,13 +565,9 @@ const num1 = await channel.pop();
 const num2 = await channel.pop();
 const num3 = await channel.pop();
 
-console.log(num1);
-console.log(num2);
-console.log(num3);
-// output:
-// 123
-// 456
-// 789
+console.log(num1); // 123
+console.log(num2); // 456
+console.log(num3); // 789
 ```
 
 **Example (iterable)**
@@ -610,7 +604,7 @@ function parallel<M extends { [x: string]: any; }>(
 ): ThreadedFunctions<M>;
 ```
 
-Wraps a module and run its functions in worker threads.
+Wraps a module so its functions are run in worker threads.
 
 In Node.js and Bun, the `module` can be either an ES module or a CommonJS module,
 **node_modules** and built-in modules are also supported.
@@ -619,37 +613,38 @@ In browsers and Deno, the `module` can only be an ES module.
 
 In Bun and Deno, the `module` can also be a TypeScript file.
 
-Data are cloned and transferred between threads via **Structured Clone Algorithm** (by default).
+Data are cloned and transferred between threads via **Structured Clone Algorithm**.
 
 Apart from the standard data types supported by the algorithm, `Channel` can also be
 used to transfer data between threads. To do so, just passed a channel instance to the threaded
-function.
+function. But be aware, channel can only be used as a parameter, return a channel from the
+threaded function is not allowed. Once passed, the data can only be transferred into and
+out-from the function.
 
-But be aware, channel can only be used as a parameter, return a channel from the threaded
-function is not allowed. Once passed, the data can only be transferred into and out-from the
-function.
-
-The difference between using channel and generator function for streaming processing is, for a
-generator function, `next(value)` is coupled with a `yield value`, the process is blocked
+The difference between using a channel and a generator function for streaming processing is, for
+a generator function, `next(value)` is coupled with a `yield value`, the process is blocked
 between **next** calls, channel doesn't have this limit, we can use it to stream all the data
 into the function before processing and receiving any result.
 
-Moreover, the threaded functions support `ArrayBuffer`s as transferable objects. If an
-array buffer is presented as an argument or the direct property of an argument (assume it's an
-plain object), or the array buffer is the return value or the direct property of the return value
-(assume it's an plain object), it automatically becomes a transferrable object and will be
-transferred to the other thread instead of being cloned. This strategy allows us easily to
-compose objects like `Request` and `Response` instances into plain objects and pass them to
-the worker thread without overhead.
+The threaded function also supports `ArrayBuffer`s as transferable objects. If an array buffer is
+presented as an argument or the direct property of an argument (assume it's a plain object), or
+the array buffer is the return value or the direct property of the return value (assume it's a
+plain object), it automatically becomes a transferrable object and will be transferred to the
+other thread instead of being cloned. This strategy allows us to easily compose objects like
+`Request` and `Response` instances into plain objects and pass them between threads without
+overhead.
 
-**Example (async function)**
+NOTE: If the current module is already in a worker thread, use this function won't create another
+worker thread.
+
+**Example (regular or async function)**
 
 ```ts
 const mod = parallel(() => import("./examples/worker.mjs"));
 console.log(await mod.greet("World")); // Hi, World
 ```
 
-**Example (async generator function)**
+**Example (generator or async generator function)**
 
 ```ts
 const mod = parallel(() => import("./examples/worker.mjs"));
@@ -675,11 +670,20 @@ for (const value of Number.sequence(0, 9)) {
 }
 
 const results = (await readAll(channel)).map(item => item.value);
-console.log(results);
-console.log(await length);
-// output:
-// [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
-// 10
+console.log(results);      // [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+console.log(await length); // 10
+```
+
+**Example (use transferrable)**
+
+```ts
+const mod = parallel(() => import("./examples/worker.mjs"));
+
+const arr = Uint8Array.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+const length = await mod.transfer(arr.buffer);
+
+console.log(length);     // 10
+console.log(arr.length); // 0
 ```
 
 NOTE: if the application is to be bundled, use the following syntax to link the module instead,

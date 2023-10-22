@@ -729,7 +729,7 @@ function extractBaseUrl(stackTrace: string): string | undefined {
 }
 
 /**
- * Wraps a module and run its functions in worker threads.
+ * Wraps a module so its functions are run in worker threads.
  * 
  * In Node.js and Bun, the `module` can be either an ES module or a CommonJS module,
  * **node_modules** and built-in modules are also supported.
@@ -738,37 +738,40 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * 
  * In Bun and Deno, the `module` can also be a TypeScript file.
  * 
- * Data are cloned and transferred between threads via **Structured Clone Algorithm** (by default).
+ * Data are cloned and transferred between threads via **Structured Clone Algorithm**.
  * 
  * Apart from the standard data types supported by the algorithm, {@link Channel} can also be
  * used to transfer data between threads. To do so, just passed a channel instance to the threaded
- * function.
+ * function. But be aware, channel can only be used as a parameter, return a channel from the
+ * threaded function is not allowed. Once passed, the data can only be transferred into and
+ * out-from the function.
  * 
- * But be aware, channel can only be used as a parameter, return a channel from the threaded
- * function is not allowed. Once passed, the data can only be transferred into and out-from the
- * function.
- * 
- * The difference between using channel and generator function for streaming processing is, for a
- * generator function, `next(value)` is coupled with a `yield value`, the process is blocked
+ * The difference between using a channel and a generator function for streaming processing is, for
+ * a generator function, `next(value)` is coupled with a `yield value`, the process is blocked
  * between **next** calls, channel doesn't have this limit, we can use it to stream all the data
  * into the function before processing and receiving any result.
  * 
- * Moreover, the threaded functions support `ArrayBuffer`s as transferable objects. If an
- * array buffer is presented as an argument or the direct property of an argument (assume it's an
- * plain object), or the array buffer is the return value or the direct property of the return value
- * (assume it's an plain object), it automatically becomes a transferrable object and will be
- * transferred to the other thread instead of being cloned. This strategy allows us easily to
- * compose objects like `Request` and `Response` instances into plain objects and pass them to
- * the worker thread without overhead.
+ * The threaded function also supports `ArrayBuffer`s as transferable objects. If an array buffer is
+ * presented as an argument or the direct property of an argument (assume it's a plain object), or
+ * the array buffer is the return value or the direct property of the return value (assume it's a
+ * plain object), it automatically becomes a transferrable object and will be transferred to the
+ * other thread instead of being cloned. This strategy allows us to easily compose objects like
+ * `Request` and `Response` instances into plain objects and pass them between threads without
+ * overhead.
+ * 
+ * NOTE: If the current module is already in a worker thread, use this function won't create another
+ * worker thread.
  * 
  * @example
  * ```ts
+ * // regular or async function
  * const mod = parallel(() => import("./examples/worker.mjs"));
  * console.log(await mod.greet("World")); // Hi, World
  * ```
  * 
  * @example
  * ```ts
+ * // generator or async generator function
  * const mod = parallel(() => import("./examples/worker.mjs"));
  * 
  * for await (const word of mod.sequence(["foo", "bar"])) {
@@ -781,6 +784,7 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * 
  * @example
  * ```ts
+ * // use channel
  * const mod = parallel(() => import("./examples/worker.mjs"));
  * 
  * const channel = chan<{ value: number; done: boolean; }>();
@@ -791,11 +795,27 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * }
  * 
  * const results = (await readAll(channel)).map(item => item.value);
- * console.log(results);
- * console.log(await length);
- * // output:
- * // [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
- * // 10
+ * console.log(results);      // [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+ * console.log(await length); // 10
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // use transferrable
+ * const mod = parallel(() => import("./examples/worker.mjs"));
+ * 
+ * const arr = Uint8Array.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+ * const length = await mod.transfer(arr.buffer);
+ * 
+ * console.log(length);     // 10
+ * console.log(arr.length); // 0
+ * ```
+ * 
+ * NOTE: if the application is to be bundled, use the following syntax to link the module instead,
+ * it will prevent the bundler from including the file and rewriting the path.
+ * 
+ * ```ts
+ * const mod = parallel<typeof import("./examples/worker.mjs")>("./examples/worker.mjs");
  * ```
  */
 function parallel<M extends { [x: string]: any; }>(

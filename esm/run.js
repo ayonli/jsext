@@ -8,7 +8,56 @@ const workerPools = new Map();
 // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
 // pop a consumer and run the callback, which will retry gaining the worker and retry the task.
 const workerConsumerQueue = [];
-async function run(script, args = undefined, options = undefined) {
+/**
+ * Runs the given `script` in a worker thread or child process.
+ *
+ * In Node.js and Bun, the `script` can be either an ES module or a CommonJS module, and is
+ * relative to the current working directory if not absolute.
+ *
+ * In browsers and Deno, the `script` can only be an ES module, and is relative to the current URL
+ * (or working directory in Deno) if not absolute.
+ *
+ * In Bun and Deno, the `script` can also be a TypeScript file.
+ *
+ * This function also uses {@link parallel.maxWorkers} and {@link parallel.workerEntry} for worker
+ * configuration by default. {@link Channel} can also be used to transfer streaming data into the
+ * function being called. `ArrayBuffer`s are also supported as transferrable objects if they are
+ * presented as arguments or the return value (or their direct properties).
+ *
+ * @example
+ * ```ts
+ * // result
+ * const job1 = await run("examples/worker.mjs", ["World"]);
+ * console.log(await job1.result()); // Hello, World
+ * ```
+ *
+ * @example
+ * ```ts
+ * // iterate
+ * const job2 = await run<string, [string[]]>("examples/worker.mjs", [["foo", "bar"]], {
+ *     fn: "sequence",
+ * });
+ * for await (const word of job2.iterate()) {
+ *     console.log(word);
+ * }
+ * // output:
+ * // foo
+ * // bar
+ * ```
+ *
+ * @example
+ * ```ts
+ * // abort
+ * const job3 = await run<string, [string]>("examples/worker.mjs", ["foobar"], {
+ *    fn: "takeTooLong",
+ * });
+ * await job3.abort();
+ * const [err, res] = await _try(job3.result());
+ * console.assert(err === null);
+ * console.assert(res === undefined);
+ * ```
+ */
+async function run(script, args, options) {
     var _a;
     const maxWorkers = run.maxWorkers || parallel.maxWorkers || await getMaxParallelism;
     const fn = (options === null || options === void 0 ? void 0 : options.fn) || "default";

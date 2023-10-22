@@ -137,8 +137,8 @@ describe("jsext.run", () => {
             fn: "transfer",
         });
 
-        deepStrictEqual(await job.result(), 10);
-        strictEqual(arr.byteLength, 0);
+        strictEqual(await job.result(), 10);
+        strictEqual(arr.length, 0);
     });
 
     it("send unserializable", async () => {
