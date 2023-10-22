@@ -12,6 +12,7 @@ import {
     isBun,
     isBeforeNode14,
     IsPath,
+    isMainThread,
     resolveModule,
     ChannelMessage,
     isChannelMessage,
@@ -34,15 +35,6 @@ export type ThreadedFunctions<M, T extends FunctionProperties<M> = FunctionPrope
     : T[K] extends (...args: infer A) => infer R ? (...args: A) => Promise<Awaited<R>>
     : T[K];
 };
-
-declare var Bun: any;
-declare var WorkerGlobalScope: object;
-
-// In Node.js, `process.argv` contains `--worker-thread` when the current thread is used as
-// a worker.
-const isWorkerThread = isNode && process.argv.includes("--worker-thread");
-const isMainThread = !isWorkerThread
-    && (isBun ? (Bun.isMainThread as boolean) : typeof WorkerGlobalScope === "undefined");
 
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 type RemoteTask = {
@@ -493,11 +485,23 @@ export function wrapArgs<A extends any[]>(
             return wrapChannel(arg, (type, msg, channelId) => {
                 getWorker.then(worker => {
                     if (typeof (worker as any)["postMessage"] === "function") {
-                        (worker as Worker).postMessage({
-                            type,
-                            value: msg,
-                            channelId,
-                        } satisfies ChannelMessage);
+                        try {
+                            (worker as Worker).postMessage({
+                                type,
+                                value: msg,
+                                channelId,
+                            } satisfies ChannelMessage);
+                        } catch (err) {
+                            // Suppress error when sending `close` command to the channel in the
+                            // worker thread when the thread is terminated. This situation often
+                            // occurs when using `run()` to call function and the `result()` is
+                            // is called before `channel.close()`.
+                            if (!(type === "close" &&
+                                String(err).includes("Worker has been terminated"))
+                            ) {
+                                throw err;
+                            }
+                        }
                     } else {
                         (worker as ChildProcess).send({
                             type,
@@ -737,8 +741,8 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * function.
  * 
  * But be aware, channel can only be used as a parameter, return a channel from the threaded
- * function is not allowed. And the channel can only be used for one threaded function at a time,
- * once passed, the data can only be transferred into and out-from the function.
+ * function is not allowed. Once passed, the data can only be transferred into and out-from the
+ * function.
  * 
  * The difference between using channel and generator function for streaming processing is, for a
  * generator function, `next(value)` is coupled with a `yield value`, the process is blocked

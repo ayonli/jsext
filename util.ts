@@ -7,9 +7,21 @@ export const isBun = typeof Bun === "object";
 export const isNode = !isDeno && !isBun && typeof process === "object" && !!process.versions?.node;
 export const isBeforeNode14 = isNode && parseInt(process.version.slice(1)) < 14;
 export const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
+declare var WorkerGlobalScope: object;
+
+// In Node.js, `process.argv` contains `--worker-thread` when the current thread is used as
+// a worker.
+const isNodeWorkerThread = isNode && process.argv.includes("--worker-thread");
+export const isMainThread = !isNodeWorkerThread
+    && (isBun ? (Bun.isMainThread as boolean) : typeof WorkerGlobalScope === "undefined");
 
 const moduleCache = new Map();
-const channelStore = new Map<number, { channel: Channel<any>, raw: Pick<Channel<any>, "push" | "close">; }>();
+const channelStore = new Map<number, {
+    channel: Channel<any>,
+    raw: Pick<Channel<any>, "push" | "close">;
+    writers: Array<(type: "push" | "close", msg: any, channelId: number) => void>,
+    counter: number;
+}>();
 
 export async function resolveModule(modId: string, baseUrl: string | undefined = undefined) {
     let module: { [x: string]: any; };
@@ -72,109 +84,61 @@ export function isChannelMessage(msg: any): msg is ChannelMessage {
 }
 
 export async function handleChannelMessage(msg: ChannelMessage) {
-    const channel = channelStore.get(msg.channelId);
+    const record = channelStore.get(msg.channelId);
 
-    if (!channel)
+    if (!record)
         return;
 
     if (msg.type === "push") {
-        channel.raw.push(msg.value);
+        await record.raw.push(msg.value);
     } else if (msg.type === "close") {
-        channel.raw.close(msg.value);
-        channelStore.delete(msg.channelId);
+        const { value: err, channelId } = msg;
+        record.raw.close(err);
+        channelStore.delete(channelId);
+
+        if (isMainThread && record.writers.length > 1) {
+            // distribute the channel close event to all threads
+            record.writers.forEach(write => {
+                write("close", err, channelId);
+            });
+        }
     }
 }
 
-export function wrapChannel(
+function wireChannel(
     channel: Channel<any>,
     channelWrite: (type: "push" | "close", msg: any, channelId: number) => void
-): object {
+) {
     const channelId = channel[id] as number;
 
     if (!channelStore.has(channelId)) {
         const push = channel.push.bind(channel);
         const close = channel.close.bind(channel);
 
-        channelStore.set(channelId, { channel, raw: { push, close } });
-    }
-
-    Object.defineProperties(channel, {
-        push: {
-            configurable: true,
-            writable: true,
-            value: async (value: any) => {
-                if (channel["state"] !== 1) {
-                    throw new Error("the channel is closed");
-                }
-
-                await Promise.resolve(channelWrite("push", value, channelId));
-            },
-        },
-        close: {
-            configurable: true,
-            writable: true,
-            value: (err: Error | null = null) => {
-                const record = channelStore.get(channelId);
-                record?.raw.close(err);
-                channelWrite("close", err, channelId);
-                channelStore.delete(channelId);
-
-                if (record) {
-                    // recover to the original methods
-                    Object.defineProperties(channel, {
-                        push: {
-                            configurable: true,
-                            writable: true,
-                            value: record.raw.push,
-                        },
-                        close: {
-                            configurable: true,
-                            writable: true,
-                            value: record.raw.close,
-                        },
-                    });
-                }
-            },
-        },
-    });
-
-    return { "@@type": "Channel", "@@id": channelId, "capacity": channel.capacity };
-}
-
-export function unwrapChannel(
-    obj: { "@@type": "Channel", "@@id": number; capacity?: number; },
-    channelWrite: (type: "push" | "close", msg: any, channelId: number) => void
-) {
-    const channelId = obj["@@id"];
-    let record = channelStore.get(channelId);
-
-    if (!record) {
-        const channel: Channel<any> = Object.assign(Object.create(Channel.prototype), {
-            [id]: channelId,
-            capacity: obj.capacity ?? 0,
-            buffer: [],
-            producers: [],
-            consumers: [],
-            error: null,
-            state: 1,
+        channelStore.set(channelId, {
+            channel,
+            raw: { push, close },
+            writers: [channelWrite],
+            counter: 0,
         });
-
-        if (!channelStore.has(channelId)) {
-            const push = channel.push.bind(channel);
-            const close = channel.close.bind(channel);
-            channelStore.set(channelId, record = { channel, raw: { push, close } });
-        }
 
         Object.defineProperties(channel, {
             push: {
                 configurable: true,
                 writable: true,
-                value: async (value: any) => {
-                    if (channel["state"] !== 1) {
-                        throw new Error("the channel is closed");
-                    }
+                value: async (data: any) => {
+                    const record = channelStore.get(channelId);
 
-                    await Promise.resolve(channelWrite("push", value, channelId));
+                    if (record) {
+                        const channel = record.channel;
+
+                        if (channel["state"] !== 1) {
+                            throw new Error("the channel is closed");
+                        }
+
+                        const write = record.writers[record.counter++ % record.writers.length];
+                        await Promise.resolve(write!("push", data, channelId));
+                    }
                 },
             },
             close: {
@@ -182,11 +146,15 @@ export function unwrapChannel(
                 writable: true,
                 value: (err: Error | null = null) => {
                     const record = channelStore.get(channelId);
-                    record?.raw.close(err);
-                    channelWrite("close", err, channelId);
-                    channelStore.delete(channelId);
 
                     if (record) {
+                        channelStore.delete(channelId);
+                        const channel = record.channel;
+
+                        record.writers.forEach(write => {
+                            write("close", err, channelId);
+                        });
+
                         // recover to the original methods
                         Object.defineProperties(channel, {
                             push: {
@@ -200,11 +168,46 @@ export function unwrapChannel(
                                 value: record.raw.close,
                             },
                         });
+
+                        channel.close(err);
                     }
                 },
             },
         });
+    } else {
+        const record = channelStore.get(channelId);
+        record!.writers.push(channelWrite);
+    }
+}
+
+export function wrapChannel(
+    channel: Channel<any>,
+    channelWrite: (type: "push" | "close", msg: any, channelId: number) => void
+): object {
+    wireChannel(channel, channelWrite);
+    return { "@@type": "Channel", "@@id": channel[id], "capacity": channel.capacity };
+}
+
+export function unwrapChannel(
+    obj: { "@@type": "Channel", "@@id": number; capacity?: number; },
+    channelWrite: (type: "push" | "close", msg: any, channelId: number) => void
+): Channel<any> {
+    const channelId = obj["@@id"];
+    let channel = channelStore.get(channelId)?.channel;
+
+    if (!channel) {
+        channel = Object.assign(Object.create(Channel.prototype), {
+            [id]: channelId,
+            capacity: obj.capacity ?? 0,
+            buffer: [],
+            producers: [],
+            consumers: [],
+            error: null,
+            state: 1,
+        });
     }
 
-    return record!.channel;
+    wireChannel(channel as Channel<any>, channelWrite);
+
+    return channel as Channel<any>;
 }

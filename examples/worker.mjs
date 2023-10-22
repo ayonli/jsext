@@ -84,6 +84,26 @@ export async function twoTimesValues(channel) {
 }
 
 /**
+ * @param {import("../chan.ts").Channel<{ value: number; done: boolean }>} channel 
+ */
+export async function threeTimesValues(channel) {
+    /** @type {number[]} */
+    const values = [];
+
+    for await (const value of channel) {
+        values.push(value * 3);
+        await channel.push(value * 3);
+        await new Promise(resolve => setTimeout(resolve, 5));
+
+        if (values.length === 5) {
+            break;
+        }
+    }
+
+    return values;
+}
+
+/**
  * @param {ArrayBuffer} buf
  */
 export function transfer(buf) {

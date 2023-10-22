@@ -76,7 +76,7 @@ async function run(script, args = undefined, options = undefined) {
     const handleMessage = async (msg) => {
         var _a, _b;
         if (isChannelMessage(msg)) {
-            handleChannelMessage(msg);
+            await handleChannelMessage(msg);
         }
         else if (isCallResponse(msg)) {
             timeout && clearTimeout(timeout);

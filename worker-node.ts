@@ -10,7 +10,7 @@ if (isNode) {
                     parentPort!.postMessage(res, transferable);
                 });
             } else if (isChannelMessage(msg)) {
-                handleChannelMessage(msg);
+                await handleChannelMessage(msg);
             }
         });
     } else if (process.send) {
@@ -21,7 +21,7 @@ if (isNode) {
                     process.send!(res);
                 });
             } else if (isChannelMessage(msg)) {
-                handleChannelMessage(msg);
+                await handleChannelMessage(msg);
             }
         });
     }

@@ -198,7 +198,7 @@ async function run<R, A extends any[] = any[]>(
 
     const handleMessage = async (msg: any) => {
         if (isChannelMessage(msg)) {
-            handleChannelMessage(msg);
+            await handleChannelMessage(msg);
         } else if (isCallResponse(msg)) {
             timeout && clearTimeout(timeout);
 

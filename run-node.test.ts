@@ -2,6 +2,7 @@ import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import jsext from "./index.ts";
 import { sequence } from "./number/index.ts";
 import { fromObject } from "./error/index.ts";
+import { sum } from "./math/index.ts";
 
 declare var Bun: any;
 
@@ -97,6 +98,33 @@ describe("jsext.run", () => {
             const results = (await jsext.readAll(channel)).map(item => item.value);
             deepStrictEqual(results, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]);
             strictEqual(await job1.result(), 10);
+
+            const channel2 = jsext.chan<number>();
+            const job2 = await jsext.run<number, [typeof channel2]>("examples/worker.mjs", [channel2], {
+                fn: "threeTimesValues",
+            });
+            const _job2 = await jsext.run<number, [typeof channel2]>("examples/worker.mjs", [channel2], {
+                fn: "threeTimesValues",
+            });
+
+            for (const value of sequence(1, 10)) {
+                await channel2.push(value);
+            }
+
+            const results2: number[] = [];
+
+            for await (const value of channel2) {
+                results2.push(value);
+
+                if (results2.length === 10) {
+                    break;
+                }
+            }
+
+            deepStrictEqual(await job2.result(), [3, 9, 15, 21, 27]);
+            deepStrictEqual(await _job2.result(), [6, 12, 18, 24, 30]);
+            strictEqual(sum(...results2), 165);
+            channel2.close();
         });
 
         it("use transferable", async () => {
@@ -251,6 +279,33 @@ describe("jsext.run", () => {
             const results = (await jsext.readAll(channel)).map(item => item.value);
             deepStrictEqual(results, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]);
             strictEqual(await job1.result(), 10);
+
+            const channel2 = jsext.chan<number>();
+            const job2 = await jsext.run<number, [typeof channel2]>("examples/worker.mjs", [channel2], {
+                fn: "threeTimesValues",
+            });
+            const _job2 = await jsext.run<number, [typeof channel2]>("examples/worker.mjs", [channel2], {
+                fn: "threeTimesValues",
+            });
+
+            for (const value of sequence(1, 10)) {
+                await channel2.push(value);
+            }
+
+            const results2: number[] = [];
+
+            for await (const value of channel2) {
+                results2.push(value);
+
+                if (results2.length === 10) {
+                    break;
+                }
+            }
+
+            deepStrictEqual(await job2.result(), [3, 9, 15, 21, 27]);
+            deepStrictEqual(await _job2.result(), [6, 12, 18, 24, 30]);
+            strictEqual(sum(...results2), 165);
+            channel2.close();
         });
 
         it("send unserializable", async () => {

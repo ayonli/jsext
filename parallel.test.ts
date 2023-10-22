@@ -1,6 +1,7 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import jsext from "./index.ts";
 import { sequence } from "./number/index.ts";
+import { sum } from "./math/index.ts";
 
 declare var Deno: any;
 declare var Bun: any;
@@ -54,6 +55,59 @@ describe("jsext.parallel", () => {
         const results = (await jsext.readAll(channel)).map(item => item.value);
         deepStrictEqual(results, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]);
         strictEqual(await length, 10);
+
+        const channel2 = jsext.chan<number>();
+        // @ts-ignore because allowJs is not turned on
+        const values2 = mod.threeTimesValues(channel2);
+        // @ts-ignore because allowJs is not turned on
+        const _values2 = mod.threeTimesValues(channel2);
+
+        for (const value of sequence(1, 10)) {
+            await channel2.push(value);
+        }
+
+        const results2: number[] = [];
+
+        for await (const value of channel2) {
+            results2.push(value);
+
+            if (results2.length === 10) {
+                break;
+            }
+        }
+
+        deepStrictEqual(await values2, [3, 9, 15, 21, 27]);
+        deepStrictEqual(await _values2, [6, 12, 18, 24, 30]);
+        strictEqual(sum(...results2), 165);
+        channel2.close();
+
+        // @ts-ignore because allowJs is not turned on
+        const mod2 = jsext.parallel(() => import("./examples/worker.mjs"));
+
+        const channel3 = jsext.chan<number>();
+        // @ts-ignore because allowJs is not turned on
+        const values3 = mod.threeTimesValues(channel3);
+        // @ts-ignore because allowJs is not turned on
+        const _values3 = mod2.threeTimesValues(channel3);
+
+        for (const value of sequence(1, 10)) {
+            await channel3.push(value);
+        }
+
+        const results3: number[] = [];
+
+        for await (const value of channel3) {
+            results3.push(value);
+
+            if (results3.length === 10) {
+                break;
+            }
+        }
+
+        deepStrictEqual(await values3, [3, 9, 15, 21, 27]);
+        deepStrictEqual(await _values3, [6, 12, 18, 24, 30]);
+        strictEqual(sum(...results3), 165);
+        channel3.close();
     });
 
     it("use transferable", async () => {

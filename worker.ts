@@ -210,7 +210,7 @@ if (isBun
                 process.send!(res);
             });
         } else if (isChannelMessage(msg)) {
-            handleChannelMessage(msg);
+            await handleChannelMessage(msg);
         }
     });
 } else if (!isNode && typeof self === "object") {
