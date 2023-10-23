@@ -53,7 +53,7 @@ const remoteTasks = new Map<number, RemoteTask>;
 
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 type PoolRecord = {
-    getWorker: Promise<Worker | BunWorker | NodeWorker | ChildProcess>;
+    getWorker: Promise<Worker | BunWorker | NodeWorker>;
     tasks: Set<number>;
     lastAccess: number;
 };
@@ -138,14 +138,14 @@ export function isCallResponse(msg: any): msg is CallResponse {
 }
 
 export async function createWorker(options: {
-    entry?: string | undefined;
     adapter?: "worker_threads" | "child_process";
-}): Promise<{
+} = {}): Promise<{
     worker: Worker | BunWorker | NodeWorker | ChildProcess;
     workerId: number;
     kind: "web_worker" | "bun_worker" | "node_worker" | "node_process";
 }> {
-    let { entry, adapter = "worker_threads" } = options;
+    let { adapter = "worker_threads" } = options;
+    let entry = parallel.workerEntry;
 
     if (isNode || isBun) {
         if (!entry) {
@@ -299,7 +299,7 @@ async function acquireWorker(taskId: number) {
     } else if (workerPool.length < maxWorkers) {
         workerPool.push(poolRecord = {
             getWorker: (async () => {
-                const { worker } = await createWorker({ entry: parallel.workerEntry });
+                const worker = (await createWorker()).worker as Worker | BunWorker | NodeWorker;
                 const handleMessage = (msg: any) => {
                     if (isChannelMessage(msg)) {
                         handleChannelMessage(msg);
@@ -356,7 +356,7 @@ async function acquireWorker(taskId: number) {
 
                             if (!poolRecord.tasks.size && (isNode || isBun)) {
                                 // Allow the main thread to exit if the event loop is empty.
-                                (worker as NodeWorker | BunWorker | ChildProcess).unref();
+                                (worker as NodeWorker | BunWorker).unref();
                             }
                         } else if (msg.type === "yield") {
                             task.channel?.push({ value: msg.value, done: msg.done as boolean });
@@ -433,7 +433,7 @@ async function acquireWorker(taskId: number) {
 
                 workerPool = workerPool.filter(item => {
                     const ideal = !item.tasks.size
-                        && (now - item.lastAccess) >= 60_000;
+                        && (now - item.lastAccess) >= 10_000;
 
                     if (ideal) {
                         idealItems.push(item);
@@ -444,14 +444,9 @@ async function acquireWorker(taskId: number) {
 
                 idealItems.forEach(async item => {
                     const worker = await item.getWorker;
-
-                    if (typeof (worker as any)["terminate"] === "function") {
-                        await (worker as Worker | BunWorker | NodeWorker).terminate();
-                    } else {
-                        (worker as ChildProcess).kill();
-                    }
+                    await (worker as Worker | BunWorker | NodeWorker).terminate();
                 });
-            }, 60_000);
+            }, 1_000);
 
             if (isNode || isBun) {
                 (gcTimer as NodeJS.Timeout).unref();
@@ -470,7 +465,7 @@ async function acquireWorker(taskId: number) {
 
     if (isNode || isBun) {
         // Prevent premature exit in the main thread.
-        (worker as NodeWorker | BunWorker | ChildProcess).ref();
+        (worker as NodeWorker | BunWorker).ref();
     }
 
     return worker;
@@ -536,24 +531,18 @@ export function wrapArgs<A extends any[]>(
 }
 
 async function safeRemoteCall(
-    worker: Worker | BunWorker | NodeWorker | ChildProcess,
+    worker: Worker | BunWorker | NodeWorker,
     req: CallRequest,
-    transferable: ArrayBuffer[] = [],
-    taskId: number = 0
+    transferable: ArrayBuffer[],
+    taskId: number
 ) {
     try {
-        if (typeof (worker as any)["postMessage"] === "function") {
-            (worker as Worker).postMessage(req, transferable);
-        } else {
-            await new Promise<void>((resolve, reject) => {
-                (worker as ChildProcess).send(req, err => err ? reject(err) : resolve());
-            });
-        }
+        (worker as Worker).postMessage(req, transferable);
     } catch (err) {
-        taskId && remoteTasks.delete(taskId);
+        remoteTasks.delete(taskId);
 
         if (typeof (worker as any)["unref"] === "function") {
-            (worker as BunWorker | NodeWorker | ChildProcess).unref();
+            (worker as BunWorker | NodeWorker).unref();
         }
 
         throw err;

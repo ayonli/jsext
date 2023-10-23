@@ -152,7 +152,7 @@ async function run<R, A extends any[] = any[]>(
         // `run.maxWorkers`. If the the call doesn't keep-alive the worker, it will be
         // cleaned after the call.
         workerPool.push(poolRecord = {
-            getWorker: createWorker({ entry: parallel.workerEntry, adapter }),
+            getWorker: createWorker({ adapter }),
             adapter,
             busy: true,
         });

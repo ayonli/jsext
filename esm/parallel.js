@@ -64,9 +64,10 @@ function sanitizeModuleId(id, strict = false) {
 function isCallResponse(msg) {
     return msg && typeof msg === "object" && ["return", "yield", "error", "gen"].includes(msg.type);
 }
-async function createWorker(options) {
+async function createWorker(options = {}) {
     var _a;
-    let { entry, adapter = "worker_threads" } = options;
+    let { adapter = "worker_threads" } = options;
+    let entry = parallel.workerEntry;
     if (isNode || isBun) {
         if (!entry) {
             const path = await import('path');
@@ -212,7 +213,7 @@ async function acquireWorker(taskId) {
     else if (workerPool.length < maxWorkers) {
         workerPool.push(poolRecord = {
             getWorker: (async () => {
-                const { worker } = await createWorker({ entry: parallel.workerEntry });
+                const worker = (await createWorker()).worker;
                 const handleMessage = (msg) => {
                     var _a, _b, _c, _d;
                     if (isChannelMessage(msg)) {
@@ -339,7 +340,7 @@ async function acquireWorker(taskId) {
                 const idealItems = [];
                 workerPool = workerPool.filter(item => {
                     const ideal = !item.tasks.size
-                        && (now - item.lastAccess) >= 60000;
+                        && (now - item.lastAccess) >= 10000;
                     if (ideal) {
                         idealItems.push(item);
                     }
@@ -347,14 +348,9 @@ async function acquireWorker(taskId) {
                 });
                 idealItems.forEach(async (item) => {
                     const worker = await item.getWorker;
-                    if (typeof worker["terminate"] === "function") {
-                        await worker.terminate();
-                    }
-                    else {
-                        worker.kill();
-                    }
+                    await worker.terminate();
                 });
-            }, 60000);
+            }, 1000);
             if (isNode || isBun) {
                 gcTimer.unref();
             }
@@ -425,19 +421,12 @@ function wrapArgs(args, getWorker) {
     });
     return { args, transferable };
 }
-async function safeRemoteCall(worker, req, transferable = [], taskId = 0) {
+async function safeRemoteCall(worker, req, transferable, taskId) {
     try {
-        if (typeof worker["postMessage"] === "function") {
-            worker.postMessage(req, transferable);
-        }
-        else {
-            await new Promise((resolve, reject) => {
-                worker.send(req, err => err ? reject(err) : resolve());
-            });
-        }
+        worker.postMessage(req, transferable);
     }
     catch (err) {
-        taskId && remoteTasks.delete(taskId);
+        remoteTasks.delete(taskId);
         if (typeof worker["unref"] === "function") {
             worker.unref();
         }
