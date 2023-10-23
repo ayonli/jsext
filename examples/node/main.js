@@ -53,8 +53,8 @@ function pipeResponse(res, _res) {
 if (cluster.isPrimary && isMainThread) {
     if (process.argv.includes("--cluster=builtin")) {
         // Even for a simple web application, this version is the best win. Node.js builtin cluster
-        // handles about 3/2 req/sec compared to single-threaded version, and way more ahead than
-        // the parallel-threads version, although consumes much more system memory.
+        // handles about 2 times req/sec compared to single-threaded version, and way more ahead
+        // than the parallel-threads version, although consumes much more system memory.
 
         const numCPUs = availableParallelism();
 
@@ -67,8 +67,6 @@ if (cluster.isPrimary && isMainThread) {
             // coping and transferring data between the main thread and worker threads is very
             // heavy and slow, the server can only handle about 1/2 req/sec compared to the
             // single-threaded version.
-            // Still, it beats Deno's parallel-threads version, it seems Node.js performs better
-            // at transferring data between threads.
 
             const req = incomingMessageToRequest(_req);
             /**

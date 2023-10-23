@@ -62,7 +62,7 @@ if (Bun.isMainThread) {
     } else {
         // This is absolutely the best win. It seems Bun doesn't just run a single-threaded
         // web server (like Node.js and Deno), it spawns multiple threads (= CPUs + 2) to
-        // handle connections internally, an they consume very little system memory.
+        // handle connections internally, and they consume very little system memory.
         Bun.serve({
             hostname: "localhost",
             port: 8000,
