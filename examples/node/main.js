@@ -64,7 +64,7 @@ if (cluster.isPrimary && isMainThread) {
     } else if (process.argv.includes("--cluster=parallel-threads")) {
         http.createServer(async (_req, _res) => {
             // For a simple web application, using parallel threads isn't an ideal choice,
-            // coping and transferring data between the main thread and worker threads is very
+            // cloning and transferring data between the main thread and worker threads are very
             // heavy and slow, the server can only handle about 1/2 req/sec compared to the
             // single-threaded version.
 

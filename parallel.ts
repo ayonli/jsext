@@ -748,8 +748,13 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * `Request` and `Response` instances into plain objects and pass them between threads without
  * overhead.
  * 
- * NOTE: If the current module is already in a worker thread, use this function won't create another
+ * NOTE: if the current module is already in a worker thread, use this function won't create another
  * worker thread.
+ * 
+ * NOTE: cloning and transferring data between the main thread and worker threads are very heavy
+ * and slow, worker threads are only intended to run CPU-intensive tasks and prevent blocking the
+ * main thread, they have no advantage when performing IO-intensive tasks such as handling HTTP
+ * requests, always prefer `cluster` module for that kind of purpose.
  * 
  * @example
  * ```ts

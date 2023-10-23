@@ -27,8 +27,8 @@ if (isMainThread) {
             return await fetch(url, req);
         });
     } else if (Deno.args.includes("--cluster=parallel-threads")) {
-        // For a simple web application, using parallel threads isn't an ideal choice, coping and
-        // transferring data between the main thread and worker threads is very heavy and slow, the
+        // For a simple web application, using parallel threads isn't an ideal choice, cloning and
+        // transferring data between the main thread and worker threads are very heavy and slow, the
         // server can only handle about 1/10 req/sec compared to the single-threaded version.
         // Still, it beats reverse-proxy versions, either the above version or Nginx (very low rps,
         // only about 1/8 req/sec compared to parallel threads).
