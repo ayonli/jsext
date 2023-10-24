@@ -5,7 +5,7 @@ import chan, { Channel } from "./chan.ts";
 import { sequence } from "./number/index.ts";
 import { trim } from "./string/index.ts";
 import { isPlainObject } from "./object/index.ts";
-import { fromErrorEvent, fromObject } from "./error/index.ts";
+import { Exception, fromErrorEvent, fromObject, isAggregateError, isDOMException, toObject } from "./error/index.ts";
 import {
     isNode,
     isDeno,
@@ -341,10 +341,12 @@ async function acquireWorker(taskId: number) {
                                     task.error = err;
                                 }
                             } else {
+                                const value = unwrapReturnValue(msg.value);
+
                                 if (task.resolver) {
-                                    task.resolver.resolve(msg.value);
+                                    task.resolver.resolve(value);
                                 } else {
-                                    task.result = { value: msg.value };
+                                    task.result = { value };
                                 }
 
                                 if (task.channel) {
@@ -359,13 +361,14 @@ async function acquireWorker(taskId: number) {
                                 (worker as NodeWorker | BunWorker).unref();
                             }
                         } else if (msg.type === "yield") {
-                            task.channel?.push({ value: msg.value, done: msg.done as boolean });
+                            const value = unwrapReturnValue(msg.value);
+                            task.channel?.push({ value, done: msg.done as boolean });
 
                             if (msg.done) {
                                 // The final message of yield event is the return value.
                                 handleMessage({
                                     type: "return",
-                                    value: msg.value,
+                                    value,
                                     taskId: msg.taskId,
                                 } satisfies CallResponse);
                             }
@@ -510,6 +513,8 @@ export function wrapArgs<A extends any[]>(
                     }
                 });
             });
+        } else if ((arg instanceof Exception) || isDOMException(arg) || isAggregateError(arg)) {
+            return toObject(arg);
         }
 
         if (arg instanceof ArrayBuffer) {
@@ -520,14 +525,45 @@ export function wrapArgs<A extends any[]>(
 
                 if (value instanceof ArrayBuffer) {
                     transferable.push(value);
+                } else if ((value instanceof Exception)
+                    || isDOMException(value)
+                    || isAggregateError(value)
+                ) {
+                    arg[key] = toObject(value);
                 }
             }
+        } else if (Array.isArray(arg)) {
+            arg = arg.map(item => {
+                if (item instanceof ArrayBuffer) {
+                    transferable.push(item);
+                    return item;
+                } else if ((item instanceof Exception)
+                    || isDOMException(item)
+                    || isAggregateError(item)
+                ) {
+                    return toObject(item);
+                } else {
+                    return item;
+                }
+            });
         }
 
         return arg;
     }) as A;
 
     return { args, transferable };
+}
+
+export function unwrapReturnValue(value: any): any {
+    if (isPlainObject(value) && (
+        value["@@type"] === "Exception" ||
+        value["@@type"] === "DOMException" ||
+        value["@@type"] === "AggregateError"
+    )) {
+        return fromObject(value);
+    }
+
+    return value;
 }
 
 async function safeRemoteCall(
@@ -755,6 +791,23 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * and slow, worker threads are only intended to run CPU-intensive tasks and prevent blocking the
  * main thread, they have no advantage when performing IO-intensive tasks such as handling HTTP
  * requests, always prefer `cluster` module for that kind of purpose.
+ * 
+ * NOTE: for error types, only the following errors can be properly sent and received between
+ * threads.
+ * 
+ * - `Error`
+ * - `EvalError`
+ * - `RangeError`
+ * - `ReferenceError`
+ * - `SyntaxError`
+ * - `TypeError`
+ * - `URIError`
+ * - `AggregateError` (as arguments, return values, thrown values, or shallow object properties)
+ * - `Exception` (as arguments, return values, thrown values, or shallow object properties)
+ * - `DOMException` (as arguments, return values, thrown values, or shallow object properties)
+ * 
+ * In order to handle errors properly between threads, throw well-known error types or use
+ * `Exception` (or `DOMException`) with error names in the threaded function.
  * 
  * @example
  * ```ts

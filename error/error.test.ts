@@ -1,6 +1,9 @@
 import "../augment.ts";
-import { ok, strictEqual } from "node:assert";
+import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { isNode, isBun } from "../util.ts";
+import { pick } from "../object/index.ts";
+
+declare var AggregateError: new (errors: Error[], message?: string, options?: { cause: unknown; }) => Error & { errors: Error[]; };
 
 describe("Error", () => {
     it("Error.toObject", () => {
@@ -9,6 +12,7 @@ describe("Error", () => {
             code: 500,
         });
         const obj1 = Error.toObject(err1);
+        strictEqual(obj1["@@type"], "Error");
         strictEqual(obj1["name"], err1.name);
         strictEqual(obj1["message"], err1.message);
         strictEqual(obj1["stack"], err1.stack);
@@ -22,6 +26,7 @@ describe("Error", () => {
             code: 500,
         });
         const obj2 = Error.toObject(err2);
+        strictEqual(obj2["@@type"], "TypeError");
         strictEqual(obj2["name"], err2.name);
         strictEqual(obj2["message"], err2.message);
         strictEqual(obj2["stack"], err2.stack);
@@ -33,11 +38,32 @@ describe("Error", () => {
         // @ts-ignore
         const err3 = new Exception("something went wrong", { cause: "unknown", code: 500 });
         const obj3 = Error.toObject(err3);
+        strictEqual(obj3["@@type"], "Exception");
         strictEqual(obj3["name"], err3.name);
         strictEqual(obj3["message"], err3.message);
         strictEqual(obj3["stack"], err3.stack);
         strictEqual(obj3["cause"], err3.cause);
         strictEqual(obj3["code"], err3.code);
+
+        if (typeof DOMException === "function") {
+            const err4 = new DOMException("something went wrong", "UnknownError");
+            const obj4 = Error.toObject(err4);
+            strictEqual(obj4["@@type"], "DOMException");
+            strictEqual(obj4["name"], "UnknownError");
+            strictEqual(obj4["message"], err4.message);
+            strictEqual(obj4["stack"], err4.stack);
+        }
+
+        if (typeof AggregateError === "function") {
+            const _err = new Error("some error");
+            const err5 = new AggregateError([_err], "something went wrong");
+            const obj5 = Error.toObject(err5);
+            strictEqual(obj5["@@type"], "AggregateError");
+            strictEqual(obj5["name"], "AggregateError");
+            strictEqual(obj5["message"], err5.message);
+            strictEqual(obj5["stack"], err5.stack);
+            deepStrictEqual(obj5["errors"], [Error.toObject(_err)]);
+        }
     });
 
     it("Error.fromObject", () => {
@@ -196,13 +222,34 @@ describe("Error", () => {
         const err10 = Error.fromObject(obj10);
         strictEqual(err10?.constructor, Exception);
         strictEqual(err10?.name, "UnknownError");
-
         strictEqual(err10?.message, obj10["message"]);
         strictEqual(err10?.stack, obj10["stack"]);
         // @ts-ignore
         strictEqual(err10?.["cause"], obj10["cause"]);
         // @ts-ignore
         strictEqual(err10?.["code"], obj10["code"]);
+
+        if (typeof DOMException === "function") {
+            const obj12 = Error.toObject(new DOMException("something went wrong", "UnknownError"));
+            const err12 = Error.fromObject(obj12);
+            strictEqual(err12?.constructor, DOMException);
+            strictEqual(err12?.name, "UnknownError");
+            strictEqual(err12?.message, obj12["message"]);
+            strictEqual(err12?.stack, obj12["stack"]);
+        }
+
+        if (typeof AggregateError === "function") {
+            const _err = new Error("some error");
+            const obj12 = Error.toObject(new AggregateError([_err], "something went wrong"));
+            const err12 = Error.fromObject(obj12);
+            strictEqual(err12?.constructor, AggregateError);
+            strictEqual(err12?.name, "AggregateError");
+            strictEqual(err12?.message, obj12["message"]);
+            strictEqual(err12?.stack, obj12["stack"]);
+            // @ts-ignore
+            deepStrictEqual(pick(err12?.errors[0], ["constructor", "name", "message", "stack"]),
+                pick(_err, ["constructor", "name", "message", "stack"]));
+        }
 
         strictEqual(Error.fromObject({ foo: "bar" }), null);
     });
@@ -213,6 +260,7 @@ describe("Error", () => {
             code: 500,
         });
         const obj1 = err1.toJSON();
+        strictEqual(obj1["@@type"], "Error");
         strictEqual(obj1["name"], err1.name);
         strictEqual(obj1["message"], err1.message);
         strictEqual(obj1["stack"], err1.stack);
@@ -226,6 +274,7 @@ describe("Error", () => {
             code: 500,
         });
         const obj2 = err2.toJSON();
+        strictEqual(obj2["@@type"], "TypeError");
         strictEqual(obj2["name"], err2.name);
         strictEqual(obj2["message"], err2.message);
         strictEqual(obj2["stack"], err2.stack);
@@ -237,6 +286,7 @@ describe("Error", () => {
         // @ts-ignore
         const err3 = new Exception("something went wrong", { cause: "unknown", code: 500 });
         const obj3 = err3.toJSON();
+        strictEqual(obj3["@@type"], "Exception");
         strictEqual(obj3["name"], err3.name);
         strictEqual(obj3["message"], err3.message);
         strictEqual(obj3["stack"], err3.stack);
@@ -262,7 +312,7 @@ describe("Error", () => {
             ok(event.lineno > 0);
             ok(event.colno > 0);
         } else {
-            strictEqual(event.lineno, 252);
+            strictEqual(event.lineno, 302);
             strictEqual(event.colno, 21);
         }
 
@@ -284,7 +334,7 @@ describe("Error", () => {
             ok(event2.lineno > 0);
             ok(event2.colno > 0);
         } else {
-            strictEqual(event2.lineno, 269);
+            strictEqual(event2.lineno, 319);
             strictEqual(event2.colno, 22);
         }
 
@@ -316,7 +366,7 @@ describe("Error", () => {
             error: err,
             message: err.message,
             filename,
-            lineno: 313,
+            lineno: 363,
             colno: 21,
         });
 
@@ -326,18 +376,18 @@ describe("Error", () => {
         const event2 = new ErrorEvent("error", {
             message: err.message,
             filename,
-            lineno: 313,
+            lineno: 363,
             colno: 21,
         });
         const err2 = Error.fromErrorEvent(event2);
         strictEqual(err2?.message, err.message);
-        strictEqual(err2?.stack, `Error: ${err.message}\n    at ${filename}:${313}:21`);
+        strictEqual(err2?.stack, `Error: ${err.message}\n    at ${filename}:${363}:21`);
 
         const event3 = new ErrorEvent("error", {
             error: Error.toObject(err),
             message: err.message,
             filename,
-            lineno: 313,
+            lineno: 363,
             colno: 21,
         });
         const err3 = Error.fromErrorEvent(event3);

@@ -1,5 +1,5 @@
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
-import { toObject } from "./error/index.ts";
+import { Exception, fromObject, isAggregateError, isDOMException, toObject } from "./error/index.ts";
 import { isPlainObject } from "./object/index.ts";
 import type { CallRequest, CallResponse } from "./parallel.ts";
 import {
@@ -20,14 +20,18 @@ function unwrapArgs(
     channelWrite: (type: "push" | "close", msg: any, channelId: number) => void
 ) {
     return args.map(arg => {
-        if (isPlainObject(arg) &&
-            arg["@@type"] === "Channel" &&
-            typeof arg["@@id"] === "number"
-        ) {
-            return unwrapChannel(arg as any, channelWrite);
-        } else {
-            return arg;
+        if (isPlainObject(arg)) {
+            if (arg["@@type"] === "Channel" && typeof arg["@@id"] === "number") {
+                return unwrapChannel(arg as any, channelWrite);
+            } else if (arg["@@type"] === "Exception"
+                || arg["@@type"] === "DOMException"
+                || arg["@@type"] === "AggregateError"
+            ) {
+                return fromObject(arg);
+            }
         }
+
+        return arg;
     });
 }
 
@@ -36,14 +40,35 @@ function wrapReturnValue<T>(value: T): { value: T, transferable: ArrayBuffer[]; 
 
     if (value instanceof ArrayBuffer) {
         transferable.push(value);
+    } else if ((value instanceof Exception) || isDOMException(value) || isAggregateError(value)) {
+        value = toObject(value as any) as T;
     } else if (isPlainObject(value)) {
         for (const key of Object.getOwnPropertyNames(value)) {
             const _value = value[key];
 
             if (_value instanceof ArrayBuffer) {
                 transferable.push(_value);
+            } else if ((_value instanceof Exception)
+                || isDOMException(_value)
+                || isAggregateError(_value)
+            ) {
+                (value as any)[key] = toObject(_value);
             }
         }
+    } else if (Array.isArray(value)) {
+        value = value.map(item => {
+            if (item instanceof ArrayBuffer) {
+                transferable.push(item);
+                return item;
+            } else if ((item instanceof Exception)
+                || isDOMException(item)
+                || isAggregateError(item)
+            ) {
+                return toObject(item);
+            } else {
+                return item;
+            }
+        }) as T;
     }
 
     return { value, transferable };
@@ -63,26 +88,19 @@ export async function handleCallRequest(
     const _reply = reply;
     reply = (res) => {
         if (res.type === "error") {
-            if (isNode && process.argv.includes("--serialization=json")) {
+            if (isNode && (res.error instanceof Error)) {
                 return _reply({
                     ...res,
-                    error: toObject(res.error as Error)
+                    error: toObject(res.error as Error),
                 } as CallResponse | ChannelMessage);
             }
 
-            if ((typeof DOMException === "function" && res.error instanceof DOMException) ||
-                (res.error instanceof Error && ["DOMException", "DataCloneError"].includes(res.error.name)) // Node v16-
-            ) {
+            if (isDOMException(res.error)) {
                 // DOMException cannot be cloned properly, fallback to transferring it as
                 // an object and rebuild in the main thread.
                 return _reply({
                     ...res,
-                    error: {
-                        ...toObject(res.error as Error),
-                        // In Node.js, the default name of DOMException is incorrect,
-                        // we need to set it right.
-                        name: res.error.name === "DataCloneError" ? "DataCloneError" : "DOMException",
-                    },
+                    error: toObject(res.error as DOMException),
                 } as CallResponse | ChannelMessage);
             }
 

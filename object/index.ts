@@ -73,7 +73,7 @@ export function omit(obj: any, keys: (string | symbol)[]) {
 
     // special treatment for Error types
     if (obj instanceof Error) {
-        ["name", "message", "cause"].forEach(key => {
+        ["name", "message", "stack", "cause"].forEach(key => {
             if (!keys.includes(key) &&
                 (obj as any)[key] !== undefined &&
                 !hasOwn(result, key)

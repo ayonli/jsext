@@ -417,7 +417,7 @@ function omit(obj, keys) {
     const result = pick(obj, keptKeys);
     // special treatment for Error types
     if (obj instanceof Error) {
-        ["name", "message", "cause"].forEach(key => {
+        ["name", "message", "stack", "cause"].forEach(key => {
             if (!keys.includes(key) &&
                 obj[key] !== undefined &&
                 !hasOwn(result, key)) {
@@ -488,7 +488,16 @@ function toObject(err) {
     if (!(err instanceof Error) && err["name"] && err["message"]) { // Error-like
         err = fromObject(err, Error);
     }
-    return { "@@type": err.constructor.name, ...omit(err, ["toString", "toJSON"]) };
+    const obj = {
+        "@@type": err.constructor.name,
+        ...omit(err, ["toString", "toJSON", "__callSiteEvals"]),
+    };
+    if (obj["@@type"] === "AggregateError" && Array.isArray(obj["errors"])) {
+        obj["errors"] = obj["errors"].map(item => {
+            return item instanceof Error ? toObject(item) : item;
+        });
+    }
+    return obj;
 }
 function fromObject(obj, ctor = undefined) {
     var _a, _b;
@@ -556,20 +565,38 @@ function fromObject(obj, ctor = undefined) {
         // @ts-ignore
         (_a = err[key]) !== null && _a !== void 0 ? _a : (err[key] = obj[key]);
     });
+    // @ts-ignore
+    if (isAggregateError(err) && Array.isArray(err["errors"])) {
+        err["errors"] = err["errors"].map(item => {
+            return isPlainObject(item) ? fromObject(item) : item;
+        });
+    }
     return err;
+}
+/** @inner */
+function isDOMException(value) {
+    return (typeof DOMException === "function") && (value instanceof DOMException);
+}
+/** @inner */
+function isAggregateError(value) {
+    // @ts-ignore
+    return typeof AggregateError === "function" && value instanceof AggregateError;
 }
 
 const pendingTasks = new Map();
 function unwrapArgs(args, channelWrite) {
     return args.map(arg => {
-        if (isPlainObject(arg) &&
-            arg["@@type"] === "Channel" &&
-            typeof arg["@@id"] === "number") {
-            return unwrapChannel(arg, channelWrite);
+        if (isPlainObject(arg)) {
+            if (arg["@@type"] === "Channel" && typeof arg["@@id"] === "number") {
+                return unwrapChannel(arg, channelWrite);
+            }
+            else if (arg["@@type"] === "Exception"
+                || arg["@@type"] === "DOMException"
+                || arg["@@type"] === "AggregateError") {
+                return fromObject(arg);
+            }
         }
-        else {
-            return arg;
-        }
+        return arg;
     });
 }
 function wrapReturnValue(value) {
@@ -577,13 +604,37 @@ function wrapReturnValue(value) {
     if (value instanceof ArrayBuffer) {
         transferable.push(value);
     }
+    else if ((value instanceof Exception) || isDOMException(value) || isAggregateError(value)) {
+        value = toObject(value);
+    }
     else if (isPlainObject(value)) {
         for (const key of Object.getOwnPropertyNames(value)) {
             const _value = value[key];
             if (_value instanceof ArrayBuffer) {
                 transferable.push(_value);
             }
+            else if ((_value instanceof Exception)
+                || isDOMException(_value)
+                || isAggregateError(_value)) {
+                value[key] = toObject(_value);
+            }
         }
+    }
+    else if (Array.isArray(value)) {
+        value = value.map(item => {
+            if (item instanceof ArrayBuffer) {
+                transferable.push(item);
+                return item;
+            }
+            else if ((item instanceof Exception)
+                || isDOMException(item)
+                || isAggregateError(item)) {
+                return toObject(item);
+            }
+            else {
+                return item;
+            }
+        });
     }
     return { value, transferable };
 }
@@ -597,25 +648,18 @@ async function handleCallRequest(msg, reply) {
     const _reply = reply;
     reply = (res) => {
         if (res.type === "error") {
-            if (isNode && process.argv.includes("--serialization=json")) {
+            if (isNode && (res.error instanceof Error)) {
                 return _reply({
                     ...res,
-                    error: toObject(res.error)
+                    error: toObject(res.error),
                 });
             }
-            if ((typeof DOMException === "function" && res.error instanceof DOMException) ||
-                (res.error instanceof Error && ["DOMException", "DataCloneError"].includes(res.error.name)) // Node v16-
-            ) {
+            if (isDOMException(res.error)) {
                 // DOMException cannot be cloned properly, fallback to transferring it as
                 // an object and rebuild in the main thread.
                 return _reply({
                     ...res,
-                    error: {
-                        ...toObject(res.error),
-                        // In Node.js, the default name of DOMException is incorrect,
-                        // we need to set it right.
-                        name: res.error.name === "DataCloneError" ? "DataCloneError" : "DOMException",
-                    },
+                    error: toObject(res.error),
                 });
             }
             try {

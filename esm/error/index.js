@@ -1,4 +1,4 @@
-import { omit } from '../object/index.js';
+import { omit, isPlainObject } from '../object/index.js';
 import Exception from './Exception.js';
 
 /** Transform the error to a plain object. */
@@ -6,7 +6,16 @@ function toObject(err) {
     if (!(err instanceof Error) && err["name"] && err["message"]) { // Error-like
         err = fromObject(err, Error);
     }
-    return { "@@type": err.constructor.name, ...omit(err, ["toString", "toJSON"]) };
+    const obj = {
+        "@@type": err.constructor.name,
+        ...omit(err, ["toString", "toJSON", "__callSiteEvals"]),
+    };
+    if (obj["@@type"] === "AggregateError" && Array.isArray(obj["errors"])) {
+        obj["errors"] = obj["errors"].map(item => {
+            return item instanceof Error ? toObject(item) : item;
+        });
+    }
+    return obj;
 }
 function fromObject(obj, ctor = undefined) {
     var _a, _b;
@@ -74,6 +83,12 @@ function fromObject(obj, ctor = undefined) {
         // @ts-ignore
         (_a = err[key]) !== null && _a !== void 0 ? _a : (err[key] = obj[key]);
     });
+    // @ts-ignore
+    if (isAggregateError(err) && Array.isArray(err["errors"])) {
+        err["errors"] = err["errors"].map(item => {
+            return isPlainObject(item) ? fromObject(item) : item;
+        });
+    }
     return err;
 }
 /** Creates an `ErrorEvent` instance based on the given error. */
@@ -161,6 +176,15 @@ function fromErrorEvent(event) {
     }
     return err;
 }
+/** @inner */
+function isDOMException(value) {
+    return (typeof DOMException === "function") && (value instanceof DOMException);
+}
+/** @inner */
+function isAggregateError(value) {
+    // @ts-ignore
+    return typeof AggregateError === "function" && value instanceof AggregateError;
+}
 
-export { Exception, fromErrorEvent, fromObject, toErrorEvent, toObject };
+export { Exception, fromErrorEvent, fromObject, isAggregateError, isDOMException, toErrorEvent, toObject };
 //# sourceMappingURL=index.js.map

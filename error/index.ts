@@ -1,5 +1,5 @@
 import { Constructor } from "../index.ts";
-import { omit } from "../object/index.ts";
+import { isPlainObject, omit } from "../object/index.ts";
 import Exception from "./Exception.ts";
 
 export { Exception };
@@ -10,7 +10,18 @@ export function toObject<T extends Error>(err: T): { [x: string | symbol]: any; 
         err = fromObject(err, Error) as any;
     }
 
-    return { "@@type": err.constructor.name, ...omit(err, ["toString", "toJSON"]) };
+    const obj = {
+        "@@type": err.constructor.name,
+        ...omit(err, ["toString", "toJSON", "__callSiteEvals"]),
+    } as { [x: string | symbol]: any; };
+
+    if (obj["@@type"] === "AggregateError" && Array.isArray(obj["errors"])) {
+        obj["errors"] = (obj["errors"] as unknown[]).map(item => {
+            return item instanceof Error ? toObject(item) : item;
+        });
+    }
+
+    return obj;
 }
 
 /** Reverse a plain object to a specific error type. */
@@ -97,6 +108,13 @@ export function fromObject<T extends Error>(
         // @ts-ignore
         err[key] ??= obj[key];
     });
+
+    // @ts-ignore
+    if (isAggregateError(err) && Array.isArray(err["errors"])) {
+        (err as any)["errors"] = ((err as any)["errors"] as unknown[]).map(item => {
+            return isPlainObject(item) ? fromObject(item) : item;
+        });
+    }
 
     return err;
 }
@@ -199,4 +217,15 @@ export function fromErrorEvent<T extends Error>(event: ErrorEvent): T | null {
     }
 
     return err;
+}
+
+/** @inner */
+export function isDOMException(value: unknown): value is DOMException {
+    return (typeof DOMException === "function") && (value instanceof DOMException);
+}
+
+/** @inner */
+export function isAggregateError(value: unknown): boolean {
+    // @ts-ignore
+    return typeof AggregateError === "function" && value instanceof AggregateError;
 }

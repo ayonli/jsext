@@ -42,7 +42,7 @@ function omit(obj, keys) {
     const result = pick(obj, keptKeys);
     // special treatment for Error types
     if (obj instanceof Error) {
-        ["name", "message", "cause"].forEach(key => {
+        ["name", "message", "stack", "cause"].forEach(key => {
             if (!keys.includes(key) &&
                 obj[key] !== undefined &&
                 !hasOwn(result, key)) {

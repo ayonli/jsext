@@ -636,6 +636,23 @@ and slow, worker threads are only intended to run CPU-intensive tasks and preven
 main thread, they have no advantage when performing IO-intensive tasks such as handling HTTP
 requests, always prefer `cluster` module for that kind of purpose.
 
+NOTE: for error types, only the following errors can be properly sent and received between
+threads.
+
+- `Error`
+- `EvalError`
+- `RangeError`
+- `ReferenceError`
+- `SyntaxError`
+- `TypeError`
+- `URIError`
+- `AggregateError` (as arguments, return values, thrown values, or shallow object properties)
+- `Exception` (as arguments, return values, thrown values, or shallow object properties)
+- `DOMException` (as arguments, return values, thrown values, or shallow object properties)
+
+In order to handle errors properly between threads, throw well-known error types or use
+`Exception` (or `DOMException`) with error names in the threaded function.
+
 **Example (regular or async function)**
 
 ```ts

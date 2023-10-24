@@ -3,8 +3,9 @@ import chan, { Channel } from './chan.js';
 import { sequence } from './number/index.js';
 import { trim } from './string/index.js';
 import { isPlainObject } from './object/index.js';
-import { fromErrorEvent, fromObject } from './error/index.js';
+import { isDOMException, isAggregateError, toObject, fromObject, fromErrorEvent } from './error/index.js';
 import { isNode, isBun, isDeno, wrapChannel, IsPath, isBeforeNode14, isMainThread, resolveModule, isChannelMessage, handleChannelMessage } from './util.js';
+import Exception from './error/Exception.js';
 
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const remoteTasks = new Map;
@@ -254,11 +255,12 @@ async function acquireWorker(taskId) {
                                 }
                             }
                             else {
+                                const value = unwrapReturnValue(msg.value);
                                 if (task.resolver) {
-                                    task.resolver.resolve(msg.value);
+                                    task.resolver.resolve(value);
                                 }
                                 else {
-                                    task.result = { value: msg.value };
+                                    task.result = { value };
                                 }
                                 if (task.channel) {
                                     task.channel.close();
@@ -271,12 +273,13 @@ async function acquireWorker(taskId) {
                             }
                         }
                         else if (msg.type === "yield") {
-                            (_c = task.channel) === null || _c === void 0 ? void 0 : _c.push({ value: msg.value, done: msg.done });
+                            const value = unwrapReturnValue(msg.value);
+                            (_c = task.channel) === null || _c === void 0 ? void 0 : _c.push({ value, done: msg.done });
                             if (msg.done) {
                                 // The final message of yield event is the return value.
                                 handleMessage({
                                     type: "return",
-                                    value: msg.value,
+                                    value,
                                     taskId: msg.taskId,
                                 });
                             }
@@ -406,6 +409,9 @@ function wrapArgs(args, getWorker) {
                 });
             });
         }
+        else if ((arg instanceof Exception) || isDOMException(arg) || isAggregateError(arg)) {
+            return toObject(arg);
+        }
         if (arg instanceof ArrayBuffer) {
             transferable.push(arg);
         }
@@ -415,11 +421,40 @@ function wrapArgs(args, getWorker) {
                 if (value instanceof ArrayBuffer) {
                     transferable.push(value);
                 }
+                else if ((value instanceof Exception)
+                    || isDOMException(value)
+                    || isAggregateError(value)) {
+                    arg[key] = toObject(value);
+                }
             }
+        }
+        else if (Array.isArray(arg)) {
+            arg = arg.map(item => {
+                if (item instanceof ArrayBuffer) {
+                    transferable.push(item);
+                    return item;
+                }
+                else if ((item instanceof Exception)
+                    || isDOMException(item)
+                    || isAggregateError(item)) {
+                    return toObject(item);
+                }
+                else {
+                    return item;
+                }
+            });
         }
         return arg;
     });
     return { args, transferable };
+}
+function unwrapReturnValue(value) {
+    if (isPlainObject(value) && (value["@@type"] === "Exception" ||
+        value["@@type"] === "DOMException" ||
+        value["@@type"] === "AggregateError")) {
+        return fromObject(value);
+    }
+    return value;
 }
 async function safeRemoteCall(worker, req, transferable, taskId) {
     try {
@@ -623,6 +658,23 @@ function extractBaseUrl(stackTrace) {
  * main thread, they have no advantage when performing IO-intensive tasks such as handling HTTP
  * requests, always prefer `cluster` module for that kind of purpose.
  *
+ * NOTE: for error types, only the following errors can be properly sent and received between
+ * threads.
+ *
+ * - `Error`
+ * - `EvalError`
+ * - `RangeError`
+ * - `ReferenceError`
+ * - `SyntaxError`
+ * - `TypeError`
+ * - `URIError`
+ * - `AggregateError` (as arguments, return values, thrown values, or shallow object properties)
+ * - `Exception` (as arguments, return values, thrown values, or shallow object properties)
+ * - `DOMException` (as arguments, return values, thrown values, or shallow object properties)
+ *
+ * In order to handle errors properly between threads, throw well-known error types or use
+ * `Exception` (or `DOMException`) with error names in the threaded function.
+ *
  * @example
  * ```ts
  * // regular or async function
@@ -740,5 +792,5 @@ function parallel(module) {
 })(parallel || (parallel = {}));
 var parallel$1 = parallel;
 
-export { createWorker, parallel$1 as default, getMaxParallelism, isCallResponse, sanitizeModuleId, wrapArgs };
+export { createWorker, parallel$1 as default, getMaxParallelism, isCallResponse, sanitizeModuleId, unwrapReturnValue, wrapArgs };
 //# sourceMappingURL=parallel.js.map

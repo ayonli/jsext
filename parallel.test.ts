@@ -2,9 +2,12 @@ import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import jsext from "./index.ts";
 import { sequence } from "./number/index.ts";
 import { sum } from "./math/index.ts";
+import { pick } from "./object/index.ts";
+import Exception from "./error/Exception.ts";
 
 declare var Deno: any;
 declare var Bun: any;
+declare var AggregateError: new (errors: Error[], message?: string, options?: { cause: unknown; }) => Error & { errors: Error[]; };
 
 describe("jsext.parallel", () => {
     const modUrl = new URL("./examples/worker.mjs", import.meta.url).href;
@@ -30,17 +33,92 @@ describe("jsext.parallel", () => {
     });
 
     it("use error", async () => {
-        const err = new Error("something went wrong");
         // @ts-ignore because allowJs is not turned on
-        const returns = await mod.transferError(err);
-        ok(returns instanceof Error);
-        strictEqual(returns.message, err.message);
-        strictEqual(returns.stack, err.stack);
+        const [err1] = await jsext.try(mod.throwError("not good"));
+        ok(err1 instanceof Error);
+        strictEqual(err1.message, "not good");
 
+        const err2 = new Error("something went wrong");
         // @ts-ignore because allowJs is not turned on
-        const [err2] = await jsext.try(mod.throwError("not good"));
-        ok(err2 instanceof Error);
-        strictEqual(err2.message, "not good");
+        const returns2 = await mod.transferError(err2);
+        ok(returns2 instanceof Error);
+        strictEqual(returns2.message, err2.message);
+        strictEqual(returns2.stack, err2.stack);
+
+        const err3 = new EvalError("something went wrong");
+        // @ts-ignore because allowJs is not turned on
+        const returns3 = await mod.transferError(err3);
+        ok(returns3 instanceof EvalError);
+        strictEqual(returns3.message, err3.message);
+        strictEqual(returns3.stack, err3.stack);
+
+        const err4 = new RangeError("something went wrong");
+        // @ts-ignore because allowJs is not turned on
+        const returns4 = await mod.transferError(err4);
+        ok(returns4 instanceof RangeError);
+        strictEqual(returns4.message, err4.message);
+        strictEqual(returns4.stack, err4.stack);
+
+        const err5 = new ReferenceError("something went wrong");
+        // @ts-ignore because allowJs is not turned on
+        const returns5 = await mod.transferError(err5);
+        ok(returns5 instanceof ReferenceError);
+        strictEqual(returns5.message, err5.message);
+        strictEqual(returns5.stack, err5.stack);
+
+        const err6 = new SyntaxError("something went wrong");
+        // @ts-ignore because allowJs is not turned on
+        const returns6 = await mod.transferError(err6);
+        ok(returns6 instanceof SyntaxError);
+        strictEqual(returns6.message, err6.message);
+        strictEqual(returns6.stack, err6.stack);
+
+        const err7 = new TypeError("something went wrong");
+        // @ts-ignore because allowJs is not turned on
+        const returns7 = await mod.transferError(err7);
+        ok(returns7 instanceof TypeError);
+        strictEqual(returns7.message, err7.message);
+        strictEqual(returns7.stack, err7.stack);
+
+        const err8 = new URIError("something went wrong");
+        // @ts-ignore because allowJs is not turned on
+        const returns8 = await mod.transferError(err8);
+        ok(returns8 instanceof URIError);
+        strictEqual(returns8.message, err8.message);
+        strictEqual(returns8.stack, err8.stack);
+
+        const err9 = new Exception("something went wrong", "UnknownError");
+        // @ts-ignore because allowJs is not turned on
+        const returns9 = await mod.transferError(err9);
+        ok(returns9 instanceof Exception);
+        strictEqual(returns9.name, "UnknownError");
+        strictEqual(returns9.message, err9.message);
+        strictEqual(returns9.stack, err9.stack);
+
+        if (typeof DOMException === "function") {
+            const err10 = new DOMException("something went wrong", "UnknownError");
+            // @ts-ignore because allowJs is not turned on
+            const returns10 = await mod.transferError(err10);
+
+            ok(returns10 instanceof DOMException);
+            strictEqual(returns10.name, "UnknownError");
+            strictEqual(returns10.message, err10.message);
+            strictEqual(returns10.stack, err10.stack);
+        }
+
+        if (typeof AggregateError === "function") {
+            const _err = new Error("another error");
+            const err10 = new AggregateError([_err], "something went wrong");
+            // @ts-ignore because allowJs is not turned on
+            const returns10 = await mod.transferError(err10);
+
+            ok(returns10 instanceof AggregateError);
+            strictEqual(returns10.name, "AggregateError");
+            strictEqual(returns10.message, err10.message);
+            strictEqual(returns10.stack, err10.stack);
+            deepStrictEqual(pick(returns10.errors[0], ["constructor", "name", "message", "stack"]),
+                pick(err10.errors[0], ["constructor", "name", "message", "stack"]));
+        }
     });
 
     it("use channel", async () => {
