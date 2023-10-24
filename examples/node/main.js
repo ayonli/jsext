@@ -8,44 +8,44 @@ import { availableParallelism } from "node:os";
 const { parallelHandle } = parallel(() => import("./worker.js"));
 
 /**
- * @param {http.IncomingMessage} _req
+ * @param {http.IncomingMessage} nReq
  * @returns {Request}
  */
-function incomingMessageToRequest(_req) {
-    return new Request(new URL(_req.url, "http://" + (_req.headers["host"] || "localhost:8000")), {
-        method: _req.method,
-        headers: _req.headers,
-        body: ["GET", "HEAD", "OPTIONS"].includes(_req.method) ? null : new ReadableStream({
+function incomingMessageToRequest(nReq) {
+    return new Request(new URL(nReq.url, "http://" + (nReq.headers["host"] || "localhost:8000")), {
+        method: nReq.method,
+        headers: nReq.headers,
+        body: ["GET", "HEAD", "OPTIONS"].includes(nReq.method) ? null : new ReadableStream({
             async start(controller) {
-                for await (const chunk of _req) {
+                for await (const chunk of nReq) {
                     controller.enqueue(chunk);
                 }
 
                 controller.close();
             },
         }),
-        cache: _req.headers["cache-control"],
+        cache: nReq.headers["cache-control"],
         credentials: "include",
         keepalive: false,
-        mode: _req.headers["sec-fetch-mode"],
+        mode: nReq.headers["sec-fetch-mode"],
         redirect: "follow",
-        referrer: _req.headers["referer"],
+        referrer: nReq.headers["referer"],
         duplex: "half",
     });
 }
 
 /**
  * @param {Response} res 
- * @param {http.ServerResponse} _res 
+ * @param {http.ServerResponse} nRes 
  */
-function pipeResponse(res, _res) {
-    _res.writeHead(res.status, res.statusText, Object.fromEntries(res.headers.entries()));
+function pipeResponse(res, nRes) {
+    nRes.writeHead(res.status, res.statusText, Object.fromEntries(res.headers.entries()));
     res.body?.pipeTo(new WritableStream({
         write(chunk) {
-            _res.write(chunk);
+            nRes.write(chunk);
         },
         close() {
-            _res.end();
+            nRes.end();
         }
     }));
 }
@@ -62,44 +62,74 @@ if (cluster.isPrimary && isMainThread) {
             cluster.fork();
         }
     } else if (process.argv.includes("--cluster=parallel-threads")) {
-        http.createServer(async (_req, _res) => {
-            // For a simple web application, using parallel threads isn't an ideal choice,
-            // cloning and transferring data between the main thread and worker threads are very
-            // heavy and slow, the server can only handle about 1/2 req/sec compared to the
-            // single-threaded version.
+        // For a simple web application, using parallel threads isn't an ideal choice, cloning and
+        // transferring data between the main thread and worker threads are very heavy and slow.
+        //
+        // In Node.js, sending streaming body or transferring it performs roughly the same.
+        // both versions can only handle about 1/2 req/sec compared to the single-threaded version.
 
-            const req = incomingMessageToRequest(_req);
-            /**
-             * @type {import("../../index.ts").Channel<{ value: Uint8Array | undefined; done: boolean; }>}
-             */
-            const channel = chan();
+        if (process.argv.includes("--stream-body")) {
+            http.createServer(async (nReq, nRes) => {
+                const req = incomingMessageToRequest(nReq);
+                /**
+                 * @type {import("../../index.ts").Channel<{ value: Uint8Array | undefined; done: boolean; }>}
+                 */
+                const channel = chan();
 
-            // Pass the request information and the channel to the threaded function
-            // so it can rebuild the request object in the worker thread for use.
-            const getResMsg = parallelHandle({
-                url: req.url,
-                method: req.method,
-                headers: Object.fromEntries(req.headers.entries()),
-                hasBody: !!req.body,
-                cache: req.cache,
-                credentials: req.credentials,
-                integrity: req.integrity,
-                keepalive: req.keepalive,
-                mode: req.mode,
-                redirect: req.redirect,
-                referrer: req.referrer,
-                referrerPolicy: req.referrerPolicy,
-            }, channel); // pass channel as argument to the threaded function
+                // Pass the request information and the channel to the threaded function
+                // so it can rebuild the request object in the worker thread for use.
+                const getResMsg = parallelHandle({
+                    url: req.url,
+                    method: req.method,
+                    headers: Object.fromEntries(req.headers.entries()),
+                    streamBody: !!req.body,
+                    cache: req.cache,
+                    credentials: req.credentials,
+                    integrity: req.integrity,
+                    keepalive: req.keepalive,
+                    mode: req.mode,
+                    redirect: req.redirect,
+                    referrer: req.referrer,
+                    referrerPolicy: req.referrerPolicy,
+                }, channel); // pass channel as argument to the threaded function
 
-            req.body && wireChannel(req.body, channel);
+                req.body && wireChannel(req.body, channel);
 
-            const { hasBody, ...init } = await getResMsg;
-            const res = new Response(hasBody ? readChannel(channel, true) : null, init);
+                const { streamBody, ...init } = await getResMsg;
+                const res = new Response(streamBody ? readChannel(channel, true) : null, init);
 
-            pipeResponse(res, _res);
-        }).listen(8000, "localhost", () => {
-            console.log(`Listening on http://localhost:${8000}/`);
-        });
+                pipeResponse(res, nRes);
+            }).listen(8000, "localhost", () => {
+                console.log(`Listening on http://localhost:${8000}/`);
+            });
+        } else {
+            http.createServer(async (nReq, nRes) => {
+                const req = incomingMessageToRequest(nReq);
+                const { body, ...init } = await parallelHandle({
+                    url: req.url,
+                    method: req.method,
+                    headers: Object.fromEntries(req.headers.entries()),
+                    streamBody: false,
+
+                    // The body (ArrayBuffer) is transferred rather than cloned.
+                    body: req.body ? await req.arrayBuffer() : null,
+
+                    cache: req.cache,
+                    credentials: req.credentials,
+                    integrity: req.integrity,
+                    keepalive: req.keepalive,
+                    mode: req.mode,
+                    redirect: req.redirect,
+                    referrer: req.referrer,
+                    referrerPolicy: req.referrerPolicy,
+                });
+
+                const res = new Response(body, init);
+                pipeResponse(res, nRes);
+            }).listen(8000, "localhost", () => {
+                console.log(`Listening on http://localhost:${8000}/`);
+            });
+        }
     } else {
         // For a simple web application, this single-threaded version performs between the
         // builtin-cluster version and the parallel-threads version.

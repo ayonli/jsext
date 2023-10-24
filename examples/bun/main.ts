@@ -27,37 +27,71 @@ if (Bun.isMainThread) {
         });
         console.log(`Listening on http://localhost:8000/`);
     } else if (process.argv.includes("--cluster=parallel-threads")) {
-        // This version causes 'libc++abi: Pure virtual function called!`, cannot test.
-        Bun.serve({
-            hostname: "localhost",
-            port: 8000,
-            async fetch(req: Request) {
-                const channel = chan<{ value: Uint8Array | undefined; done: boolean; }>();
+        // For a simple web application, using parallel threads isn't an ideal choice, cloning and
+        // transferring data between the main thread and worker threads are very heavy and slow.
 
-                // Pass the request information and the channel to the threaded function
-                // so it can rebuild the request object in the worker thread for use.
-                const getResMsg = parallelHandle({
-                    url: req.url,
-                    method: req.method,
-                    headers: Object.fromEntries(req.headers.entries()),
-                    hasBody: !!req.body,
-                    cache: req.cache,
-                    credentials: req.credentials,
-                    integrity: req.integrity,
-                    keepalive: req.keepalive,
-                    mode: req.mode,
-                    redirect: req.redirect,
-                    referrer: req.referrer,
-                    referrerPolicy: req.referrerPolicy,
-                }, channel); // pass channel as argument to the threaded function
+        if (process.argv.includes("--stream-body")) {
+            // This version causes 'libc++abi: Pure virtual function called!`, cannot test.
+            Bun.serve({
+                hostname: "localhost",
+                port: 8000,
+                async fetch(req: Request) {
+                    const channel = chan<{ value: Uint8Array | undefined; done: boolean; }>();
 
-                req.body && wireChannel(req.body, channel);
+                    // Pass the request information and the channel to the threaded function
+                    // so it can rebuild the request object in the worker thread for use.
+                    const getResMsg = parallelHandle({
+                        url: req.url,
+                        method: req.method,
+                        headers: Object.fromEntries(req.headers.entries()),
+                        streamBody: !!req.body,
+                        cache: req.cache,
+                        credentials: req.credentials,
+                        integrity: req.integrity,
+                        keepalive: req.keepalive,
+                        mode: req.mode,
+                        redirect: req.redirect,
+                        referrer: req.referrer,
+                        referrerPolicy: req.referrerPolicy,
+                    }, channel); // pass channel as argument to the threaded function
 
-                const { hasBody, ...init } = await getResMsg;
+                    req.body && wireChannel(req.body, channel);
 
-                return new Response(hasBody ? readChannel(channel, true) : null, init);
-            },
-        });
+                    const { streamBody, body, ...init } = await getResMsg;
+
+                    return new Response(streamBody && channel ? readChannel(channel, true) : (body ?? null), init);
+                },
+            });
+        } else {
+            // This version handles about 1/5 req/sec compared to the single-threaded version.
+            Bun.serve({
+                hostname: "localhost",
+                port: 8000,
+                async fetch(req: Request) {
+                    const { body, ...init } = await parallelHandle({
+                        url: req.url,
+                        method: req.method,
+                        headers: Object.fromEntries(req.headers.entries()),
+                        streamBody: false,
+
+                        // The body (ArrayBuffer) is transferred rather than cloned.
+                        body: req.body ? await req.arrayBuffer() : null,
+
+                        cache: req.cache,
+                        credentials: req.credentials,
+                        integrity: req.integrity,
+                        keepalive: req.keepalive,
+                        mode: req.mode,
+                        redirect: req.redirect,
+                        referrer: req.referrer,
+                        referrerPolicy: req.referrerPolicy,
+                    });
+
+                    return new Response(body, init);
+                }
+            });
+        }
+
         console.log(`Listening on http://localhost:8000/`);
     } else {
         // This is absolutely the best win. It seems Bun doesn't just run a single-threaded

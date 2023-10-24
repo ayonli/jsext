@@ -28,37 +28,70 @@ if (isMainThread) {
         });
     } else if (Deno.args.includes("--cluster=parallel-threads")) {
         // For a simple web application, using parallel threads isn't an ideal choice, cloning and
-        // transferring data between the main thread and worker threads are very heavy and slow, the
-        // server can only handle about 1/10 req/sec compared to the single-threaded version.
-        // Still, it beats reverse-proxy versions, either the above version or Nginx (very low rps,
-        // only about 1/8 req/sec compared to parallel threads).
-        
-        Deno.serve({ hostname: "localhost", port: 8000 }, async (req: Request) => {
-            const channel = chan<{ value: Uint8Array | undefined; done: boolean; }>();
+        // transferring data between the main thread and worker threads are very heavy and slow.
 
-            // Pass the request information and the channel to the threaded function
-            // so it can rebuild the request object in the worker thread for use.
-            const getResMsg = parallelHandle({
-                url: req.url,
-                method: req.method,
-                headers: Object.fromEntries(req.headers.entries()),
-                hasBody: !!req.body,
-                cache: req.cache,
-                credentials: req.credentials,
-                integrity: req.integrity,
-                keepalive: req.keepalive,
-                mode: req.mode,
-                redirect: req.redirect,
-                referrer: req.referrer,
-                referrerPolicy: req.referrerPolicy,
-            }, channel); // pass channel as argument to the threaded function
+        if (Deno.args.includes("--stream-body")) {
+            // This version is very slow, because streaming data between threads requires more
+            // `postMessage` calls. It can only handle about 1/10 req/sec compared to the
+            // single-threaded version.
+            // Still, it beats reverse-proxy versions, either the above version or Nginx (very low
+            // req/sec, only about 1/8 req/sec compared to parallel threads).
 
-            req.body && wireChannel(req.body, channel);
+            Deno.serve({ hostname: "localhost", port: 8000 }, async (req: Request) => {
+                const channel = chan<{ value: Uint8Array | undefined; done: boolean; }>();
 
-            const { hasBody, ...init } = await getResMsg;
+                // Pass the request information and the channel to the threaded function
+                // so it can rebuild the request object in the worker thread for use.
+                const getResMsg = parallelHandle({
+                    url: req.url,
+                    method: req.method,
+                    headers: Object.fromEntries(req.headers.entries()),
+                    streamBody: !!req.body,
+                    cache: req.cache,
+                    credentials: req.credentials,
+                    integrity: req.integrity,
+                    keepalive: req.keepalive,
+                    mode: req.mode,
+                    redirect: req.redirect,
+                    referrer: req.referrer,
+                    referrerPolicy: req.referrerPolicy,
+                }, channel); // pass channel as argument to the threaded function
 
-            return new Response(hasBody ? readChannel(channel, true) : null, init);
-        });
+                req.body && wireChannel(req.body, channel);
+
+                const { streamBody, body, ...init } = await getResMsg;
+
+                return new Response(streamBody && channel ? readChannel(channel, true) : (body ?? null), init);
+            });
+        } else {
+            // This version is faster than the streaming version, be cause there are only two
+            // `postMessage` calls. However, it consumes more memory because data need to be loaded
+            // before they can be transferred. This version handles about 3/8 req/sec compared to
+            // the single-threaded version.
+
+            Deno.serve({ hostname: "localhost", port: 8000 }, async (req: Request) => {
+                const { body, ...init } = await parallelHandle({
+                    url: req.url,
+                    method: req.method,
+                    headers: Object.fromEntries(req.headers.entries()),
+                    streamBody: false,
+
+                    // The body (ArrayBuffer) is transferred rather than cloned.
+                    body: req.body ? await req.arrayBuffer() : null,
+
+                    cache: req.cache,
+                    credentials: req.credentials,
+                    integrity: req.integrity,
+                    keepalive: req.keepalive,
+                    mode: req.mode,
+                    redirect: req.redirect,
+                    referrer: req.referrer,
+                    referrerPolicy: req.referrerPolicy,
+                });
+
+                return new Response(body, init);
+            });
+        }
     } else {
         // For a simple web application, this single-threaded version is the best win.
         Deno.serve({ hostname: "localhost", port: 8000 }, handle);
