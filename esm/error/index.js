@@ -26,7 +26,7 @@ function fromObject(obj, ctor = undefined) {
     // @ts-ignore
     ctor || (ctor = (globalThis[obj["@@type"] || obj.name] || globalThis[obj.name]));
     if (!ctor) {
-        if (obj["@@type"] === "Exception" || obj["name"] === "Exception") {
+        if (obj["@@type"] === "Exception") {
             ctor = Exception;
         }
         else {

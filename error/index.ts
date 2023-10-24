@@ -47,7 +47,7 @@ export function fromObject<T extends Error>(
     ctor ||= (globalThis[obj["@@type"] || obj.name] || globalThis[obj.name]) as new (...args: any) => T;
 
     if (!ctor) {
-        if (obj["@@type"] === "Exception" || obj["name"] === "Exception") {
+        if (obj["@@type"] === "Exception") {
             ctor = Exception as unknown as new (...args: any) => T;
         } else {
             ctor = Error as unknown as new (...args: any) => T;

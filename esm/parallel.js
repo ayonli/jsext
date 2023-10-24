@@ -658,8 +658,8 @@ function extractBaseUrl(stackTrace) {
  * main thread, they have no advantage when performing IO-intensive tasks such as handling HTTP
  * requests, always prefer `cluster` module for that kind of purpose.
  *
- * NOTE: for error types, only the following errors can be properly sent and received between
- * threads.
+ * NOTE: for error instances, only the following types are guaranteed to be sent and received properly
+ * between threads.
  *
  * - `Error`
  * - `EvalError`
