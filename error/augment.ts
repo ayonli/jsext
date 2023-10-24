@@ -9,7 +9,7 @@ declare global {
     interface ErrorConstructor {
         /** Transform the error to a plain object. */
         toObject<T extends Error>(err: T): { [x: string | symbol]: any; };
-        /** Reverse a plain object to a specific error type according to the `name` property. */
+        /** Reverse a plain object to a specific error type. */
         fromObject<T extends { name: "Error"; }>(obj: T): Error;
         fromObject<T extends { name: "EvalError"; }>(obj: T): EvalError;
         fromObject<T extends { name: "RangeError"; }>(obj: T): RangeError;
@@ -29,8 +29,9 @@ declare global {
     class Exception extends Error {
         readonly cause?: unknown;
         readonly code: number;
+        constructor(message: string, name?: string);
         constructor(message: string, code?: number);
-        constructor(message: string, options: { cause?: unknown; code?: number; });
+        constructor(message: string, options: { name?: string; cause?: unknown; code?: number; });
     }
 }
 

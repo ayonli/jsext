@@ -5,7 +5,23 @@ class Exception extends Error {
         if (typeof options === "number") {
             this.code = options;
         }
+        else if (typeof options === "string") {
+            Object.defineProperty(this, "name", {
+                configurable: true,
+                enumerable: false,
+                writable: true,
+                value: options,
+            });
+        }
         else {
+            if (options.name) {
+                Object.defineProperty(this, "name", {
+                    configurable: true,
+                    enumerable: false,
+                    writable: true,
+                    value: options.name,
+                });
+            }
             if (options.cause) {
                 Object.defineProperty(this, "cause", {
                     configurable: true,

@@ -36,5 +36,28 @@ describe("Exception", () => {
         strictEqual(e4.name, "Exception");
         strictEqual(e4.cause, err);
         strictEqual(e4.code, 500);
+
+        const e5 = new Exception("something went wrong", "UnknownError");
+        deepStrictEqual(Object.getOwnPropertyDescriptor(e5, "name"), {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: "UnknownError",
+        } as PropertyDescriptor);
+        strictEqual(e5.cause, undefined);
+        strictEqual(e5.code, 0);
+
+        const e6 = new Exception("something went wrong", {
+            name: "UnknownError",
+            code: 500,
+        });
+        deepStrictEqual(Object.getOwnPropertyDescriptor(e6, "name"), {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: "UnknownError",
+        } as PropertyDescriptor);
+        strictEqual(e6.cause, undefined);
+        strictEqual(e6.code, 500);
     });
 });

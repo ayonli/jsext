@@ -10,10 +10,10 @@ export function toObject<T extends Error>(err: T): { [x: string | symbol]: any; 
         err = fromObject(err, Error) as any;
     }
 
-    return omit(err, ["toString", "toJSON"]);
+    return { "@@type": err.constructor.name, ...omit(err, ["toString", "toJSON"]) };
 }
 
-/** Reverse a plain object to a specific error type according to the `name` property. */
+/** Reverse a plain object to a specific error type. */
 export function fromObject<T extends { name: "Error"; }>(obj: T): Error;
 export function fromObject<T extends { name: "EvalError"; }>(obj: T): EvalError;
 export function fromObject<T extends { name: "RangeError"; }>(obj: T): RangeError;
@@ -33,10 +33,10 @@ export function fromObject<T extends Error>(
     }
 
     // @ts-ignore
-    ctor ||= globalThis[obj.name] as new (...args: any) => T;
+    ctor ||= (globalThis[obj["@@type"] || obj.name] || globalThis[obj.name]) as new (...args: any) => T;
 
     if (!ctor) {
-        if (obj["name"] === "Exception") {
+        if (obj["@@type"] === "Exception" || obj["name"] === "Exception") {
             ctor = Exception as unknown as new (...args: any) => T;
         } else {
             ctor = Error as unknown as new (...args: any) => T;
@@ -45,7 +45,7 @@ export function fromObject<T extends Error>(
 
     let err: T;
 
-    if (ctor.name === "DOMException") {
+    if (ctor.name === "DOMException" && typeof DOMException === "function") {
         err = new (ctor as typeof DOMException)(obj["message"] ?? "", obj["name"]) as any;
     } else {
         err = Object.create(ctor.prototype, {
@@ -85,9 +85,13 @@ export function fromObject<T extends Error>(
         });
     }
 
-    const otherKeys = Reflect.ownKeys(obj).filter(
-        key => !(["name", "message", "stack", "cause"] as (string | symbol)[]).includes(key)
-    );
+    const otherKeys = Reflect.ownKeys(obj).filter(key => !([
+        "@@type",
+        "name",
+        "message",
+        "stack",
+        "cause"
+    ] as (string | symbol)[]).includes(key));
 
     otherKeys.forEach(key => {
         // @ts-ignore

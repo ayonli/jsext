@@ -445,7 +445,23 @@ class Exception extends Error {
         if (typeof options === "number") {
             this.code = options;
         }
+        else if (typeof options === "string") {
+            Object.defineProperty(this, "name", {
+                configurable: true,
+                enumerable: false,
+                writable: true,
+                value: options,
+            });
+        }
         else {
+            if (options.name) {
+                Object.defineProperty(this, "name", {
+                    configurable: true,
+                    enumerable: false,
+                    writable: true,
+                    value: options.name,
+                });
+            }
             if (options.cause) {
                 Object.defineProperty(this, "cause", {
                     configurable: true,
@@ -472,7 +488,7 @@ function toObject(err) {
     if (!(err instanceof Error) && err["name"] && err["message"]) { // Error-like
         err = fromObject(err, Error);
     }
-    return omit(err, ["toString", "toJSON"]);
+    return { "@@type": err.constructor.name, ...omit(err, ["toString", "toJSON"]) };
 }
 function fromObject(obj, ctor = undefined) {
     var _a, _b;
@@ -481,9 +497,9 @@ function fromObject(obj, ctor = undefined) {
         return null;
     }
     // @ts-ignore
-    ctor || (ctor = globalThis[obj.name]);
+    ctor || (ctor = (globalThis[obj["@@type"] || obj.name] || globalThis[obj.name]));
     if (!ctor) {
-        if (obj["name"] === "Exception") {
+        if (obj["@@type"] === "Exception" || obj["name"] === "Exception") {
             ctor = Exception;
         }
         else {
@@ -491,7 +507,7 @@ function fromObject(obj, ctor = undefined) {
         }
     }
     let err;
-    if (ctor.name === "DOMException") {
+    if (ctor.name === "DOMException" && typeof DOMException === "function") {
         err = new ctor((_a = obj["message"]) !== null && _a !== void 0 ? _a : "", obj["name"]);
     }
     else {
@@ -528,7 +544,13 @@ function fromObject(obj, ctor = undefined) {
             value: obj["cause"],
         });
     }
-    const otherKeys = Reflect.ownKeys(obj).filter(key => !["name", "message", "stack", "cause"].includes(key));
+    const otherKeys = Reflect.ownKeys(obj).filter(key => ![
+        "@@type",
+        "name",
+        "message",
+        "stack",
+        "cause"
+    ].includes(key));
     otherKeys.forEach(key => {
         var _a;
         // @ts-ignore

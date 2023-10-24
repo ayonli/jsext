@@ -192,6 +192,18 @@ describe("Error", () => {
         // @ts-ignore
         strictEqual(err9?.["code"], obj9.code);
 
+        const obj10 = Error.toObject(new Exception("something went wrong", "UnknownError"));
+        const err10 = Error.fromObject(obj10);
+        strictEqual(err10?.constructor, Exception);
+        strictEqual(err10?.name, "UnknownError");
+
+        strictEqual(err10?.message, obj10["message"]);
+        strictEqual(err10?.stack, obj10["stack"]);
+        // @ts-ignore
+        strictEqual(err10?.["cause"], obj10["cause"]);
+        // @ts-ignore
+        strictEqual(err10?.["code"], obj10["code"]);
+
         strictEqual(Error.fromObject({ foo: "bar" }), null);
     });
 
@@ -250,7 +262,7 @@ describe("Error", () => {
             ok(event.lineno > 0);
             ok(event.colno > 0);
         } else {
-            strictEqual(event.lineno, 240);
+            strictEqual(event.lineno, 252);
             strictEqual(event.colno, 21);
         }
 
@@ -272,7 +284,7 @@ describe("Error", () => {
             ok(event2.lineno > 0);
             ok(event2.colno > 0);
         } else {
-            strictEqual(event2.lineno, 257);
+            strictEqual(event2.lineno, 269);
             strictEqual(event2.colno, 22);
         }
 
@@ -304,7 +316,7 @@ describe("Error", () => {
             error: err,
             message: err.message,
             filename,
-            lineno: 301,
+            lineno: 313,
             colno: 21,
         });
 
@@ -314,18 +326,18 @@ describe("Error", () => {
         const event2 = new ErrorEvent("error", {
             message: err.message,
             filename,
-            lineno: 301,
+            lineno: 313,
             colno: 21,
         });
         const err2 = Error.fromErrorEvent(event2);
         strictEqual(err2?.message, err.message);
-        strictEqual(err2?.stack, `Error: ${err.message}\n    at ${filename}:${301}:21`);
+        strictEqual(err2?.stack, `Error: ${err.message}\n    at ${filename}:${313}:21`);
 
         const event3 = new ErrorEvent("error", {
             error: Error.toObject(err),
             message: err.message,
             filename,
-            lineno: 301,
+            lineno: 313,
             colno: 21,
         });
         const err3 = Error.fromErrorEvent(event3);
