@@ -270,7 +270,14 @@ async function run<R, A extends any[] = any[]>(
                     channel.close();
                 }
             } else if (channel) {
-                channel.close(error as Error);
+                if (error instanceof Error) {
+                    channel.close(error);
+                } else if (typeof error === "string") {
+                    channel.close(new Error(error));
+                } else {
+                    // @ts-ignore
+                    channel.close(new Error("unknown error", { cause: error }));
+                }
             }
         } else {
             result ??= { value: void 0 };
@@ -443,14 +450,7 @@ async function run<R, A extends any[] = any[]>(
             timeout && clearTimeout(timeout);
 
             if (reason) {
-                if (reason instanceof Error) {
-                    error = reason;
-                } else if (typeof reason === "string") {
-                    error = new Error(reason);
-                } else {
-                    // @ts-ignore
-                    error = new Error("operation aborted", { cause: reason });
-                }
+                error = reason;
             } else {
                 result = { value: void 0 };
             }

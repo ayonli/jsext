@@ -202,7 +202,16 @@ async function run(script, args, options) {
                 }
             }
             else if (channel) {
-                channel.close(error);
+                if (error instanceof Error) {
+                    channel.close(error);
+                }
+                else if (typeof error === "string") {
+                    channel.close(new Error(error));
+                }
+                else {
+                    // @ts-ignore
+                    channel.close(new Error("unknown error", { cause: error }));
+                }
             }
         }
         else {
@@ -353,16 +362,7 @@ async function run(script, args, options) {
         async abort(reason = undefined) {
             timeout && clearTimeout(timeout);
             if (reason) {
-                if (reason instanceof Error) {
-                    error = reason;
-                }
-                else if (typeof reason === "string") {
-                    error = new Error(reason);
-                }
-                else {
-                    // @ts-ignore
-                    error = new Error("operation aborted", { cause: reason });
-                }
+                error = reason;
             }
             else {
                 result = { value: void 0 };
