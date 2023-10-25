@@ -1,5 +1,28 @@
+import { random as rand } from "../number/index.ts";
+
 export interface RealArrayLike<T> extends ArrayLike<T> {
     slice(start?: number, end?: number): RealArrayLike<T>;
+}
+
+/** Returns a random element of the array, or `undefined` if the array is empty. */
+export function random<T>(arr: T[], remove = false): T | undefined {
+    if (!arr.length) {
+        return undefined;
+    } else if (arr.length === 1) {
+        if (remove) {
+            return arr.splice(0, 1)[0];
+        } else {
+            return arr[0];
+        }
+    }
+
+    const i = rand(0, arr.length - 1);
+
+    if (remove) {
+        return arr.splice(i, 1)[0];
+    } else {
+        return arr[i];
+    }
 }
 
 /** Counts the occurrence of the element in the array. */

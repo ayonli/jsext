@@ -1,10 +1,13 @@
-import { count, equals, split, chunk, uniq, shuffle, orderBy, groupBy } from './index.js';
+import { random, count, equals, split, chunk, uniq, shuffle, orderBy, groupBy } from './index.js';
 
 Array.prototype.first = function first() {
     return this[0];
 };
 Array.prototype.last = function last() {
     return this[this.length - 1];
+};
+Array.prototype.random = function random$1(remove = false) {
+    return random(this, remove);
 };
 Array.prototype.count = function count$1(ele) {
     return count(this, ele);

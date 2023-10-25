@@ -1,5 +1,5 @@
 import "../augment.ts";
-import { strictEqual, deepStrictEqual, notDeepEqual } from "node:assert";
+import { strictEqual, deepStrictEqual, notDeepEqual, ok } from "node:assert";
 
 describe("Array", () => {
     it("Array.prototype.first", () => {
@@ -12,6 +12,16 @@ describe("Array", () => {
         const arr = [1, 2, 3, 4, 5];
         strictEqual(arr.last(), 5);
         strictEqual([].last(), undefined);
+    });
+
+    it("Array.prototype.random", () => {
+        const arr = [1, 2, 3, 4, 5];
+        ok(arr.includes(arr.random() as number));
+        strictEqual([].random(), undefined);
+
+        const item = arr.random(true) as number;
+        ok(item > 0);
+        ok(!arr.includes(item));
     });
 
     it("Array.prototype.count", () => {

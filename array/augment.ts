@@ -4,6 +4,7 @@ import {
     equals as _equals,
     groupBy as _groupBy,
     orderBy as _orderBy,
+    random as _random,
     shuffle as _shuffle,
     split as _split,
     uniq as _uniq
@@ -12,9 +13,11 @@ import {
 declare global {
     interface Array<T> {
         /** Returns the first element of the array, or `undefined` if the array is empty. */
-        first(): T;
-        /** Returns the last element of the array, or `undefined` is the array is empty. */
-        last(): T;
+        first(): T | undefined;
+        /** Returns the last element of the array, or `undefined` if the array is empty. */
+        last(): T | undefined;
+        /** Returns a random element of the array, or `undefined` if the array is empty. */
+        random(remove?: boolean): T | undefined;
         /** Counts the occurrence of the element in the array. */
         count(ele: T): number;
         /**
@@ -59,6 +62,10 @@ Array.prototype.first = function first() {
 
 Array.prototype.last = function last() {
     return this[this.length - 1];
+};
+
+Array.prototype.random = function random(remove = false) {
+    return _random(this, remove);
 };
 
 Array.prototype.count = function count(ele) {

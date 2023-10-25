@@ -1,3 +1,26 @@
+import { random as random$1 } from '../number/index.js';
+
+/** Returns a random element of the array, or `undefined` if the array is empty. */
+function random(arr, remove = false) {
+    if (!arr.length) {
+        return undefined;
+    }
+    else if (arr.length === 1) {
+        if (remove) {
+            return arr.splice(0, 1)[0];
+        }
+        else {
+            return arr[0];
+        }
+    }
+    const i = random$1(0, arr.length - 1);
+    if (remove) {
+        return arr.splice(i, 1)[0];
+    }
+    else {
+        return arr[i];
+    }
+}
 /** Counts the occurrence of the element in the array. */
 function count(arr, ele) {
     let count = 0;
@@ -152,5 +175,5 @@ function groupBy(arr, fn, type = Object) {
     }
 }
 
-export { chunk, count, equals, groupBy, orderBy, shuffle, split, uniq };
+export { chunk, count, equals, groupBy, orderBy, random, shuffle, split, uniq };
 //# sourceMappingURL=index.js.map

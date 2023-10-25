@@ -1023,6 +1023,7 @@ import "@ayonli/jsext/array/augment";
 
 **Functions**
 
+- `random<T>(arr: T[], remove?: boolean): T | undefined`
 - `count<T>(arr: RealArrayLike<T>, ele: T): number`
 - `equals<T>(arr1: RealArrayLike<T>, arr2: RealArrayLike<T>): boolean`
 - `split<T>(arr: RealArrayLike<T>, delimiter: T): RealArrayLike<T>[]`
@@ -1037,8 +1038,9 @@ import "@ayonli/jsext/array/augment";
 
 - `Array<T>`
     - `prototype`
-        - `first(): T`
-        - `last(): T`
+        - `first(): T | undefined`
+        - `last(): T | undefined`
+        - `random(remove?: boolean): T | undefined`
         - `count(ele: T): number`
         - `equals(another: T[]): boolean`
         - `split(delimiter: T): T[][]`
