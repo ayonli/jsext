@@ -15,6 +15,35 @@ import {
 declare var Bun: any;
 const pendingTasks = new Map<number, AsyncGenerator | Generator>();
 
+/**
+ * For some reason, in Node.js and Bun, when import expression throws an module/package not found
+ * error, the error can not be serialized and sent to the other thread properly. We need to check
+ * this situation and sent the error as plain object instead.
+ */
+function isModuleResolveError(value: any) {
+    if (typeof value === "object" &&
+        typeof value?.message === "string" &&
+        /Cannot find (module|package)/.test((value as Error)?.message)
+    ) {
+        return (value instanceof Error) // Node.js (possibly bug)
+            || (value as Error).constructor?.name === "Error"; // Bun (doesn't inherit from Error)
+    }
+
+    return false;
+}
+
+function removeUnserializableProperties(obj: { [x: string | symbol]: any; }) {
+    const _obj = {} as typeof obj;
+
+    for (const key of Reflect.ownKeys(obj)) {
+        if (typeof obj[key] !== "bigint" && typeof obj[key] !== "function") {
+            _obj[key] = obj[key];
+        }
+    }
+
+    return _obj;
+}
+
 function unwrapArgs(
     args: any[],
     channelWrite: (type: "push" | "close", msg: any, channelId: number) => void
@@ -40,7 +69,11 @@ function wrapReturnValue<T>(value: T): { value: T, transferable: ArrayBuffer[]; 
 
     if (value instanceof ArrayBuffer) {
         transferable.push(value);
-    } else if ((value instanceof Exception) || isDOMException(value) || isAggregateError(value)) {
+    } else if ((value instanceof Exception)
+        || isDOMException(value)
+        || isAggregateError(value)
+        || isModuleResolveError(value)
+    ) {
         value = toObject(value as any) as T;
     } else if (isPlainObject(value)) {
         for (const key of Object.getOwnPropertyNames(value)) {
@@ -51,6 +84,7 @@ function wrapReturnValue<T>(value: T): { value: T, transferable: ArrayBuffer[]; 
             } else if ((_value instanceof Exception)
                 || isDOMException(_value)
                 || isAggregateError(_value)
+                || isModuleResolveError(_value)
             ) {
                 (value as any)[key] = toObject(_value);
             }
@@ -63,6 +97,7 @@ function wrapReturnValue<T>(value: T): { value: T, transferable: ArrayBuffer[]; 
             } else if ((item instanceof Exception)
                 || isDOMException(item)
                 || isAggregateError(item)
+                || isModuleResolveError(item)
             ) {
                 return toObject(item);
             } else {
@@ -88,19 +123,14 @@ export async function handleCallRequest(
     const _reply = reply;
     reply = (res) => {
         if (res.type === "error") {
-            if (isNode && (res.error instanceof Error)) {
+            if ((res.error instanceof Exception) ||
+                isDOMException(res.error) ||
+                isAggregateError(res.error) ||
+                isModuleResolveError(res.error)
+            ) {
                 return _reply({
                     ...res,
-                    error: toObject(res.error as Error),
-                } as CallResponse | ChannelMessage);
-            }
-
-            if (isDOMException(res.error)) {
-                // DOMException cannot be cloned properly, fallback to transferring it as
-                // an object and rebuild in the main thread.
-                return _reply({
-                    ...res,
-                    error: toObject(res.error as DOMException),
+                    error: removeUnserializableProperties(toObject(res.error as Error)),
                 } as CallResponse | ChannelMessage);
             }
 
@@ -111,7 +141,7 @@ export async function handleCallRequest(
                 // an object and rebuild in the main thread.
                 return _reply({
                     ...res,
-                    error: toObject(res.error as Error)
+                    error: removeUnserializableProperties(toObject(res.error as Error)),
                 } as CallResponse | ChannelMessage);
             }
         } else {

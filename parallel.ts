@@ -184,7 +184,7 @@ export async function createWorker(options: {
         if (adapter === "child_process") {
             const { fork } = await import("child_process");
             const serialization = isBeforeNode14 ? "json" : "advanced";
-            const worker = fork(entry, ["--worker-thread", "--serialization=" + serialization], {
+            const worker = fork(entry, ["--worker-thread"], {
                 stdio: "inherit",
                 serialization,
             });

@@ -584,6 +584,30 @@ function isAggregateError(value) {
 }
 
 const pendingTasks = new Map();
+/**
+ * For some reason, in Node.js and Bun, when import expression throws an module/package not found
+ * error, the error can not be serialized and sent to the other thread properly. We need to check
+ * this situation and sent the error as plain object instead.
+ */
+function isModuleResolveError(value) {
+    var _a;
+    if (typeof value === "object" &&
+        typeof (value === null || value === void 0 ? void 0 : value.message) === "string" &&
+        /Cannot find (module|package)/.test(value === null || value === void 0 ? void 0 : value.message)) {
+        return (value instanceof Error) // Node.js (possibly bug)
+            || ((_a = value.constructor) === null || _a === void 0 ? void 0 : _a.name) === "Error"; // Bun (doesn't inherit from Error)
+    }
+    return false;
+}
+function removeUnserializableProperties(obj) {
+    const _obj = {};
+    for (const key of Reflect.ownKeys(obj)) {
+        if (typeof obj[key] !== "bigint" && typeof obj[key] !== "function") {
+            _obj[key] = obj[key];
+        }
+    }
+    return _obj;
+}
 function unwrapArgs(args, channelWrite) {
     return args.map(arg => {
         if (isPlainObject(arg)) {
@@ -604,7 +628,10 @@ function wrapReturnValue(value) {
     if (value instanceof ArrayBuffer) {
         transferable.push(value);
     }
-    else if ((value instanceof Exception) || isDOMException(value) || isAggregateError(value)) {
+    else if ((value instanceof Exception)
+        || isDOMException(value)
+        || isAggregateError(value)
+        || isModuleResolveError(value)) {
         value = toObject(value);
     }
     else if (isPlainObject(value)) {
@@ -615,7 +642,8 @@ function wrapReturnValue(value) {
             }
             else if ((_value instanceof Exception)
                 || isDOMException(_value)
-                || isAggregateError(_value)) {
+                || isAggregateError(_value)
+                || isModuleResolveError(_value)) {
                 value[key] = toObject(_value);
             }
         }
@@ -628,7 +656,8 @@ function wrapReturnValue(value) {
             }
             else if ((item instanceof Exception)
                 || isDOMException(item)
-                || isAggregateError(item)) {
+                || isAggregateError(item)
+                || isModuleResolveError(item)) {
                 return toObject(item);
             }
             else {
@@ -648,18 +677,13 @@ async function handleCallRequest(msg, reply) {
     const _reply = reply;
     reply = (res) => {
         if (res.type === "error") {
-            if (isNode && (res.error instanceof Error)) {
+            if ((res.error instanceof Exception) ||
+                isDOMException(res.error) ||
+                isAggregateError(res.error) ||
+                isModuleResolveError(res.error)) {
                 return _reply({
                     ...res,
-                    error: toObject(res.error),
-                });
-            }
-            if (isDOMException(res.error)) {
-                // DOMException cannot be cloned properly, fallback to transferring it as
-                // an object and rebuild in the main thread.
-                return _reply({
-                    ...res,
-                    error: toObject(res.error),
+                    error: removeUnserializableProperties(toObject(res.error)),
                 });
             }
             try {
@@ -670,7 +694,7 @@ async function handleCallRequest(msg, reply) {
                 // an object and rebuild in the main thread.
                 return _reply({
                     ...res,
-                    error: toObject(res.error)
+                    error: removeUnserializableProperties(toObject(res.error)),
                 });
             }
         }

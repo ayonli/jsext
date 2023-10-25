@@ -2,7 +2,7 @@ import chan from './chan.js';
 import { isPlainObject } from './object/index.js';
 import { fromErrorEvent, fromObject } from './error/index.js';
 import { isDeno, isNode, isBun, IsPath, isChannelMessage, handleChannelMessage } from './util.js';
-import parallel, { getMaxParallelism, sanitizeModuleId, createWorker, wrapArgs, isCallResponse } from './parallel.js';
+import parallel, { getMaxParallelism, sanitizeModuleId, createWorker, wrapArgs, isCallResponse, unwrapReturnValue } from './parallel.js';
 
 const workerPools = new Map();
 // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
@@ -150,18 +150,19 @@ async function run(script, args, options) {
                     error = err;
                 }
                 else {
-                    result = { value: msg.value };
+                    result = { value: unwrapReturnValue(msg.value) };
                 }
                 (options === null || options === void 0 ? void 0 : options.keepAlive) || await terminate();
                 handleClose(null, !(options === null || options === void 0 ? void 0 : options.keepAlive));
             }
             else if (msg.type === "yield") {
+                const value = unwrapReturnValue(msg.value);
                 if (msg.done) {
                     // The final message of yield event is the return value.
-                    handleMessage({ type: "return", value: msg.value });
+                    handleMessage({ type: "return", value });
                 }
                 else {
-                    channel === null || channel === void 0 ? void 0 : channel.push(msg.value);
+                    channel === null || channel === void 0 ? void 0 : channel.push(value);
                 }
             }
         }

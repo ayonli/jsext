@@ -12,7 +12,8 @@ import parallel, {
     CallRequest,
     CallResponse,
     isCallResponse,
-    wrapArgs
+    wrapArgs,
+    unwrapReturnValue
 } from "./parallel.ts";
 
 declare var Deno: any;
@@ -212,17 +213,19 @@ async function run<R, A extends any[] = any[]>(
 
                     error = err;
                 } else {
-                    result = { value: msg.value };
+                    result = { value: unwrapReturnValue(msg.value) };
                 }
 
                 options?.keepAlive || await terminate();
                 handleClose(null, !options?.keepAlive);
             } else if (msg.type === "yield") {
+                const value = unwrapReturnValue(msg.value);
+
                 if (msg.done) {
                     // The final message of yield event is the return value.
-                    handleMessage({ type: "return", value: msg.value } satisfies CallResponse);
+                    handleMessage({ type: "return", value } satisfies CallResponse);
                 } else {
-                    channel?.push(msg.value);
+                    channel?.push(value);
                 }
             }
         }
