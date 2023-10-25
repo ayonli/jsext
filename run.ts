@@ -105,12 +105,12 @@ async function run<R, A extends any[] = any[]>(
     }
 ): Promise<{
     workerId: number;
-    /** Retrieves the return value of the function that has been called. */
+    /** Retrieves the return value of the function being called. */
     result(): Promise<R>;
-    /** Iterates the yield value if the function returns a generator. */
+    /** Iterates the yield value if the function being called returns a generator. */
     iterate(): AsyncIterable<R>;
     /** Terminates the worker thread and aborts the task. */
-    abort(reason?: unknown): Promise<void>;
+    abort(reason?: Error | null): Promise<void>;
 }> {
     const maxWorkers = run.maxWorkers || parallel.maxWorkers || await getMaxParallelism;
     const fn = options?.fn || "default";

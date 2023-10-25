@@ -762,12 +762,12 @@ function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
     adapter?: "worker_threads" | "child_process";
 }): Promise<{
     workerId: number;
-    /** Retrieves the return value of the function that has been called. */
+    /** Retrieves the return value of the function being called. */
     result(): Promise<R>;
-    /** Iterates the yield value if the function returns a generator. */
+    /** Iterates the yield value if the function being called returns a generator. */
     iterate(): AsyncIterable<R>;
     /** Terminates the worker thread and aborts the task. */
-    abort(reason?: unknown): Promise<void>;
+    abort(reason?: Error | null): Promise<void>;
 }>;
 ```
 
@@ -778,7 +778,7 @@ also applicable to `run()`, except the following:
 
 1. The `script` can only be a filename, and is relative to the current working directory
     (or the current URL) if not absolute.
-2. Only one task is allow to run at a time for one worker thread, set {@link run.maxWorkers} to
+2. Only one task is allow to run at a time for one worker thread, set `run.maxWorkers` to
     allow more tasks to be run at the same time if needed.
 3. By default, the worker thread is dropped after the task settles, set `keepAlive` option
     in order to reused it.
