@@ -178,12 +178,14 @@ function fromErrorEvent(event) {
 }
 /** @inner */
 function isDOMException(value) {
-    return (typeof DOMException === "function") && (value instanceof DOMException);
+    return ((typeof DOMException === "function") && (value instanceof DOMException))
+        || (value instanceof Error && value.constructor.name === "DOMException"); // Node.js v16-
 }
 /** @inner */
 function isAggregateError(value) {
     // @ts-ignore
-    return typeof AggregateError === "function" && value instanceof AggregateError;
+    return (typeof AggregateError === "function" && value instanceof AggregateError)
+        || (value instanceof Error && value.constructor.name === "AggregateError");
 }
 
 export { Exception, fromErrorEvent, fromObject, isAggregateError, isDOMException, toErrorEvent, toObject };

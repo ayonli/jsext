@@ -221,11 +221,13 @@ export function fromErrorEvent<T extends Error>(event: ErrorEvent): T | null {
 
 /** @inner */
 export function isDOMException(value: unknown): value is DOMException {
-    return (typeof DOMException === "function") && (value instanceof DOMException);
+    return ((typeof DOMException === "function") && (value instanceof DOMException))
+        || (value instanceof Error && value.constructor.name === "DOMException"); // Node.js v16-
 }
 
 /** @inner */
 export function isAggregateError(value: unknown): boolean {
     // @ts-ignore
-    return typeof AggregateError === "function" && value instanceof AggregateError;
+    return (typeof AggregateError === "function" && value instanceof AggregateError)
+        || (value instanceof Error && value.constructor.name === "AggregateError");
 }
