@@ -9,20 +9,17 @@ const workerPools = new Map();
 // pop a consumer and run the callback, which will retry gaining the worker and retry the task.
 const workerConsumerQueue = [];
 /**
- * Runs the given `script` in a worker thread or child process.
+ * Runs the given `script` in a worker thread and abort the task at any time.
  *
- * In Node.js and Bun, the `script` can be either an ES module or a CommonJS module, and is
- * relative to the current working directory if not absolute.
+ * This function is similar to {@link parallel}(), many features applicable to `parallel()` are
+ * also applicable to `run()`, except the following:
  *
- * In browsers and Deno, the `script` can only be an ES module, and is relative to the current URL
- * (or working directory in Deno) if not absolute.
- *
- * In Bun and Deno, the `script` can also be a TypeScript file.
- *
- * This function also uses {@link parallel.maxWorkers} and {@link parallel.workerEntry} for worker
- * configuration by default. {@link Channel} can also be used to transfer streaming data into the
- * function being called. `ArrayBuffer`s are also supported as transferrable objects if they are
- * presented as arguments or the return value (or their direct properties).
+ * 1. The `script` can only be a filename, and is relative to the current working directory
+ *     (or the current URL) if not absolute.
+ * 2. Only one task is allow to run at a time for one worker thread, set {@link run.maxWorkers} to
+ *     allow more tasks to be run at the same time if needed.
+ * 3. By default, the worker thread is dropped after the task settles, set `keepAlive` option
+ *     in order to reused it.
  *
  * @example
  * ```ts
