@@ -746,7 +746,17 @@ function extractBaseUrl(stackTrace: string): string | undefined {
         baseUrl = callSite.replace(/:\d+:\d+$/, "");
 
         if (!/^(https?|file):/.test(baseUrl)) {
-            baseUrl = "file://" + baseUrl;
+            if (IsPath.test(baseUrl)) {
+                baseUrl = "file://" + baseUrl;
+            } else if (typeof location === "object") {
+                baseUrl = location.href;
+            } else if (isDeno) {
+                baseUrl = "file://" + Deno.cwd() + "/";
+            } else if (isNode || isBun) {
+                baseUrl = "file://" + process.cwd() + "/";
+            } else {
+                baseUrl = "";
+            }
         }
     }
 
@@ -788,8 +798,8 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * worker thread.
  * 
  * NOTE: cloning and transferring data between the main thread and worker threads are very heavy
- * and slow, worker threads are only intended to run CPU-intensive tasks and prevent blocking the
- * main thread, they have no advantage when performing IO-intensive tasks such as handling HTTP
+ * and slow, worker threads are only intended to run CPU-intensive tasks or divide tasks among
+ * multiple threads, they have no advantage when performing IO-intensive tasks such as handling HTTP
  * requests, always prefer `cluster` module for that kind of purpose.
  * 
  * NOTE: for error instances, only the following types are guaranteed to be sent and received properly
