@@ -89,10 +89,14 @@ describe("jsext.read", () => {
             }
         });
 
-        // @ts-ignore
-        const ws = new dWebSocket(
-            "ws://localhost:12345",
-            "echo-protocol") as unknown as WebSocket;
+        let ws: WebSocket;
+
+        if (typeof WebSocket === "function") {
+            ws = new WebSocket("ws://localhost:12345", "echo-protocol");
+        } else {
+            ws = new dWebSocket("ws://localhost:12345", "echo-protocol") as unknown as WebSocket;
+        }
+
         const messages: string[] = [];
 
         for await (const msg of jsext.read<string>(ws)) {
