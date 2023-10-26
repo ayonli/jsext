@@ -748,12 +748,12 @@ function extractBaseUrl(stackTrace: string): string | undefined {
         if (!/^(https?|file):/.test(baseUrl)) {
             if (IsPath.test(baseUrl)) {
                 baseUrl = "file://" + baseUrl;
-            } else if (typeof location === "object") {
-                baseUrl = location.href;
             } else if (isDeno) {
                 baseUrl = "file://" + Deno.cwd() + "/";
             } else if (isNode || isBun) {
                 baseUrl = "file://" + process.cwd() + "/";
+            } else if (typeof location === "object") {
+                baseUrl = location.href;
             } else {
                 baseUrl = "";
             }
