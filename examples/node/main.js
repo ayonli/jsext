@@ -66,11 +66,17 @@ if (cluster.isPrimary && isMainThread) {
         // This version is the best, it performs the same as `cluster` module, and consume much less
         // system memory (same as parallel-handle).
 
-        const server = http.createServer();
-        server.listen(8000, () => {
-            const numCPUs = availableParallelism();
+        const server = http.createServer(async (_req, _res) => {
+            const req = incomingMessageToRequest(_req);
+            const res = await handle(req);
+            pipeResponse(res, _res);
+        });
 
-            for (let i = 0; i < numCPUs; i++) {
+        server.listen(8000, () => {
+            console.log(`Listening on http://localhost:${8000}/`);
+            const maxWorkers = availableParallelism() - 1;
+
+            for (let i = 0; i < maxWorkers; i++) {
                 new Worker(fileURLToPath(import.meta.url), {
                     workerData: { handle: { fd: server._handle.fd } }
                 });
