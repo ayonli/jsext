@@ -26,7 +26,7 @@ if (isMainThread) {
             const url = `http://localhost:${8001 + (counter++ % numCPUs)}` + pathname + search + hash;
             return await fetch(url, req);
         });
-    } else if (Deno.args.includes("--cluster=parallel-threads")) {
+    } else if (Deno.args.includes("--cluster=parallel-handle")) {
         // For a simple web application, using parallel threads isn't an ideal choice, cloning and
         // transferring data between the main thread and worker threads are very heavy and slow.
 

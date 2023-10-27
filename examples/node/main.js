@@ -1,6 +1,7 @@
 import * as http from "node:http";
 import cluster from "node:cluster";
-import { isMainThread } from "node:worker_threads";
+import { isMainThread, Worker, workerData } from "node:worker_threads";
+import { fileURLToPath } from "node:url";
 import { parallel, chan } from "../../esm/index.js";
 import { readChannel, wireChannel } from "./util.js";
 import { default as handle } from "./handler.js";
@@ -51,17 +52,31 @@ function pipeResponse(res, nRes) {
 }
 
 if (cluster.isPrimary && isMainThread) {
-    if (process.argv.includes("--cluster=builtin")) {
-        // Even for a simple web application, this version is the best win. Node.js builtin cluster
-        // handles about 2 times req/sec compared to single-threaded version, and way more ahead
-        // than the parallel-threads version, although consumes much more system memory.
+    if (process.argv.includes("--cluster=builtin-cluster")) {
+        // The builtin `cluster` module handles about 2 times req/sec compared to single-threaded
+        // version, and way more ahead than the parallel-handle version, although consumes much
+        // more system memory.
 
         const numCPUs = availableParallelism();
 
         for (let i = 0; i < numCPUs; i++) {
             cluster.fork();
         }
-    } else if (process.argv.includes("--cluster=parallel-threads")) {
+    } else if (process.argv.includes("--cluster=native-worker")) {
+        // This version is the best, it performs the same as `cluster` module, and consume much less
+        // system memory (same as parallel-handle).
+
+        const server = http.createServer();
+        server.listen(8000, () => {
+            const numCPUs = availableParallelism();
+
+            for (let i = 0; i < numCPUs; i++) {
+                new Worker(fileURLToPath(import.meta.url), {
+                    workerData: { handle: { fd: server._handle.fd } }
+                });
+            }
+        });
+    } else if (process.argv.includes("--cluster=parallel-handle")) {
         // For a simple web application, using parallel threads isn't an ideal choice, cloning and
         // transferring data between the main thread and worker threads are very heavy and slow.
         //
@@ -132,7 +147,7 @@ if (cluster.isPrimary && isMainThread) {
         }
     } else {
         // For a simple web application, this single-threaded version performs between the
-        // builtin-cluster version and the parallel-threads version.
+        // builtin-cluster version and the parallel-handle version.
         http.createServer(async (_req, _res) => {
             const req = incomingMessageToRequest(_req);
             const res = await handle(req);
@@ -141,6 +156,14 @@ if (cluster.isPrimary && isMainThread) {
             console.log(`Listening on http://localhost:${8000}/`);
         });
     }
+} else if (cluster.isPrimary && !isMainThread) {
+    http.createServer(async (_req, _res) => {
+        const req = incomingMessageToRequest(_req);
+        const res = await handle(req);
+        pipeResponse(res, _res);
+    }).listen(workerData.handle, () => {
+        console.log(`Listening on http://localhost:${8000}/`);
+    });
 } else { // cluster.isWorker
     http.createServer(async (_req, _res) => {
         const req = incomingMessageToRequest(_req);

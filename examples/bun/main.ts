@@ -26,7 +26,7 @@ if (Bun.isMainThread) {
             },
         });
         console.log(`Listening on http://localhost:8000/`);
-    } else if (process.argv.includes("--cluster=parallel-threads")) {
+    } else if (process.argv.includes("--cluster=parallel-handle")) {
         // For a simple web application, using parallel threads isn't an ideal choice, cloning and
         // transferring data between the main thread and worker threads are very heavy and slow.
 
