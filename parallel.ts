@@ -95,14 +95,19 @@ export function sanitizeModuleId(id: string | (() => Promise<any>), strict = fal
         _id = id;
     }
 
-    if (isNode &&
-        !/\.[cm]?(js|ts|)x?$/.test(_id) && // omit suffix
-        IsPath.test(_id)                   // relative or absolute path
-    ) {
-        if (isBun) {
-            _id += ".ts";
-        } else {
-            _id += ".js";
+    if ((isNode || isBun) && IsPath.test(_id)) {
+        if (!/\.[cm]?(js|ts|)x?$/.test(_id)) { // if omitted suffix, add suffix
+            _id += isBun ? ".ts" : ".js";
+        } else if (isNode) { // replace .ts/.mts/.cts to .js/.mjs/.cjs in Node.js
+            if (_id.endsWith(".ts")) {
+                _id = _id.slice(0, -3) + ".js";
+            } else if (_id.endsWith(".mts")) {
+                _id = _id.slice(0, -4) + ".mjs";
+            } else if (_id.endsWith(".cts")) { // rare, but should support
+                _id = _id.slice(0, -4) + ".cjs";
+            } else if (_id.endsWith(".tsx")) { // rare, but should support
+                _id = _id.slice(0, -4) + ".js";
+            }
         }
     }
 

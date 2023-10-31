@@ -4,7 +4,7 @@ import { sequence } from './number/index.js';
 import { trim } from './string/index.js';
 import { isPlainObject } from './object/index.js';
 import { isDOMException, isAggregateError, toObject, fromObject, fromErrorEvent } from './error/index.js';
-import { isNode, isBun, isDeno, wrapChannel, IsPath, isBeforeNode14, isMainThread, resolveModule, isChannelMessage, handleChannelMessage } from './util.js';
+import { isNode, isBun, IsPath, isDeno, wrapChannel, isBeforeNode14, isMainThread, resolveModule, isChannelMessage, handleChannelMessage } from './util.js';
 import Exception from './error/Exception.js';
 
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
@@ -46,15 +46,23 @@ function sanitizeModuleId(id, strict = false) {
     else {
         _id = id;
     }
-    if (isNode &&
-        !/\.[cm]?(js|ts|)x?$/.test(_id) && // omit suffix
-        IsPath.test(_id) // relative or absolute path
-    ) {
-        if (isBun) {
-            _id += ".ts";
+    if ((isNode || isBun) && IsPath.test(_id)) {
+        if (!/\.[cm]?(js|ts|)x?$/.test(_id)) { // if omitted suffix, add suffix
+            _id += isBun ? ".ts" : ".js";
         }
-        else {
-            _id += ".js";
+        else if (isNode) { // replace .ts/.mts/.cts to .js/.mjs/.cjs in Node.js
+            if (_id.endsWith(".ts")) {
+                _id = _id.slice(0, -3) + ".js";
+            }
+            else if (_id.endsWith(".mts")) {
+                _id = _id.slice(0, -4) + ".mjs";
+            }
+            else if (_id.endsWith(".cts")) { // rare, but should support
+                _id = _id.slice(0, -4) + ".cjs";
+            }
+            else if (_id.endsWith(".tsx")) { // rare, but should support
+                _id = _id.slice(0, -4) + ".js";
+            }
         }
     }
     if (!IsPath.test(_id) && !strict) {

@@ -238,13 +238,8 @@ describe("jsext.parallel", () => {
     });
 
     it("in worker", async () => {
-        const { default: avg } = jsext.parallel(() => import("./examples/avg.js"));
+        const { default: avg } = jsext.parallel(() => import("./examples/avg.ts"));
         strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
-
-        if (typeof Deno === "object" || typeof Bun === "object") {
-            const { default: avg } = jsext.parallel(() => import("./examples/avg.ts"));
-            strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
-        }
     });
 
     if (typeof Deno !== "object") {
