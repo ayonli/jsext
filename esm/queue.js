@@ -28,6 +28,9 @@ class Queue {
     onError(handler) {
         this.errorHandler = handler;
     }
+    [Symbol.dispose]() {
+        this.close();
+    }
 }
 /**
  * Processes data sequentially by the given `handler` function and prevents concurrency

@@ -272,6 +272,9 @@ function* sequence(min, max, step = 1, loop = false) {
 }
 
 var _a$1;
+if (typeof Symbol.dispose === "undefined") {
+    Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });
+}
 const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const id = Symbol.for("id");
 class Channel {
@@ -417,6 +420,9 @@ class Channel {
                 };
             }
         };
+    }
+    [Symbol.dispose]() {
+        this.close();
     }
 }
 

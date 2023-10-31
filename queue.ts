@@ -31,6 +31,10 @@ export class Queue<T> {
     onError(handler: (err: unknown) => void) {
         this.errorHandler = handler;
     }
+
+    [Symbol.dispose]() {
+        this.close();
+    }
 }
 
 /**

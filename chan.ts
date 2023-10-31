@@ -1,5 +1,9 @@
 import { sequence } from "./number/index.ts";
 
+if (typeof Symbol.dispose === "undefined") {
+    Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });
+}
+
 const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 export const id = Symbol.for("id");
 
@@ -152,6 +156,10 @@ export class Channel<T> implements AsyncIterable<T> {
                 };
             }
         };
+    }
+
+    [Symbol.dispose]() {
+        this.close();
     }
 }
 
