@@ -642,14 +642,12 @@ function extractBaseUrl(stackTrace) {
     return baseUrl;
 }
 /**
- * Wraps a module so its functions are run in worker threads.
+ * Wraps a module so its functions will be run in worker threads.
  *
  * In Node.js and Bun, the `module` can be either an ES module or a CommonJS module,
  * **node_modules** and built-in modules are also supported.
  *
  * In browsers and Deno, the `module` can only be an ES module.
- *
- * In Bun and Deno, the `module` can also be a TypeScript file.
  *
  * Data are cloned and transferred between threads via **Structured Clone Algorithm**.
  *

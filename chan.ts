@@ -181,7 +181,7 @@ export class Channel<T> implements AsyncIterable<T> {
  * Unlike `EventEmitter` or `EventTarget`, `Channel` guarantees the data will always be delivered,
  * even if there is no receiver at the moment.
  * 
- * Also, unlike Golang, `await channel.pop()` does not prevent the process from exiting.
+ * Also, unlike Golang, `await channel.pop()` does not prevent the program from exiting.
  * 
  * Channels can be used to send and receive streaming data between main thread and worker threads
  * wrapped by `parallel()`, but once used that way, `channel.close()` must be explicitly called

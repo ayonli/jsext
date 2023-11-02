@@ -323,7 +323,7 @@ Processes data sequentially by the given `handler` function and prevents concurr
 conflicts, it returns a `Queue` instance that we can push data into.
 
 `bufferSize` is the maximum capacity of the underlying channel, once reached, the push
-operation will block until there is new space available. Bu default, this option is not set and
+operation will block until there is new space available. By default, this option is not set and
 use a non-buffered channel instead.
 
 **Example**
@@ -527,7 +527,7 @@ and behave like a message queue.
 Unlike `EventEmitter` or `EventTarget`, `Channel` guarantees the data will always be delivered,
 even if there is no receiver at the moment.
 
-Also, unlike Golang, `await channel.pop()` does not prevent the process from exiting.
+Also, unlike Golang, `await channel.pop()` does not prevent the program from exiting.
 
 Channels can be used to send and receive streaming data between main thread and worker threads
 wrapped by `parallel()`, but once used that way, `channel.close()` must be explicitly called
@@ -598,14 +598,12 @@ function parallel<M extends { [x: string]: any; }>(
 ): ThreadedFunctions<M>;
 ```
 
-Wraps a module so its functions are run in worker threads.
+Wraps a module so its functions will be run in worker threads.
 
 In Node.js and Bun, the `module` can be either an ES module or a CommonJS module,
 **node_modules** and built-in modules are also supported.
 
 In browsers and Deno, the `module` can only be an ES module.
-
-In Bun and Deno, the `module` can also be a TypeScript file.
 
 Data are cloned and transferred between threads via **Structured Clone Algorithm**.
 
