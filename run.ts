@@ -25,8 +25,10 @@ type PoolRecord = {
     }>;
     adapter: "worker_threads" | "child_process";
     busy: boolean;
+    lastAccess: number;
 };
 const workerPools = new Map<string, PoolRecord[]>();
+let gcTimer: number | NodeJS.Timeout;
 
 // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
 // pop a consumer and run the callback, which will retry gaining the worker and retry the task.
@@ -145,6 +147,7 @@ async function run<R, A extends any[] = any[]>(
 
     if (poolRecord) {
         poolRecord.busy = true;
+        poolRecord.lastAccess = Date.now();
     } else if (workerPool.length < maxWorkers) {
         // Fill the worker pool regardless the current call should keep-alive or not,
         // this will make sure that the total number of workers will not exceed the
@@ -154,7 +157,43 @@ async function run<R, A extends any[] = any[]>(
             getWorker: createWorker({ adapter }),
             adapter,
             busy: true,
+            lastAccess: Date.now(),
         });
+
+        if (!gcTimer) {
+            gcTimer = setInterval(() => {
+                // GC: clean long-time unused workers
+                const now = Date.now();
+                const idealItems: PoolRecord[] = [];
+
+                workerPools.set(adapter, workerPool.filter(item => {
+                    const ideal = !item.busy
+                        && (now - item.lastAccess) >= 10_000;
+
+                    if (ideal) {
+                        idealItems.push(item);
+                    }
+
+                    return !ideal;
+                }));
+
+                idealItems.forEach(async item => {
+                    const { worker } = await item.getWorker;
+
+                    if (typeof (worker as any)["terminate"] === "function") {
+                        await (worker as Worker | BunWorker | NodeWorker).terminate();
+                    } else {
+                        (worker as ChildProcess).kill();
+                    }
+                });
+            }, 1_000);
+
+            if (isNode || isBun) {
+                (gcTimer as NodeJS.Timeout).unref();
+            } else if (isDeno) {
+                Deno.unrefTimer(gcTimer);
+            }
+        }
     } else {
         // Put the current call in the consumer queue if there are no workers available,
         // once an existing call finishes, the queue will pop the its head consumer and

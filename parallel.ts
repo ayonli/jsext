@@ -5,7 +5,14 @@ import chan, { Channel } from "./chan.ts";
 import { sequence } from "./number/index.ts";
 import { trim } from "./string/index.ts";
 import { isPlainObject } from "./object/index.ts";
-import { Exception, fromErrorEvent, fromObject, isAggregateError, isDOMException, toObject } from "./error/index.ts";
+import {
+    Exception,
+    fromErrorEvent,
+    fromObject,
+    isAggregateError,
+    isDOMException,
+    toObject
+} from "./error/index.ts";
 import {
     isNode,
     isDeno,

@@ -5,6 +5,7 @@ import { isDeno, isNode, isBun, IsPath, isChannelMessage, handleChannelMessage }
 import parallel, { getMaxParallelism, sanitizeModuleId, createWorker, wrapArgs, isCallResponse, unwrapReturnValue } from './parallel.js';
 
 const workerPools = new Map();
+let gcTimer;
 // The worker consumer queue is nothing but a callback list, once a worker is available, the runner
 // pop a consumer and run the callback, which will retry gaining the worker and retry the task.
 const workerConsumerQueue = [];
@@ -86,6 +87,7 @@ async function run(script, args, options) {
     let poolRecord = workerPool.find(item => !item.busy);
     if (poolRecord) {
         poolRecord.busy = true;
+        poolRecord.lastAccess = Date.now();
     }
     else if (workerPool.length < maxWorkers) {
         // Fill the worker pool regardless the current call should keep-alive or not,
@@ -96,7 +98,38 @@ async function run(script, args, options) {
             getWorker: createWorker({ adapter }),
             adapter,
             busy: true,
+            lastAccess: Date.now(),
         });
+        if (!gcTimer) {
+            gcTimer = setInterval(() => {
+                // GC: clean long-time unused workers
+                const now = Date.now();
+                const idealItems = [];
+                workerPools.set(adapter, workerPool.filter(item => {
+                    const ideal = !item.busy
+                        && (now - item.lastAccess) >= 10000;
+                    if (ideal) {
+                        idealItems.push(item);
+                    }
+                    return !ideal;
+                }));
+                idealItems.forEach(async (item) => {
+                    const { worker } = await item.getWorker;
+                    if (typeof worker["terminate"] === "function") {
+                        await worker.terminate();
+                    }
+                    else {
+                        worker.kill();
+                    }
+                });
+            }, 1000);
+            if (isNode || isBun) {
+                gcTimer.unref();
+            }
+            else if (isDeno) {
+                Deno.unrefTimer(gcTimer);
+            }
+        }
     }
     else {
         // Put the current call in the consumer queue if there are no workers available,
