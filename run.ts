@@ -162,29 +162,31 @@ async function run<R, A extends any[] = any[]>(
 
         if (!gcTimer) {
             gcTimer = setInterval(() => {
-                // GC: clean long-time unused workers
-                const now = Date.now();
-                const idealItems: PoolRecord[] = [];
+                workerPools.forEach((workerPool, adapter) => {
+                    // GC: clean long-time unused workers
+                    const now = Date.now();
+                    const idealItems: PoolRecord[] = [];
 
-                workerPools.set(adapter, workerPool.filter(item => {
-                    const ideal = !item.busy
-                        && (now - item.lastAccess) >= 10_000;
+                    workerPools.set(adapter, workerPool.filter(item => {
+                        const ideal = !item.busy
+                            && (now - item.lastAccess) >= 10_000;
 
-                    if (ideal) {
-                        idealItems.push(item);
-                    }
+                        if (ideal) {
+                            idealItems.push(item);
+                        }
 
-                    return !ideal;
-                }));
+                        return !ideal;
+                    }));
 
-                idealItems.forEach(async item => {
-                    const { worker } = await item.getWorker;
+                    idealItems.forEach(async item => {
+                        const { worker } = await item.getWorker;
 
-                    if (typeof (worker as any)["terminate"] === "function") {
-                        await (worker as Worker | BunWorker | NodeWorker).terminate();
-                    } else {
-                        (worker as ChildProcess).kill();
-                    }
+                        if (typeof (worker as any)["terminate"] === "function") {
+                            await (worker as Worker | BunWorker | NodeWorker).terminate();
+                        } else {
+                            (worker as ChildProcess).kill();
+                        }
+                    });
                 });
             }, 1_000);
 

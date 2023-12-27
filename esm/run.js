@@ -102,25 +102,27 @@ async function run(script, args, options) {
         });
         if (!gcTimer) {
             gcTimer = setInterval(() => {
-                // GC: clean long-time unused workers
-                const now = Date.now();
-                const idealItems = [];
-                workerPools.set(adapter, workerPool.filter(item => {
-                    const ideal = !item.busy
-                        && (now - item.lastAccess) >= 10000;
-                    if (ideal) {
-                        idealItems.push(item);
-                    }
-                    return !ideal;
-                }));
-                idealItems.forEach(async (item) => {
-                    const { worker } = await item.getWorker;
-                    if (typeof worker["terminate"] === "function") {
-                        await worker.terminate();
-                    }
-                    else {
-                        worker.kill();
-                    }
+                workerPools.forEach((workerPool, adapter) => {
+                    // GC: clean long-time unused workers
+                    const now = Date.now();
+                    const idealItems = [];
+                    workerPools.set(adapter, workerPool.filter(item => {
+                        const ideal = !item.busy
+                            && (now - item.lastAccess) >= 10000;
+                        if (ideal) {
+                            idealItems.push(item);
+                        }
+                        return !ideal;
+                    }));
+                    idealItems.forEach(async (item) => {
+                        const { worker } = await item.getWorker;
+                        if (typeof worker["terminate"] === "function") {
+                            await worker.terminate();
+                        }
+                        else {
+                            worker.kill();
+                        }
+                    });
                 });
             }, 1000);
             if (isNode || isBun) {
