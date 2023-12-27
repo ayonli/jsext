@@ -51,7 +51,7 @@ declare global {
          * The returned record / map has separate properties for each group, containing arrays with
          * the items in the group.
          */
-        groupBy(fn: (item: T, i: number) => string | symbol, type?: ObjectConstructor): Record<string | symbol, T[]>;
+        groupBy(fn: (item: T, i: number) => string | number | symbol, type?: ObjectConstructor): Record<string | number | symbol, T[]>;
         groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>;
     }
 }

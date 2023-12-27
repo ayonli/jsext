@@ -175,10 +175,10 @@ export function orderBy<T>(arr: T[], key: keyof T, order: "asc" | "desc" = "asc"
  */
 export function groupBy<T>(
     arr: T[],
-    fn: (item: T, i: number) => string | symbol,
+    fn: (item: T, i: number) => string | number | symbol,
     type?: ObjectConstructor
-): Record<string | symbol, T[]>;
-export function groupBy<T, K extends string>(
+): Record<string | number | symbol, T[]>;
+export function groupBy<T, K>(
     arr: T[],
     fn: (item: T, i: number) => K,
     type: MapConstructor
