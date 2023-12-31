@@ -1029,8 +1029,10 @@ import "@ayonli/jsext/array/augment";
 - `uniq<T>(arr: T[]): T[]`
 - `shuffle<T>(arr: T[]): T[]`
 - `orderBy<T>(arr: T[], key: keyof T, order: "asc" | "desc" = "asc"): T[]`
-- `groupBy<T>(arr: T[], fn: (item: T, i: number) => string | symbol, type?: ObjectConstructor): Record<string | symbol, T[]>`
-- `groupBy<T, K extends string>(arr: T[], fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
+- `groupBy<T, K extends string | number | symbol>(arr: T[], fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T[]>`
+- `groupBy<T, K>(arr: T[], fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
+- `keyBy<T, K extends string | number | symbol>(arr: T[], fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
+- `keyBy<T, K>(arr: T[], fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>`
 
 **[Augmentation](https://github.com/ayonli/jsext/blob/main/array/augment.ts)**
 
@@ -1049,8 +1051,10 @@ import "@ayonli/jsext/array/augment";
         - `toReversed(): T[]`
         - `toSorted(fn?: ((a: T, b: T) => number) | undefined): T[]`
         - `orderBy(key: keyof T, order?: "asc" | "desc"): T[]`
-        - `groupBy(fn: (item: T, i: number) => string | symbol, type?: ObjectConstructor): Record<string | symbol, T[]>`
+        - `groupBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T[]>`
         - `groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
+        - `keyBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
+        - `keyBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>`
 
 ### [uint8array](https://deno.land/x/ayonli_jsext/uint8array/index.ts)
 
@@ -1227,7 +1231,7 @@ import "@ayonli/jsext/collections/augment";
         - `getKey(value: V): K | undefined`
         - `hasValue(value: V): boolean`
         - `deleteValue(value: V): boolean`
-- `CiMap<K extends string, V>` (implements `Map<K, V>`) Case-insensitive map, keys are
+- `CiMap<K extends string, V>` (extends `Map<K, any>`) Case-insensitive map, keys are
     case-insensitive.
 
 *When [augment](https://github.com/ayonli/jsext/blob/main/collections/augment.ts)ing, these types*
@@ -1238,11 +1242,3 @@ import "@ayonli/jsext/collections/augment";
 ```js
 import "@ayonli/jsext/augment";
 ```
-
-## When to use augmentations
-
-If we're developing libraries and share them publicly, in order to prevent collision, it's better
-not to use augmentations, but use the corresponding functions from the sub-packages instead.
-
-But if we're developing private application, using augmentations can save a lot of time, it's easier
-to read and write, and make sense.

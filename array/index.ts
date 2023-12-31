@@ -1,3 +1,4 @@
+import { isSubclassOf } from "../mixins.ts";
 import { random as rand } from "../number/index.ts";
 
 export interface RealArrayLike<T> extends ArrayLike<T> {
@@ -170,14 +171,15 @@ export function orderBy<T>(arr: T[], key: keyof T, order: "asc" | "desc" = "asc"
 /**
  * Groups the items of the array according to the comparable values returned by a provided
  * callback function.
+ * 
  * The returned record / map has separate properties for each group, containing arrays with
  * the items in the group.
  */
-export function groupBy<T>(
+export function groupBy<T, K extends string | number | symbol>(
     arr: T[],
-    fn: (item: T, i: number) => string | number | symbol,
+    fn: (item: T, i: number) => K,
     type?: ObjectConstructor
-): Record<string | number | symbol, T[]>;
+): Record<K, T[]>;
 export function groupBy<T, K>(
     arr: T[],
     fn: (item: T, i: number) => K,
@@ -188,8 +190,8 @@ export function groupBy<T>(
     fn: (item: T, i: number) => any,
     type: ObjectConstructor | MapConstructor = Object
 ): any {
-    if (type === Map) {
-        const groups = new Map<any, any[]>();
+    if (type === Map || isSubclassOf(type, Map)) {
+        const groups = new (type as MapConstructor)<any, any[]>();
 
         for (let i = 0; i < arr.length; i++) {
             const item = arr[i];
@@ -222,3 +224,38 @@ export function groupBy<T>(
         return groups;
     }
 };
+
+/**
+ * Creates a record or map from the items of the array according to the comparable values
+ * returned by a provided callback function.
+ * 
+ * This function is similar to {@link groupBy} except it overrides values if the same
+ * property already exists instead of grouping them as a list.
+ */
+export function keyBy<T, K extends string | number | symbol>(
+    arr: T[],
+    fn: (item: T, i: number) => K,
+    type?: ObjectConstructor
+): Record<K, T>;
+export function keyBy<T, K>(
+    arr: T[],
+    fn: (item: T, i: number) => K,
+    type: MapConstructor 
+): Map<K, T>;
+export function keyBy<T, K>(
+    arr: T[],
+    fn: (item: T, i: number) => K,
+    type: ObjectConstructor | MapConstructor = Object
+): Record<string | number | symbol, T> | Map<K, T> {
+    if (type === Map || isSubclassOf(type, Map)) {
+        return arr.reduce((map, item, i) => {
+            return map.set(fn(item, i), item);
+        }, new type() as Map<any, any>);
+    } else {
+        return arr.reduce((record, item, i) => {
+            const key = fn(item, i) as string | number | symbol;
+            record[key] = item;
+            return record;
+        }, {} as Record<string | number | symbol, T>);
+    }
+}

@@ -216,10 +216,72 @@ describe("Array", () => {
         });
 
         it("Map", () => {
-            const map = arr.groupBy(item => item.group, Map);
-            deepStrictEqual(map, new Map<string, Item[]>([
+            const map1 = arr.groupBy(item => item.group, Map);
+            deepStrictEqual(map1, new Map<string, Item[]>([
                 ["world", [{ group: "world", tag: "A" }]],
                 ["room", [{ group: "room", tag: "B" }, { group: "room", tag: "C" }]]
+            ]));
+
+            const map2 = arr.groupBy(item => item.group, BiMap);
+            deepStrictEqual(map2, new BiMap<string, Item[]>([
+                ["world", [{ group: "world", tag: "A" }]],
+                ["room", [{ group: "room", tag: "B" }, { group: "room", tag: "C" }]]
+            ]));
+
+            const map3 = arr.groupBy(item => item.group, CiMap);
+            deepStrictEqual(map3, new CiMap<string, Item[]>([
+                ["world", [{ group: "world", tag: "A" }]],
+                ["room", [{ group: "room", tag: "B" }, { group: "room", tag: "C" }]]
+            ]));
+        });
+    });
+
+    describe("Array.prototype.keyBy", () => {
+        type Item = { group: string; tag: string; };
+        const arr: Item[] = [
+            {
+                group: "world",
+                tag: "A",
+            },
+            {
+                group: "room",
+                tag: "B",
+            },
+            {
+                group: "room",
+                tag: "C",
+            }
+        ];
+
+        it("Object", () => {
+            const record = arr.keyBy(item => item.tag);
+            deepStrictEqual(record, {
+                A: { group: "world", tag: "A" },
+                B: { group: "room", tag: "B" },
+                C: { group: "room", tag: "C" },
+            });
+        });
+
+        it("Map", () => {
+            const map1 = arr.keyBy(item => item.tag, Map);
+            deepStrictEqual(map1, new Map<string, Item>([
+                ["A", { group: "world", tag: "A" }],
+                ["B", { group: "room", tag: "B" }],
+                ["C", { group: "room", tag: "C" }]
+            ]));
+
+            const map2 = arr.keyBy(item => item.tag, BiMap);
+            deepStrictEqual(map2, new BiMap<string, Item>([
+                ["A", { group: "world", tag: "A" }],
+                ["B", { group: "room", tag: "B" }],
+                ["C", { group: "room", tag: "C" }]
+            ]));
+
+            const map3 = arr.keyBy(item => item.tag, CiMap);
+            deepStrictEqual(map3, new CiMap<string, Item>([
+                ["A", { group: "world", tag: "A" }],
+                ["B", { group: "room", tag: "B" }],
+                ["C", { group: "room", tag: "C" }]
             ]));
         });
     });

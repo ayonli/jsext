@@ -3,6 +3,7 @@ import {
     count as _count,
     equals as _equals,
     groupBy as _groupBy,
+    keyBy as _keyBy,
     orderBy as _orderBy,
     random as _random,
     shuffle as _shuffle,
@@ -48,11 +49,21 @@ declare global {
         /**
          * Groups the items of the array according to the comparable values returned by a provided
          * callback function.
+         * 
          * The returned record / map has separate properties for each group, containing arrays with
          * the items in the group.
          */
-        groupBy(fn: (item: T, i: number) => string | number | symbol, type?: ObjectConstructor): Record<string | number | symbol, T[]>;
+        groupBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T[]>;
         groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>;
+        /**
+         * Creates a record or map from the items of the array according to the comparable values
+         * returned by a provided callback function.
+         * 
+         * This function is similar to {@link groupBy} except it overrides values if the same
+         * property already exists instead of grouping them as a list.
+         */
+        keyBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>;
+        keyBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>;
     }
 }
 
@@ -117,4 +128,11 @@ Array.prototype.groupBy = function orderBy(
     type: ObjectConstructor | MapConstructor = Object
 ): any {
     return _groupBy(this, fn, type as any);
+};
+
+Array.prototype.keyBy = function keyBy(
+    fn: (item: any, i: number) => any,
+    type: ObjectConstructor | MapConstructor = Object
+): any {
+    return _keyBy(this, fn, type as any);
 };
