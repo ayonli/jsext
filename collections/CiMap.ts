@@ -1,19 +1,11 @@
-const internal = Symbol("internal");
-
 /** Case-insensitive map, keys are case-insensitive. */
-export default class CiMap<K extends string, V> implements Map<K, V> {
-    [internal]: Map<string, { key: K, value: V; }>;
-
+export default class CiMap<K extends string, V> extends Map<K, any> {
     get [Symbol.toStringTag]() {
         return "CiMap";
     }
 
-    get size() {
-        return this[internal].size;
-    }
-
     constructor(iterable: Iterable<readonly [K, V]> | null = null) {
-        this[internal] = new Map<string, { key: K, value: V; }>();
+        super();
 
         if (iterable) {
             for (const [key, value] of iterable) {
@@ -22,51 +14,47 @@ export default class CiMap<K extends string, V> implements Map<K, V> {
         }
     }
 
-    set(key: K, value: V): this {
+    override set(key: K, value: V): this {
         const id = String(key).toLowerCase();
-        this[internal].set(id, { key, value });
+        super.set(id as K, { key, value });
         return this;
     }
 
-    get(key: K): V | undefined {
+    override get(key: K): V | undefined {
         const id = String(key).toLowerCase();
-        return this[internal].get(id)?.value;
+        return super.get(id as K)?.value;
     }
 
-    has(key: K): boolean {
+    override has(key: K): boolean {
         const id = String(key).toLowerCase();
-        return this[internal].has(id);
+        return super.has(id as K);
     }
 
-    delete(key: K): boolean {
+    override delete(key: K): boolean {
         const id = String(key).toLowerCase();
-        return this[internal].delete(id);
+        return super.delete(id as K);
     }
 
-    clear(): void {
-        this[internal].clear();
-    }
-
-    * entries(): IterableIterator<[K, V]> {
-        for (const { key, value } of this[internal].values()) {
+    override * entries(): IterableIterator<[K, V]> {
+        for (const { key, value } of super.values()) {
             yield [key, value];
         }
     }
 
-    * keys(): IterableIterator<K> {
-        for (const { key } of this[internal].values()) {
+    override * keys(): IterableIterator<K> {
+        for (const { key } of super.values()) {
             yield key;
         }
     }
 
-    * values(): IterableIterator<V> {
-        for (const { value } of this[internal].values()) {
+    override * values(): IterableIterator<V> {
+        for (const { value } of super.values()) {
             yield value;
         }
     }
 
-    forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void {
-        this[internal].forEach(({ key, value }) => {
+    override forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void {
+        super.forEach(({ key, value }) => {
             callbackfn(value, key, this);
         }, thisArg);
     }

@@ -8,19 +8,17 @@ declare global {
         deleteValue(value: V): boolean;
     }
 
-    class CiMap<K extends string, V> implements Map<K, V> {
+    class CiMap<K extends string, V> extends Map<K, any> {
         readonly [Symbol.toStringTag]: "CiMap";
-        readonly size: number;
         constructor(iterable?: Iterable<readonly [K, V]> | null);
-        set(key: K, value: V): this;
-        get(key: K): V | undefined;
-        has(key: K): boolean;
-        delete(key: K): boolean;
-        clear(): void;
-        entries(): IterableIterator<[K, V]>;
-        keys(): IterableIterator<K>;
-        values(): IterableIterator<V>;
-        forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void;
+        override set(key: K, value: V): this;
+        override get(key: K): V | undefined;
+        override has(key: K): boolean;
+        override delete(key: K): boolean;
+        override entries(): IterableIterator<[K, V]>;
+        override keys(): IterableIterator<K>;
+        override values(): IterableIterator<V>;
+        override forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void;
         [Symbol.iterator](): IterableIterator<[K, V]>;
     }
 }
