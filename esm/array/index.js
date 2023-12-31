@@ -1,3 +1,4 @@
+import { isSubclassOf } from '../mixins.js';
 import { random as random$1 } from '../number/index.js';
 
 /** Returns a random element of the array, or `undefined` if the array is empty. */
@@ -143,8 +144,8 @@ function orderBy(arr, key, order = "asc") {
     return items;
 }
 function groupBy(arr, fn, type = Object) {
-    if (type === Map) {
-        const groups = new Map();
+    if (type === Map || isSubclassOf(type, Map)) {
+        const groups = new type();
         for (let i = 0; i < arr.length; i++) {
             const item = arr[i];
             const key = fn(item, i);
@@ -174,6 +175,26 @@ function groupBy(arr, fn, type = Object) {
         return groups;
     }
 }
+function keyBy(arr, fn, type = Object) {
+    if (type === Map || isSubclassOf(type, Map)) {
+        const map = new type();
+        for (let i = 0; i < arr.length; i++) {
+            const item = arr[i];
+            const key = fn(item, i);
+            map.set(key, item);
+        }
+        return map;
+    }
+    else {
+        const record = {};
+        for (let i = 0; i < arr.length; i++) {
+            const item = arr[i];
+            const key = fn(item, i);
+            record[key] = item;
+        }
+        return record;
+    }
+}
 
-export { chunk, count, equals, groupBy, orderBy, random, shuffle, split, uniq };
+export { chunk, count, equals, groupBy, keyBy, orderBy, random, shuffle, split, uniq };
 //# sourceMappingURL=index.js.map

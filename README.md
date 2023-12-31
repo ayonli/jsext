@@ -401,7 +401,7 @@ console.assert(!isSubclassOf(Controller, Log));
 ### jsext.isSubclassOf
 
 ```ts
-function isSubclassOf<T, B>(ctor1: Constructor<T>, ctor2: Constructor<B>): boolean;
+function isSubclassOf<A, B>(ctor1: Constructor<A>, ctor2: Constructor<B>): boolean;
 ```
 
 Checks if a class is a subclass of another class.

@@ -126,7 +126,7 @@ export default function mixins(base: Constructor<any>, ...mixins: any[]) {
  * console.assert(isSubclassOf(Moment, Object)); // all classes are subclasses of Object
  * ```
  */
-export function isSubclassOf<T, B>(ctor1: Constructor<T>, ctor2: Constructor<B>): boolean {
+export function isSubclassOf<A, B>(ctor1: Constructor<A>, ctor2: Constructor<B>): boolean {
     return typeof ctor1 === "function"
         && typeof ctor2 === "function"
         && ctor1.prototype instanceof ctor2;

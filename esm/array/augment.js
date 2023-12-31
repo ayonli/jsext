@@ -1,4 +1,4 @@
-import { random, count, equals, split, chunk, uniq, shuffle, orderBy, groupBy } from './index.js';
+import { random, count, equals, split, chunk, uniq, shuffle, orderBy, groupBy, keyBy } from './index.js';
 
 Array.prototype.first = function first() {
     return this[0];
@@ -45,5 +45,8 @@ Array.prototype.orderBy = function orderBy$1(key, order = "asc") {
 };
 Array.prototype.groupBy = function orderBy(fn, type = Object) {
     return groupBy(this, fn, type);
+};
+Array.prototype.keyBy = function keyBy$1(fn, type = Object) {
+    return keyBy(this, fn, type);
 };
 //# sourceMappingURL=augment.js.map

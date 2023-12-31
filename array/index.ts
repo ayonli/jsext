@@ -185,17 +185,17 @@ export function groupBy<T, K>(
     fn: (item: T, i: number) => K,
     type: MapConstructor
 ): Map<K, T[]>;
-export function groupBy<T>(
+export function groupBy<T, K>(
     arr: T[],
-    fn: (item: T, i: number) => any,
+    fn: (item: T, i: number) => K,
     type: ObjectConstructor | MapConstructor = Object
 ): any {
     if (type === Map || isSubclassOf(type, Map)) {
-        const groups = new (type as MapConstructor)<any, any[]>();
+        const groups = new type() as Map<any, T[]>;
 
         for (let i = 0; i < arr.length; i++) {
-            const item = arr[i];
-            const key = fn(item as T, i);
+            const item = arr[i] as T;
+            const key = fn(item, i);
             const list = groups.get(key);
 
             if (list) {
@@ -207,11 +207,11 @@ export function groupBy<T>(
 
         return groups;
     } else {
-        const groups: Record<string | symbol, any[]> = {};
+        const groups: Record<string | number | symbol, T[]> = {};
 
         for (let i = 0; i < arr.length; i++) {
-            const item = arr[i];
-            const key = fn(item as T, i);
+            const item = arr[i] as T;
+            const key = fn(item, i) as string | number | symbol;
             const list = groups[key];
 
             if (list) {
@@ -240,7 +240,7 @@ export function keyBy<T, K extends string | number | symbol>(
 export function keyBy<T, K>(
     arr: T[],
     fn: (item: T, i: number) => K,
-    type: MapConstructor 
+    type: MapConstructor
 ): Map<K, T>;
 export function keyBy<T, K>(
     arr: T[],
@@ -248,14 +248,24 @@ export function keyBy<T, K>(
     type: ObjectConstructor | MapConstructor = Object
 ): Record<string | number | symbol, T> | Map<K, T> {
     if (type === Map || isSubclassOf(type, Map)) {
-        return arr.reduce((map, item, i) => {
-            return map.set(fn(item, i), item);
-        }, new type() as Map<any, any>);
+        const map = new type() as Map<any, T>;
+
+        for (let i = 0; i < arr.length; i++) {
+            const item = arr[i] as T;
+            const key = fn(item, i);
+            map.set(key, item);
+        }
+
+        return map;
     } else {
-        return arr.reduce((record, item, i) => {
+        const record = {} as Record<string | number | symbol, T>;
+
+        for (let i = 0; i < arr.length; i++) {
+            const item = arr[i] as T;
             const key = fn(item, i) as string | number | symbol;
             record[key] = item;
-            return record;
-        }, {} as Record<string | number | symbol, T>);
+        }
+
+        return record;
     }
 }

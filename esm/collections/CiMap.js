@@ -1,14 +1,10 @@
-const internal = Symbol("internal");
 /** Case-insensitive map, keys are case-insensitive. */
-class CiMap {
+class CiMap extends Map {
     get [Symbol.toStringTag]() {
         return "CiMap";
     }
-    get size() {
-        return this[internal].size;
-    }
     constructor(iterable = null) {
-        this[internal] = new Map();
+        super();
         if (iterable) {
             for (const [key, value] of iterable) {
                 this.set(key, value);
@@ -17,42 +13,39 @@ class CiMap {
     }
     set(key, value) {
         const id = String(key).toLowerCase();
-        this[internal].set(id, { key, value });
+        super.set(id, { key, value });
         return this;
     }
     get(key) {
         var _a;
         const id = String(key).toLowerCase();
-        return (_a = this[internal].get(id)) === null || _a === void 0 ? void 0 : _a.value;
+        return (_a = super.get(id)) === null || _a === void 0 ? void 0 : _a.value;
     }
     has(key) {
         const id = String(key).toLowerCase();
-        return this[internal].has(id);
+        return super.has(id);
     }
     delete(key) {
         const id = String(key).toLowerCase();
-        return this[internal].delete(id);
-    }
-    clear() {
-        this[internal].clear();
+        return super.delete(id);
     }
     *entries() {
-        for (const { key, value } of this[internal].values()) {
+        for (const { key, value } of super.values()) {
             yield [key, value];
         }
     }
     *keys() {
-        for (const { key } of this[internal].values()) {
+        for (const { key } of super.values()) {
             yield key;
         }
     }
     *values() {
-        for (const { value } of this[internal].values()) {
+        for (const { value } of super.values()) {
             yield value;
         }
     }
     forEach(callbackfn, thisArg) {
-        this[internal].forEach(({ key, value }) => {
+        super.forEach(({ key, value }) => {
             callbackfn(value, key, this);
         }, thisArg);
     }
