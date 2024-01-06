@@ -19,16 +19,10 @@ function throttle(handler, options) {
         try {
             const returns = handler.call(this, ...args);
             if (typeof (returns === null || returns === void 0 ? void 0 : returns.then) === "function") {
-                cache.pending = returns.then(value => {
+                cache.pending = Promise.resolve(returns).finally(() => {
+                    cache.result = { value: cache.pending };
                     cache.pending = undefined;
-                    cache.result = { value };
                     cache.expires = Date.now() + duration;
-                    return value;
-                }).catch(error => {
-                    cache.pending = undefined;
-                    cache.result = { error };
-                    cache.expires = Date.now() + duration;
-                    throw error;
                 });
                 if (noWait && cache.result) {
                     if (cache.result.error) {
