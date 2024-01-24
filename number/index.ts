@@ -12,8 +12,10 @@ export function isFloat(value: unknown): boolean {
 export function isNumeric(value: unknown): boolean {
     const type = typeof value;
 
-    if (type === "number" || type === "bigint") {
+    if (type === "bigint") {
         return true;
+    } else if (type === "number") {
+        return !Number.isNaN(value);
     } else if (type === "string" && value) {
         try {
             BigInt(value as string);
