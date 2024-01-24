@@ -2,13 +2,16 @@ import { isBetween, isFloat, isNumeric, random, sequence } from "./index.ts";
 
 declare global {
     interface NumberConstructor {
-        /** Returns true if the given value is a float, false otherwise. */
+        /** Returns `true` if the given value is a float, `false` otherwise. */
         isFloat(value: unknown): boolean;
         /**
          * Returns `true` if the given value is a numeric value, `false` otherwise. A numeric value
          * is a number, a bigint, or a string that can be converted as a number or bigint.
+         * 
+         * NOTE: `NaN` is not considered a number.
+         * @param strict Only returns `true` when the value is of type `number`.
          */
-        isNumeric(value: unknown): boolean;
+        isNumeric(value: unknown, strict?: boolean): boolean;
         /** Return `true` if a number is between the given range (inclusive). */
         isBetween(value: number, [min, max]: [number, number]): boolean;
         /** Returns a random integer ranged from `min` to `max` (inclusive). */

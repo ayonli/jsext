@@ -7,11 +7,20 @@ function isFloat(value) {
 /**
  * Returns `true` if the given value is a numeric value, `false` otherwise. A numeric value is a
  * number, a bigint, or a string that can be converted to a number or bigint.
+ *
+ * NOTE: `NaN` is not considered a number.
+ * @param strict Only returns `true` when the value is of type `number`.
  */
-function isNumeric(value) {
+function isNumeric(value, strict = false) {
     const type = typeof value;
-    if (type === "number" || type === "bigint") {
+    if (strict) {
+        return type === "number" && !Number.isNaN(value);
+    }
+    else if (type === "bigint") {
         return true;
+    }
+    else if (type === "number") {
+        return !Number.isNaN(value);
     }
     else if (type === "string" && value) {
         try {

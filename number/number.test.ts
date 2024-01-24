@@ -16,13 +16,19 @@ describe("Number", () => {
 
     it("Number.isNumeric", () => {
         ok(Number.isNumeric(123));
+        ok(Number.isNumeric(123, true));
         ok(Number.isNumeric(Infinity));
+        ok(Number.isNumeric(Infinity, true));
         ok(Number.isNumeric(-Infinity));
+        ok(Number.isNumeric(-Infinity, true));
         ok(Number.isNumeric(Number.MIN_VALUE));
         ok(Number.isNumeric(Number.MAX_VALUE));
         ok(Number.isNumeric(BigInt(Number.MAX_VALUE)));
+        ok(!Number.isNumeric(BigInt(Number.MAX_VALUE), true));
         ok(Number.isNumeric("123"));
+        ok(!Number.isNumeric("123", true));
         ok(Number.isNumeric("1.23"));
+        ok(!Number.isNumeric("1.23", true));
         ok(Number.isNumeric("0b1010"));
         ok(Number.isNumeric("0b1010"));
         ok(Number.isNumeric("0o123"));
@@ -31,6 +37,7 @@ describe("Number", () => {
         ok(!Number.isNumeric("12a"))
         ok(!Number.isNumeric("abc"))
         ok(!Number.isNumeric(""))
+        ok(!Number.isNumeric(NaN))
     });
 
     it("Number.isBetween", () => {
