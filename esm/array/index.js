@@ -1,6 +1,14 @@
 import { isSubclassOf } from '../mixins.js';
 import { random as random$1 } from '../number/index.js';
 
+/** Returns the first element of the array, or `undefined` if the array is empty. */
+function first(arr) {
+    return arr[0];
+}
+/** Returns the last element of the array, or `undefined` if the array is empty. */
+function last(arr) {
+    return arr.length > 0 ? arr[arr.length - 1] : undefined;
+}
 /** Returns a random element of the array, or `undefined` if the array is empty. */
 function random(arr, remove = false) {
     if (!arr.length) {
@@ -196,5 +204,5 @@ function keyBy(arr, fn, type = Object) {
     }
 }
 
-export { chunk, count, equals, groupBy, keyBy, orderBy, random, shuffle, split, uniq };
+export { chunk, count, equals, first, groupBy, keyBy, last, orderBy, random, shuffle, split, uniq };
 //# sourceMappingURL=index.js.map

@@ -1021,6 +1021,8 @@ import "@ayonli/jsext/array/augment";
 
 **Functions**
 
+- `first<T>(arr: T[]): T | undefined`
+- `last<T>(arr: T[]): T | undefined`
 - `random<T>(arr: T[], remove?: boolean): T | undefined`
 - `count<T>(arr: RealArrayLike<T>, ele: T): number`
 - `equals<T>(arr1: RealArrayLike<T>, arr2: RealArrayLike<T>): boolean`

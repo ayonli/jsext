@@ -5,6 +5,16 @@ export interface RealArrayLike<T> extends ArrayLike<T> {
     slice(start?: number, end?: number): RealArrayLike<T>;
 }
 
+/** Returns the first element of the array, or `undefined` if the array is empty. */
+export function first<T>(arr: T[]): T | undefined {
+    return arr[0];
+}
+
+/** Returns the last element of the array, or `undefined` if the array is empty. */
+export function last<T>(arr: T[]): T | undefined {
+    return arr.length > 0 ? arr[arr.length - 1] : undefined;
+}
+
 /** Returns a random element of the array, or `undefined` if the array is empty. */
 export function random<T>(arr: T[], remove = false): T | undefined {
     if (!arr.length) {

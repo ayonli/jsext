@@ -1,4 +1,6 @@
 import {
+    first as _first,
+    last as _last,
     chunk as _chunk,
     count as _count,
     equals as _equals,
@@ -68,11 +70,11 @@ declare global {
 }
 
 Array.prototype.first = function first() {
-    return this[0];
+    return _first(this);
 };
 
 Array.prototype.last = function last() {
-    return this[this.length - 1];
+    return _last(this);
 };
 
 Array.prototype.random = function random(remove = false) {
