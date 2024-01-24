@@ -27,6 +27,10 @@ describe("Number", () => {
         ok(Number.isNumeric("0b1010"));
         ok(Number.isNumeric("0o123"));
         ok(Number.isNumeric("0x123"));
+        ok(!Number.isNumeric("12n"))
+        ok(!Number.isNumeric("12a"))
+        ok(!Number.isNumeric("abc"))
+        ok(!Number.isNumeric(""))
     });
 
     it("Number.isBetween", () => {

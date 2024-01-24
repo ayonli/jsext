@@ -14,16 +14,12 @@ export function isNumeric(value: unknown): boolean {
 
     if (type === "number" || type === "bigint") {
         return true;
-    } else if (type === "string") {
-        if (!Number.isNaN(value)) {
+    } else if (type === "string" && value) {
+        try {
+            BigInt(value as string);
             return true;
-        } else {
-            try {
-                BigInt(value as string);
-                return true;
-            } catch {
-                return false;
-            }
+        } catch {
+            return !Number.isNaN(Number(value));
         }
     }
 

@@ -13,18 +13,13 @@ function isNumeric(value) {
     if (type === "number" || type === "bigint") {
         return true;
     }
-    else if (type === "string") {
-        if (!Number.isNaN(value)) {
+    else if (type === "string" && value) {
+        try {
+            BigInt(value);
             return true;
         }
-        else {
-            try {
-                BigInt(value);
-                return true;
-            }
-            catch (_a) {
-                return false;
-            }
+        catch (_a) {
+            return !Number.isNaN(Number(value));
         }
     }
     return false;
