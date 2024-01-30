@@ -1,9 +1,11 @@
 import { isSubclassOf } from "../mixins.ts";
 import { random as rand } from "../number/index.ts";
-
-export interface RealArrayLike<T> extends ArrayLike<T> {
-    slice(start?: number, end?: number): RealArrayLike<T>;
-}
+import {
+    count as _count,
+    equals as _equals,
+    split as _split,
+    chunk as _chunk,
+} from "./base.ts";
 
 /** Returns the first element of the array, or `undefined` if the array is empty. */
 export function first<T>(arr: T[]): T | undefined {
@@ -37,81 +39,26 @@ export function random<T>(arr: T[], remove = false): T | undefined {
 }
 
 /** Counts the occurrence of the element in the array. */
-export function count<T>(arr: RealArrayLike<T>, ele: T): number {
-    let count = 0;
-
-    for (let i = 0; i < arr.length; i++) {
-        if (arr[i] === ele) {
-            count++;
-        }
-    }
-
-    return count;
+export function count<T>(arr: T[], ele: T): number {
+    return _count(arr, ele);
 }
 
 /**
  * Performs a shallow compare to another array and see if it contains the same elements as
  * this array.
  */
-export function equals<T>(arr1: RealArrayLike<T>, arr2: RealArrayLike<T>): boolean {
-    if (arr1.length !== arr2.length) {
-        return false;
-    }
-
-    for (let i = 0; i < arr1.length; i++) {
-        if (arr1[i] !== arr2[i]) {
-            return false;
-        }
-    }
-
-    return true;
+export function equals<T>(arr1: T[], arr2: T[]): boolean {
+    return _equals(arr1, arr2);
 }
 
 /** Breaks the array into smaller chunks according to the given delimiter. */
-export function split<T>(arr: RealArrayLike<T>, delimiter: T): RealArrayLike<T>[] {
-    const chunks: (typeof arr)[] = [];
-    const limit = arr.length;
-    let offset = 0;
-
-    for (let i = 0; i < limit; i++) {
-        if (arr[i] === delimiter) {
-            chunks.push(arr.slice(offset, i));
-            offset = i + 1;
-        }
-    }
-
-    if (offset < limit) {
-        chunks.push(arr.slice(offset, limit));
-    } else if (offset === limit) {
-        const ctor = arr.constructor as (new (...args: any[]) => RealArrayLike<T>) & {
-            from?: (iterable: Iterable<T>) => RealArrayLike<T>;
-        };
-
-        if (typeof ctor.from === "function") {
-            chunks.push(ctor.from([]));
-        } else {
-            chunks.push(new ctor([]));
-        }
-    }
-
-    return chunks;
+export function split<T>(arr: T[], delimiter: T): T[][] {
+    return _split(arr, delimiter) as T[][];
 }
 
 /** Breaks the array into smaller chunks according to the given length. */
-export function chunk<T>(arr: RealArrayLike<T>, length: number): RealArrayLike<T>[] {
-    const limit = arr.length;
-    const size = Math.ceil(limit / length);
-    const chunks = new Array<RealArrayLike<T>>(size);
-    let offset = 0;
-    let idx = 0;
-
-    while (offset < limit) {
-        chunks[idx] = arr.slice(offset, offset + length);
-        offset += length;
-        idx++;
-    }
-
-    return chunks;
+export function chunk<T>(arr: T[], length: number): T[][] {
+    return _chunk(arr, length) as T[][];
 }
 
 /** Returns a subset of the array that contains only unique items. */

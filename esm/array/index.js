@@ -1,5 +1,6 @@
 import { isSubclassOf } from '../mixins.js';
 import { random as random$1 } from '../number/index.js';
+import { count as count$1, equals as equals$1, split as split$1, chunk as chunk$1 } from './base.js';
 
 /** Returns the first element of the array, or `undefined` if the array is empty. */
 function first(arr) {
@@ -32,67 +33,22 @@ function random(arr, remove = false) {
 }
 /** Counts the occurrence of the element in the array. */
 function count(arr, ele) {
-    let count = 0;
-    for (let i = 0; i < arr.length; i++) {
-        if (arr[i] === ele) {
-            count++;
-        }
-    }
-    return count;
+    return count$1(arr, ele);
 }
 /**
  * Performs a shallow compare to another array and see if it contains the same elements as
  * this array.
  */
 function equals(arr1, arr2) {
-    if (arr1.length !== arr2.length) {
-        return false;
-    }
-    for (let i = 0; i < arr1.length; i++) {
-        if (arr1[i] !== arr2[i]) {
-            return false;
-        }
-    }
-    return true;
+    return equals$1(arr1, arr2);
 }
 /** Breaks the array into smaller chunks according to the given delimiter. */
 function split(arr, delimiter) {
-    const chunks = [];
-    const limit = arr.length;
-    let offset = 0;
-    for (let i = 0; i < limit; i++) {
-        if (arr[i] === delimiter) {
-            chunks.push(arr.slice(offset, i));
-            offset = i + 1;
-        }
-    }
-    if (offset < limit) {
-        chunks.push(arr.slice(offset, limit));
-    }
-    else if (offset === limit) {
-        const ctor = arr.constructor;
-        if (typeof ctor.from === "function") {
-            chunks.push(ctor.from([]));
-        }
-        else {
-            chunks.push(new ctor([]));
-        }
-    }
-    return chunks;
+    return split$1(arr, delimiter);
 }
 /** Breaks the array into smaller chunks according to the given length. */
 function chunk(arr, length) {
-    const limit = arr.length;
-    const size = Math.ceil(limit / length);
-    const chunks = new Array(size);
-    let offset = 0;
-    let idx = 0;
-    while (offset < limit) {
-        chunks[idx] = arr.slice(offset, offset + length);
-        offset += length;
-        idx++;
-    }
-    return chunks;
+    return chunk$1(arr, length);
 }
 /** Returns a subset of the array that contains only unique items. */
 function uniq(arr) {

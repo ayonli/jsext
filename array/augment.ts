@@ -90,11 +90,11 @@ Array.prototype.equals = function equals(another) {
 };
 
 Array.prototype.split = function split(delimiter) {
-    return _split(this, delimiter) as any[];
+    return _split(this, delimiter);
 };
 
 Array.prototype.chunk = function chunk(length) {
-    return _chunk(this, length) as any[];
+    return _chunk(this, length);
 };
 
 Array.prototype.uniq = function uniq() {

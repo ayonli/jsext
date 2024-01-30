@@ -1,4 +1,4 @@
-import { chunk as _chunk } from "../array/index.ts";
+import { chunk as _chunk } from "../array/base.ts";
 
 /**
  * Compares two strings, returns `-1` if `a < b`, `0` if `a == b` and `1` if `a > b`.
@@ -56,7 +56,7 @@ export function hyphenate(str: string): string {
 /** Extracts words (in latin characters) from the string. */
 export function words(str: string): string[] {
     const matches = str.match(/\w+/g);
-    return matches ? [...matches] : [];
+    return matches ? [...matches].map(sub => sub.split("_")).flat() : [];
 }
 
 /** Breaks the string into smaller chunks according to the given length. */

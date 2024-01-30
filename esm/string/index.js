@@ -1,4 +1,4 @@
-import { chunk as chunk$1 } from '../array/index.js';
+import { chunk as chunk$1 } from '../array/base.js';
 
 /**
  * Compares two strings, returns `-1` if `a < b`, `0` if `a == b` and `1` if `a > b`.
@@ -51,7 +51,7 @@ function hyphenate(str) {
 /** Extracts words (in latin characters) from the string. */
 function words(str) {
     const matches = str.match(/\w+/g);
-    return matches ? [...matches] : [];
+    return matches ? [...matches].map(sub => sub.split("_")).flat() : [];
 }
 /** Breaks the string into smaller chunks according to the given length. */
 function chunk(str, length) {

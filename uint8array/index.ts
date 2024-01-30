@@ -1,4 +1,4 @@
-import { equals as _equals, split as _split, chunk as _chunk } from "../array/index.ts";
+import { equals as _equals, split as _split, chunk as _chunk } from "../array/base.ts";
 import { sum } from "../math/index.ts";
 
 /** Copies bytes from `src` array to `dest` and returns the number of bytes copied. */

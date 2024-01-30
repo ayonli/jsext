@@ -37,6 +37,7 @@ describe("String", () => {
 
     it("String.prototype.words", () => {
         deepStrictEqual("Hello, World!".words(), ["Hello", "World"]);
+        deepStrictEqual("hello_world".words(), ["hello", "world"]);
     });
 
     it("String.prototype.chunk", () => {
