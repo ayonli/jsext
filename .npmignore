@@ -16,3 +16,5 @@ bundle/index.js
 bundle/index.js.map
 !bundle/worker.mjs
 !bundle/worker-node.mjs
+deno.json
+deno.lock
