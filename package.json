@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.6.28",
+    "version": "0.6.29",
     "description": "Additional functions for JavaScript to build strong applications.",
     "main": "./cjs/index.js",
     "module": "./esm/index.js",
@@ -26,6 +26,13 @@
             "require": "./cjs/chan.js",
             "import": "./esm/chan.js",
             "default": "./chan.ts"
+        },
+        "./deprecate": {
+            "types": "./types/deprecate.d.ts",
+            "bun": "./deprecate.ts",
+            "require": "./cjs/deprecate.js",
+            "import": "./esm/deprecate.js",
+            "default": "./deprecate.ts"
         },
         "./example": {
             "types": "./types/example.d.ts",
