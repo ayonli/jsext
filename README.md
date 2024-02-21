@@ -973,6 +973,8 @@ import "@ayonli/jsext/string/augment";
 - `trim(str: string, chars?: string): string`
 - `trimEnd(str: string, chars?: string): string`
 - `trimStart(str: string, chars?: string): string`
+- `stripEnd(str: string, suffix: string): string`
+- `stripStart(str: string, prefix: string): string`
 - `byteLength(str: string): number`
 
 **[Augmentation](https://github.com/ayonli/jsext/blob/main/string/augment.ts)**
@@ -990,6 +992,8 @@ import "@ayonli/jsext/string/augment";
         - `trim(chars?: string): string`
         - `trimEnd(chars?: string): string`
         - `trimStart(chars?: string): string`
+        - `stripEnd(suffix: string): string`
+        - `stripStart(prefix: string): string`
         - `byteLength(): number`
 
 ### [number](https://deno.land/x/ayonli_jsext/number/index.ts)

@@ -10,7 +10,9 @@ import {
     words as _words,
     trim as _trim,
     trimEnd as _trimEnd,
-    trimStart as _trimStart
+    trimStart as _trimStart,
+    stripEnd as _stripEnd,
+    stripStart as _stripStart,
 } from "./index.ts";
 
 declare global {
@@ -45,6 +47,10 @@ declare global {
         trimEnd(chars?: string): string;
         /** Removes leading spaces or custom characters of the string. */
         trimStart(chars?: string): string;
+        /** Removes the given prefix of the string if present. */
+        stripStart(prefix: string): string;
+        /** Removes the given suffix of the string if present. */
+        stripEnd(suffix: string): string;
         /** Returns the byte length of the string. */
         byteLength(): number;
     }
@@ -87,6 +93,14 @@ String.prototype.trimEnd = function trimEnd(chars: string = "") {
 
 String.prototype.trimStart = function trimStart(chars: string = "") {
     return _trimStart(String(this), chars);
+};
+
+String.prototype.stripEnd = function stripEnd(suffix: string) {
+    return _stripEnd(String(this), suffix);
+};
+
+String.prototype.stripStart = function stripStart(prefix: string) {
+    return _stripStart(String(this), prefix);
 };
 
 String.prototype.byteLength = function byteLength() {

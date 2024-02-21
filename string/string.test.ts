@@ -69,6 +69,16 @@ describe("String", () => {
         strictEqual("!!!Hello, World!!!".trimStart("!"), "Hello, World!!!");
     });
 
+    it("String.prototype.stripEnd", () => {
+        strictEqual("foo:bar".stripEnd(":bar"), "foo");
+        strictEqual("foo".stripEnd(":bar"), "foo");
+    });
+
+    it("String.prototype.stripStart", () => {
+        strictEqual("foo:bar".stripStart("foo:"), "bar");
+        strictEqual("bar".stripStart("foo"), "bar");
+    });
+
     it("String.prototype.byteLength", () => {
         strictEqual("Hello, World!".byteLength(), 13);
         strictEqual("你好，世界！".byteLength(), 18);

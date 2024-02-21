@@ -111,6 +111,24 @@ export function trimStart(str: string, chars = ""): string {
     }
 }
 
+/** Removes the given suffix of the string if present. */
+export function stripEnd(str: string, suffix: string): string {
+    if (str.endsWith(suffix)) {
+        return str.slice(0, -suffix.length);
+    }
+
+    return str;
+}
+
+/** Removes the given prefix of the string if present. */
+export function stripStart(str: string, prefix: string): string {
+    if (str.startsWith(prefix)) {
+        return str.slice(prefix.length);
+    }
+
+    return str;
+}
+
 const encoder = new TextEncoder();
 /** Returns the byte length of the string. */
 export function byteLength(str: string): number {

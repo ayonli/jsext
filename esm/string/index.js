@@ -104,11 +104,25 @@ function trimStart(str, chars = "") {
         return str.substring(i);
     }
 }
+/** Removes the given suffix of the string if present. */
+function stripEnd(str, suffix) {
+    if (str.endsWith(suffix)) {
+        return str.slice(0, -suffix.length);
+    }
+    return str;
+}
+/** Removes the given prefix of the string if present. */
+function stripStart(str, prefix) {
+    if (str.startsWith(prefix)) {
+        return str.slice(prefix.length);
+    }
+    return str;
+}
 const encoder = new TextEncoder();
 /** Returns the byte length of the string. */
 function byteLength(str) {
     return encoder.encode(str).byteLength;
 }
 
-export { byteLength, capitalize, chunk, compare, count, hyphenate, random, trim, trimEnd, trimStart, truncate, words };
+export { byteLength, capitalize, chunk, compare, count, hyphenate, random, stripEnd, stripStart, trim, trimEnd, trimStart, truncate, words };
 //# sourceMappingURL=index.js.map
