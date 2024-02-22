@@ -96,6 +96,36 @@ describe("Array", () => {
         deepStrictEqual(list, [1, 2, 3, 4]);
     });
 
+    it("Array.prototype.uniqBy", () => {
+        type Item = { group: string; tag: string; };
+        const arr: Item[] = [
+            {
+                group: "world",
+                tag: "A",
+            },
+            {
+                group: "room",
+                tag: "B",
+            },
+            {
+                group: "room",
+                tag: "C",
+            }
+        ];
+
+        const list = arr.uniqBy(item => item.group);
+        deepStrictEqual(list, [
+            {
+                group: "world",
+                tag: "A",
+            },
+            {
+                group: "room",
+                tag: "B",
+            }
+        ]);
+    });
+
     it("Array.prototype.orderBy", () => {
         type Item = { id: string; age: number; tag: string; };
         const arr1: Item[] = [

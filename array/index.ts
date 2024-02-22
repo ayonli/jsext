@@ -67,6 +67,25 @@ export function uniq<T>(arr: T[]): T[] {
 }
 
 /**
+ * Returns a subset of the array that contains only unique items filtered by the
+ * given callback function.
+ */
+export function uniqBy<T, K extends string | number | symbol>(
+    arr: T[],
+    fn: (item: T, i: number) => K
+): T[] {
+    const map = new Map() as Map<K, T>;
+
+    for (let i = 0; i < arr.length; i++) {
+        const item = arr[i] as T;
+        const key = fn(item, i);
+        map.has(key) || map.set(key, item);
+    }
+
+    return [...map.values()];
+}
+
+/**
  * Reorganizes the elements in the array in random order.
  * 
  * This function mutates the array.

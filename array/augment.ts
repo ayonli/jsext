@@ -10,7 +10,8 @@ import {
     random as _random,
     shuffle as _shuffle,
     split as _split,
-    uniq as _uniq
+    uniq as _uniq,
+    uniqBy as _uniqBy,
 } from "./index.ts";
 
 declare global {
@@ -34,6 +35,11 @@ declare global {
         chunk(length: number): T[][];
         /** Returns a subset of the array that contains only unique items. */
         uniq(): T[];
+        /**
+         * Returns a subset of the array that contains only unique items filtered by the
+         * given callback function.
+         */
+        uniqBy<K extends string | number | symbol>(fn: (item: T, i: number) => K): T[];
         /**
          * Reorganizes the elements in the array in random order.
          * 
@@ -101,6 +107,10 @@ Array.prototype.uniq = function uniq() {
     return _uniq(this);
 };
 
+Array.prototype.uniqBy = function uniqBy(fn) {
+    return _uniqBy(this, fn);
+};
+
 Array.prototype.shuffle = function shuffle() {
     return _shuffle(this);
 };
@@ -125,7 +135,7 @@ Array.prototype.orderBy = function orderBy(key, order = "asc") {
     return _orderBy(this, key, order);
 };
 
-Array.prototype.groupBy = function orderBy(
+Array.prototype.groupBy = function groupBy(
     fn: (item: any, i: number) => any,
     type: ObjectConstructor | MapConstructor = Object
 ): any {

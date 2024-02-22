@@ -1,4 +1,4 @@
-import { first, last, random, count, equals, split, chunk, uniq, shuffle, orderBy, groupBy, keyBy } from './index.js';
+import { first, last, random, count, equals, split, chunk, uniq, uniqBy, shuffle, orderBy, groupBy, keyBy } from './index.js';
 
 Array.prototype.first = function first$1() {
     return first(this);
@@ -24,6 +24,9 @@ Array.prototype.chunk = function chunk$1(length) {
 Array.prototype.uniq = function uniq$1() {
     return uniq(this);
 };
+Array.prototype.uniqBy = function uniqBy$1(fn) {
+    return uniqBy(this, fn);
+};
 Array.prototype.shuffle = function shuffle$1() {
     return shuffle(this);
 };
@@ -43,7 +46,7 @@ if (!Array.prototype.toSorted) {
 Array.prototype.orderBy = function orderBy$1(key, order = "asc") {
     return orderBy(this, key, order);
 };
-Array.prototype.groupBy = function orderBy(fn, type = Object) {
+Array.prototype.groupBy = function groupBy$1(fn, type = Object) {
     return groupBy(this, fn, type);
 };
 Array.prototype.keyBy = function keyBy$1(fn, type = Object) {

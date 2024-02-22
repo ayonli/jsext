@@ -55,6 +55,19 @@ function uniq(arr) {
     return [...new Set(arr)];
 }
 /**
+ * Returns a subset of the array that contains only unique items filtered by the
+ * given callback function.
+ */
+function uniqBy(arr, fn) {
+    const map = new Map();
+    for (let i = 0; i < arr.length; i++) {
+        const item = arr[i];
+        const key = fn(item, i);
+        map.has(key) || map.set(key, item);
+    }
+    return [...map.values()];
+}
+/**
  * Reorganizes the elements in the array in random order.
  *
  * This function mutates the array.
@@ -160,5 +173,5 @@ function keyBy(arr, fn, type = Object) {
     }
 }
 
-export { chunk, count, equals, first, groupBy, keyBy, last, orderBy, random, shuffle, split, uniq };
+export { chunk, count, equals, first, groupBy, keyBy, last, orderBy, random, shuffle, split, uniq, uniqBy };
 //# sourceMappingURL=index.js.map
