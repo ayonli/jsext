@@ -145,79 +145,158 @@ describe("Array", () => {
                 tag: "B",
             },
         ];
-        const arr2 = arr1.orderBy("age");
-        const arr3 = arr1.orderBy("age", "desc");
-        const arr4 = arr1.orderBy("id", "asc");
-        const arr5 = arr1.orderBy("tag", "desc");
 
-        deepStrictEqual(arr2, [
-            {
-                id: "claire",
-                age: 25,
-                tag: "B",
-            },
-            {
-                id: "ayon",
-                age: 28,
-                tag: "B",
-            },
-            {
-                id: "world",
-                age: 53,
-                tag: "A",
-            },
-        ] as Item[]);
-        deepStrictEqual(arr3, [
-            {
-                id: "world",
-                age: 53,
-                tag: "A",
-            },
-            {
-                id: "ayon",
-                age: 28,
-                tag: "B",
-            },
-            {
-                id: "claire",
-                age: 25,
-                tag: "B",
-            },
-        ] as Item[]);
-        deepStrictEqual(arr4, [
-            {
-                id: "ayon",
-                age: 28,
-                tag: "B",
-            },
-            {
-                id: "claire",
-                age: 25,
-                tag: "B",
-            },
-            {
-                id: "world",
-                age: 53,
-                tag: "A",
-            },
-        ] as Item[]);
-        deepStrictEqual(arr5, [
-            {
-                id: "claire",
-                age: 25,
-                tag: "B",
-            },
-            {
-                id: "ayon",
-                age: 28,
-                tag: "B",
-            },
-            {
-                id: "world",
-                age: 53,
-                tag: "A",
-            },
-        ] as Item[]);
+        it("key", () => {
+            const arr2 = arr1.orderBy("age");
+            const arr3 = arr1.orderBy("age", "desc");
+            const arr4 = arr1.orderBy("id", "asc");
+            const arr5 = arr1.orderBy("tag", "desc");
+
+            deepStrictEqual(arr2, [
+                {
+                    id: "claire",
+                    age: 25,
+                    tag: "B",
+                },
+                {
+                    id: "ayon",
+                    age: 28,
+                    tag: "B",
+                },
+                {
+                    id: "world",
+                    age: 53,
+                    tag: "A",
+                },
+            ] as Item[]);
+            deepStrictEqual(arr3, [
+                {
+                    id: "world",
+                    age: 53,
+                    tag: "A",
+                },
+                {
+                    id: "ayon",
+                    age: 28,
+                    tag: "B",
+                },
+                {
+                    id: "claire",
+                    age: 25,
+                    tag: "B",
+                },
+            ] as Item[]);
+            deepStrictEqual(arr4, [
+                {
+                    id: "ayon",
+                    age: 28,
+                    tag: "B",
+                },
+                {
+                    id: "claire",
+                    age: 25,
+                    tag: "B",
+                },
+                {
+                    id: "world",
+                    age: 53,
+                    tag: "A",
+                },
+            ] as Item[]);
+            deepStrictEqual(arr5, [
+                {
+                    id: "claire",
+                    age: 25,
+                    tag: "B",
+                },
+                {
+                    id: "ayon",
+                    age: 28,
+                    tag: "B",
+                },
+                {
+                    id: "world",
+                    age: 53,
+                    tag: "A",
+                },
+            ] as Item[]);
+        });
+
+        it("fn", () => {
+            const arr2 = arr1.orderBy(item => item.age);
+            const arr3 = arr1.orderBy(item => item.age, "desc");
+            const arr4 = arr1.orderBy(item => item.id, "asc");
+            const arr5 = arr1.orderBy(item => item.tag, "desc");
+
+            deepStrictEqual(arr2, [
+                {
+                    id: "claire",
+                    age: 25,
+                    tag: "B",
+                },
+                {
+                    id: "ayon",
+                    age: 28,
+                    tag: "B",
+                },
+                {
+                    id: "world",
+                    age: 53,
+                    tag: "A",
+                },
+            ] as Item[]);
+            deepStrictEqual(arr3, [
+                {
+                    id: "world",
+                    age: 53,
+                    tag: "A",
+                },
+                {
+                    id: "ayon",
+                    age: 28,
+                    tag: "B",
+                },
+                {
+                    id: "claire",
+                    age: 25,
+                    tag: "B",
+                },
+            ] as Item[]);
+            deepStrictEqual(arr4, [
+                {
+                    id: "ayon",
+                    age: 28,
+                    tag: "B",
+                },
+                {
+                    id: "claire",
+                    age: 25,
+                    tag: "B",
+                },
+                {
+                    id: "world",
+                    age: 53,
+                    tag: "A",
+                },
+            ] as Item[]);
+            deepStrictEqual(arr5, [
+                {
+                    id: "claire",
+                    age: 25,
+                    tag: "B",
+                },
+                {
+                    id: "ayon",
+                    age: 28,
+                    tag: "B",
+                },
+                {
+                    id: "world",
+                    age: 53,
+                    tag: "A",
+                },
+            ] as Item[]);
+        });
     });
 
     describe("Array.prototype.groupBy", () => {

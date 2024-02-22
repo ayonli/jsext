@@ -79,12 +79,14 @@ function shuffle(arr) {
     }
     return arr;
 }
-/**
- * Orders the items of the array according to the specified comparable `key` (whose value
- * must either be a numeric or string).
- */
 function orderBy(arr, key, order = "asc") {
     const items = arr.slice();
+    if (typeof key === "function") {
+        return orderBy(items.map((item, i) => ({
+            key: key(item, i),
+            value: item,
+        })), "key", order).map(({ value }) => value);
+    }
     items.sort((a, b) => {
         if (typeof a !== "object" || typeof b !== "object" ||
             !a || !b ||

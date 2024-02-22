@@ -54,6 +54,8 @@ declare global {
          * must either be a numeric or string).
          */
         orderBy(key: keyof T, order?: "asc" | "desc"): T[];
+        /** Orders the items of the array according to the given callback function. */
+        orderBy(fn: (item: T, i: number) => string | number | bigint, order?: "asc" | "desc"): T[];
         /**
          * Groups the items of the array according to the comparable values returned by a provided
          * callback function.
@@ -132,7 +134,7 @@ if (!Array.prototype.toSorted) {
 }
 
 Array.prototype.orderBy = function orderBy(key, order = "asc") {
-    return _orderBy(this, key, order);
+    return _orderBy(this, key as any, order);
 };
 
 Array.prototype.groupBy = function groupBy(

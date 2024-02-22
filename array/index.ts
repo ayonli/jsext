@@ -103,8 +103,27 @@ export function shuffle<T>(arr: T[]): T[] {
  * Orders the items of the array according to the specified comparable `key` (whose value
  * must either be a numeric or string).
  */
-export function orderBy<T>(arr: T[], key: keyof T, order: "asc" | "desc" = "asc"): T[] {
+export function orderBy<T>(arr: T[], key: keyof T, order?: "asc" | "desc"): T[];
+/** Orders the items of the array according to the given callback function. */
+export function orderBy<T>(
+    arr: T[],
+    fn: (item: T, i: number) => string | number | bigint,
+    order?: "asc" | "desc"
+): T[];
+export function orderBy<T>(
+    arr: T[],
+    key: keyof T | ((item: T, i: number) => string | number | bigint),
+    order: "asc" | "desc" = "asc"
+): T[] {
     const items = arr.slice();
+
+    if (typeof key === "function") {
+        return orderBy(items.map((item, i) => ({
+            key: key(item, i),
+            value: item,
+        })), "key", order).map(({ value }) => value);
+    }
+
     items.sort((a, b) => {
         if (typeof a !== "object" || typeof b !== "object" ||
             !a || !b ||
