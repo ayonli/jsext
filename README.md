@@ -1033,8 +1033,10 @@ import "@ayonli/jsext/array/augment";
 - `split<T>(arr: RealArrayLike<T>, delimiter: T): RealArrayLike<T>[]`
 - `chunk<T>(arr: RealArrayLike<T>, length: number): RealArrayLike<T>[]`
 - `uniq<T>(arr: T[]): T[]`
+- `uniqBy<T, K extends string | number | symbol>(arr: T[], fn: (item: T, i: number) => K): T[]`
 - `shuffle<T>(arr: T[]): T[]`
 - `orderBy<T>(arr: T[], key: keyof T, order: "asc" | "desc" = "asc"): T[]`
+- `orderBy<T>(arr: T[], fn: (item: T, i: number) => string | number | bigint, order?: "asc" | "desc"): T[]`
 - `groupBy<T, K extends string | number | symbol>(arr: T[], fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T[]>`
 - `groupBy<T, K>(arr: T[], fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
 - `keyBy<T, K extends string | number | symbol>(arr: T[], fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
@@ -1052,11 +1054,13 @@ import "@ayonli/jsext/array/augment";
         - `split(delimiter: T): T[][]`
         - `chunk(length: number): T[][]`
         - `uniq(): T[]`
+        - `uniqBy<K extends string | number | symbol>(fn: (item: T, i: number) => K): T[]`
         - `shuffle(): T[]`
         - `toShuffled(): T[]`
         - `toReversed(): T[]`
         - `toSorted(fn?: ((a: T, b: T) => number) | undefined): T[]`
         - `orderBy(key: keyof T, order?: "asc" | "desc"): T[]`
+        - `orderBy(fn: (item: T, i: number) => string | number | bigint, order?: "asc" | "desc"): T[]`
         - `groupBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T[]>`
         - `groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
         - `keyBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
