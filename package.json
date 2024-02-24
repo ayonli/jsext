@@ -27,6 +27,13 @@
             "import": "./esm/chan.js",
             "default": "./chan.ts"
         },
+        "./debounce": {
+            "types": "./types/debounce.d.ts",
+            "bun": "./debounce.ts",
+            "require": "./cjs/debounce.js",
+            "import": "./esm/debounce.js",
+            "default": "./debounce.ts"
+        },
         "./deprecate": {
             "types": "./types/deprecate.d.ts",
             "bun": "./deprecate.ts",

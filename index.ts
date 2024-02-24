@@ -2,6 +2,7 @@ import _try from "./try.ts";
 import func from "./func.ts";
 import wrap from "./wrap.ts";
 import throttle from "./throttle.ts";
+import debounce from "./debounce.ts";
 import mixins, { isSubclassOf } from "./mixins.ts";
 import chan, { Channel } from "./chan.ts";
 import queue, { Queue } from "./queue.ts";
@@ -52,6 +53,7 @@ const jsext = {
     func,
     wrap,
     throttle,
+    debounce,
     mixins,
     isSubclassOf,
     chan,
@@ -71,6 +73,7 @@ export {
     func,
     wrap,
     throttle,
+    debounce,
     mixins,
     isSubclassOf,
     chan,

@@ -54,6 +54,7 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 - [func](#func) Define a function along with a `defer` keyword, inspired by Golang.
 - [wrap](#wrap) Wrap a function for decorator pattern but keep its signature.
 - [throttle](#throttle) Throttle function calls for frequent access.
+- [debounce](#debounce) Debounce function calls for frequent access.
 - [queue](#queue) Handle tasks sequentially and prevent concurrency conflicts.
 - [lock](#lock) Lock resources for concurrent operations.
 - [mixins](#mixins) Define a class that inherits methods from multiple base classes.
@@ -304,11 +305,11 @@ console.assert(show.toString() === log.toString());
 ### throttle
 
 ```ts
-function throttle<T, Fn extends (this: T, ...args: any[]) => any>(
+function throttle<I, Fn extends (this: I, ...args: any[]) => any>(
     handler: Fn,
     duration: number
 ): Fn;
-function throttle<T, Fn extends (this: T, ...args: any[]) => any>(handler: Fn, options: {
+function throttle<I, Fn extends (this: I, ...args: any[]) => any>(handler: Fn, options: {
     duration: number;
     /**
      * Use the throttle strategy `for` the given key, this will keep the result in a global
@@ -360,6 +361,113 @@ console.log(out2); // foo
 await sleep(1_000);
 const out3 = await throttle(() => Promise.resolve("bar"), { duration: 1_000, for: "example" })();
 console.log(out3); // bar
+```
+
+---
+
+### debounce
+
+```ts
+export default function debounce<I, T, R>(
+    handler: (this: I, data: T) => R | Promise<R>,
+    delay: number,
+    reducer?: (prev: T, data: T) => T
+): (this: I, data: T) => Promise<R>;
+export default function debounce<I, T, R>(
+    handler: (this: I, data: T) => R | Promise<R>,
+    options: {
+        delay: number,
+        /**
+         * Use the debounce strategy `for` the given key, this will keep the debounce context in
+         * a global registry, binding new `handler` function for the same key will override
+         * the previous settings. This mechanism guarantees that both creating the debounced
+         * function in function scopes and overwriting the handler are possible.
+         */
+        for?: any;
+    },
+    reducer?: (prev: T, data: T) => T
+): (this: I, data: T) => Promise<R>;
+```
+
+Creates a debounced function that delays invoking `handler` until after `delay` duration
+(in milliseconds) have elapsed since the last time the debounced function was invoked.
+
+If a subsequent call happens within the `delay` duration (in milliseconds), the previous call
+will be canceled and it will result in the same return value  as the new call's.
+
+Optionally, we can provide a `reducer` function to merge data before processing so multiple
+calls can be merged into one.
+
+**Example**
+
+```ts
+import debounce from "@ayonli/jsext/debounce";
+import { sleep } from "@ayonli/jsext/promise";
+
+let count = 0;
+
+const fn = debounce((obj: { foo?: string; bar?: string }) => {
+    count++;
+    return obj;
+}, 1_000);
+
+const [res1, res2] = await Promise.all([
+    fn({ foo: "hello", bar: "world" }),
+    sleep(100).then(() => fn({ foo: "hi" })),
+]);
+
+console.log(res1); // { foo: "hi" }
+console.log(res2); // { foo: "hi" }
+console.log(count); // 1
+```
+
+**Example (with reducer)**
+
+```ts
+import debounce from "@ayonli/jsext/debounce";
+
+const fn = debounce((obj: { foo?: string; bar?: string }) => {
+    return obj;
+}, 1_000, (prev, curr) => {
+    return { ...prev, ...curr };
+});
+
+const [res1, res2] = await Promise.all([
+    fn({ foo: "hello", bar: "world" }),
+    fn({ foo: "hi" }),
+]);
+ 
+console.log(res1); // { foo: "hi", bar: "world" }
+console.assert(res2 === res1);
+```
+
+**Example (with key)**
+
+```ts
+import debounce from "@ayonli/jsext/debounce";
+
+const key = "unique_key";
+let count = 0;
+
+const [res1, res2] = await Promise.all([
+    debounce(async (obj: { foo?: string; bar?: string }) => {
+        count += 1;
+        return await Promise.resolve(obj);
+    }, { delay: 5, for: key }, (prev, data) => {
+        return { ...prev, ...data };
+    })({ foo: "hello", bar: "world" }),
+
+    debounce(async (obj: { foo?: string; bar?: string }) => {
+        count += 2;
+        return await Promise.resolve(obj);
+    }, { delay: 5, for: key }, (prev, data) => {
+        return { ...prev, ...data };
+    })({ foo: "hi" }),
+]);
+
+console.log(res1); // { foo: "hi", bar: "world" }
+console.assert(res1 === res2);
+console.assert(count === 2);
 ```
 
 ---
@@ -419,7 +527,7 @@ lock becomes available again.
 ```ts
 import lock from "@ayonli/jsext/lock";
 
-const key = "lock-key";
+const key = "unique_key";
 
 async function someAsyncOperation() {
     const ctx = await lock(key);

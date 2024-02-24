@@ -1,10 +1,10 @@
-type ThrottleCache = {
+type Throttle = {
     for: any;
     expires?: number;
     result?: { value?: any; error?: unknown; };
     pending?: Promise<any> | undefined;
 };
-const throttleCaches = new Map<any, ThrottleCache>();
+const Cache = new Map<any, Throttle>();
 
 /**
  * Creates a throttled function that will only be run once in a certain amount of time.
@@ -25,7 +25,7 @@ const throttleCaches = new Map<any, ThrottleCache>();
  * console.log(fn("bar")); // bar
  * ```
  */
-export default function throttle<T, Fn extends (this: T, ...args: any[]) => any>(
+export default function throttle<I, Fn extends (this: I, ...args: any[]) => any>(
     handler: Fn,
     duration: number
 ): Fn;
@@ -46,7 +46,7 @@ export default function throttle<T, Fn extends (this: T, ...args: any[]) => any>
  * console.log(out3); // bar
  * ```
  */
-export default function throttle<T, Fn extends (this: T, ...args: any[]) => any>(handler: Fn, options: {
+export default function throttle<I, Fn extends (this: I, ...args: any[]) => any>(handler: Fn, options: {
     duration: number;
     /**
      * Use the throttle strategy `for` the given key, this will keep the result in a global
@@ -73,7 +73,7 @@ export default function throttle(handler: (this: any, ...args: any[]) => any, op
 
     const handleCall = function (
         this: any,
-        cache: ThrottleCache,
+        cache: Throttle,
         ...args: any[]
     ) {
         if (cache.result && ((cache.pending && noWait) || Date.now() < (cache.expires ?? 0))) {
@@ -117,21 +117,21 @@ export default function throttle(handler: (this: any, ...args: any[]) => any, op
         }
     };
 
-    if (!key) {
-        const cache: ThrottleCache = { for: null };
+    if (key === null || key === undefined || key === "") {
+        const cache: Throttle = { for: null };
         return function (this: any, ...args: any[]) {
             return handleCall.call(this, cache, ...args);
         };
     } else {
-        let cache = throttleCaches.get(key);
+        let cache = Cache.get(key);
 
         if (!cache) {
             cache = { for: key };
-            throttleCaches.set(key, cache);
+            Cache.set(key, cache);
         }
 
         return function (this: any, ...args: any[]) {
-            return handleCall.call(this, cache as ThrottleCache, ...args);
+            return handleCall.call(this, cache as Throttle, ...args);
         };
     }
 }

@@ -108,7 +108,7 @@ const registry = new BiMap();
  * ```ts
  * import lock from "@ayonli/jsext/lock";
  *
- * const key = "lock-key";
+ * const key = "lock_key";
  *
  * async function someAsyncOperation() {
  *     const ctx = await lock(key);

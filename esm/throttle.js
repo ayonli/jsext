@@ -1,4 +1,4 @@
-const throttleCaches = new Map();
+const Cache = new Map();
 function throttle(handler, options) {
     const key = typeof options === "number" ? null : options.for;
     const duration = typeof options === "number" ? options : options.duration;
@@ -48,17 +48,17 @@ function throttle(handler, options) {
             throw error;
         }
     };
-    if (!key) {
+    if (key === null || key === undefined || key === "") {
         const cache = { for: null };
         return function (...args) {
             return handleCall.call(this, cache, ...args);
         };
     }
     else {
-        let cache = throttleCaches.get(key);
+        let cache = Cache.get(key);
         if (!cache) {
             cache = { for: key };
-            throttleCaches.set(key, cache);
+            Cache.set(key, cache);
         }
         return function (...args) {
             return handleCall.call(this, cache, ...args);

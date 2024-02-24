@@ -2,6 +2,7 @@ import _try from './try.js';
 import func from './func.js';
 import wrap from './wrap.js';
 import throttle from './throttle.js';
+import debounce from './debounce.js';
 import mixins, { isSubclassOf } from './mixins.js';
 import chan from './chan.js';
 export { Channel } from './chan.js';
@@ -25,6 +26,7 @@ const jsext = {
     func,
     wrap,
     throttle,
+    debounce,
     mixins,
     isSubclassOf,
     chan,
@@ -38,5 +40,5 @@ const jsext = {
     deprecate,
 };
 
-export { AsyncFunction, AsyncGeneratorFunction, _try, chan, jsext as default, deprecate, example, func, isSubclassOf, lock, mixins, parallel, queue, read, readAll, run, throttle, wrap };
+export { AsyncFunction, AsyncGeneratorFunction, _try, chan, debounce, jsext as default, deprecate, example, func, isSubclassOf, lock, mixins, parallel, queue, read, readAll, run, throttle, wrap };
 //# sourceMappingURL=index.js.map
