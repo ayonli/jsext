@@ -48,6 +48,13 @@
             "import": "./esm/func.js",
             "default": "./func.ts"
         },
+        "./lock": {
+            "types": "./types/lock.d.ts",
+            "bun": "./lock.ts",
+            "require": "./cjs/lock.js",
+            "import": "./esm/lock.js",
+            "default": "./lock.ts"
+        },
         "./mixins": {
             "types": "./types/mixins.d.ts",
             "bun": "./mixins.ts",

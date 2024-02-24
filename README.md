@@ -33,6 +33,7 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 - [jsext.wrap](#jsextwrap) Wrap a function for decorator pattern but keep its signature.
 - [jsext.throttle](#jsextthrottle) Throttle function calls for frequent access.
 - [jsext.queue](#jsextqueue) Handle tasks sequentially and prevent concurrency conflicts.
+- [jsext.lock](#jsextlock) Locks a given key for concurrent operations.
 - [jsext.mixins](#jsextmixins) Define a class that inherits methods from multiple base classes.
 - [jsext.isSubclassOf](#jsextissubclassof) Check if a class is a subset of another class.
 - [jsext.read](#jsextread) Make any streaming source readable via `for await ... of ...` syntax.
@@ -346,6 +347,77 @@ console.log(list.length);
 q.close();
 // output:
 // 2
+```
+
+---
+
+### jsext.lock
+
+```ts
+function lock(key: any): Promise<AsyncMutex.Lock<undefined>>;
+```
+
+Acquires lock for the given key in order to perform concurrent operations and prevent conflicts.
+
+If the key is currently being locked by other coroutines, this function will block until the
+lock is available again.
+
+**Example**
+
+```ts
+import lock from "@ayonli/jsext/lock";
+
+const key = "lock-key";
+
+async function someAsyncOperation() {
+    const ctx = await lock(key);
+
+    // This block will never be run if there are other coroutines holding
+    // the lock.
+    //
+    // Other coroutines trying to lock the same key will also never be run
+    // before `release()`.
+
+    ctx.release();
+}
+```
+
+Other than using the `lock()` function, we can also use `new AsyncMutex()` to create a mutex
+instance that holds some shared resource which can only be accessed by one coroutine at a time.
+
+**Example**
+
+```ts
+import { random } from "@ayonli/jsext/numbers";
+import { sleep } from "@ayonli/jsext/promise";
+import { AsyncMutex } from "@ayonli/jsext/lock";
+
+const mutex = new AsyncMutex(1);
+
+async function concurrentOperation() {
+    const ctx = await mutex.lock();
+    const value1 = ctx.value;
+
+    await otherAsyncOperations();
+
+    ctx.value += 1
+    const value2 = ctx.value;
+
+    console.assert(value1 + 1 === value2);
+
+    ctx.release();
+}
+
+async function otherAsyncOperations() {
+    await sleep(100 * random(1, 10));
+}
+
+await Promise.all([
+    concurrentOperation(),
+    concurrentOperation(),
+    concurrentOperation(),
+    concurrentOperation(),
+]);
 ```
 
 ---
@@ -917,6 +989,8 @@ console.log(pow(2, 3));
 
 - `Channel<T>`
 - `Queue<T>`
+- `AsyncMutex`
+    - `Lock`
 - `AsyncFunction`
 - `AsyncGeneratorFunction`
 - `AsyncFunctionConstructor`
