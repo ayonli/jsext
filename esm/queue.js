@@ -42,6 +42,8 @@ class Queue {
  *
  * @example
  * ```ts
+ * import queue from "@ayonli/jsext/queue";
+ *
  * const list: string[] = [];
  * const q = queue(async (str: string) => {
  *     await Promise.resolve(null);

@@ -13,9 +13,9 @@ const _value = Symbol.for("value");
  * 
  * @example
  * ```ts
- * import { random } from "@ayonli/jsext/numbers";
- * import { sleep } from "@ayonli/jsext/promise";
  * import { AsyncMutex } from "@ayonli/jsext/lock";
+ * import { random } from "@ayonli/jsext/number";
+ * import { sleep } from "@ayonli/jsext/promise";
  * 
  * const mutex = new AsyncMutex(1);
  * 
@@ -111,7 +111,7 @@ const registry = new BiMap<any, AsyncMutex<undefined>>();
  * Acquires lock for the given key in order to perform concurrent operations and prevent conflicts.
  * 
  * If the key is currently being locked by other coroutines, this function will block until the
- * lock is available again.
+ * lock becomes available again.
  * 
  * @example
  * ```ts

@@ -16,6 +16,8 @@ const warnedRecord = new Map<Function, boolean>();
  * 
  * @example
  * ```ts
+ * import deprecate from "@ayonli/jsext/deprecate";
+ * 
  * const sum = deprecate(function sum(a: number, b: number) {
  *     return a + b;
  * }, "use `a + b` instead");
@@ -40,6 +42,8 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
  * 
  * @example
  * ```ts
+ * import deprecate from "@ayonli/jsext/deprecate";
+ * 
  * const pow = function pow(a: number, b: number) {
  *     deprecate("pow()", pow, "use `a ** b` instead");
  *     return a ** b;

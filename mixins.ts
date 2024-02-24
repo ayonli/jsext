@@ -64,6 +64,8 @@ function setProp(proto: any, source: any, prop: string | symbol) {
  * 
  * @example
  * ```ts
+ * import mixins from "@ayonli/jsext/mixins";
+ * 
  * class Log {
  *     log(text: string) {
  *         console.log(text);
@@ -120,6 +122,8 @@ export default function mixins(base: Constructor<any>, ...mixins: any[]) {
  * 
  * @example
  * ```ts
+ * import { isSubclassOf } from "@ayonli/jsext/mixins";
+ * 
  * class Moment extends Date {}
  * 
  * console.assert(isSubclassOf(Moment, Date));

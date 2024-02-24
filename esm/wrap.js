@@ -4,6 +4,8 @@
  *
  * @example
  * ```ts
+ * import wrap from "@ayonli/jsext/wrap";
+ *
  * function log(text: string) {
  *     console.log(text);
  * }

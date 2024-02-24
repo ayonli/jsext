@@ -698,6 +698,8 @@ function extractBaseUrl(stackTrace) {
  * @example
  * ```ts
  * // regular or async function
+ * import parallel from "@ayonli/jsext/parallel";
+ *
  * const mod = parallel(() => import("./examples/worker.mjs"));
  * console.log(await mod.greet("World")); // Hi, World
  * ```
@@ -705,6 +707,8 @@ function extractBaseUrl(stackTrace) {
  * @example
  * ```ts
  * // generator or async generator function
+ * import parallel from "@ayonli/jsext/parallel";
+ *
  * const mod = parallel(() => import("./examples/worker.mjs"));
  *
  * for await (const word of mod.sequence(["foo", "bar"])) {
@@ -718,12 +722,17 @@ function extractBaseUrl(stackTrace) {
  * @example
  * ```ts
  * // use channel
+ * import parallel from "@ayonli/jsext/parallel";
+ * import chan from "@ayonli/jsext/chan";
+ * import { sequence } from "@ayonli/jsext/number";
+ * import { readAll } from "@ayonli/jsext/read";
+ *
  * const mod = parallel(() => import("./examples/worker.mjs"));
  *
  * const channel = chan<{ value: number; done: boolean; }>();
  * const length = mod.twoTimesValues(channel);
  *
- * for (const value of Number.sequence(0, 9)) {
+ * for (const value of sequence(0, 9)) {
  *     await channel.push({ value, done: value === 9 });
  * }
  *
@@ -734,6 +743,8 @@ function extractBaseUrl(stackTrace) {
  *
  * @example
  * ```ts
+ * import parallel from "@ayonli/jsext/parallel";
+ *
  * // use transferrable
  * const mod = parallel(() => import("./examples/worker.mjs"));
  *

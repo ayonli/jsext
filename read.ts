@@ -9,6 +9,8 @@ export default function read<I extends AsyncIterable<any>>(iterable: I): I;
 /**
  * @example
  * ```ts
+ * import read from "@ayonli/jsext/read";
+ * 
  * // listen to the `onmessage`
  * const sse = new EventSource("/sse/message");
  * 
@@ -28,6 +30,8 @@ export default function read(es: EventSource, options?: { event?: string; }): As
 /**
  * @example
  * ```ts
+ * import read from "@ayonli/jsext/read";
+ * 
  * const ws = new WebSocket("/ws");
  * 
  * for await (const msg of read(ws)) {
@@ -43,6 +47,8 @@ export default function read<T extends Uint8Array | string>(ws: WebSocket): Asyn
 /**
  * @example
  * ```ts
+ * import read from "@ayonli/jsext/read";
+ * 
  * for await (const msg of read(self)) {
  *     console.log("receive message from the parent window:", msg);
  * }
@@ -56,6 +62,8 @@ export default function read<T>(target: EventTarget, eventMap?: {
 /**
  * @example
  * ```ts
+ * import read from "@ayonli/jsext/read";
+ * 
  * for await (const msg of read(process)) {
  *     console.log("receive message from the parent process:", msg);
  * }
@@ -223,6 +231,9 @@ export default function read<T>(source: any, eventMap: {
  * 
  * @example
  * ```ts
+ * import { readAll } from "@ayonli/jsext/read";
+ * import * as fs from "node:fs";
+ * 
  * const file = fs.createReadStream("./package.json");
  * const chunks = await readAll(file);
  * ```

@@ -181,6 +181,8 @@ class Channel {
  * @example
  * ```ts
  * // non-buffered
+ * import chan from "@ayonli/jsext/chan";
+ *
  * const channel = chan<number>();
  *
  * (async () => {
@@ -196,6 +198,8 @@ class Channel {
  * @example
  * ```ts
  * // buffered
+ * import chan from "@ayonli/jsext/chan";
+ *
  * const channel = chan<number>(3);
  *
  * await channel.push(123);
@@ -214,10 +218,13 @@ class Channel {
  * @example
  * ```ts
  * // iterable
+ * import chan from "@ayonli/jsext/chan";
+ * import { sequence } from "@ayonli/jsext/number";
+ *
  * const channel = chan<number>();
  *
  * (async () => {
- *     for (const num of Number.sequence(1, 5)) {
+ *     for (const num of sequence(1, 5)) {
  *         await channel.push(num);
  *     }
  *

@@ -14,6 +14,8 @@ declare var Deno: any;
  * 
  * @example
  * ```ts
+ * import example from "@ayonli/jsext/example";
+ * 
  * it("should output as expected", example(console => {
  *     console.log("Hello, World!");
  *     // output:

@@ -14,11 +14,14 @@ const throttleCaches = new Map<any, ThrottleCache>();
  * 
  * @example
  * ```ts
+ * import throttle from "@ayonli/jsext/throttle";
+ * import { sleep } from "@ayonli/jsext/promise";
+ * 
  * const fn = throttle((input: string) => input, 1_000);
  * console.log(fn("foo")); // foo
  * console.log(fn("bar")); // foo
  * 
- * await Promise.sleep(1_000);
+ * await sleep(1_000);
  * console.log(fn("bar")); // bar
  * ```
  */
@@ -29,13 +32,16 @@ export default function throttle<T, Fn extends (this: T, ...args: any[]) => any>
 /**
  * @example
  * ```ts
+ * import throttle from "@ayonli/jsext/throttle";
+ * import { sleep } from "@ayonli/jsext/promise";
+ * 
  * const out1 = await throttle(() => Promise.resolve("foo"), { duration: 1_000, for: "example" })();
  * console.log(out1); // foo
  * 
  * const out2 = await throttle(() => Promise.resolve("bar"), { duration: 1_000, for: "example" })();
  * console.log(out2); // foo
  * 
- * await Promise.sleep(1_000);
+ * await sleep(1_000);
  * const out3 = await throttle(() => Promise.resolve("bar"), { duration: 1_000, for: "example" })();
  * console.log(out3); // bar
  * ```

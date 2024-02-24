@@ -25,6 +25,8 @@ const workerConsumerQueue = [];
  * @example
  * ```ts
  * // result
+ * import run from "@ayonli/jsext/run";
+ *
  * const job1 = await run("examples/worker.mjs", ["World"]);
  * console.log(await job1.result()); // Hello, World
  * ```
@@ -32,6 +34,8 @@ const workerConsumerQueue = [];
  * @example
  * ```ts
  * // iterate
+ * import run from "@ayonli/jsext/run";
+ *
  * const job2 = await run<string, [string[]]>("examples/worker.mjs", [["foo", "bar"]], {
  *     fn: "sequence",
  * });
@@ -46,6 +50,9 @@ const workerConsumerQueue = [];
  * @example
  * ```ts
  * // abort
+ * import run from "@ayonli/jsext/run";
+ * import _try from "@ayonli/jsext/try";
+ *
  * const job3 = await run<string, [string]>("examples/worker.mjs", ["foobar"], {
  *    fn: "takeTooLong",
  * });

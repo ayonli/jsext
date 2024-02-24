@@ -69,6 +69,8 @@ function mixins(base, ...mixins) {
  *
  * @example
  * ```ts
+ * import { isSubclassOf } from "@ayonli/jsext/mixins";
+ *
  * class Moment extends Date {}
  *
  * console.assert(isSubclassOf(Moment, Date));

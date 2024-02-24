@@ -149,6 +149,9 @@ function read(source, eventMap = undefined) {
  *
  * @example
  * ```ts
+ * import { readAll } from "@ayonli/jsext/read";
+ * import * as fs from "node:fs";
+ *
  * const file = fs.createReadStream("./package.json");
  * const chunks = await readAll(file);
  * ```

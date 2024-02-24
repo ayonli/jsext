@@ -11,6 +11,8 @@ import { ThenableAsyncGenerator } from "./external/thenable-generator/index.ts";
  * 
  * @example
  * ```ts
+ * import _try from "@ayonli/jsext/try";
+ * 
  * const iter = _try(async function* () {
  *     // do something that may fail
  * });
@@ -33,6 +35,8 @@ export default function _try<E = unknown, T = any, A extends any[] = any[], TRet
  * 
  * @example
  * ```ts
+ * import _try from "@ayonli/jsext/try";
+ * 
  * const iter = _try(function* () {
  *     // do something that may fail
  * });
@@ -55,6 +59,9 @@ export default function _try<E = unknown, T = any, A extends any[] = any[], TRet
  * 
  * @example
  * ```ts
+ * import _try from "@ayonli/jsext/try";
+ * import axios from "axios";
+ * 
  * let [err, res] = await _try(async () => {
  *     return await axios.get("https://example.org");
  * });
@@ -73,6 +80,8 @@ export default function _try<E = unknown, R = any, A extends any[] = any[]>(
  * 
  * @example
  * ```ts
+ * import _try from "@ayonli/jsext/try";
+ * 
  * const [err, res] = _try(() => {
  *     // do something that may fail
  * });
@@ -87,6 +96,8 @@ export default function _try<E = unknown, R = any, A extends any[] = any[]>(
  * 
  * @example
  * ```ts
+ * import _try from "@ayonli/jsext/try";
+ * 
  * async function* gen() {
  *     // do something that may fail
  * }
@@ -108,7 +119,10 @@ export default function _try<E = unknown, T = any, TReturn = any, TNext = unknow
  * 
  * @example
  * ```ts
- * const iter = Number.sequence(1, 10);
+ * import _try from "@ayonli/jsext/try";
+ * import { sequence } from "@ayonli/jsext/number";
+ * 
+ * const iter = sequence(1, 10);
  * 
  * for (const [err, val] of _try(iter)) {
  *     if (err) {
@@ -127,6 +141,9 @@ export default function _try<E = unknown, T = any, TReturn = any, TNext = unknow
  * 
  * @example
  * ```ts
+ * import _try from "@ayonli/jsext/try";
+ * import axios from "axios";
+ * 
  * let [err, res] = await _try(axios.get("https://example.org"));
  * 
  * if (err) {

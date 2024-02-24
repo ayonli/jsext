@@ -7,12 +7,34 @@ Additional functions for JavaScript to build strong applications.
 ```js
 // Node.js
 import jsext from "@ayonli/jsext";
+import { _try, func, /* ... */ } from "@ayonli/jsext";
 
 // Deno
 import jsext from "https://lib.deno.dev/x/ayonli_jsext@latest/index.ts";
+import { _try, func, /* ... */ } from "https://lib.deno.dev/x/ayonli_jsext@latest/index.ts";
 
 // Browser
 import jsext from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/index.js";
+import { _try, func, /* ... */ } from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/index.js";
+```
+
+Or import what are needed:
+
+```js
+// Node.js
+import _try from "@ayonli/jsext/try";
+import func from "@ayonli/jsext/func";
+// ...
+
+// Deno
+import _try from "https://lib.deno.dev/x/ayonli_jsext@latest/try.ts";
+import func from "https://lib.deno.dev/x/ayonli_jsext@latest/func.ts";
+// ...
+
+// Browser
+import _try from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/try.js";
+import func from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/func.js";
+// ...
 ```
 
 There is also a bundled version that can be loaded via a `<script>` tag in the browser.
@@ -28,28 +50,28 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 
 ## Functions
 
-- [jsext.try](#jsexttry) Call a function safely and return errors when captured.
-- [jsext.func](#jsextfunc) Define a function along with a `defer` keyword, inspired by Golang.
-- [jsext.wrap](#jsextwrap) Wrap a function for decorator pattern but keep its signature.
-- [jsext.throttle](#jsextthrottle) Throttle function calls for frequent access.
-- [jsext.queue](#jsextqueue) Handle tasks sequentially and prevent concurrency conflicts.
-- [jsext.lock](#jsextlock) Locks a given key for concurrent operations.
-- [jsext.mixins](#jsextmixins) Define a class that inherits methods from multiple base classes.
-- [jsext.isSubclassOf](#jsextissubclassof) Check if a class is a subset of another class.
-- [jsext.read](#jsextread) Make any streaming source readable via `for await ... of ...` syntax.
-- [jsext.readAll](#jsextreadall) Read all streaming data at once.
-- [jsext.chan](#jsextchan) Create a channel that transfers data across routines, even between
+- [_try](#_try) Call a function safely and return errors when captured.
+- [func](#func) Define a function along with a `defer` keyword, inspired by Golang.
+- [wrap](#wrap) Wrap a function for decorator pattern but keep its signature.
+- [throttle](#throttle) Throttle function calls for frequent access.
+- [queue](#queue) Handle tasks sequentially and prevent concurrency conflicts.
+- [lock](#lock) Lock resources for concurrent operations.
+- [mixins](#mixins) Define a class that inherits methods from multiple base classes.
+- [isSubclassOf](#issubclassof) Check if a class is a subset of another class.
+- [read](#read) Make any streaming source readable via `for await ... of ...` syntax.
+- [readAll](#readall) Read all streaming data at once.
+- [chan](#chan) Create a channel that transfers data across routines, even between
     multiple threads, inspired by Golang.
-- [jsext.parallel](#jsextparallel) Run functions in parallel threads and take advantage of
+- [parallel](#parallel) Run functions in parallel threads and take advantage of
     multi-core CPUs, inspired by Golang.
-- [jsext.run](#jsextrun) Run a script in another thread and abort at any time.
-- [jsext.example](#jsextexample) Write unit tests as if writing examples, inspired by Golang.
-- [jsext.deprecate](#jsextdeprecate) Mark a function as deprecated and emit warnings when it is
+- [run](#run) Run a script in another thread and abort at any time.
+- [example](#example) Write unit tests as if writing examples, inspired by Golang.
+- [deprecate](#deprecate) Mark a function as deprecated and emit warnings when it is
     called.
 
 And other functions in [sub-packages](#sub-packages).
 
-### jsext.try
+### _try
 
 ```ts
 function _try<E = unknown, R = any, A extends any[] = any[]>(
@@ -67,6 +89,8 @@ Invokes a regular function or an async function and renders its result in an `[e
 **Example (regular function)**
 
 ```ts
+import _try from "@ayonli/jsext/try";
+
 const [err, res] = _try(() => {
     // do something that may fail
 });
@@ -75,6 +99,9 @@ const [err, res] = _try(() => {
 **Example (async function)**
 
 ```ts
+import _try from "@ayonli/jsext/try";
+import axios from "axios";
+
 let [err, res] = await _try(async () => {
     return await axios.get("https://example.org");
 });
@@ -95,6 +122,9 @@ Resolves a promise and renders its result in an `[err, res]` tuple.
 **Example (promise)**
 
 ```ts
+import _try from "@ayonli/jsext/try";
+import axios from "axios";
+
 let [err, res] = await _try(axios.get("https://example.org"));
 
 if (err) {
@@ -121,6 +151,8 @@ in an `[err, val]` tuple.
 **Example (generator function)**
 
 ```ts
+import _try from "@ayonli/jsext/try";
+
 const iter = _try(function* () {
     // do something that may fail
 });
@@ -137,6 +169,8 @@ for (const [err, val] of iter) {
 **Example (async generator function)**
 
 ```ts
+import _try from "@ayonli/jsext/try";
+
 const iter = _try(async function* () {
     // do something that may fail
 });
@@ -167,7 +201,10 @@ tuple.
 **Example (generator)**
 
 ```ts
-const iter = Number.sequence(1, 10);
+import _try from "@ayonli/jsext/try";
+import { sequence } from "@ayonli/jsext/number";
+
+const iter = sequence(1, 10);
 
 for (const [err, val] of _try(iter)) {
     if (err) {
@@ -181,6 +218,8 @@ for (const [err, val] of _try(iter)) {
 **Example (async generator)**
 
 ```ts
+import _try from "@ayonli/jsext/try";
+
 async function* gen() {
     // do something that may fail
 };
@@ -196,7 +235,7 @@ for await (const [err, val] of _try(gen())) {
 
 ---
 
-### jsext.func
+### func
 
 ```ts
 function func<T, R = any, A extends any[] = any[]>(
@@ -214,6 +253,9 @@ an async generator function, and all the running procedures will be awaited.
 **Example**
 
 ```ts
+import func from "@ayonli/jsext/func";
+import * as fs from "node:fs/promises";
+
 const getVersion = func(async (defer) => {
     const file = await fs.open("./package.json", "r");
     defer(() => file.close());
@@ -227,7 +269,7 @@ const getVersion = func(async (defer) => {
 
 ---
 
-### jsext.wrap
+### wrap
 
 ```ts
 function wrap<T, Fn extends (this: T, ...args: any[]) => any>(
@@ -242,6 +284,8 @@ function's name and other properties.
 **Example**
 
 ```ts
+import wrap from "@ayonli/jsext/wrap";
+
 function log(text: string) {
     console.log(text);
 }
@@ -257,7 +301,7 @@ console.assert(show.toString() === log.toString());
 
 ---
 
-### jsext.throttle
+### throttle
 
 ```ts
 function throttle<T, Fn extends (this: T, ...args: any[]) => any>(
@@ -290,31 +334,37 @@ be returned and the `handler` function will not be invoked.
 **Example**
 
 ```ts
+import throttle from "@ayonli/jsext/throttle";
+import { sleep } from "@ayonli/jsext/promise";
+
 const fn = throttle((input: string) => input, 1_000);
 console.log(fn("foo")); // foo
 console.log(fn("bar")); // foo
 
-await Promise.sleep(1_000);
+await sleep(1_000);
 console.log(fn("bar")); // bar
 ```
 
 **Example (with key)**
 
 ```ts
+import throttle from "@ayonli/jsext/throttle";
+import { sleep } from "@ayonli/jsext/promise";
+
 const out1 = await throttle(() => Promise.resolve("foo"), { duration: 1_000, for: "example" })();
 console.log(out1); // foo
 
 const out2 = await throttle(() => Promise.resolve("bar"), { duration: 1_000, for: "example" })();
 console.log(out2); // foo
 
-await Promise.sleep(1_000);
+await sleep(1_000);
 const out3 = await throttle(() => Promise.resolve("bar"), { duration: 1_000, for: "example" })();
 console.log(out3); // bar
 ```
 
 ---
 
-### jsext.queue
+### queue
 
 ```ts
 function queue<T>(handler: (data: T) => Promise<void>, bufferSize?: number): Queue<T>
@@ -330,6 +380,8 @@ use a non-buffered channel instead.
 **Example**
 
 ```ts
+import queue from "@ayonli/jsext/queue";
+
 const list: string[] = [];
 const q = queue(async (str: string) => {
     await Promise.resolve(null);
@@ -351,7 +403,7 @@ q.close();
 
 ---
 
-### jsext.lock
+### lock
 
 ```ts
 function lock(key: any): Promise<AsyncMutex.Lock<undefined>>;
@@ -360,7 +412,7 @@ function lock(key: any): Promise<AsyncMutex.Lock<undefined>>;
 Acquires lock for the given key in order to perform concurrent operations and prevent conflicts.
 
 If the key is currently being locked by other coroutines, this function will block until the
-lock is available again.
+lock becomes available again.
 
 **Example**
 
@@ -388,9 +440,9 @@ instance that holds some shared resource which can only be accessed by one corou
 **Example**
 
 ```ts
-import { random } from "@ayonli/jsext/numbers";
-import { sleep } from "@ayonli/jsext/promise";
 import { AsyncMutex } from "@ayonli/jsext/lock";
+import { random } from "@ayonli/jsext/number";
+import { sleep } from "@ayonli/jsext/promise";
 
 const mutex = new AsyncMutex(1);
 
@@ -422,7 +474,7 @@ await Promise.all([
 
 ---
 
-### jsext.mixins
+### mixins
 
 ```ts
 function mixins<T extends Constructor<any>, M extends any[]>(
@@ -442,6 +494,8 @@ This function does not mutates the base class but create a pivot class instead.
 **Example**
 
 ```ts
+import mixins from "@ayonli/jsext/mixins";
+
 class Log {
     log(text: string) {
         console.log(text);
@@ -470,7 +524,7 @@ console.assert(!isSubclassOf(Controller, Log));
 
 ---
 
-### jsext.isSubclassOf
+### isSubclassOf
 
 ```ts
 function isSubclassOf<A, B>(ctor1: Constructor<A>, ctor2: Constructor<B>): boolean;
@@ -481,6 +535,8 @@ Checks if a class is a subclass of another class.
 **Example**
 
 ```ts
+import { isSubclassOf } from "@ayonli/jsext/mixins";
+
 class Moment extends Date {}
 
 console.assert(isSubclassOf(Moment, Date));
@@ -489,7 +545,7 @@ console.assert(isSubclassOf(Moment, Object)); // all classes are subclasses of O
 
 ---
 
-### jsext.read
+### read
 
 ```ts
 function read<I extends AsyncIterable<any>>(iterable: I): I;
@@ -513,6 +569,8 @@ for reading streaming data.
 **Example (EventSource)**
 
 ```ts
+import read from "@ayonli/jsext/read";
+
 // listen to the `onmessage`
 const sse = new EventSource("/sse/message");
 
@@ -531,6 +589,8 @@ for await (const msg of read(channel, { event: "broadcast" })) {
 **Example (WebSocket)**
 
 ```ts
+import read from "@ayonli/jsext/read";
+
 const ws = new WebSocket("/ws");
 
 for await (const data of read(ws)) {
@@ -545,6 +605,8 @@ for await (const data of read(ws)) {
 **Example (EventTarget)**
 
 ```ts
+import read from "@ayonli/jsext/read";
+
 for await (const msg of read(self)) {
     console.log("receive message from the parent window:", msg);
 }
@@ -553,13 +615,15 @@ for await (const msg of read(self)) {
 **Example (EventEmitter)**
 
 ```ts
+import read from "@ayonli/jsext/read";
+
 for await (const msg of read(process)) {
     console.log("receive message from the parent process:", msg);
 }
 ```
 ---
 
-### jsext.readAll
+### readAll
 
 ```ts
 function readAll<T>(iterable: AsyncIterable<T>): Promise<T[]>;
@@ -570,13 +634,16 @@ Reads all values from the iterable object at once.
 **Example**
 
 ```ts
+import { readAll } from "@ayonli/jsext/read";
+import * as fs from "node:fs";
+
 const file = fs.createReadStream("./package.json");
 const chunks = await readAll(file);
 ```
 
 ---
 
-### jsext.chan
+### chan
 
 ```ts
 function chan<T>(capacity?: number): Channel<T>;
@@ -608,6 +675,8 @@ in order to release the channel for garbage collection.
 **Example (non-buffered)**
 
 ```ts
+import chan from "@ayonli/jsext/chan";
+
 const channel = chan<number>();
 
 (async () => {
@@ -621,6 +690,8 @@ console.log(num); // 123
 **Example (buffered)**
 
 ```ts
+import chan from "@ayonli/jsext/chan";
+
 const channel = chan<number>(3);
 
 await channel.push(123);
@@ -639,10 +710,13 @@ console.log(num3); // 789
 **Example (iterable)**
 
 ```ts
+import chan from "@ayonli/jsext/chan";
+import { sequence } from "@ayonli/jsext/number";
+
 const channel = chan<number>();
 
 (async () => {
-    for (const num of Number.sequence(1, 5)) {
+    for (const num of sequence(1, 5)) {
         await channel.push(num);
     }
 
@@ -662,7 +736,7 @@ for await (const num of channel) {
 
 ---
 
-### jsext.parallel
+### parallel
 
 ```ts
 function parallel<M extends { [x: string]: any; }>(
@@ -726,6 +800,8 @@ In order to handle errors properly between threads, throw well-known error types
 **Example (regular or async function)**
 
 ```ts
+import parallel from "@ayonli/jsext/parallel";
+
 const mod = parallel(() => import("./examples/worker.mjs"));
 console.log(await mod.greet("World")); // Hi, World
 ```
@@ -733,6 +809,8 @@ console.log(await mod.greet("World")); // Hi, World
 **Example (generator or async generator function)**
 
 ```ts
+import parallel from "@ayonli/jsext/parallel";
+
 const mod = parallel(() => import("./examples/worker.mjs"));
 
 for await (const word of mod.sequence(["foo", "bar"])) {
@@ -746,12 +824,17 @@ for await (const word of mod.sequence(["foo", "bar"])) {
 **Example (use channel)**
 
 ```ts
+import parallel from "@ayonli/jsext/parallel";
+import chan from "@ayonli/jsext/chan";
+import { sequence } from "@ayonli/jsext/number";
+import { readAll } from "@ayonli/jsext/read";
+
 const mod = parallel(() => import("./examples/worker.mjs"));
 
 const channel = chan<{ value: number; done: boolean; }>();
 const length = mod.twoTimesValues(channel);
 
-for (const value of Number.sequence(0, 9)) {
+for (const value of sequence(0, 9)) {
     await channel.push({ value, done: value === 9 });
 }
 
@@ -763,6 +846,8 @@ console.log(await length); // 10
 **Example (use transferrable)**
 
 ```ts
+import parallel from "@ayonli/jsext/parallel";
+
 const mod = parallel(() => import("./examples/worker.mjs"));
 
 const arr = Uint8Array.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
@@ -806,7 +891,7 @@ namespace parallel {
 
 ---
 
-### jsext.run
+### run
 
 ```ts
 function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
@@ -856,6 +941,8 @@ also applicable to `run()`, except the following:
 **Example (result)**
 
 ```ts
+import run from "@ayonli/jsext/run";
+
 const job1 = await run<string, [string]>("examples/worker.mjs", ["World"]);
 console.log(await job1.result()); // Hello, World
 ```
@@ -863,6 +950,8 @@ console.log(await job1.result()); // Hello, World
 **Example (iterate)**
 
 ```ts
+import run from "@ayonli/jsext/run";
+
 const job2 = await run<string, [string[]]>("examples/worker.mjs", [["foo", "bar"]], {
     fn: "sequence",
 });
@@ -877,6 +966,9 @@ for await (const word of job2.iterate()) {
 **Example (abort)**
 
 ```ts
+import run from "@ayonli/jsext/run";
+import _try from "@ayonli/jsext/try";
+
 const job3 = await run<string, [string]>("examples/worker.mjs", ["foobar"], {
     fn: "takeTooLong",
 });
@@ -900,7 +992,7 @@ namespace run {
 
 ---
 
-### jsext.example
+### example
 
 ```ts
 function example<T, A extends any[] = any[]>(
@@ -926,16 +1018,18 @@ during runtime, and the function relies on Node.js built-in modules.
 **Example**
 
 ```ts
+import example from "@ayonli/jsext/example";
+
 it("should output as expected", example(console => {
     console.log("Hello, World!");
-    // output:
+    // output
     // Hello, World!
 }));
 ```
 
 ---
 
-### jsext.deprecate
+### deprecate
 
 ```ts
 function deprecate<T, Fn extends (this: T, ...args: any[]) => any>(
@@ -954,6 +1048,8 @@ NOTE: the original function must have a name.
 **Example**
 
 ```ts
+import deprecate from "@ayonli/jsext/deprecate";
+
 const sum = deprecate(function sum(a: number, b: number) {
     return a + b;
 }, "use `a + b` instead");
@@ -975,6 +1071,8 @@ etc.
 **Example**
 
 ```ts
+import deprecate from "@ayonli/jsext/deprecate";
+
 const pow = function pow(a: number, b: number) {
     deprecate("pow()", pow, "use `a ** b` instead");
     return a ** b;
@@ -989,8 +1087,8 @@ console.log(pow(2, 3));
 
 - `Channel<T>`
 - `Queue<T>`
-- `AsyncMutex`
-    - `Lock`
+- `AsyncMutex<T>`
+    - `Lock<T>`
 - `AsyncFunction`
 - `AsyncGeneratorFunction`
 - `AsyncFunctionConstructor`
@@ -1000,7 +1098,7 @@ console.log(pow(2, 3));
 - `Ensured<T, K extends keyof T>`
 
 When [augment](https://github.com/ayonli/jsext/blob/main/augment.ts)ing, these types are exposed to
-the global scope (except for `Channel` and `Queue`).
+the global scope (except for `Channel`, `Queue` and `AsyncMutex`).
 
 ## Sub-packages
 
@@ -1202,8 +1300,8 @@ import "@ayonli/jsext/object/augment";
 
 ### [json](https://deno.land/x/ayonli_jsext/json/index.ts)
 
-```ts
-import { parseAs } from "@ayonli/jsext/json";
+```js
+import { parseAs, /* ... */ } from "@ayonli/jsext/json";
 // or
 import "@ayonli/jsext/json/augment";
 ```
