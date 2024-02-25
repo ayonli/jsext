@@ -56,7 +56,7 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 - [throttle](#throttle) Throttle function calls for frequent access.
 - [debounce](#debounce) Debounce function calls for frequent access.
 - [queue](#queue) Handle tasks sequentially and prevent concurrency conflicts.
-- [lock](#lock) Lock resources for concurrent operations.
+- [lock](#lock) Provide mutual exclusion for concurrent operations.
 - [mixins](#mixins) Define a class that inherits methods from multiple base classes.
 - [isSubclassOf](#issubclassof) Check if a class is a subset of another class.
 - [read](#read) Make any streaming source readable via `for await ... of ...` syntax.
@@ -539,13 +539,13 @@ q.close();
 ### lock
 
 ```ts
-import type { AsyncMutex } from "@ayonli/jsext/lock";
+import type { Mutex } from "@ayonli/jsext/lock";
 
-declare function lock(key: any): Promise<AsyncMutex.Lock<undefined>>;
+declare function lock(key: any): Promise<Mutex.Lock<undefined>>;
 ```
 
-Acquires lock for the given key in order to perform concurrent operations and
-prevent conflicts.
+Acquires a mutex lock for the given key in order to perform concurrent
+operations and prevent conflicts.
 
 If the key is currently being locked by other coroutines, this function will
 block until the lock becomes available again.
@@ -554,48 +554,52 @@ block until the lock becomes available again.
 
 ```ts
 import lock from "@ayonli/jsext/lock";
+import func from "@ayonli/jsext/func";
 
 const key = "unique_key";
 
-async function someAsyncOperation() {
+export const concurrentOperation = func(async (defer) => {
     const ctx = await lock(key);
+    defer(() => ctx.unlock()); // don't forget to unlock
 
     // This block will never be run if there are other coroutines holding
     // the lock.
     //
     // Other coroutines trying to lock the same key will also never be run
-    // before `release()`.
-
-    ctx.release();
-}
+    // before `unlock()`.
+});
 ```
 
-Other than using the `lock()` function, we can also use `new AsyncMutex()` to
+Other than using the `lock()` function, we can also use `new Mutex()` to
 create a mutex instance that holds some shared resource which can only be
 accessed by one coroutine at a time.
 
 **Example**
 
 ```ts
-import { AsyncMutex } from "@ayonli/jsext/lock";
+import { Mutex } from "@ayonli/jsext/lock";
+import func from "@ayonli/jsext/func";
 import { random } from "@ayonli/jsext/number";
 import { sleep } from "@ayonli/jsext/promise";
 
-const mutex = new AsyncMutex(1);
+const mutex = new Mutex(1);
 
-async function concurrentOperation() {
-    const ctx = await mutex.lock();
-    const value1 = ctx.value;
+const concurrentOperation = func(async (defer) => {
+    const shared = await mutex.lock();
+    defer(() => shared.unlock()); // don't forget to unlock
+
+    const value1 = shared.value;
 
     await otherAsyncOperations();
 
-    ctx.value += 1
-    const value2 = ctx.value;
+    shared.value += 1
+    const value2 = shared.value;
 
+    // Without mutex lock, the shared value may have been modified by other
+    // calls during `await otherAsyncOperation()`, and the following
+    // assertion will fail.
     console.assert(value1 + 1 === value2);
-
-    ctx.release();
-}
+});
 
 async function otherAsyncOperations() {
     await sleep(100 * random(1, 10));
@@ -1257,7 +1261,7 @@ console.log(pow(2, 3));
 
 - `Channel<T>`
 - `Queue<T>`
-- `AsyncMutex<T>`
+- `Mutex<T>`
     - `Lock<T>`
 - `AsyncFunction`
 - `AsyncGeneratorFunction`
@@ -1268,7 +1272,7 @@ console.log(pow(2, 3));
 - `Ensured<T, K extends keyof T>`
 
 When [augment](https://github.com/ayonli/jsext/blob/main/augment.ts)ing, these types are exposed to
-the global scope (except for `Channel`, `Queue` and `AsyncMutex`).
+the global scope (except for `Channel`, `Queue` and `Mutex`).
 
 ## Sub-packages
 

@@ -7,31 +7,37 @@ if (typeof Symbol.dispose === "undefined") {
 const _value = Symbol.for("value");
 
 /**
- * AsyncMutex is a mutual exclusion (mutex) implementation for async JavaScript,
- * which prevents multiple coroutines from accessing the same shared resource
- * simultaneously.
+ * Mutual Exclusion prevents multiple coroutines from accessing the same shared
+ * resource simultaneously.
+ * 
+ * NOTE: currently, the Mutex instance can not be used across multiple threads,
+ * but is considering adding support for `parallel` threads.
  * 
  * @example
  * ```ts
- * import { AsyncMutex } from "@ayonli/jsext/lock";
+ * import { Mutex } from "@ayonli/jsext/lock";
+ * import func from "@ayonli/jsext/func";
  * import { random } from "@ayonli/jsext/number";
  * import { sleep } from "@ayonli/jsext/promise";
  * 
- * const mutex = new AsyncMutex(1);
+ * const mutex = new Mutex(1);
  * 
- * async function concurrentOperation() {
- *     const ctx = await mutex.lock();
- *     const value1 = ctx.value;
+ * const concurrentOperation = func(async (defer) => {
+ *     const shared = await mutex.lock();
+ *     defer(() => shared.unlock()); // don't forget to unlock
+ * 
+ *     const value1 = shared.value;
  * 
  *     await otherAsyncOperations();
  * 
- *     ctx.value += 1
- *     const value2 = ctx.value;
+ *     shared.value += 1
+ *     const value2 = shared.value;
  * 
+ *     // Without mutex lock, the shared value may have been modified by other
+ *     // calls during `await otherAsyncOperation()`, and the following
+ *     // assertion will fail.
  *     console.assert(value1 + 1 === value2);
- * 
- *     ctx.release();
- * }
+ * });
  * 
  * async function otherAsyncOperations() {
  *     await sleep(100 * random(1, 10));
@@ -45,7 +51,7 @@ const _value = Symbol.for("value");
  * ]);
  * ```
  */
-export class AsyncMutex<T> {
+export class Mutex<T> {
     private queue: (() => void)[] = [];
     private [_value]: T;
 
@@ -70,15 +76,15 @@ export class AsyncMutex<T> {
             }
         });
 
-        const lock = Object.create(AsyncMutex.Lock.prototype) as AsyncMutex.Lock<T>;
+        const lock = Object.create(Mutex.Lock.prototype) as Mutex.Lock<T>;
         lock["mutex"] = this;
         return lock;
     }
 }
 
-export namespace AsyncMutex {
+export namespace Mutex {
     export abstract class Lock<T> {
-        constructor(private mutex: AsyncMutex<T>) { }
+        constructor(private mutex: Mutex<T>) { }
 
         /** Accesses the data associated to the mutex instance. */
         get value() {
@@ -90,7 +96,7 @@ export namespace AsyncMutex {
         }
 
         /** Releases the current lock of the mutex. */
-        async release() {
+        async unlock() {
             const queue = this.mutex["queue"];
             queue.shift();
             const next = queue[0];
@@ -103,16 +109,16 @@ export namespace AsyncMutex {
         }
 
         [Symbol.dispose]() {
-            this.release();
+            this.unlock();
         }
     }
 }
 
-const registry = new BiMap<any, AsyncMutex<undefined>>();
+const registry = new BiMap<any, Mutex<undefined>>();
 
 /**
- * Acquires lock for the given key in order to perform concurrent operations and
- * prevent conflicts.
+ * Acquires a mutex lock for the given key in order to perform concurrent
+ * operations and prevent conflicts.
  * 
  * If the key is currently being locked by other coroutines, this function will
  * block until the lock becomes available again.
@@ -120,27 +126,27 @@ const registry = new BiMap<any, AsyncMutex<undefined>>();
  * @example
  * ```ts
  * import lock from "@ayonli/jsext/lock";
+ * import func from "@ayonli/jsext/func";
  * 
  * const key = "lock_key";
  * 
- * async function someAsyncOperation() {
+ * export const concurrentOperation = func(async (defer) => {
  *     const ctx = await lock(key);
+ *     defer(() => ctx.unlock()); // don't forget to unlock
  * 
  *     // This block will never be run if there are other coroutines holding
  *     // the lock.
  *     //
  *     // Other coroutines trying to lock the same key will also never be run
- *     // before `release()`.
- * 
- *     ctx.release();
- * }
+ *     // before `unlock()`.
+ * });
  * ```
  */
-export default async function lock(key: any): Promise<AsyncMutex.Lock<undefined>> {
+export default async function lock(key: any): Promise<Mutex.Lock<undefined>> {
     let mutex = registry.get(key);
 
     if (!mutex) {
-        registry.set(key, mutex = new AsyncMutex(void 0));
+        registry.set(key, mutex = new Mutex(void 0));
     }
 
     return await mutex.lock();

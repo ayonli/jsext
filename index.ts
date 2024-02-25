@@ -6,14 +6,14 @@ import debounce from "./debounce.ts";
 import mixins, { isSubclassOf } from "./mixins.ts";
 import chan, { Channel } from "./chan.ts";
 import queue, { Queue } from "./queue.ts";
-import lock, { AsyncMutex } from "./lock.ts";
+import lock, { Mutex } from "./lock.ts";
 import read, { readAll } from "./read.ts";
 import run from "./run.ts";
 import parallel from "./parallel.ts";
 import example from "./example.ts";
 import deprecate from "./deprecate.ts";
 
-export { Channel, Queue, AsyncMutex };
+export { Channel, Queue, Mutex };
 export const AsyncFunction = (async function () { }).constructor as AsyncFunctionConstructor;
 export const AsyncGeneratorFunction = (async function* () { }).constructor as AsyncGeneratorFunctionConstructor;
 

@@ -9,7 +9,7 @@ export { Channel } from './chan.js';
 import queue from './queue.js';
 export { Queue } from './queue.js';
 import lock from './lock.js';
-export { AsyncMutex } from './lock.js';
+export { Mutex } from './lock.js';
 import read, { readAll } from './read.js';
 import run from './run.js';
 import parallel from './parallel.js';
