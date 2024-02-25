@@ -14,10 +14,11 @@ import {
     toObject
 } from "./error/index.ts";
 import {
-    isNode,
-    isDeno,
     isBun,
+    isDeno,
     isBeforeNode14,
+    isNode,
+    isTsx,
     IsPath,
     isMainThread,
     resolveModule,
@@ -108,10 +109,10 @@ export function sanitizeModuleId(id: string | (() => Promise<any>), strict = fal
         _id = id;
     }
 
-    if ((isNode || isBun) && IsPath.test(_id)) {
+    if ((isNode || isBun || isTsx) && IsPath.test(_id)) {
         if (!/\.[cm]?(js|ts|)x?$/.test(_id)) { // if omitted suffix, add suffix
             _id += isBun ? ".ts" : ".js";
-        } else if (isNode) { // replace .ts/.mts/.cts to .js/.mjs/.cjs in Node.js
+        } else if (isNode && !isTsx) { // replace .ts/.mts/.cts to .js/.mjs/.cjs in Node.js
             if (_id.endsWith(".ts")) {
                 _id = _id.slice(0, -3) + ".js";
             } else if (_id.endsWith(".mts")) {
@@ -426,8 +427,7 @@ async function acquireWorker(taskId: number) {
 
                 if (isNode) {
                     (worker as NodeWorker).on("message", handleMessage)
-                        .on("error", handleClose); // In Node.js, worker will
-                                                   // exit once erred.
+                        .on("error", handleClose); // In Node.js, worker will exit once erred.
                 } else if (isBun) {
                     const _worker = worker as BunWorker;
 
@@ -742,7 +742,13 @@ function createLocalCall(module: string, fn: string, args: any[]) {
 }
 
 function extractBaseUrl(stackTrace: string): string | undefined {
-    const lines = stackTrace.split("\n");
+    let lines = stackTrace.split("\n");
+    const offset = lines.findIndex(line => line === "Error");
+
+    if (offset !== -1) {
+        lines = lines.slice(offset); // fix for tsx in Node.js v16
+    }
+
     let callSite: string;
 
     if (lines[0]?.startsWith("Error")) { // chromium browsers

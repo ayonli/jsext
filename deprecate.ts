@@ -79,9 +79,22 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
 
 function emitWarning(target: string, forFn: Function, tip: string, once: boolean, lineNum: number) {
     if (!once || !warnedRecord.has(forFn)) {
-        const capture: { stack?: string; } = {};
-        Error.captureStackTrace(capture, forFn);
-        let line = (capture.stack as string).split("\n")[lineNum]?.trim();
+        let trace: { stack?: string; } = {};
+
+        if (typeof Error.captureStackTrace === "function") {
+            Error.captureStackTrace(trace, forFn);
+        } else {
+            trace = new Error("");
+        }
+
+        let lines = (trace.stack as string).split("\n");
+        const offset = lines.findIndex(line => line === "Error");
+
+        if (offset !== -1) {
+            lines = lines.slice(offset); // fix for tsx in Node.js v16
+        }
+
+        let line = lines[lineNum]?.trim();
         let warning = `${target} is deprecated`;
 
         if (tip) {
