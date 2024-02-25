@@ -1,6 +1,4 @@
-export interface RealArrayLike<T> extends ArrayLike<T> {
-    slice(start?: number, end?: number): RealArrayLike<T>;
-}
+import type { RealArrayLike } from "../index.ts";
 
 /** Counts the occurrence of the element in the array-like object. */
 export function count<T>(arr: RealArrayLike<T>, ele: T): number {

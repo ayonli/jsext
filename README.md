@@ -1267,6 +1267,7 @@ console.log(pow(2, 3));
 - `AsyncGeneratorFunction`
 - `AsyncFunctionConstructor`
 - `Constructor<T>`
+- `RealArrayLike<T>`
 - `TypedArray`
 - `Optional<T, K extends keyof T>`
 - `Ensured<T, K extends keyof T>`

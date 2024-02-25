@@ -33,6 +33,10 @@ declare global {
         prototype: T;
     }
 
+    interface RealArrayLike<T> extends ArrayLike<T> {
+        slice(start?: number, end?: number): RealArrayLike<T>;
+    }
+
     interface TypedArray extends Array<number> {
         readonly buffer: ArrayBufferLike;
         readonly byteLength: number;

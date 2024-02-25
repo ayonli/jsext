@@ -36,6 +36,10 @@ export interface Constructor<T = object> extends Function {
     prototype: T;
 }
 
+export interface RealArrayLike<T> extends ArrayLike<T> {
+    slice(start?: number, end?: number): RealArrayLike<T>;
+}
+
 export interface TypedArray extends Array<number> {
     readonly buffer: ArrayBufferLike;
     readonly byteLength: number;
