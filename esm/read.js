@@ -154,6 +154,8 @@ function read(source, eventMap = undefined) {
  *
  * const file = fs.createReadStream("./package.json");
  * const chunks = await readAll(file);
+ *
+ * console.log(chunks);
  * ```
  */
 async function readAll(iterable) {

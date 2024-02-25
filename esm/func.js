@@ -14,7 +14,7 @@ import { isAsyncGenerator, isGenerator } from './external/check-iterable/index.j
  * import func from "@ayonli/jsext/func";
  * import * as fs from "node:fs/promises";
  *
- * const getVersion = func(async (defer) => {
+ * export const getVersion = func(async (defer) => {
  *     const file = await fs.open("./package.json", "r");
  *     defer(() => file.close());
  *

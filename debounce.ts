@@ -66,7 +66,7 @@ const registry = new Map<any, Debounce>();
 export default function debounce<I, T, R>(
     handler: (this: I, data: T) => R | Promise<R>,
     delay: number,
-    reducer?: (prev: T, data: T) => T
+    reducer?: (prev: T, current: T) => T
 ): (this: I, data: T) => Promise<R>;
 /**
  * @example
@@ -109,12 +109,12 @@ export default function debounce<I, T, R>(
          */
         for?: any;
     },
-    reducer?: (prev: T, data: T) => T
+    reducer?: (prev: T, current: T) => T
 ): (this: I, data: T) => Promise<R>;
 export default function debounce<I, T = any, R = any>(
     handler: (this: I, data: T) => R | Promise<R>,
     options: number | { delay: number; for?: any; },
-    reducer: ((prev: T, data: T) => T) | undefined = undefined,
+    reducer: ((prev: T, current: T) => T) | undefined = undefined,
 ): (this: I, data: T) => Promise<R> {
     const delay = typeof options === "number" ? options : options.delay;
     const key = typeof options === "number" ? null : options.for;

@@ -26,8 +26,9 @@
             "@ayonli/jsext": [
                 "."
             ],
-            "tslib": [
-                "./node_modules/tslib/index.d.ts"
+            "@ayonli/jsext/*": [
+                "./*",
+                "./*/index.ts"
             ]
         }
     },
@@ -37,6 +38,7 @@
     ],
     "exclude": [
         "node_modules",
+        "types",
         "examples",
         "test-*.ts",
         "*deno.test.ts"

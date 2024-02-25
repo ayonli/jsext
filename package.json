@@ -284,6 +284,7 @@
         "pretest": "node pretest.cjs",
         "posttest": "node posttest.cjs",
         "test": "node --no-warnings=ExperimentalWarning --loader=ts-node/esm ./node_modules/mocha/bin/mocha",
+        "test:tsx": "npm run pretest && tsx ./node_modules/mocha/bin/mocha; npm run posttest",
         "test:bun": "bun run ./node_modules/mocha/bin/mocha",
         "test:deno": "deno run --allow-read --allow-net test-deno.ts",
         "build": "rollup -c rollup.config.mjs && echo '{\"type\":\"module\"}' > ./esm/package.json && echo '{\"type\":\"commonjs\"}' > ./cjs/package.json && tsc -p types.tsconfig.json",
@@ -367,6 +368,7 @@
         "string-hash": "^1.1.3",
         "ts-node": "^10.9.1",
         "tslib": "^2.6.2",
+        "tsx": "^4.7.1",
         "typescript": "^5.2.2",
         "ws": "^8.14.1"
     },

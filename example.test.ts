@@ -3,6 +3,8 @@ import jsext from "./index.ts";
 
 declare var Bun: any;
 
+const isTsx = globalThis["process"]?.env["npm_lifecycle_script"]?.match(/\btsx\b/) ? true : false;
+
 describe("jsext.example", () => {
     if (typeof Bun === "undefined") {
         it("should output as expected", jsext.example(console => {
@@ -13,7 +15,7 @@ describe("jsext.example", () => {
     }
 
     it("regular function", async function (this) {
-        if (typeof Bun === "object") {
+        if (typeof Bun === "object" || isTsx) {
             this.skip();
         }
 
@@ -88,7 +90,7 @@ describe("jsext.example", () => {
     });
 
     it("async function", async function () {
-        if (typeof Bun === "object") {
+        if (typeof Bun === "object" || isTsx) {
             this.skip();
         }
 

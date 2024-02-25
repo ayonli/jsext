@@ -9,6 +9,8 @@ declare var Deno: any;
 declare var Bun: any;
 declare var AggregateError: new (errors: Error[], message?: string, options?: { cause: unknown; }) => Error & { errors: Error[]; };
 
+const isTsx = globalThis["process"]?.env["npm_lifecycle_script"]?.match(/\btsx\b/) ? true : false;
+
 describe("jsext.parallel", () => {
     const modUrl = new URL("./examples/worker.mjs", import.meta.url).href;
     // @ts-ignore because allowJs is not turned on
@@ -226,11 +228,13 @@ describe("jsext.parallel", () => {
     });
 
     it("in dependencies", async () => {
-        // @ts-ignore because allowJs is not turned on
-        const { default: avg } = await import("./examples/avg.js");
-        strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
+        if (!isTsx) {
+            // @ts-ignore because allowJs is not turned on
+            const { default: avg } = await import("./examples/avg.js");
+            strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
+        }
 
-        if (typeof Deno === "object" || typeof Bun === "object") {
+        if (typeof Deno === "object" || typeof Bun === "object" || isTsx) {
             // @ts-ignore because allowJs is not turned on
             const { default: avg } = await import("./examples/avg.ts");
             strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);

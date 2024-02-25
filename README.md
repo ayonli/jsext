@@ -75,11 +75,11 @@ And other functions in [sub-packages](#sub-packages).
 ### _try
 
 ```ts
-function _try<E = unknown, R = any, A extends any[] = any[]>(
+declare function _try<E = unknown, R = any, A extends any[] = any[]>(
     fn: (...args: A) => R,
     ...args: A
 ): [E, R];
-function _try<E = unknown, R = any, A extends any[] = any[]>(
+declare function _try<E = unknown, R = any, A extends any[] = any[]>(
     fn: (...args: A) => Promise<R>,
     ...args: A
 ): Promise<[E, R]>;
@@ -115,7 +115,7 @@ if (err) {
 ---
 
 ```ts
-function _try<E = unknown, R = any>(job: Promise<R>): Promise<[E, R]>;
+declare function _try<E = unknown, R = any>(job: Promise<R>): Promise<[E, R]>;
 ```
 
 Resolves a promise and renders its result in an `[err, res]` tuple.
@@ -136,11 +136,11 @@ if (err) {
 ---
 
 ```ts
-function _try<E = unknown, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
+declare function _try<E = unknown, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
     fn: (...args: A) => Generator<T, TReturn, TNext>,
     ...args: A
 ): Generator<[E, T], [E, TReturn], TNext>;
-function _try<E = unknown, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
+declare function _try<E = unknown, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
     fn: (...args: A) => AsyncGenerator<T, TReturn, TNext>,
     ...args: A
 ): AsyncGenerator<[E, T], [E, TReturn], TNext>;
@@ -188,10 +188,10 @@ for await (const [err, val] of iter) {
 ---
 
 ```ts
-function _try<E = unknown, T = any, TReturn = any, TNext = unknown>(
+declare function _try<E = unknown, T = any, TReturn = any, TNext = unknown>(
     gen: Generator<T, TReturn, TNext>
 ): Generator<[E, T], [E, TReturn], TNext>;
-function _try<E = unknown, T = any, TReturn = any, TNext = unknown>(
+declare function _try<E = unknown, T = any, TReturn = any, TNext = unknown>(
     gen: AsyncGenerator<T, TReturn, TNext>
 ): AsyncGenerator<[E, T], [E, TReturn], TNext>;
 ```
@@ -239,7 +239,7 @@ for await (const [err, val] of _try(gen())) {
 ### func
 
 ```ts
-function func<T, R = any, A extends any[] = any[]>(
+declare function func<T, R = any, A extends any[] = any[]>(
     fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R
 ): (this: T, ...args: A) => R;
 ```
@@ -257,7 +257,7 @@ an async generator function, and all the running procedures will be awaited.
 import func from "@ayonli/jsext/func";
 import * as fs from "node:fs/promises";
 
-const getVersion = func(async (defer) => {
+export const getVersion = func(async (defer) => {
     const file = await fs.open("./package.json", "r");
     defer(() => file.close());
 
@@ -273,10 +273,10 @@ const getVersion = func(async (defer) => {
 ### wrap
 
 ```ts
-function wrap<T, Fn extends (this: T, ...args: any[]) => any>(
+declare function wrap<T, Fn extends (this: T, ...args: any[]) => any>(
     fn: Fn,
     wrapper: (this: T, fn: Fn, ...args: Parameters<Fn>) => ReturnType<Fn>
-): Fn
+): Fn;
 ```
 
 Wraps a function inside another function and returns a new function that copies the original
@@ -305,11 +305,11 @@ console.assert(show.toString() === log.toString());
 ### throttle
 
 ```ts
-function throttle<I, Fn extends (this: I, ...args: any[]) => any>(
+declare function throttle<I, Fn extends (this: I, ...args: any[]) => any>(
     handler: Fn,
     duration: number
 ): Fn;
-function throttle<I, Fn extends (this: I, ...args: any[]) => any>(handler: Fn, options: {
+declare function throttle<I, Fn extends (this: I, ...args: any[]) => any>(handler: Fn, options: {
     duration: number;
     /**
      * Use the throttle strategy `for` the given key, this will keep the result in a global
@@ -368,12 +368,12 @@ console.log(out3); // bar
 ### debounce
 
 ```ts
-export default function debounce<I, T, R>(
+declare function debounce<I, T, R>(
     handler: (this: I, data: T) => R | Promise<R>,
     delay: number,
     reducer?: (prev: T, data: T) => T
 ): (this: I, data: T) => Promise<R>;
-export default function debounce<I, T, R>(
+declare function debounce<I, T, R>(
     handler: (this: I, data: T) => R | Promise<R>,
     options: {
         delay: number,
@@ -428,8 +428,8 @@ import debounce from "@ayonli/jsext/debounce";
 
 const fn = debounce((obj: { foo?: string; bar?: string }) => {
     return obj;
-}, 1_000, (prev, curr) => {
-    return { ...prev, ...curr };
+}, 1_000, (prev, current) => {
+    return { ...prev, ...current };
 });
 
 const [res1, res2] = await Promise.all([
@@ -475,7 +475,9 @@ console.assert(count === 2);
 ### queue
 
 ```ts
-function queue<T>(handler: (data: T) => Promise<void>, bufferSize?: number): Queue<T>
+import type { Queue } from "@ayonli/jsext/queue";
+
+declare function queue<T>(handler: (data: T) => Promise<void>, bufferSize?: number): Queue<T>;
 ```
 
 Processes data sequentially by the given `handler` function and prevents concurrency
@@ -514,7 +516,9 @@ q.close();
 ### lock
 
 ```ts
-function lock(key: any): Promise<AsyncMutex.Lock<undefined>>;
+import type { AsyncMutex } from "@ayonli/jsext/lock";
+
+declare function lock(key: any): Promise<AsyncMutex.Lock<undefined>>;
 ```
 
 Acquires lock for the given key in order to perform concurrent operations and prevent conflicts.
@@ -585,11 +589,13 @@ await Promise.all([
 ### mixins
 
 ```ts
-function mixins<T extends Constructor<any>, M extends any[]>(
+import type { UnionToIntersection } from "@ayonli/jsext/mixins";
+
+declare function mixins<T extends Constructor<any>, M extends any[]>(
     base: T,
     ...mixins: { [X in keyof M]: Constructor<M[X]> }
 ): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
-function mixins<T extends Constructor<any>, M extends any[]>(
+declare function mixins<T extends Constructor<any>, M extends any[]>(
     base: T,
     ...mixins: M
 ): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
@@ -602,7 +608,7 @@ This function does not mutates the base class but create a pivot class instead.
 **Example**
 
 ```ts
-import mixins from "@ayonli/jsext/mixins";
+import mixins, { isSubclassOf } from "@ayonli/jsext/mixins";
 
 class Log {
     log(text: string) {
@@ -635,7 +641,7 @@ console.assert(!isSubclassOf(Controller, Log));
 ### isSubclassOf
 
 ```ts
-function isSubclassOf<A, B>(ctor1: Constructor<A>, ctor2: Constructor<B>): boolean;
+declare function isSubclassOf<A, B>(ctor1: Constructor<A>, ctor2: Constructor<B>): boolean;
 ```
 
 Checks if a class is a subclass of another class.
@@ -656,15 +662,15 @@ console.assert(isSubclassOf(Moment, Object)); // all classes are subclasses of O
 ### read
 
 ```ts
-function read<I extends AsyncIterable<any>>(iterable: I): I;
-function read(es: EventSource, options?: { event?: string; }): AsyncIterable<string>;
-function read<T extends Uint8Array | string>(ws: WebSocket): AsyncIterable<T>;
-function read<T>(target: EventTarget, eventMap?: {
+declare function read<I extends AsyncIterable<any>>(iterable: I): I;
+declare function read(es: EventSource, options?: { event?: string; }): AsyncIterable<string>;
+declare function read<T extends Uint8Array | string>(ws: WebSocket): AsyncIterable<T>;
+declare function read<T>(target: EventTarget, eventMap?: {
     message?: string;
     error?: string;
     close?: string;
 }): AsyncIterable<T>;
-function read<T>(target: NodeJS.EventEmitter, eventMap?: {
+declare function read<T>(target: NodeJS.EventEmitter, eventMap?: {
     data?: string;
     error?: string;
     close?: string;
@@ -734,7 +740,7 @@ for await (const msg of read(process)) {
 ### readAll
 
 ```ts
-function readAll<T>(iterable: AsyncIterable<T>): Promise<T[]>;
+declare function readAll<T>(iterable: AsyncIterable<T>): Promise<T[]>;
 ```
 
 Reads all values from the iterable object at once.
@@ -747,6 +753,8 @@ import * as fs from "node:fs";
 
 const file = fs.createReadStream("./package.json");
 const chunks = await readAll(file);
+
+console.log(chunks);
 ```
 
 ---
@@ -754,7 +762,9 @@ const chunks = await readAll(file);
 ### chan
 
 ```ts
-function chan<T>(capacity?: number): Channel<T>;
+import type { Channel } from "@ayonli/jsext/chan";
+
+declare function chan<T>(capacity?: number): Channel<T>;
 ```
 
 Inspired by Golang, cerates a `Channel` that can be used to transfer data across routines.
@@ -847,7 +857,9 @@ for await (const num of channel) {
 ### parallel
 
 ```ts
-function parallel<M extends { [x: string]: any; }>(
+import type { ThreadedFunctions } from "@ayonli/jsext/parallel";
+
+declare function parallel<M extends { [x: string]: any; }>(
     mod: string | (() => Promise<M>)
 ): ThreadedFunctions<M>;
 ```
@@ -1002,7 +1014,7 @@ namespace parallel {
 ### run
 
 ```ts
-function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
+declare function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
     /** If not set, invoke the default function, otherwise invoke the specified function. */
     fn?: string;
     /** Automatically abort the task when timeout (in milliseconds). */
@@ -1094,7 +1106,7 @@ namespace run {
      * The maximum number of workers allowed to exist at the same time. If not set, use the same
      * setting as {@link parallel.maxWorkers}.
      */
-    var maxWorkers: number | undefined;
+    export var maxWorkers: number | undefined;
 }
 ```
 
@@ -1103,7 +1115,7 @@ namespace run {
 ### example
 
 ```ts
-function example<T, A extends any[] = any[]>(
+declare function example<T, A extends any[] = any[]>(
     fn: (this: T, console: Console, ...args: A) => void | Promise<void>,
     options?: {
         /** Suppress logging to the terminal and only check the output. */
@@ -1119,9 +1131,10 @@ the actual output matches the one declared in the comment.
 The example function receives a customized `console` object which will be used to log outputs
 instead of using the built-in `console`.
 
-NOTE: this function is used to simplify the process of writing tests, it does not work in Bun and
-browsers currently, because Bun hasn't implement the `Console` constructor and removes comments
-during runtime, and the function relies on Node.js built-in modules.
+NOTE: this function is used to simplify the process of writing tests, currently, it does not
+work in Bun, **tsx** and browsers, because Bun hasn't implement the `Console` constructor and
+removes comments during runtime, **tsx** also remove comments, and the function relies on
+Node.js built-in modules.
 
 **Example**
 
@@ -1140,7 +1153,7 @@ it("should output as expected", example(console => {
 ### deprecate
 
 ```ts
-function deprecate<T, Fn extends (this: T, ...args: any[]) => any>(
+declare function deprecate<T, Fn extends (this: T, ...args: any[]) => any>(
     fn: Fn,
     tip?: string,
     once?: boolean
@@ -1170,7 +1183,7 @@ console.log(sum(1, 2));
 ---
 
 ```ts
-function deprecate(target: string, forFn: Function, tip?: string, once?: boolean): void;
+declare function deprecate(target: string, forFn: Function, tip?: string, once?: boolean): void;
 ```
 
 Emits a deprecation warning for the target, usually a parameter, an option, or the function's name,

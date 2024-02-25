@@ -236,6 +236,8 @@ export default function read<T>(source: any, eventMap: {
  * 
  * const file = fs.createReadStream("./package.json");
  * const chunks = await readAll(file);
+ * 
+ * console.log(chunks);
  * ```
  */
 export async function readAll<T>(iterable: AsyncIterable<T>): Promise<T[]> {

@@ -33,12 +33,17 @@ function sanitizeModuleId(id, strict = false) {
     let _id = "";
     if (typeof id === "function") {
         let str = id.toString();
-        let start = str.lastIndexOf("(");
+        let offset = "import(".length;
+        let start = str.lastIndexOf("import(");
+        if (start === -1) {
+            offset = "require(".length;
+            start = str.lastIndexOf("require(");
+        }
         if (start === -1) {
             throw new TypeError("the given script is not a dynamic import expression");
         }
         else {
-            start += 1;
+            start += offset;
             const end = str.indexOf(")", start);
             _id = trim(str.slice(start, end), ` '"\'`);
         }
