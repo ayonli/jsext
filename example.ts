@@ -1,17 +1,19 @@
 declare var Deno: any;
 
 /**
- * Inspired by Golang's **Example as Test** design, creates a function that carries example code
- * with `// output:` comments, when the returned function is called, it will automatically check if
- * the actual output matches the one declared in the comment.
+ * Inspired by Golang's **Example as Test** design, creates a function that
+ * carries example code with `// output:` comments, when the returned function
+ * is called, it will automatically check if the actual output matches the one
+ * declared in the comment.
  * 
- * The example function receives a customized `console` object which will be used to log outputs
- * instead of using the built-in `console`.
+ * The example function receives a customized `console` object which will be
+ * used to log outputs instead of using the built-in `console`.
  * 
- * NOTE: this function is used to simplify the process of writing tests, currently, it does not
- * work in Bun, **tsx** and browsers, because Bun hasn't implement the `Console` constructor and
- * removes comments during runtime, **tsx** also remove comments, and the function relies on
- * Node.js built-in modules.
+ * NOTE: this function is used to simplify the process of writing tests,
+ * currently, it does not work in Bun, **tsx** and browsers, because Bun hasn't
+ * implement the `Console` constructor and removes comments during runtime,
+ * **tsx** also remove comments, and the function relies on Node.js built-in
+ * modules.
  * 
  * @example
  * ```ts
@@ -37,7 +39,9 @@ export default function example<T, A extends any[] = any[]>(
     return async function (this, ...args) {
         const fnStr = fn.toString();
         let lines = fnStr.split("\n").slice(1, -1);
-        let offset = lines.findIndex(line => line.trim().toLowerCase() === "// output:");
+        let offset = lines.findIndex(line => {
+            return line.trim().toLowerCase() === "// output:";
+        });
 
         if (offset === -1) {
             // no output is detected, skip the function
@@ -47,7 +51,9 @@ export default function example<T, A extends any[] = any[]>(
             lines = lines.slice(offset);
         }
 
-        if (lines.findIndex(line => line.trim().toLowerCase() === "// output:") !== -1) {
+        if (lines.findIndex(line => {
+            return line.trim().toLowerCase() === "// output:";
+        }) !== -1) {
             throw new Error("there can only be one output comment in the example");
         }
 
@@ -63,7 +69,8 @@ export default function example<T, A extends any[] = any[]>(
 
                 expected.push(line.slice(3));
             } else {
-                throw new Error("the output comment must be at the end of the example");
+                throw new Error(
+                    "the output comment must be at the end of the example");
             }
         }
 
@@ -100,21 +107,24 @@ export default function example<T, A extends any[] = any[]>(
         const _console = new Console(stdout);
         const returns = fn.call(this, _console, ...args);
         const handleResult = async () => {
-            const actual = logs.map(chunk => decoder.decode(chunk)).join("\n").replace(/[\n]+$/, "");
+            const actual = logs.map(chunk => decoder.decode(chunk))
+                .join("\n")
+                .replace(/[\n]+$/, "");
             const _expected = expected.join("\n");
 
             try {
                 // @ts-ignore
-                assert.ok(actual === _expected, `\nexpected:\n${_expected}\n\ngot:\n${actual}`);
+                assert.ok(actual === _expected,
+                    `\nexpected:\n${_expected}\n\ngot:\n${actual}`);
 
                 if (!options?.suppress) {
                     for (const chunk of logs) {
                         if (typeof Deno === "object") {
                             await Deno.stdout.write(chunk);
                         } else if (typeof process === "object") {
-                            await new Promise<void>(
-                                resolve => process.stdout.write(chunk, () => resolve())
-                            );
+                            await new Promise<void>(resolve => {
+                                process.stdout.write(chunk, () => resolve());
+                            });
                         }
                     }
                 }

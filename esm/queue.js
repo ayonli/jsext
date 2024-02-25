@@ -33,12 +33,13 @@ class Queue {
     }
 }
 /**
- * Processes data sequentially by the given `handler` function and prevents concurrency
- * conflicts, it returns a {@link Queue} instance that we can push data into.
+ * Processes data sequentially by the given `handler` function and prevents
+ * concurrency conflicts, it returns a {@link Queue} instance that we can push
+ * data into.
  *
- * @param bufferSize The maximum capacity of the underlying channel, once reached, the push
- * operation will block until there is new space available. By default, this option is not set and
- * use a non-buffered channel instead.
+ * @param bufferSize The maximum capacity of the underlying channel, once
+ * reached, the push operation will block until there is new space available.
+ * By default, this option is not set and use a non-buffered channel instead.
  *
  * @example
  * ```ts

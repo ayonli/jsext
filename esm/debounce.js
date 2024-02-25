@@ -25,8 +25,8 @@ function debounce(handler, options, reducer = undefined) {
         }
         cache.timer && clearTimeout(cache.timer);
         cache.timer = setTimeout(() => {
-            // Move tasks and cached data to new variables, so during the middle of handler
-            // running, new calls won't affect the running process.
+            // Move tasks and cached data to new variables, so during the middle
+            // of handler running, new calls won't affect the running process.
             const _tasks = cache.tasks;
             const _data = cache.data;
             cache.tasks = [];

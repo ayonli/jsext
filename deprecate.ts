@@ -7,7 +7,8 @@ const warnedRecord = new Map<Function, boolean>();
 /**
  * Marks a function as deprecated and returns a wrapped function.
  * 
- * When the wrapped function is called, a deprecation warning will be emitted to the stdout.
+ * When the wrapped function is called, a deprecation warning will be emitted
+ * to the stdout.
  * 
  * NOTE: the original function must have a name.
  * 

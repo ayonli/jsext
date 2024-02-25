@@ -12,14 +12,16 @@ type Debounce = {
 const registry = new Map<any, Debounce>();
 
 /**
- * Creates a debounced function that delays invoking `handler` until after `delay` duration
- * (in milliseconds) have elapsed since the last time the debounced function was invoked. 
+ * Creates a debounced function that delays invoking `handler` until after
+ * `delay` duration (in milliseconds) have elapsed since the last time the
+ * debounced function was invoked. 
  * 
- * If a subsequent call happens within the `delay` duration (in milliseconds), the previous call
- * will be canceled and it will result in the same return value  as the new call's.
+ * If a subsequent call happens within the `delay` duration (in milliseconds),
+ * the previous call will be canceled and it will result in the same return
+ * value  as the new call's.
  * 
- * Optionally, we can provide a `reducer` function to merge data before processing so multiple
- * calls can be merged into one.
+ * Optionally, we can provide a `reducer` function to merge data before
+ * processing so multiple calls can be merged into one.
  * 
  * @example
  * ```ts
@@ -102,10 +104,11 @@ export default function debounce<I, T, R>(
     options: {
         delay: number,
         /**
-         * Use the debounce strategy `for` the given key, this will keep the debounce context in
-         * a global registry, binding new `handler` function for the same key will override
-         * the previous settings. This mechanism guarantees that both creating the debounced
-         * function in function scopes and overwriting the handler are possible.
+         * Use the debounce strategy `for` the given key, this will keep the
+         * debounce context in a global registry, binding new `handler` function
+         * for the same key will override the previous settings. This mechanism
+         * guarantees that both creating the debounced function in function
+         * scopes and overwriting the handler are possible.
          */
         for?: any;
     },
@@ -145,8 +148,8 @@ export default function debounce<I, T = any, R = any>(
 
         cache.timer && clearTimeout(cache.timer);
         cache.timer = setTimeout(() => {
-            // Move tasks and cached data to new variables, so during the middle of handler
-            // running, new calls won't affect the running process.
+            // Move tasks and cached data to new variables, so during the middle
+            // of handler running, new calls won't affect the running process.
             const _tasks = cache.tasks;
             const _data = cache.data as T;
             cache.tasks = [];

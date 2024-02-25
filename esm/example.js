@@ -1,15 +1,17 @@
 /**
- * Inspired by Golang's **Example as Test** design, creates a function that carries example code
- * with `// output:` comments, when the returned function is called, it will automatically check if
- * the actual output matches the one declared in the comment.
+ * Inspired by Golang's **Example as Test** design, creates a function that
+ * carries example code with `// output:` comments, when the returned function
+ * is called, it will automatically check if the actual output matches the one
+ * declared in the comment.
  *
- * The example function receives a customized `console` object which will be used to log outputs
- * instead of using the built-in `console`.
+ * The example function receives a customized `console` object which will be
+ * used to log outputs instead of using the built-in `console`.
  *
- * NOTE: this function is used to simplify the process of writing tests, currently, it does not
- * work in Bun, **tsx** and browsers, because Bun hasn't implement the `Console` constructor and
- * removes comments during runtime, **tsx** also remove comments, and the function relies on
- * Node.js built-in modules.
+ * NOTE: this function is used to simplify the process of writing tests,
+ * currently, it does not work in Bun, **tsx** and browsers, because Bun hasn't
+ * implement the `Console` constructor and removes comments during runtime,
+ * **tsx** also remove comments, and the function relies on Node.js built-in
+ * modules.
  *
  * @example
  * ```ts
@@ -28,7 +30,9 @@ function example(fn, options = undefined) {
     return async function (...args) {
         const fnStr = fn.toString();
         let lines = fnStr.split("\n").slice(1, -1);
-        let offset = lines.findIndex(line => line.trim().toLowerCase() === "// output:");
+        let offset = lines.findIndex(line => {
+            return line.trim().toLowerCase() === "// output:";
+        });
         if (offset === -1) {
             // no output is detected, skip the function
             return;
@@ -37,7 +41,9 @@ function example(fn, options = undefined) {
             offset += 1;
             lines = lines.slice(offset);
         }
-        if (lines.findIndex(line => line.trim().toLowerCase() === "// output:") !== -1) {
+        if (lines.findIndex(line => {
+            return line.trim().toLowerCase() === "// output:";
+        }) !== -1) {
             throw new Error("there can only be one output comment in the example");
         }
         let expected = [];
@@ -84,7 +90,9 @@ function example(fn, options = undefined) {
         const returns = fn.call(this, _console, ...args);
         const handleResult = async () => {
             var _a;
-            const actual = logs.map(chunk => decoder.decode(chunk)).join("\n").replace(/[\n]+$/, "");
+            const actual = logs.map(chunk => decoder.decode(chunk))
+                .join("\n")
+                .replace(/[\n]+$/, "");
             const _expected = expected.join("\n");
             try {
                 // @ts-ignore
@@ -95,7 +103,9 @@ function example(fn, options = undefined) {
                             await Deno.stdout.write(chunk);
                         }
                         else if (typeof process === "object") {
-                            await new Promise(resolve => process.stdout.write(chunk, () => resolve()));
+                            await new Promise(resolve => {
+                                process.stdout.write(chunk, () => resolve());
+                            });
                         }
                     }
                 }

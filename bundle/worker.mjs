@@ -295,13 +295,14 @@ class Channel {
      *
      * If there is a receiver, the data will be consumed immediately. Otherwise:
      *
-     * - If this is an non-buffered channel, this function will block until a receiver is
-     *  available and the data is consumed.
+     * - If this is an non-buffered channel, this function will block until a
+     *  receiver is available and the data is consumed.
      *
      * - If this is a buffered channel, then:
-     *      - If the buffer size is within the capacity, the data will be pushed to the buffer.
-     *      - Otherwise, this function will block until there is new space for the data in the
-     *          buffer.
+     *      - If the buffer size is within the capacity, the data will be pushed
+     *        to the buffer.
+     *      - Otherwise, this function will block until there is new space for
+     *        the data in the buffer.
      */
     push(data) {
         if (this.state !== 1) {
@@ -335,12 +336,13 @@ class Channel {
     /**
      * Retrieves data from the channel.
      *
-     * If there isn't data available at the moment, this function will block until new data is
-     * available.
+     * If there isn't data available at the moment, this function will block
+     * until new data is available.
      *
      * If the channel is closed, then:
      *
-     * - If there is error set in the channel, this function throws that error immediately.
+     * - If there is error set in the channel, this function throws that error
+     *   immediately.
      * - Otherwise, this function returns `undefined` immediately.
      */
     pop() {
@@ -362,7 +364,8 @@ class Channel {
             return Promise.resolve(undefined);
         }
         else if (this.error) {
-            // Error can only be consumed once, after that, that closure will be complete.
+            // Error can only be consumed once, after that, that closure will
+            // be complete.
             const { error } = this;
             this.state = 0;
             this.error = null;
@@ -384,16 +387,19 @@ class Channel {
         }
     }
     /**
-     * Closes the channel. If `err` is supplied, it will be captured by the receiver.
+     * Closes the channel. If `err` is supplied, it will be captured by the
+     * receiver.
      *
      * No more data shall be sent once the channel is closed.
      *
-     * Explicitly closing the channel is not required, if the channel is no longer used, it
-     * will be automatically released by the GC. However, if the channel is used in a
-     * `for await...of...` loop, closing the channel will allow the loop to break automatically.
+     * Explicitly closing the channel is not required, if the channel is no
+     * longer used, it will be automatically released by the GC. However, if
+     * the channel is used in a `for await...of...` loop, closing the channel
+     * will allow the loop to break automatically.
      *
-     * Moreover, if the channel is used between parallel threads, it will no longer be able to
-     * release automatically, must explicitly call this function in order to release for GC.
+     * Moreover, if the channel is used between parallel threads, it will no
+     * longer be able to release automatically, must explicitly call this
+     * function in order to release for GC.
      */
     close(err = null) {
         if (this.state !== 1) {
@@ -591,9 +597,10 @@ function unwrapChannel(obj, channelWrite) {
 
 const pendingTasks = new Map();
 /**
- * For some reason, in Node.js and Bun, when import expression throws an module/package not found
- * error, the error can not be serialized and sent to the other thread properly. We need to check
- * this situation and sent the error as plain object instead.
+ * For some reason, in Node.js and Bun, when import expression throws an
+ * module/package not found error, the error can not be serialized and sent to
+ * the other thread properly. We need to check this situation and sent the error
+ * as plain object instead.
  */
 function isModuleResolveError(value) {
     var _a;
@@ -696,8 +703,8 @@ async function handleCallRequest(msg, reply) {
                 return _reply(res);
             }
             catch (_a) {
-                // In case the error cannot be cloned directly, fallback to transferring it as
-                // an object and rebuild in the main thread.
+                // In case the error cannot be cloned directly, fallback to
+                // transferring it as an object and rebuild in the main thread.
                 return _reply({
                     ...res,
                     error: removeUnserializableProperties(toObject(res.error)),

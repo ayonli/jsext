@@ -51,7 +51,10 @@ class AsyncMutex {
         this.queue = [];
         this[_value] = value;
     }
-    /** Acquires the lock of the mutex, optionally for modifying the shared resource.  */
+    /**
+     * Acquires the lock of the mutex, optionally for modifying the shared
+     * resource.
+     */
     async lock() {
         await new Promise(resolve => {
             if (this.queue.length) {
@@ -99,10 +102,11 @@ class AsyncMutex {
 })(AsyncMutex || (AsyncMutex = {}));
 const registry = new BiMap();
 /**
- * Acquires lock for the given key in order to perform concurrent operations and prevent conflicts.
+ * Acquires lock for the given key in order to perform concurrent operations and
+ * prevent conflicts.
  *
- * If the key is currently being locked by other coroutines, this function will block until the
- * lock becomes available again.
+ * If the key is currently being locked by other coroutines, this function will
+ * block until the lock becomes available again.
  *
  * @example
  * ```ts

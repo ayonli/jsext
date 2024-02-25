@@ -2,12 +2,14 @@
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
 
 /**
- * Inspired by Golang, creates a function that receives a `defer` keyword which can be used
- * to carry deferred jobs that will be run after the main function is complete.
+ * Inspired by Golang, creates a function that receives a `defer` keyword which
+ * can be used to carry deferred jobs that will be run after the main function
+ * is complete.
  * 
- * Multiple calls of the `defer` keyword is supported, and the callbacks are called in the
- * LIFO order. Callbacks can be async functions if the main function is an async function or
- * an async generator function, and all the running procedures will be awaited.
+ * Multiple calls of the `defer` keyword is supported, and the callbacks are
+ * called in the LIFO order. Callbacks can be async functions if the main
+ * function is an async function or an async generator function, and all the
+ * running procedures will be awaited.
  * 
  * @example
  * ```ts

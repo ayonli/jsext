@@ -59,8 +59,9 @@ function read(source, eventMap = undefined) {
             });
         }
         else if (!(closeDesc === null || closeDesc === void 0 ? void 0 : closeDesc.set) && isFunction(source["close"])) { // EventSource
-            // EventSource by default does not trigger close event, we need to make sure when
-            // it calls the close() function, the iterator is automatically closed.
+            // EventSource by default does not trigger close event, we need to
+            // make sure when it calls the close() function, the iterator is
+            // automatically closed.
             const es = source;
             const _close = es.close;
             es.close = function close() {

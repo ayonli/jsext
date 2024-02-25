@@ -152,7 +152,9 @@ export type CallResponse = {
 };
 
 export function isCallResponse(msg: any): msg is CallResponse {
-    return msg && typeof msg === "object" && ["return", "yield", "error", "gen"].includes(msg.type);
+    return msg
+        && typeof msg === "object"
+        && ["return", "yield", "error", "gen"].includes(msg.type);
 }
 
 export async function createWorker(options: {
@@ -172,7 +174,8 @@ export async function createWorker(options: {
             const _filename = fileURLToPath(import.meta.url);
 
             if (_filename === process.argv[1]) {
-                // The code is bundled, try the worker entry in node_modules (hope it exists).
+                // The code is bundled, try the worker entry in node_modules
+                // (hope it exists).
                 if (isBun) {
                     entry = "./node_modules/@ayonli/jsext/worker.ts";
                 } else {
@@ -186,8 +189,8 @@ export async function createWorker(options: {
                     path.join("jsext", "esm"),
                     path.join("jsext", "bundle")
                 ].some(path => _dirname.endsWith(path))) {
-                    // The application imports the compiled version of this module,
-                    // redirect to the root directory of this package.
+                    // The application imports the compiled version of this
+                    // module, redirect to the root directory of this package.
                     _dirname = path.dirname(_dirname);
                 }
 
@@ -271,16 +274,16 @@ export async function createWorker(options: {
                         "worker.ts"
                     ].join("/");
 
-                    // The application imports the compiled version of this module,
-                    // redirect to the source worker entry.
+                    // The application imports the compiled version of this
+                    // module, redirect to the source worker entry.
                     if (entry.endsWith("/esm/worker.ts")) {
                         entry = entry.slice(0, -14) + "/worker.ts";
                     }
                 }
             }
         } else {
-            // Use fetch to download the script and compose an object URL can bypass CORS
-            // security constraint in the browser.
+            // Use fetch to download the script and compose an object URL can
+            // bypass CORS security constraint in the browser.
             const url = entry || "https://ayonli.github.io/jsext/bundle/worker.mjs";
             const res = await fetch(url);
             let blob: Blob;
@@ -375,7 +378,8 @@ async function acquireWorker(taskId: number) {
                             poolRecord.tasks.delete(msg.taskId);
 
                             if (!poolRecord.tasks.size && (isNode || isBun)) {
-                                // Allow the main thread to exit if the event loop is empty.
+                                // Allow the main thread to exit if the event
+                                // loop is empty.
                                 (worker as NodeWorker | BunWorker).unref();
                             }
                         } else if (msg.type === "yield") {
@@ -383,7 +387,8 @@ async function acquireWorker(taskId: number) {
                             task.channel?.push({ value, done: msg.done as boolean });
 
                             if (msg.done) {
-                                // The final message of yield event is the return value.
+                                // The final message of yield event is the
+                                // return value.
                                 handleMessage({
                                     type: "return",
                                     value,
@@ -421,7 +426,8 @@ async function acquireWorker(taskId: number) {
 
                 if (isNode) {
                     (worker as NodeWorker).on("message", handleMessage)
-                        .on("error", handleClose); // In Node.js, worker will exit once erred.
+                        .on("error", handleClose); // In Node.js, worker will
+                                                   // exit once erred.
                 } else if (isBun) {
                     const _worker = worker as BunWorker;
 
@@ -512,9 +518,10 @@ export function wrapArgs<A extends any[]>(
                                 channelId,
                             } satisfies ChannelMessage);
                         } catch (err) {
-                            // Suppress error when sending `close` command to the channel in the
-                            // worker thread when the thread is terminated. This situation often
-                            // occurs when using `run()` to call function and the `result()` is
+                            // Suppress error when sending `close` command to
+                            // the channel in the worker thread when the thread
+                            // is terminated. This situation often occurs when
+                            // using `run()` to call function and the `result()`
                             // is called before `channel.close()`.
                             if (!(type === "close" &&
                                 String(err).includes("Worker has been terminated"))
@@ -531,7 +538,10 @@ export function wrapArgs<A extends any[]>(
                     }
                 });
             });
-        } else if ((arg instanceof Exception) || isDOMException(arg) || isAggregateError(arg)) {
+        } else if ((arg instanceof Exception)
+            || isDOMException(arg)
+            || isAggregateError(arg)
+        ) {
             return toObject(arg);
         }
 
@@ -784,42 +794,47 @@ function extractBaseUrl(stackTrace: string): string | undefined {
 /**
  * Wraps a module so its functions will be run in worker threads.
  * 
- * In Node.js and Bun, the `module` can be either an ES module or a CommonJS module,
- * **node_modules** and built-in modules are also supported.
+ * In Node.js and Bun, the `module` can be either an ES module or a CommonJS
+ * module, **node_modules** and built-in modules are also supported.
  * 
  * In browsers and Deno, the `module` can only be an ES module.
  * 
- * Data are cloned and transferred between threads via **Structured Clone Algorithm**.
+ * Data are cloned and transferred between threads via **Structured Clone**
+ * **Algorithm**.
  * 
- * Apart from the standard data types supported by the algorithm, {@link Channel} can also be
- * used to transfer data between threads. To do so, just passed a channel instance to the threaded
- * function. But be aware, channel can only be used as a parameter, return a channel from the
- * threaded function is not allowed. Once passed, the data can only be transferred into and
- * out-from the function.
+ * Apart from the standard data types supported by the algorithm, {@link Channel}
+ * can also be used to transfer data between threads. To do so, just passed a
+ * channel instance to the threaded function. But be aware, channel can only be
+ * used as a parameter, return a channel from the threaded function is not
+ * allowed. Once passed, the data can only be transferred into and out-from the
+ * function.
  * 
- * The difference between using a channel and a generator function for streaming processing is, for
- * a generator function, `next(value)` is coupled with a `yield value`, the process is blocked
- * between **next** calls, channel doesn't have this limit, we can use it to stream all the data
- * into the function before processing and receiving any result.
+ * The difference between using a channel and a generator function for streaming
+ * processing is, for a generator function, `next(value)` is coupled with a
+ * `yield value`, the process is blocked between **next** calls, channel doesn't
+ * have this limit, we can use it to stream all the data into the function
+ * before processing and receiving any result.
  * 
- * The threaded function also supports `ArrayBuffer`s as transferable objects. If an array buffer is
- * presented as an argument or the direct property of an argument (assume it's a plain object), or
- * the array buffer is the return value or the direct property of the return value (assume it's a
- * plain object), it automatically becomes a transferrable object and will be transferred to the
- * other thread instead of being cloned. This strategy allows us to easily compose objects like
- * `Request` and `Response` instances into plain objects and pass them between threads without
- * overhead.
+ * The threaded function also supports `ArrayBuffer`s as transferable objects.
+ * If an array buffer is presented as an argument or the direct property of an
+ * argument (assume it's a plain object), or the array buffer is the return
+ * value or the direct property of the return value (assume it's a plain object),
+ * it automatically becomes a transferrable object and will be transferred to
+ * the other thread instead of being cloned. This strategy allows us to easily
+ * compose objects like `Request` and `Response` instances into plain objects
+ * and pass them between threads without overhead.
  * 
- * NOTE: if the current module is already in a worker thread, use this function won't create another
- * worker thread.
+ * NOTE: if the current module is already in a worker thread, use this function
+ * won't create another worker thread.
  * 
- * NOTE: cloning and transferring data between the main thread and worker threads are very heavy
- * and slow, worker threads are only intended to run CPU-intensive tasks or divide tasks among
- * multiple threads, they have no advantage when performing IO-intensive tasks such as handling HTTP
- * requests, always prefer `cluster` module for that kind of purpose.
+ * NOTE: cloning and transferring data between the main thread and worker
+ * threads are very heavy and slow, worker threads are only intended to run
+ * CPU-intensive tasks or divide tasks among multiple threads, they have no
+ * advantage when performing IO-intensive tasks such as handling HTTP requests,
+ * always prefer `cluster` module for that kind of purpose.
  * 
- * NOTE: for error instances, only the following types are guaranteed to be sent and received properly
- * between threads.
+ * NOTE: for error instances, only the following types are guaranteed to be sent
+ * and received properly between threads.
  * 
  * - `Error`
  * - `EvalError`
@@ -828,12 +843,16 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * - `SyntaxError`
  * - `TypeError`
  * - `URIError`
- * - `AggregateError` (as arguments, return values, thrown values, or shallow object properties)
- * - `Exception` (as arguments, return values, thrown values, or shallow object properties)
- * - `DOMException` (as arguments, return values, thrown values, or shallow object properties)
+ * - `AggregateError` (as arguments, return values, thrown values, or shallow
+ *   object properties)
+ * - `Exception` (as arguments, return values, thrown values, or shallow object
+ *   properties)
+ * - `DOMException` (as arguments, return values, thrown values, or shallow
+ *   object properties)
  * 
- * In order to handle errors properly between threads, throw well-known error types or use
- * `Exception` (or `DOMException`) with error names in the threaded function.
+ * In order to handle errors properly between threads, throw well-known error
+ * types or use `Exception` (or `DOMException`) with error names in the threaded
+ * function.
  * 
  * @example
  * ```ts
@@ -895,8 +914,9 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * console.log(arr.length); // 0
  * ```
  * 
- * NOTE: if the application is to be bundled, use the following syntax to link the module instead,
- * it will prevent the bundler from including the file and rewriting the path.
+ * NOTE: if the application is to be bundled, use the following syntax to link
+ * the module instead, it will prevent the bundler from including the file and
+ * rewriting the path.
  * 
  * ```ts
  * const mod = parallel<typeof import("./examples/worker.mjs")>("./examples/worker.mjs");
@@ -949,21 +969,22 @@ function parallel<M extends { [x: string]: any; }>(
 
 namespace parallel {
     /**
-     * The maximum number of workers allowed to exist at the same time. If not set, the program
-     * by default uses CPU core numbers as the limit.
+     * The maximum number of workers allowed to exist at the same time. If not
+     * set, the program by default uses CPU core numbers as the limit.
      */
     export var maxWorkers: number | undefined = undefined;
 
     /**
-     * In browsers, by default, the program loads the worker entry directly from GitHub,
-     * which could be slow due to poor internet connection, we can copy the entry file
-     * `bundle/worker.mjs` to a local path of our website and set this option to that path
-     * so that it can be loaded locally.
+     * In browsers, by default, the program loads the worker entry directly from
+     * GitHub, which could be slow due to poor internet connection, we can copy
+     * the entry file `bundle/worker.mjs` to a local path of our website and set
+     * this option to that path so that it can be loaded locally.
      * 
-     * Or, if the code is bundled, the program won't be able to automatically locate the entry
-     * file in the file system, in such case, we can also copy the entry file
-     * (`bundle/worker.mjs` for Bun, Deno and the browser, `bundle/worker-node.mjs` for Node.js)
-     * to a local directory and supply this option instead.
+     * Or, if the code is bundled, the program won't be able to automatically
+     * locate the entry file in the file system, in such case, we can also copy
+     * the entry file (`bundle/worker.mjs` for Bun, Deno and the browser,
+     * `bundle/worker-node.mjs` for Node.js) to a local directory and supply
+     * this option instead.
      */
     export var workerEntry: string | undefined = undefined;
 }

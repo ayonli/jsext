@@ -1,7 +1,13 @@
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
-import { Exception, fromObject, isAggregateError, isDOMException, toObject } from "./error/index.ts";
-import { isPlainObject } from "./object/index.ts";
 import type { CallRequest, CallResponse } from "./parallel.ts";
+import { isPlainObject } from "./object/index.ts";
+import {
+    Exception,
+    fromObject,
+    isAggregateError,
+    isDOMException,
+    toObject,
+} from "./error/index.ts";
 import {
     isNode,
     resolveModule,
@@ -16,9 +22,10 @@ declare var Bun: any;
 const pendingTasks = new Map<number, AsyncGenerator | Generator>();
 
 /**
- * For some reason, in Node.js and Bun, when import expression throws an module/package not found
- * error, the error can not be serialized and sent to the other thread properly. We need to check
- * this situation and sent the error as plain object instead.
+ * For some reason, in Node.js and Bun, when import expression throws an
+ * module/package not found error, the error can not be serialized and sent to
+ * the other thread properly. We need to check this situation and sent the error
+ * as plain object instead.
  */
 function isModuleResolveError(value: any) {
     if (typeof value === "object" &&
@@ -137,8 +144,8 @@ export async function handleCallRequest(
             try {
                 return _reply(res);
             } catch {
-                // In case the error cannot be cloned directly, fallback to transferring it as
-                // an object and rebuild in the main thread.
+                // In case the error cannot be cloned directly, fallback to
+                // transferring it as an object and rebuild in the main thread.
                 return _reply({
                     ...res,
                     error: removeUnserializableProperties(toObject(res.error as Error)),

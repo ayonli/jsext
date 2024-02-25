@@ -30,13 +30,14 @@ export class Channel<T> implements AsyncIterable<T> {
      * 
      * If there is a receiver, the data will be consumed immediately. Otherwise:
      * 
-     * - If this is an non-buffered channel, this function will block until a receiver is
-     *  available and the data is consumed.
+     * - If this is an non-buffered channel, this function will block until a
+     *  receiver is available and the data is consumed.
      * 
      * - If this is a buffered channel, then:
-     *      - If the buffer size is within the capacity, the data will be pushed to the buffer.
-     *      - Otherwise, this function will block until there is new space for the data in the
-     *          buffer.
+     *      - If the buffer size is within the capacity, the data will be pushed
+     *        to the buffer.
+     *      - Otherwise, this function will block until there is new space for
+     *        the data in the buffer.
      */
     push(data: T): Promise<void> {
         if (this.state !== 1) {
@@ -67,12 +68,13 @@ export class Channel<T> implements AsyncIterable<T> {
     /**
      * Retrieves data from the channel.
      * 
-     * If there isn't data available at the moment, this function will block until new data is
-     * available.
+     * If there isn't data available at the moment, this function will block
+     * until new data is available.
      * 
      * If the channel is closed, then:
      * 
-     * - If there is error set in the channel, this function throws that error immediately.
+     * - If there is error set in the channel, this function throws that error
+     *   immediately.
      * - Otherwise, this function returns `undefined` immediately.
      */
     pop(): Promise<T | void> {
@@ -95,7 +97,8 @@ export class Channel<T> implements AsyncIterable<T> {
         } else if (this.state === 0) {
             return Promise.resolve(undefined);
         } else if (this.error) {
-            // Error can only be consumed once, after that, that closure will be complete.
+            // Error can only be consumed once, after that, that closure will
+            // be complete.
             const { error } = this;
             this.state = 0;
             this.error = null;
@@ -117,16 +120,19 @@ export class Channel<T> implements AsyncIterable<T> {
     }
 
     /**
-     * Closes the channel. If `err` is supplied, it will be captured by the receiver.
+     * Closes the channel. If `err` is supplied, it will be captured by the
+     * receiver.
      * 
      * No more data shall be sent once the channel is closed.
      * 
-     * Explicitly closing the channel is not required, if the channel is no longer used, it
-     * will be automatically released by the GC. However, if the channel is used in a
-     * `for await...of...` loop, closing the channel will allow the loop to break automatically.
+     * Explicitly closing the channel is not required, if the channel is no
+     * longer used, it will be automatically released by the GC. However, if
+     * the channel is used in a `for await...of...` loop, closing the channel
+     * will allow the loop to break automatically.
      * 
-     * Moreover, if the channel is used between parallel threads, it will no longer be able to
-     * release automatically, must explicitly call this function in order to release for GC.
+     * Moreover, if the channel is used between parallel threads, it will no
+     * longer be able to release automatically, must explicitly call this
+     * function in order to release for GC.
      */
     close(err: Error | null = null) {
         if (this.state !== 1) {
@@ -164,28 +170,31 @@ export class Channel<T> implements AsyncIterable<T> {
 }
 
 /**
- * Inspired by Golang, cerates a {@link Channel} that can be used to transfer data across routines.
+ * Inspired by Golang, cerates a {@link Channel} that can be used to transfer
+ * data across routines.
  * 
- * If `capacity` is not set, a non-buffered channel will be created. For a non-buffered channel,
- * the sender and receiver must be present at the same time (theoretically), otherwise, the
- * channel will block (non-IO aspect).
+ * If `capacity` is not set, a non-buffered channel will be created. For a
+ * non-buffered channel, the sender and receiver must be present at the same
+ * time (theoretically), otherwise, the channel will block (non-IO aspect).
  * 
- * If `capacity` is set, a buffered channel will be created. For a buffered channel, data will
- * be queued in the buffer first and then consumed by the receiver in FIFO order. Once the
- * buffer size reaches the capacity limit, no more data will be sent unless there is new space
- * available.
+ * If `capacity` is set, a buffered channel will be created. For a buffered
+ * channel, data will be queued in the buffer first and then consumed by the
+ * receiver in FIFO order. Once the buffer size reaches the capacity limit, no
+ * more data will be sent unless there is new space available.
  * 
- * It is possible to set the `capacity` to `Infinity` to allow the channel to never block and
- * behave like a message queue.
+ * It is possible to set the `capacity` to `Infinity` to allow the channel to
+ * never block and behave like a message queue.
  * 
- * Unlike `EventEmitter` or `EventTarget`, `Channel` guarantees the data will always be delivered,
- * even if there is no receiver at the moment.
+ * Unlike `EventEmitter` or `EventTarget`, `Channel` guarantees the data will
+ * always be delivered, even if there is no receiver at the moment.
  * 
- * Also, unlike Golang, `await channel.pop()` does not prevent the program from exiting.
+ * Also, unlike Golang, `await channel.pop()` does not prevent the program from
+ * exiting.
  * 
- * Channels can be used to send and receive streaming data between main thread and worker threads
- * wrapped by `parallel()`, but once used that way, `channel.close()` must be explicitly called
- * in order to release the channel for garbage collection.
+ * Channels can be used to send and receive streaming data between main thread
+ * and worker threads wrapped by `parallel()`, but once used that way,
+ * `channel.close()` must be explicitly called in order to release the channel
+ * for garbage collection.
  * 
  * @example
  * ```ts

@@ -2,8 +2,8 @@ import chan from "./chan.ts";
 import { isFunction } from "./try.ts";
 
 /**
- * Wraps a source as an AsyncIterable object that can be used in the `for await...of...` loop
- * for reading streaming data.
+ * Wraps a source as an AsyncIterable object that can be used in the
+ * `for await...of...` loop for reading streaming data.
  */
 export default function read<I extends AsyncIterable<any>>(iterable: I): I;
 /**
@@ -142,8 +142,9 @@ export default function read<T>(source: any, eventMap: {
                 cleanup?.();
             });
         } else if (!closeDesc?.set && isFunction(source["close"])) { // EventSource
-            // EventSource by default does not trigger close event, we need to make sure when
-            // it calls the close() function, the iterator is automatically closed.
+            // EventSource by default does not trigger close event, we need to
+            // make sure when it calls the close() function, the iterator is
+            // automatically closed.
             const es = source as EventSource;
             const _close = es.close;
             es.close = function close() {

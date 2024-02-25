@@ -2,12 +2,12 @@
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
 import { ThenableAsyncGenerator } from "./external/thenable-generator/index.ts";
 
-// The following declarations shall be order from complex to simple, otherwise TypeScript won't work
-// well.
+// The following declarations shall be order from complex to simple, otherwise
+// TypeScript won't work well.
 
 /**
- * Invokes an async generator function and renders its yield value and result in an `[err, val]`
- * tuple.
+ * Invokes an async generator function and renders its yield value and result in
+ * an `[err, val]` tuple.
  * 
  * @example
  * ```ts
@@ -31,7 +31,8 @@ export default function _try<E = unknown, T = any, A extends any[] = any[], TRet
     ...args: A
 ): AsyncGenerator<[E, T], [E, TReturn], TNext>;
 /**
- * Invokes a generator function and renders its yield value and result in an `[err, val]` tuple.
+ * Invokes a generator function and renders its yield value and result in an
+ * `[err, val]` tuple.
  * 
  * @example
  * ```ts
@@ -92,7 +93,8 @@ export default function _try<E = unknown, R = any, A extends any[] = any[]>(
     ...args: A
 ): [E, R];
 /**
- * Resolves an async generator and renders its yield value and result in an `[err, val]` tuple.
+ * Resolves an async generator and renders its yield value and result in an
+ * `[err, val]` tuple.
  * 
  * @example
  * ```ts
@@ -115,7 +117,8 @@ export default function _try<E = unknown, T = any, TReturn = any, TNext = unknow
     gen: AsyncGenerator<T, TReturn, TNext>
 ): AsyncGenerator<[E, T], [E, TReturn], TNext>;
 /**
- * Resolves a generator and renders its yield value and result in an `[err, val]` tuple.
+ * Resolves a generator and renders its yield value and result in an `[err, val]`
+ * tuple.
  * 
  * @example
  * ```ts
@@ -166,8 +169,10 @@ export default function _try(fn: any, ...args: any[]) {
 
     if (returns instanceof ThenableAsyncGenerator) {
         // special case
-        returns = (returns as PromiseLike<any>).then((value: any) => [null, value]);
-        return Promise.resolve(returns).catch((err: unknown) => [err, undefined]) as any;
+        returns = (returns as PromiseLike<any>)
+            .then((value: any) => [null, value]);
+        return Promise.resolve(returns)
+            .catch((err: unknown) => [err, undefined]) as any;
     } else if (isAsyncGenerator(returns)) {
         // @ts-ignore
         return (async function* () {
@@ -224,8 +229,10 @@ export default function _try(fn: any, ...args: any[]) {
             return [null, result];
         })() as Generator<unknown, any, unknown>;
     } else if (isFunction(returns?.then)) {
-        returns = (returns as PromiseLike<any>).then((value: any) => [null, value]);
-        return Promise.resolve(returns).catch((err: unknown) => [err, undefined]) as any;
+        returns = (returns as PromiseLike<any>)
+            .then((value: any) => [null, value]);
+        return Promise.resolve(returns)
+            .catch((err: unknown) => [err, undefined]) as any;
     } else {
         return [null, returns];
     }

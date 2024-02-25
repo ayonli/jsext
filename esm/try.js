@@ -15,8 +15,10 @@ function _try(fn, ...args) {
     // Implementation details should be ordered from complex to simple.
     if (returns instanceof ThenableAsyncGenerator) {
         // special case
-        returns = returns.then((value) => [null, value]);
-        return Promise.resolve(returns).catch((err) => [err, undefined]);
+        returns = returns
+            .then((value) => [null, value]);
+        return Promise.resolve(returns)
+            .catch((err) => [err, undefined]);
     }
     else if (isAsyncGenerator(returns)) {
         // @ts-ignore
@@ -74,8 +76,10 @@ function _try(fn, ...args) {
         })();
     }
     else if (isFunction(returns === null || returns === void 0 ? void 0 : returns.then)) {
-        returns = returns.then((value) => [null, value]);
-        return Promise.resolve(returns).catch((err) => [err, undefined]);
+        returns = returns
+            .then((value) => [null, value]);
+        return Promise.resolve(returns)
+            .catch((err) => [err, undefined]);
     }
     else {
         return [null, returns];

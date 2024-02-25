@@ -6,21 +6,23 @@ import parallel, { getMaxParallelism, sanitizeModuleId, createWorker, wrapArgs, 
 
 const workerPools = new Map();
 let gcTimer;
-// The worker consumer queue is nothing but a callback list, once a worker is available, the runner
-// pop a consumer and run the callback, which will retry gaining the worker and retry the task.
+// The worker consumer queue is nothing but a callback list, once a worker is
+// available, the runner pop a consumer and run the callback, which will retry
+// gaining the worker and retry the task.
 const workerConsumerQueue = [];
 /**
  * Runs the given `script` in a worker thread and abort the task at any time.
  *
- * This function is similar to {@link parallel}(), many features applicable to `parallel()` are
- * also applicable to `run()`, except the following:
+ * This function is similar to {@link parallel}(), many features applicable to
+ * `parallel()` are also applicable to `run()`, except the following:
  *
- * 1. The `script` can only be a filename, and is relative to the current working directory
- *     (or the current URL) if not absolute.
- * 2. Only one task is allow to run at a time for one worker thread, set {@link run.maxWorkers} to
- *     allow more tasks to be run at the same time if needed.
- * 3. By default, the worker thread is dropped after the task settles, set `keepAlive` option
- *     in order to reused it.
+ * 1. The `script` can only be a filename, and is relative to the current
+ *   working directory (or the current URL) if not absolute.
+ * 2. Only one task is allow to run at a time for one worker thread, set
+ *   {@link run.maxWorkers} to allow more tasks to be run at the same time if
+ *   needed.
+ * 3. By default, the worker thread is dropped after the task settles, set
+ *   `keepAlive` option in order to reused it.
  *
  * @example
  * ```ts
@@ -36,9 +38,11 @@ const workerConsumerQueue = [];
  * // iterate
  * import run from "@ayonli/jsext/run";
  *
- * const job2 = await run<string, [string[]]>("examples/worker.mjs", [["foo", "bar"]], {
- *     fn: "sequence",
- * });
+ * const job2 = await run<string, [string[]]>(
+ *     "examples/worker.mjs",
+ *     [["foo", "bar"]],
+ *     { fn: "sequence" }
+ * );
  * for await (const word of job2.iterate()) {
  *     console.log(word);
  * }
@@ -97,10 +101,10 @@ async function run(script, args, options) {
         poolRecord.lastAccess = Date.now();
     }
     else if (workerPool.length < maxWorkers) {
-        // Fill the worker pool regardless the current call should keep-alive or not,
-        // this will make sure that the total number of workers will not exceed the
-        // `run.maxWorkers`. If the the call doesn't keep-alive the worker, it will be
-        // cleaned after the call.
+        // Fill the worker pool regardless the current call should keep-alive
+        // or not, this will make sure that the total number of workers will not
+        // exceed the `run.maxWorkers`. If the the call doesn't keep-alive the
+        // worker, it will be cleaned after the call.
         workerPool.push(poolRecord = {
             getWorker: createWorker({ adapter }),
             adapter,
@@ -124,7 +128,8 @@ async function run(script, args, options) {
                     idealItems.forEach(async (item) => {
                         const { worker } = await item.getWorker;
                         if (typeof worker["terminate"] === "function") {
-                            await worker.terminate();
+                            await worker
+                                .terminate();
                         }
                         else {
                             worker.kill();
@@ -141,9 +146,9 @@ async function run(script, args, options) {
         }
     }
     else {
-        // Put the current call in the consumer queue if there are no workers available,
-        // once an existing call finishes, the queue will pop the its head consumer and
-        // retry.
+        // Put the current call in the consumer queue if there are no workers
+        // available, once an existing call finishes, the queue will pop the its
+        // head consumer and retry.
         return new Promise((resolve) => {
             workerConsumerQueue.push(resolve);
         }).then(() => run(modId, args, options));
@@ -198,7 +203,10 @@ async function run(script, args, options) {
                 const value = unwrapReturnValue(msg.value);
                 if (msg.done) {
                     // The final message of yield event is the return value.
-                    handleMessage({ type: "return", value });
+                    handleMessage({
+                        type: "return",
+                        value,
+                    });
                 }
                 else {
                     channel === null || channel === void 0 ? void 0 : channel.push(value);
@@ -219,8 +227,8 @@ async function run(script, args, options) {
         }
         else if (poolRecord) {
             // Clean the pool before resolve.
-            // The `workerPool` of this key in the pool map may have been modified by other
-            // routines, we need to retrieve the newest value.
+            // The `workerPool` of this key in the pool map may have been
+            // modified by other routines, we need to retrieve the newest value.
             const remainItems = (_b = workerPools.get(adapter)) === null || _b === void 0 ? void 0 : _b.filter(record => record !== poolRecord);
             if (remainItems === null || remainItems === void 0 ? void 0 : remainItems.length) {
                 workerPools.set(adapter, remainItems);
@@ -273,7 +281,9 @@ async function run(script, args, options) {
             }
             else {
                 await new Promise((resolve, reject) => {
-                    worker.send(req, err => err ? reject(err) : resolve());
+                    worker.send(req, err => {
+                        err ? reject(err) : resolve();
+                    });
                 });
             }
         }
@@ -300,15 +310,18 @@ async function run(script, args, options) {
                 }
             });
             release = () => {
-                worker.unref(); // allow the main thread to exit if the event loop is empty
-                // Remove the event listener so that later calls will not mess up.
+                // allow the main thread to exit if the event loop is empty
+                worker.unref();
+                // Remove the event listener so that later calls will not mess
+                // up.
                 worker.off("message", handleMessage);
                 worker.removeAllListeners("exit");
                 poolRecord && (poolRecord.busy = false);
             };
             terminate = () => Promise.resolve(void worker.kill(1));
             if (error) {
-                // The worker take too long to start and timeout error already thrown.
+                // The worker take too long to start and timeout error already
+                // thrown.
                 await terminate();
                 throw error;
             }
@@ -321,7 +334,8 @@ async function run(script, args, options) {
             const worker = record.worker;
             const handleErrorEvent = (err) => {
                 if (!error && !result) {
-                    handleClose(err, true); // In Node.js, worker will exit once erred.
+                    // In Node.js, worker will exit once erred.
+                    handleClose(err, true);
                 }
             };
             workerId = record.workerId;
@@ -339,7 +353,7 @@ async function run(script, args, options) {
                 await terminate();
                 throw error;
             }
-            const { args, transferable } = wrapArgs(req.args, Promise.resolve(worker));
+            const { args, transferable, } = wrapArgs(req.args, Promise.resolve(worker));
             req.args = args;
             await safeRemoteCall(worker, req, transferable);
         }
@@ -368,7 +382,7 @@ async function run(script, args, options) {
                 await terminate();
                 throw error;
             }
-            const { args, transferable } = wrapArgs(req.args, Promise.resolve(worker));
+            const { args, transferable, } = wrapArgs(req.args, Promise.resolve(worker));
             req.args = args;
             await safeRemoteCall(worker, req, transferable);
         }
@@ -395,7 +409,7 @@ async function run(script, args, options) {
             await terminate();
             throw error;
         }
-        const { args, transferable } = wrapArgs(req.args, Promise.resolve(worker));
+        const { args, transferable, } = wrapArgs(req.args, Promise.resolve(worker));
         req.args = args;
         await safeRemoteCall(worker, req, transferable);
     }
@@ -441,8 +455,8 @@ async function run(script, args, options) {
 }
 (function (run) {
     /**
-     * The maximum number of workers allowed to exist at the same time. If not set, use the same
-     * setting as {@link parallel.maxWorkers}.
+     * The maximum number of workers allowed to exist at the same time.
+     * If not set, use the same setting as {@link parallel.maxWorkers}.
      */
     run.maxWorkers = undefined;
 })(run || (run = {}));

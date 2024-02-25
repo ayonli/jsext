@@ -14,7 +14,8 @@ if (isNode) {
             }
         });
     } else if (process.send) {
-        process.send("ready"); // notify the parent process that the worker is ready;
+        // notify the parent process that the worker is ready;
+        process.send("ready");
         process.on("message", async (msg) => {
             if (isCallRequest(msg)) {
                 await handleCallRequest(msg, (res, _ = []) => {

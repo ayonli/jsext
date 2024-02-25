@@ -3,7 +3,14 @@ import type { ChildProcess } from "node:child_process";
 import chan, { Channel } from "./chan.ts";
 import { isPlainObject } from "./object/index.ts";
 import { fromErrorEvent, fromObject } from "./error/index.ts";
-import { handleChannelMessage, isChannelMessage, isNode, isBun, isDeno, IsPath } from "./util.ts";
+import {
+    handleChannelMessage,
+    isChannelMessage,
+    isNode,
+    isBun,
+    isDeno,
+    IsPath,
+} from "./util.ts";
 import parallel, {
     BunWorker,
     getMaxParallelism,
@@ -13,7 +20,7 @@ import parallel, {
     CallResponse,
     isCallResponse,
     wrapArgs,
-    unwrapReturnValue
+    unwrapReturnValue,
 } from "./parallel.ts";
 
 declare var Deno: any;
@@ -30,22 +37,24 @@ type PoolRecord = {
 const workerPools = new Map<string, PoolRecord[]>();
 let gcTimer: number | NodeJS.Timeout;
 
-// The worker consumer queue is nothing but a callback list, once a worker is available, the runner
-// pop a consumer and run the callback, which will retry gaining the worker and retry the task.
+// The worker consumer queue is nothing but a callback list, once a worker is
+// available, the runner pop a consumer and run the callback, which will retry
+// gaining the worker and retry the task.
 const workerConsumerQueue: (() => void)[] = [];
 
 /**
  * Runs the given `script` in a worker thread and abort the task at any time.
  * 
- * This function is similar to {@link parallel}(), many features applicable to `parallel()` are
- * also applicable to `run()`, except the following:
+ * This function is similar to {@link parallel}(), many features applicable to
+ * `parallel()` are also applicable to `run()`, except the following:
  * 
- * 1. The `script` can only be a filename, and is relative to the current working directory
- *     (or the current URL) if not absolute.
- * 2. Only one task is allow to run at a time for one worker thread, set {@link run.maxWorkers} to
- *     allow more tasks to be run at the same time if needed.
- * 3. By default, the worker thread is dropped after the task settles, set `keepAlive` option
- *     in order to reused it.
+ * 1. The `script` can only be a filename, and is relative to the current
+ *   working directory (or the current URL) if not absolute.
+ * 2. Only one task is allow to run at a time for one worker thread, set
+ *   {@link run.maxWorkers} to allow more tasks to be run at the same time if
+ *   needed.
+ * 3. By default, the worker thread is dropped after the task settles, set
+ *   `keepAlive` option in order to reused it.
  * 
  * @example
  * ```ts
@@ -61,9 +70,11 @@ const workerConsumerQueue: (() => void)[] = [];
  * // iterate
  * import run from "@ayonli/jsext/run";
  * 
- * const job2 = await run<string, [string[]]>("examples/worker.mjs", [["foo", "bar"]], {
- *     fn: "sequence",
- * });
+ * const job2 = await run<string, [string[]]>(
+ *     "examples/worker.mjs",
+ *     [["foo", "bar"]],
+ *     { fn: "sequence" }
+ * );
  * for await (const word of job2.iterate()) {
  *     console.log(word);
  * }
@@ -87,32 +98,32 @@ const workerConsumerQueue: (() => void)[] = [];
  * console.assert(res === undefined);
  * ```
  */
-async function run<R, A extends any[] = any[]>(
-    script: string,
-    args?: A,
-    options?: {
-        /** If not set, invoke the default function, otherwise invoke the specified function. */
-        fn?: string;
-        /** Automatically abort the task when timeout (in milliseconds). */
-        timeout?: number;
-        /**
-         * Instead of dropping the worker after the task has completed, keep it alive so that it can
-         * be reused by other tasks.
-         */
-        keepAlive?: boolean;
-        /**
-         * Choose whether to use `worker_threads` or `child_process` for running the script.
-         * The default setting is `worker_threads`.
-         * 
-         * In browsers and Deno, this option is ignored and will always use the web worker.
-         * 
-         * @deprecated Always prefer `worker_threads` over `child_process` since it consumes
-         * less system resources. `child_process` support may be removed in the future once
-         * considered thoroughly.
-         */
-        adapter?: "worker_threads" | "child_process";
-    }
-): Promise<{
+async function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
+    /**
+     * If not set, invoke the default function, otherwise invoke the specified
+     * function.
+     */
+    fn?: string;
+    /** Automatically abort the task when timeout (in milliseconds). */
+    timeout?: number;
+    /**
+     * Instead of dropping the worker after the task has completed, keep it
+     * alive so that it can be reused by other tasks.
+     */
+    keepAlive?: boolean;
+    /**
+     * Choose whether to use `worker_threads` or `child_process` for running
+     * the script. The default setting is `worker_threads`.
+     * 
+     * In browsers and Deno, this option is ignored and will always use the web
+     * worker.
+     * 
+     * @deprecated Always prefer `worker_threads` over `child_process` since it
+     * consumes less system resources. `child_process` support may be removed
+     * in the future once considered thoroughly.
+     */
+    adapter?: "worker_threads" | "child_process";
+}): Promise<{
     workerId: number;
     /** Retrieves the return value of the function being called. */
     result(): Promise<R>;
@@ -156,10 +167,10 @@ async function run<R, A extends any[] = any[]>(
         poolRecord.busy = true;
         poolRecord.lastAccess = Date.now();
     } else if (workerPool.length < maxWorkers) {
-        // Fill the worker pool regardless the current call should keep-alive or not,
-        // this will make sure that the total number of workers will not exceed the
-        // `run.maxWorkers`. If the the call doesn't keep-alive the worker, it will be
-        // cleaned after the call.
+        // Fill the worker pool regardless the current call should keep-alive
+        // or not, this will make sure that the total number of workers will not
+        // exceed the `run.maxWorkers`. If the the call doesn't keep-alive the
+        // worker, it will be cleaned after the call.
         workerPool.push(poolRecord = {
             getWorker: createWorker({ adapter }),
             adapter,
@@ -189,7 +200,8 @@ async function run<R, A extends any[] = any[]>(
                         const { worker } = await item.getWorker;
 
                         if (typeof (worker as any)["terminate"] === "function") {
-                            await (worker as Worker | BunWorker | NodeWorker).terminate();
+                            await (worker as Worker | BunWorker | NodeWorker)
+                                .terminate();
                         } else {
                             (worker as ChildProcess).kill();
                         }
@@ -204,9 +216,9 @@ async function run<R, A extends any[] = any[]>(
             }
         }
     } else {
-        // Put the current call in the consumer queue if there are no workers available,
-        // once an existing call finishes, the queue will pop the its head consumer and
-        // retry.
+        // Put the current call in the consumer queue if there are no workers
+        // available, once an existing call finishes, the queue will pop the its
+        // head consumer and retry.
         return new Promise<void>((resolve) => {
             workerConsumerQueue.push(resolve);
         }).then(() => run(modId, args, options));
@@ -269,7 +281,10 @@ async function run<R, A extends any[] = any[]>(
 
                 if (msg.done) {
                     // The final message of yield event is the return value.
-                    handleMessage({ type: "return", value } satisfies CallResponse);
+                    handleMessage({
+                        type: "return",
+                        value,
+                    } satisfies CallResponse);
                 } else {
                     channel?.push(value);
                 }
@@ -290,9 +305,10 @@ async function run<R, A extends any[] = any[]>(
             }
         } else if (poolRecord) {
             // Clean the pool before resolve.
-            // The `workerPool` of this key in the pool map may have been modified by other
-            // routines, we need to retrieve the newest value.
-            const remainItems = workerPools.get(adapter)?.filter(record => record !== poolRecord);
+            // The `workerPool` of this key in the pool map may have been
+            // modified by other routines, we need to retrieve the newest value.
+            const remainItems = workerPools.get(adapter)
+                ?.filter(record => record !== poolRecord);
 
             if (remainItems?.length) {
                 workerPools.set(adapter, remainItems);
@@ -350,7 +366,9 @@ async function run<R, A extends any[] = any[]>(
                 (worker as Worker).postMessage(req, transferable);
             } else {
                 await new Promise<void>((resolve, reject) => {
-                    (worker as ChildProcess).send(req, err => err ? reject(err) : resolve());
+                    (worker as ChildProcess).send(req, err => {
+                        err ? reject(err) : resolve();
+                    });
                 });
             }
         } catch (err) {
@@ -376,14 +394,19 @@ async function run<R, A extends any[] = any[]>(
             worker.on("message", handleMessage);
             worker.once("exit", (code, signal) => {
                 if (!error && !result) {
-                    handleClose(new Error(`worker exited (${code ?? signal})`), true);
+                    handleClose(
+                        new Error(`worker exited (${code ?? signal})`),
+                        true
+                    );
                 }
             });
 
             release = () => {
-                worker.unref(); // allow the main thread to exit if the event loop is empty
+                // allow the main thread to exit if the event loop is empty
+                worker.unref();
 
-                // Remove the event listener so that later calls will not mess up.
+                // Remove the event listener so that later calls will not mess
+                // up.
                 worker.off("message", handleMessage);
                 worker.removeAllListeners("exit");
                 poolRecord && (poolRecord.busy = false);
@@ -391,7 +414,8 @@ async function run<R, A extends any[] = any[]>(
             terminate = () => Promise.resolve(void worker.kill(1));
 
             if (error) {
-                // The worker take too long to start and timeout error already thrown.
+                // The worker take too long to start and timeout error already
+                // thrown.
                 await terminate();
                 throw error;
             }
@@ -404,7 +428,8 @@ async function run<R, A extends any[] = any[]>(
             const worker = record.worker as NodeWorker;
             const handleErrorEvent = (err: Error) => {
                 if (!error && !result) {
-                    handleClose(err, true); // In Node.js, worker will exit once erred.
+                    // In Node.js, worker will exit once erred.
+                    handleClose(err, true);
                 }
             };
 
@@ -426,7 +451,10 @@ async function run<R, A extends any[] = any[]>(
                 throw error;
             }
 
-            const { args, transferable } = wrapArgs(req.args, Promise.resolve(worker));
+            const {
+                args,
+                transferable,
+            } = wrapArgs(req.args, Promise.resolve(worker));
             req.args = args;
             await safeRemoteCall(worker, req, transferable);
         } else { // isBun
@@ -434,7 +462,10 @@ async function run<R, A extends any[] = any[]>(
             const worker = record.worker as BunWorker;
             const handleCloseEvent = ((ev: CloseEvent) => {
                 if (!error && !result) {
-                    handleClose(new Error(ev.reason + " (" + ev.code + ")"), true);
+                    handleClose(
+                        new Error(ev.reason + " (" + ev.code + ")"),
+                        true
+                    );
                 }
             }) as EventListener;
 
@@ -458,7 +489,10 @@ async function run<R, A extends any[] = any[]>(
                 throw error;
             }
 
-            const { args, transferable } = wrapArgs(req.args, Promise.resolve(worker));
+            const {
+                args,
+                transferable,
+            } = wrapArgs(req.args, Promise.resolve(worker));
             req.args = args;
             await safeRemoteCall(worker, req, transferable);
         }
@@ -471,7 +505,10 @@ async function run<R, A extends any[] = any[]>(
         worker.onerror = (ev) => {
             if (!error && !result) {
                 worker.terminate(); // ensure termination
-                handleClose(fromErrorEvent(ev) ?? new Error("worker exited"), true);
+                handleClose(
+                    fromErrorEvent(ev) ?? new Error("worker exited"),
+                    true
+                );
             }
         };
 
@@ -487,7 +524,10 @@ async function run<R, A extends any[] = any[]>(
             throw error;
         }
 
-        const { args, transferable } = wrapArgs(req.args, Promise.resolve(worker));
+        const {
+            args,
+            transferable,
+        } = wrapArgs(req.args, Promise.resolve(worker));
         req.args = args;
         await safeRemoteCall(worker, req, transferable);
     }
@@ -535,8 +575,8 @@ async function run<R, A extends any[] = any[]>(
 
 namespace run {
     /**
-     * The maximum number of workers allowed to exist at the same time. If not set, use the same
-     * setting as {@link parallel.maxWorkers}.
+     * The maximum number of workers allowed to exist at the same time.
+     * If not set, use the same setting as {@link parallel.maxWorkers}.
      */
     export var maxWorkers: number | undefined = undefined;
     /** @deprecated set {@link parallel.workerEntry} instead */

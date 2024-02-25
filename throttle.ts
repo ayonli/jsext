@@ -7,10 +7,12 @@ type Throttle = {
 const Cache = new Map<any, Throttle>();
 
 /**
- * Creates a throttled function that will only be run once in a certain amount of time.
+ * Creates a throttled function that will only be run once in a certain amount
+ * of time.
  * 
- * If a subsequent call happens within the `duration` (in milliseconds), the previous result will
- * be returned and the `handler` function will not be invoked.
+ * If a subsequent call happens within the `duration` (in milliseconds), the
+ * previous result will be returned and the `handler` function will not be
+ * invoked.
  * 
  * @example
  * ```ts
@@ -35,33 +37,47 @@ export default function throttle<I, Fn extends (this: I, ...args: any[]) => any>
  * import throttle from "@ayonli/jsext/throttle";
  * import { sleep } from "@ayonli/jsext/promise";
  * 
- * const out1 = await throttle(() => Promise.resolve("foo"), { duration: 1_000, for: "example" })();
+ * const out1 = await throttle(() => Promise.resolve("foo"), {
+ *     duration: 1_000,
+ *     for: "example",
+ * })();
  * console.log(out1); // foo
  * 
- * const out2 = await throttle(() => Promise.resolve("bar"), { duration: 1_000, for: "example" })();
+ * const out2 = await throttle(() => Promise.resolve("bar"), {
+ *     duration: 1_000,
+ *     for: "example",
+ * })();
  * console.log(out2); // foo
  * 
  * await sleep(1_000);
- * const out3 = await throttle(() => Promise.resolve("bar"), { duration: 1_000, for: "example" })();
+ * const out3 = await throttle(() => Promise.resolve("bar"), {
+ *     duration: 1_000,
+ *     for: "example",
+ * })();
  * console.log(out3); // bar
  * ```
  */
-export default function throttle<I, Fn extends (this: I, ...args: any[]) => any>(handler: Fn, options: {
-    duration: number;
-    /**
-     * Use the throttle strategy `for` the given key, this will keep the result in a global
-     * cache, binding new `handler` function for the same key will result in the same result
-     * as the previous, unless the duration has passed. This mechanism guarantees that both
-     * creating the throttled function in function scopes and overwriting the handler are
-     * possible.
-     */
-    for?: any;
-    /**
-     * When turned on, respond with the last cache (if available) immediately, even if it has
-     * expired, and update the cache in the background.
-     */
-    noWait?: boolean;
-}): Fn;
+export default function throttle<I, Fn extends (this: I, ...args: any[]) => any>(
+    handler: Fn,
+    options: {
+        duration: number;
+        /**
+         * Use the throttle strategy `for` the given key, this will keep the
+         * result in a global cache, binding new `handler` function for the same
+         * key will result in the same result as the previous, unless the
+         * duration has passed. This mechanism guarantees that both creating the
+         * throttled function in function scopes and overwriting the handler are
+         * possible.
+         */
+        for?: any;
+        /**
+         * When turned on, respond with the last cache (if available)
+         * immediately, even if it has expired, and update the cache in the
+         * background.
+         */
+        noWait?: boolean;
+    }
+): Fn;
 export default function throttle(handler: (this: any, ...args: any[]) => any, options: number | {
     duration: number;
     for?: any;

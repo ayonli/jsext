@@ -1,6 +1,6 @@
 /**
- * Wraps a function inside another function and returns a new function that copies the original
- * function's name and other properties.
+ * Wraps a function inside another function and returns a new function that
+ * copies the original function's name and other properties.
  * 
  * @example
  * ```ts
