@@ -330,8 +330,7 @@ async function acquireWorker(taskId) {
                 };
                 if (isNode) {
                     worker.on("message", handleMessage)
-                        .on("error", handleClose); // In Node.js, worker will
-                    // exit once erred.
+                        .on("error", handleClose); // In Node.js, worker will exit once erred.
                 }
                 else if (isBun) {
                     const _worker = worker;
@@ -608,7 +607,11 @@ function createLocalCall(module, fn, args) {
 }
 function extractBaseUrl(stackTrace) {
     var _a, _b, _c;
-    const lines = stackTrace.split("\n");
+    let lines = stackTrace.split("\n");
+    const offset = lines.findIndex(line => line === "Error");
+    if (offset !== -1) {
+        lines = lines.slice(offset); // fix for tsx in Node.js v16
+    }
     let callSite;
     if ((_a = lines[0]) === null || _a === void 0 ? void 0 : _a.startsWith("Error")) { // chromium browsers
         callSite = lines[2];

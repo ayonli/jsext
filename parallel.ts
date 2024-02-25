@@ -18,7 +18,6 @@ import {
     isDeno,
     isBeforeNode14,
     isNode,
-    isTsx,
     IsPath,
     isMainThread,
     resolveModule,
@@ -109,10 +108,10 @@ export function sanitizeModuleId(id: string | (() => Promise<any>), strict = fal
         _id = id;
     }
 
-    if ((isNode || isBun || isTsx) && IsPath.test(_id)) {
+    if ((isNode || isBun) && IsPath.test(_id)) {
         if (!/\.[cm]?(js|ts|)x?$/.test(_id)) { // if omitted suffix, add suffix
             _id += isBun ? ".ts" : ".js";
-        } else if (isNode && !isTsx) { // replace .ts/.mts/.cts to .js/.mjs/.cjs in Node.js
+        } else if (isNode) { // replace .ts/.mts/.cts to .js/.mjs/.cjs in Node.js
             if (_id.endsWith(".ts")) {
                 _id = _id.slice(0, -3) + ".js";
             } else if (_id.endsWith(".mts")) {

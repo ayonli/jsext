@@ -20,9 +20,19 @@ function deprecate(target, ...args) {
 function emitWarning(target, forFn, tip, once, lineNum) {
     var _a;
     if (!once || !warnedRecord.has(forFn)) {
-        const capture = {};
-        Error.captureStackTrace(capture, forFn);
-        let line = (_a = capture.stack.split("\n")[lineNum]) === null || _a === void 0 ? void 0 : _a.trim();
+        let trace = {};
+        if (typeof Error.captureStackTrace === "function") {
+            Error.captureStackTrace(trace, forFn);
+        }
+        else {
+            trace = new Error("");
+        }
+        let lines = trace.stack.split("\n");
+        const offset = lines.findIndex(line => line === "Error");
+        if (offset !== -1) {
+            lines = lines.slice(offset); // fix for tsx in Node.js v16
+        }
+        let line = (_a = lines[lineNum]) === null || _a === void 0 ? void 0 : _a.trim();
         let warning = `${target} is deprecated`;
         if (tip) {
             warning += ", " + tip;
