@@ -4,7 +4,10 @@ if (typeof Symbol.dispose === "undefined") {
     Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });
 }
 
+const _queue = Symbol.for("queue");
 const _value = Symbol.for("value");
+const _mutex = Symbol.for("mutex");
+const _unlocked = Symbol.for("unlocked");
 
 /**
  * Mutual Exclusion prevents multiple coroutines from accessing the same shared
@@ -52,7 +55,7 @@ const _value = Symbol.for("value");
  * ```
  */
 export class Mutex<T> {
-    private queue: (() => void)[] = [];
+    private [_queue]: (() => void)[] = [];
     private [_value]: T;
 
     /**
@@ -68,43 +71,58 @@ export class Mutex<T> {
      */
     async lock() {
         await new Promise<void>(resolve => {
-            if (this.queue.length) {
-                this.queue.push(resolve);
+            if (this[_queue].length) {
+                this[_queue].push(resolve);
             } else {
-                this.queue.push(resolve);
+                this[_queue].push(resolve);
                 resolve();
             }
         });
 
         const lock = Object.create(Mutex.Lock.prototype) as Mutex.Lock<T>;
-        lock["mutex"] = this;
+        lock[_mutex] = this;
         return lock;
     }
 }
 
 export namespace Mutex {
     export abstract class Lock<T> {
-        constructor(private mutex: Mutex<T>) { }
+        private [_mutex]: Mutex<T>;
+        private [_unlocked] = false;
+
+        constructor(mutex: Mutex<T>) {
+            this[_mutex] = mutex;
+        }
 
         /** Accesses the data associated to the mutex instance. */
         get value() {
-            return this.mutex[_value];
+            if (this[_unlocked]) {
+                throw new ReferenceError("trying to access data after unlocked");
+            }
+
+            return this[_mutex][_value];
         }
 
         set value(v) {
-            this.mutex[_value] = v;
+            if (this[_unlocked]) {
+                throw new ReferenceError("trying to access data after unlocked");
+            }
+
+            this[_mutex][_value] = v;
         }
 
         /** Releases the current lock of the mutex. */
-        async unlock() {
-            const queue = this.mutex["queue"];
+        unlock() {
+            this[_unlocked] = true;
+
+            const queue = this[_mutex][_queue];
             queue.shift();
             const next = queue[0];
 
             if (next) {
                 next();
-            } else if (registry.hasValue(this.mutex as any)) {
-                registry.deleteValue(this.mutex as any);
+            } else if (registry.hasValue(this[_mutex] as any)) {
+                registry.deleteValue(this[_mutex] as any);
             }
         }
 

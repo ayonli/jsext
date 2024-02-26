@@ -1,6 +1,6 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { sleep } from "./promise/index.ts";
-import jsext, { Mutex } from "./index.ts";
+import jsext, { Mutex, _try } from "./index.ts";
 
 describe("jsext.lock", () => {
     it("lock", async () => {
@@ -56,5 +56,17 @@ describe("jsext.lock", () => {
         ]);
 
         strictEqual(value, 3);
+    });
+
+    it("access after unlocked", async () => {
+        const mutex = new Mutex(1);
+        const lock = await mutex.lock();
+        lock.unlock();
+
+        const [err1] = _try(() => lock.value);
+        deepStrictEqual(err1, new ReferenceError("trying to access data after unlocked"));
+
+        const [err2] = _try(() => { lock.value = 2; });
+        deepStrictEqual(err2, new ReferenceError("trying to access data after unlocked"));
     });
 });

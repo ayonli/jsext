@@ -1,9 +1,13 @@
 import BiMap from './collections/BiMap.js';
 
+var _a;
 if (typeof Symbol.dispose === "undefined") {
     Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });
 }
+const _queue = Symbol.for("queue");
 const _value = Symbol.for("value");
+const _mutex = Symbol.for("mutex");
+const _unlocked = Symbol.for("unlocked");
 /**
  * Mutual Exclusion prevents multiple coroutines from accessing the same shared
  * resource simultaneously.
@@ -54,7 +58,7 @@ class Mutex {
      * @param value The data associated to the mutex instance.
      */
     constructor(value) {
-        this.queue = [];
+        this[_a] = [];
         this[_value] = value;
     }
     /**
@@ -63,44 +67,54 @@ class Mutex {
      */
     async lock() {
         await new Promise(resolve => {
-            if (this.queue.length) {
-                this.queue.push(resolve);
+            if (this[_queue].length) {
+                this[_queue].push(resolve);
             }
             else {
-                this.queue.push(resolve);
+                this[_queue].push(resolve);
                 resolve();
             }
         });
         const lock = Object.create(Mutex.Lock.prototype);
-        lock["mutex"] = this;
+        lock[_mutex] = this;
         return lock;
     }
 }
+_a = _queue;
 (function (Mutex) {
+    var _b;
     class Lock {
         constructor(mutex) {
-            this.mutex = mutex;
+            this[_b] = false;
+            this[_mutex] = mutex;
         }
         /** Accesses the data associated to the mutex instance. */
         get value() {
-            return this.mutex[_value];
+            if (this[_unlocked]) {
+                throw new ReferenceError("trying to access data after unlocked");
+            }
+            return this[_mutex][_value];
         }
         set value(v) {
-            this.mutex[_value] = v;
+            if (this[_unlocked]) {
+                throw new ReferenceError("trying to access data after unlocked");
+            }
+            this[_mutex][_value] = v;
         }
         /** Releases the current lock of the mutex. */
-        async unlock() {
-            const queue = this.mutex["queue"];
+        unlock() {
+            this[_unlocked] = true;
+            const queue = this[_mutex][_queue];
             queue.shift();
             const next = queue[0];
             if (next) {
                 next();
             }
-            else if (registry.hasValue(this.mutex)) {
-                registry.deleteValue(this.mutex);
+            else if (registry.hasValue(this[_mutex])) {
+                registry.deleteValue(this[_mutex]);
             }
         }
-        [Symbol.dispose]() {
+        [(_b = _unlocked, Symbol.dispose)]() {
             this.unlock();
         }
     }
