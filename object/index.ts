@@ -153,3 +153,175 @@ export function isPlainObject(value: unknown): value is { [x: string | symbol]: 
     const proto = Object.getPrototypeOf(value);
     return proto === null || proto.constructor === Object;
 }
+
+/**
+ * Creates an object base on the original object but without any invalid values
+ * (except for `null`), and trims the value if it's a string.
+ */
+export function sanitize<T extends object>(obj: T, deep?: boolean): T;
+export function sanitize<T extends object>(obj: T, options: {
+    deep?: boolean,
+    removeNull?: boolean;
+    removeEmptyString?: boolean;
+    removeEmptyObject?: boolean;
+}): T;
+export function sanitize<T extends object>(obj: T, options: boolean | {
+    deep?: boolean,
+    removeNull?: boolean;
+    removeEmptyString?: boolean;
+    removeEmptyObject?: boolean;
+} = false): T {
+    const deep = typeof options === "object" ? !!options.deep : !!options;
+    const removeNull = typeof options === "object" ? !!options.removeNull : false;
+    const removeEmptyString = typeof options === "object" ? !!options.removeEmptyString : false;
+    const removeEmptyObject = typeof options === "object" ? !!options?.removeEmptyObject : false;
+
+    return (function process(
+        target: any,
+        removeNull: boolean,
+        removeEmptyString: boolean,
+        removeEmptyObject: boolean,
+        depth: number
+    ): any {
+        if (typeof target === "string") {
+            return target.trim();
+        } else if (Array.isArray(target)) {
+            return !depth || deep ? target.map(item => process(
+                item,
+                removeNull,
+                removeEmptyString,
+                removeEmptyObject,
+                depth + 1
+            )).filter(item => {
+                if (item === null) {
+                    return !removeNull;
+                } else if (item === "") {
+                    return !removeEmptyString;
+                } else if (Array.isArray(item)) {
+                    return item.length > 0 || !removeEmptyObject;
+                } else if (isPlainObject(item)) {
+                    return Reflect.ownKeys(item).length > 0 || !removeEmptyObject;
+                } else {
+                    return true;
+                }
+            }) : target;
+        } else if (isPlainObject(target)) {
+            return !depth || deep ? Reflect.ownKeys(target).reduce((result, key) => {
+                const value = process(
+                    target[key],
+                    removeNull,
+                    removeEmptyString,
+                    removeEmptyObject,
+                    depth + 1
+                );
+
+                if (value === null) {
+                    if (!removeNull) {
+                        result[key] = value;
+                    }
+                } else if (value === "") {
+                    if (!removeEmptyString) {
+                        result[key] = value;
+                    }
+                } else if (isValid(value)) {
+                    if (typeof value !== "object") {
+                        result[key] = value;
+                    } else if (Array.isArray(value)) {
+                        if (value.length > 0 || !removeEmptyObject) {
+                            result[key] = value;
+                        }
+                    } else if (isPlainObject(value)) {
+                        if (Reflect.ownKeys(value).length > 0 || !removeEmptyObject) {
+                            result[key] = value;
+                        }
+                    } else {
+                        result[key] = value;
+                    }
+
+                }
+
+                return result;
+            }, target.constructor ? {} as any : Object.create(null)) : target;
+        } else {
+            return target;
+        }
+    })(obj, removeNull, removeEmptyString, removeEmptyObject, 0);
+}
+
+/**
+ * Creates an object with sorted keys (in ascending order) of the original object.
+ * 
+ * Note: symbol keys are not sorted and remain their original order.
+ */
+export function sortKeys<T extends object>(obj: T, deep = false): T {
+    return (function process(target: any, depth: number): any {
+        if (isPlainObject(target)) {
+            return !depth || deep ? [
+                ...Object.getOwnPropertyNames(target).sort(), // sort the string keys
+                ...Object.getOwnPropertySymbols(target)
+            ].reduce((result, key) => {
+                result[key] = process(target[key], depth + 1);
+                return result;
+            }, target.constructor ? {} as any : Object.create(null)) : target;
+        } else if (Array.isArray(target)) {
+            return !depth || deep ? target.map(
+                item => process(item, depth + 1)
+            ) : target;
+        } else {
+            return target;
+        }
+    })(obj, 0);
+}
+
+export type OmitChildrenNodes<T extends object> = Pick<T, {
+    [K in keyof T]: T[K] extends any[] ? K : T[K] extends object ? never : K;
+}[keyof T]>;
+
+/**
+ * Create an object with flatted keys of the original object, the children
+ * nodes' properties will be transformed to a string-represented path.
+ * 
+ * @param depth Default value: `1`.
+ * @example
+ * ```ts
+ * const obj = flatKeys({ foo: { bar: "hello", baz: "world" } });
+ * console.log(obj);
+ * // { "foo.bar": "hello", "foo.baz": "world" }
+ * ```
+ */
+export function flatKeys<T extends object>(
+    obj: T,
+    depth = 1
+): OmitChildrenNodes<T> & Record<string | number | symbol, any> {
+    return (function process(
+        carrier: any,
+        source: any,
+        path: string,
+        depth: number,
+        maxDepth: number
+    ) {
+        if (depth === maxDepth || !isPlainObject(source)) {
+            carrier[path] = source;
+        } else {
+            Reflect.ownKeys(source).forEach(key => {
+                const value = source[key];
+
+                if (typeof key === "symbol") {
+                    if (depth === 0) { // only allow top-level symbol properties
+                        carrier[key] = value;
+                    }
+                } else {
+                    process(
+                        carrier,
+                        value,
+                        path ? `${path}.${key}` : key,
+                        path ? depth + 1 : depth,
+                        maxDepth
+                    );
+                }
+            });
+        }
+
+        return carrier;
+    })(obj.constructor ? {} as any : Object.create(null), obj, "", 0, depth);
+}

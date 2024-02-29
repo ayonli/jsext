@@ -1,4 +1,4 @@
-import { hasOwn, hasOwnMethod, patch, pick, omit, as, isValid, isPlainObject } from './index.js';
+import { hasOwn, hasOwnMethod, patch, pick, omit, as, isValid, isPlainObject, sanitize, sortKeys, flatKeys } from './index.js';
 
 if (!Object.hasOwn) {
     Object.hasOwn = hasOwn;
@@ -12,4 +12,7 @@ Object.omit = omit;
 Object.as = as;
 Object.isValid = isValid;
 Object.isPlainObject = isPlainObject;
+Object.sanitize = sanitize;
+Object.sortKeys = sortKeys;
+Object.flatKeys = flatKeys;
 //# sourceMappingURL=augment.js.map

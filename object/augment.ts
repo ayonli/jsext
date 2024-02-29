@@ -1,4 +1,17 @@
-import { hasOwn, hasOwnMethod, omit, patch, pick, as, isValid, isPlainObject } from "./index.ts";
+import {
+    hasOwn,
+    hasOwnMethod,
+    omit,
+    patch,
+    pick,
+    as,
+    isValid,
+    isPlainObject,
+    sanitize,
+    sortKeys,
+    flatKeys,
+    OmitChildrenNodes,
+} from "./index.ts";
 
 declare global {
     interface ObjectConstructor {
@@ -58,6 +71,35 @@ declare global {
          * the `Object` constructor or one with a `[[Prototype]]` of `null`.
          */
         isPlainObject(value: unknown): value is { [x: string | symbol]: any; };
+        /**
+         * Creates an object base on the original object but without any invalid values
+         * (except for `null`), and trims the value if it's a string.
+         */
+        sanitize<T extends object>(obj: T, deep?: boolean): T;
+        sanitize<T extends object>(obj: T, options: {
+            deep?: boolean,
+            removeNull?: boolean;
+            removeEmptyString?: boolean;
+            removeEmptyObject?: boolean;
+        }): T;
+        /**
+         * Creates an object with sorted keys (in ascending order) of the original object.
+         * 
+         * Note: symbol keys are not sorted and remain their original order.
+         */
+        sortKeys<T extends object>(obj: T, deep?: boolean): T;
+        /**
+         * Create an object with flatted keys of the original object, the children
+         * nodes' properties will be transformed to a string-represented path.
+         * 
+         * @param depth Default value: `1`.
+         * @example
+         *  Object.flatKeys({ foo: { bar: "Hello, World!" } }) === { "foo.bar": "Hello, World!" }
+         */
+        flatKeys<T extends object>(
+            obj: T,
+            depth?: number
+        ): OmitChildrenNodes<T> & Record<string | number | symbol, any>;
     }
 }
 
@@ -75,3 +117,6 @@ Object.omit = omit;
 Object.as = as;
 Object.isValid = isValid;
 Object.isPlainObject = isPlainObject;
+Object.sanitize = sanitize;
+Object.sortKeys = sortKeys;
+Object.flatKeys = flatKeys;

@@ -150,4 +150,138 @@ describe("Object", () => {
         ok(!Object.isPlainObject(""));
         ok(!Object.isPlainObject(new Date()));
     });
+
+    it("Object.sanitize", () => {
+        const obj = {
+            name: " Hello, World! ",
+            str: " ",
+            nil: void 0,
+            nil2: null,
+            nil3: NaN,
+            date: new Date("invalid"),
+            obj: { foo: void 0, bar: null },
+            arr: [{ foo: void 0, bar: null }],
+        };
+
+        deepStrictEqual(Object.sanitize(obj), {
+            name: "Hello, World!",
+            str: "",
+            nil2: null,
+            obj: { foo: void 0, bar: null },
+            arr: [{ foo: void 0, bar: null }],
+        });
+        deepStrictEqual(Object.sanitize(obj, true), {
+            name: "Hello, World!",
+            str: "",
+            nil2: null,
+            obj: { bar: null },
+            arr: [{ bar: null }],
+        });
+        deepStrictEqual(Object.sanitize(obj, { deep: true }), {
+            name: "Hello, World!",
+            str: "",
+            nil2: null,
+            obj: { bar: null },
+            arr: [{ bar: null }],
+        });
+        deepStrictEqual(Object.sanitize(obj, { deep: true, removeNull: true }), {
+            name: "Hello, World!",
+            str: "",
+            obj: {},
+            arr: [{}],
+        });
+        deepStrictEqual(Object.sanitize(obj, {
+            deep: true,
+            removeNull: true,
+            removeEmptyString: true,
+        }), {
+            name: "Hello, World!",
+            obj: {},
+            arr: [{}],
+        });
+        deepStrictEqual(Object.sanitize(obj, {
+            deep: true,
+            removeNull: true,
+            removeEmptyString: true,
+            removeEmptyObject: true,
+        }), {
+            name: "Hello, World!",
+        });
+    });
+
+    it("Object.sortKeys", () => {
+        const obj = {
+            str: "foobar",
+            num: 123,
+            bool: true,
+            nil: null,
+            obj: { foo: "hello", bar: "world" },
+            arr: [{ foo: "hello", bar: "world" }],
+        };
+
+        strictEqual(JSON.stringify(Object.sortKeys(obj)), JSON.stringify({
+            arr: [{ foo: "hello", bar: "world" }],
+            bool: true,
+            nil: null,
+            num: 123,
+            obj: { foo: "hello", bar: "world" },
+            str: "foobar",
+        }));
+        strictEqual(JSON.stringify(Object.sortKeys(obj, true)), JSON.stringify({
+            arr: [{ bar: "world", foo: "hello" }],
+            bool: true,
+            nil: null,
+            num: 123,
+            obj: { bar: "world", foo: "hello" },
+            str: "foobar",
+        }));
+    });
+
+    it("Object.flatKeys", () => {
+        const obj = {
+            obj: {
+                foo: "hello",
+                bar: "world",
+                baz: {
+                    foo: "hello",
+                    bar: "world",
+                    baz: {
+                        foo: "hello",
+                        bar: "world",
+                    }
+                }
+            }
+        };
+
+        deepStrictEqual(Object.flatKeys(obj), {
+            "obj.foo": "hello",
+            "obj.bar": "world",
+            "obj.baz": {
+                foo: "hello",
+                bar: "world",
+                baz: {
+                    foo: "hello",
+                    bar: "world",
+                },
+            },
+        });
+        deepStrictEqual(Object.flatKeys(obj, 2), {
+            "obj.foo": "hello",
+            "obj.bar": "world",
+            "obj.baz.foo": "hello",
+            "obj.baz.bar": "world",
+            "obj.baz.baz": {
+                foo: "hello",
+                bar: "world",
+            },
+        });
+        deepStrictEqual(Object.flatKeys(obj, Infinity), {
+            "obj.foo": "hello",
+            "obj.bar": "world",
+            "obj.baz.foo": "hello",
+            "obj.baz.bar": "world",
+            "obj.baz.baz.foo": "hello",
+            "obj.baz.baz.bar": "world",
+        });
+    });
 });
