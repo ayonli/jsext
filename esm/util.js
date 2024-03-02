@@ -4,7 +4,7 @@ var _a;
 const isDeno = typeof Deno === "object";
 const isBun = typeof Bun === "object";
 const isNode = !isDeno && !isBun && typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
-const isBeforeNode14 = isNode && parseInt(process.version.slice(1)) < 14;
+const isNodePrior14 = isNode && parseInt(process.version.slice(1)) < 14;
 const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
 // In Node.js, `process.argv` contains `--worker-thread` when the current thread is used as
 // a worker.
@@ -168,5 +168,5 @@ function unwrapChannel(obj, channelWrite) {
     return channel;
 }
 
-export { IsPath, handleChannelMessage, isBeforeNode14, isBun, isChannelMessage, isDeno, isMainThread, isNode, resolveModule, unwrapChannel, wrapChannel };
+export { IsPath, handleChannelMessage, isBun, isChannelMessage, isDeno, isMainThread, isNode, isNodePrior14, resolveModule, unwrapChannel, wrapChannel };
 //# sourceMappingURL=util.js.map

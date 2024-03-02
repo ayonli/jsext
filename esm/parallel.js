@@ -4,7 +4,7 @@ import { sequence } from './number/index.js';
 import { trim } from './string/index.js';
 import { isPlainObject } from './object/index.js';
 import { isDOMException, isAggregateError, toObject, fromObject, fromErrorEvent } from './error/index.js';
-import { isNode, isBun, IsPath, isDeno, wrapChannel, isBeforeNode14, isMainThread, resolveModule, isChannelMessage, handleChannelMessage } from './util.js';
+import { isNode, isBun, IsPath, isDeno, wrapChannel, isNodePrior14, isMainThread, resolveModule, isChannelMessage, handleChannelMessage } from './util.js';
 import Exception from './error/Exception.js';
 
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
@@ -120,7 +120,7 @@ async function createWorker(options = {}) {
         }
         if (adapter === "child_process") {
             const { fork } = await import('child_process');
-            const serialization = isBeforeNode14 ? "json" : "advanced";
+            const serialization = isNodePrior14 ? "json" : "advanced";
             const worker = fork(entry, ["--worker-thread"], {
                 stdio: "inherit",
                 serialization,
