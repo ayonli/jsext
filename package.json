@@ -69,6 +69,13 @@
             "import": "./esm/mixins.js",
             "default": "./mixins.ts"
         },
+        "./isclass": {
+            "types": "./types/isclass.d.ts",
+            "bun": "./isclass.ts",
+            "require": "./cjs/isclass.js",
+            "import": "./esm/isclass.js",
+            "default": "./isclass.ts"
+        },
         "./parallel": {
             "types": "./types/parallel.d.ts",
             "bun": "./parallel.ts",
