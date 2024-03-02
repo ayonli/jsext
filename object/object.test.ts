@@ -261,7 +261,15 @@ describe("Object", () => {
                         foo: "hello",
                         bar: "world",
                     }
-                }
+                },
+                arr: [
+                    "hello",
+                    "world",
+                    {
+                        foo: "hello",
+                        bar: "world",
+                    }
+                ],
             }
         };
 
@@ -276,6 +284,14 @@ describe("Object", () => {
                     bar: "world",
                 },
             },
+            "obj.arr": [
+                "hello",
+                "world",
+                {
+                    foo: "hello",
+                    bar: "world",
+                }
+            ],
         });
         deepStrictEqual(Object.flatKeys(obj, 2), {
             "obj.foo": "hello",
@@ -286,6 +302,14 @@ describe("Object", () => {
                 foo: "hello",
                 bar: "world",
             },
+            "obj.arr": [
+                "hello",
+                "world",
+                {
+                    foo: "hello",
+                    bar: "world",
+                }
+            ],
         });
         deepStrictEqual(Object.flatKeys(obj, Infinity), {
             "obj.foo": "hello",
@@ -294,6 +318,42 @@ describe("Object", () => {
             "obj.baz.bar": "world",
             "obj.baz.baz.foo": "hello",
             "obj.baz.baz.bar": "world",
+            "obj.arr": [
+                "hello",
+                "world",
+                {
+                    foo: "hello",
+                    bar: "world",
+                }
+            ],
+        });
+        deepStrictEqual(Object.flatKeys(obj, 2, { flatArrayIndices: true }), {
+            "obj.foo": "hello",
+            "obj.bar": "world",
+            "obj.baz.foo": "hello",
+            "obj.baz.bar": "world",
+            "obj.baz.baz": {
+                foo: "hello",
+                bar: "world",
+            },
+            "obj.arr.0": "hello",
+            "obj.arr.1": "world",
+            "obj.arr.2": {
+                foo: "hello",
+                bar: "world",
+            },
+        });
+        deepStrictEqual(Object.flatKeys(obj, Infinity, { flatArrayIndices: true }), {
+            "obj.foo": "hello",
+            "obj.bar": "world",
+            "obj.baz.foo": "hello",
+            "obj.baz.bar": "world",
+            "obj.baz.baz.foo": "hello",
+            "obj.baz.baz.bar": "world",
+            "obj.arr.0": "hello",
+            "obj.arr.1": "world",
+            "obj.arr.2.foo": "hello",
+            "obj.arr.2.bar": "world",
         });
     });
 });

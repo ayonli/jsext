@@ -260,9 +260,7 @@ export function sortKeys<T extends object>(obj: T, deep = false): T {
                 return result;
             }, target.constructor ? {} as any : Object.create(null)) : target;
         } else if (Array.isArray(target)) {
-            return !depth || deep ? target.map(
-                item => process(item, depth + 1)
-            ) : target;
+            return !depth || deep ? target.map(item => process(item, depth + 1)) : target;
         } else {
             return target;
         }
@@ -287,20 +285,31 @@ export type OmitChildrenNodes<T extends object> = Pick<T, {
  */
 export function flatKeys<T extends object>(
     obj: T,
-    depth = 1
+    depth = 1,
+    options: { flatArrayIndices?: boolean; } = {}
 ): OmitChildrenNodes<T> & Record<string | number | symbol, any> {
     const maxDepth = depth;
-    return (function process(
-        carrier: any,
-        source: any,
-        path: string,
-        depth: number
-    ) {
-        if (depth === maxDepth || !isPlainObject(source)) {
-            carrier[path] = source;
-        } else {
-            Reflect.ownKeys(source).forEach(key => {
-                const value = source[key];
+    const carrier = obj.constructor ? {} as any : Object.create(null);
+    const flatArrayIndices = options?.flatArrayIndices ?? false;
+
+    (function process(target: any, path: string, depth: number) {
+        if (depth === maxDepth) {
+            carrier[path] = target;
+        } else if (Array.isArray(target)) {
+            if (!flatArrayIndices) {
+                carrier[path] = target;
+            } else {
+                target.forEach((value, i) => {
+                    process(
+                        value,
+                        path ? `${path}.${i}` : String(i),
+                        path ? depth + 1 : depth
+                    );
+                });
+            }
+        } else if (isPlainObject(target)) {
+            Reflect.ownKeys(target).forEach(key => {
+                const value = target[key];
 
                 if (typeof key === "symbol") {
                     if (depth === 0) { // only allow top-level symbol properties
@@ -308,15 +317,16 @@ export function flatKeys<T extends object>(
                     }
                 } else {
                     process(
-                        carrier,
                         value,
                         path ? `${path}.${key}` : key,
                         path ? depth + 1 : depth
                     );
                 }
             });
+        } else {
+            carrier[path] = target;
         }
+    })(obj, "", 0);
 
-        return carrier;
-    })(obj.constructor ? {} as any : Object.create(null), obj, "", 0);
+    return carrier;
 }

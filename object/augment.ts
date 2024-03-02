@@ -97,9 +97,10 @@ declare global {
          * @example
          *  Object.flatKeys({ foo: { bar: "Hello, World!" } }) === { "foo.bar": "Hello, World!" }
          */
-        flatKeys<T extends object>(
+        flatKeys<T extends Record<string, any>>(
             obj: T,
-            depth?: number
+            depth?: number,
+            options?: { flatArrayIndices?: boolean; }
         ): OmitChildrenNodes<T> & Record<string | number | symbol, any>;
     }
 }
