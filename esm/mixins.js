@@ -1,4 +1,5 @@
 import { hasOwn } from './object/index.js';
+export { isSubclassOf } from './isclass.js';
 
 /**
  * Merges properties and methods only if they're missing in the class.
@@ -64,24 +65,6 @@ function mixins(base, ...mixins) {
     }
     return obj.ctor;
 }
-/**
- * Checks if a class is a subclass of another class.
- *
- * @example
- * ```ts
- * import { isSubclassOf } from "@ayonli/jsext/mixins";
- *
- * class Moment extends Date {}
- *
- * console.assert(isSubclassOf(Moment, Date));
- * console.assert(isSubclassOf(Moment, Object)); // all classes are subclasses of Object
- * ```
- */
-function isSubclassOf(ctor1, ctor2) {
-    return typeof ctor1 === "function"
-        && typeof ctor2 === "function"
-        && ctor1.prototype instanceof ctor2;
-}
 
-export { mixins as default, isSubclassOf };
+export { mixins as default };
 //# sourceMappingURL=mixins.js.map

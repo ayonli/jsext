@@ -1,3 +1,5 @@
+import isClass from '../isclass.js';
+
 /**
  * Returns `true` if the specified object has the indicated property as its own property.
  * If the property is inherited, or does not exist, the function returns `false`.
@@ -76,6 +78,32 @@ function as(value, type) {
         return value;
     }
     return null;
+}
+/**
+ * Returns a string representation or the constructor of the value's type.
+ *
+ * @remarks This function returns `"class"` for ES6 classes.
+ * @remarks This function returns `"null"` for `null`.
+ * @remarks This function returns `Object` for `Object.create(null)`.
+ */
+function typeOf(value) {
+    var _a, _b;
+    if (value === undefined) {
+        return "undefined";
+    }
+    else if (value === null) {
+        return "null";
+    }
+    const type = typeof value;
+    if (type === "function") {
+        return isClass(value) ? "class" : "function";
+    }
+    else if (type === "object") {
+        return (_b = (_a = Object.getPrototypeOf(value)) === null || _a === void 0 ? void 0 : _a.constructor) !== null && _b !== void 0 ? _b : Object;
+    }
+    else {
+        return type;
+    }
 }
 /**
  * Returns `true` if the given value is valid. The following values are considered invalid:
@@ -264,5 +292,5 @@ function flatKeys(obj, depth = 1, options = {}) {
     return carrier;
 }
 
-export { as, flatKeys, hasOwn, hasOwnMethod, isPlainObject, isValid, omit, patch, pick, sanitize, sortKeys };
+export { as, flatKeys, hasOwn, hasOwnMethod, isPlainObject, isValid, omit, patch, pick, sanitize, sortKeys, typeOf };
 //# sourceMappingURL=index.js.map

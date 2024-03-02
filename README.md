@@ -58,6 +58,7 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 - [queue](#queue) Handle tasks sequentially and prevent concurrency conflicts.
 - [lock](#lock) Provide mutual exclusion for concurrent operations.
 - [mixins](#mixins) Define a class that inherits methods from multiple base classes.
+- [isClass](#isclass) Checks if a value is a class/constructor.
 - [isSubclassOf](#issubclassof) Check if a class is a subset of another class.
 - [read](#read) Make any streaming source readable via `for await ... of ...` syntax.
 - [readAll](#readall) Read all streaming data at once.
@@ -637,7 +638,8 @@ This function does not mutates the base class but create a pivot class instead.
 **Example**
 
 ```ts
-import mixins, { isSubclassOf } from "@ayonli/jsext/mixins";
+import mixins from "@ayonli/jsext/mixins";
+import { isSubclassOf } from "@ayonli/jsext/isclass";
 
 class Log {
     log(text: string) {
@@ -667,6 +669,25 @@ console.assert(!isSubclassOf(Controller, Log));
 
 ---
 
+### isClass
+
+```ts
+declare function isClass(value: unknown): value is Constructor<any>;
+```
+
+Checks if a value is a class/constructor.
+
+**Example**
+
+```ts
+import isClass from "@ayonli/jsext/isclass";
+
+console.assert(isClass(class Foo { }));
+console.assert(!isClass(function foo() { }));
+```
+
+---
+
 ### isSubclassOf
 
 ```ts
@@ -678,7 +699,7 @@ Checks if a class is a subclass of another class.
 **Example**
 
 ```ts
-import { isSubclassOf } from "@ayonli/jsext/mixins";
+import { isSubclassOf } from "@ayonli/jsext/isclass";
 
 class Moment extends Date {}
 
@@ -1484,6 +1505,7 @@ import "@ayonli/jsext/object/augment";
 - `as(value: unknown, type: BooleanConstructor): boolean | null`
 - `as(value: unknown, type: SymbolConstructor): symbol | null`
 - `as<T>(value: unknown, type: Constructor<T>): T | null`
+- `typeOf<T>(value: T): TypeNames | Constructor<T>`
 - `isValid(value: unknown): boolean`
 - `isPlainObject(value: unknown): value is { [x: string | symbol]: any; }`
 - `sanitize<T extends object>(obj: T, deep?: boolean): T`

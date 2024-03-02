@@ -151,6 +151,39 @@ describe("Object", () => {
         ok(!Object.isPlainObject(new Date()));
     });
 
+    it("Object.typeOf", () => {
+        strictEqual(Object.typeOf("foobar"), "string");
+        strictEqual(Object.typeOf(123), "number");
+        strictEqual(Object.typeOf(NaN), "number");
+        strictEqual(Object.typeOf(BigInt(123)), "bigint");
+        strictEqual(Object.typeOf(true), "boolean");
+        strictEqual(Object.typeOf(Symbol("foobar")), "symbol");
+        strictEqual(Object.typeOf(function foo() { }), "function");
+        strictEqual(Object.typeOf(function Foo() { }), "function");
+        strictEqual(Object.typeOf(() => { }), "function");
+        strictEqual(Object.typeOf(async () => { }), "function");
+        strictEqual(Object.typeOf(async function foo() { }), "function");
+        strictEqual(Object.typeOf(function* foo() { }), "function");
+        strictEqual(Object.typeOf(async function* foo() { }), "function");
+        strictEqual(Object.typeOf(String), "function");
+        strictEqual(Object.typeOf(Number), "function");
+        strictEqual(Object.typeOf(Boolean), "function");
+        strictEqual(Object.typeOf(BigInt), "function");
+        strictEqual(Object.typeOf(Symbol), "function");
+        strictEqual(Object.typeOf(Object), "class");
+        strictEqual(Object.typeOf(Array), "class");
+        strictEqual(Object.typeOf(Date), "class");
+        strictEqual(Object.typeOf(Function), "class");
+        strictEqual(Object.typeOf(class Foo { }), "class");
+        strictEqual(Object.typeOf(Uint8Array), "class");
+        strictEqual(Object.typeOf(undefined), "undefined");
+        strictEqual(Object.typeOf(null), "null");
+        strictEqual(Object.typeOf({}), Object);
+        strictEqual(Object.typeOf(Object.create(null)), Object);
+        strictEqual(Object.typeOf([]), Array);
+        strictEqual(Object.typeOf(new Uint8Array()), Uint8Array);
+    });
+
     describe("Object.sanitize", () => {
         const obj = {
             name: " Hello, World! ",

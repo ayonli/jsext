@@ -1,5 +1,13 @@
 import type { Constructor } from "./index.ts";
 import { hasOwn } from "./object/index.ts";
+import { isSubclassOf } from "./isclass.ts";
+
+export {
+    /**
+     * @deprecated This is a redundant re-export of the `isSubclassOf` from `@ayonli/jsext/isclass`.
+     */
+    isSubclassOf
+};
 
 export type UnionToIntersection<U> = (
     U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
@@ -65,6 +73,7 @@ function setProp(proto: any, source: any, prop: string | symbol) {
  * @example
  * ```ts
  * import mixins from "@ayonli/jsext/mixins";
+ * import { isSubclassOf } from "@ayonli/jsext/isclass";
  * 
  * class Log {
  *     log(text: string) {
@@ -115,23 +124,4 @@ export default function mixins(base: Constructor<any>, ...mixins: any[]) {
     }
 
     return obj.ctor as Constructor<any>;
-}
-
-/**
- * Checks if a class is a subclass of another class.
- * 
- * @example
- * ```ts
- * import { isSubclassOf } from "@ayonli/jsext/mixins";
- * 
- * class Moment extends Date {}
- * 
- * console.assert(isSubclassOf(Moment, Date));
- * console.assert(isSubclassOf(Moment, Object)); // all classes are subclasses of Object
- * ```
- */
-export function isSubclassOf<A, B>(ctor1: Constructor<A>, ctor2: Constructor<B>): boolean {
-    return typeof ctor1 === "function"
-        && typeof ctor2 === "function"
-        && ctor1.prototype instanceof ctor2;
 }

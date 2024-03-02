@@ -1,4 +1,4 @@
-import { isSubclassOf } from '../mixins.js';
+import { isSubclassOf } from '../isclass.js';
 import { random as random$1 } from '../number/index.js';
 import { count as count$1, equals as equals$1, split as split$1, chunk as chunk$1 } from './base.js';
 

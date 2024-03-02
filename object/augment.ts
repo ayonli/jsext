@@ -5,6 +5,8 @@ import {
     patch,
     pick,
     as,
+    typeOf,
+    TypeNames,
     isValid,
     isPlainObject,
     sanitize,
@@ -58,6 +60,14 @@ declare global {
         as(value: unknown, type: BooleanConstructor): boolean | null;
         as(value: unknown, type: SymbolConstructor): symbol | null;
         as<T>(value: unknown, type: Constructor<T>): T | null;
+        /**
+         * Returns a string representation or the constructor of the value's type.
+         * 
+         * @remarks This function returns `"class"` for ES6 classes.
+         * @remarks This function returns `"null"` for `null`.
+         * @remarks This function returns `Object` for `Object.create(null)`.
+         */
+        typeOf<T>(value: T): TypeNames | Constructor<T>;
         /**
          * Returns `true` if the given value is valid. The following values are considered invalid:
          * 
@@ -120,6 +130,7 @@ Object.patch = patch;
 Object.pick = pick;
 Object.omit = omit;
 Object.as = as;
+Object.typeOf = typeOf;
 Object.isValid = isValid;
 Object.isPlainObject = isPlainObject;
 Object.sanitize = sanitize;

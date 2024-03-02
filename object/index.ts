@@ -1,4 +1,5 @@
 import type { Constructor } from "../index.ts";
+import isClass from "../isclass.ts";
 
 /**
  * Returns `true` if the specified object has the indicated property as its own property.
@@ -6,7 +7,7 @@ import type { Constructor } from "../index.ts";
  */
 export function hasOwn(obj: any, key: string | number | symbol): boolean {
     return Object.prototype.hasOwnProperty.call(obj, key);
-};
+}
 
 /**
  * Returns `true` if the specified object has the indicated method as its own method (in its own
@@ -127,6 +128,41 @@ export function as(value: any, type: any): any {
     }
 
     return null;
+}
+
+export type TypeNames = "string"
+    | "number"
+    | "bigint"
+    | "boolean"
+    | "symbol"
+    | "function"
+    | "class"
+    | "undefined"
+    | "null";
+
+/**
+ * Returns a string representation or the constructor of the value's type.
+ * 
+ * @remarks This function returns `"class"` for ES6 classes.
+ * @remarks This function returns `"null"` for `null`.
+ * @remarks This function returns `Object` for `Object.create(null)`.
+ */
+export function typeOf<T>(value: T): TypeNames | Constructor<T> {
+    if (value === undefined) {
+        return "undefined";
+    } else if (value === null) {
+        return "null";
+    }
+
+    const type = typeof value;
+
+    if (type === "function") {
+        return isClass(value) ? "class" : "function";
+    } else if (type === "object") {
+        return Object.getPrototypeOf(value)?.constructor as Constructor<T> ?? Object;
+    } else {
+        return type;
+    }
 }
 
 /**
