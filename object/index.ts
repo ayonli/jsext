@@ -61,8 +61,9 @@ export function pick(obj: any, keys: (string | symbol)[]) {
 /**
  * Creates an object composed without the picked keys.
  * 
- * NOTE: this function only collect keys from the object's own properties, except for type
- * Error, whose `name`, `message` and `cause` are always collected.
+ * @remarks
+ * This function only collect keys from the object's own properties, except for type Error,
+ * whose `name`, `message` and `cause` are always collected.
  */
 export function omit<T extends object, U extends keyof T>(obj: T, keys: U[]): Omit<T, U>;
 export function omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>;
@@ -89,6 +90,7 @@ export function omit(obj: any, keys: (string | symbol)[]) {
 /**
  * Checks if the value is an instance of the given type, returns the value itself if passed,
  * otherwise returns `null`. This function is mainly used for the optional chaining syntax.
+ * 
  * @example
  * ```ts
  * as(bar, SomeType)?.doSomething();

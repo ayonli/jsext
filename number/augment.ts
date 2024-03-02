@@ -8,7 +8,8 @@ declare global {
          * Returns `true` if the given value is a numeric value, `false` otherwise. A numeric value
          * is a number, a bigint, or a string that can be converted as a number or bigint.
          * 
-         * NOTE: `NaN` is not considered a number.
+         * @remarks `NaN` is not considered numeric.
+         * 
          * @param strict Only returns `true` when the value is of type `number`.
          */
         isNumeric(value: unknown, strict?: boolean): boolean;

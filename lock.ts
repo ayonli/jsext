@@ -13,8 +13,9 @@ const _unlocked = Symbol.for("unlocked");
  * Mutual Exclusion prevents multiple coroutines from accessing the same shared
  * resource simultaneously.
  * 
- * NOTE: currently, the Mutex instance can not be used across multiple threads,
- * but is considering adding support for `parallel` threads.
+ * @remarks
+ * Currently, the Mutex instance can not be used across multiple threads, but is
+ * considering adding support for `parallel` threads.
  * 
  * @example
  * ```ts

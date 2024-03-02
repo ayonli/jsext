@@ -928,17 +928,23 @@ the other thread instead of being cloned. This strategy allows us to easily
 compose objects like `Request` and `Response` instances into plain objects
 and pass them between threads without overhead.
 
-NOTE: if the current module is already in a worker thread, use this function
-won't create another worker thread.
+**Remarks**
 
-NOTE: cloning and transferring data between the main thread and worker
-threads are very heavy and slow, worker threads are only intended to run
-CPU-intensive tasks or divide tasks among multiple threads, they have no
-advantage when performing IO-intensive tasks such as handling HTTP requests,
-always prefer `cluster` module for that kind of purpose.
+If the current module is already in a worker thread, use this function won't
+create another worker thread.
 
-NOTE: for error instances, only the following types are guaranteed to be sent
-and received properly between threads.
+**Remarks**
+
+Cloning and transferring data between the main thread and worker threads are
+very heavy and slow, worker threads are only intended to run CPU-intensive
+tasks or divide tasks among multiple threads, they have no advantage when
+performing IO-intensive tasks such as handling HTTP requests, always prefer
+`cluster` module for that kind of purpose.
+
+**Remarks**
+
+For error instances, only the following types are guaranteed to be sent and
+received properly between threads.
 
 - `Error`
 - `EvalError`
@@ -1018,8 +1024,10 @@ console.log(length);     // 10
 console.log(arr.length); // 0
 ```
 
-NOTE: if the application is to be bundled, use the following syntax to link
-the module instead, it will prevent the bundler from including the file and
+**Remarks**
+
+If the application is to be bundled, use the following syntax to link the
+module instead, it will prevent the bundler from including the file and
 rewriting the path.
 
 ```ts
@@ -1182,11 +1190,12 @@ declared in the comment.
 The example function receives a customized `console` object which will be
 used to log outputs instead of using the built-in `console`.
 
-NOTE: this function is used to simplify the process of writing tests,
-currently, it does not work in Bun, **tsx** and browsers, because Bun hasn't
-implement the `Console` constructor and removes comments during runtime,
-**tsx** also remove comments, and the function relies on Node.js built-in
-modules.
+**Remarks**
+
+This function is used to simplify the process of writing tests, currently,
+it does not work in Bun, **tsx** and browsers, because Bun hasn't implement
+the `Console` constructor and removes comments during runtime, **tsx** also
+remove comments, and the function relies on Node.js built-in modules.
 
 **Example**
 
@@ -1217,7 +1226,7 @@ Marks a function as deprecated and returns a wrapped function.
 When the wrapped function is called, a deprecation warning will be emitted
 to the stdout.
 
-NOTE: the original function must have a name.
+**Remarks** The original function must have a name.
 
 **Example**
 

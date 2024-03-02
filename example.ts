@@ -9,11 +9,11 @@ declare var Deno: any;
  * The example function receives a customized `console` object which will be
  * used to log outputs instead of using the built-in `console`.
  * 
- * NOTE: this function is used to simplify the process of writing tests,
- * currently, it does not work in Bun, **tsx** and browsers, because Bun hasn't
- * implement the `Console` constructor and removes comments during runtime,
- * **tsx** also remove comments, and the function relies on Node.js built-in
- * modules.
+ * @remarks
+ * This function is used to simplify the process of writing tests, currently,
+ * it does not work in Bun, **tsx** and browsers, because Bun hasn't implement
+ * the `Console` constructor and removes comments during runtime, **tsx** also
+ * remove comments, and the function relies on Node.js built-in modules.
  * 
  * @example
  * ```ts

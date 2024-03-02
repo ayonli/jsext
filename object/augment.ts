@@ -38,8 +38,9 @@ declare global {
         /**
          * Creates an object composed without the picked keys.
          * 
-         * NOTE: this function only collect keys from the object's own properties, except for type
-         * Error, whose `name`, `message` and `cause` are always collected.
+         * @remarks
+         * This function only collect keys from the object's own properties, except for type Error,
+         * whose `name`, `message` and `cause` are always collected.
          */
         omit<T extends object, U extends keyof T>(obj: T, keys: U[]): Omit<T, U>;
         omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>;
@@ -86,7 +87,7 @@ declare global {
         /**
          * Creates an object with sorted keys (in ascending order) of the original object.
          * 
-         * Note: symbol keys are not sorted and remain their original order.
+         * @remarks Symbol keys are not sorted and remain their original order.
          */
         sortKeys<T extends object>(obj: T, deep?: boolean): T;
         /**
