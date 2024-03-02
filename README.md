@@ -1323,7 +1323,10 @@ import "@ayonli/jsext/string/augment";
 - `count(str: string, sub: string): number`
 - `capitalize(str: string, all?: boolean): string`
 - `hyphenate(str: string): string`
+- `bytes(str: string): Uint8Array`
+- `chars(str: string): string[]`
 - `words(str: string): string[]`
+- `lines(str: string): string[]`
 - `chunk(str: string, length: number): string[]`
 - `truncate(str: string, length: number): string`
 - `trim(str: string, chars?: string): string`
@@ -1332,17 +1335,21 @@ import "@ayonli/jsext/string/augment";
 - `stripEnd(str: string, suffix: string): string`
 - `stripStart(str: string, prefix: string): string`
 - `byteLength(str: string): number`
+- `isAscii(str: string): boolean`
 
 **[Augmentation](https://github.com/ayonli/jsext/blob/main/string/augment.ts)**
 
 - `String`
     - `compare(str1: string, str2: string): -1 | 0 | 1`
-    - `random(length: number): string`
+    - `random(length: number, chars?: string): string`
     - `prototype`
         - `count(sub: string): number`
         - `capitalize(all?: boolean): string`
         - `hyphenate(): string`
+        - `bytes(): Uint8Array`
+        - `chars(): string[]`
         - `words(): string[]`
+        - `lines(): string[]`
         - `chunk(length: number): string[]`
         - `truncate(length: number): string`
         - `trim(chars?: string): string`
@@ -1351,6 +1358,7 @@ import "@ayonli/jsext/string/augment";
         - `stripEnd(suffix: string): string`
         - `stripStart(prefix: string): string`
         - `byteLength(): number`
+        - `isAscii(): boolean`
 
 ### [number](https://deno.land/x/ayonli_jsext/number/index.ts)
 
@@ -1478,6 +1486,10 @@ import "@ayonli/jsext/object/augment";
 - `as<T>(value: unknown, type: Constructor<T>): T | null`
 - `isValid(value: unknown): boolean`
 - `isPlainObject(value: unknown): value is { [x: string | symbol]: any; }`
+- `sanitize<T extends object>(obj: T, deep?: boolean): T`
+- `sanitize<T extends object>(obj: T, options: { deep?: boolean, removeNulls?: boolean; removeEmptyStrings?: boolean; removeEmptyObjects?: boolean; removeArrayItems?: boolean; }): T`
+- `sortKeys<T extends object>(obj: T, deep = false): T`
+- `flatKeys<T extends object>(obj: T, depth = 1, options?: { flatArrayIndices?: boolean; }): OmitChildrenNodes<T> & Record<string | number | symbol, any>`
 
 *When [augment](https://github.com/ayonli/jsext/blob/main/object/augment.ts)ing,*
 *these functions are attached to the `Object` constructor.*
