@@ -1,5 +1,7 @@
 import { chunk as _chunk } from "../array/base.ts";
 
+const encoder = new TextEncoder();
+
 /**
  * Compares two strings, returns `-1` if `a < b`, `0` if `a == b` and `1` if `a > b`.
  */
@@ -53,10 +55,30 @@ export function hyphenate(str: string): string {
     return str.replace(/(\S)\s+(\S)/g, (_, $1, $2) => $1 + "-" + $2);
 }
 
+/** Returns the bytes of the given string. */
+export function bytes(str: string): Uint8Array {
+    return encoder.encode(str);
+}
+
+/** Returns the characters of the string (emojis are supported). */
+export function chars(str: string): string[] {
+    if (typeof (Intl as any)?.Segmenter === "function") {
+        return Array.from(new (Intl as any).Segmenter().segment(str))
+            .map((x: any) => x.segment);
+    } else {
+        return Array.from(str);
+    }
+}
+
 /** Extracts words (in latin characters) from the string. */
 export function words(str: string): string[] {
     const matches = str.match(/\w+/g);
     return matches ? [...matches].map(sub => sub.split("_")).flat() : [];
+}
+
+/** Splits the string into lines by `\n` or `\r\n`. */
+export function lines(str: string): string[] {
+    return str.split(/\r?\n/);
 }
 
 /** Breaks the string into smaller chunks according to the given length. */
@@ -129,8 +151,12 @@ export function stripStart(str: string, prefix: string): string {
     return str;
 }
 
-const encoder = new TextEncoder();
 /** Returns the byte length of the string. */
 export function byteLength(str: string): number {
-    return encoder.encode(str).byteLength;
+    return bytes(str).byteLength;
 };
+
+/** Checks if all characters in this string are within the ASCII range. */
+export function isAscii(str: string): boolean {
+    return bytes(str).every(byte => byte >= 0 && byte <= 127);
+}

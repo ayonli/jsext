@@ -1,18 +1,22 @@
 import {
     compare,
     random,
-    byteLength as _byteLength,
     capitalize as _capitalize,
     chunk as _chunk,
     count as _count,
     hyphenate as _hyphenate,
     truncate as _truncate,
+    bytes as _bytes,
+    chars as _chars,
     words as _words,
+    lines as _lines,
     trim as _trim,
     trimEnd as _trimEnd,
     trimStart as _trimStart,
     stripEnd as _stripEnd,
     stripStart as _stripStart,
+    byteLength as _byteLength,
+    isAscii as _isAscii,
 } from "./index.ts";
 
 declare global {
@@ -35,8 +39,14 @@ declare global {
         capitalize(all?: boolean): string;
         /** Replaces the spaces between non-empty characters of the string with hyphens (`-`). */
         hyphenate(): string;
+        /** Returns the bytes of the given string. */
+        bytes(): Uint8Array;
+        /** Returns the characters of the string (emojis are supported). */
+        chars(): string[];
         /** Extracts words (in latin characters) from the string. */
         words(): string[];
+        /** Splits the string into lines by `\n` or `\r\n`. */
+        lines(): string[];
         /** Breaks the string into smaller chunks according to the given length. */
         chunk(length: number): string[];
         /** Truncates the string to the given length (including the ending `...`). */
@@ -53,6 +63,8 @@ declare global {
         stripEnd(suffix: string): string;
         /** Returns the byte length of the string. */
         byteLength(): number;
+        /** Checks if all characters in this string are within the ASCII range. */
+        isAscii(): boolean;
     }
 }
 
@@ -71,8 +83,20 @@ String.prototype.hyphenate = function capitalize() {
     return _hyphenate(String(this));
 };
 
+String.prototype.bytes = function bytes() {
+    return _bytes(String(this));
+};
+
+String.prototype.chars = function chars() {
+    return _chars(String(this));
+};
+
 String.prototype.words = function words() {
     return _words(String(this));
+};
+
+String.prototype.lines = function lines() {
+    return _lines(String(this));
 };
 
 String.prototype.chunk = function chunk(length) {
@@ -105,4 +129,8 @@ String.prototype.stripStart = function stripStart(prefix: string) {
 
 String.prototype.byteLength = function byteLength() {
     return _byteLength(String(this));
+};
+
+String.prototype.isAscii = function isAscii() {
+    return _isAscii(String(this));
 };

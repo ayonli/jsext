@@ -1,5 +1,6 @@
 import { chunk as chunk$1 } from '../array/base.js';
 
+const encoder = new TextEncoder();
 /**
  * Compares two strings, returns `-1` if `a < b`, `0` if `a == b` and `1` if `a > b`.
  */
@@ -48,10 +49,28 @@ function capitalize(str, all) {
 function hyphenate(str) {
     return str.replace(/(\S)\s+(\S)/g, (_, $1, $2) => $1 + "-" + $2);
 }
+/** Returns the bytes of the given string. */
+function bytes(str) {
+    return encoder.encode(str);
+}
+/** Returns the characters of the string (emojis are supported). */
+function chars(str) {
+    if (typeof (Intl === null || Intl === void 0 ? void 0 : Intl.Segmenter) === "function") {
+        return Array.from(new Intl.Segmenter().segment(str))
+            .map((x) => x.segment);
+    }
+    else {
+        return Array.from(str);
+    }
+}
 /** Extracts words (in latin characters) from the string. */
 function words(str) {
     const matches = str.match(/\w+/g);
     return matches ? [...matches].map(sub => sub.split("_")).flat() : [];
+}
+/** Splits the string into lines by `\n` or `\r\n`. */
+function lines(str) {
+    return str.split(/\r?\n/);
 }
 /** Breaks the string into smaller chunks according to the given length. */
 function chunk(str, length) {
@@ -118,11 +137,14 @@ function stripStart(str, prefix) {
     }
     return str;
 }
-const encoder = new TextEncoder();
 /** Returns the byte length of the string. */
 function byteLength(str) {
-    return encoder.encode(str).byteLength;
+    return bytes(str).byteLength;
+}
+/** Checks if all characters in this string are within the ASCII range. */
+function isAscii(str) {
+    return bytes(str).every(byte => byte >= 0 && byte <= 127);
 }
 
-export { byteLength, capitalize, chunk, compare, count, hyphenate, random, stripEnd, stripStart, trim, trimEnd, trimStart, truncate, words };
+export { byteLength, bytes, capitalize, chars, chunk, compare, count, hyphenate, isAscii, lines, random, stripEnd, stripStart, trim, trimEnd, trimStart, truncate, words };
 //# sourceMappingURL=index.js.map

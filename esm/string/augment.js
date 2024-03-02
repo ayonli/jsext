@@ -1,4 +1,4 @@
-import { compare, random, count, capitalize, hyphenate, words, chunk, truncate, trim, trimEnd, trimStart, stripEnd, stripStart, byteLength } from './index.js';
+import { compare, random, count, capitalize, hyphenate, bytes, chars, words, lines, chunk, truncate, trim, trimEnd, trimStart, stripEnd, stripStart, byteLength, isAscii } from './index.js';
 
 String.compare = compare;
 String.random = random;
@@ -11,8 +11,17 @@ String.prototype.capitalize = function capitalize$1(all) {
 String.prototype.hyphenate = function capitalize() {
     return hyphenate(String(this));
 };
+String.prototype.bytes = function bytes$1() {
+    return bytes(String(this));
+};
+String.prototype.chars = function chars$1() {
+    return chars(String(this));
+};
 String.prototype.words = function words$1() {
     return words(String(this));
+};
+String.prototype.lines = function lines$1() {
+    return lines(String(this));
 };
 String.prototype.chunk = function chunk$1(length) {
     return chunk(String(this), length);
@@ -37,5 +46,8 @@ String.prototype.stripStart = function stripStart$1(prefix) {
 };
 String.prototype.byteLength = function byteLength$1() {
     return byteLength(String(this));
+};
+String.prototype.isAscii = function isAscii$1() {
+    return isAscii(String(this));
 };
 //# sourceMappingURL=augment.js.map

@@ -35,9 +35,31 @@ describe("String", () => {
         strictEqual(" hello  world   ".hyphenate(), " hello-world   ");
     });
 
+    it("String.prototype.bytes", () => {
+        const encoder = new TextEncoder();
+        deepStrictEqual("Hello, World!".bytes(), encoder.encode("Hello, World!"));
+        deepStrictEqual("你好，世界！".bytes(), encoder.encode("你好，世界！"));
+    });
+
+    it("String.prototype.chars", () => {
+        deepStrictEqual("foo".chars(), ["f", "o", "o"]);
+        deepStrictEqual("你好".chars(), ["你", "好"]);
+        deepStrictEqual("😴😄⛔🎠🚓🚇👨‍👨‍👧‍👧👦🏾".chars(), ["😴", "😄", "⛔", "🎠", "🚓", "🚇", "👨‍👨‍👧‍👧", "👦🏾"]);
+    });
+
     it("String.prototype.words", () => {
         deepStrictEqual("Hello, World!".words(), ["Hello", "World"]);
         deepStrictEqual("hello_world".words(), ["hello", "world"]);
+    });
+
+    it("String.prototype.lines", () => {
+        deepStrictEqual("Hello World".lines(), ["Hello World"]);
+        deepStrictEqual("Hello\nWorld".lines(), ["Hello", "World"]);
+        deepStrictEqual("Hello\r\nWorld".lines(), ["Hello", "World"]);
+        deepStrictEqual("Hello\r\n\rWorld".lines(), ["Hello", "\rWorld"]);
+        deepStrictEqual("Hello\r\n\r\n\nWorld".lines(), ["Hello", "", "", "World"]);
+        deepStrictEqual("Hello\nWorld\n".lines(), ["Hello", "World", ""]);
+        deepStrictEqual("Hello\nWorld\r\n".lines(), ["Hello", "World", ""]);
     });
 
     it("String.prototype.chunk", () => {
@@ -82,5 +104,11 @@ describe("String", () => {
     it("String.prototype.byteLength", () => {
         strictEqual("Hello, World!".byteLength(), 13);
         strictEqual("你好，世界！".byteLength(), 18);
+    });
+
+    it("String.prototype.isAscii", () => {
+        ok("Hello, World!".isAscii());
+        ok(!"Hello, 世界！".isAscii());
+        ok(!"Hello, 😴😄".isAscii());
     });
 });
