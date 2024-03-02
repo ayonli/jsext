@@ -25,8 +25,12 @@ declare global {
          * Compares two strings, returns `-1` if `a < b`, `0` if `a == b` and `1` if `a > b`.
          */
         compare(str1: string, str2: string): -1 | 0 | 1;
-        /** Returns a random string, the charset matches `/[0-9a-zA-Z]/` */
-        random(length: number): string;
+        /**
+         * Returns a random string restricted by `length` (character-wise).
+         * 
+         * @param chars Default value: `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`.
+         */
+        random(length: number, chars?: string): string;
     }
 
     interface String {

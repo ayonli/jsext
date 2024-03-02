@@ -1,6 +1,7 @@
 import { chunk as _chunk } from "../array/base.ts";
 
 const encoder = new TextEncoder();
+const _chars = chars;
 
 /**
  * Compares two strings, returns `-1` if `a < b`, `0` if `a == b` and `1` if `a > b`.
@@ -15,14 +16,21 @@ export function compare(str1: string, str2: string): -1 | 0 | 1 {
     }
 }
 
-/** Returns a random string, the charset matches `/[0-9a-zA-Z]/`. */
-export function random(length: number): string {
-    const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+/**
+ * Returns a random string restricted by `length` (character-wise).
+ * 
+ * @param chars Default value: `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`.
+ */
+export function random(
+    length: number,
+    chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+): string {
+    const arr = _chars(chars);
     let str = "";
 
     while (0 < length--) {
-        const i = Math.floor(Math.random() * chars.length);
-        str += chars[i];
+        const i = Math.floor(Math.random() * arr.length);
+        str += arr[i];
     }
 
     return str;

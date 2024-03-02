@@ -13,6 +13,12 @@ describe("String", () => {
 
     it("String.random", () => {
         ok(String.random(4).match(/[0-9a-zA-Z]{4}/));
+        ok(String.random(10, "01234567890").match(/[0-9]{10}/));
+
+        const chars = "😴😄⛔🎠🚓🚇";
+        const randStr = String.random(4, chars);
+        strictEqual(randStr.chars().length, 4);
+        ok(randStr.chars().every(char => chars.includes(char)));
     });
 
     it("String.prototype.count", () => {

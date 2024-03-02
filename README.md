@@ -1319,7 +1319,7 @@ import "@ayonli/jsext/string/augment";
 **Functions**
 
 - `compare(str1: string, str2: string): -1 | 0 | 1`
-- `random(length: number): string`
+- `random(length: number, chars?: string): string`
 - `count(str: string, sub: string): number`
 - `capitalize(str: string, all?: boolean): string`
 - `hyphenate(str: string): string`

@@ -1,6 +1,7 @@
 import { chunk as chunk$1 } from '../array/base.js';
 
 const encoder = new TextEncoder();
+const _chars = chars;
 /**
  * Compares two strings, returns `-1` if `a < b`, `0` if `a == b` and `1` if `a > b`.
  */
@@ -15,13 +16,17 @@ function compare(str1, str2) {
         return 0;
     }
 }
-/** Returns a random string, the charset matches `/[0-9a-zA-Z]/`. */
-function random(length) {
-    const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+/**
+ * Returns a random string restricted by `length` (character-wise).
+ *
+ * @param chars Default value: `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`.
+ */
+function random(length, chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") {
+    const arr = _chars(chars);
     let str = "";
     while (0 < length--) {
-        const i = Math.floor(Math.random() * chars.length);
-        str += chars[i];
+        const i = Math.floor(Math.random() * arr.length);
+        str += arr[i];
     }
     return str;
 }
