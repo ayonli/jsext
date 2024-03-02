@@ -93,6 +93,8 @@ declare global {
          * Create an object with flatted keys of the original object, the children
          * nodes' properties will be transformed to a string-represented path.
          * 
+         * @remarks This function only operates on plain objects and arrays.
+         * 
          * @param depth Default value: `1`.
          * @example
          *  Object.flatKeys({ foo: { bar: "Hello, World!" } }) === { "foo.bar": "Hello, World!" }

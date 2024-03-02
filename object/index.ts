@@ -275,6 +275,8 @@ export type OmitChildrenNodes<T extends object> = Pick<T, {
  * Create an object with flatted keys of the original object, the children
  * nodes' properties will be transformed to a string-represented path.
  * 
+ * @remarks This function only operates on plain objects and arrays.
+ * 
  * @param depth Default value: `1`.
  * @example
  * ```ts
@@ -292,10 +294,14 @@ export function flatKeys<T extends object>(
     const carrier = obj.constructor ? {} as any : Object.create(null);
     const flatArrayIndices = options?.flatArrayIndices ?? false;
 
+    if (!isPlainObject(obj) && (!Array.isArray(obj) || !flatArrayIndices)) {
+        return obj;
+    }
+
     (function process(target: any, path: string, depth: number) {
         if (depth === maxDepth) {
             carrier[path] = target;
-        } else if (Array.isArray(target)) {
+        } else if (Array.isArray(target) && depth) {
             if (!flatArrayIndices) {
                 carrier[path] = target;
             } else {
@@ -307,9 +313,9 @@ export function flatKeys<T extends object>(
                     );
                 });
             }
-        } else if (isPlainObject(target)) {
+        } else if (isPlainObject(target) || (Array.isArray(target) && !depth)) {
             Reflect.ownKeys(target).forEach(key => {
-                const value = target[key];
+                const value = (target as any)[key];
 
                 if (typeof key === "symbol") {
                     if (depth === 0) { // only allow top-level symbol properties
