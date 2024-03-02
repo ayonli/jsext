@@ -161,83 +161,79 @@ export function isPlainObject(value: unknown): value is { [x: string | symbol]: 
 export function sanitize<T extends object>(obj: T, deep?: boolean): T;
 export function sanitize<T extends object>(obj: T, options: {
     deep?: boolean,
-    removeNull?: boolean;
-    removeEmptyString?: boolean;
-    removeEmptyObject?: boolean;
+    removeNulls?: boolean;
+    removeEmptyStrings?: boolean;
+    removeEmptyObjects?: boolean;
+    removeArrayItems?: boolean;
 }): T;
 export function sanitize<T extends object>(obj: T, options: boolean | {
     deep?: boolean,
-    removeNull?: boolean;
-    removeEmptyString?: boolean;
-    removeEmptyObject?: boolean;
+    removeNulls?: boolean;
+    removeEmptyStrings?: boolean;
+    removeEmptyObjects?: boolean;
+    removeArrayItems?: boolean;
 } = false): T {
     const deep = typeof options === "object" ? !!options.deep : !!options;
-    const removeNull = typeof options === "object" ? !!options.removeNull : false;
-    const removeEmptyString = typeof options === "object" ? !!options.removeEmptyString : false;
-    const removeEmptyObject = typeof options === "object" ? !!options?.removeEmptyObject : false;
+    const removeNulls = typeof options === "object" ? !!options.removeNulls : false;
+    const removeEmptyStrings = typeof options === "object" ? !!options.removeEmptyStrings : false;
+    const removeEmptyObjects = typeof options === "object" ? !!options?.removeEmptyObjects : false;
+    const removeArrayItems = typeof options === "object" ? !!options?.removeArrayItems : false;
 
-    return (function process(
-        target: any,
-        removeNull: boolean,
-        removeEmptyString: boolean,
-        removeEmptyObject: boolean,
-        depth: number
-    ): any {
+    return (function process(target: any, depth: number): any {
         if (typeof target === "string") {
             return target.trim();
         } else if (Array.isArray(target)) {
-            return !depth || deep ? target.map(item => process(
-                item,
-                removeNull,
-                removeEmptyString,
-                removeEmptyObject,
-                depth + 1
-            )).filter(item => {
-                if (item === null) {
-                    return !removeNull;
-                } else if (item === "") {
-                    return !removeEmptyString;
-                } else if (Array.isArray(item)) {
-                    return item.length > 0 || !removeEmptyObject;
-                } else if (isPlainObject(item)) {
-                    return Reflect.ownKeys(item).length > 0 || !removeEmptyObject;
-                } else {
-                    return true;
-                }
-            }) : target;
+            const arr = !depth || deep ? target.map(item => process(item, depth + 1)) : target;
+
+            if (removeArrayItems) {
+                return arr.filter(value => {
+                    if (value === null) {
+                        return !removeNulls;
+                    } else if (value === "") {
+                        return !removeEmptyStrings;
+                    } else if (isValid(value)) {
+                        if (typeof value !== "object") {
+                            return true;
+                        } else if (Array.isArray(value)) {
+                            return value.length > 0 || !removeEmptyObjects;
+                        } else if (isPlainObject(value)) {
+                            return Reflect.ownKeys(value).length > 0 || !removeEmptyObjects;
+                        } else {
+                            return true;
+                        }
+                    } else {
+                        return false;
+                    }
+                });
+            } else {
+                return arr;
+            }
         } else if (isPlainObject(target)) {
             return !depth || deep ? Reflect.ownKeys(target).reduce((result, key) => {
-                const value = process(
-                    target[key],
-                    removeNull,
-                    removeEmptyString,
-                    removeEmptyObject,
-                    depth + 1
-                );
+                const value = process(target[key], depth + 1);
 
                 if (value === null) {
-                    if (!removeNull) {
+                    if (!removeNulls) {
                         result[key] = value;
                     }
                 } else if (value === "") {
-                    if (!removeEmptyString) {
+                    if (!removeEmptyStrings) {
                         result[key] = value;
                     }
                 } else if (isValid(value)) {
                     if (typeof value !== "object") {
                         result[key] = value;
                     } else if (Array.isArray(value)) {
-                        if (value.length > 0 || !removeEmptyObject) {
+                        if (value.length > 0 || !removeEmptyObjects) {
                             result[key] = value;
                         }
                     } else if (isPlainObject(value)) {
-                        if (Reflect.ownKeys(value).length > 0 || !removeEmptyObject) {
+                        if (Reflect.ownKeys(value).length > 0 || !removeEmptyObjects) {
                             result[key] = value;
                         }
                     } else {
                         result[key] = value;
                     }
-
                 }
 
                 return result;
@@ -245,7 +241,7 @@ export function sanitize<T extends object>(obj: T, options: boolean | {
         } else {
             return target;
         }
-    })(obj, removeNull, removeEmptyString, removeEmptyObject, 0);
+    })(obj, 0);
 }
 
 /**
@@ -293,12 +289,12 @@ export function flatKeys<T extends object>(
     obj: T,
     depth = 1
 ): OmitChildrenNodes<T> & Record<string | number | symbol, any> {
+    const maxDepth = depth;
     return (function process(
         carrier: any,
         source: any,
         path: string,
-        depth: number,
-        maxDepth: number
+        depth: number
     ) {
         if (depth === maxDepth || !isPlainObject(source)) {
             carrier[path] = source;
@@ -315,13 +311,12 @@ export function flatKeys<T extends object>(
                         carrier,
                         value,
                         path ? `${path}.${key}` : key,
-                        path ? depth + 1 : depth,
-                        maxDepth
+                        path ? depth + 1 : depth
                     );
                 }
             });
         }
 
         return carrier;
-    })(obj.constructor ? {} as any : Object.create(null), obj, "", 0, depth);
+    })(obj.constructor ? {} as any : Object.create(null), obj, "", 0);
 }

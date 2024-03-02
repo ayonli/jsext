@@ -160,7 +160,7 @@ describe("Object", () => {
             nil3: NaN,
             date: new Date("invalid"),
             obj: { foo: void 0, bar: null },
-            arr: [{ foo: void 0, bar: null }],
+            arr: [" Hello, World! ", " ", void 0, null, NaN, { foo: void 0, bar: null }],
         };
 
         deepStrictEqual(Object.sanitize(obj), {
@@ -168,45 +168,57 @@ describe("Object", () => {
             str: "",
             nil2: null,
             obj: { foo: void 0, bar: null },
-            arr: [{ foo: void 0, bar: null }],
+            arr: [" Hello, World! ", " ", void 0, null, NaN, { foo: void 0, bar: null }],
         });
         deepStrictEqual(Object.sanitize(obj, true), {
             name: "Hello, World!",
             str: "",
             nil2: null,
             obj: { bar: null },
-            arr: [{ bar: null }],
+            arr: ["Hello, World!", "", void 0, null, NaN, { bar: null }],
         });
         deepStrictEqual(Object.sanitize(obj, { deep: true }), {
             name: "Hello, World!",
             str: "",
             nil2: null,
             obj: { bar: null },
-            arr: [{ bar: null }],
+            arr: ["Hello, World!", "", void 0, null, NaN, { bar: null }],
         });
-        deepStrictEqual(Object.sanitize(obj, { deep: true, removeNull: true }), {
+        deepStrictEqual(Object.sanitize(obj, { deep: true, removeNulls: true }), {
             name: "Hello, World!",
             str: "",
             obj: {},
-            arr: [{}],
+            arr: ["Hello, World!", "", void 0, null, NaN, {}],
         });
         deepStrictEqual(Object.sanitize(obj, {
             deep: true,
-            removeNull: true,
-            removeEmptyString: true,
+            removeNulls: true,
+            removeEmptyStrings: true,
         }), {
             name: "Hello, World!",
             obj: {},
-            arr: [{}],
+            arr: ["Hello, World!", "", void 0, null, NaN, {}],
         });
         deepStrictEqual(Object.sanitize(obj, {
             deep: true,
-            removeNull: true,
-            removeEmptyString: true,
-            removeEmptyObject: true,
+            removeNulls: true,
+            removeEmptyStrings: true,
+            removeEmptyObjects: true,
         }), {
             name: "Hello, World!",
+            arr: ["Hello, World!", "", void 0, null, NaN, {}],
         });
+        deepStrictEqual(Object.sanitize(obj, {
+            deep: true,
+            removeNulls: true,
+            removeEmptyStrings: true,
+            removeEmptyObjects: true,
+            removeArrayItems: true,
+        }), {
+            name: "Hello, World!",
+            arr: ["Hello, World!"],
+        });
+
     });
 
     it("Object.sortKeys", () => {

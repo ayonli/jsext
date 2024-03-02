@@ -78,9 +78,10 @@ declare global {
         sanitize<T extends object>(obj: T, deep?: boolean): T;
         sanitize<T extends object>(obj: T, options: {
             deep?: boolean,
-            removeNull?: boolean;
-            removeEmptyString?: boolean;
-            removeEmptyObject?: boolean;
+            removeNulls?: boolean;
+            removeEmptyStrings?: boolean;
+            removeEmptyObjects?: boolean;
+            removeArrayItems?: boolean;
         }): T;
         /**
          * Creates an object with sorted keys (in ascending order) of the original object.
