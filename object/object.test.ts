@@ -151,7 +151,7 @@ describe("Object", () => {
         ok(!Object.isPlainObject(new Date()));
     });
 
-    it("Object.sanitize", () => {
+    describe("Object.sanitize", () => {
         const obj = {
             name: " Hello, World! ",
             str: " ",
@@ -163,65 +163,87 @@ describe("Object", () => {
             arr: [" Hello, World! ", " ", void 0, null, NaN, { foo: void 0, bar: null }],
         };
 
-        deepStrictEqual(Object.sanitize(obj), {
-            name: "Hello, World!",
-            str: "",
-            nil2: null,
-            obj: { foo: void 0, bar: null },
-            arr: [" Hello, World! ", " ", void 0, null, NaN, { foo: void 0, bar: null }],
-        });
-        deepStrictEqual(Object.sanitize(obj, true), {
-            name: "Hello, World!",
-            str: "",
-            nil2: null,
-            obj: { bar: null },
-            arr: ["Hello, World!", "", void 0, null, NaN, { bar: null }],
-        });
-        deepStrictEqual(Object.sanitize(obj, { deep: true }), {
-            name: "Hello, World!",
-            str: "",
-            nil2: null,
-            obj: { bar: null },
-            arr: ["Hello, World!", "", void 0, null, NaN, { bar: null }],
-        });
-        deepStrictEqual(Object.sanitize(obj, { deep: true, removeNulls: true }), {
-            name: "Hello, World!",
-            str: "",
-            obj: {},
-            arr: ["Hello, World!", "", void 0, null, NaN, {}],
-        });
-        deepStrictEqual(Object.sanitize(obj, {
-            deep: true,
-            removeNulls: true,
-            removeEmptyStrings: true,
-        }), {
-            name: "Hello, World!",
-            obj: {},
-            arr: ["Hello, World!", "", void 0, null, NaN, {}],
-        });
-        deepStrictEqual(Object.sanitize(obj, {
-            deep: true,
-            removeNulls: true,
-            removeEmptyStrings: true,
-            removeEmptyObjects: true,
-        }), {
-            name: "Hello, World!",
-            arr: ["Hello, World!", "", void 0, null, NaN, {}],
-        });
-        deepStrictEqual(Object.sanitize(obj, {
-            deep: true,
-            removeNulls: true,
-            removeEmptyStrings: true,
-            removeEmptyObjects: true,
-            removeArrayItems: true,
-        }), {
-            name: "Hello, World!",
-            arr: ["Hello, World!"],
+        it("object", () => {
+            deepStrictEqual(Object.sanitize(obj), {
+                name: "Hello, World!",
+                str: "",
+                nil2: null,
+                obj: { foo: void 0, bar: null },
+                arr: [" Hello, World! ", " ", void 0, null, NaN, { foo: void 0, bar: null }],
+            });
+            deepStrictEqual(Object.sanitize(obj, true), {
+                name: "Hello, World!",
+                str: "",
+                nil2: null,
+                obj: { bar: null },
+                arr: ["Hello, World!", "", void 0, null, NaN, { bar: null }],
+            });
+            deepStrictEqual(Object.sanitize(obj, { deep: true }), {
+                name: "Hello, World!",
+                str: "",
+                nil2: null,
+                obj: { bar: null },
+                arr: ["Hello, World!", "", void 0, null, NaN, { bar: null }],
+            });
+            deepStrictEqual(Object.sanitize(obj, { deep: true, removeNulls: true }), {
+                name: "Hello, World!",
+                str: "",
+                obj: {},
+                arr: ["Hello, World!", "", void 0, null, NaN, {}],
+            });
+            deepStrictEqual(Object.sanitize(obj, {
+                deep: true,
+                removeNulls: true,
+                removeEmptyStrings: true,
+            }), {
+                name: "Hello, World!",
+                obj: {},
+                arr: ["Hello, World!", "", void 0, null, NaN, {}],
+            });
+            deepStrictEqual(Object.sanitize(obj, {
+                deep: true,
+                removeNulls: true,
+                removeEmptyStrings: true,
+                removeEmptyObjects: true,
+            }), {
+                name: "Hello, World!",
+                arr: ["Hello, World!", "", void 0, null, NaN, {}],
+            });
+            deepStrictEqual(Object.sanitize(obj, {
+                deep: true,
+                removeNulls: true,
+                removeEmptyStrings: true,
+                removeEmptyObjects: true,
+                removeArrayItems: true,
+            }), {
+                name: "Hello, World!",
+                arr: ["Hello, World!"],
+            });
         });
 
+        it("array", () => {
+            deepStrictEqual(Object.sanitize([obj]), [obj]);
+            deepStrictEqual(Object.sanitize([obj], true), [{
+                name: "Hello, World!",
+                str: "",
+                nil2: null,
+                obj: { bar: null },
+                arr: ["Hello, World!", "", void 0, null, NaN, { bar: null }],
+            }]);
+            deepStrictEqual(Object.sanitize([obj], {
+                deep: true,
+                removeArrayItems: true,
+            }), [{
+                name: "Hello, World!",
+                str: "",
+                nil2: null,
+                obj: { bar: null },
+                arr: ["Hello, World!", "", null, { bar: null }],
+            }]);
+        });
     });
 
-    it("Object.sortKeys", () => {
+    describe("Object.sortKeys", () => {
         const obj = {
             str: "foobar",
             num: 123,
@@ -231,22 +253,36 @@ describe("Object", () => {
             arr: [{ foo: "hello", bar: "world" }],
         };
 
-        strictEqual(JSON.stringify(Object.sortKeys(obj)), JSON.stringify({
-            arr: [{ foo: "hello", bar: "world" }],
-            bool: true,
-            nil: null,
-            num: 123,
-            obj: { foo: "hello", bar: "world" },
-            str: "foobar",
-        }));
-        strictEqual(JSON.stringify(Object.sortKeys(obj, true)), JSON.stringify({
-            arr: [{ bar: "world", foo: "hello" }],
-            bool: true,
-            nil: null,
-            num: 123,
-            obj: { bar: "world", foo: "hello" },
-            str: "foobar",
-        }));
+        it("object", () => {
+            strictEqual(JSON.stringify(Object.sortKeys(obj)), JSON.stringify({
+                arr: [{ foo: "hello", bar: "world" }],
+                bool: true,
+                nil: null,
+                num: 123,
+                obj: { foo: "hello", bar: "world" },
+                str: "foobar",
+            }));
+            strictEqual(JSON.stringify(Object.sortKeys(obj, true)), JSON.stringify({
+                arr: [{ bar: "world", foo: "hello" }],
+                bool: true,
+                nil: null,
+                num: 123,
+                obj: { bar: "world", foo: "hello" },
+                str: "foobar",
+            }));
+        });
+
+        it("array", () => {
+            strictEqual(JSON.stringify(Object.sortKeys([obj])), JSON.stringify([obj]));
+            strictEqual(JSON.stringify(Object.sortKeys([obj], true)), JSON.stringify([{
+                arr: [{ bar: "world", foo: "hello" }],
+                bool: true,
+                nil: null,
+                num: 123,
+                obj: { bar: "world", foo: "hello" },
+                str: "foobar",
+            }]));
+        });
     });
 
     describe("Object.flatKeys", () => {

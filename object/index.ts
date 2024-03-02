@@ -157,6 +157,8 @@ export function isPlainObject(value: unknown): value is { [x: string | symbol]: 
 /**
  * Creates an object base on the original object but without any invalid values
  * (except for `null`), and trims the value if it's a string.
+ * 
+ * @remarks This function only operates on plain objects and arrays.
  */
 export function sanitize<T extends object>(obj: T, deep?: boolean): T;
 export function sanitize<T extends object>(obj: T, options: {
@@ -247,7 +249,8 @@ export function sanitize<T extends object>(obj: T, options: boolean | {
 /**
  * Creates an object with sorted keys (in ascending order) of the original object.
  * 
- * Note: symbol keys are not sorted and remain their original order.
+ * @remarks Symbol keys are not sorted and remain their original order.
+ * @remarks This function only operates on plain objects and arrays.
  */
 export function sortKeys<T extends object>(obj: T, deep = false): T {
     return (function process(target: any, depth: number): any {
