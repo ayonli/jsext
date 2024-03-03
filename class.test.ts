@@ -1,8 +1,49 @@
 import { ok, strictEqual } from "node:assert";
 import { hasOwn } from "./object/index.ts";
-import jsext from "./index.ts";
+import jsext, { AsyncFunction, AsyncGeneratorFunction } from "./index.ts";
 
-describe("jsext.mixins", () => {
+describe("jsext.isClass", () => {
+    it("true", () => {
+        ok(jsext.isClass(class A { }));
+        ok(jsext.isClass(class { }));
+        ok(jsext.isClass(Uint8Array));
+        ok(jsext.isClass(Object));
+        ok(jsext.isClass(Array));
+        ok(jsext.isClass(Date));
+        ok(jsext.isClass(Function));
+        ok(jsext.isClass(AsyncFunction));
+        ok(jsext.isClass(AsyncGeneratorFunction));
+    });
+
+    it("false", () => {
+        ok(!jsext.isClass(String));
+        ok(!jsext.isClass(Number));
+        ok(!jsext.isClass(Boolean));
+        ok(!jsext.isClass(BigInt));
+        ok(!jsext.isClass(Symbol));
+        ok(!jsext.isClass(function foo() { }));
+        ok(!jsext.isClass(function Foo() { }));
+        ok(!jsext.isClass(() => { }));
+        ok(!jsext.isClass(async () => { }));
+        ok(!jsext.isClass(async function foo() { }));
+        ok(!jsext.isClass(function* foo() { }));
+        ok(!jsext.isClass(async function* foo() { }));
+    });
+});
+
+describe("jsext.isSubclassOf", () => {
+    it("jsext.isSubclassOf", () => {
+        class A { }
+        class B extends A { }
+        class C extends A { }
+
+        ok(jsext.isSubclassOf(B, A));
+        ok(jsext.isSubclassOf(A, Object));
+        ok(!jsext.isSubclassOf(C, B));
+    });
+});
+
+describe("jsext.mixin", () => {
     class A {
         get name() {
             return this.constructor.name;
@@ -33,13 +74,13 @@ describe("jsext.mixins", () => {
         }
     }
 
-    class Bar extends jsext.mixins<typeof Foo<string>, [A, C]>(Foo, A, C) {
+    class Bar extends jsext.mixin<typeof Foo<string>, [A, C]>(Foo, A, C) {
         show(str: string) {
             return str;
         }
     }
 
-    const Bar2 = jsext.mixins(Bar, {
+    const Bar2 = jsext.mixin(Bar, {
         log(text: string) {
             console.log(text);
         }

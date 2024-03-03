@@ -27,6 +27,13 @@
             "import": "./esm/chan.js",
             "default": "./chan.ts"
         },
+        "./class": {
+            "types": "./types/class.d.ts",
+            "bun": "./class.ts",
+            "require": "./cjs/class.js",
+            "import": "./esm/class.js",
+            "default": "./class.ts"
+        },
         "./debounce": {
             "types": "./types/debounce.d.ts",
             "bun": "./debounce.ts",
@@ -68,13 +75,6 @@
             "require": "./cjs/mixins.js",
             "import": "./esm/mixins.js",
             "default": "./mixins.ts"
-        },
-        "./isclass": {
-            "types": "./types/isclass.d.ts",
-            "bun": "./isclass.ts",
-            "require": "./cjs/isclass.js",
-            "import": "./esm/isclass.js",
-            "default": "./isclass.ts"
         },
         "./parallel": {
             "types": "./types/parallel.d.ts",

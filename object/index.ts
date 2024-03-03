@@ -1,5 +1,5 @@
 import type { Constructor } from "../index.ts";
-import isClass from "../isclass.ts";
+import { isClass } from "../class.ts";
 
 /**
  * Returns `true` if the specified object has the indicated property as its own property.

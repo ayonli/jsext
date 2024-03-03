@@ -57,9 +57,6 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 - [debounce](#debounce) Debounces function calls for frequent access.
 - [queue](#queue) Handles tasks sequentially and prevent concurrency conflicts.
 - [lock](#lock) Provides mutual exclusion for concurrent operations.
-- [mixins](#mixins) Defines a class that inherits methods from multiple base classes.
-- [isClass](#isclass) Checks if a value is a class/constructor.
-- [isSubclassOf](#issubclassof) Checks if a class is a subset of another class.
 - [read](#read) Makes any streaming source readable via `for await ... of ...` syntax.
 - [readAll](#readall) Reads all streaming data at once.
 - [chan](#chan) Creates a channel that transfers data across routines, even across
@@ -70,6 +67,9 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 - [example](#example) Writes unit tests as if writing examples, inspired by Golang.
 - [deprecate](#deprecate) Marks a function as deprecated and emit warnings when it is
     called.
+- [isClass](#isclass) Checks if a value is a class/constructor.
+- [isSubclassOf](#issubclassof) Checks if a class is a subset of another class.
+- [mixin](#mixin) Defines a class that inherits methods from multiple base classes.
 
 And other functions in [sub-packages](#sub-packages).
 
@@ -612,99 +612,6 @@ await Promise.all([
     concurrentOperation(),
     concurrentOperation(),
 ]);
-```
-
----
-
-### mixins
-
-```ts
-import type { UnionToIntersection } from "@ayonli/jsext/mixins";
-
-declare function mixins<T extends Constructor<any>, M extends any[]>(
-    base: T,
-    ...mixins: { [X in keyof M]: Constructor<M[X]> }
-): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
-declare function mixins<T extends Constructor<any>, M extends any[]>(
-    base: T,
-    ...mixins: M
-): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
-```
-
-Returns an extended class that combines all mixin methods.
-
-This function does not mutates the base class but create a pivot class instead.
-
-**Example**
-
-```ts
-import mixins from "@ayonli/jsext/mixins";
-import { isSubclassOf } from "@ayonli/jsext/isclass";
-
-class Log {
-    log(text: string) {
-        console.log(text);
-    }
-}
-
-class View {
-    display(data: Record<string, any>[]) {
-        console.table(data);
-    }
-}
-
-class Controller extends mixins(View, Log) {
-    constructor(readonly topic: string) {
-        super();
-    }
-}
-
-const ctrl = new Controller("foo");
-ctrl.log("something is happening");
-ctrl.display([{ topic: ctrl.topic, content: "something is happening" }]);
-
-console.assert(isSubclassOf(Controller, View));
-console.assert(!isSubclassOf(Controller, Log));
-```
-
----
-
-### isClass
-
-```ts
-declare function isClass(value: unknown): value is Constructor<any>;
-```
-
-Checks if a value is a class/constructor.
-
-**Example**
-
-```ts
-import isClass from "@ayonli/jsext/isclass";
-
-console.assert(isClass(class Foo { }));
-console.assert(!isClass(function foo() { }));
-```
-
----
-
-### isSubclassOf
-
-```ts
-declare function isSubclassOf<A, B>(ctor1: Constructor<A>, ctor2: Constructor<B>): boolean;
-```
-
-Checks if a class is a subclass of another class.
-
-**Example**
-
-```ts
-import { isSubclassOf } from "@ayonli/jsext/isclass";
-
-class Moment extends Date {}
-
-console.assert(isSubclassOf(Moment, Date));
-console.assert(isSubclassOf(Moment, Object)); // all classes are subclasses of Object
 ```
 
 ---
@@ -1287,6 +1194,101 @@ console.log(pow(2, 3));
 // DeprecationWarning: pow() is deprecated, use `a ** b` instead (at <anonymous>:5:13)
 // 8
 ```
+
+---
+
+
+### isClass
+
+```ts
+declare function isClass(value: unknown): value is Constructor<any>;
+```
+
+Checks if a value is a class/constructor.
+
+**Example**
+
+```ts
+import { isClass } from "@ayonli/jsext/class";
+
+console.assert(isClass(class Foo { }));
+console.assert(!isClass(function foo() { }));
+```
+
+---
+
+### isSubclassOf
+
+```ts
+declare function isSubclassOf<A, B>(ctor1: Constructor<A>, ctor2: Constructor<B>): boolean;
+```
+
+Checks if a class is a subclass of another class.
+
+**Example**
+
+```ts
+import { isSubclassOf } from "@ayonli/jsext/class";
+
+class Moment extends Date {}
+
+console.assert(isSubclassOf(Moment, Date));
+console.assert(isSubclassOf(Moment, Object)); // all classes are subclasses of Object
+```
+
+---
+
+### mixin
+
+```ts
+import type { UnionToIntersection } from "@ayonli/jsext/class";
+
+declare function mixin<T extends Constructor<any>, M extends any[]>(
+    base: T,
+    ...mixins: { [X in keyof M]: Constructor<M[X]> }
+): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
+declare function mixin<T extends Constructor<any>, M extends any[]>(
+    base: T,
+    ...mixins: M
+): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
+```
+
+Returns an extended class that combines all mixin methods.
+
+This function does not mutates the base class but create a pivot class instead.
+
+**Example**
+
+```ts
+import { mixin, isSubclassOf } from "@ayonli/jsext/class";
+
+class Log {
+    log(text: string) {
+        console.log(text);
+    }
+}
+
+class View {
+    display(data: Record<string, any>[]) {
+        console.table(data);
+    }
+}
+
+class Controller extends mixin(View, Log) {
+    constructor(readonly topic: string) {
+        super();
+    }
+}
+
+const ctrl = new Controller("foo");
+ctrl.log("something is happening");
+ctrl.display([{ topic: ctrl.topic, content: "something is happening" }]);
+
+console.assert(isSubclassOf(Controller, View));
+console.assert(!isSubclassOf(Controller, Log));
+```
+
+---
 
 ## Types
 

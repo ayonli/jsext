@@ -1,4 +1,4 @@
-import { isSubclassOf } from "../isclass.ts";
+import { isSubclassOf } from "../class.ts";
 import { random as rand } from "../number/index.ts";
 import {
     count as _count,

@@ -3,16 +3,16 @@ import func from "./func.ts";
 import wrap from "./wrap.ts";
 import throttle from "./throttle.ts";
 import debounce from "./debounce.ts";
-import mixins from "./mixins.ts";
-import isClass, { isSubclassOf } from "./isclass.ts";
-import chan, { Channel } from "./chan.ts";
 import queue, { Queue } from "./queue.ts";
 import lock, { Mutex } from "./lock.ts";
 import read, { readAll } from "./read.ts";
-import run from "./run.ts";
+import chan, { Channel } from "./chan.ts";
 import parallel from "./parallel.ts";
+import run from "./run.ts";
 import example from "./example.ts";
 import deprecate from "./deprecate.ts";
+import { isClass, isSubclassOf, mixin } from "./class.ts";
+import mixins from "./mixins.ts";
 
 export { Channel, Queue, Mutex };
 export const AsyncFunction = (async function () { }).constructor as AsyncFunctionConstructor;
@@ -59,18 +59,19 @@ const jsext = {
     wrap,
     throttle,
     debounce,
-    mixins,
-    isClass,
-    isSubclassOf,
-    chan,
     queue,
     lock,
     read,
     readAll,
-    run,
+    chan,
     parallel,
+    run,
     example,
     deprecate,
+    isClass,
+    isSubclassOf,
+    mixin,
+    mixins,
 };
 
 export {
@@ -80,16 +81,17 @@ export {
     wrap,
     throttle,
     debounce,
-    mixins,
-    isClass,
-    isSubclassOf,
-    chan,
     queue,
     lock,
     read,
     readAll,
-    run,
+    chan,
     parallel,
+    run,
     example,
     deprecate,
+    isClass,
+    isSubclassOf,
+    mixin,
+    mixins,
 };

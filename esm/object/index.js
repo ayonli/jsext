@@ -1,4 +1,4 @@
-import isClass from '../isclass.js';
+import { isClass } from '../class.js';
 
 /**
  * Returns `true` if the specified object has the indicated property as its own property.
