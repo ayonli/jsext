@@ -1509,9 +1509,8 @@ import "@ayonli/jsext/object/augment";
 - `typeOf<T>(value: T): TypeNames | Constructor<T>`
 - `isValid(value: unknown): boolean`
 - `isPlainObject(value: unknown): value is { [x: string | symbol]: any; }`
-- `sanitize<T extends object>(obj: T, deep?: boolean): T`
-- `sanitize<T extends object>(obj: T, options: { deep?: boolean, removeNulls?: boolean; removeEmptyStrings?: boolean; removeEmptyObjects?: boolean; removeArrayItems?: boolean; }): T`
-- `sortKeys<T extends object>(obj: T, deep = false): T`
+- `sanitize<T extends object>(obj: T, deep?: boolean, options?: { removeNulls?: boolean; removeEmptyStrings?: boolean; removeEmptyObjects?: boolean; removeArrayItems?: boolean; }): T`
+- `sortKeys<T extends object>(obj: T, deep?: boolean): T`
 - `flatKeys<T extends object>(obj: T, depth = 1, options?: { flatArrayIndices?: boolean; }): OmitChildrenNodes<T> & Record<string | number | symbol, any>`
 
 *When [augment](https://github.com/ayonli/jsext/blob/main/object/augment.ts)ing,*

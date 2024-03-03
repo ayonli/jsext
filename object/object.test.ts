@@ -211,21 +211,13 @@ describe("Object", () => {
                 obj: { bar: null },
                 arr: ["Hello, World!", "", void 0, null, NaN, { bar: null }],
             });
-            deepStrictEqual(Object.sanitize(obj, { deep: true }), {
-                name: "Hello, World!",
-                str: "",
-                nil2: null,
-                obj: { bar: null },
-                arr: ["Hello, World!", "", void 0, null, NaN, { bar: null }],
-            });
-            deepStrictEqual(Object.sanitize(obj, { deep: true, removeNulls: true }), {
+            deepStrictEqual(Object.sanitize(obj, true, { removeNulls: true }), {
                 name: "Hello, World!",
                 str: "",
                 obj: {},
                 arr: ["Hello, World!", "", void 0, null, NaN, {}],
             });
-            deepStrictEqual(Object.sanitize(obj, {
-                deep: true,
+            deepStrictEqual(Object.sanitize(obj, true, {
                 removeNulls: true,
                 removeEmptyStrings: true,
             }), {
@@ -233,8 +225,7 @@ describe("Object", () => {
                 obj: {},
                 arr: ["Hello, World!", "", void 0, null, NaN, {}],
             });
-            deepStrictEqual(Object.sanitize(obj, {
-                deep: true,
+            deepStrictEqual(Object.sanitize(obj, true, {
                 removeNulls: true,
                 removeEmptyStrings: true,
                 removeEmptyObjects: true,
@@ -242,8 +233,7 @@ describe("Object", () => {
                 name: "Hello, World!",
                 arr: ["Hello, World!", "", void 0, null, NaN, {}],
             });
-            deepStrictEqual(Object.sanitize(obj, {
-                deep: true,
+            deepStrictEqual(Object.sanitize(obj, true, {
                 removeNulls: true,
                 removeEmptyStrings: true,
                 removeEmptyObjects: true,
@@ -263,10 +253,7 @@ describe("Object", () => {
                 obj: { bar: null },
                 arr: ["Hello, World!", "", void 0, null, NaN, { bar: null }],
             }]);
-            deepStrictEqual(Object.sanitize([obj], {
-                deep: true,
-                removeArrayItems: true,
-            }), [{
+            deepStrictEqual(Object.sanitize([obj], true, { removeArrayItems: true }), [{
                 name: "Hello, World!",
                 str: "",
                 nil2: null,

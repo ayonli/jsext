@@ -198,26 +198,13 @@ export function isPlainObject(value: unknown): value is { [x: string | symbol]: 
  * 
  * @remarks This function only operates on plain objects and arrays.
  */
-export function sanitize<T extends object>(obj: T, deep?: boolean): T;
-export function sanitize<T extends object>(obj: T, options: {
-    deep?: boolean,
+export function sanitize<T extends object>(obj: T, deep = false, options: {
     removeNulls?: boolean;
     removeEmptyStrings?: boolean;
     removeEmptyObjects?: boolean;
     removeArrayItems?: boolean;
-}): T;
-export function sanitize<T extends object>(obj: T, options: boolean | {
-    deep?: boolean,
-    removeNulls?: boolean;
-    removeEmptyStrings?: boolean;
-    removeEmptyObjects?: boolean;
-    removeArrayItems?: boolean;
-} = false): T {
-    const deep = typeof options === "object" ? !!options.deep : !!options;
-    const removeNulls = typeof options === "object" ? !!options.removeNulls : false;
-    const removeEmptyStrings = typeof options === "object" ? !!options.removeEmptyStrings : false;
-    const removeEmptyObjects = typeof options === "object" ? !!options?.removeEmptyObjects : false;
-    const removeArrayItems = typeof options === "object" ? !!options?.removeArrayItems : false;
+} = {}): T {
+    const { removeNulls, removeEmptyStrings, removeEmptyObjects, removeArrayItems } = options;
 
     return (function process(target: any, depth: number): any {
         if (typeof target === "string") {

@@ -129,12 +129,14 @@ function isPlainObject(value) {
     const proto = Object.getPrototypeOf(value);
     return proto === null || proto.constructor === Object;
 }
-function sanitize(obj, options = false) {
-    const deep = typeof options === "object" ? !!options.deep : !!options;
-    const removeNulls = typeof options === "object" ? !!options.removeNulls : false;
-    const removeEmptyStrings = typeof options === "object" ? !!options.removeEmptyStrings : false;
-    const removeEmptyObjects = typeof options === "object" ? !!(options === null || options === void 0 ? void 0 : options.removeEmptyObjects) : false;
-    const removeArrayItems = typeof options === "object" ? !!(options === null || options === void 0 ? void 0 : options.removeArrayItems) : false;
+/**
+ * Creates an object base on the original object but without any invalid values
+ * (except for `null`), and trims the value if it's a string.
+ *
+ * @remarks This function only operates on plain objects and arrays.
+ */
+function sanitize(obj, deep = false, options = {}) {
+    const { removeNulls, removeEmptyStrings, removeEmptyObjects, removeArrayItems } = options;
     return (function process(target, depth) {
         if (typeof target === "string") {
             return target.trim();

@@ -86,9 +86,7 @@ declare global {
          * Creates an object base on the original object but without any invalid values
          * (except for `null`), and trims the value if it's a string.
          */
-        sanitize<T extends object>(obj: T, deep?: boolean): T;
-        sanitize<T extends object>(obj: T, options: {
-            deep?: boolean,
+        sanitize<T extends object>(obj: T, deep?: boolean, options?: {
             removeNulls?: boolean;
             removeEmptyStrings?: boolean;
             removeEmptyObjects?: boolean;
