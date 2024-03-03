@@ -286,7 +286,7 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
                         value,
                     } satisfies CallResponse);
                 } else {
-                    channel?.push(value);
+                    channel?.send(value);
                 }
             }
         }

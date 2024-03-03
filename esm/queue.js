@@ -19,7 +19,7 @@ class Queue {
         });
     }
     push(data) {
-        return this.channel.push(data);
+        return this.channel.send(data);
     }
     close() {
         var _a;

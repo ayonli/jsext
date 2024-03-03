@@ -9,10 +9,10 @@ describe("jsext.chan", () => {
         const channel = jsext.chan<number>();
 
         (async () => {
-            await channel.push(123);
+            await channel.send(123);
         })();
 
-        const num = await channel.pop();
+        const num = await channel.recv();
         strictEqual(num, 123);
     });
 
@@ -21,30 +21,30 @@ describe("jsext.chan", () => {
 
         (async () => {
             await sleep(random(1, 5));
-            await channel.push(1);
+            await channel.send(1);
         })();
 
         (async () => {
             await sleep(random(1, 5));
-            await channel.push(2);
+            await channel.send(2);
         })();
 
         (async () => {
             await sleep(random(1, 5));
-            await channel.push(3);
+            await channel.send(3);
         })();
 
         (async () => {
             await sleep(random(1, 5));
-            await channel.push(4);
+            await channel.send(4);
         })();
 
         await sleep(random(1, 5));
         const numbers = await Promise.all([
-            channel.pop(),
-            channel.pop(),
-            channel.pop(),
-            channel.pop(),
+            channel.recv(),
+            channel.recv(),
+            channel.recv(),
+            channel.recv(),
         ]) as number[];
 
         strictEqual(sum(...numbers), 10);
@@ -55,7 +55,7 @@ describe("jsext.chan", () => {
 
         (async () => {
             for (const num of sequence(0, 9)) {
-                await channel.push(num);
+                await channel.send(num);
             }
 
             channel.close();
@@ -75,7 +75,7 @@ describe("jsext.chan", () => {
 
         (async () => {
             for (const num of sequence(0, 9)) {
-                await channel.push(num);
+                await channel.send(num);
             }
 
             channel.close();
@@ -97,11 +97,11 @@ describe("jsext.chan", () => {
             channel.close(new Error("something went wrong"));
         })();
 
-        const [err, res] = await jsext.try(channel.pop());
+        const [err, res] = await jsext.try(channel.recv());
         deepStrictEqual(err, new Error("something went wrong"));
         strictEqual(res, undefined);
 
-        const val = await channel.pop();
+        const val = await channel.recv();
         strictEqual(val, undefined);
     });
 });

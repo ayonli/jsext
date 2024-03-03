@@ -33,7 +33,7 @@ class Channel {
      *      - Otherwise, this function will block until there is new space for
      *        the data in the buffer.
      */
-    push(data) {
+    send(data) {
         if (this.state !== 1) {
             throw new Error("the channel is closed");
         }
@@ -74,7 +74,7 @@ class Channel {
      *   immediately.
      * - Otherwise, this function returns `undefined` immediately.
      */
-    pop() {
+    recv() {
         if (this.buffer.length) {
             const data = this.buffer.shift();
             if (this.state === 2 && !this.buffer.length) {
@@ -148,7 +148,7 @@ class Channel {
             async next() {
                 const bufSize = channel.buffer.length;
                 const queueSize = channel.producers.length;
-                const value = await channel.pop();
+                const value = await channel.recv();
                 return {
                     value: value,
                     done: channel.state === 0 && !bufSize && !queueSize,
@@ -158,6 +158,14 @@ class Channel {
     }
     [Symbol.dispose]() {
         this.close();
+    }
+    /** @deprecated This method is deprecated in favor of the `send()` method. */
+    push(data) {
+        return this.send(data);
+    }
+    /** @deprecated This method is deprecated in favor of the `recv()` method. */
+    pop() {
+        return this.recv();
     }
 }
 /**
@@ -179,7 +187,7 @@ class Channel {
  * Unlike `EventEmitter` or `EventTarget`, `Channel` guarantees the data will
  * always be delivered, even if there is no receiver at the moment.
  *
- * Also, unlike Golang, `await channel.pop()` does not prevent the program from
+ * Also, unlike Golang, `await channel.recv()` does not prevent the program from
  * exiting.
  *
  * Channels can be used to send and receive streaming data between main thread
@@ -195,10 +203,10 @@ class Channel {
  * const channel = chan<number>();
  *
  * (async () => {
- *     await channel.push(123);
+ *     await channel.send(123);
  * })();
  *
- * const num = await channel.pop();
+ * const num = await channel.recv();
  * console.log(num); // 123
  * // output:
  * // 123
@@ -211,13 +219,13 @@ class Channel {
  *
  * const channel = chan<number>(3);
  *
- * await channel.push(123);
- * await channel.push(456);
- * await channel.push(789);
+ * await channel.send(123);
+ * await channel.send(456);
+ * await channel.send(789);
  *
- * const num1 = await channel.pop();
- * const num2 = await channel.pop();
- * const num3 = await channel.pop();
+ * const num1 = await channel.recv();
+ * const num2 = await channel.recv();
+ * const num3 = await channel.recv();
  *
  * console.log(num1); // 123
  * console.log(num2); // 456
@@ -234,7 +242,7 @@ class Channel {
  *
  * (async () => {
  *     for (const num of sequence(1, 5)) {
- *         await channel.push(num);
+ *         await channel.send(num);
  *     }
  *
  *     channel.close();

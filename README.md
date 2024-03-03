@@ -742,7 +742,7 @@ never block and behave like a message queue.
 Unlike `EventEmitter` or `EventTarget`, `Channel` guarantees the data will
 always be delivered, even if there is no receiver at the moment.
 
-Also, unlike Golang, `await channel.pop()` does not prevent the program from
+Also, unlike Golang, `await channel.recv()` does not prevent the program from
 exiting.
 
 Channels can be used to send and receive streaming data between main thread
@@ -758,10 +758,10 @@ import chan from "@ayonli/jsext/chan";
 const channel = chan<number>();
 
 (async () => {
-    await channel.push(123);
+    await channel.send(123);
 })();
 
-const num = await channel.pop();
+const num = await channel.recv();
 console.log(num); // 123
 ```
 
@@ -772,13 +772,13 @@ import chan from "@ayonli/jsext/chan";
 
 const channel = chan<number>(3);
 
-await channel.push(123);
-await channel.push(456);
-await channel.push(789);
+await channel.send(123);
+await channel.send(456);
+await channel.send(789);
 
-const num1 = await channel.pop();
-const num2 = await channel.pop();
-const num3 = await channel.pop();
+const num1 = await channel.recv();
+const num2 = await channel.recv();
+const num3 = await channel.recv();
 
 console.log(num1); // 123
 console.log(num2); // 456
@@ -795,7 +795,7 @@ const channel = chan<number>();
 
 (async () => {
     for (const num of sequence(1, 5)) {
-        await channel.push(num);
+        await channel.send(num);
     }
 
     channel.close();
@@ -930,7 +930,7 @@ const channel = chan<{ value: number; done: boolean; }>();
 const length = mod.twoTimesValues(channel);
 
 for (const value of sequence(0, 9)) {
-    await channel.push({ value, done: value === 9 });
+    await channel.send({ value, done: value === 9 });
 }
 
 const results = (await readAll(channel)).map(item => item.value);

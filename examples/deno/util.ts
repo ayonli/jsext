@@ -9,7 +9,7 @@ export async function wireChannel<T = Uint8Array>(
     while (true) {
         const { value, done } = await reader.read();
 
-        await channel.push({ value, done });
+        await channel.send({ value, done });
 
         if (done) {
             break;

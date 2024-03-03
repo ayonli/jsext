@@ -50,7 +50,7 @@ class Channel {
      *      - Otherwise, this function will block until there is new space for
      *        the data in the buffer.
      */
-    push(data) {
+    send(data) {
         if (this.state !== 1) {
             throw new Error("the channel is closed");
         }
@@ -91,7 +91,7 @@ class Channel {
      *   immediately.
      * - Otherwise, this function returns `undefined` immediately.
      */
-    pop() {
+    recv() {
         if (this.buffer.length) {
             const data = this.buffer.shift();
             if (this.state === 2 && !this.buffer.length) {
@@ -165,7 +165,7 @@ class Channel {
             async next() {
                 const bufSize = channel.buffer.length;
                 const queueSize = channel.producers.length;
-                const value = await channel.pop();
+                const value = await channel.recv();
                 return {
                     value: value,
                     done: channel.state === 0 && !bufSize && !queueSize,
@@ -175,6 +175,14 @@ class Channel {
     }
     [Symbol.dispose]() {
         this.close();
+    }
+    /** @deprecated This method is deprecated in favor of the `send()` method. */
+    push(data) {
+        return this.send(data);
+    }
+    /** @deprecated This method is deprecated in favor of the `recv()` method. */
+    pop() {
+        return this.recv();
     }
 }
 
@@ -238,15 +246,15 @@ async function resolveModule(modId, baseUrl = undefined) {
 function isChannelMessage(msg) {
     return msg
         && typeof msg === "object"
-        && ["push", "close"].includes(msg.type)
+        && ["send", "close"].includes(msg.type)
         && typeof msg.channelId === "number";
 }
 async function handleChannelMessage(msg) {
     const record = channelStore.get(msg.channelId);
     if (!record)
         return;
-    if (msg.type === "push") {
-        await record.raw.push(msg.value);
+    if (msg.type === "send") {
+        await record.raw.send(msg.value);
     }
     else if (msg.type === "close") {
         const { value: err, channelId } = msg;
@@ -263,16 +271,16 @@ async function handleChannelMessage(msg) {
 function wireChannel(channel, channelWrite) {
     const channelId = channel[id];
     if (!channelStore.has(channelId)) {
-        const push = channel.push.bind(channel);
+        const send = channel.send.bind(channel);
         const close = channel.close.bind(channel);
         channelStore.set(channelId, {
             channel,
-            raw: { push, close },
+            raw: { send, close },
             writers: [channelWrite],
             counter: 0,
         });
         Object.defineProperties(channel, {
-            push: {
+            send: {
                 configurable: true,
                 writable: true,
                 value: async (data) => {
@@ -283,7 +291,7 @@ function wireChannel(channel, channelWrite) {
                             throw new Error("the channel is closed");
                         }
                         const write = record.writers[record.counter++ % record.writers.length];
-                        await Promise.resolve(write("push", data, channelId));
+                        await Promise.resolve(write("send", data, channelId));
                     }
                 },
             },
@@ -300,10 +308,10 @@ function wireChannel(channel, channelWrite) {
                         });
                         // recover to the original methods
                         Object.defineProperties(channel, {
-                            push: {
+                            send: {
                                 configurable: true,
                                 writable: true,
-                                value: record.raw.push,
+                                value: record.raw.send,
                             },
                             close: {
                                 configurable: true,

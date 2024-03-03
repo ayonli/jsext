@@ -11,7 +11,7 @@ export async function wireChannel(stream, channel) {
     while (true) {
         let { value, done } = await reader.read();
 
-        await channel.push({ value, done });
+        await channel.send({ value, done });
 
         if (done) {
             break;

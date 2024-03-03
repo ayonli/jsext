@@ -209,7 +209,7 @@ async function run(script, args, options) {
                     });
                 }
                 else {
-                    channel === null || channel === void 0 ? void 0 : channel.push(value);
+                    channel === null || channel === void 0 ? void 0 : channel.send(value);
                 }
             }
         }

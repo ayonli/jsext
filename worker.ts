@@ -53,7 +53,7 @@ function removeUnserializableProperties(obj: { [x: string | symbol]: any; }) {
 
 function unwrapArgs(
     args: any[],
-    channelWrite: (type: "push" | "close", msg: any, channelId: number) => void
+    channelWrite: (type: "send" | "close", msg: any, channelId: number) => void
 ) {
     return args.map(arg => {
         if (isPlainObject(arg)) {

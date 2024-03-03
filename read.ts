@@ -86,7 +86,7 @@ export default function read<T>(source: any, eventMap: {
     }
 
     const channel = chan<T>(Infinity);
-    const handleMessage = channel.push.bind(channel);
+    const handleMessage = channel.send.bind(channel);
     const handleClose = channel.close.bind(channel);
     const handleBrowserErrorEvent = (ev: Event) => {
         let err: Error;

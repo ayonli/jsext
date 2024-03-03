@@ -384,7 +384,7 @@ async function acquireWorker(taskId: number) {
                             }
                         } else if (msg.type === "yield") {
                             const value = unwrapReturnValue(msg.value);
-                            task.channel?.push({ value, done: msg.done as boolean });
+                            task.channel?.send({ value, done: msg.done as boolean });
 
                             if (msg.done) {
                                 // The final message of yield event is the
@@ -685,7 +685,7 @@ function createRemoteCall(module: string, fn: string, args: any[]) {
                     taskId,
                 }, transferable, taskId);
 
-                return await task.channel.pop();
+                return await task.channel.recv();
             }
         },
         async return(value) {

@@ -61,15 +61,15 @@ async function resolveModule(modId, baseUrl = undefined) {
 function isChannelMessage(msg) {
     return msg
         && typeof msg === "object"
-        && ["push", "close"].includes(msg.type)
+        && ["send", "close"].includes(msg.type)
         && typeof msg.channelId === "number";
 }
 async function handleChannelMessage(msg) {
     const record = channelStore.get(msg.channelId);
     if (!record)
         return;
-    if (msg.type === "push") {
-        await record.raw.push(msg.value);
+    if (msg.type === "send") {
+        await record.raw.send(msg.value);
     }
     else if (msg.type === "close") {
         const { value: err, channelId } = msg;
@@ -86,16 +86,16 @@ async function handleChannelMessage(msg) {
 function wireChannel(channel, channelWrite) {
     const channelId = channel[id];
     if (!channelStore.has(channelId)) {
-        const push = channel.push.bind(channel);
+        const send = channel.send.bind(channel);
         const close = channel.close.bind(channel);
         channelStore.set(channelId, {
             channel,
-            raw: { push, close },
+            raw: { send, close },
             writers: [channelWrite],
             counter: 0,
         });
         Object.defineProperties(channel, {
-            push: {
+            send: {
                 configurable: true,
                 writable: true,
                 value: async (data) => {
@@ -106,7 +106,7 @@ function wireChannel(channel, channelWrite) {
                             throw new Error("the channel is closed");
                         }
                         const write = record.writers[record.counter++ % record.writers.length];
-                        await Promise.resolve(write("push", data, channelId));
+                        await Promise.resolve(write("send", data, channelId));
                     }
                 },
             },
@@ -123,10 +123,10 @@ function wireChannel(channel, channelWrite) {
                         });
                         // recover to the original methods
                         Object.defineProperties(channel, {
-                            push: {
+                            send: {
                                 configurable: true,
                                 writable: true,
-                                value: record.raw.push,
+                                value: record.raw.send,
                             },
                             close: {
                                 configurable: true,

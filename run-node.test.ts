@@ -92,7 +92,7 @@ describe("jsext.run", () => {
             });
 
             for (const value of sequence(0, 9)) {
-                await channel.push({ value, done: value === 9 });
+                await channel.send({ value, done: value === 9 });
             }
 
             const results = (await jsext.readAll(channel)).map(item => item.value);
@@ -108,7 +108,7 @@ describe("jsext.run", () => {
             });
 
             for (const value of sequence(1, 10)) {
-                await channel2.push(value);
+                await channel2.send(value);
             }
 
             const results2: number[] = [];
@@ -273,7 +273,7 @@ describe("jsext.run", () => {
             });
 
             for (const value of sequence(0, 9)) {
-                await channel.push({ value, done: value === 9 });
+                await channel.send({ value, done: value === 9 });
             }
 
             const results = (await jsext.readAll(channel)).map(item => item.value);
@@ -289,7 +289,7 @@ describe("jsext.run", () => {
             });
 
             for (const value of sequence(1, 10)) {
-                await channel2.push(value);
+                await channel2.send(value);
             }
 
             const results2: number[] = [];

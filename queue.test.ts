@@ -10,7 +10,7 @@ describe("jsext.queue", () => {
             list.push(str);
 
             if (list.length === 2) {
-                out.push(list);
+                out.send(list);
             }
         });
 
@@ -22,7 +22,7 @@ describe("jsext.queue", () => {
             await queue.push("bar");
         })();
 
-        strictEqual((await out.pop())?.length, 2);
+        strictEqual((await out.recv())?.length, 2);
         queue.close();
     });
 
@@ -35,12 +35,12 @@ describe("jsext.queue", () => {
         });
 
         queue.onError(err => {
-            out.push(err as Error);
+            out.send(err as Error);
         });
 
         queue.push("error");
 
-        const err = await out.pop();
+        const err = await out.recv();
         deepStrictEqual(err, new Error("something went wrong"));
     });
 });

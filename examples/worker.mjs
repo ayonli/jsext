@@ -76,7 +76,7 @@ export async function twoTimesValues(channel) {
     }
 
     for (const item of data) {
-        await channel.push(item);
+        await channel.send(item);
     }
 
     channel.close();
@@ -92,7 +92,7 @@ export async function threeTimesValues(channel) {
 
     for await (const value of channel) {
         values.push(value * 3);
-        await channel.push(value * 3);
+        await channel.send(value * 3);
         await new Promise(resolve => setTimeout(resolve, 5));
 
         if (values.length === 5) {

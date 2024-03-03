@@ -129,7 +129,7 @@ describe("jsext.parallel", () => {
         const length = mod.twoTimesValues(channel);
 
         for (const value of sequence(0, 9)) {
-            await channel.push({ value, done: value === 9 });
+            await channel.send({ value, done: value === 9 });
         }
 
         const results = (await jsext.readAll(channel)).map(item => item.value);
@@ -143,7 +143,7 @@ describe("jsext.parallel", () => {
         const _values2 = mod.threeTimesValues(channel2);
 
         for (const value of sequence(1, 10)) {
-            await channel2.push(value);
+            await channel2.send(value);
         }
 
         const results2: number[] = [];
@@ -171,7 +171,7 @@ describe("jsext.parallel", () => {
         const _values3 = mod2.threeTimesValues(channel3);
 
         for (const value of sequence(1, 10)) {
-            await channel3.push(value);
+            await channel3.send(value);
         }
 
         const results3: number[] = [];

@@ -21,7 +21,7 @@ export class Queue<T> {
     }
 
     push(data: T): Promise<void> {
-        return this.channel!.push(data);
+        return this.channel!.send(data);
     }
 
     close() {

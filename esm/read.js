@@ -7,7 +7,7 @@ function read(source, eventMap = undefined) {
         return source;
     }
     const channel = chan(Infinity);
-    const handleMessage = channel.push.bind(channel);
+    const handleMessage = channel.send.bind(channel);
     const handleClose = channel.close.bind(channel);
     const handleBrowserErrorEvent = (ev) => {
         let err;

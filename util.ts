@@ -18,8 +18,8 @@ export const isMainThread = !isNodeWorkerThread
 const moduleCache = new Map();
 const channelStore = new Map<number, {
     channel: Channel<any>,
-    raw: Pick<Channel<any>, "push" | "close">;
-    writers: Array<(type: "push" | "close", msg: any, channelId: number) => void>,
+    raw: Pick<Channel<any>, "send" | "close">;
+    writers: Array<(type: "send" | "close", msg: any, channelId: number) => void>,
     counter: number;
 }>();
 
@@ -71,7 +71,7 @@ export async function resolveModule(modId: string, baseUrl: string | undefined =
 }
 
 export type ChannelMessage = {
-    type: "push" | "close";
+    type: "send" | "close";
     value?: any;
     channelId: number;
 };
@@ -79,7 +79,7 @@ export type ChannelMessage = {
 export function isChannelMessage(msg: any): msg is ChannelMessage {
     return msg
         && typeof msg === "object"
-        && ["push", "close"].includes(msg.type)
+        && ["send", "close"].includes(msg.type)
         && typeof msg.channelId === "number";
 }
 
@@ -89,8 +89,8 @@ export async function handleChannelMessage(msg: ChannelMessage) {
     if (!record)
         return;
 
-    if (msg.type === "push") {
-        await record.raw.push(msg.value);
+    if (msg.type === "send") {
+        await record.raw.send(msg.value);
     } else if (msg.type === "close") {
         const { value: err, channelId } = msg;
         record.raw.close(err);
@@ -107,23 +107,23 @@ export async function handleChannelMessage(msg: ChannelMessage) {
 
 function wireChannel(
     channel: Channel<any>,
-    channelWrite: (type: "push" | "close", msg: any, channelId: number) => void
+    channelWrite: (type: "send" | "close", msg: any, channelId: number) => void
 ) {
     const channelId = channel[id] as number;
 
     if (!channelStore.has(channelId)) {
-        const push = channel.push.bind(channel);
+        const send = channel.send.bind(channel);
         const close = channel.close.bind(channel);
 
         channelStore.set(channelId, {
             channel,
-            raw: { push, close },
+            raw: { send, close },
             writers: [channelWrite],
             counter: 0,
         });
 
         Object.defineProperties(channel, {
-            push: {
+            send: {
                 configurable: true,
                 writable: true,
                 value: async (data: any) => {
@@ -137,7 +137,7 @@ function wireChannel(
                         }
 
                         const write = record.writers[record.counter++ % record.writers.length];
-                        await Promise.resolve(write!("push", data, channelId));
+                        await Promise.resolve(write!("send", data, channelId));
                     }
                 },
             },
@@ -157,10 +157,10 @@ function wireChannel(
 
                         // recover to the original methods
                         Object.defineProperties(channel, {
-                            push: {
+                            send: {
                                 configurable: true,
                                 writable: true,
-                                value: record.raw.push,
+                                value: record.raw.send,
                             },
                             close: {
                                 configurable: true,
@@ -182,7 +182,7 @@ function wireChannel(
 
 export function wrapChannel(
     channel: Channel<any>,
-    channelWrite: (type: "push" | "close", msg: any, channelId: number) => void
+    channelWrite: (type: "send" | "close", msg: any, channelId: number) => void
 ): object {
     wireChannel(channel, channelWrite);
     return { "@@type": "Channel", "@@id": channel[id], "capacity": channel.capacity };
@@ -190,7 +190,7 @@ export function wrapChannel(
 
 export function unwrapChannel(
     obj: { "@@type": "Channel", "@@id": number; capacity?: number; },
-    channelWrite: (type: "push" | "close", msg: any, channelId: number) => void
+    channelWrite: (type: "send" | "close", msg: any, channelId: number) => void
 ): Channel<any> {
     const channelId = obj["@@id"];
     let channel = channelStore.get(channelId)?.channel;
