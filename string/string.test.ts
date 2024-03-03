@@ -122,5 +122,7 @@ describe("String", () => {
         ok("Hello, World!".isAscii());
         ok(!"Hello, 世界！".isAscii());
         ok(!"Hello, 😴😄".isAscii());
+        ok("\u{00}\u{19}".isAscii());
+        ok(!"\u{00}\u{19}".isAscii(true));
     });
 });

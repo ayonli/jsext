@@ -68,7 +68,7 @@ declare global {
         /** Returns the byte length of the string. */
         byteLength(): number;
         /** Checks if all characters in this string are within the ASCII range. */
-        isAscii(): boolean;
+        isAscii(printableOnly?: boolean): boolean;
     }
 }
 
@@ -135,6 +135,6 @@ String.prototype.byteLength = function byteLength() {
     return _byteLength(String(this));
 };
 
-String.prototype.isAscii = function isAscii() {
-    return _isAscii(String(this));
+String.prototype.isAscii = function isAscii(printableOnly = false) {
+    return _isAscii(String(this), printableOnly);
 };

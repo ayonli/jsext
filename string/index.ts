@@ -162,9 +162,9 @@ export function stripStart(str: string, prefix: string): string {
 /** Returns the byte length of the string. */
 export function byteLength(str: string): number {
     return bytes(str).byteLength;
-};
+}
 
 /** Checks if all characters in this string are within the ASCII range. */
-export function isAscii(str: string): boolean {
-    return bytes(str).every(byte => byte >= 0 && byte <= 127);
+export function isAscii(str: string, printableOnly = false): boolean {
+    return printableOnly ? /^[-~]+$/.test(str) : /^[\x00-\x7E]+$/.test(str);
 }
