@@ -21,7 +21,7 @@ export function concat<T extends Uint8Array>(...arrays: T[]): T {
     for (const arr of arrays) {
         result.set(arr, offset);
         offset += arr.length;
-    };
+    }
 
     return result;
 }

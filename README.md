@@ -50,25 +50,25 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 
 ## Functions
 
-- [_try](#_try) Call a function safely and return errors when captured.
-- [func](#func) Define a function along with a `defer` keyword, inspired by Golang.
-- [wrap](#wrap) Wrap a function for decorator pattern but keep its signature.
-- [throttle](#throttle) Throttle function calls for frequent access.
-- [debounce](#debounce) Debounce function calls for frequent access.
-- [queue](#queue) Handle tasks sequentially and prevent concurrency conflicts.
-- [lock](#lock) Provide mutual exclusion for concurrent operations.
-- [mixins](#mixins) Define a class that inherits methods from multiple base classes.
+- [_try](#_try) Calls a function safely and return errors when captured.
+- [func](#func) Defines a function along with a `defer` keyword, inspired by Golang.
+- [wrap](#wrap) Wraps a function for decorator pattern but keep its signature.
+- [throttle](#throttle) Throttles function calls for frequent access.
+- [debounce](#debounce) Debounces function calls for frequent access.
+- [queue](#queue) Handles tasks sequentially and prevent concurrency conflicts.
+- [lock](#lock) Provides mutual exclusion for concurrent operations.
+- [mixins](#mixins) Defines a class that inherits methods from multiple base classes.
 - [isClass](#isclass) Checks if a value is a class/constructor.
-- [isSubclassOf](#issubclassof) Check if a class is a subset of another class.
-- [read](#read) Make any streaming source readable via `for await ... of ...` syntax.
-- [readAll](#readall) Read all streaming data at once.
-- [chan](#chan) Create a channel that transfers data across routines, even between
+- [isSubclassOf](#issubclassof) Checks if a class is a subset of another class.
+- [read](#read) Makes any streaming source readable via `for await ... of ...` syntax.
+- [readAll](#readall) Reads all streaming data at once.
+- [chan](#chan) Creates a channel that transfers data across routines, even across
     multiple threads, inspired by Golang.
-- [parallel](#parallel) Run functions in parallel threads and take advantage of
+- [parallel](#parallel) Runs functions in parallel threads and take advantage of
     multi-core CPUs, inspired by Golang.
-- [run](#run) Run a script in another thread and abort at any time.
-- [example](#example) Write unit tests as if writing examples, inspired by Golang.
-- [deprecate](#deprecate) Mark a function as deprecated and emit warnings when it is
+- [run](#run) Runs a script in another thread and abort at any time.
+- [example](#example) Writes unit tests as if writing examples, inspired by Golang.
+- [deprecate](#deprecate) Marks a function as deprecated and emit warnings when it is
     called.
 
 And other functions in [sub-packages](#sub-packages).
@@ -225,7 +225,7 @@ import _try from "@ayonli/jsext/try";
 
 async function* gen() {
     // do something that may fail
-};
+}
 
 for await (const [err, val] of _try(gen())) {
     if (err) {
@@ -1277,10 +1277,11 @@ or the function's name, etc.
 ```ts
 import deprecate from "@ayonli/jsext/deprecate";
 
-const pow = function pow(a: number, b: number) {
+function pow(a: number, b: number) {
     deprecate("pow()", pow, "use `a ** b` instead");
     return a ** b;
-};
+}
+
 console.log(pow(2, 3));
 // output:
 // DeprecationWarning: pow() is deprecated, use `a ** b` instead (at <anonymous>:5:13)
@@ -1356,7 +1357,7 @@ import "@ayonli/jsext/string/augment";
 - `stripEnd(str: string, suffix: string): string`
 - `stripStart(str: string, prefix: string): string`
 - `byteLength(str: string): number`
-- `isAscii(str: string): boolean`
+- `isAscii(str: string, printableOnly?: boolean): boolean`
 
 **[Augmentation](https://github.com/ayonli/jsext/blob/main/string/augment.ts)**
 
@@ -1379,7 +1380,7 @@ import "@ayonli/jsext/string/augment";
         - `stripEnd(suffix: string): string`
         - `stripStart(prefix: string): string`
         - `byteLength(): number`
-        - `isAscii(): boolean`
+        - `isAscii(printableOnly?: boolean): boolean`
 
 ### [number](https://deno.land/x/ayonli_jsext/number/index.ts)
 

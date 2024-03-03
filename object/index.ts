@@ -44,7 +44,7 @@ export function patch(target: any, ...sources: any[]) {
     }
 
     return target;
-};
+}
 
 /** Creates an object composed of the picked keys. */
 export function pick<T extends object, U extends keyof T>(obj: T, keys: U[]): Pick<T, U>;

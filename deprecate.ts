@@ -45,10 +45,11 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
  * ```ts
  * import deprecate from "@ayonli/jsext/deprecate";
  * 
- * const pow = function pow(a: number, b: number) {
+ * function pow(a: number, b: number) {
  *     deprecate("pow()", pow, "use `a ** b` instead");
  *     return a ** b;
- * };
+ * }
+ * 
  * console.log(pow(2, 3));
  * // output:
  * // DeprecationWarning: pow() is deprecated, use `a ** b` instead (at <anonymous>:5:13)

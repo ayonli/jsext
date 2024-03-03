@@ -147,8 +147,8 @@ function byteLength(str) {
     return bytes(str).byteLength;
 }
 /** Checks if all characters in this string are within the ASCII range. */
-function isAscii(str) {
-    return bytes(str).every(byte => byte >= 0 && byte <= 127);
+function isAscii(str, printableOnly = false) {
+    return printableOnly ? /^[-~]+$/.test(str) : /^[\x00-\x7E]+$/.test(str);
 }
 
 export { byteLength, bytes, capitalize, chars, chunk, compare, count, hyphenate, isAscii, lines, random, stripEnd, stripStart, trim, trimEnd, trimStart, truncate, words };

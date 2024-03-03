@@ -32,7 +32,7 @@ export function* sequence(words) {
     }
 
     return words.join(", ");
-};
+}
 
 /**
  * @param {Error} err 

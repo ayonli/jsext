@@ -47,7 +47,7 @@ String.prototype.stripStart = function stripStart$1(prefix) {
 String.prototype.byteLength = function byteLength$1() {
     return byteLength(String(this));
 };
-String.prototype.isAscii = function isAscii$1() {
-    return isAscii(String(this));
+String.prototype.isAscii = function isAscii$1(printableOnly = false) {
+    return isAscii(String(this), printableOnly);
 };
 //# sourceMappingURL=augment.js.map
