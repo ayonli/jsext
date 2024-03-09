@@ -1,4 +1,33 @@
 {
+    "name": "@ayonli/jsext",
+    "version": "0.7.3",
+    "exports": {
+        ".": "./index.ts",
+        "./chan": "./chan.ts",
+        "./class": "./class.ts",
+        "./debounce": "./debounce.ts",
+        "./deprecate": "./deprecate.ts",
+        "./example": "./example.ts",
+        "./func": "./func.ts",
+        "./lock": "./lock.ts",
+        "./parallel": "./parallel.ts",
+        "./queue": "./queue.ts",
+        "./read": "./read.ts",
+        "./run": "./run.ts",
+        "./throttle": "./throttle.ts",
+        "./try": "./try.ts",
+        "./wrap": "./wrap.ts",
+        "./array": "./array/index.ts",
+        "./collections": "./collections/index.ts",
+        "./error": "./error/index.ts",
+        "./json": "./json/index.ts",
+        "./math": "./math/index.ts",
+        "./number": "./number/index.ts",
+        "./object": "./object/index.ts",
+        "./promise": "./promise/index.ts",
+        "./string": "./string/index.ts",
+        "./uint8array": "./uint8array/index.ts"
+    },
     "compilerOptions": {
         "experimentalDecorators": true
     }
