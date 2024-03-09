@@ -1,5 +1,6 @@
 import { equals as _equals, split as _split, chunk as _chunk } from "../array/base.ts";
 import { sum } from "../math/index.ts";
+import type { Constructor } from "../index.ts";
 
 /** Copies bytes from `src` array to `dest` and returns the number of bytes copied. */
 export function copy(src: Uint8Array, dest: Uint8Array): number {

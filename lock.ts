@@ -70,7 +70,7 @@ export class Mutex<T> {
      * Acquires the lock of the mutex, optionally for modifying the shared
      * resource.
      */
-    async lock() {
+    async lock(): Promise<Mutex.Lock<T>> {
         await new Promise<void>(resolve => {
             if (this[_queue].length) {
                 this[_queue].push(resolve);
@@ -96,7 +96,7 @@ export namespace Mutex {
         }
 
         /** Accesses the data associated to the mutex instance. */
-        get value() {
+        get value(): T {
             if (this[_unlocked]) {
                 throw new ReferenceError("trying to access data after unlocked");
             }
@@ -104,7 +104,7 @@ export namespace Mutex {
             return this[_mutex][_value];
         }
 
-        set value(v) {
+        set value(v: T) {
             if (this[_unlocked]) {
                 throw new ReferenceError("trying to access data after unlocked");
             }

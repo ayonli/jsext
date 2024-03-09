@@ -68,7 +68,17 @@ let workerPool: PoolRecord[] = [];
 let gcTimer: number | NodeJS.Timeout;
 declare var Deno: any;
 
-export const getMaxParallelism = (async () => {
+async function fileExists(filename: string): Promise<boolean> {
+    try {
+        const fs = await import("fs/promises");
+        await fs.stat(filename);
+        return true;
+    } catch (err) {
+        return false;
+    }
+}
+
+export const getMaxParallelism: Promise<number> = (async () => {
     if (isNode) {
         const os = await import("os");
 
@@ -181,6 +191,16 @@ export async function createWorker(options: {
                 } else {
                     entry = "./node_modules/@ayonli/jsext/bundle/worker-node.mjs";
                 }
+
+                if (!(await fileExists(entry))) {
+                    // The application imports a JSR version of this module, try the
+                    // auto-compiled worker entry.
+                    if (isBun) {
+                        entry = "./node_modules/@ayonli/jsext/worker.js";
+                    } else {
+                        entry = "./node_modules/@ayonli/jsext/worker-node.js";
+                    }
+                }
             } else {
                 let _dirname = path.dirname(_filename);
 
@@ -198,6 +218,16 @@ export async function createWorker(options: {
                     entry = path.join(_dirname, "worker.ts");
                 } else {
                     entry = path.join(_dirname, "bundle", "worker-node.mjs");
+                }
+
+                if (!(await fileExists(entry))) {
+                    // The application imports a JSR version of this module, try the
+                    // auto-compiled worker entry.
+                    if (isBun) {
+                        entry = path.join(_dirname, "worker.js");
+                    } else {
+                        entry = path.join(_dirname, "worker-node.mjs");
+                    }
                 }
             }
         }

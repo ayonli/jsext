@@ -189,7 +189,8 @@ class Channel {
 var _a;
 const isDeno = typeof Deno === "object";
 const isBun = typeof Bun === "object";
-const isNode = !isDeno && !isBun && typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
+const isNode = !isDeno && !isBun
+    && typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
 isNode && parseInt(process.version.slice(1)) < 14;
 // In Node.js, `process.argv` contains `--worker-thread` when the current thread is used as
 // a worker.

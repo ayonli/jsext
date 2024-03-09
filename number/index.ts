@@ -17,7 +17,7 @@ export function isNumeric(value: unknown, strict = false): boolean {
     const type = typeof value;
 
     if (strict) {
-        return type === "number" && !Number.isNaN(value)
+        return type === "number" && !Number.isNaN(value);
     } else if (type === "bigint") {
         return true;
     } else if (type === "number") {
@@ -45,7 +45,12 @@ export function random(min: number, max: number): number {
 }
 
 /** Creates a generator that produces sequential numbers from `min` to `max` (inclusive). */
-export function* sequence(min: number, max: number, step = 1, loop = false) {
+export function* sequence(
+    min: number,
+    max: number,
+    step = 1,
+    loop = false
+): Generator<number, void, unknown> {
     let id = min;
 
     while (true) {

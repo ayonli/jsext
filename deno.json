@@ -30,5 +30,22 @@
     },
     "compilerOptions": {
         "experimentalDecorators": true
+    },
+    "publish": {
+        "include": [
+            "*.ts",
+            "**/*.ts",
+            "external/**/*.js",
+            "external/**/*.d.ts",
+            "external/**/*.mjs",
+            "external/**/*.d.mts"
+        ],
+        "exclude": [
+            "**/augment.ts",
+            "**/*.test.ts",
+            "test-deno.ts",
+            "bundle.ts",
+            "examples/*"
+        ]
     }
 }

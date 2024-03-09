@@ -8,7 +8,7 @@ const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 export const id = Symbol.for("id");
 
 export class Channel<T> implements AsyncIterable<T> {
-    readonly [id] = idGenerator.next().value;
+    readonly [id] = idGenerator.next().value as number;
     /** The capacity is the maximum number of data allowed to be buffered. */
     readonly capacity: number;
     private buffer: T[] = [];
@@ -77,7 +77,7 @@ export class Channel<T> implements AsyncIterable<T> {
      *   immediately.
      * - Otherwise, this function returns `undefined` immediately.
      */
-    recv(): Promise<T | void> {
+    recv(): Promise<T | undefined> {
         if (this.buffer.length) {
             const data = this.buffer.shift();
 
@@ -149,7 +149,7 @@ export class Channel<T> implements AsyncIterable<T> {
         }
     }
 
-    [Symbol.asyncIterator]() {
+    [Symbol.asyncIterator](): { next(): Promise<IteratorResult<T>>; } {
         const channel = this;
         return {
             async next(): Promise<IteratorResult<T>> {
@@ -169,12 +169,12 @@ export class Channel<T> implements AsyncIterable<T> {
     }
 
     /** @deprecated This method is deprecated in favor of the `send()` method. */
-    push(data: T) {
+    push(data: T): Promise<void> {
         return this.send(data);
     }
 
     /** @deprecated This method is deprecated in favor of the `recv()` method. */
-    pop() {
+    pop(): Promise<T | undefined> {
         return this.recv();
     }
 }

@@ -580,7 +580,7 @@ namespace run {
      */
     export var maxWorkers: number | undefined = undefined;
     /** @deprecated set {@link parallel.workerEntry} instead */
-    export declare var workerEntry: string | undefined;
+    export var workerEntry: string | undefined = undefined;
 }
 // backward compatibility
 Object.defineProperties(run, {

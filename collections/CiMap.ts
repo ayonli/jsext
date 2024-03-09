@@ -1,6 +1,6 @@
 /** Case-insensitive map, keys are case-insensitive. */
 export default class CiMap<K extends string, V> extends Map<K, any> {
-    get [Symbol.toStringTag]() {
+    get [Symbol.toStringTag](): "CiMap" {
         return "CiMap";
     }
 

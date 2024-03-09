@@ -4,7 +4,7 @@ const inverse = Symbol("inverse");
 export default class BiMap<K, V> extends Map<K, V> {
     [inverse]: Map<V, K>;
 
-    get [Symbol.toStringTag]() {
+    get [Symbol.toStringTag](): "BiMap" {
         return "BiMap";
     }
 

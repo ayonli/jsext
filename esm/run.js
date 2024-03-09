@@ -459,6 +459,8 @@ async function run(script, args, options) {
      * If not set, use the same setting as {@link parallel.maxWorkers}.
      */
     run.maxWorkers = undefined;
+    /** @deprecated set {@link parallel.workerEntry} instead */
+    run.workerEntry = undefined;
 })(run || (run = {}));
 // backward compatibility
 Object.defineProperties(run, {

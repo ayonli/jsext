@@ -12,6 +12,16 @@ const remoteTasks = new Map;
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 let workerPool = [];
 let gcTimer;
+async function fileExists(filename) {
+    try {
+        const fs = await import('fs/promises');
+        await fs.stat(filename);
+        return true;
+    }
+    catch (err) {
+        return false;
+    }
+}
 const getMaxParallelism = (async () => {
     if (isNode) {
         const os = await import('os');
@@ -98,6 +108,16 @@ async function createWorker(options = {}) {
                 else {
                     entry = "./node_modules/@ayonli/jsext/bundle/worker-node.mjs";
                 }
+                if (!(await fileExists(entry))) {
+                    // The application imports a JSR version of this module, try the
+                    // auto-compiled worker entry.
+                    if (isBun) {
+                        entry = "./node_modules/@ayonli/jsext/worker.js";
+                    }
+                    else {
+                        entry = "./node_modules/@ayonli/jsext/worker-node.js";
+                    }
+                }
             }
             else {
                 let _dirname = path.dirname(_filename);
@@ -115,6 +135,16 @@ async function createWorker(options = {}) {
                 }
                 else {
                     entry = path.join(_dirname, "bundle", "worker-node.mjs");
+                }
+                if (!(await fileExists(entry))) {
+                    // The application imports a JSR version of this module, try the
+                    // auto-compiled worker entry.
+                    if (isBun) {
+                        entry = path.join(_dirname, "worker.js");
+                    }
+                    else {
+                        entry = path.join(_dirname, "worker-node.mjs");
+                    }
                 }
             }
         }
