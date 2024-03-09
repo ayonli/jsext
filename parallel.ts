@@ -1,5 +1,5 @@
 /**
- * This module provides JavaScript the ability to runs functions in parallel
+ * This module provides JavaScript the ability to run functions in parallel
  * threads and take advantage of multi-core CPUs, inspired by Golang.
  * @module
  */
