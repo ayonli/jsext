@@ -33,7 +33,6 @@
     },
     "publish": {
         "include": [
-            "*.ts",
             "**/*.ts",
             "external/**/*.js",
             "external/**/*.d.ts",
