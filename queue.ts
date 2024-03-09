@@ -1,3 +1,9 @@
+/**
+ * This module provides a mechanism to handle tasks sequentially and prevent
+ * concurrency conflicts.
+ * @module
+ */
+
 import chan, { Channel } from "./chan.ts";
 
 export class Queue<T> {

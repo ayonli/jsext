@@ -1,4 +1,9 @@
 /**
+ * Wraps a function for decorator pattern but keep its signature.
+ * @module
+ */
+
+/**
  * Wraps a function inside another function and returns a new function that
  * copies the original function's name and other properties.
  * 

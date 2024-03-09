@@ -2,7 +2,6 @@
  * This module is only used internally by the `parallel()` function to spawn
  * workers, DON'T use it in your own code.
  * @internal
- * @ignore
  * @module
  */
 

@@ -7,6 +7,11 @@ import { isDOMException, isAggregateError, toObject, fromObject, fromErrorEvent 
 import { isNode, isBun, IsPath, isDeno, wrapChannel, isNodePrior14, isMainThread, resolveModule, isChannelMessage, handleChannelMessage } from './util.js';
 import Exception from './error/Exception.js';
 
+/**
+ * This module provides JavaScript the ability to runs functions in parallel
+ * threads and take advantage of multi-core CPUs, inspired by Golang.
+ * @module
+ */
 const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const remoteTasks = new Map;
 const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);

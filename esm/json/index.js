@@ -1,6 +1,10 @@
 import { isValid } from '../object/index.js';
 import { fromObject } from '../error/index.js';
 
+/**
+ * Functions for parsing JSONs to specific structures.
+ * @module
+ */
 const typeRegistry = new Map();
 function parseAs(text, type) {
     const data = JSON.parse(text);

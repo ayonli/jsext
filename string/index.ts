@@ -1,3 +1,8 @@
+/**
+ * Functions for dealing with strings.
+ * @module
+ */
+
 import { chunk as _chunk } from "../array/base.ts";
 
 const encoder = new TextEncoder();

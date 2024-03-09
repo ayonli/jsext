@@ -1,11 +1,20 @@
 import { sequence } from './number/index.js';
 
+/**
+ * A channel implementation that transfers data across routines, even across
+ * multiple threads, inspired by Golang.
+ * @module
+ */
 var _a;
 if (typeof Symbol.dispose === "undefined") {
     Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });
 }
 const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const id = Symbol.for("id");
+/**
+ * A channel implementation that transfers data across routines, even across
+ * multiple threads, inspired by Golang.
+ */
 class Channel {
     constructor(capacity = 0) {
         this[_a] = idGenerator.next().value;

@@ -1,3 +1,8 @@
+/**
+ * Functions for converting errors to/from other types of objects.
+ * @module
+ */
+
 import { Constructor } from "../index.ts";
 import { isPlainObject, omit } from "../object/index.ts";
 import Exception from "./Exception.ts";

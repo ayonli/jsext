@@ -1,6 +1,10 @@
 import { hasOwn } from './object/index.js';
 
 /**
+ * This module includes functions for dealing with classes.
+ * @module
+ */
+/**
  * Checks if a value is a class/constructor.
  *
  * @example

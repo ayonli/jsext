@@ -1,3 +1,8 @@
+/**
+ * This module includes functions for reading data from various kinds of streams.
+ * @module
+ */
+
 import chan from "./chan.ts";
 import { isFunction } from "./try.ts";
 

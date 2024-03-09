@@ -1,3 +1,9 @@
+/**
+ * A mutual exclusion mechanism for concurrent operations and protecting shared
+ * data.
+ * @module
+ */
+
 import BiMap from "./collections/BiMap.ts";
 
 if (typeof Symbol.dispose === "undefined") {

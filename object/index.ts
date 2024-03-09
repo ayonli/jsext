@@ -1,3 +1,8 @@
+/**
+ * Functions for dealing with objects.
+ * @module
+ */
+
 import type { Constructor } from "../index.ts";
 import { isClass } from "../class.ts";
 

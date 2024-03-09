@@ -1,6 +1,10 @@
 import { isAsyncGenerator, isGenerator } from './external/check-iterable/index.js';
 import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
 
+/**
+ * Calls a function safely and return errors when captured.
+ * @module
+ */
 // @ts-ignore
 function _try(fn, ...args) {
     if (isFunction(fn)) {

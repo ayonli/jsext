@@ -1,6 +1,10 @@
 import { isClass } from '../class.js';
 
 /**
+ * Functions for dealing with objects.
+ * @module
+ */
+/**
  * Returns `true` if the specified object has the indicated property as its own property.
  * If the property is inherited, or does not exist, the function returns `false`.
  */

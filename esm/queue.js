@@ -1,5 +1,10 @@
 import chan from './chan.js';
 
+/**
+ * This module provides a mechanism to handle tasks sequentially and prevent
+ * concurrency conflicts.
+ * @module
+ */
 class Queue {
     constructor(handler, bufferSize = 0) {
         this.channel = chan(bufferSize);

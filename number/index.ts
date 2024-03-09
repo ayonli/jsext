@@ -1,3 +1,8 @@
+/**
+ * Functions for dealing with numbers.
+ * @module
+ */
+
 /** Returns `true` if the given value is a float number, `false` otherwise. */
 export function isFloat(value: unknown): boolean {
     return typeof value === "number"

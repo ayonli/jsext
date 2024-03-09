@@ -1,6 +1,10 @@
 import chan from './chan.js';
 import { isFunction } from './try.js';
 
+/**
+ * This module includes functions for reading data from various kinds of streams.
+ * @module
+ */
 function read(source, eventMap = undefined) {
     var _a;
     if (isFunction(source[Symbol.asyncIterator])) {

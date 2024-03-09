@@ -1,3 +1,8 @@
+/**
+ * Writes unit tests as if writing examples, inspired by Golang.
+ * @module
+ */
+
 declare var Deno: any;
 
 /**

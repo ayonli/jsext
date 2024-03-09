@@ -1,3 +1,8 @@
+/**
+ * Marks a function as deprecated and emit warnings when it is called.
+ * @module
+ */
+
 import wrap from "./wrap.ts";
 
 declare var Bun: any;

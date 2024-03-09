@@ -2,6 +2,10 @@ import { isSubclassOf } from '../class.js';
 import { random as random$1 } from '../number/index.js';
 import { count as count$1, equals as equals$1, split as split$1, chunk as chunk$1 } from './base.js';
 
+/**
+ * Functions for dealing with arrays.
+ * @module
+ */
 /** Returns the first element of the array, or `undefined` if the array is empty. */
 function first(arr) {
     return arr[0];

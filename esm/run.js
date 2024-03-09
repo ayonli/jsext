@@ -4,6 +4,10 @@ import { fromErrorEvent, fromObject } from './error/index.js';
 import { isDeno, isNode, isBun, IsPath, isChannelMessage, handleChannelMessage } from './util.js';
 import parallel, { getMaxParallelism, sanitizeModuleId, createWorker, wrapArgs, isCallResponse, unwrapReturnValue } from './parallel.js';
 
+/**
+ * Runs a script in another thread and abort at any time.
+ * @module
+ */
 const workerPools = new Map();
 let gcTimer;
 // The worker consumer queue is nothing but a callback list, once a worker is

@@ -1,5 +1,10 @@
 import BiMap from './collections/BiMap.js';
 
+/**
+ * A mutual exclusion mechanism for concurrent operations and protecting shared
+ * data.
+ * @module
+ */
 var _a;
 if (typeof Symbol.dispose === "undefined") {
     Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });

@@ -1,3 +1,9 @@
+/**
+ * A channel implementation that transfers data across routines, even across
+ * multiple threads, inspired by Golang.
+ * @module
+ */
+
 import { sequence } from "./number/index.ts";
 
 if (typeof Symbol.dispose === "undefined") {
@@ -7,6 +13,10 @@ if (typeof Symbol.dispose === "undefined") {
 const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 export const id = Symbol.for("id");
 
+/**
+ * A channel implementation that transfers data across routines, even across
+ * multiple threads, inspired by Golang.
+ */
 export class Channel<T> implements AsyncIterable<T> {
     readonly [id] = idGenerator.next().value as number;
     /** The capacity is the maximum number of data allowed to be buffered. */

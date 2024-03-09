@@ -1,5 +1,9 @@
 import { chunk as chunk$1 } from '../array/base.js';
 
+/**
+ * Functions for dealing with strings.
+ * @module
+ */
 const encoder = new TextEncoder();
 const _chars = chars;
 /**

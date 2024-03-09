@@ -1,3 +1,7 @@
+/**
+ * Functions for mathematical calculations.
+ * @module
+ */
 /** Returns the sum value of the given values. */
 function sum(...values) {
     return values.reduce((sum, value) => sum + value, 0);

@@ -1,3 +1,8 @@
+/**
+ * This module includes functions for dealing with classes.
+ * @module
+ */
+
 import type { Constructor } from "./index.ts";
 import { hasOwn } from "./object/index.ts";
 

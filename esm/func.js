@@ -1,5 +1,10 @@
 import { isAsyncGenerator, isGenerator } from './external/check-iterable/index.js';
 
+/**
+ * Inspired by Golang, creates a function that receives a `defer` keyword which
+ * can be used to carry deferred jobs.
+ * @module
+ */
 // @ts-ignore
 /**
  * Inspired by Golang, creates a function that receives a `defer` keyword which

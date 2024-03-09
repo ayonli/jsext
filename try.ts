@@ -1,3 +1,8 @@
+/**
+ * Calls a function safely and return errors when captured.
+ * @module
+ */
+
 // @ts-ignore
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
 import { ThenableAsyncGenerator } from "./external/thenable-generator/index.ts";

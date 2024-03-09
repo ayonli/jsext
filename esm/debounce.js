@@ -1,3 +1,7 @@
+/**
+ * Debounces function calls for frequent access.
+ * @module
+ */
 const registry = new Map();
 function debounce(handler, options, reducer = undefined) {
     const delay = typeof options === "number" ? options : options.delay;

@@ -1,3 +1,8 @@
+/**
+ * Throttles function calls for frequent access.
+ * @module
+ */
+
 type Throttle = {
     for: any;
     expires?: number;

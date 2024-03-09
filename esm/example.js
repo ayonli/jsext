@@ -1,4 +1,8 @@
 /**
+ * Writes unit tests as if writing examples, inspired by Golang.
+ * @module
+ */
+/**
  * Inspired by Golang's **Example as Test** design, creates a function that
  * carries example code with `// output:` comments, when the returned function
  * is called, it will automatically check if the actual output matches the one

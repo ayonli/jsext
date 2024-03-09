@@ -1,3 +1,8 @@
+/**
+ * Functions for dealing with arrays.
+ * @module
+ */
+
 import { isSubclassOf } from "../class.ts";
 import { random as rand } from "../number/index.ts";
 import {

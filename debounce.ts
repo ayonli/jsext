@@ -1,3 +1,7 @@
+/**
+ * Debounces function calls for frequent access.
+ * @module
+ */
 
 type DebounceTask = {
     resolve: (result: any) => void;

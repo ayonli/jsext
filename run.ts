@@ -1,3 +1,8 @@
+/**
+ * Runs a script in another thread and abort at any time.
+ * @module
+ */
+
 import type { Worker as NodeWorker } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
 import chan, { Channel } from "./chan.ts";

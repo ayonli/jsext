@@ -1,6 +1,10 @@
 import { equals as equals$1, split as split$1, chunk as chunk$1 } from '../array/base.js';
 import { sum } from '../math/index.js';
 
+/**
+ * Functions for dealing with `Uint8Array`s.
+ * @module
+ */
 /** Copies bytes from `src` array to `dest` and returns the number of bytes copied. */
 function copy(src, dest) {
     if (src.length > dest.length) {

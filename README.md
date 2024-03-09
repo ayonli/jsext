@@ -1316,9 +1316,9 @@ console.assert(!isSubclassOf(Controller, Log));
 - [uint8array](#uint8array) Functions for dealing with `Uint8Array`s.
 - [object](#object) Functions for dealing with objects.
 - [json](#json) Functions for parsing JSONs to specific structures.
-- [math](#math) Functions for the mathematical calculations.
+- [math](#math) Functions for mathematical calculations.
 - [promise](#promise) Functions for promise/async context handling.
-- [error](#error) Functions for transferring errors to/from other types of objects.
+- [error](#error) Functions for converting errors to/from other types of objects.
 - [collections](#collections) Additional collection data types.
 
 

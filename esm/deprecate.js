@@ -1,5 +1,9 @@
 import wrap from './wrap.js';
 
+/**
+ * Marks a function as deprecated and emit warnings when it is called.
+ * @module
+ */
 const isBun = typeof Bun === "object";
 const warnedRecord = new Map();
 function deprecate(target, ...args) {

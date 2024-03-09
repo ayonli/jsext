@@ -1,3 +1,8 @@
+/**
+ * Functions for promise/async context handling.
+ * @module
+ */
+
 /** Try to resolve a promise with a timeout limit. */
 export async function timeout<T>(value: T | PromiseLike<T>, ms: number): Promise<T> {
     const result = await Promise.race([

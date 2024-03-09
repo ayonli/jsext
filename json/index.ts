@@ -1,3 +1,8 @@
+/**
+ * Functions for parsing JSONs to specific structures.
+ * @module
+ */
+
 import type { Constructor } from "../index.ts";
 import { isValid } from "../object/index.ts";
 import { fromObject } from "../error/index.ts";

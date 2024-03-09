@@ -1,5 +1,9 @@
 import { isMainThread as isMainThread$1, parentPort } from 'worker_threads';
 
+/**
+ * Functions for dealing with numbers.
+ * @module
+ */
 /** Returns `true` if the given value is a float number, `false` otherwise. */
 /** Creates a generator that produces sequential numbers from `min` to `max` (inclusive). */
 function* sequence(min, max, step = 1, loop = false) {
@@ -17,12 +21,21 @@ function* sequence(min, max, step = 1, loop = false) {
     }
 }
 
+/**
+ * A channel implementation that transfers data across routines, even across
+ * multiple threads, inspired by Golang.
+ * @module
+ */
 var _a$1;
 if (typeof Symbol.dispose === "undefined") {
     Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });
 }
 const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
 const id = Symbol.for("id");
+/**
+ * A channel implementation that transfers data across routines, even across
+ * multiple threads, inspired by Golang.
+ */
 class Channel {
     constructor(capacity = 0) {
         this[_a$1] = idGenerator.next().value;
@@ -418,6 +431,10 @@ function hasGeneratorSpecials(obj) {
 }
 
 /**
+ * Functions for dealing with objects.
+ * @module
+ */
+/**
  * Returns `true` if the specified object has the indicated property as its own property.
  * If the property is inherited, or does not exist, the function returns `false`.
  */
@@ -504,6 +521,10 @@ Object.defineProperty(Exception.prototype, "name", {
     value: "Exception",
 });
 
+/**
+ * Functions for converting errors to/from other types of objects.
+ * @module
+ */
 /** Transform the error to a plain object. */
 function toObject(err) {
     if (!(err instanceof Error) && err["name"] && err["message"]) { // Error-like
@@ -610,7 +631,6 @@ function isAggregateError(value) {
  * This module is only used internally by the `parallel()` function to spawn
  * workers, DON'T use it in your own code.
  * @internal
- * @ignore
  * @module
  */
 const pendingTasks = new Map();

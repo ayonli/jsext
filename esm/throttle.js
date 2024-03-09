@@ -1,3 +1,7 @@
+/**
+ * Throttles function calls for frequent access.
+ * @module
+ */
 const Cache = new Map();
 function throttle(handler, options) {
     const key = typeof options === "number" ? null : options.for;

@@ -1,3 +1,8 @@
+/**
+ * Functions for dealing with `Uint8Array`s.
+ * @module
+ */
+
 import { equals as _equals, split as _split, chunk as _chunk } from "../array/base.ts";
 import { sum } from "../math/index.ts";
 import type { Constructor } from "../index.ts";

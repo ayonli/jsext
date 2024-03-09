@@ -1,3 +1,8 @@
+/**
+ * Functions for mathematical calculations.
+ * @module
+ */
+
 /** Returns the sum value of the given values. */
 export function sum(...values: number[]): number {
     return values.reduce((sum, value) => sum + value, 0);

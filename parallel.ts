@@ -1,3 +1,9 @@
+/**
+ * This module provides JavaScript the ability to runs functions in parallel
+ * threads and take advantage of multi-core CPUs, inspired by Golang.
+ * @module
+ */
+
 import type { Worker as NodeWorker } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
 import { ThenableAsyncGenerator, ThenableAsyncGeneratorLike } from "./external/thenable-generator/index.ts";

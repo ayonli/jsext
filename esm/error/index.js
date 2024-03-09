@@ -1,6 +1,10 @@
 import { omit, isPlainObject } from '../object/index.js';
 import Exception from './Exception.js';
 
+/**
+ * Functions for converting errors to/from other types of objects.
+ * @module
+ */
 /** Transform the error to a plain object. */
 function toObject(err) {
     if (!(err instanceof Error) && err["name"] && err["message"]) { // Error-like
