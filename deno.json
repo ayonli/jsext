@@ -33,6 +33,7 @@
     },
     "publish": {
         "include": [
+            "deno.json",
             "**/*.ts",
             "external/**/*.js",
             "external/**/*.d.ts",
