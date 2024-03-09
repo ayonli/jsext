@@ -153,20 +153,6 @@
             "import": "./esm/collections/augment.js",
             "default": "./collections/augment.ts"
         },
-        "./collections/BiMap": {
-            "types": "./types/collections/BiMap.d.ts",
-            "bun": "./collections/BiMap.ts",
-            "require": "./cjs/collections/BiMap.js",
-            "import": "./esm/collections/BiMap.js",
-            "default": "./collections/BiMap.ts"
-        },
-        "./collections/CiMap": {
-            "types": "./types/collections/CiMap.d.ts",
-            "bun": "./collections/CiMap.ts",
-            "require": "./cjs/collections/CiMap.js",
-            "import": "./esm/collections/CiMap.js",
-            "default": "./collections/CiMap.ts"
-        },
         "./error": {
             "types": "./types/error/index.d.ts",
             "bun": "./error/index.ts",
@@ -180,13 +166,6 @@
             "require": "./cjs/error/augment.js",
             "import": "./esm/error/augment.js",
             "default": "./error/augment.ts"
-        },
-        "./error/Exception": {
-            "types": "./types/error/Exception.d.ts",
-            "bun": "./error/Exception.ts",
-            "require": "./cjs/error/Exception.js",
-            "import": "./esm/error/Exception.js",
-            "default": "./error/Exception.ts"
         },
         "./json": {
             "types": "./types/json/index.d.ts",
