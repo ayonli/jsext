@@ -1,8 +1,7 @@
 name: Publish
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [created]
 
 jobs:
   test-node:
@@ -76,7 +75,32 @@ jobs:
 
       - run: deno run --allow-read --allow-net test-deno.ts
 
-  publish:
+  publish-npm:
+    needs: [test-node, test-tsx, test-bun, test-deno]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 21.x
+          cache: 'npm'
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install Dependencies
+        run: npm i
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to NPM
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+
+  publish-jsr:
     needs: [test-node, test-tsx, test-bun, test-deno]
     runs-on: ubuntu-latest
 
@@ -101,8 +125,3 @@ jobs:
 
       - name: Publish to JSR
         run: npx jsr publish
-
-      - name: Publish to NPM
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
