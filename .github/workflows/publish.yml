@@ -77,7 +77,7 @@ jobs:
       - run: deno run --allow-read --allow-net test-deno.ts
 
   publish:
-    needs: [test-node, test-jsx, test-bun, test-deno]
+    needs: [test-node, test-tsx, test-bun, test-deno]
     runs-on: ubuntu-latest
 
     permissions:
