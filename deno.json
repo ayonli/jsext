@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.7.3",
+    "version": "0.7.4",
     "exports": {
         ".": "./index.ts",
         "./chan": "./chan.ts",
@@ -26,7 +26,8 @@
         "./object": "./object/index.ts",
         "./promise": "./promise/index.ts",
         "./string": "./string/index.ts",
-        "./uint8array": "./uint8array/index.ts"
+        "./uint8array": "./uint8array/index.ts",
+        "./worker.ts": "./worker.ts"
     },
     "compilerOptions": {
         "experimentalDecorators": true
@@ -34,15 +35,17 @@
     "publish": {
         "include": [
             "deno.json",
+            "LICENSE",
+            "README.md",
             "**/*.ts",
-            "external/**/*.js",
-            "external/**/*.d.ts",
-            "external/**/*.mjs",
-            "external/**/*.d.mts"
+            "external/**/*",
+            "bundle/worker.mjs",
+            "bundle/worker-node.mjs"
         ],
         "exclude": [
             "**/augment.ts",
             "**/*.test.ts",
+            "worker-node.ts",
             "test-deno.ts",
             "bundle.ts",
             "examples/*"

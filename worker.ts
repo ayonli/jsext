@@ -1,3 +1,11 @@
+/**
+ * This module is only used internally by the `parallel()` function to spawn
+ * workers, DON'T use it in your own code.
+ * @internal
+ * @ignore
+ * @module
+ */
+
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
 import type { CallRequest, CallResponse } from "./parallel.ts";
 import { isPlainObject } from "./object/index.ts";

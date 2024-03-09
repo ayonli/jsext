@@ -604,6 +604,13 @@ function unwrapChannel(obj, channelWrite) {
     return channel;
 }
 
+/**
+ * This module is only used internally by the `parallel()` function to spawn
+ * workers, DON'T use it in your own code.
+ * @internal
+ * @ignore
+ * @module
+ */
 const pendingTasks = new Map();
 /**
  * For some reason, in Node.js and Bun, when import expression throws an

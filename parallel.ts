@@ -68,16 +68,6 @@ let workerPool: PoolRecord[] = [];
 let gcTimer: number | NodeJS.Timeout;
 declare var Deno: any;
 
-async function fileExists(filename: string): Promise<boolean> {
-    try {
-        const fs = await import("fs/promises");
-        await fs.stat(filename);
-        return true;
-    } catch (err) {
-        return false;
-    }
-}
-
 export const getMaxParallelism: Promise<number> = (async () => {
     if (isNode) {
         const os = await import("os");
@@ -187,19 +177,13 @@ export async function createWorker(options: {
                 // The code is bundled, try the worker entry in node_modules
                 // (hope it exists).
                 if (isBun) {
-                    entry = "./node_modules/@ayonli/jsext/worker.ts";
+                    if (_filename.endsWith(".ts")) {
+                        entry = "./node_modules/@ayonli/jsext/worker.ts";
+                    } else {
+                        entry = "./node_modules/@ayonli/jsext/bundle/worker.mjs";
+                    }
                 } else {
                     entry = "./node_modules/@ayonli/jsext/bundle/worker-node.mjs";
-                }
-
-                if (!(await fileExists(entry))) {
-                    // The application imports a JSR version of this module, try the
-                    // auto-compiled worker entry.
-                    if (isBun) {
-                        entry = "./node_modules/@ayonli/jsext/worker.js";
-                    } else {
-                        entry = "./node_modules/@ayonli/jsext/worker-node.js";
-                    }
                 }
             } else {
                 let _dirname = path.dirname(_filename);
@@ -215,19 +199,13 @@ export async function createWorker(options: {
                 }
 
                 if (isBun) {
-                    entry = path.join(_dirname, "worker.ts");
+                    if (_filename.endsWith(".ts")) {
+                        entry = path.join(_dirname, "worker.ts");
+                    } else {
+                        entry = path.join(_dirname, "bundle", "worker.mjs");
+                    }
                 } else {
                     entry = path.join(_dirname, "bundle", "worker-node.mjs");
-                }
-
-                if (!(await fileExists(entry))) {
-                    // The application imports a JSR version of this module, try the
-                    // auto-compiled worker entry.
-                    if (isBun) {
-                        entry = path.join(_dirname, "worker.js");
-                    } else {
-                        entry = path.join(_dirname, "worker-node.mjs");
-                    }
                 }
             }
         }
@@ -297,12 +275,20 @@ export async function createWorker(options: {
             if (!entry) {
                 if ((import.meta as any)["main"]) {
                     // The code is bundled, try the remote worker entry.
-                    entry = "https://ayonli.github.io/jsext/bundle/worker.mjs";
+                    if (import.meta.url.includes("jsr.io")) {
+                        entry = "jsr:@ayonli/jsext/worker.ts";
+                    } else {
+                        entry = "https://ayonli.github.io/jsext/bundle/worker.mjs";
+                    }
                 } else {
-                    entry = [
-                        ...(import.meta.url.split("/").slice(0, -1)),
-                        "worker.ts"
-                    ].join("/");
+                    if (import.meta.url.includes("jsr.io")) {
+                        entry = "jsr:@ayonli/jsext/worker.ts";
+                    } else {
+                        entry = [
+                            ...(import.meta.url.split("/").slice(0, -1)),
+                            "worker.ts"
+                        ].join("/");
+                    }
 
                     // The application imports the compiled version of this
                     // module, redirect to the source worker entry.
