@@ -22,6 +22,8 @@ const AsyncGeneratorFunction = (async function* () { }).constructor;
  * The entry of jsext main functions.
  */
 const jsext = {
+    _try,
+    /** @deprecated use `_try` instead */
     try: _try,
     func,
     wrap,

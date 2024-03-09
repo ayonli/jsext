@@ -23,7 +23,7 @@ declare global {
         /** Returns a random element of the array, or `undefined` if the array is empty. */
         random(remove?: boolean): T | undefined;
         /** Counts the occurrence of the element in the array. */
-        count(ele: T): number;
+        count(item: T): number;
         /**
          * Performs a shallow compare to another array and see if it contains the same elements as
          * this array.

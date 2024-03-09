@@ -1,8 +1,8 @@
 /** Counts the occurrence of the element in the array-like object. */
-function count(arr, ele) {
+function count(arr, item) {
     let count = 0;
     for (let i = 0; i < arr.length; i++) {
-        if (arr[i] === ele) {
+        if (arr[i] === item) {
             count++;
         }
     }

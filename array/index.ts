@@ -39,8 +39,8 @@ export function random<T>(arr: T[], remove = false): T | undefined {
 }
 
 /** Counts the occurrence of the element in the array. */
-export function count<T>(arr: T[], ele: T): number {
-    return _count(arr, ele);
+export function count<T>(arr: T[], item: T): number {
+    return _count(arr, item);
 }
 
 /**

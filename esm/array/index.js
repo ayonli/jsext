@@ -32,8 +32,8 @@ function random(arr, remove = false) {
     }
 }
 /** Counts the occurrence of the element in the array. */
-function count(arr, ele) {
-    return count$1(arr, ele);
+function count(arr, item) {
+    return count$1(arr, item);
 }
 /**
  * Performs a shallow compare to another array and see if it contains the same elements as

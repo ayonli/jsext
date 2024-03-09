@@ -54,6 +54,8 @@ export type Ensured<T, K extends keyof T> = Required<Pick<T, K>> & Omit<T, K>;
  * The entry of jsext main functions.
  */
 const jsext = {
+    _try,
+    /** @deprecated use `_try` instead */
     try: _try,
     func,
     wrap,

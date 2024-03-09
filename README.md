@@ -5,11 +5,11 @@ Additional functions for JavaScript to build strong applications.
 ## Import
 
 ```js
-// Node.js
+// Node.js, Bun or Deno (jsr)
 import jsext from "@ayonli/jsext";
 import { _try, func, /* ... */ } from "@ayonli/jsext";
 
-// Deno
+// Deno (legacy)
 import jsext from "https://lib.deno.dev/x/ayonli_jsext@latest/index.ts";
 import { _try, func, /* ... */ } from "https://lib.deno.dev/x/ayonli_jsext@latest/index.ts";
 
@@ -21,12 +21,12 @@ import { _try, func, /* ... */ } from "https://lib.deno.dev/x/ayonli_jsext@lates
 Or import what are needed:
 
 ```js
-// Node.js
+// Node.js, Bun or Deno (jsr)
 import _try from "@ayonli/jsext/try";
 import func from "@ayonli/jsext/func";
 // ...
 
-// Deno
+// Deno (legacy)
 import _try from "https://lib.deno.dev/x/ayonli_jsext@latest/try.ts";
 import func from "https://lib.deno.dev/x/ayonli_jsext@latest/func.ts";
 // ...
@@ -43,7 +43,7 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 <script src="https://lib.deno.dev/x/ayonli_jsext@latest/bundle/index.js"></script>
 <script>
     const jsext = window["@ayonli/jsext"];
-    // this will also include the sub-packages and augmentations
+    // this will also include the sub-modules and augmentations
 <script>
 ```
 
@@ -71,7 +71,7 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 - [isSubclassOf](#issubclassof) Checks if a class is a subset of another class.
 - [mixin](#mixin) Defines a class that inherits methods from multiple base classes.
 
-And other functions in [sub-packages](#sub-packages).
+And other functions in sub-[modules](#modules).
 
 ### _try
 
@@ -1290,7 +1290,7 @@ console.assert(!isSubclassOf(Controller, Log));
 
 ---
 
-## Types
+## Classes and Types
 
 - `Channel<T>`
 - `Queue<T>`
@@ -1305,10 +1305,10 @@ console.assert(!isSubclassOf(Controller, Log));
 - `Optional<T, K extends keyof T>`
 - `Ensured<T, K extends keyof T>`
 
-When [augment](https://github.com/ayonli/jsext/blob/main/augment.ts)ing, these types are exposed to
-the global scope (except for `Channel`, `Queue` and `Mutex`).
+*When [augment](#augmentations)ing, these types are exposed to the global scope*
+*(except for `Channel`, `Queue` and `Mutex`).*
 
-## Sub-packages
+## Modules
 
 - [string](#string) Functions for dealing with strings.
 - [number](#number) Functions for dealing with numbers.
@@ -1323,21 +1323,19 @@ the global scope (except for `Channel`, `Queue` and `Mutex`).
 
 
 **NOTE:** Configure `tsconfig.json` to set `compilerOptions.module` as `NodeNext`
-or `ESNext` instead of `CommonJS` in order to use sub-packages.
+or `ESNext` instead of `CommonJS` in order to use sub-modules.
 
 **NOTE:** The following examples of module specifiers uses Node.js style, but
-they have Deno and browser equivalents, like this:
+they have Deno (legacy) and browser equivalents, like this:
 
-- Node.js `@ayonli/jsext/string`
-- Deno: `https://lib.deno.dev/x/ayonli_jsext@latest/string/index.ts`
+- Node.js, Bun or Deno (jsr) `@ayonli/jsext/string`
+- Deno (legacy): `https://lib.deno.dev/x/ayonli_jsext@latest/string/index.ts`
 - Browser: `https://lib.deno.dev/x/ayonli_jsext@latest/esm/string/index.js`
 
-### [string](https://deno.land/x/ayonli_jsext/string/index.ts)
+### [string](https://jsr.io/@ayonli/jsext/doc/string/~)
 
 ```js
 import { compare, random, /* ... */ } from "@ayonli/jsext/string";
-// or
-import "@ayonli/jsext/string/augment";
 ```
 
 **Functions**
@@ -1361,30 +1359,7 @@ import "@ayonli/jsext/string/augment";
 - `byteLength(str: string): number`
 - `isAscii(str: string, printableOnly?: boolean): boolean`
 
-**[Augmentation](https://github.com/ayonli/jsext/blob/main/string/augment.ts)**
-
-- `String`
-    - `compare(str1: string, str2: string): -1 | 0 | 1`
-    - `random(length: number, chars?: string): string`
-    - `prototype`
-        - `count(sub: string): number`
-        - `capitalize(all?: boolean): string`
-        - `hyphenate(): string`
-        - `bytes(): Uint8Array`
-        - `chars(): string[]`
-        - `words(): string[]`
-        - `lines(): string[]`
-        - `chunk(length: number): string[]`
-        - `truncate(length: number): string`
-        - `trim(chars?: string): string`
-        - `trimEnd(chars?: string): string`
-        - `trimStart(chars?: string): string`
-        - `stripEnd(suffix: string): string`
-        - `stripStart(prefix: string): string`
-        - `byteLength(): number`
-        - `isAscii(printableOnly?: boolean): boolean`
-
-### [number](https://deno.land/x/ayonli_jsext/number/index.ts)
+### [number](https://jsr.io/@ayonli/jsext/doc/number/~)
 
 ```js
 import { isFloat, isNumeric, /* ... */ } from "@ayonli/jsext/number";
@@ -1400,15 +1375,10 @@ import "@ayonli/jsext/number/augment";
 - `random(min: number, max: number): number`
 - `sequence(min: number, max: number, step?: number, loop?: boolean): Generator<number, void, unknown>`
 
-*When [augment](https://github.com/ayonli/jsext/blob/main/number/augment.ts)ing,*
-*these functions are attached to the `Number` constructor.*
-
-### [array](https://deno.land/x/ayonli_jsext/array/index.ts)
+### [array](https://jsr.io/@ayonli/jsext/doc/array/~)
 
 ```js
 import { count, equals, /* ... */ } from "@ayonli/jsext/array";
-// or
-import "@ayonli/jsext/array/augment";
 ```
 
 **Functions**
@@ -1416,7 +1386,7 @@ import "@ayonli/jsext/array/augment";
 - `first<T>(arr: T[]): T | undefined`
 - `last<T>(arr: T[]): T | undefined`
 - `random<T>(arr: T[], remove?: boolean): T | undefined`
-- `count<T>(arr: RealArrayLike<T>, ele: T): number`
+- `count<T>(arr: RealArrayLike<T>, item: T): number`
 - `equals<T>(arr1: RealArrayLike<T>, arr2: RealArrayLike<T>): boolean`
 - `split<T>(arr: RealArrayLike<T>, delimiter: T): RealArrayLike<T>[]`
 - `chunk<T>(arr: RealArrayLike<T>, length: number): RealArrayLike<T>[]`
@@ -1430,36 +1400,10 @@ import "@ayonli/jsext/array/augment";
 - `keyBy<T, K extends string | number | symbol>(arr: T[], fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
 - `keyBy<T, K>(arr: T[], fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>`
 
-**[Augmentation](https://github.com/ayonli/jsext/blob/main/array/augment.ts)**
-
-- `Array<T>`
-    - `prototype`
-        - `first(): T | undefined`
-        - `last(): T | undefined`
-        - `random(remove?: boolean): T | undefined`
-        - `count(ele: T): number`
-        - `equals(another: T[]): boolean`
-        - `split(delimiter: T): T[][]`
-        - `chunk(length: number): T[][]`
-        - `uniq(): T[]`
-        - `uniqBy<K extends string | number | symbol>(fn: (item: T, i: number) => K): T[]`
-        - `shuffle(): T[]`
-        - `toShuffled(): T[]`
-        - `toReversed(): T[]`
-        - `toSorted(fn?: ((a: T, b: T) => number) | undefined): T[]`
-        - `orderBy(key: keyof T, order?: "asc" | "desc"): T[]`
-        - `orderBy(fn: (item: T, i: number) => string | number | bigint, order?: "asc" | "desc"): T[]`
-        - `groupBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T[]>`
-        - `groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
-        - `keyBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
-        - `keyBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>`
-
-### [uint8array](https://deno.land/x/ayonli_jsext/uint8array/index.ts)
+### [uint8array](https://jsr.io/@ayonli/jsext/doc/uint8array/~)
 
 ```js
 import { compare, equals, /* ... */ } from "@ayonli/jsext/uint8array";
-// or
-import "@ayonli/jsext/uint8array/augment";
 ```
 
 **Functions**
@@ -1471,23 +1415,10 @@ import "@ayonli/jsext/uint8array/augment";
 - `split<T extends Uint8Array>(arr: T, delimiter: number): T[]`
 - `chunk<T extends Uint8Array>(arr: T, length: number): T[]`
 
-**[Augmentation](https://github.com/ayonli/jsext/blob/main/uint8array/augment.ts)**
-
-- `Uint8Array`
-    - `copy(src: Uint8Array, dest: Uint8Array): number`
-    - `concat<T extends Uint8Array>(...arrays: T[]): T`
-    - `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
-    - `prototype`
-        - `equals(another: Uint8Array): boolean`
-        - `split(delimiter: number): this[]`
-        - `chunk(length: number): this[]`
-
-### [object](https://deno.land/x/ayonli_jsext/object/index.ts)
+### [object](https://jsr.io/@ayonli/jsext/doc/object/~)
 
 ```js
 import { hasOwn, hasOwnMethod, /* ... */ } from "@ayonli/jsext/object";
-// or
-import "@ayonli/jsext/object/augment";
 ```
 
 **Functions**
@@ -1515,15 +1446,10 @@ import "@ayonli/jsext/object/augment";
 - `sortKeys<T extends object>(obj: T, deep?: boolean): T`
 - `flatKeys<T extends object>(obj: T, depth = 1, options?: { flatArrayIndices?: boolean; }): OmitChildrenNodes<T> & Record<string | number | symbol, any>`
 
-*When [augment](https://github.com/ayonli/jsext/blob/main/object/augment.ts)ing,*
-*these functions are attached to the `Object` constructor.*
-
-### [json](https://deno.land/x/ayonli_jsext/json/index.ts)
+### [json](https://jsr.io/@ayonli/jsext/doc/json/~)
 
 ```js
 import { parseAs, /* ... */ } from "@ayonli/jsext/json";
-// or
-import "@ayonli/jsext/json/augment";
 ```
 
 **Functions**
@@ -1540,15 +1466,10 @@ import "@ayonli/jsext/json/augment";
 - `as<T>(data: unknown, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
 - `type(ctor: Constructor<any>): PropertyDecorator`
 
-*When [augment](https://github.com/ayonli/jsext/blob/main/json/augment.ts)ing,*
-*these functions are attached to the `JSON` namespace.*
-
-### [math](https://deno.land/x/ayonli_jsext/math/index.ts)
+### [math](https://jsr.io/@ayonli/jsext/doc/math/~)
 
 ```js
 import { sum, avg, /* ... */ } from "@ayonli/jsext/math";
-// or
-import "@ayonli/jsext/math/augment";
 ```
 
 **Functions**
@@ -1557,15 +1478,10 @@ import "@ayonli/jsext/math/augment";
 - `avg(...values: number[]): number`
 - `product(...values: number[]): number`
 
-*When [augment](https://github.com/ayonli/jsext/blob/main/math/augment.ts)ing,*
-*these functions are attached to the `Math` namespace.*
-
-### [promise](https://deno.land/x/ayonli_jsext/promise/index.ts)
+### [promise](https://jsr.io/@ayonli/jsext/doc/promise/~)
 
 ```js
 import { timeout, after, /* ... */ } from "@ayonli/jsext/promise";
-// or
-import "@ayonli/jsext/promise/augment";
 ```
 
 **Functions**
@@ -1575,27 +1491,17 @@ import "@ayonli/jsext/promise/augment";
 - `sleep(ms: number): Promise<void>`
 - `until(test: () => boolean | Promise<boolean>): Promise<void>`
 
-*When [augment](https://github.com/ayonli/jsext/blob/main/promise/augment.ts)ing,*
-*these functions are attached to the `Promise` constructor.*
-
-### [error](https://deno.land/x/ayonli_jsext/error/index.ts)
+### [error](https://jsr.io/@ayonli/jsext/doc/error/~)
 
 ```js
-import Exception from "@ayonli/jsext/error/Exception";
-// or
 import { Exception, toObject, /* ... */ } from "@ayonli/jsext/error";
-// or
-import "@ayonli/jsext/error/augment";
 ```
 
-**Types**
+**Classes**
 
 - `Exception` (extends `Error`)
     - `cause?: unknown`
     - `code: number`
-
-*When [augment](https://github.com/ayonli/jsext/blob/main/error/augment.ts)ing,*
-*these types are exposed to the global scope.*
 
 **Functions**
 
@@ -1604,28 +1510,13 @@ import "@ayonli/jsext/error/augment";
 - `toErrorEvent(err: Error, type?: string): ErrorEvent`
 - `fromErrorEvent<T extends Error>(event: ErrorEvent): T | null`
 
-**[Augmentation](https://github.com/ayonli/jsext/blob/main/error/augment.ts)**
-
-- `Error`
-    - `toObject<T extends Error>(err: T): { [x: string | symbol]: any; }`
-    - `fromObject<T extends Error>(obj: { [x: string | symbol]: any; }, ctor?: Constructor<T>): T`
-    - `toErrorEvent(err: Error, type?: string): ErrorEvent`
-    - `fromErrorEvent<T extends Error>(event: ErrorEvent): T | null`
-    - `prototype`
-        - `toJSON(): { [x: string | symbol]: any; }`
-
-### [collections](https://deno.land/x/ayonli_jsext/collections/index.ts)
+### [collections](https://jsr.io/@ayonli/jsext/doc/collections/~)
 
 ```js
-import BiMap from "@ayonli/jsext/collections/BiMap";
-import CiMap from "@ayonli/jsext/collections/CiMap";
-// or
 import { BiMap, CiMap } from "@ayonli/jsext/collections";
-// or
-import "@ayonli/jsext/collections/augment";
 ```
 
-**Types**
+**Classes**
 
 - `BiMap<K, V>` (extends `Map<K, V>`) Bi-directional map, keys and values are
   unique and map to each other.
@@ -1636,11 +1527,177 @@ import "@ayonli/jsext/collections/augment";
 - `CiMap<K extends string, V>` (extends `Map<K, any>`) Case-insensitive map,
   keys are case-insensitive.
 
-*When [augment](https://github.com/ayonli/jsext/blob/main/collections/augment.ts)ing,*
-*these types are exposed to the global scope.*
+## Augmentations
 
-## Import all sub-package augmentations at once
+This package supports augmenting functions to the corresponding built-in
+types/namespaces, but they should only be used for application development,
+don't use them when developing libraries.
+
+*NOTE: this feature is only available by the NPM package or in the Browser,*
+*They don't work by the JSR package.*
 
 ```js
+// import all
 import "@ayonli/jsext/augment";
+
+// import individual sub-modules
+import "@ayonli/jsext/string/augment";
+import "@ayonli/jsext/number/augment";
+import "@ayonli/jsext/array/augment";
+import "@ayonli/jsext/uint8array/augment";
+import "@ayonli/jsext/object/augment";
+import "@ayonli/jsext/json/augment";
+import "@ayonli/jsext/math/augment";
+import "@ayonli/jsext/promise/augment";
+import "@ayonli/jsext/error/augment";
+import "@ayonli/jsext/collections/augment";
 ```
+
+### Augment String
+
+- `String`
+    - `compare(str1: string, str2: string): -1 | 0 | 1`
+    - `random(length: number, chars?: string): string`
+    - `prototype`
+        - `count(sub: string): number`
+        - `capitalize(all?: boolean): string`
+        - `hyphenate(): string`
+        - `bytes(): Uint8Array`
+        - `chars(): string[]`
+        - `words(): string[]`
+        - `lines(): string[]`
+        - `chunk(length: number): string[]`
+        - `truncate(length: number): string`
+        - `trim(chars?: string): string`
+        - `trimEnd(chars?: string): string`
+        - `trimStart(chars?: string): string`
+        - `stripEnd(suffix: string): string`
+        - `stripStart(prefix: string): string`
+        - `byteLength(): number`
+        - `isAscii(printableOnly?: boolean): boolean`
+
+### Augment Number
+
+- `Number`
+    - `isFloat(value: unknown): boolean`
+    - `isNumeric(value: unknown): boolean`
+    - `isBetween(value: number, [min, max]: [number, number]): boolean`
+    - `random(min: number, max: number): number`
+    - `sequence(min: number, max: number, step?: number, loop?: boolean): Generator<number, void, unknown>`
+
+### Augment Array
+
+- `Array<T>`
+    - `prototype`
+        - `first(): T | undefined`
+        - `last(): T | undefined`
+        - `random(remove?: boolean): T | undefined`
+        - `count(item: T): number`
+        - `equals(another: T[]): boolean`
+        - `split(delimiter: T): T[][]`
+        - `chunk(length: number): T[][]`
+        - `uniq(): T[]`
+        - `uniqBy<K extends string | number | symbol>(fn: (item: T, i: number) => K): T[]`
+        - `shuffle(): T[]`
+        - `toShuffled(): T[]`
+        - `toReversed(): T[]`
+        - `toSorted(fn?: ((a: T, b: T) => number) | undefined): T[]`
+        - `orderBy(key: keyof T, order?: "asc" | "desc"): T[]`
+        - `orderBy(fn: (item: T, i: number) => string | number | bigint, order?: "asc" | "desc"): T[]`
+        - `groupBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T[]>`
+        - `groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
+        - `keyBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
+        - `keyBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>`
+
+### Augment Uint8Array
+
+- `Uint8Array`
+    - `copy(src: Uint8Array, dest: Uint8Array): number`
+    - `concat<T extends Uint8Array>(...arrays: T[]): T`
+    - `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
+    - `prototype`
+        - `equals(another: Uint8Array): boolean`
+        - `split(delimiter: number): this[]`
+        - `chunk(length: number): this[]`
+
+### Augment Object
+
+- `Object`
+    - `hasOwn(obj: any, key: string | number | symbol): boolean`
+    - `hasOwnMethod(obj: any, method: string | symbol): boolean`
+    - `patch<T extends {}, U>(target: T, source: U): T & U`
+    - `patch<T extends {}, U, V>(target: T, source1: U, source2: V): T & U & V`
+    - `patch<T extends {}, U, V, W>(target: T, source1: U, source2: V, source3: W): T & U & V & W`
+    - `patch(target: object, ...sources: any[]): any`
+    - `pick<T extends object, U extends keyof T>(obj: T, keys: U[]): Pick<T, U>`
+    - `pick<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
+    - `omit<T extends object, U extends keyof T>(obj: T, keys: U[]): Omit<T, U>`
+    - `omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
+    - `as(value: unknown, type: StringConstructor): string | null`
+    - `as(value: unknown, type: NumberConstructor): number | null`
+    - `as(value: unknown, type: BigIntConstructor): bigint | null`
+    - `as(value: unknown, type: BooleanConstructor): boolean | null`
+    - `as(value: unknown, type: SymbolConstructor): symbol | null`
+    - `as<T>(value: unknown, type: Constructor<T>): T | null`
+    - `typeOf<T>(value: T): TypeNames | Constructor<T>`
+    - `isValid(value: unknown): boolean`
+    - `isPlainObject(value: unknown): value is { [x: string | symbol]: any; }`
+    - `sanitize<T extends object>(obj: T, deep?: boolean, options?: { removeNulls?: boolean; removeEmptyStrings?: boolean; removeEmptyObjects?: boolean; removeArrayItems?: boolean; }): T`
+    - `sortKeys<T extends object>(obj: T, deep?: boolean): T`
+    - `flatKeys<T extends object>(obj: T, depth = 1, options?: { flatArrayIndices?: boolean; }): OmitChildrenNodes<T> & Record<string | number | symbol, any>`
+
+### Augment JSON
+
+- `JSON`
+    - `parseAs(text: string, type: StringConstructor): string | null`
+    - `parseAs(text: string, type: NumberConstructor): number | null`
+    - `parseAs(text: string, type: BigIntConstructor): bigint | null`
+    - `parseAs(text: string, type: BooleanConstructor): boolean | null`
+    - `parseAs<T>(text: string, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
+    - `as(data: unknown, type: StringConstructor): string | null`
+    - `as(data: unknown, type: NumberConstructor): number | null`
+    - `as(data: unknown, type: BigIntConstructor): bigint | null`
+    - `as(data: unknown, type: BooleanConstructor): boolean | null`
+    - `as<T>(data: unknown, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
+    - `type(ctor: Constructor<any>): PropertyDecorator`
+
+### Augment Math
+
+- `Math`
+    - `sum(...values: number[]): number`
+    - `avg(...values: number[]): number`
+    - `product(...values: number[]): number`
+
+### Augment Promise
+
+- `Promise`
+    - `timeout<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
+    - `after<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
+    - `sleep(ms: number): Promise<void>`
+    - `until(test: () => boolean | Promise<boolean>): Promise<void>`
+
+### Augment Error
+
+- `Error`
+    - `toObject<T extends Error>(err: T): { [x: string | symbol]: any; }`
+    - `fromObject<T extends Error>(obj: { [x: string | symbol]: any; }, ctor?: Constructor<T>): T`
+    - `toErrorEvent(err: Error, type?: string): ErrorEvent`
+    - `fromErrorEvent<T extends Error>(event: ErrorEvent): T | null`
+    - `prototype`
+        - `toJSON(): { [x: string | symbol]: any; }`
+
+- `globalThis`
+    - `Exception` (extends `Error`)
+        - `cause?: unknown`
+        - `code: number`
+
+### Augment Collections
+
+- `globalThis`
+    - `BiMap<K, V>` (extends `Map<K, V>`)
+        map to each other.
+        - `prototype` (additional)
+            - `getKey(value: V): K | undefined`
+            - `hasValue(value: V): boolean`
+            - `deleteValue(value: V): boolean`
+    - `CiMap<K extends string, V>` (extends `Map<K, any>`)
