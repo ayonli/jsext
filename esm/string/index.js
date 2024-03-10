@@ -7,7 +7,7 @@ import { chunk as chunk$1 } from '../array/base.js';
 const encoder = new TextEncoder();
 const _chars = chars;
 /**
- * Compares two strings, returns `-1` if `a < b`, `0` if `a == b` and `1` if `a > b`.
+ * Compares two strings, returns `-1` if `a < b`, `0` if `a === b` and `1` if `a > b`.
  */
 function compare(str1, str2) {
     if (str1 < str2) {

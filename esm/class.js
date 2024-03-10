@@ -29,7 +29,7 @@ function isClass(value) {
         return false;
     const str = value.toString();
     // ES6 class
-    if (str.slice(0, 5) == "class")
+    if (str.slice(0, 5) === "class")
         return true;
     const name0 = value.name[0];
     if (name0 && name0 >= "A" && name0 <= "Z" && str.includes("[native code]"))
@@ -60,7 +60,7 @@ function isSubclassOf(ctor1, ctor2) {
 function mergeIfNotExists(proto, source, mergeSuper = false) {
     const props = Reflect.ownKeys(source);
     for (const prop of props) {
-        if (prop == "constructor") {
+        if (prop === "constructor") {
             continue;
         }
         else if (mergeSuper) {
@@ -106,10 +106,10 @@ function mixin(base, ...mixins) {
     obj.ctor = class extends base {
     }; // make sure this class has no name
     for (const mixin of mixins) {
-        if (typeof mixin == "function") {
+        if (typeof mixin === "function") {
             mergeHierarchy(obj.ctor, mixin);
         }
-        else if (mixin && typeof mixin == "object") {
+        else if (mixin && typeof mixin === "object") {
             mergeIfNotExists(obj.ctor.prototype, mixin);
         }
         else {
