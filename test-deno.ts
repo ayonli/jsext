@@ -13,7 +13,9 @@ const iterator = globber({
 });
 
 for await (const file of iterator) {
-    await import(file.absolute);
+    const filename: string = file.absolute
+    const url = (/^[a-zA-Z]:/.test(filename) ? "file:///" : "file://") + filename
+    await import(url);
 }
 
 mocha.run((failures: number) => {

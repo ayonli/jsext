@@ -110,18 +110,18 @@ describe("jsext.throttle", () => {
     describe("async function", () => {
         describe("without key", () => {
             it("success", async () => {
-                const fn = jsext.throttle(<T>(obj: T) => Promise.resolve(obj), 5);
+                const fn = jsext.throttle(<T>(obj: T) => Promise.resolve(obj), 50);
                 const job1 = fn({ foo: "hello", bar: "world" });
                 const job2 = fn({ foo: "hello" });
 
                 ok(job1 instanceof Promise);
                 ok(job2 instanceof Promise);
-                ok(job1 == job2);
+                ok(job1 === job2);
 
                 const [res1, res2] = await Promise.all([job1, job2]);
 
                 ok(res1 === res2);
-                await sleep(6);
+                await sleep(60);
 
                 const job3 = fn({ bar: "world" });
                 ok(job3 instanceof Promise);
@@ -130,7 +130,7 @@ describe("jsext.throttle", () => {
                 deepStrictEqual(res3, { bar: "world" });
                 ok(res1 !== res3);
 
-                await sleep(2);
+                await sleep(20);
                 const job4 = fn({ foo: "hello", bar: "world" });
                 ok(job4 instanceof Promise);
                 ok(job4 === job3);
@@ -143,7 +143,7 @@ describe("jsext.throttle", () => {
                     } else {
                         return Promise.resolve(obj);
                     }
-                }, 5);
+                }, 50);
                 const job1 = fn({ foo: "hello", bar: "world" });
                 const job2 = fn({ foo: "hello" });
 
@@ -159,7 +159,7 @@ describe("jsext.throttle", () => {
                 deepStrictEqual(err1, new Error("something went wrong"));
                 ok(err1 === err2);
 
-                await sleep(6);
+                await sleep(60);
 
                 const job3 = fn({ bar: "world" });
                 ok(job3 instanceof Promise);
@@ -168,7 +168,7 @@ describe("jsext.throttle", () => {
                 deepStrictEqual(err3, new Error("something went wrong"));
                 ok(err1 !== err3);
 
-                await sleep(2);
+                await sleep(20);
                 const job4 = fn({ foo: "hello", bar: "world" });
                 ok(job4 instanceof Promise);
                 ok(job4 === job3);
@@ -176,14 +176,14 @@ describe("jsext.throttle", () => {
 
             it("noWait", async () => {
                 const fn = jsext.throttle(<T>(obj: T) => Promise.resolve(obj), {
-                    duration: 5,
+                    duration: 50,
                     noWait: true,
                 });
                 const job1 = fn({ foo: "hello", bar: "world" });
                 ok(job1 instanceof Promise);
 
                 const res1 = await job1;
-                await sleep(6);
+                await sleep(60);
 
                 const job2 = fn({ foo: "hello" });
                 ok(job2 instanceof Promise);
@@ -192,12 +192,12 @@ describe("jsext.throttle", () => {
                 const res2 = await job2;
                 ok(res1 === res2);
 
-                await sleep(1);
+                await sleep(10);
                 const job3 = fn({ bar: "world" });
                 const res3 = await job3;
                 deepStrictEqual(res3, { foo: "hello" });
 
-                await sleep(2);
+                await sleep(20);
                 const job4 = fn({ foo: "hello", bar: "world" });
                 ok(job4 instanceof Promise);
                 ok(job4 === job3);
@@ -207,11 +207,11 @@ describe("jsext.throttle", () => {
         describe("with key", () => {
             it("success", async () => {
                 const job1 = jsext.throttle(<T>(obj: T) => Promise.resolve(obj), {
-                    duration: 5,
+                    duration: 50,
                     for: "fooAsync",
                 })({ foo: "hello", bar: "world" });
                 const job2 = jsext.throttle(<T>(obj: T) => Promise.resolve(obj), {
-                    duration: 5,
+                    duration: 50,
                     for: "fooAsync",
                 })({ foo: "hello" });
 
@@ -222,17 +222,17 @@ describe("jsext.throttle", () => {
                 const [res1, res2] = await Promise.all([job1, job2,]);
 
                 ok(res1 === res2);
-                await sleep(6);
+                await sleep(60);
 
                 const job3 = jsext.throttle(<T>(obj: T) => Promise.resolve(obj), {
-                    duration: 5,
+                    duration: 50,
                     for: "fooAsync",
                 })({ bar: "world" });
                 const res3 = await job3;
                 deepStrictEqual(res3, { bar: "world" });
                 ok(res1 !== res3);
 
-                await sleep(2);
+                await sleep(20);
                 const job4 = jsext.throttle(<T>(obj: T) => Promise.resolve(obj), {
                     duration: 5,
                     for: "fooAsync",
@@ -249,7 +249,7 @@ describe("jsext.throttle", () => {
                         return Promise.resolve(obj);
                     }
                 }, {
-                    duration: 5,
+                    duration: 50,
                     for: "barAsync",
                 })({ foo: "hello", bar: "world" });
                 const job2 = jsext.throttle(<T>(obj: T) => {
@@ -259,7 +259,7 @@ describe("jsext.throttle", () => {
                         return Promise.resolve(obj);
                     }
                 }, {
-                    duration: 5,
+                    duration: 50,
                     for: "barAsync",
                 })({ foo: "hello" });
 
@@ -272,7 +272,7 @@ describe("jsext.throttle", () => {
                 deepStrictEqual(err1, new Error("something went wrong"));
                 ok(err1 === err2);
 
-                await sleep(6);
+                await sleep(60);
 
                 const job3 = jsext.throttle(<T>(obj: T) => {
                     if (true) {
@@ -281,14 +281,14 @@ describe("jsext.throttle", () => {
                         return Promise.resolve(obj);
                     }
                 }, {
-                    duration: 5,
+                    duration: 50,
                     for: "barAsync",
                 })({ bar: "world" });
                 const [err3] = await jsext.try(job3);
                 deepStrictEqual(err3, new Error("something went wrong"));
                 ok(err1 !== err3);
 
-                await sleep(2);
+                await sleep(20);
                 const job4 = jsext.throttle(<T>(obj: T) => {
                     if (true) {
                         return Promise.reject(new Error("something went wrong"));
@@ -296,7 +296,7 @@ describe("jsext.throttle", () => {
                         return Promise.resolve(obj);
                     }
                 }, {
-                    duration: 5,
+                    duration: 50,
                     for: "barAsync",
                 })({ foo: "hello", bar: "world" });
                 ok(job4 instanceof Promise);
@@ -305,7 +305,7 @@ describe("jsext.throttle", () => {
 
             it("noWait", async () => {
                 const job1 = jsext.throttle(<T>(obj: T) => Promise.resolve(obj), {
-                    duration: 5,
+                    duration: 50,
                     for: "noWait",
                     noWait: true,
                 })({ foo: "hello", bar: "world" });
@@ -313,10 +313,10 @@ describe("jsext.throttle", () => {
 
                 const res1 = await job1;
 
-                await sleep(6);
+                await sleep(60);
 
                 const job2 = jsext.throttle(<T>(obj: T) => Promise.resolve(obj), {
-                    duration: 5,
+                    duration: 50,
                     for: "noWait",
                     noWait: true,
                 })({ foo: "hello" });
@@ -326,7 +326,7 @@ describe("jsext.throttle", () => {
                 const res2 = await job2;
                 ok(res1 === res2);
 
-                await sleep(1);
+                await sleep(10);
                 const job3 = jsext.throttle(<T>(obj: T) => Promise.resolve(obj), {
                     duration: 5,
                     for: "noWait",

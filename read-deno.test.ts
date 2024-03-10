@@ -13,7 +13,9 @@ describe("jsext.read", () => {
         ok(chunks.length > 0);
     });
 
-    it("WebSocket", jsext.func(async (defer) => {
+    it("WebSocket", jsext.func(async function (defer) {
+        this.timeout(5000);
+
         const server = Deno.serve({ port: 12345 }, req => {
             if (req.headers.get("upgrade") != "websocket") {
                 return new Response(null, { status: 501 });

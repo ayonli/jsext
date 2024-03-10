@@ -4,6 +4,8 @@ import { sequence } from "./number/index.ts";
 import { sum } from "./math/index.ts";
 import { pick } from "./object/index.ts";
 import Exception from "./error/Exception.ts";
+import * as path from "node:path";
+import { trim } from "./string/index.ts";
 
 declare var Deno: any;
 declare var Bun: any;
@@ -217,14 +219,22 @@ describe("jsext.parallel", () => {
             // if the error is captured.
             ok(err instanceof Error);
         } else {
-            ok((err as DOMException)?.stack?.includes(import.meta.url.replace(/^(file|https?):\/\//, "")));
+            const __filename = trim(
+                import.meta.url.replace(/^(file|https?):\/\//, "").replace(/\//g, path.sep),
+                path.sep).replace(/^([a-zA-Z]):/, "");
+            const stack = (err as DOMException)?.stack?.replace(/\//g, path.sep);
+            ok(stack?.includes(__filename));
         }
     });
 
     it("receive unserializable", async () => {
         // @ts-ignore because allowJs is not turned on
         const [err] = await jsext.try(async () => await mod.throwUnserializableError(1));
-        ok((err as DOMException)?.stack?.includes(modUrl));
+        const __filename = trim(
+            modUrl.replace(/^(file|https?):\/\//, "").replace(/\//g, path.sep),
+            path.sep).replace(/^([a-zA-Z]):/, "");
+        const stack = (err as DOMException)?.stack?.replace(/\//g, path.sep);
+        ok(stack?.includes(__filename));
     });
 
     it("in dependencies", async () => {

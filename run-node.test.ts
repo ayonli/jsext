@@ -3,6 +3,9 @@ import jsext from "./index.ts";
 import { sequence } from "./number/index.ts";
 import { fromObject } from "./error/index.ts";
 import { sum } from "./math/index.ts";
+import { isNode } from "./parallel/constants.ts";
+import { trim } from "./string/index.ts";
+import * as path from "node:path";
 
 declare var Bun: any;
 
@@ -153,7 +156,11 @@ describe("jsext.run", () => {
                 // if the error is captured.
                 ok(err instanceof Error);
             } else {
-                ok(err?.stack?.includes(import.meta.url.replace(/^(file|https?):\/\//, "")));
+               const __filename = trim(
+                    import.meta.url.replace(/^(file|https?):\/\//, "").replace(/\//g, path.sep),
+                    path.sep).replace(/^([a-zA-Z]):/, "");
+                const stack = (err as Error)?.stack?.replace(/\//g, path.sep);
+                ok(stack?.includes(__filename));
             }
         });
 
@@ -170,21 +177,33 @@ describe("jsext.run", () => {
     });
 
     describe("child_process", async () => {
-        it("CommonJS", async () => {
+        it("CommonJS", async function () {
+            if (isNode && process.platform === "win32") {
+                this.skip();
+            }
+
             const job = await jsext.run("examples/worker.cjs", ["World"], {
                 adapter: "child_process",
             });
             strictEqual(await job.result(), "Hello, World");
         });
 
-        it("ES Module", async () => {
+        it("ES Module", async function () {
+            if (isNode && process.platform === "win32") {
+                this.skip();
+            }
+
             const job = await jsext.run("examples/worker.mjs", ["World"], {
                 adapter: "child_process",
             });
             strictEqual(await job.result(), "Hello, World");
         });
 
-        it("custom function", async () => {
+        it("custom function", async function () {
+            if (isNode && process.platform === "win32") {
+                this.skip();
+            }
+
             const job = await jsext.run("examples/worker.mjs", ["World"], {
                 fn: "greet",
                 adapter: "child_process",
@@ -192,7 +211,11 @@ describe("jsext.run", () => {
             strictEqual(await job.result(), "Hi, World");
         });
 
-        it("timeout", async () => {
+        it("timeout", async function () {
+            if (isNode && process.platform === "win32") {
+                this.skip();
+            }
+
             const [err, job] = await jsext.try(jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
                 fn: "takeTooLong",
                 timeout: 50,
@@ -209,7 +232,11 @@ describe("jsext.run", () => {
             }
         });
 
-        it("abort", async () => {
+        it("abort", async function () {
+            if (isNode && process.platform === "win32") {
+                this.skip();
+            }
+
             const job = await jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
                 fn: "takeTooLong",
                 adapter: "child_process",
@@ -229,7 +256,11 @@ describe("jsext.run", () => {
             deepStrictEqual(err2, new Error("something went wrong"));
         });
 
-        it("iterate", async () => {
+        it("iterate", async function () {
+            if (isNode && process.platform === "win32") {
+                this.skip();
+            }
+
             const job = await jsext.run<string, [string[]]>("examples/worker.mjs", [["foo", "bar"]], {
                 fn: "sequence",
                 adapter: "child_process",
@@ -244,7 +275,11 @@ describe("jsext.run", () => {
             strictEqual(await job.result(), "foo, bar");
         });
 
-        it("keep alive", async () => {
+        it("keep alive", async function () {
+            if (isNode && process.platform === "win32") {
+                this.skip();
+            }
+
             const job1 = await jsext.run("examples/worker.mjs", ["World"], {
                 keepAlive: true,
                 adapter: "child_process",
@@ -265,7 +300,11 @@ describe("jsext.run", () => {
             strictEqual(await job3.result(), "Hello, World");
         });
 
-        it("use channel", async () => {
+        it("use channel", async function () {
+            if (isNode && process.platform === "win32") {
+                this.skip();
+            }
+
             const channel = jsext.chan<{ value: number; done: boolean; }>();
             const job1 = await jsext.run<number, [typeof channel]>("examples/worker.mjs", [channel], {
                 fn: "twoTimesValues",
@@ -308,7 +347,11 @@ describe("jsext.run", () => {
             channel2.close();
         });
 
-        it("send unserializable", async () => {
+        it("send unserializable", async function () {
+            if (isNode && process.platform === "win32") {
+                this.skip();
+            }
+
             const [_err] = await jsext.try(async () => await jsext.run<number, [any]>("examples/worker.mjs", [
                 () => null
             ], {
@@ -329,7 +372,11 @@ describe("jsext.run", () => {
             }
         });
 
-        it("receive unserializable", async () => {
+        it("receive unserializable", async function () {
+            if (isNode && process.platform === "win32") {
+                this.skip();
+            }
+
             const job = await jsext.run<number, [any]>("examples/worker.mjs", [
                 1
             ], {

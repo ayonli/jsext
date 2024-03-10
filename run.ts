@@ -116,8 +116,9 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
      * worker.
      * 
      * @deprecated Always prefer `worker_threads` over `child_process` since it
-     * consumes less system resources. `child_process` support may be removed
-     * in the future once considered thoroughly.
+     * consumes less system resources and `child_process` may not work in
+     * Windows. `child_process` support may be removed in the future once
+     * considered thoroughly.
      */
     adapter?: "worker_threads" | "child_process";
 }): Promise<{

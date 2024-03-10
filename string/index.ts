@@ -9,7 +9,7 @@ const encoder = new TextEncoder();
 const _chars = chars;
 
 /**
- * Compares two strings, returns `-1` if `a < b`, `0` if `a == b` and `1` if `a > b`.
+ * Compares two strings, returns `-1` if `a < b`, `0` if `a === b` and `1` if `a > b`.
  */
 export function compare(str1: string, str2: string): -1 | 0 | 1 {
     if (str1 < str2) {
