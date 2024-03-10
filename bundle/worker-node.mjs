@@ -1,5 +1,18 @@
 import { isMainThread as isMainThread$1, parentPort } from 'worker_threads';
 
+var _a$1;
+const id = Symbol.for("id");
+const isDeno = typeof Deno === "object";
+const isBun = typeof Bun === "object";
+const isNode = !isDeno && !isBun
+    && typeof process === "object" && !!((_a$1 = process.versions) === null || _a$1 === void 0 ? void 0 : _a$1.node);
+isNode && parseInt(process.version.slice(1)) < 14;
+// In Node.js, `process.argv` contains `--worker-thread` when the current thread is used as
+// a worker.
+const isNodeWorkerThread = isNode && process.argv.includes("--worker-thread");
+const isMainThread = !isNodeWorkerThread
+    && (isBun ? Bun.isMainThread : typeof WorkerGlobalScope === "undefined");
+
 /**
  * Functions for dealing with numbers.
  * @module
@@ -26,19 +39,18 @@ function* sequence(min, max, step = 1, loop = false) {
  * multiple threads, inspired by Golang.
  * @module
  */
-var _a$1;
+var _a;
 if (typeof Symbol.dispose === "undefined") {
     Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });
 }
 const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
-const id = Symbol.for("id");
 /**
  * A channel implementation that transfers data across routines, even across
  * multiple threads, inspired by Golang.
  */
 class Channel {
     constructor(capacity = 0) {
-        this[_a$1] = idGenerator.next().value;
+        this[_a] = idGenerator.next().value;
         this.buffer = [];
         this.producers = [];
         this.consumers = [];
@@ -172,7 +184,7 @@ class Channel {
             consume(err, undefined);
         }
     }
-    [(_a$1 = id, Symbol.asyncIterator)]() {
+    [(_a = id, Symbol.asyncIterator)]() {
         const channel = this;
         return {
             async next() {
@@ -199,64 +211,7 @@ class Channel {
     }
 }
 
-var _a;
-const isDeno = typeof Deno === "object";
-const isBun = typeof Bun === "object";
-const isNode = !isDeno && !isBun
-    && typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
-isNode && parseInt(process.version.slice(1)) < 14;
-// In Node.js, `process.argv` contains `--worker-thread` when the current thread is used as
-// a worker.
-const isNodeWorkerThread = isNode && process.argv.includes("--worker-thread");
-const isMainThread = !isNodeWorkerThread
-    && (isBun ? Bun.isMainThread : typeof WorkerGlobalScope === "undefined");
-const moduleCache = new Map();
 const channelStore = new Map();
-async function resolveModule(modId, baseUrl = undefined) {
-    let module;
-    if (isNode || isBun) {
-        const { fileURLToPath } = await import('url');
-        const path = baseUrl ? fileURLToPath(new URL(modId, baseUrl).href) : modId;
-        module = await import(path);
-    }
-    else {
-        const url = new URL(modId, baseUrl).href;
-        module = moduleCache.get(url);
-        if (!module) {
-            if (isDeno) {
-                module = await import(url);
-                moduleCache.set(url, module);
-            }
-            else {
-                try {
-                    module = await import(url);
-                    moduleCache.set(url, module);
-                }
-                catch (err) {
-                    if (String(err).includes("Failed")) {
-                        // The content-type of the response isn't application/javascript, try to
-                        // download it and load it with object URL.
-                        const res = await fetch(url);
-                        const buf = await res.arrayBuffer();
-                        const blob = new Blob([new Uint8Array(buf)], {
-                            type: "application/javascript",
-                        });
-                        const _url = URL.createObjectURL(blob);
-                        module = await import(_url);
-                        moduleCache.set(url, module);
-                    }
-                    else {
-                        throw err;
-                    }
-                }
-            }
-        }
-    }
-    if (typeof module["default"] === "object" && typeof module["default"].default !== "undefined") {
-        module = module["default"]; // CommonJS module with exports.default
-    }
-    return module;
-}
 function isChannelMessage(msg) {
     return msg
         && typeof msg === "object"
@@ -428,6 +383,59 @@ function isAsyncGenerator(obj) {
 function hasGeneratorSpecials(obj) {
     return typeof obj.return === "function"
         && typeof obj.throw === "function";
+}
+
+/**
+ * Functions for dealing with strings.
+ * @module
+ */
+new TextEncoder();
+
+const moduleCache = new Map();
+async function resolveModule(modId, baseUrl = undefined) {
+    let module;
+    if (isNode || isBun) {
+        const { fileURLToPath } = await import('url');
+        const path = baseUrl ? fileURLToPath(new URL(modId, baseUrl).href) : modId;
+        module = await import(path);
+    }
+    else {
+        const url = new URL(modId, baseUrl).href;
+        module = moduleCache.get(url);
+        if (!module) {
+            if (isDeno) {
+                module = await import(url);
+                moduleCache.set(url, module);
+            }
+            else {
+                try {
+                    module = await import(url);
+                    moduleCache.set(url, module);
+                }
+                catch (err) {
+                    if (String(err).includes("Failed")) {
+                        // The content-type of the response isn't application/javascript, try to
+                        // download it and load it with object URL.
+                        const res = await fetch(url);
+                        const buf = await res.arrayBuffer();
+                        const blob = new Blob([new Uint8Array(buf)], {
+                            type: "application/javascript",
+                        });
+                        const _url = URL.createObjectURL(blob);
+                        module = await import(_url);
+                        moduleCache.set(url, module);
+                    }
+                    else {
+                        throw err;
+                    }
+                }
+            }
+        }
+    }
+    if (typeof module["default"] === "object" && typeof module["default"].default !== "undefined") {
+        module = module["default"]; // CommonJS module with exports.default
+    }
+    return module;
 }
 
 /**
@@ -627,12 +635,6 @@ function isAggregateError(value) {
         || (value instanceof Error && value.constructor.name === "AggregateError");
 }
 
-/**
- * This module is only used internally by the `parallel()` function to spawn
- * workers, DON'T use it in your own code.
- * @internal
- * @module
- */
 const pendingTasks = new Map();
 /**
  * For some reason, in Node.js and Bun, when import expression throws an
@@ -718,12 +720,20 @@ function wrapReturnValue(value) {
     }
     return { value, transferable };
 }
+/**
+ * @ignore
+ * @internal
+ */
 function isCallRequest(msg) {
     return msg && typeof msg === "object"
         && ((msg.type === "call" && typeof msg.module === "string" && typeof msg.fn === "string") ||
             (["next", "return", "throw"].includes(msg.type) && typeof msg.taskId === "number"))
         && Array.isArray(msg.args);
 }
+/**
+ * @ignore
+ * @internal
+ */
 async function handleCallRequest(msg, reply) {
     const _reply = reply;
     reply = (res) => {
@@ -842,34 +852,6 @@ async function handleCallRequest(msg, reply) {
     catch (error) {
         reply({ type: "error", error, taskId: msg.taskId });
     }
-}
-if (isBun
-    && Bun.isMainThread
-    && typeof process === "object"
-    && typeof process.send === "function") { // Bun with child_process
-    process.send("ready"); // notify the parent process that the worker is ready;
-    process.on("message", async (msg) => {
-        if (isCallRequest(msg)) {
-            await handleCallRequest(msg, (res, _ = []) => {
-                process.send(res);
-            });
-        }
-        else if (isChannelMessage(msg)) {
-            await handleChannelMessage(msg);
-        }
-    });
-}
-else if (!isNode && typeof self === "object") {
-    self.onmessage = async ({ data: msg }) => {
-        if (isCallRequest(msg)) {
-            await handleCallRequest(msg, (res, transferable = []) => {
-                self.postMessage(res, { transfer: transferable });
-            });
-        }
-        else if (isChannelMessage(msg)) {
-            await handleChannelMessage(msg);
-        }
-    };
 }
 
 if (isNode) {

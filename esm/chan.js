@@ -1,4 +1,5 @@
 import { sequence } from './number/index.js';
+import { id } from './parallel/constants.js';
 
 /**
  * A channel implementation that transfers data across routines, even across
@@ -10,7 +11,6 @@ if (typeof Symbol.dispose === "undefined") {
     Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });
 }
 const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
-const id = Symbol.for("id");
 /**
  * A channel implementation that transfers data across routines, even across
  * multiple threads, inspired by Golang.
@@ -272,5 +272,5 @@ function chan(capacity = 0) {
     return new Channel(capacity);
 }
 
-export { Channel, chan as default, id };
+export { Channel, chan as default };
 //# sourceMappingURL=chan.js.map

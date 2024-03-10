@@ -11,9 +11,7 @@
         "types",
         "examples",
         "test-*.ts",
-        "*.test.ts",
-        "*/**.test.ts",
-        "*.d.ts",
-        "*/**.d.ts"
+        "**/*.test.ts",
+        "**/*.d.ts"
     ]
 }

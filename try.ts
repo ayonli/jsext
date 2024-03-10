@@ -6,6 +6,7 @@
 // @ts-ignore
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
 import { ThenableAsyncGenerator } from "./external/thenable-generator/index.ts";
+import { isFunction } from "./util.ts";
 
 // The following declarations shall be order from complex to simple, otherwise
 // TypeScript won't work well.
@@ -241,8 +242,4 @@ export default function _try(fn: any, ...args: any[]) {
     } else {
         return [null, returns];
     }
-}
-
-export function isFunction(val: unknown): val is (...args: any[]) => any {
-    return typeof val === "function";
 }

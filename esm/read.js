@@ -1,5 +1,5 @@
 import chan from './chan.js';
-import { isFunction } from './try.js';
+import { isFunction } from './util.js';
 
 /**
  * This module includes functions for reading data from various kinds of streams.

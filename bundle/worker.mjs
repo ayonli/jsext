@@ -1,3 +1,321 @@
+var _a$1;
+const id = Symbol.for("id");
+const isDeno = typeof Deno === "object";
+const isBun = typeof Bun === "object";
+const isNode = !isDeno && !isBun
+    && typeof process === "object" && !!((_a$1 = process.versions) === null || _a$1 === void 0 ? void 0 : _a$1.node);
+isNode && parseInt(process.version.slice(1)) < 14;
+// In Node.js, `process.argv` contains `--worker-thread` when the current thread is used as
+// a worker.
+const isNodeWorkerThread = isNode && process.argv.includes("--worker-thread");
+const isMainThread = !isNodeWorkerThread
+    && (isBun ? Bun.isMainThread : typeof WorkerGlobalScope === "undefined");
+
+/**
+ * Functions for dealing with numbers.
+ * @module
+ */
+/** Returns `true` if the given value is a float number, `false` otherwise. */
+/** Creates a generator that produces sequential numbers from `min` to `max` (inclusive). */
+function* sequence(min, max, step = 1, loop = false) {
+    let id = min;
+    while (true) {
+        yield id;
+        if ((id += step) > max) {
+            if (loop) {
+                id = min;
+            }
+            else {
+                break;
+            }
+        }
+    }
+}
+
+/**
+ * A channel implementation that transfers data across routines, even across
+ * multiple threads, inspired by Golang.
+ * @module
+ */
+var _a;
+if (typeof Symbol.dispose === "undefined") {
+    Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });
+}
+const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
+/**
+ * A channel implementation that transfers data across routines, even across
+ * multiple threads, inspired by Golang.
+ */
+class Channel {
+    constructor(capacity = 0) {
+        this[_a] = idGenerator.next().value;
+        this.buffer = [];
+        this.producers = [];
+        this.consumers = [];
+        this.error = null;
+        this.state = 1;
+        if (capacity < 0) {
+            throw new RangeError("the capacity of a channel must not be negative");
+        }
+        this.capacity = capacity;
+    }
+    /**
+     * Pushes data to the channel.
+     *
+     * If there is a receiver, the data will be consumed immediately. Otherwise:
+     *
+     * - If this is an non-buffered channel, this function will block until a
+     *  receiver is available and the data is consumed.
+     *
+     * - If this is a buffered channel, then:
+     *      - If the buffer size is within the capacity, the data will be pushed
+     *        to the buffer.
+     *      - Otherwise, this function will block until there is new space for
+     *        the data in the buffer.
+     */
+    send(data) {
+        if (this.state !== 1) {
+            throw new Error("the channel is closed");
+        }
+        else if (this.consumers.length) {
+            const consume = this.consumers.shift();
+            return Promise.resolve(consume(null, data));
+        }
+        else if (this.capacity && this.buffer.length < this.capacity) {
+            this.buffer.push(data);
+            return Promise.resolve(undefined);
+        }
+        else {
+            return new Promise(resolve => {
+                this.producers.push(() => {
+                    if (this.capacity) {
+                        const _data = this.buffer.shift();
+                        this.buffer.push(data);
+                        resolve();
+                        return _data;
+                    }
+                    else {
+                        resolve();
+                        return data;
+                    }
+                });
+            });
+        }
+    }
+    /**
+     * Retrieves data from the channel.
+     *
+     * If there isn't data available at the moment, this function will block
+     * until new data is available.
+     *
+     * If the channel is closed, then:
+     *
+     * - If there is error set in the channel, this function throws that error
+     *   immediately.
+     * - Otherwise, this function returns `undefined` immediately.
+     */
+    recv() {
+        if (this.buffer.length) {
+            const data = this.buffer.shift();
+            if (this.state === 2 && !this.buffer.length) {
+                this.state = 0;
+            }
+            return Promise.resolve(data);
+        }
+        else if (this.producers.length) {
+            const produce = this.producers.shift();
+            if (this.state === 2 && !this.producers.length) {
+                this.state = 0;
+            }
+            return Promise.resolve(produce());
+        }
+        else if (this.state === 0) {
+            return Promise.resolve(undefined);
+        }
+        else if (this.error) {
+            // Error can only be consumed once, after that, that closure will
+            // be complete.
+            const { error } = this;
+            this.state = 0;
+            this.error = null;
+            return Promise.reject(error);
+        }
+        else if (this.state === 2) {
+            this.state = 0;
+            return Promise.resolve(undefined);
+        }
+        else {
+            return new Promise((resolve, reject) => {
+                this.consumers.push((err, data) => {
+                    if (this.state === 2 && !this.consumers.length) {
+                        this.state = 0;
+                    }
+                    err ? reject(err) : resolve(data);
+                });
+            });
+        }
+    }
+    /**
+     * Closes the channel. If `err` is supplied, it will be captured by the
+     * receiver.
+     *
+     * No more data shall be sent once the channel is closed.
+     *
+     * Explicitly closing the channel is not required, if the channel is no
+     * longer used, it will be automatically released by the GC. However, if
+     * the channel is used in a `for await...of...` loop, closing the channel
+     * will allow the loop to break automatically.
+     *
+     * Moreover, if the channel is used between parallel threads, it will no
+     * longer be able to release automatically, must explicitly call this
+     * function in order to release for GC.
+     */
+    close(err = null) {
+        if (this.state !== 1) {
+            // prevent duplicated call
+            return;
+        }
+        this.state = 2;
+        this.error = err;
+        let consume;
+        while (consume = this.consumers.shift()) {
+            consume(err, undefined);
+        }
+    }
+    [(_a = id, Symbol.asyncIterator)]() {
+        const channel = this;
+        return {
+            async next() {
+                const bufSize = channel.buffer.length;
+                const queueSize = channel.producers.length;
+                const value = await channel.recv();
+                return {
+                    value: value,
+                    done: channel.state === 0 && !bufSize && !queueSize,
+                };
+            }
+        };
+    }
+    [Symbol.dispose]() {
+        this.close();
+    }
+    /** @deprecated This method is deprecated in favor of the `send()` method. */
+    push(data) {
+        return this.send(data);
+    }
+    /** @deprecated This method is deprecated in favor of the `recv()` method. */
+    pop() {
+        return this.recv();
+    }
+}
+
+const channelStore = new Map();
+function isChannelMessage(msg) {
+    return msg
+        && typeof msg === "object"
+        && ["send", "close"].includes(msg.type)
+        && typeof msg.channelId === "number";
+}
+async function handleChannelMessage(msg) {
+    const record = channelStore.get(msg.channelId);
+    if (!record)
+        return;
+    if (msg.type === "send") {
+        await record.raw.send(msg.value);
+    }
+    else if (msg.type === "close") {
+        const { value: err, channelId } = msg;
+        record.raw.close(err);
+        channelStore.delete(channelId);
+        if (isMainThread && record.writers.length > 1) {
+            // distribute the channel close event to all threads
+            record.writers.forEach(write => {
+                write("close", err, channelId);
+            });
+        }
+    }
+}
+function wireChannel(channel, channelWrite) {
+    const channelId = channel[id];
+    if (!channelStore.has(channelId)) {
+        const send = channel.send.bind(channel);
+        const close = channel.close.bind(channel);
+        channelStore.set(channelId, {
+            channel,
+            raw: { send, close },
+            writers: [channelWrite],
+            counter: 0,
+        });
+        Object.defineProperties(channel, {
+            send: {
+                configurable: true,
+                writable: true,
+                value: async (data) => {
+                    const record = channelStore.get(channelId);
+                    if (record) {
+                        const channel = record.channel;
+                        if (channel["state"] !== 1) {
+                            throw new Error("the channel is closed");
+                        }
+                        const write = record.writers[record.counter++ % record.writers.length];
+                        await Promise.resolve(write("send", data, channelId));
+                    }
+                },
+            },
+            close: {
+                configurable: true,
+                writable: true,
+                value: (err = null) => {
+                    const record = channelStore.get(channelId);
+                    if (record) {
+                        channelStore.delete(channelId);
+                        const channel = record.channel;
+                        record.writers.forEach(write => {
+                            write("close", err, channelId);
+                        });
+                        // recover to the original methods
+                        Object.defineProperties(channel, {
+                            send: {
+                                configurable: true,
+                                writable: true,
+                                value: record.raw.send,
+                            },
+                            close: {
+                                configurable: true,
+                                writable: true,
+                                value: record.raw.close,
+                            },
+                        });
+                        channel.close(err);
+                    }
+                },
+            },
+        });
+    }
+    else {
+        const record = channelStore.get(channelId);
+        record.writers.push(channelWrite);
+    }
+}
+function unwrapChannel(obj, channelWrite) {
+    var _a, _b;
+    const channelId = obj["@@id"];
+    let channel = (_a = channelStore.get(channelId)) === null || _a === void 0 ? void 0 : _a.channel;
+    if (!channel) {
+        channel = Object.assign(Object.create(Channel.prototype), {
+            [id]: channelId,
+            capacity: (_b = obj.capacity) !== null && _b !== void 0 ? _b : 0,
+            buffer: [],
+            producers: [],
+            consumers: [],
+            error: null,
+            state: 1,
+        });
+    }
+    wireChannel(channel, channelWrite);
+    return channel;
+}
+
 if (!Symbol.asyncIterator) {
     // @ts-ignore
     Symbol.asyncIterator = Symbol("Symbol.asyncIterator");
@@ -63,6 +381,59 @@ function isAsyncGenerator(obj) {
 function hasGeneratorSpecials(obj) {
     return typeof obj.return === "function"
         && typeof obj.throw === "function";
+}
+
+/**
+ * Functions for dealing with strings.
+ * @module
+ */
+new TextEncoder();
+
+const moduleCache = new Map();
+async function resolveModule(modId, baseUrl = undefined) {
+    let module;
+    if (isNode || isBun) {
+        const { fileURLToPath } = await import('url');
+        const path = baseUrl ? fileURLToPath(new URL(modId, baseUrl).href) : modId;
+        module = await import(path);
+    }
+    else {
+        const url = new URL(modId, baseUrl).href;
+        module = moduleCache.get(url);
+        if (!module) {
+            if (isDeno) {
+                module = await import(url);
+                moduleCache.set(url, module);
+            }
+            else {
+                try {
+                    module = await import(url);
+                    moduleCache.set(url, module);
+                }
+                catch (err) {
+                    if (String(err).includes("Failed")) {
+                        // The content-type of the response isn't application/javascript, try to
+                        // download it and load it with object URL.
+                        const res = await fetch(url);
+                        const buf = await res.arrayBuffer();
+                        const blob = new Blob([new Uint8Array(buf)], {
+                            type: "application/javascript",
+                        });
+                        const _url = URL.createObjectURL(blob);
+                        module = await import(_url);
+                        moduleCache.set(url, module);
+                    }
+                    else {
+                        throw err;
+                    }
+                }
+            }
+        }
+    }
+    if (typeof module["default"] === "object" && typeof module["default"].default !== "undefined") {
+        module = module["default"]; // CommonJS module with exports.default
+    }
+    return module;
 }
 
 /**
@@ -262,375 +633,6 @@ function isAggregateError(value) {
         || (value instanceof Error && value.constructor.name === "AggregateError");
 }
 
-/**
- * Functions for dealing with numbers.
- * @module
- */
-/** Returns `true` if the given value is a float number, `false` otherwise. */
-/** Creates a generator that produces sequential numbers from `min` to `max` (inclusive). */
-function* sequence(min, max, step = 1, loop = false) {
-    let id = min;
-    while (true) {
-        yield id;
-        if ((id += step) > max) {
-            if (loop) {
-                id = min;
-            }
-            else {
-                break;
-            }
-        }
-    }
-}
-
-/**
- * A channel implementation that transfers data across routines, even across
- * multiple threads, inspired by Golang.
- * @module
- */
-var _a$1;
-if (typeof Symbol.dispose === "undefined") {
-    Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });
-}
-const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
-const id = Symbol.for("id");
-/**
- * A channel implementation that transfers data across routines, even across
- * multiple threads, inspired by Golang.
- */
-class Channel {
-    constructor(capacity = 0) {
-        this[_a$1] = idGenerator.next().value;
-        this.buffer = [];
-        this.producers = [];
-        this.consumers = [];
-        this.error = null;
-        this.state = 1;
-        if (capacity < 0) {
-            throw new RangeError("the capacity of a channel must not be negative");
-        }
-        this.capacity = capacity;
-    }
-    /**
-     * Pushes data to the channel.
-     *
-     * If there is a receiver, the data will be consumed immediately. Otherwise:
-     *
-     * - If this is an non-buffered channel, this function will block until a
-     *  receiver is available and the data is consumed.
-     *
-     * - If this is a buffered channel, then:
-     *      - If the buffer size is within the capacity, the data will be pushed
-     *        to the buffer.
-     *      - Otherwise, this function will block until there is new space for
-     *        the data in the buffer.
-     */
-    send(data) {
-        if (this.state !== 1) {
-            throw new Error("the channel is closed");
-        }
-        else if (this.consumers.length) {
-            const consume = this.consumers.shift();
-            return Promise.resolve(consume(null, data));
-        }
-        else if (this.capacity && this.buffer.length < this.capacity) {
-            this.buffer.push(data);
-            return Promise.resolve(undefined);
-        }
-        else {
-            return new Promise(resolve => {
-                this.producers.push(() => {
-                    if (this.capacity) {
-                        const _data = this.buffer.shift();
-                        this.buffer.push(data);
-                        resolve();
-                        return _data;
-                    }
-                    else {
-                        resolve();
-                        return data;
-                    }
-                });
-            });
-        }
-    }
-    /**
-     * Retrieves data from the channel.
-     *
-     * If there isn't data available at the moment, this function will block
-     * until new data is available.
-     *
-     * If the channel is closed, then:
-     *
-     * - If there is error set in the channel, this function throws that error
-     *   immediately.
-     * - Otherwise, this function returns `undefined` immediately.
-     */
-    recv() {
-        if (this.buffer.length) {
-            const data = this.buffer.shift();
-            if (this.state === 2 && !this.buffer.length) {
-                this.state = 0;
-            }
-            return Promise.resolve(data);
-        }
-        else if (this.producers.length) {
-            const produce = this.producers.shift();
-            if (this.state === 2 && !this.producers.length) {
-                this.state = 0;
-            }
-            return Promise.resolve(produce());
-        }
-        else if (this.state === 0) {
-            return Promise.resolve(undefined);
-        }
-        else if (this.error) {
-            // Error can only be consumed once, after that, that closure will
-            // be complete.
-            const { error } = this;
-            this.state = 0;
-            this.error = null;
-            return Promise.reject(error);
-        }
-        else if (this.state === 2) {
-            this.state = 0;
-            return Promise.resolve(undefined);
-        }
-        else {
-            return new Promise((resolve, reject) => {
-                this.consumers.push((err, data) => {
-                    if (this.state === 2 && !this.consumers.length) {
-                        this.state = 0;
-                    }
-                    err ? reject(err) : resolve(data);
-                });
-            });
-        }
-    }
-    /**
-     * Closes the channel. If `err` is supplied, it will be captured by the
-     * receiver.
-     *
-     * No more data shall be sent once the channel is closed.
-     *
-     * Explicitly closing the channel is not required, if the channel is no
-     * longer used, it will be automatically released by the GC. However, if
-     * the channel is used in a `for await...of...` loop, closing the channel
-     * will allow the loop to break automatically.
-     *
-     * Moreover, if the channel is used between parallel threads, it will no
-     * longer be able to release automatically, must explicitly call this
-     * function in order to release for GC.
-     */
-    close(err = null) {
-        if (this.state !== 1) {
-            // prevent duplicated call
-            return;
-        }
-        this.state = 2;
-        this.error = err;
-        let consume;
-        while (consume = this.consumers.shift()) {
-            consume(err, undefined);
-        }
-    }
-    [(_a$1 = id, Symbol.asyncIterator)]() {
-        const channel = this;
-        return {
-            async next() {
-                const bufSize = channel.buffer.length;
-                const queueSize = channel.producers.length;
-                const value = await channel.recv();
-                return {
-                    value: value,
-                    done: channel.state === 0 && !bufSize && !queueSize,
-                };
-            }
-        };
-    }
-    [Symbol.dispose]() {
-        this.close();
-    }
-    /** @deprecated This method is deprecated in favor of the `send()` method. */
-    push(data) {
-        return this.send(data);
-    }
-    /** @deprecated This method is deprecated in favor of the `recv()` method. */
-    pop() {
-        return this.recv();
-    }
-}
-
-var _a;
-const isDeno = typeof Deno === "object";
-const isBun = typeof Bun === "object";
-const isNode = !isDeno && !isBun
-    && typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node);
-isNode && parseInt(process.version.slice(1)) < 14;
-// In Node.js, `process.argv` contains `--worker-thread` when the current thread is used as
-// a worker.
-const isNodeWorkerThread = isNode && process.argv.includes("--worker-thread");
-const isMainThread = !isNodeWorkerThread
-    && (isBun ? Bun.isMainThread : typeof WorkerGlobalScope === "undefined");
-const moduleCache = new Map();
-const channelStore = new Map();
-async function resolveModule(modId, baseUrl = undefined) {
-    let module;
-    if (isNode || isBun) {
-        const { fileURLToPath } = await import('url');
-        const path = baseUrl ? fileURLToPath(new URL(modId, baseUrl).href) : modId;
-        module = await import(path);
-    }
-    else {
-        const url = new URL(modId, baseUrl).href;
-        module = moduleCache.get(url);
-        if (!module) {
-            if (isDeno) {
-                module = await import(url);
-                moduleCache.set(url, module);
-            }
-            else {
-                try {
-                    module = await import(url);
-                    moduleCache.set(url, module);
-                }
-                catch (err) {
-                    if (String(err).includes("Failed")) {
-                        // The content-type of the response isn't application/javascript, try to
-                        // download it and load it with object URL.
-                        const res = await fetch(url);
-                        const buf = await res.arrayBuffer();
-                        const blob = new Blob([new Uint8Array(buf)], {
-                            type: "application/javascript",
-                        });
-                        const _url = URL.createObjectURL(blob);
-                        module = await import(_url);
-                        moduleCache.set(url, module);
-                    }
-                    else {
-                        throw err;
-                    }
-                }
-            }
-        }
-    }
-    if (typeof module["default"] === "object" && typeof module["default"].default !== "undefined") {
-        module = module["default"]; // CommonJS module with exports.default
-    }
-    return module;
-}
-function isChannelMessage(msg) {
-    return msg
-        && typeof msg === "object"
-        && ["send", "close"].includes(msg.type)
-        && typeof msg.channelId === "number";
-}
-async function handleChannelMessage(msg) {
-    const record = channelStore.get(msg.channelId);
-    if (!record)
-        return;
-    if (msg.type === "send") {
-        await record.raw.send(msg.value);
-    }
-    else if (msg.type === "close") {
-        const { value: err, channelId } = msg;
-        record.raw.close(err);
-        channelStore.delete(channelId);
-        if (isMainThread && record.writers.length > 1) {
-            // distribute the channel close event to all threads
-            record.writers.forEach(write => {
-                write("close", err, channelId);
-            });
-        }
-    }
-}
-function wireChannel(channel, channelWrite) {
-    const channelId = channel[id];
-    if (!channelStore.has(channelId)) {
-        const send = channel.send.bind(channel);
-        const close = channel.close.bind(channel);
-        channelStore.set(channelId, {
-            channel,
-            raw: { send, close },
-            writers: [channelWrite],
-            counter: 0,
-        });
-        Object.defineProperties(channel, {
-            send: {
-                configurable: true,
-                writable: true,
-                value: async (data) => {
-                    const record = channelStore.get(channelId);
-                    if (record) {
-                        const channel = record.channel;
-                        if (channel["state"] !== 1) {
-                            throw new Error("the channel is closed");
-                        }
-                        const write = record.writers[record.counter++ % record.writers.length];
-                        await Promise.resolve(write("send", data, channelId));
-                    }
-                },
-            },
-            close: {
-                configurable: true,
-                writable: true,
-                value: (err = null) => {
-                    const record = channelStore.get(channelId);
-                    if (record) {
-                        channelStore.delete(channelId);
-                        const channel = record.channel;
-                        record.writers.forEach(write => {
-                            write("close", err, channelId);
-                        });
-                        // recover to the original methods
-                        Object.defineProperties(channel, {
-                            send: {
-                                configurable: true,
-                                writable: true,
-                                value: record.raw.send,
-                            },
-                            close: {
-                                configurable: true,
-                                writable: true,
-                                value: record.raw.close,
-                            },
-                        });
-                        channel.close(err);
-                    }
-                },
-            },
-        });
-    }
-    else {
-        const record = channelStore.get(channelId);
-        record.writers.push(channelWrite);
-    }
-}
-function unwrapChannel(obj, channelWrite) {
-    var _a, _b;
-    const channelId = obj["@@id"];
-    let channel = (_a = channelStore.get(channelId)) === null || _a === void 0 ? void 0 : _a.channel;
-    if (!channel) {
-        channel = Object.assign(Object.create(Channel.prototype), {
-            [id]: channelId,
-            capacity: (_b = obj.capacity) !== null && _b !== void 0 ? _b : 0,
-            buffer: [],
-            producers: [],
-            consumers: [],
-            error: null,
-            state: 1,
-        });
-    }
-    wireChannel(channel, channelWrite);
-    return channel;
-}
-
-/**
- * This module is only used internally by the `parallel()` function to spawn
- * workers, DON'T use it in your own code.
- * @internal
- * @module
- */
 const pendingTasks = new Map();
 /**
  * For some reason, in Node.js and Bun, when import expression throws an
@@ -716,12 +718,20 @@ function wrapReturnValue(value) {
     }
     return { value, transferable };
 }
+/**
+ * @ignore
+ * @internal
+ */
 function isCallRequest(msg) {
     return msg && typeof msg === "object"
         && ((msg.type === "call" && typeof msg.module === "string" && typeof msg.fn === "string") ||
             (["next", "return", "throw"].includes(msg.type) && typeof msg.taskId === "number"))
         && Array.isArray(msg.args);
 }
+/**
+ * @ignore
+ * @internal
+ */
 async function handleCallRequest(msg, reply) {
     const _reply = reply;
     reply = (res) => {
@@ -841,6 +851,13 @@ async function handleCallRequest(msg, reply) {
         reply({ type: "error", error, taskId: msg.taskId });
     }
 }
+
+/**
+ * This module is only used internally by the `parallel()` function to spawn
+ * workers, DON'T use it in your own code.
+ * @internal
+ * @module
+ */
 if (isBun
     && Bun.isMainThread
     && typeof process === "object"
@@ -869,5 +886,3 @@ else if (!isNode && typeof self === "object") {
         }
     };
 }
-
-export { handleCallRequest, isCallRequest };

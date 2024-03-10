@@ -4,7 +4,7 @@
  */
 
 import chan from "./chan.ts";
-import { isFunction } from "./try.ts";
+import { isFunction } from "./util.ts";
 
 /**
  * Wraps a source as an AsyncIterable object that can be used in the

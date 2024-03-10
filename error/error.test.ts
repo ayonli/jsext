@@ -1,6 +1,6 @@
 import "../augment.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { isNode, isBun } from "../util.ts";
+import { isNode, isBun } from "../parallel/constants.ts";
 import { pick } from "../object/index.ts";
 
 declare var AggregateError: new (errors: Error[], message?: string, options?: { cause: unknown; }) => Error & { errors: Error[]; };

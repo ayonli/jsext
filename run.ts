@@ -3,30 +3,22 @@
  * @module
  */
 
-import type { Worker as NodeWorker } from "node:worker_threads";
 import type { ChildProcess } from "node:child_process";
 import chan, { Channel } from "./chan.ts";
 import { isPlainObject } from "./object/index.ts";
 import { fromErrorEvent, fromObject } from "./error/index.ts";
+import { BunWorker, NodeWorker, CallRequest, CallResponse } from "./parallel/types.ts";
+import { isNode, isBun, isDeno, IsPath } from "./parallel/constants.ts";
+import { sanitizeModuleId } from "./parallel/utils/module.ts";
+import { handleChannelMessage, isChannelMessage } from "./parallel/utils/channel.ts";
 import {
-    handleChannelMessage,
-    isChannelMessage,
-    isNode,
-    isBun,
-    isDeno,
-    IsPath,
-} from "./util.ts";
-import parallel, {
-    BunWorker,
     getMaxParallelism,
-    sanitizeModuleId,
     createWorker,
-    CallRequest,
-    CallResponse,
     isCallResponse,
     wrapArgs,
     unwrapReturnValue,
-} from "./parallel.ts";
+} from "./parallel/utils/threads.ts";
+import parallel from "./parallel.ts";
 
 declare var Deno: any;
 
@@ -177,7 +169,7 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
         // exceed the `run.maxWorkers`. If the the call doesn't keep-alive the
         // worker, it will be cleaned after the call.
         workerPool.push(poolRecord = {
-            getWorker: createWorker({ adapter }),
+            getWorker: createWorker({ parallel, adapter }),
             adapter,
             busy: true,
             lastAccess: Date.now(),

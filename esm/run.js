@@ -1,8 +1,11 @@
 import chan from './chan.js';
 import { isPlainObject } from './object/index.js';
 import { fromErrorEvent, fromObject } from './error/index.js';
-import { isDeno, isNode, isBun, IsPath, isChannelMessage, handleChannelMessage } from './util.js';
-import parallel, { getMaxParallelism, sanitizeModuleId, createWorker, wrapArgs, isCallResponse, unwrapReturnValue } from './parallel.js';
+import { isDeno, isNode, isBun, IsPath } from './parallel/constants.js';
+import { sanitizeModuleId } from './parallel/utils/module.js';
+import { isChannelMessage, handleChannelMessage } from './parallel/utils/channel.js';
+import { getMaxParallelism, createWorker, wrapArgs, isCallResponse, unwrapReturnValue } from './parallel/utils/threads.js';
+import parallel from './parallel.js';
 
 /**
  * Runs a script in another thread and abort at any time.
@@ -110,7 +113,7 @@ async function run(script, args, options) {
         // exceed the `run.maxWorkers`. If the the call doesn't keep-alive the
         // worker, it will be cleaned after the call.
         workerPool.push(poolRecord = {
-            getWorker: createWorker({ adapter }),
+            getWorker: createWorker({ parallel, adapter }),
             adapter,
             busy: true,
             lastAccess: Date.now(),

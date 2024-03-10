@@ -1,6 +1,7 @@
 import { isMainThread, parentPort } from "worker_threads";
-import { isChannelMessage, handleChannelMessage, isNode } from "./util.ts";
-import { isCallRequest, handleCallRequest } from "./worker.ts";
+import { isNode } from "./parallel/constants.ts";
+import { isChannelMessage, handleChannelMessage } from "./parallel/utils/channel.ts";
+import { isCallRequest, handleCallRequest } from "./parallel/utils/worker.ts";
 
 if (isNode) {
     if (!isMainThread && parentPort) {

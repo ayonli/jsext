@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.7.5",
+    "version": "0.7.6",
     "description": "Additional functions for JavaScript to build strong applications.",
     "main": "./cjs/index.js",
     "module": "./esm/index.js",
@@ -274,6 +274,7 @@
         "test:bun": "bun run ./node_modules/mocha/bin/mocha",
         "test:deno": "deno run --allow-read --allow-net test-deno.ts",
         "build": "rollup -c rollup.config.mjs && echo '{\"type\":\"module\"}' > ./esm/package.json && echo '{\"type\":\"commonjs\"}' > ./cjs/package.json && tsc -p types.tsconfig.json",
+        "typing": "tsc --noEmit --watch",
         "prepublishOnly": "npm run build"
     },
     "repository": {
@@ -363,8 +364,7 @@
     },
     "mocha": {
         "spec": [
-            "*.test.ts",
-            "*/**.test.ts"
+            "**/*.test.ts"
         ],
         "exclude": [
             "*-deno.test.ts",

@@ -1,5 +1,6 @@
 import { isAsyncGenerator, isGenerator } from './external/check-iterable/index.js';
 import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
+import { isFunction } from './util.js';
 
 /**
  * Calls a function safely and return errors when captured.
@@ -89,9 +90,6 @@ function _try(fn, ...args) {
         return [null, returns];
     }
 }
-function isFunction(val) {
-    return typeof val === "function";
-}
 
-export { _try as default, isFunction };
+export { _try as default };
 //# sourceMappingURL=try.js.map

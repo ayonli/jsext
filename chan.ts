@@ -5,13 +5,13 @@
  */
 
 import { sequence } from "./number/index.ts";
+import { id } from "./parallel/constants.ts";
 
 if (typeof Symbol.dispose === "undefined") {
     Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });
 }
 
 const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
-export const id = Symbol.for("id");
 
 /**
  * A channel implementation that transfers data across routines, even across
