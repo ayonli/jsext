@@ -5,10 +5,11 @@ on:
 
 jobs:
   test-node:
-    runs-on: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.runner }}
 
     strategy:
       matrix:
+        runner: [ ubuntu-latest, windows-latest ]
         node-version: [14.x, 16.x, 18.x, 20.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
@@ -63,7 +64,11 @@ jobs:
       - run: npm run test:bun
 
   test-deno:
-    runs-on: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      matrix:
+        runner: [ ubuntu-latest, windows-latest ]
 
     steps:
       - uses: actions/checkout@v4

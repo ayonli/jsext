@@ -19,7 +19,11 @@ permissions:
 
 jobs:
   test:
-    runs-on: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      matrix:
+        runner: [ ubuntu-latest, windows-latest ]
 
     steps:
       - name: Setup repo
