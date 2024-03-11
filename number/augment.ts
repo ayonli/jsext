@@ -1,4 +1,4 @@
-import { isBetween, isFloat, isNumeric, random, sequence } from "./index.ts";
+import { isBetween, isFloat, isNumeric, random, range, autoId, sequence } from "./index.ts";
 
 declare global {
     interface NumberConstructor {
@@ -17,7 +17,18 @@ declare global {
         isBetween(value: number, [min, max]: [number, number]): boolean;
         /** Returns a random integer ranged from `min` to `max` (inclusive). */
         random(min: number, max: number): number;
-        /** Creates a generator that produces sequential numbers from `min` to `max` (inclusive). */
+        /** Generates a sequence of numbers from `min` to `max` (inclusive). */
+        range(min: number, max: number, step?: number): Generator<number, void, unknown>;
+        /**
+         * Creates a generator that produces sequential numbers from `1` to
+         * `Number.MAX_SAFE_INTEGER` and repeat the sequence when the end is reached.
+         * Useful for generating unique IDs.
+         */
+        autoId(): Generator<number, void, unknown>;
+        /**
+         * Creates a generator that produces sequential numbers from `min` to `max` (inclusive).
+         * @deprecated use {@link range} and {@link autoId} instead.
+         */
         sequence(min: number, max: number, step?: number, loop?: boolean): Generator<number, void, unknown>;
     }
 }
@@ -26,4 +37,6 @@ Number.isFloat = isFloat;
 Number.isNumeric = isNumeric;
 Number.isBetween = isBetween;
 Number.random = random;
+Number.range = range;
+Number.autoId = autoId;
 Number.sequence = sequence;

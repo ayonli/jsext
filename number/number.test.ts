@@ -33,11 +33,11 @@ describe("Number", () => {
         ok(Number.isNumeric("0b1010"));
         ok(Number.isNumeric("0o123"));
         ok(Number.isNumeric("0x123"));
-        ok(!Number.isNumeric("12n"))
-        ok(!Number.isNumeric("12a"))
-        ok(!Number.isNumeric("abc"))
-        ok(!Number.isNumeric(""))
-        ok(!Number.isNumeric(NaN))
+        ok(!Number.isNumeric("12n"));
+        ok(!Number.isNumeric("12a"));
+        ok(!Number.isNumeric("abc"));
+        ok(!Number.isNumeric(""));
+        ok(!Number.isNumeric(NaN));
     });
 
     it("Number.isBetween", () => {
@@ -53,6 +53,25 @@ describe("Number", () => {
 
         const num = Number.random(0, 10);
         ok(num >= 0 && num <= 10);
+    });
+
+    it("Number.range", () => {
+        deepStrictEqual([...Number.range(0, 9)], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        deepStrictEqual([...Number.sequence(0, 9, 2)], [0, 2, 4, 6, 8]);
+    });
+
+    it("Number.autoId", () => {
+        const ids: number[] = [];
+
+        for (const id of Number.autoId()) {
+            ids.push(id);
+
+            if (ids.length === 9) {
+                break;
+            }
+        }
+
+        deepStrictEqual(ids, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
     });
 
     it("Number.sequence", () => {

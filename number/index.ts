@@ -49,7 +49,28 @@ export function random(min: number, max: number): number {
     return min + Math.floor(Math.random() * (max - min + 1));
 }
 
-/** Creates a generator that produces sequential numbers from `min` to `max` (inclusive). */
+/** Generates a sequence of numbers from `min` to `max` (inclusive). */
+export function range(
+    min: number,
+    max: number,
+    step = 1
+): Generator<number, void, unknown> {
+    return sequence(min, max, step);
+}
+
+/**
+ * Creates a generator that produces sequential numbers from `1` to
+ * `Number.MAX_SAFE_INTEGER` and repeat the sequence when the end is reached.
+ * Useful for generating unique IDs.
+ */
+export function autoId() {
+    return sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
+}
+
+/**
+ * Creates a generator that produces sequential numbers from `min` to `max` (inclusive).
+ * @deprecated use {@link range} and {@link autoId} instead.
+ */
 export function* sequence(
     min: number,
     max: number,

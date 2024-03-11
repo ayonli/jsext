@@ -1374,7 +1374,8 @@ import "@ayonli/jsext/number/augment";
 - `isNumeric(value: unknown): boolean`
 - `isBetween(value: number, [min, max]: [number, number]): boolean`
 - `random(min: number, max: number): number`
-- `sequence(min: number, max: number, step?: number, loop?: boolean): Generator<number, void, unknown>`
+- `range(min: number, max: number, step?: number): Generator<number, void, unknown>`
+- `autoId(): Generator<number, void, unknown>`
 
 ### [array](https://jsr.io/@ayonli/jsext/doc/array/~)
 
@@ -1584,7 +1585,8 @@ import "@ayonli/jsext/collections/augment";
     - `isNumeric(value: unknown): boolean`
     - `isBetween(value: number, [min, max]: [number, number]): boolean`
     - `random(min: number, max: number): number`
-    - `sequence(min: number, max: number, step?: number, loop?: boolean): Generator<number, void, unknown>`
+    - `range(min: number, max: number, step?: number): Generator<number, void, unknown>`
+    - `autoId(): Generator<number, void, unknown>`
 
 ### Augment Array
 
