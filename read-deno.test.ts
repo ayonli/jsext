@@ -3,10 +3,10 @@ import jsext from "./index.ts";
 
 describe("jsext.read", () => {
     it("ReadableStream", async () => {
-        const file = await Deno.open("./package.json", { read: true });
+        const res = new Response("hello, world");
         const chunks: Uint8Array[] = [];
 
-        for await (const chunk of jsext.read(file.readable)) {
+        for await (const chunk of jsext.read(res.body!)) {
             chunks.push(chunk as Uint8Array);
         }
 

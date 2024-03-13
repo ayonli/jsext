@@ -13,7 +13,22 @@ import { EventEmitter } from "events";
 import jsext from "./index.ts";
 
 describe("jsext.read", () => {
-    it("ReadableStream", async () => {
+    it("ReadableStream", async function () {
+        if (typeof ReadableStream !== "function" || typeof Response !== "function") {
+            this.skip();
+        }
+
+        const res = new Response("hello, world");
+        const chunks: Uint8Array[] = [];
+
+        for await (const chunk of jsext.read(res.body!)) {
+            chunks.push(chunk as Uint8Array);
+        }
+
+        ok(chunks.length > 0);
+    });
+
+    it("ReadStream", async () => {
         const file = createReadStream("./package.json");
         const chunks: Buffer[] = [];
 

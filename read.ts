@@ -16,6 +16,19 @@ export default function read<I extends AsyncIterable<any>>(iterable: I): I;
  * ```ts
  * import read from "@ayonli/jsext/read";
  * 
+ * const res = new Response("Hello, World!");
+ * 
+ * for await (const chunk of read(res.body!)) {
+ *     console.log("receive chunk:", chunk);
+ * }
+ * ```
+ */
+export default function read<T>(stream: ReadableStream<T>): AsyncIterable<T>;
+/**
+ * @example
+ * ```ts
+ * import read from "@ayonli/jsext/read";
+ * 
  * // listen to the `onmessage`
  * const sse = new EventSource("/sse/message");
  * 
@@ -88,6 +101,27 @@ export default function read<T>(source: any, eventMap: {
 } | undefined = undefined): AsyncIterable<T> {
     if (isFunction(source[Symbol.asyncIterator])) {
         return source;
+    } else if (typeof ReadableStream === "function"
+        && source instanceof ReadableStream
+    ) {
+        const reader = source.getReader();
+        return {
+            [Symbol.asyncIterator]: async function* () {
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+
+                        if (done) {
+                            break;
+                        }
+
+                        yield value;
+                    }
+                } finally {
+                    reader.releaseLock();
+                }
+            },
+        };
     }
 
     const channel = chan<T>(Infinity);
@@ -250,7 +284,7 @@ export async function readAll<T>(iterable: AsyncIterable<T>): Promise<T[]> {
     const list: T[] = [];
 
     for await (const chunk of iterable) {
-        list.push(chunk)
+        list.push(chunk);
     }
 
     return list;
