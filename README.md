@@ -620,6 +620,7 @@ await Promise.all([
 
 ```ts
 declare function read<I extends AsyncIterable<any>>(iterable: I): I;
+declare function read<T>(stream: ReadableStream<T>): AsyncIterable<T>;
 declare function read(es: EventSource, options?: { event?: string; }): AsyncIterable<string>;
 declare function read<T extends Uint8Array | string>(ws: WebSocket): AsyncIterable<T>;
 declare function read<T>(target: EventTarget, eventMap?: {
@@ -636,6 +637,18 @@ declare function read<T>(target: NodeJS.EventEmitter, eventMap?: {
 
 Wraps a source as an AsyncIterable object that can be used in the
 `for await...of...` loop for reading streaming data.
+
+**Example (ReadableStream)**
+
+```ts
+import read from "@ayonli/jsext/read";
+
+const res = new Response("Hello, World!");
+
+for await (const chunk of read(res.body!)) {
+    console.log("receive chunk:", chunk);
+}
+```
 
 **Example (EventSource)**
 
