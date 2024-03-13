@@ -1,6 +1,6 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { sleep } from "./promise/index.ts";
-import { random, sequence } from "./number/index.ts";
+import { random, range } from "./number/index.ts";
 import { sum } from "./math/index.ts";
 import jsext from "./index.ts";
 
@@ -54,7 +54,7 @@ describe("jsext.chan", () => {
         const channel = jsext.chan<number>();
 
         (async () => {
-            for (const num of sequence(0, 9)) {
+            for (const num of range(0, 9)) {
                 await channel.send(num);
             }
 
@@ -74,7 +74,7 @@ describe("jsext.chan", () => {
         const channel = jsext.chan<number>(Infinity);
 
         (async () => {
-            for (const num of sequence(0, 9)) {
+            for (const num of range(0, 9)) {
                 await channel.send(num);
             }
 

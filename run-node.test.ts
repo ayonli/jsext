@@ -1,6 +1,6 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import jsext from "./index.ts";
-import { sequence } from "./number/index.ts";
+import { range } from "./number/index.ts";
 import { fromObject } from "./error/index.ts";
 import { sum } from "./math/index.ts";
 import { isNode } from "./parallel/constants.ts";
@@ -94,7 +94,7 @@ describe("jsext.run", () => {
                 fn: "twoTimesValues",
             });
 
-            for (const value of sequence(0, 9)) {
+            for (const value of range(0, 9)) {
                 await channel.send({ value, done: value === 9 });
             }
 
@@ -110,7 +110,7 @@ describe("jsext.run", () => {
                 fn: "threeTimesValues",
             });
 
-            for (const value of sequence(1, 10)) {
+            for (const value of range(1, 10)) {
                 await channel2.send(value);
             }
 
@@ -156,7 +156,7 @@ describe("jsext.run", () => {
                 // if the error is captured.
                 ok(err instanceof Error);
             } else {
-               const __filename = trim(
+                const __filename = trim(
                     import.meta.url.replace(/^(file|https?):\/\//, "").replace(/\//g, path.sep),
                     path.sep).replace(/^([a-zA-Z]):/, "");
                 const stack = (err as Error)?.stack?.replace(/\//g, path.sep);
@@ -311,7 +311,7 @@ describe("jsext.run", () => {
                 adapter: "child_process",
             });
 
-            for (const value of sequence(0, 9)) {
+            for (const value of range(0, 9)) {
                 await channel.send({ value, done: value === 9 });
             }
 
@@ -327,7 +327,7 @@ describe("jsext.run", () => {
                 fn: "threeTimesValues",
             });
 
-            for (const value of sequence(1, 10)) {
+            for (const value of range(1, 10)) {
                 await channel2.send(value);
             }
 

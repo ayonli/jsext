@@ -6,7 +6,7 @@
 
 import { ThenableAsyncGenerator, ThenableAsyncGeneratorLike } from "./external/thenable-generator/index.ts";
 import chan, { Channel } from "./chan.ts";
-import { sequence } from "./number/index.ts";
+import { autoId } from "./number/index.ts";
 import { BunWorker, CallRequest, NodeWorker } from "./parallel/types.ts";
 import { isBun, isDeno, isNode, IsPath, isMainThread } from "./parallel/constants.ts";
 import { resolveModule, sanitizeModuleId } from "./parallel/utils/module.ts";
@@ -23,7 +23,7 @@ export type ThreadedFunctions<M, T extends FunctionProperties<M> = FunctionPrope
     : T[K];
 };
 
-const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
+const taskIdCounter = autoId();
 declare var Deno: any;
 
 async function safeRemoteCall(
