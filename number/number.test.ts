@@ -60,7 +60,7 @@ describe("Number", () => {
         deepStrictEqual([...Number.sequence(0, 9, 2)], [0, 2, 4, 6, 8]);
     });
 
-    it("Number.autoId", () => {
+    it("Number.serial", () => {
         const ids: number[] = [];
 
         for (const id of Number.serial()) {
