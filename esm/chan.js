@@ -1,4 +1,4 @@
-import { sequence } from './number/index.js';
+import { serial } from './number/index.js';
 import { id } from './parallel/constants.js';
 
 /**
@@ -10,7 +10,7 @@ var _a;
 if (typeof Symbol.dispose === "undefined") {
     Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });
 }
-const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
+const idGenerator = serial(true);
 /**
  * A channel implementation that transfers data across routines, even across
  * multiple threads, inspired by Golang.

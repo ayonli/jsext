@@ -2,10 +2,10 @@ import { Channel } from '../../chan.js';
 import { isNode, isBun, isDeno, isNodePrior14 } from '../constants.js';
 import { wrapChannel, isChannelMessage, handleChannelMessage } from './channel.js';
 import { isPlainObject } from '../../object/index.js';
-import { sequence } from '../../number/index.js';
+import { serial } from '../../number/index.js';
 import { fromErrorEvent, isDOMException, isAggregateError, toObject, fromObject } from '../../error/index.js';
 
-const workerIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
+const workerIdCounter = serial(true);
 let workerPool = [];
 let gcTimer;
 const remoteTasks = new Map();
