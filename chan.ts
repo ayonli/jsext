@@ -4,14 +4,14 @@
  * @module
  */
 
-import { autoId } from "./number/index.ts";
+import { serial } from "./number/index.ts";
 import { id } from "./parallel/constants.ts";
 
 if (typeof Symbol.dispose === "undefined") {
     Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });
 }
 
-const idGenerator = autoId();
+const idGenerator = serial(true);
 
 /**
  * A channel implementation that transfers data across routines, even across

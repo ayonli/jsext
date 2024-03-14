@@ -63,7 +63,7 @@ describe("Number", () => {
     it("Number.autoId", () => {
         const ids: number[] = [];
 
-        for (const id of Number.autoId()) {
+        for (const id of Number.serial()) {
             ids.push(id);
 
             if (ids.length === 9) {

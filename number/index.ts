@@ -60,16 +60,17 @@ export function range(
 
 /**
  * Creates a generator that produces sequential numbers from `1` to
- * `Number.MAX_SAFE_INTEGER` and repeat the sequence when the end is reached.
- * Useful for generating unique IDs.
+ * `Number.MAX_SAFE_INTEGER`, useful for generating unique IDs.
+ * 
+ * @param loop Repeat the sequence when the end is reached.
  */
-export function autoId() {
-    return sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
+export function serial(loop = false): Generator < number, void, unknown > {
+    return sequence(1, Number.MAX_SAFE_INTEGER, 1, loop);
 }
 
 /**
  * Creates a generator that produces sequential numbers from `min` to `max` (inclusive).
- * @deprecated use {@link range} and {@link autoId} instead.
+ * @deprecated use {@link range} and {@link serial} instead.
  */
 export function* sequence(
     min: number,

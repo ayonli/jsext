@@ -4,7 +4,7 @@ import { BunWorker, NodeWorker, CallResponse, ChannelMessage } from "../types.ts
 import { isBun, isDeno, isNode, isNodePrior14 } from "../constants.ts";
 import { handleChannelMessage, isChannelMessage, wrapChannel } from "./channel.ts";
 import { isPlainObject } from "../../object/index.ts";
-import { autoId } from "../../number/index.ts";
+import { serial } from "../../number/index.ts";
 import {
     fromErrorEvent,
     fromObject,
@@ -15,7 +15,7 @@ import {
 
 declare var Deno: any;
 
-const workerIdCounter = autoId();
+const workerIdCounter = serial(true);
 type PoolRecord = {
     getWorker: Promise<Worker | BunWorker | NodeWorker>;
     tasks: Set<number>;

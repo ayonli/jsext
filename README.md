@@ -1388,7 +1388,7 @@ import "@ayonli/jsext/number/augment";
 - `isBetween(value: number, [min, max]: [number, number]): boolean`
 - `random(min: number, max: number): number`
 - `range(min: number, max: number, step?: number): Generator<number, void, unknown>`
-- `autoId(): Generator<number, void, unknown>`
+- `serial(loop?: boolean): Generator<number, void, unknown>`
 
 ### [array](https://jsr.io/@ayonli/jsext/doc/array/~)
 
