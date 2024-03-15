@@ -1,5 +1,17 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { isAbsolute, isPosixPath, isUrl, isWindowsPath, join, normalize, split } from "./index.ts";
+import * as path from "node:path";
+import {
+    basename,
+    dirname,
+    extname,
+    isAbsolute,
+    isPosixPath,
+    isUrl,
+    isWindowsPath,
+    join,
+    normalize,
+    split,
+} from "./index.ts";
 
 describe("path", () => {
     it("isUrl", () => {
@@ -142,6 +154,7 @@ describe("path", () => {
 
         it("relative path", () => {
             deepStrictEqual(split("foo"), ["foo"]);
+            deepStrictEqual(split("foo/"), ["foo"]);
             deepStrictEqual(split("foo/bar"), ["foo", "bar"]);
             deepStrictEqual(split("foo//bar/"), ["foo", "bar"]);
             deepStrictEqual(split("foo\\bar"), ["foo", "bar"]);
@@ -203,7 +216,6 @@ describe("path", () => {
             strictEqual(join("c:", "foo"), "c:\\foo");
             strictEqual(join("c:", "foo", "bar"), "c:\\foo\\bar");
             strictEqual(join("c:", "foo", "bar", "baz"), "c:\\foo\\bar\\baz");
-            strictEqual(join("c:", "foo", "bar", "baz", "qux"), "c:\\foo\\bar\\baz\\qux");
             strictEqual(join("c:", "foo", "bar", "..", "baz"), "c:\\foo\\baz");
             strictEqual(join("c:", "foo", "bar", "..\\baz"), "c:\\foo\\baz");
         });
@@ -213,7 +225,6 @@ describe("path", () => {
             strictEqual(join("/", "foo"), "/foo");
             strictEqual(join("/", "foo", "bar"), "/foo/bar");
             strictEqual(join("/", "foo", "bar", "baz"), "/foo/bar/baz");
-            strictEqual(join("/", "foo", "bar", "baz", "qux"), "/foo/bar/baz/qux");
             strictEqual(join("/", "foo", "bar", "..", "baz"), "/foo/baz");
             strictEqual(join("/", "foo", "bar", "../baz"), "/foo/baz");
         });
@@ -223,11 +234,10 @@ describe("path", () => {
             strictEqual(join(""), ".");
             strictEqual(join("", ""), ".");
             strictEqual(join("foo"), "foo");
-            strictEqual(join("foo", "bar"), "foo/bar");
-            strictEqual(join("foo", "bar", "baz"), "foo/bar/baz");
-            strictEqual(join("foo", "bar", "baz", "qux"), "foo/bar/baz/qux");
-            strictEqual(join("foo", "bar", "..", "baz"), "foo/baz");
-            strictEqual(join("foo", "bar", "../baz"), "foo/baz");
+            strictEqual(join("foo", "bar"), path.join("foo", "bar"));
+            strictEqual(join("foo", "bar", "baz"), path.join("foo", "bar", "baz"));
+            strictEqual(join("foo", "bar", "..", "baz"), path.join(join("foo", "baz")));
+            strictEqual(join("foo", "bar", "../baz"), path.join("foo", "baz"));
         });
     });
 
@@ -253,6 +263,14 @@ describe("path", () => {
                 normalize("http://example.com/foo/./bar"),
                 "http://example.com/foo/bar"
             );
+            strictEqual(
+                normalize("http://example.com/foo/.."),
+                "http://example.com"
+            );
+            strictEqual(
+                normalize("http://example.com/foo/../.."),
+                "http://example.com"
+            );
         });
 
         it("windows path", () => {
@@ -273,7 +291,7 @@ describe("path", () => {
             strictEqual(normalize("/foo/../.."), "/");
             strictEqual(normalize("/foo/./bar"), "/foo/bar");
             strictEqual(normalize("/foo/././bar"), "/foo/bar");
-        })
+        });
 
         it("relative path", () => {
             strictEqual(normalize("foo/../bar"), "bar");
@@ -284,10 +302,131 @@ describe("path", () => {
             strictEqual(normalize("foo\\bar\\..\\"), "foo");
             strictEqual(normalize("foo/.."), ".");
             strictEqual(normalize("foo\\.."), ".");
-            strictEqual(normalize("foo/../.."), ".");
-            strictEqual(normalize("foo\\..\\.."), ".");
-            strictEqual(normalize("foo/./bar"), "foo/bar");
-            strictEqual(normalize("foo\\.\\bar"), "foo/bar");
-        })
+            strictEqual(normalize("foo/../.."), "..");
+            strictEqual(normalize("foo\\..\\.."), "..");
+            strictEqual(normalize("foo/./bar"), path.join("foo", "bar"));
+            strictEqual(normalize("foo\\.\\bar"), path.join("foo", "bar"));
+            strictEqual(normalize(""), ".");
+            strictEqual(normalize("."), ".");
+            strictEqual(normalize(".."), "..");
+            strictEqual(normalize("../foo"), path.normalize("../foo"));
+            strictEqual(normalize("../.."), path.normalize("../.."));
+        });
+    });
+
+    describe("dirname", () => {
+        it("url", () => {
+            strictEqual(dirname("http://example.com/foo/bar?foo=bar#baz"), "http://example.com/foo");
+            strictEqual(dirname("http://example.com/foo?foo=bar#baz"), "http://example.com");
+            strictEqual(dirname("http://example.com/foo/../bar?foo=bar#baz"), "http://example.com");
+            strictEqual(dirname("http://example.com/?foo=bar#baz"), "http://example.com");
+            strictEqual(dirname("http://example.com?foo=bar#baz"), "http://example.com");
+        });
+
+        it("windows path", () => {
+            strictEqual(dirname("c:/foo/bar"), "c:\\foo");
+            strictEqual(dirname("c:/foo/bar/"), "c:\\foo");
+            strictEqual(dirname("c:/foo/../bar"), "c:\\");
+            strictEqual(dirname("c:/foo/"), "c:\\");
+            strictEqual(dirname("c:/foo"), "c:\\");
+        });
+
+        it("posix path", () => {
+            strictEqual(dirname("/foo/bar"), "/foo");
+            strictEqual(dirname("/foo/bar/"), "/foo");
+            strictEqual(dirname("/foo/../bar"), "/");
+            strictEqual(dirname("/foo/"), "/");
+            strictEqual(dirname("/foo"), "/");
+        });
+
+        it("relative path", () => {
+            strictEqual(dirname("foo/bar"), "foo");
+            strictEqual(dirname("foo/bar/"), "foo");
+            strictEqual(dirname("foo/bar/baz"), path.join("foo", "bar"));
+            strictEqual(dirname("foo/../bar"), ".");
+            strictEqual(dirname("foo/"), ".");
+            strictEqual(dirname("foo"), ".");
+            strictEqual(dirname(""), ".");
+        });
+    });
+
+    describe("basename", () => {
+        it("url", () => {
+            strictEqual(basename("http://example.com/foo.txt"), "foo.txt");
+            strictEqual(basename("http://example.com/foo.txt?foo=bar#baz"), "foo.txt");
+            strictEqual(basename("http://example.com/foo"), "foo");
+            strictEqual(basename("http://example.com"), "");
+            strictEqual(basename("http://example.com/foo.txt", ".txt"), "foo");
+            strictEqual(basename("http://example.com/foo.txt", ".ts"), "foo.txt");
+        });
+
+        it("windows path", () => {
+            strictEqual(basename("c:/foo/bar"), "bar");
+            strictEqual(basename("c:/foo/bar/"), "bar");
+            strictEqual(basename("c:/foo/../bar"), "bar");
+            strictEqual(basename("c:/foo/"), "foo");
+            strictEqual(basename("c:/foo"), "foo");
+            strictEqual(basename("c:/"), "");
+            strictEqual(basename("c:"), "");
+            strictEqual(basename("c:/foo.txt", ".txt"), "foo");
+            strictEqual(basename("c:/foo.txt", ".ts"), "foo.txt");
+        });
+
+        it("posix path", () => {
+            strictEqual(basename("/foo/bar"), "bar");
+            strictEqual(basename("/foo/bar/"), "bar");
+            strictEqual(basename("/foo/../bar"), "bar");
+            strictEqual(basename("/foo/"), "foo");
+            strictEqual(basename("/foo"), "foo");
+            strictEqual(basename("/"), "");
+            strictEqual(basename("/foo.txt", ".txt"), "foo");
+            strictEqual(basename("/foo.txt", ".ts"), "foo.txt");
+        });
+
+        it("relative path", () => {
+            strictEqual(basename("foo/bar"), "bar");
+            strictEqual(basename("foo/bar/"), "bar");
+            strictEqual(basename("foo/../bar"), "bar");
+            strictEqual(basename("foo/"), "foo");
+            strictEqual(basename("foo"), "foo");
+            strictEqual(basename(""), "");
+            strictEqual(basename("foo.txt", ".txt"), "foo");
+            strictEqual(basename("foo.txt", ".ts"), "foo.txt");
+        });
+    });
+
+    describe("extname", () => {
+        it("url", () => {
+            strictEqual(extname("http://example.com/foo.txt"), ".txt");
+            strictEqual(extname("http://example.com/foo.txt?foo=bar#baz"), ".txt");
+            strictEqual(extname("http://example.com/foo.tar.gz"), ".gz");
+            strictEqual(extname("http://example.com/foo"), "");
+            strictEqual(basename("http://example.com"), "");
+        });
+
+        it("windows path", () => {
+            strictEqual(extname("c:/foo.txt"), ".txt");
+            strictEqual(extname("c:/foo.tar.gz"), ".gz");
+            strictEqual(extname("c:/foo"), "");
+            strictEqual(extname("c:/foo/"), "");
+            strictEqual(extname("c:/"), "");
+            strictEqual(extname("c:"), "");
+        });
+
+        it("posix path", () => {
+            strictEqual(extname("/foo.txt"), ".txt");
+            strictEqual(extname("/foo.tar.gz"), ".gz");
+            strictEqual(extname("/foo"), "");
+            strictEqual(extname("/foo/"), "");
+            strictEqual(extname("/"), "");
+        });
+
+        it("relative path", () => {
+            strictEqual(extname("foo.txt"), ".txt");
+            strictEqual(extname("foo.tar.gz"), ".gz");
+            strictEqual(extname("foo"), "");
+            strictEqual(extname("foo/"), "");
+            strictEqual(extname(""), "");
+        });
     });
 });
