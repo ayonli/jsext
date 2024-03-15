@@ -112,6 +112,11 @@ describe("path", () => {
                 "?foo=bar&hello=world",
                 "#baz"
             ]);
+
+            deepStrictEqual(split("?foo=bar"), ["?foo=bar"]);
+            deepStrictEqual(split("#baz"), ["#baz"]);
+            deepStrictEqual(split("?foo=bar#baz"), ["?foo=bar", "#baz"]);
+            deepStrictEqual(split("?foo=hello&bar=world#baz"), ["?foo=hello&bar=world", "#baz"]);
         });
 
         it("windows path", () => {
@@ -170,6 +175,27 @@ describe("path", () => {
                 "?foo=bar",
                 "#baz"
             ), "http://example.com/foo/bar?foo=bar#baz");
+            strictEqual(join("http://example.com", "foo", "..", "bar"), "http://example.com/bar");
+            strictEqual(join("http://example.com", "foo", "../bar"), "http://example.com/bar");
+            strictEqual(join(
+                "http://example.com",
+                "foo",
+                "../bar?foo=bar"
+            ), "http://example.com/bar?foo=bar");
+            strictEqual(join(
+                "http://example.com",
+                "foo",
+                "../bar#baz"
+            ), "http://example.com/bar#baz");
+            strictEqual(join(
+                "http://example.com",
+                "foo",
+                "../bar?foo=bar#baz"
+            ), "http://example.com/bar?foo=bar#baz");
+            strictEqual(join(
+                "http://example.com/foo/../bar",
+                "?foo=bar#baz"
+            ), "http://example.com/bar?foo=bar#baz");
         });
 
         it("windows path", () => {
@@ -178,6 +204,8 @@ describe("path", () => {
             strictEqual(join("c:", "foo", "bar"), "c:\\foo\\bar");
             strictEqual(join("c:", "foo", "bar", "baz"), "c:\\foo\\bar\\baz");
             strictEqual(join("c:", "foo", "bar", "baz", "qux"), "c:\\foo\\bar\\baz\\qux");
+            strictEqual(join("c:", "foo", "bar", "..", "baz"), "c:\\foo\\baz");
+            strictEqual(join("c:", "foo", "bar", "..\\baz"), "c:\\foo\\baz");
         });
 
         it("posix path", () => {
@@ -186,6 +214,8 @@ describe("path", () => {
             strictEqual(join("/", "foo", "bar"), "/foo/bar");
             strictEqual(join("/", "foo", "bar", "baz"), "/foo/bar/baz");
             strictEqual(join("/", "foo", "bar", "baz", "qux"), "/foo/bar/baz/qux");
+            strictEqual(join("/", "foo", "bar", "..", "baz"), "/foo/baz");
+            strictEqual(join("/", "foo", "bar", "../baz"), "/foo/baz");
         });
 
         it("relative path", () => {
@@ -196,6 +226,8 @@ describe("path", () => {
             strictEqual(join("foo", "bar"), "foo/bar");
             strictEqual(join("foo", "bar", "baz"), "foo/bar/baz");
             strictEqual(join("foo", "bar", "baz", "qux"), "foo/bar/baz/qux");
+            strictEqual(join("foo", "bar", "..", "baz"), "foo/baz");
+            strictEqual(join("foo", "bar", "../baz"), "foo/baz");
         });
     });
 });

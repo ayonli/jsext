@@ -69,7 +69,23 @@ export function split(path: string): string[] {
             return segments;
         }
     } else { // relative path
-        return trimEnd(path, "/\\").split(/[/\\]+/);
+        path = trimEnd(path, "/\\");
+
+        if (!path) {
+            return [];
+        } else if (path[0] === "#") {
+            return [path];
+        } else if (path[0] === "?") {
+            const index = path.indexOf("#");
+
+            if (index === -1) {
+                return [path];
+            } else {
+                return [path.slice(0, index), path.slice(index)];
+            }
+        } else {
+            return path.split(/[/\\]+/);
+        }
     }
 }
 
@@ -77,6 +93,20 @@ export function split(path: string): string[] {
 export function join(...segments: string[]): string {
     if (!segments.length) {
         return ".";
+    }
+
+    const paths: string[] = [];
+
+    for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i]!;
+
+        for (const _segment of split(segment)) {
+            if (_segment === "..") {
+                paths.pop();
+            } else if (_segment && _segment !== ".") {
+                paths.push(_segment);
+            }
+        }
     }
 
     let sysSep = "/";
@@ -96,8 +126,8 @@ export function join(...segments: string[]): string {
     const sep = _isUrl ? "/" : _isWindowsPath ? "\\" : sysSep;
     let url = "";
 
-    for (let i = 0; i < segments.length; i++) {
-        const segment = segments[i]!;
+    for (let i = 0; i < paths.length; i++) {
+        const segment = paths[i]!;
 
         if (segment) {
             if (!url) {
