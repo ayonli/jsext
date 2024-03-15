@@ -102,7 +102,11 @@ export function join(...segments: string[]): string {
 
         for (const _segment of split(segment)) {
             if (_segment === "..") {
-                paths.pop();
+                if (paths.length > 1 ||
+                    (paths[0] !== "/" && !/^[a-z]:$/i.test(paths[0]!))
+                ) {
+                    paths.pop();
+                }
             } else if (_segment && _segment !== ".") {
                 paths.push(_segment);
             }
@@ -143,4 +147,9 @@ export function join(...segments: string[]): string {
     }
 
     return url || ".";
+}
+
+export function normalize(path: string): string {
+    path = join(path);
+    return /^[a-z]:$/i.test(path) ? path + "\\" : path;
 }

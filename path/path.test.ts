@@ -1,5 +1,5 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { isAbsolute, isPosixPath, isUrl, isWindowsPath, join, split } from "./index.ts";
+import { isAbsolute, isPosixPath, isUrl, isWindowsPath, join, normalize, split } from "./index.ts";
 
 describe("path", () => {
     it("isUrl", () => {
@@ -229,5 +229,65 @@ describe("path", () => {
             strictEqual(join("foo", "bar", "..", "baz"), "foo/baz");
             strictEqual(join("foo", "bar", "../baz"), "foo/baz");
         });
+    });
+
+    describe("normalize", () => {
+        it("url", () => {
+            strictEqual(
+                normalize("http://example.com/foo/../bar?foo=bar#baz"),
+                "http://example.com/bar?foo=bar#baz"
+            );
+            strictEqual(
+                normalize("http://example.com/foo/bar/..?foo=bar#baz"),
+                "http://example.com/foo?foo=bar#baz"
+            );
+            strictEqual(
+                normalize("http://example.com/foo/bar/../?foo=bar#baz"),
+                "http://example.com/foo?foo=bar#baz"
+            );
+            strictEqual(
+                normalize("http://example.com/foo/../../?foo=bar#baz"),
+                "http://example.com?foo=bar#baz"
+            );
+            strictEqual(
+                normalize("http://example.com/foo/./bar"),
+                "http://example.com/foo/bar"
+            );
+        });
+
+        it("windows path", () => {
+            strictEqual(normalize("c:/foo/../bar"), "c:\\bar");
+            strictEqual(normalize("c:/foo/bar/.."), "c:\\foo");
+            strictEqual(normalize("c:/foo/bar/../"), "c:\\foo");
+            strictEqual(normalize("c:/foo/.."), "c:\\");
+            strictEqual(normalize("c:/foo/../.."), "c:\\");
+            strictEqual(normalize("c:/foo/./bar"), "c:\\foo\\bar");
+            strictEqual(normalize("c:/foo/././/bar"), "c:\\foo\\bar");
+        });
+
+        it("posix path", () => {
+            strictEqual(normalize("/foo/../bar"), "/bar");
+            strictEqual(normalize("/foo/bar/.."), "/foo");
+            strictEqual(normalize("/foo/bar/../"), "/foo");
+            strictEqual(normalize("/foo/.."), "/");
+            strictEqual(normalize("/foo/../.."), "/");
+            strictEqual(normalize("/foo/./bar"), "/foo/bar");
+            strictEqual(normalize("/foo/././bar"), "/foo/bar");
+        })
+
+        it("relative path", () => {
+            strictEqual(normalize("foo/../bar"), "bar");
+            strictEqual(normalize("foo\\..\\bar"), "bar");
+            strictEqual(normalize("foo/bar/.."), "foo");
+            strictEqual(normalize("foo\\bar\\.."), "foo");
+            strictEqual(normalize("foo/bar/../"), "foo");
+            strictEqual(normalize("foo\\bar\\..\\"), "foo");
+            strictEqual(normalize("foo/.."), ".");
+            strictEqual(normalize("foo\\.."), ".");
+            strictEqual(normalize("foo/../.."), ".");
+            strictEqual(normalize("foo\\..\\.."), ".");
+            strictEqual(normalize("foo/./bar"), "foo/bar");
+            strictEqual(normalize("foo\\.\\bar"), "foo/bar");
+        })
     });
 });
