@@ -1334,6 +1334,8 @@ console.assert(!isSubclassOf(Controller, Log));
 - [promise](#promise) Functions for promise/async context handling.
 - [error](#error) Functions for converting errors to/from other types of objects.
 - [collections](#collections) Additional collection data types.
+- [path](#path) Platform-independent utility functions for dealing with system
+    paths and URLs.
 
 
 **NOTE:** Configure `tsconfig.json` to set `compilerOptions.module` as `NodeNext`
@@ -1541,6 +1543,31 @@ import { BiMap, CiMap } from "@ayonli/jsext/collections";
         - `deleteValue(value: V): boolean`
 - `CiMap<K extends string, V>` (extends `Map<K, any>`) Case-insensitive map,
   keys are case-insensitive.
+
+### [path](https://jsr.io/@ayonli/jsext/doc/path/~)
+
+```js
+import { resolve, dirname, basename, /* ... */ } from "@ayonli/jsext/path";
+```
+
+**Variables**
+
+- `sep: "/" | "\\"`
+
+**Functions**
+
+- `cwd(): string`
+- `isUrl(path: string): boolean`
+- `isWindowsPath(path: string): boolean`
+- `isPosixPath(path: string): boolean`
+- `isAbsolute(path: string): boolean`
+- `split(path: string): string[]`
+- `join(...segments: string[]): string`
+- `resolve(...segments: string[]): string`
+- `normalize(path: string): string`
+- `dirname(path: string): string`
+- `basename(path: string, suffix?: string): string`
+- `extname(path: string): string`
 
 ## Augmentations
 

@@ -1,6 +1,6 @@
 /**
- * Universal and platform-independent utility functions for dealing with system
- * paths and URLs.
+ * Platform-independent utility functions for dealing with system paths and URLs.
+ * @experimental
  * @module
  */
 
@@ -9,8 +9,11 @@ import { stripEnd, trim, trimEnd } from "../string/index.ts";
 declare const Deno: any;
 const ProtocolPattern = /^[a-z]([a-z\-]+[a-z]|[a-z])?:\/\//i;
 
-/** Platform-specific path segment separator. */
-export const sep = (() => {
+/**
+ * Platform-specific path segment separator.
+ * @experimental
+ */
+export const sep: "/" | "\\" = (() => {
     if (typeof Deno === "object" && typeof Deno.build?.os === "string") { // Deno
         if (Deno.build.os === "windows") {
             return "\\";
@@ -24,7 +27,10 @@ export const sep = (() => {
     return "/";
 })();
 
-/** Returns the current working directory. */
+/**
+ * Returns the current working directory.
+ * @experimental
+ */
 export function cwd(): string {
     if (typeof Deno === "object" && typeof Deno.cwd === "function") {
         return Deno.cwd();
@@ -37,7 +43,10 @@ export function cwd(): string {
     }
 }
 
-/** Checks if the given `path` is a URL, whether standard or non-standard. */
+/**
+ * Checks if the given `path` is a URL, whether standard or non-standard.
+ * @experimental
+ */
 export function isUrl(path: string): boolean {
     return /^[a-z]([a-z\-]+[a-z]|[a-z])?:\/\/\S+/i.test(path);
 }
@@ -46,22 +55,34 @@ function isVolume(path: string): boolean {
     return /^[a-z]:$/i.test(path);
 }
 
-/** Checks if the given `path` is a Windows specific path. */
+/**
+ * Checks if the given `path` is a Windows specific path.
+ * @experimental
+ */
 export function isWindowsPath(path: string): boolean {
     return /^[a-z]:/.test(path) && path.slice(1, 4) !== "://";
 }
 
-/** Checks if the given `path` is a Posix specific path. */
+/**
+ * Checks if the given `path` is a Posix specific path.
+ * @experimental
+ */
 export function isPosixPath(path: string): boolean {
     return /^\//.test(path);
 }
 
-/** Checks if the given `path` is an absolute path. */
+/**
+ * Checks if the given `path` is an absolute path.
+ * @experimental
+ */
 export function isAbsolute(path: string): boolean {
     return isPosixPath(path) || isWindowsPath(path) || isUrl(path);
 }
 
-/** Splits the `path` into well-formed segments. */
+/**
+ * Splits the `path` into well-formed segments.
+ * @experimental
+ */
 export function split(path: string): string[] {
     if (isUrl(path)) {
         const protocol = path.match(ProtocolPattern)![0];
@@ -122,7 +143,10 @@ export function split(path: string): string[] {
     }
 }
 
-/** Concatenates all given `segments` into a well-formed path. */
+/**
+ * Concatenates all given `segments` into a well-formed path.
+ * @experimental
+ */
 export function join(...segments: string[]): string {
     if (!segments.length) {
         return ".";
@@ -170,28 +194,21 @@ export function join(...segments: string[]): string {
 }
 
 /**
- * Normalizes the given `path`, resolving `..` and `.` segments. Note that
- * resolving these segments does not necessarily mean that all will be
- * eliminated. A `..` at the top-level will be preserved, and an empty path is
- * canonically `.`.
+ * Resolves path `segments` into a well-formed path.
+ * @experimental
  */
-export function normalize(path: string): string {
-    path = join(path);
-    return isVolume(path) ? path + "\\" : path;
-}
-
-export function resolve(...paths: string[]): string {
+export function resolve(...segments: string[]): string {
     const _cwd = cwd();
 
-    if (!paths.length) {
+    if (!segments.length) {
         return _cwd;
     }
 
-    paths = isAbsolute(paths[0]!) ? paths : [_cwd, ...paths];
+    segments = isAbsolute(segments[0]!) ? segments : [_cwd, ...segments];
     let _paths: string[] = [];
 
-    for (let i = 0; i < paths.length; i++) {
-        const path = paths[i]!;
+    for (let i = 0; i < segments.length; i++) {
+        const path = segments[i]!;
 
         if (isAbsolute(path)) {
             _paths = [];
@@ -204,7 +221,22 @@ export function resolve(...paths: string[]): string {
     return isVolume(path) ? path + "\\" : path;
 }
 
-/** Returns the parent path of the given `path`. */
+/**
+ * Normalizes the given `path`, resolving `..` and `.` segments. Note that
+ * resolving these segments does not necessarily mean that all will be
+ * eliminated. A `..` at the top-level will be preserved, and an empty path is
+ * canonically `.`.
+ * @experimental
+ */
+export function normalize(path: string): string {
+    path = join(path);
+    return isVolume(path) ? path + "\\" : path;
+}
+
+/**
+ * Returns the parent path of the given `path`.
+ * @experimental
+ */
 export function dirname(path: string): string {
     if (isUrl(path)) {
         const protocol = path.match(ProtocolPattern)![0];
@@ -243,6 +275,7 @@ export function dirname(path: string): string {
 /**
  * Return the last portion of the given `path`. Trailing directory separators
  * are ignored, and optional `suffix` is removed.
+ * @experimental
  */
 export function basename(path: string, suffix = ""): string {
     if (isUrl(path)) {
@@ -264,7 +297,10 @@ export function basename(path: string, suffix = ""): string {
     }
 }
 
-/** Returns the extension of the `path` with leading period. */
+/**
+ * Returns the extension of the `path` with leading period.
+ * @experimental
+ */
 export function extname(path: string): string {
     const base = basename(path);
     const index = base.lastIndexOf(".");
