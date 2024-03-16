@@ -7,7 +7,6 @@ import {
     extname,
     isAbsolute,
     isPosixPath,
-    isUrl,
     isWindowsPath,
     join,
     normalize,
@@ -36,21 +35,6 @@ describe("path", () => {
         } else if (typeof location === "object" && location.origin) {
             strictEqual(cwd(), location.origin + (location.pathname === "/" ? "" : location.pathname));
         }
-    });
-
-    it("isUrl", () => {
-        ok(isUrl("http://example.com"));
-        ok(isUrl("https://example.com"));
-        ok(isUrl("file://example.com"));
-        ok(isUrl("ftp://example.com"));
-        ok(isUrl("ws://example.com"));
-        ok(isUrl("wss://example.com"));
-        ok(isUrl("vscode://example.com/"));
-        ok(isUrl("vscode-insiders://example.com/"));
-        ok(isUrl("c://example.com/"));
-        ok(!isUrl("c:/example.com/"));
-        ok(!isUrl("c:\\example.com\\"));
-        ok(!isUrl("http://"));
     });
 
     it("isWindowsPath", () => {
@@ -184,6 +168,15 @@ describe("path", () => {
             deepStrictEqual(split("foo\\bar"), ["foo", "bar"]);
             deepStrictEqual(split("foo\\bar\\"), ["foo", "bar"]);
         });
+
+        it("file url", () => {
+            deepStrictEqual(split("file:///"), ["file://"]);
+            deepStrictEqual(split("file:///foo"), ["file://", "foo"]);
+            deepStrictEqual(split("file:///foo/bar"), ["file://", "foo", "bar"]);
+            deepStrictEqual(split("file:///foo/bar/"), ["file://", "foo", "bar"]);
+            deepStrictEqual(split("file://localhost/foo/bar/"), ["file://localhost", "foo", "bar"]);
+            deepStrictEqual(split("file://example.com/foo/bar/"), ["file://example.com", "foo", "bar"]);
+        });
     });
 
     describe("join", () => {
@@ -263,6 +256,18 @@ describe("path", () => {
             strictEqual(join("foo", "bar", "..", "baz"), path.join(join("foo", "baz")));
             strictEqual(join("foo", "bar", "../baz"), path.join("foo", "baz"));
         });
+
+        it("file url", () => {
+            strictEqual(join("file://"), "file://");
+            strictEqual(join("file://", "foo"), "file:///foo");
+            deepStrictEqual(join("file://", "foo", "bar"), "file:///foo/bar");
+            deepStrictEqual(
+                join("file://", "foo", "bar", "?foo=bar", "#baz"),
+                "file:///foo/bar?foo=bar#baz"
+            );
+            deepStrictEqual(join("file://localhost", "foo", "bar"), "file://localhost/foo/bar");
+            deepStrictEqual(join("file://example.com", "foo", "bar"), "file://example.com/foo/bar");
+        });
     });
 
     describe("resolve", () => {
@@ -315,6 +320,16 @@ describe("path", () => {
             strictEqual(resolve("foo", "/foo", "../bar"), "/bar");
             strictEqual(resolve("foo", "http://localhost/foo", "../bar"), "http://localhost/bar");
         });
+
+        it("file url", () => {
+            strictEqual(resolve("file:///foo/../bar"), "file:///bar");
+            strictEqual(resolve("file:///foo", "bar"), "file:///foo/bar");
+            strictEqual(resolve("file:///foo", "../bar"), "file:///bar");
+            strictEqual(resolve("file:///foo", "../bar", "baz"), "file:///bar/baz");
+            strictEqual(resolve("file:///foo", "file:///foo2", "../bar"), "file:///bar");
+            strictEqual(resolve("file:///foo", "/foo", "../bar"), "/bar");
+            strictEqual(resolve("file:///foo", "http://localhost/foo", "../bar"), "http://localhost/bar");
+        })
     });
 
     describe("normalize", () => {
@@ -388,6 +403,16 @@ describe("path", () => {
             strictEqual(normalize("../foo"), path.normalize("../foo"));
             strictEqual(normalize("../.."), path.normalize("../.."));
         });
+
+        it("file url", () => {
+            strictEqual(normalize("file:///foo/../bar"), "file:///bar");
+            strictEqual(normalize("file:///foo/bar/.."), "file:///foo");
+            strictEqual(normalize("file:///foo/bar/../"), "file:///foo");
+            strictEqual(normalize("file:///foo/.."), "file:///");
+            strictEqual(normalize("file:///foo/../.."), "file:///");
+            strictEqual(normalize("file:///foo/./bar"), "file:///foo/bar");
+            strictEqual(normalize("file:///foo/././/bar"), "file:///foo/bar");
+        })
     });
 
     describe("dirname", () => {
@@ -424,6 +449,14 @@ describe("path", () => {
             strictEqual(dirname("foo"), ".");
             strictEqual(dirname(""), ".");
         });
+
+        it("file url", () => {
+            strictEqual(dirname("file:///foo/bar"), "file:///foo");
+            strictEqual(dirname("file:///foo/bar/"), "file:///foo");
+            strictEqual(dirname("file:///foo/../bar"), "file:///");
+            strictEqual(dirname("file:///foo/"), "file:///");
+            strictEqual(dirname("file:///foo"), "file:///");
+        })
     });
 
     describe("basename", () => {
@@ -469,6 +502,17 @@ describe("path", () => {
             strictEqual(basename("foo.txt", ".txt"), "foo");
             strictEqual(basename("foo.txt", ".ts"), "foo.txt");
         });
+
+        it("file url", () => {
+            strictEqual(basename("file:///foo/bar"), "bar");
+            strictEqual(basename("file:///foo/bar/"), "bar");
+            strictEqual(basename("file:///foo/../bar"), "bar");
+            strictEqual(basename("file:///foo/"), "foo");
+            strictEqual(basename("file:///foo"), "foo");
+            strictEqual(basename("file:///"), "");
+            strictEqual(basename("file:///foo.txt", ".txt"), "foo");
+            strictEqual(basename("file:///foo.txt", ".ts"), "foo.txt");
+        })
     });
 
     describe("extname", () => {
@@ -504,5 +548,13 @@ describe("path", () => {
             strictEqual(extname("foo/"), "");
             strictEqual(extname(""), "");
         });
+
+        it("file url", () => {
+            strictEqual(extname("file:///foo.txt"), ".txt");
+            strictEqual(extname("file:///foo.tar.gz"), ".gz");
+            strictEqual(extname("file:///foo"), "");
+            strictEqual(extname("file:///foo/"), "");
+            strictEqual(extname("file:///"), "");
+        })
     });
 });

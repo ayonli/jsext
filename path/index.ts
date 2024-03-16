@@ -5,9 +5,10 @@
  */
 
 import { stripEnd, trim, trimEnd } from "../string/index.ts";
+import { isFileProtocol } from "../url/util.ts";
+import { isUrl, parse as parseUrl } from "../url/index.ts";
 
 declare const Deno: any;
-const ProtocolPattern = /^[a-z]([a-z\-]+[a-z]|[a-z])?:\/\//i;
 
 /**
  * Platform-specific path segment separator.
@@ -41,14 +42,6 @@ export function cwd(): string {
     } else {
         throw new Error("Unable to determine the current working directory.");
     }
-}
-
-/**
- * Checks if the given `path` is a URL, whether standard or non-standard.
- * @experimental
- */
-export function isUrl(path: string): boolean {
-    return /^[a-z]([a-z\-]+[a-z]|[a-z])?:\/\/\S+/i.test(path);
 }
 
 function isVolume(path: string): boolean {
@@ -85,10 +78,7 @@ export function isAbsolute(path: string): boolean {
  */
 export function split(path: string): string[] {
     if (isUrl(path)) {
-        const protocol = path.match(ProtocolPattern)![0];
-        const rest = path.slice(protocol.length);
-        const { hostname, port, pathname, search, hash } = new URL("http://" + rest);
-        const origin = protocol + hostname + (port ? `:${port}` : "");
+        const { origin, pathname, search, hash } = parseUrl(path);
 
         if (pathname === "/") {
             if (search && hash) {
@@ -102,6 +92,7 @@ export function split(path: string): string[] {
             }
         } else {
             const segments = trim(pathname, "/").split(/[/\\]+/);
+
             if (search && hash) {
                 return [origin, ...segments, search, hash];
             } else if (search) {
@@ -172,25 +163,25 @@ export function join(...segments: string[]): string {
 
     const start = paths[0]!;
     const _sep = isUrl(start) || isPosixPath(start) ? "/" : isWindowsPath(start) ? "\\" : sep;
-    let url = "";
+    let path = "";
 
     for (let i = 0; i < paths.length; i++) {
         const segment = paths[i]!;
 
         if (segment) {
-            if (!url) {
-                url = segment;
+            if (!path) {
+                path = segment;
             } else if (segment[0] === "?" || segment[0] === "#") {
-                url += segment;
-            } else if (url === "/") {
-                url += trim(segment, "/\\");
+                path += segment;
+            } else if (path === "/") {
+                path += trim(segment, "/\\");
             } else if (segment) {
-                url += _sep + trim(segment, "/\\");
+                path += _sep + trim(segment, "/\\");
             }
         }
     }
 
-    return url || ".";
+    return path || ".";
 }
 
 /**
@@ -230,7 +221,7 @@ export function resolve(...segments: string[]): string {
  */
 export function normalize(path: string): string {
     path = join(path);
-    return isVolume(path) ? path + "\\" : path;
+    return isVolume(path) ? path + "\\" : isFileProtocol(path) ? path + "/" : path;
 }
 
 /**
@@ -239,14 +230,11 @@ export function normalize(path: string): string {
  */
 export function dirname(path: string): string {
     if (isUrl(path)) {
-        const protocol = path.match(ProtocolPattern)![0];
-        const rest = path.slice(protocol.length);
-        const { hostname, port, pathname } = new URL("http://" + rest);
-        const origin = protocol + hostname + (port ? `:${port}` : "");
+        const { origin, pathname } = parseUrl(path);
         const _dirname = dirname(pathname);
 
         if (_dirname === "/") {
-            return origin;
+            return isFileProtocol(origin) ? origin + "/" : origin;
         } else {
             return origin + _dirname;
         }
@@ -279,9 +267,7 @@ export function dirname(path: string): string {
  */
 export function basename(path: string, suffix = ""): string {
     if (isUrl(path)) {
-        const protocol = path.match(ProtocolPattern)![0];
-        const rest = path.slice(protocol.length);
-        const { pathname } = new URL("http://" + rest);
+        const { pathname } = parseUrl(path);
         return basename(pathname, suffix);
     } else {
         const segments = split(path);
