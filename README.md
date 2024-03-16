@@ -1334,7 +1334,6 @@ console.assert(!isSubclassOf(Controller, Log));
 - [promise](#promise) Functions for promise/async context handling.
 - [error](#error) Functions for converting errors to/from other types of objects.
 - [collections](#collections) Additional collection data types.
-- [url](#url) Utility functions for dealing with URLs.
 - [path](#path) Platform-independent utility functions for dealing with system
     paths and URLs.
 
@@ -1545,18 +1544,6 @@ import { BiMap, CiMap } from "@ayonli/jsext/collections";
 - `CiMap<K extends string, V>` (extends `Map<K, any>`) Case-insensitive map,
   keys are case-insensitive.
 
-### [url](https://jsr.io/@ayonli/jsext/doc/url/~)
-
-```js
-import { isUrl, isFileUrl, parse } from "@ayonli/jsext/url"; 
-```
-
-**Functions**
-
-- `isUrl(str: string): boolean`
-- `isFileUrl(str: string): boolean`
-- `parse(str: string, base?: string | URL | undefined): URL`
-
 ### [path](https://jsr.io/@ayonli/jsext/doc/path/~)
 
 ```js
@@ -1572,6 +1559,8 @@ import { resolve, dirname, basename, /* ... */ } from "@ayonli/jsext/path";
 - `cwd(): string`
 - `isWindowsPath(path: string): boolean`
 - `isPosixPath(path: string): boolean`
+- `isUrl(str: string): boolean`
+- `isFileUrl(str: string): boolean`
 - `isAbsolute(path: string): boolean`
 - `split(path: string): string[]`
 - `join(...segments: string[]): string`

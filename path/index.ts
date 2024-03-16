@@ -5,8 +5,6 @@
  */
 
 import { stripEnd, trim, trimEnd } from "../string/index.ts";
-import { isFileProtocol } from "../url/util.ts";
-import { isUrl, parse as parseUrl } from "../url/index.ts";
 
 declare const Deno: any;
 
@@ -65,6 +63,26 @@ export function isPosixPath(path: string): boolean {
 }
 
 /**
+ * Checks if the given string is a URL, whether standard or non-standard.
+ * @experimental
+ */
+export function isUrl(str: string): boolean {
+    return /^[a-z](([a-z\-]+)?:\/\/\S+|[a-z\-]+:\/\/$)/i.test(str) || isFileUrl(str);
+}
+
+/**
+ * Checks if the given string is a file URL, whether with or without `//`.
+ * @experimental
+ */
+export function isFileUrl(str: string): boolean {
+    return /^file:((\/\/|\/)\S+|\/?$)/i.test(str);
+}
+
+function isFileProtocol(path: string): boolean {
+    return /^file:(\/\/)?$/i.test(path);
+}
+
+/**
  * Checks if the given `path` is an absolute path.
  * @experimental
  */
@@ -78,7 +96,8 @@ export function isAbsolute(path: string): boolean {
  */
 export function split(path: string): string[] {
     if (isUrl(path)) {
-        const { origin, pathname, search, hash } = parseUrl(path);
+        const { protocol, host, pathname, search, hash } = new URL(path);
+        const origin = protocol + "//" + host;
 
         if (pathname === "/") {
             if (search && hash) {
@@ -230,7 +249,8 @@ export function normalize(path: string): string {
  */
 export function dirname(path: string): string {
     if (isUrl(path)) {
-        const { origin, pathname } = parseUrl(path);
+        const { protocol, host, pathname } = new URL(path);
+        const origin = protocol + "//" + host;
         const _dirname = dirname(pathname);
 
         if (_dirname === "/") {
@@ -267,7 +287,7 @@ export function dirname(path: string): string {
  */
 export function basename(path: string, suffix = ""): string {
     if (isUrl(path)) {
-        const { pathname } = parseUrl(path);
+        const { pathname } = new URL(path);
         return basename(pathname, suffix);
     } else {
         const segments = split(path);

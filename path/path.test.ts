@@ -6,7 +6,9 @@ import {
     dirname,
     extname,
     isAbsolute,
+    isFileUrl,
     isPosixPath,
+    isUrl,
     isWindowsPath,
     join,
     normalize,
@@ -62,6 +64,34 @@ describe("path", () => {
         ok(!isPosixPath("z:\\"));
         ok(!isPosixPath("http://"));
         ok(!isPosixPath("https://"));
+    });
+
+    it("isUrl", () => {
+        ok(isUrl("http://example.com"));
+        ok(isUrl("https://example.com"));
+        ok(isUrl("file://example.com"));
+        ok(isUrl("ftp://example.com"));
+        ok(isUrl("ws://example.com"));
+        ok(isUrl("wss://example.com"));
+        ok(isUrl("vscode://example.com/"));
+        ok(isUrl("vscode-insiders://example.com/"));
+        ok(isUrl("c://example.com/"));
+        ok(!isUrl("c:/example.com/"));
+        ok(!isUrl("c:\\example.com\\"));
+        ok(isUrl("http://"));
+        ok(isUrl("file://"));
+        ok(isUrl("file:///foo/bar"));
+        ok(isUrl("file:/foo/bar"));
+    });
+
+    it("isFileUrl", () => {
+        ok(isFileUrl("file:"));
+        ok(isFileUrl("file://"));
+        ok(isFileUrl("file:///"));
+        ok(isFileUrl("file:/"));
+        ok(isFileUrl("file:/foo/bar"));
+        ok(isFileUrl("file://example.com/foo/bar"));
+        ok(!isFileUrl("file:example.com/foo/bar"));
     });
 
     it("isAbsolute", () => {
@@ -174,7 +204,7 @@ describe("path", () => {
             deepStrictEqual(split("file:///foo"), ["file://", "foo"]);
             deepStrictEqual(split("file:///foo/bar"), ["file://", "foo", "bar"]);
             deepStrictEqual(split("file:///foo/bar/"), ["file://", "foo", "bar"]);
-            deepStrictEqual(split("file://localhost/foo/bar/"), ["file://localhost", "foo", "bar"]);
+            deepStrictEqual(split("file://localhost/foo/bar/"), ["file://", "foo", "bar"]);
             deepStrictEqual(split("file://example.com/foo/bar/"), ["file://example.com", "foo", "bar"]);
         });
     });
@@ -265,7 +295,7 @@ describe("path", () => {
                 join("file://", "foo", "bar", "?foo=bar", "#baz"),
                 "file:///foo/bar?foo=bar#baz"
             );
-            deepStrictEqual(join("file://localhost", "foo", "bar"), "file://localhost/foo/bar");
+            deepStrictEqual(join("file://localhost", "foo", "bar"), "file:///foo/bar");
             deepStrictEqual(join("file://example.com", "foo", "bar"), "file://example.com/foo/bar");
         });
     });
