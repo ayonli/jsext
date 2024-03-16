@@ -9,10 +9,6 @@ import { stripEnd, trim, trimEnd } from "../string/index.ts";
 declare const Deno: any;
 const ProtocolPattern = /^[a-z]([a-z\-]+[a-z]|[a-z])?:\/\//i;
 
-function isVolume(path: string): boolean {
-    return /^[a-z]:$/i.test(path);
-}
-
 /** Platform-specific path segment separator. */
 export const sep = (() => {
     if (typeof Deno === "object" && typeof Deno.build?.os === "string") { // Deno
@@ -28,9 +24,26 @@ export const sep = (() => {
     return "/";
 })();
 
+/** Returns the current working directory. */
+export function cwd(): string {
+    if (typeof Deno === "object" && typeof Deno.cwd === "function") {
+        return Deno.cwd();
+    } else if (typeof process === "object" && typeof process.cwd === "function") {
+        return process.cwd();
+    } else if (typeof location === "object" && location.origin) {
+        return location.origin + (location.pathname === "/" ? "" : location.pathname);
+    } else {
+        throw new Error("Unable to determine the current working directory.");
+    }
+}
+
 /** Checks if the given `path` is a URL, whether standard or non-standard. */
 export function isUrl(path: string): boolean {
     return /^[a-z]([a-z\-]+[a-z]|[a-z])?:\/\/\S+/i.test(path);
+}
+
+function isVolume(path: string): boolean {
+    return /^[a-z]:$/i.test(path);
 }
 
 /** Checks if the given `path` is a Windows specific path. */
@@ -164,6 +177,30 @@ export function join(...segments: string[]): string {
  */
 export function normalize(path: string): string {
     path = join(path);
+    return isVolume(path) ? path + "\\" : path;
+}
+
+export function resolve(...paths: string[]): string {
+    const _cwd = cwd();
+
+    if (!paths.length) {
+        return _cwd;
+    }
+
+    paths = isAbsolute(paths[0]!) ? paths : [_cwd, ...paths];
+    let _paths: string[] = [];
+
+    for (let i = 0; i < paths.length; i++) {
+        const path = paths[i]!;
+
+        if (isAbsolute(path)) {
+            _paths = [];
+        }
+
+        _paths.push(path);
+    }
+
+    const path = join(..._paths);
     return isVolume(path) ? path + "\\" : path;
 }
 
