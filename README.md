@@ -1390,8 +1390,8 @@ _(except for `Channel`, `Queue` and `Mutex`)._
 - [error](#error) Functions for converting errors to/from other types of
   objects.
 - [collections](#collections) Additional collection data types.
-- [path](#path) Platform-independent utility functions for dealing with system
-  paths and URLs.
+- [path](#path) (Experimental) Platform-independent utility functions for
+  dealing with system paths and URLs.
 
 **NOTE:** Configure `tsconfig.json` to set `compilerOptions.module` as
 `NodeNext` or `ESNext` instead of `CommonJS` in order to use sub-modules.
@@ -1604,6 +1604,8 @@ import { BiMap, CiMap } from "@ayonli/jsext/collections";
 ```js
 import { basename, dirname, resolve /* ... */ } from "@ayonli/jsext/path";
 ```
+
+_This module is experimental._
 
 **Variables**
 

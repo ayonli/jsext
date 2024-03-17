@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.7.8",
+    "version": "0.7.10",
     "description": "Additional functions for JavaScript to build strong applications.",
     "main": "./cjs/index.js",
     "module": "./esm/index.js",
@@ -222,6 +222,13 @@
             "require": "./cjs/object/augment.js",
             "import": "./esm/object/augment.js",
             "default": "./object/augment.ts"
+        },
+        "./path": {
+            "types": "./types/path/index.d.ts",
+            "bun": "./path/index.ts",
+            "require": "./cjs/path/index.js",
+            "import": "./esm/path/index.js",
+            "default": "./path/index.ts"
         },
         "./promise": {
             "types": "./types/promise/index.d.ts",
