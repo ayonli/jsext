@@ -113,16 +113,17 @@ export function split(path: string): string[] {
             }
         }
     } else if (isWindowsPath(path)) {
-        const [_, volume, ...segments] = split("file:///" + path.replace(/\\/g, "/"));
+        const [_, volume, ...segments] = split("file:///" + path.replace(/[/\\]+/g, "/"));
         return [volume + "\\", ...segments];
     } else if (isPosixPath(path)) {
-        const [_, ...segments] = split("file://" + path);
+        const [_, ...segments] = split("file://" + path.replace(/[/\\]+/g, "/"));
         return ["/", ...segments];
     } else { // relative path
+        path = path.replace(/[/\\]+/g, "/");
         const [_path, query] = path.split("?");
 
         if (query) {
-            const segments = _path ? trimEnd(_path!, "/\\").split(/[/\\]+/) : [];
+            const segments = _path ? trimEnd(_path!, "/").split("/") : [];
             const [search, hash] = query.split("#");
 
             if (hash) {
@@ -132,7 +133,7 @@ export function split(path: string): string[] {
             }
         } else {
             const [pathname, hash] = path.split("#");
-            const segments = pathname ? trimEnd(pathname!, "/\\").split(/[/\\]+/) : [];
+            const segments = pathname ? trimEnd(pathname!, "/").split("/") : [];
 
             if (hash) {
                 return [...segments, "#" + hash];
