@@ -4,7 +4,21 @@
  * @module
  */
 
-import { stripEnd, trim, trimEnd } from "../string/index.ts";
+import { stripEnd, trim } from "../string/index.ts";
+import {
+    isAbsolute,
+    isFileProtocol,
+    isFileUrl,
+    isNotQuery,
+    isPosixPath,
+    isSubPath,
+    isUrl,
+    isVolume,
+    isWindowsPath,
+    split,
+} from "./util.ts";
+
+export { isWindowsPath, isPosixPath, isUrl, isFileUrl, isAbsolute, isSubPath };
 
 declare const Deno: any;
 
@@ -39,117 +53,6 @@ export function cwd(): string {
         return location.origin + (location.pathname === "/" ? "" : location.pathname);
     } else {
         throw new Error("Unable to determine the current working directory.");
-    }
-}
-
-function isVolume(path: string): boolean {
-    return /^[a-z]:$/i.test(path);
-}
-
-/**
- * Checks if the given `path` is a Windows specific path.
- * @experimental
- */
-export function isWindowsPath(path: string): boolean {
-    return /^[a-z]:/.test(path) && path.slice(1, 4) !== "://";
-}
-
-/**
- * Checks if the given `path` is a Posix specific path.
- * @experimental
- */
-export function isPosixPath(path: string): boolean {
-    return /^\//.test(path);
-}
-
-/**
- * Checks if the given string is a URL, whether standard or non-standard.
- * @experimental
- */
-export function isUrl(str: string): boolean {
-    return /^[a-z](([a-z\-]+)?:\/\/\S+|[a-z\-]+:\/\/$)/i.test(str) || isFileUrl(str);
-}
-
-/**
- * Checks if the given string is a file URL, whether with or without `//`.
- * @experimental
- */
-export function isFileUrl(str: string): boolean {
-    return /^file:((\/\/|\/)\S+|\/?$)/i.test(str);
-}
-
-function isFileProtocol(path: string): boolean {
-    return /^file:(\/\/)?$/i.test(path);
-}
-
-/**
- * Checks if the given `path` is an absolute path.
- * @experimental
- */
-export function isAbsolute(path: string): boolean {
-    return isPosixPath(path) || isWindowsPath(path) || isUrl(path);
-}
-
-/**
- * Splits the `path` into well-formed segments.
- * @experimental
- */
-export function split(path: string): string[] {
-    if (isUrl(path)) {
-        const { protocol, host, pathname, search, hash } = new URL(path);
-        const origin = protocol + "//" + host;
-
-        if (pathname === "/") {
-            if (search && hash) {
-                return [origin, search, hash];
-            } else if (search) {
-                return [origin, search];
-            } else if (hash) {
-                return [origin, hash];
-            } else {
-                return [origin];
-            }
-        } else {
-            const segments = trim(pathname, "/").split(/[/\\]+/);
-
-            if (search && hash) {
-                return [origin, ...segments, search, hash];
-            } else if (search) {
-                return [origin, ...segments, search];
-            } else if (hash) {
-                return [origin, ...segments, hash];
-            } else {
-                return [origin, ...segments];
-            }
-        }
-    } else if (isWindowsPath(path)) {
-        return trimEnd(path, "/\\").split(/[/\\]+/);
-    } else if (isPosixPath(path)) {
-        const segments = trimEnd(path, "/").split(/\/+/);
-
-        if (segments[0] === "") {
-            return ["/", ...segments.slice(1)];
-        } else {
-            return segments;
-        }
-    } else { // relative path
-        path = trimEnd(path, "/\\");
-
-        if (!path) {
-            return [];
-        } else if (path[0] === "#") {
-            return [path];
-        } else if (path[0] === "?") {
-            const index = path.indexOf("#");
-
-            if (index === -1) {
-                return [path];
-            } else {
-                return [path.slice(0, index), path.slice(index)];
-            }
-        } else {
-            return path.split(/[/\\]+/);
-        }
     }
 }
 
@@ -227,8 +130,12 @@ export function resolve(...segments: string[]): string {
         _paths.push(path);
     }
 
-    const path = join(..._paths);
-    return isVolume(path) ? path + "\\" : path;
+    return _normalize(..._paths);
+}
+
+function _normalize(...segments: string[]): string {
+    const path = join(...segments);
+    return isVolume(path) ? path + "\\" : isFileProtocol(path) ? path + "/" : path;
 }
 
 /**
@@ -239,8 +146,7 @@ export function resolve(...segments: string[]): string {
  * @experimental
  */
 export function normalize(path: string): string {
-    path = join(path);
-    return isVolume(path) ? path + "\\" : isFileProtocol(path) ? path + "/" : path;
+    return _normalize(path);
 }
 
 /**
@@ -259,7 +165,7 @@ export function dirname(path: string): string {
             return origin + _dirname;
         }
     } else {
-        const segments = split(path);
+        const segments = split(path).filter(isNotQuery);
         const last = segments.pop()!;
 
         if (segments.length) {
@@ -290,7 +196,7 @@ export function basename(path: string, suffix = ""): string {
         const { pathname } = new URL(path);
         return basename(pathname, suffix);
     } else {
-        const segments = split(path);
+        const segments = split(path).filter(isNotQuery);
         const _basename = segments.pop();
 
         if (!_basename || _basename === "/" || isVolume(_basename)) {
