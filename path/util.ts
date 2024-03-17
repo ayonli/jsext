@@ -5,8 +5,8 @@ export function isNotQuery(str: string): boolean {
     return str[0] !== "?" && str[0] !== "#";
 }
 
-export function isVolume(path: string): boolean {
-    return /^[a-z]:$/i.test(path);
+export function isVolume(path: string, strict = false): boolean {
+    return strict ? /^[a-z]:$/i.test(path) : /^[a-z]:(\\)?$/i.test(path);
 }
 
 /**
@@ -113,8 +113,8 @@ export function split(path: string): string[] {
             }
         }
     } else if (isWindowsPath(path)) {
-        const [_, ...segments] = split("file:///" + path.replace(/\\/g, "/"));
-        return segments;
+        const [_, volume, ...segments] = split("file:///" + path.replace(/\\/g, "/"));
+        return [volume + "\\", ...segments];
     } else if (isPosixPath(path)) {
         const [_, ...segments] = split("file://" + path);
         return ["/", ...segments];

@@ -61,6 +61,8 @@ export function cwd(): string {
  * @experimental
  */
 export function join(...segments: string[]): string {
+    segments = segments.filter(s => s !== "");
+
     if (!segments.length) {
         return ".";
     }
@@ -97,6 +99,8 @@ export function join(...segments: string[]): string {
                 path += segment;
             } else if (path === "/") {
                 path += trim(segment, "/\\");
+            } else if (isVolume(path)) {
+                path += isVolume(path, true) ? "\\" + segment : segment;
             } else if (segment) {
                 path += _sep + trim(segment, "/\\");
             }
@@ -111,6 +115,7 @@ export function join(...segments: string[]): string {
  * @experimental
  */
 export function resolve(...segments: string[]): string {
+    segments = segments.filter(s => s !== "");
     const _cwd = cwd();
 
     if (!segments.length) {
@@ -135,7 +140,7 @@ export function resolve(...segments: string[]): string {
 
 function _normalize(...segments: string[]): string {
     const path = join(...segments);
-    return isVolume(path) ? path + "\\" : isFileProtocol(path) ? path + "/" : path;
+    return isFileProtocol(path) ? path + "/" : path;
 }
 
 /**
@@ -169,17 +174,13 @@ export function dirname(path: string): string {
         const last = segments.pop()!;
 
         if (segments.length) {
-            const _dirname = join(...segments);
-
-            if (isVolume(_dirname)) {
-                return _dirname + "\\";
-            } else {
-                return _dirname;
-            }
+            return join(...segments);
         } else if (last === "/") {
             return "/";
-        } else if (isVolume(last)) {
+        } else if (isVolume(last, true)) {
             return last + "\\";
+        } else if (isVolume(last)) {
+            return last;
         } else {
             return ".";
         }

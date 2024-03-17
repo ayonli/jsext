@@ -261,16 +261,20 @@ describe("path", () => {
 
     describe("split", () => {
         it("windows path", () => {
-            deepStrictEqual(split("c:/"), ["c:"]);
-            deepStrictEqual(split("c:\\"), ["c:"]);
-            deepStrictEqual(split("c:\\/"), ["c:"]);
-            deepStrictEqual(split("c:/foo"), ["c:", "foo"]);
-            deepStrictEqual(split("c:\\foo\\"), ["c:", "foo"]);
-            deepStrictEqual(split("c:/foo//bar"), ["c:", "foo", "bar"]);
-            deepStrictEqual(split("c:\\foo\\bar"), ["c:", "foo", "bar"]);
-            deepStrictEqual(split("c:/foo/bar/"), ["c:", "foo", "bar"]);
-            deepStrictEqual(split("c:\\foo\\bar\\"), ["c:", "foo", "bar"]);
-            deepStrictEqual(split("c:\\foo\\bar?foo=bar#baz"), ["c:", "foo", "bar", "?foo=bar", "#baz"]);
+            deepStrictEqual(split("c:"), ["c:\\"]);
+            deepStrictEqual(split("c:/"), ["c:\\"]);
+            deepStrictEqual(split("c:\\"), ["c:\\"]);
+            deepStrictEqual(split("c:\\/"), ["c:\\"]);
+            deepStrictEqual(split("c:/foo"), ["c:\\", "foo"]);
+            deepStrictEqual(split("c:\\foo\\"), ["c:\\", "foo"]);
+            deepStrictEqual(split("c:/foo//bar"), ["c:\\", "foo", "bar"]);
+            deepStrictEqual(split("c:\\foo\\bar"), ["c:\\", "foo", "bar"]);
+            deepStrictEqual(split("c:/foo/bar/"), ["c:\\", "foo", "bar"]);
+            deepStrictEqual(split("c:\\foo\\bar\\"), ["c:\\", "foo", "bar"]);
+            deepStrictEqual(
+                split("c:\\foo\\bar?foo=bar#baz"),
+                ["c:\\", "foo", "bar", "?foo=bar", "#baz"]
+            );
         });
 
         it("posix path", () => {
@@ -359,7 +363,9 @@ describe("path", () => {
 
     describe("join", () => {
         it("windows path", () => {
-            strictEqual(join("c:"), "c:");
+            strictEqual(join("c:"), "c:\\");
+            strictEqual(join("c:/"), "c:\\");
+            strictEqual(join("c:\\"), "c:\\");
             strictEqual(join("c:", "foo"), "c:\\foo");
             strictEqual(join("c:", "foo", "bar"), "c:\\foo\\bar");
             strictEqual(join("c:", "foo", "bar", "baz"), "c:\\foo\\bar\\baz");
@@ -514,6 +520,9 @@ describe("path", () => {
         });
 
         it("relative path", () => {
+            strictEqual(resolve(), path.resolve());
+            strictEqual(resolve(""), path.resolve());
+            strictEqual(resolve("", ""), path.resolve());
             strictEqual(resolve("foo/../bar"), path.resolve("bar"));
             strictEqual(resolve("foo", "bar"), path.resolve("foo", "bar"));
             strictEqual(resolve("foo", "../bar"), path.resolve("foo", "../bar"));
