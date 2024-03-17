@@ -7,6 +7,7 @@ import { resolveRemoteModuleUrl } from "./module.ts";
 import { isPlainObject } from "../../object/index.ts";
 import { serial } from "../../number/index.ts";
 import {
+    Exception,
     fromErrorEvent,
     fromObject,
     isAggregateError,
@@ -63,21 +64,19 @@ export function isCallResponse(msg: any): msg is CallResponse {
 }
 
 function getModuleDir(importMetaPath: string) {
+    if (path.extname(importMetaPath) === ".ts") {
+        return path.resolve(importMetaPath, "../../..");
+    }
+
     let _dirname = path.dirname(importMetaPath);
 
     if (path.endsWith(_dirname, "jsext/bundle")) {
         // The application imports the bundled version of this module
-        _dirname = path.dirname(_dirname);
-    } else if (path.endsWith(_dirname, "jsext/cjs/parallel/utils")
-        || path.endsWith(_dirname, "jsext/esm/parallel/utils")
-    ) {
-        // The application imports the compiled version of this module
-        _dirname = path.resolve(_dirname, "../../..");
+        return path.dirname(_dirname);
     } else {
-        _dirname = path.resolve(_dirname, "../..");
+        // The application imports the compiled version of this module
+        return path.resolve(_dirname, "../../..");
     }
-
-    return _dirname;
 }
 
 async function getWorkerEntry(parallel: {
