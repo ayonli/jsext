@@ -45,10 +45,8 @@ describe("path", () => {
         ok(isWindowsPath("c:"));
         ok(isWindowsPath("c:/"));
         ok(isWindowsPath("c:\\"));
-        ok(isWindowsPath("d:/"));
-        ok(isWindowsPath("d:\\"));
-        ok(isWindowsPath("z:/"));
-        ok(isWindowsPath("z:\\"));
+        ok(isWindowsPath("D:/"));
+        ok(isWindowsPath("D:\\"));
         ok(isWindowsPath("c:/foo/bar"));
         ok(isWindowsPath("c:\\foo\\bar"));
         ok(isWindowsPath("c:/foo/bar/"));
@@ -127,6 +125,8 @@ describe("path", () => {
         it("windows path", () => {
             ok(isAbsolute("c:/"));
             ok(isAbsolute("c:\\"));
+            ok(isAbsolute("D:/"));
+            ok(isAbsolute("D:\\"));
             ok(isAbsolute("c:/foo/bar"));
             ok(isAbsolute("c:\\foo\\bar"));
             ok(isAbsolute("c:/foo/bar?foo=bar"));
@@ -177,10 +177,15 @@ describe("path", () => {
 
     describe("endsWith", () => {
         it("windows path", () => {
+            ok(endsWith("c:/foo/bar", ""));
             ok(endsWith("c:/foo/bar", "bar"));
             ok(endsWith("c:/foo/bar", "c:/foo/bar"));
             ok(endsWith("c:/foo/bar/", "c:/foo/bar"));
             ok(endsWith("c:/foo/bar", "c:/foo/bar/"));
+            ok(endsWith("c:/foo/bar/", "C:/foo/bar"));
+            ok(endsWith("c:/foo/bar", "C:/foo/bar/"));
+            ok(endsWith("C:/foo/bar/", "c:/foo/bar"));
+            ok(endsWith("C:/foo/bar", "c:/foo/bar/"));
             ok(endsWith("c:/foo/bar", "foo/bar"));
             ok(endsWith("c:/foo/bar/", "foo/bar"));
             ok(endsWith("c:/foo/bar?foo=bar", "foo/bar"));
@@ -193,6 +198,7 @@ describe("path", () => {
         });
 
         it("posix path", () => {
+            ok(endsWith("c:/foo/bar", ""));
             ok(endsWith("/foo/bar", "bar"));
             ok(endsWith("/foo/bar", "foo/bar"));
             ok(endsWith("/foo/bar/", "foo/bar"));
@@ -207,6 +213,7 @@ describe("path", () => {
         });
 
         it("url", () => {
+            ok(endsWith("http://example.com/foo/bar", ""));
             ok(endsWith("http://example.com/foo/bar", "bar"));
             ok(endsWith("http://example.com/foo/bar", "foo/bar"));
             ok(endsWith("http://example.com/foo/bar?foo=bar#baz", "foo/bar"));
@@ -224,6 +231,7 @@ describe("path", () => {
         });
 
         it("file url", () => {
+            ok(endsWith("file:///foo/bar", ""));
             ok(endsWith("file:///foo/bar", "bar"));
             ok(endsWith("file:///foo/bar", "foo/bar"));
             ok(endsWith("file:///foo/bar/", "foo/bar"));
@@ -244,6 +252,7 @@ describe("path", () => {
         });
 
         it("relative path", () => {
+            ok(endsWith("foo/bar", ""));
             ok(endsWith("foo/bar", "bar"));
             ok(endsWith("foo/bar", "bar?foo=bar"));
             ok(endsWith("foo/bar", "bar#baz"));

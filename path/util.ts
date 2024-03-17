@@ -13,7 +13,7 @@ export function isVolume(path: string, strict = false): boolean {
  * @experimental
  */
 export function isWindowsPath(path: string): boolean {
-    return /^[a-z]:/.test(path) && path.slice(1, 4) !== "://";
+    return /^[a-z]:/i.test(path) && path.slice(1, 4) !== "://";
 }
 
 /**
@@ -58,12 +58,25 @@ export function isAbsolute(path: string): boolean {
  * @experimental
  */
 export function endsWith(path: string, sub: string): boolean {
-    const paths = split(path).filter(isNotQuery).reverse();
-    const subs = split(sub).filter(isNotQuery).reverse();
+    const paths = split(path).filter(isNotQuery);
+    const subs = split(sub).filter(isNotQuery);
 
     if (paths.length < subs.length) {
         return false;
+    } else if (!subs.length) {
+        return true;
     }
+
+    if (isVolume(paths[0]!)) {
+        paths[0] = paths[0]!.toLowerCase();
+    }
+
+    if (isVolume(subs[0]!)) {
+        subs[0] = subs[0]!.toLowerCase();
+    }
+
+    paths.reverse();
+    subs.reverse();
 
     for (let i = 0; i < subs.length; i++) {
         if (subs[i] !== paths[i]) {
