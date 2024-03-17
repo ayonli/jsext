@@ -1,5 +1,4 @@
 import { trim, trimEnd } from "../string/index.ts";
-import { last } from "../array/index.ts";
 
 export function isNotQuery(str: string): boolean {
     return str[0] !== "?" && str[0] !== "#";
