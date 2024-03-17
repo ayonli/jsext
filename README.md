@@ -7,15 +7,21 @@ Additional functions for JavaScript to build strong applications.
 ```js
 // Node.js, Bun or Deno (jsr)
 import jsext from "@ayonli/jsext";
-import { _try, func, /* ... */ } from "@ayonli/jsext";
+import { _try, func /* ... */ } from "@ayonli/jsext";
 
 // Deno (legacy)
 import jsext from "https://lib.deno.dev/x/ayonli_jsext@latest/index.ts";
-import { _try, func, /* ... */ } from "https://lib.deno.dev/x/ayonli_jsext@latest/index.ts";
+import {
+  _try,
+  func, /* ... */
+} from "https://lib.deno.dev/x/ayonli_jsext@latest/index.ts";
 
 // Browser
 import jsext from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/index.js";
-import { _try, func, /* ... */ } from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/index.js";
+import {
+  _try,
+  func, /* ... */
+} from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/index.js";
 ```
 
 Or import what are needed:
@@ -37,7 +43,8 @@ import func from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/func.js";
 // ...
 ```
 
-There is also a bundled version that can be loaded via a `<script>` tag in the browser.
+There is also a bundled version that can be loaded via a `<script>` tag in the
+browser.
 
 ```html
 <script src="https://lib.deno.dev/x/ayonli_jsext@latest/bundle/index.js"></script>
@@ -47,29 +54,32 @@ There is also a bundled version that can be loaded via a `<script>` tag in the b
 <script>
 ```
 
-
 ## Functions
 
 - [_try](#_try) Calls a function safely and return errors when captured.
-- [func](#func) Defines a function along with a `defer` keyword, inspired by Golang.
+- [func](#func) Defines a function along with a `defer` keyword, inspired by
+  Golang.
 - [wrap](#wrap) Wraps a function for decorator pattern but keep its signature.
 - [throttle](#throttle) Throttles function calls for frequent access.
 - [debounce](#debounce) Debounces function calls for frequent access.
 - [queue](#queue) Handles tasks sequentially and prevent concurrency conflicts.
 - [lock](#lock) Provides mutual exclusion for concurrent operations.
-- [read](#read) Makes any streaming source readable via `for await ... of ...` syntax.
+- [read](#read) Makes any streaming source readable via `for await ... of ...`
+  syntax.
 - [readAll](#readall) Reads all streaming data at once.
-- [chan](#chan) Creates a channel that transfers data across routines, even across
-    multiple threads, inspired by Golang.
+- [chan](#chan) Creates a channel that transfers data across routines, even
+  across multiple threads, inspired by Golang.
 - [parallel](#parallel) Runs functions in parallel threads and take advantage of
-    multi-core CPUs, inspired by Golang.
+  multi-core CPUs, inspired by Golang.
 - [run](#run) Runs a script in another thread and abort at any time.
-- [example](#example) Writes unit tests as if writing examples, inspired by Golang.
-- [deprecate](#deprecate) Marks a function as deprecated and emit warnings when it is
-    called.
+- [example](#example) Writes unit tests as if writing examples, inspired by
+  Golang.
+- [deprecate](#deprecate) Marks a function as deprecated and emit warnings when
+  it is called.
 - [isClass](#isclass) Checks if a value is a class/constructor.
 - [isSubclassOf](#issubclassof) Checks if a class is a subset of another class.
-- [mixin](#mixin) Defines a class that inherits methods from multiple base classes.
+- [mixin](#mixin) Defines a class that inherits methods from multiple base
+  classes.
 
 And other functions in sub-[modules](#modules).
 
@@ -77,12 +87,12 @@ And other functions in sub-[modules](#modules).
 
 ```ts
 declare function _try<E = unknown, R = any, A extends any[] = any[]>(
-    fn: (...args: A) => R,
-    ...args: A
+  fn: (...args: A) => R,
+  ...args: A
 ): [E, R];
 declare function _try<E = unknown, R = any, A extends any[] = any[]>(
-    fn: (...args: A) => Promise<R>,
-    ...args: A
+  fn: (...args: A) => Promise<R>,
+  ...args: A
 ): Promise<[E, R]>;
 ```
 
@@ -95,7 +105,7 @@ Invokes a regular function or an async function and renders its result in an
 import _try from "@ayonli/jsext/try";
 
 const [err, res] = _try(() => {
-    // do something that may fail
+  // do something that may fail
 });
 ```
 
@@ -106,11 +116,11 @@ import _try from "@ayonli/jsext/try";
 import axios from "axios";
 
 let [err, res] = await _try(async () => {
-    return await axios.get("https://example.org");
+  return await axios.get("https://example.org");
 });
 
 if (err) {
-    res = (err as any)["response"];
+  res = (err as any)["response"];
 }
 ```
 
@@ -131,20 +141,32 @@ import axios from "axios";
 let [err, res] = await _try(axios.get("https://example.org"));
 
 if (err) {
-    res = (err as any)["response"];
+  res = (err as any)["response"];
 }
 ```
 
 ---
 
 ```ts
-declare function _try<E = unknown, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
-    fn: (...args: A) => Generator<T, TReturn, TNext>,
-    ...args: A
+declare function _try<
+  E = unknown,
+  T = any,
+  A extends any[] = any[],
+  TReturn = any,
+  TNext = unknown,
+>(
+  fn: (...args: A) => Generator<T, TReturn, TNext>,
+  ...args: A
 ): Generator<[E, T], [E, TReturn], TNext>;
-declare function _try<E = unknown, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
-    fn: (...args: A) => AsyncGenerator<T, TReturn, TNext>,
-    ...args: A
+declare function _try<
+  E = unknown,
+  T = any,
+  A extends any[] = any[],
+  TReturn = any,
+  TNext = unknown,
+>(
+  fn: (...args: A) => AsyncGenerator<T, TReturn, TNext>,
+  ...args: A
 ): AsyncGenerator<[E, T], [E, TReturn], TNext>;
 ```
 
@@ -157,15 +179,15 @@ yield value and result in an `[err, val]` tuple.
 import _try from "@ayonli/jsext/try";
 
 const iter = _try(function* () {
-    // do something that may fail
+  // do something that may fail
 });
 
 for (const [err, val] of iter) {
-    if (err) {
-        console.error("something went wrong:", err);
-    } else {
-        console.log("current value:", val);
-    }
+  if (err) {
+    console.error("something went wrong:", err);
+  } else {
+    console.log("current value:", val);
+  }
 }
 ```
 
@@ -175,15 +197,15 @@ for (const [err, val] of iter) {
 import _try from "@ayonli/jsext/try";
 
 const iter = _try(async function* () {
-    // do something that may fail
+  // do something that may fail
 });
 
 for await (const [err, val] of iter) {
-    if (err) {
-        console.error("something went wrong:", err);
-    } else {
-        console.log("current value:", val);
-    }
+  if (err) {
+    console.error("something went wrong:", err);
+  } else {
+    console.log("current value:", val);
+  }
 }
 ```
 
@@ -191,10 +213,10 @@ for await (const [err, val] of iter) {
 
 ```ts
 declare function _try<E = unknown, T = any, TReturn = any, TNext = unknown>(
-    gen: Generator<T, TReturn, TNext>
+  gen: Generator<T, TReturn, TNext>,
 ): Generator<[E, T], [E, TReturn], TNext>;
 declare function _try<E = unknown, T = any, TReturn = any, TNext = unknown>(
-    gen: AsyncGenerator<T, TReturn, TNext>
+  gen: AsyncGenerator<T, TReturn, TNext>,
 ): AsyncGenerator<[E, T], [E, TReturn], TNext>;
 ```
 
@@ -210,11 +232,11 @@ import { sequence } from "@ayonli/jsext/number";
 const iter = sequence(1, 10);
 
 for (const [err, val] of _try(iter)) {
-    if (err) {
-        console.error("something went wrong:", err);
-    } else {
-        console.log("current value:", val);
-    }
+  if (err) {
+    console.error("something went wrong:", err);
+  } else {
+    console.log("current value:", val);
+  }
 }
 ```
 
@@ -224,15 +246,15 @@ for (const [err, val] of _try(iter)) {
 import _try from "@ayonli/jsext/try";
 
 async function* gen() {
-    // do something that may fail
+  // do something that may fail
 }
 
 for await (const [err, val] of _try(gen())) {
-    if (err) {
-        console.error("something went wrong:", err);
-    } else {
-        console.log("current value:", val);
-    }
+  if (err) {
+    console.error("something went wrong:", err);
+  } else {
+    console.log("current value:", val);
+  }
 }
 ```
 
@@ -242,18 +264,18 @@ for await (const [err, val] of _try(gen())) {
 
 ```ts
 declare function func<T, R = any, A extends any[] = any[]>(
-    fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R
+  fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R,
 ): (this: T, ...args: A) => R;
 ```
 
-Inspired by Golang, creates a function that receives a `defer` keyword which
-can be used to carry deferred jobs that will be run after the main function
-is complete.
+Inspired by Golang, creates a function that receives a `defer` keyword which can
+be used to carry deferred jobs that will be run after the main function is
+complete.
 
-Multiple calls of the `defer` keyword is supported, and the callbacks are
-called in the LIFO order. Callbacks can be async functions if the main
-function is an async function or an async generator function, and all the
-running procedures will be awaited.
+Multiple calls of the `defer` keyword is supported, and the callbacks are called
+in the LIFO order. Callbacks can be async functions if the main function is an
+async function or an async generator function, and all the running procedures
+will be awaited.
 
 **Example**
 
@@ -262,13 +284,13 @@ import func from "@ayonli/jsext/func";
 import * as fs from "node:fs/promises";
 
 export const getVersion = func(async (defer) => {
-    const file = await fs.open("./package.json", "r");
-    defer(() => file.close());
+  const file = await fs.open("./package.json", "r");
+  defer(() => file.close());
 
-    const content = await file.readFile("utf8");
-    const pkg = JSON.parse(content);
+  const content = await file.readFile("utf8");
+  const pkg = JSON.parse(content);
 
-    return pkg.version as string;
+  return pkg.version as string;
 });
 ```
 
@@ -278,13 +300,13 @@ export const getVersion = func(async (defer) => {
 
 ```ts
 declare function wrap<T, Fn extends (this: T, ...args: any[]) => any>(
-    fn: Fn,
-    wrapper: (this: T, fn: Fn, ...args: Parameters<Fn>) => ReturnType<Fn>
+  fn: Fn,
+  wrapper: (this: T, fn: Fn, ...args: Parameters<Fn>) => ReturnType<Fn>,
 ): Fn;
 ```
 
-Wraps a function inside another function and returns a new function that
-copies the original function's name and other properties.
+Wraps a function inside another function and returns a new function that copies
+the original function's name and other properties.
 
 **Example**
 
@@ -292,11 +314,11 @@ copies the original function's name and other properties.
 import wrap from "@ayonli/jsext/wrap";
 
 function log(text: string) {
-    console.log(text);
+  console.log(text);
 }
 
 const show = wrap(log, function (fn, text) {
-    return fn.call(this, new Date().toISOString() + " " + text);
+  return fn.call(this, new Date().toISOString() + " " + text);
 });
 
 console.log(show.name); // log
@@ -310,38 +332,37 @@ console.assert(show.toString() === log.toString());
 
 ```ts
 declare function throttle<I, Fn extends (this: I, ...args: any[]) => any>(
-    handler: Fn,
-    duration: number
+  handler: Fn,
+  duration: number,
 ): Fn;
 declare function throttle<I, Fn extends (this: I, ...args: any[]) => any>(
-    handler: Fn,
-    options: {
-        duration: number;
-        /**
-         * Use the throttle strategy `for` the given key, this will keep the
-         * result in a global cache, binding new `handler` function for the same
-         * key will result in the same result as the previous, unless the
-         * duration has passed. This mechanism guarantees that both creating the
-         * throttled function in function scopes and overwriting the handler are
-         * possible.
-         */
-        for?: any;
-        /**
-         * When turned on, respond with the last cache (if available)
-         * immediately, even if it has expired, and update the cache in the
-         * background.
-         */
-        noWait?: boolean;
-    }
+  handler: Fn,
+  options: {
+    duration: number;
+    /**
+     * Use the throttle strategy `for` the given key, this will keep the
+     * result in a global cache, binding new `handler` function for the same
+     * key will result in the same result as the previous, unless the
+     * duration has passed. This mechanism guarantees that both creating the
+     * throttled function in function scopes and overwriting the handler are
+     * possible.
+     */
+    for?: any;
+    /**
+     * When turned on, respond with the last cache (if available)
+     * immediately, even if it has expired, and update the cache in the
+     * background.
+     */
+    noWait?: boolean;
+  },
 ): Fn;
 ```
 
-Creates a throttled function that will only be run once in a certain amount
-of time.
+Creates a throttled function that will only be run once in a certain amount of
+time.
 
 If a subsequent call happens within the `duration` (in milliseconds), the
-previous result will be returned and the `handler` function will not be
-invoked.
+previous result will be returned and the `handler` function will not be invoked.
 
 **Example**
 
@@ -364,21 +385,21 @@ import throttle from "@ayonli/jsext/throttle";
 import { sleep } from "@ayonli/jsext/promise";
 
 const out1 = await throttle(() => Promise.resolve("foo"), {
-    duration: 1_000,
-    for: "example",
+  duration: 1_000,
+  for: "example",
 })();
 console.log(out1); // foo
 
 const out2 = await throttle(() => Promise.resolve("bar"), {
-    duration: 1_000,
-    for: "example",
+  duration: 1_000,
+  for: "example",
 })();
 console.log(out2); // foo
 
 await sleep(1_000);
 const out3 = await throttle(() => Promise.resolve("bar"), {
-    duration: 1_000,
-    for: "example",
+  duration: 1_000,
+  for: "example",
 })();
 console.log(out3); // bar
 ```
@@ -389,37 +410,37 @@ console.log(out3); // bar
 
 ```ts
 declare function debounce<I, T, R>(
-    handler: (this: I, data: T) => R | Promise<R>,
-    delay: number,
-    reducer?: (prev: T, data: T) => T
+  handler: (this: I, data: T) => R | Promise<R>,
+  delay: number,
+  reducer?: (prev: T, data: T) => T,
 ): (this: I, data: T) => Promise<R>;
 declare function debounce<I, T, R>(
-    handler: (this: I, data: T) => R | Promise<R>,
-    options: {
-        delay: number,
-        /**
-         * Use the debounce strategy `for` the given key, this will keep the
-         * debounce context in a global registry, binding new `handler` function
-         * for the same key will override the previous settings. This mechanism
-         * guarantees that both creating the debounced function in function
-         * scopes and overwriting the handler are possible.
-         */
-        for?: any;
-    },
-    reducer?: (prev: T, data: T) => T
+  handler: (this: I, data: T) => R | Promise<R>,
+  options: {
+    delay: number;
+    /**
+     * Use the debounce strategy `for` the given key, this will keep the
+     * debounce context in a global registry, binding new `handler` function
+     * for the same key will override the previous settings. This mechanism
+     * guarantees that both creating the debounced function in function
+     * scopes and overwriting the handler are possible.
+     */
+    for?: any;
+  },
+  reducer?: (prev: T, data: T) => T,
 ): (this: I, data: T) => Promise<R>;
 ```
 
-Creates a debounced function that delays invoking `handler` until after
-`delay` duration (in milliseconds) have elapsed since the last time the
-debounced function was invoked. 
+Creates a debounced function that delays invoking `handler` until after `delay`
+duration (in milliseconds) have elapsed since the last time the debounced
+function was invoked.
 
-If a subsequent call happens within the `delay` duration (in milliseconds),
-the previous call will be canceled and it will result in the same return
-value  as the new call's.
+If a subsequent call happens within the `delay` duration (in milliseconds), the
+previous call will be canceled and it will result in the same return value as
+the new call's.
 
-Optionally, we can provide a `reducer` function to merge data before
-processing so multiple calls can be merged into one.
+Optionally, we can provide a `reducer` function to merge data before processing
+so multiple calls can be merged into one.
 
 **Example**
 
@@ -430,13 +451,13 @@ import { sleep } from "@ayonli/jsext/promise";
 let count = 0;
 
 const fn = debounce((obj: { foo?: string; bar?: string }) => {
-    count++;
-    return obj;
+  count++;
+  return obj;
 }, 1_000);
 
 const [res1, res2] = await Promise.all([
-    fn({ foo: "hello", bar: "world" }),
-    sleep(100).then(() => fn({ foo: "hi" })),
+  fn({ foo: "hello", bar: "world" }),
+  sleep(100).then(() => fn({ foo: "hi" })),
 ]);
 
 console.log(res1); // { foo: "hi" }
@@ -449,17 +470,21 @@ console.log(count); // 1
 ```ts
 import debounce from "@ayonli/jsext/debounce";
 
-const fn = debounce((obj: { foo?: string; bar?: string }) => {
+const fn = debounce(
+  (obj: { foo?: string; bar?: string }) => {
     return obj;
-}, 1_000, (prev, current) => {
+  },
+  1_000,
+  (prev, current) => {
     return { ...prev, ...current };
-});
+  },
+);
 
 const [res1, res2] = await Promise.all([
-    fn({ foo: "hello", bar: "world" }),
-    fn({ foo: "hi" }),
+  fn({ foo: "hello", bar: "world" }),
+  fn({ foo: "hi" }),
 ]);
- 
+
 console.log(res1); // { foo: "hi", bar: "world" }
 console.assert(res2 === res1);
 ```
@@ -473,19 +498,27 @@ const key = "unique_key";
 let count = 0;
 
 const [res1, res2] = await Promise.all([
-    debounce(async (obj: { foo?: string; bar?: string }) => {
-        count += 1;
-        return await Promise.resolve(obj);
-    }, { delay: 5, for: key }, (prev, data) => {
-        return { ...prev, ...data };
-    })({ foo: "hello", bar: "world" }),
+  debounce(
+    async (obj: { foo?: string; bar?: string }) => {
+      count += 1;
+      return await Promise.resolve(obj);
+    },
+    { delay: 5, for: key },
+    (prev, data) => {
+      return { ...prev, ...data };
+    },
+  )({ foo: "hello", bar: "world" }),
 
-    debounce(async (obj: { foo?: string; bar?: string }) => {
-        count += 2;
-        return await Promise.resolve(obj);
-    }, { delay: 5, for: key }, (prev, data) => {
-        return { ...prev, ...data };
-    })({ foo: "hi" }),
+  debounce(
+    async (obj: { foo?: string; bar?: string }) => {
+      count += 2;
+      return await Promise.resolve(obj);
+    },
+    { delay: 5, for: key },
+    (prev, data) => {
+      return { ...prev, ...data };
+    },
+  )({ foo: "hi" }),
 ]);
 
 console.log(res1); // { foo: "hi", bar: "world" }
@@ -500,16 +533,18 @@ console.assert(count === 2);
 ```ts
 import type { Queue } from "@ayonli/jsext/queue";
 
-declare function queue<T>(handler: (data: T) => Promise<void>, bufferSize?: number): Queue<T>;
+declare function queue<T>(
+  handler: (data: T) => Promise<void>,
+  bufferSize?: number,
+): Queue<T>;
 ```
 
 Processes data sequentially by the given `handler` function and prevents
-concurrency conflicts, it returns a `Queue` instance that we can push
-data into.
+concurrency conflicts, it returns a `Queue` instance that we can push data into.
 
-`bufferSize` is the maximum capacity of the underlying channel, once
-reached, the push operation will block until there is new space available.
-By default, this option is not set and use a non-buffered channel instead.
+`bufferSize` is the maximum capacity of the underlying channel, once reached,
+the push operation will block until there is new space available. By default,
+this option is not set and use a non-buffered channel instead.
 
 **Example**
 
@@ -518,12 +553,12 @@ import queue from "@ayonli/jsext/queue";
 
 const list: string[] = [];
 const q = queue(async (str: string) => {
-    await Promise.resolve(null);
-    list.push(str);
+  await Promise.resolve(null);
+  list.push(str);
 });
 
-q.onError(err => {
-    console.error(err);
+q.onError((err) => {
+  console.error(err);
 });
 
 await q.push("foo");
@@ -560,20 +595,20 @@ import func from "@ayonli/jsext/func";
 const key = "unique_key";
 
 export const concurrentOperation = func(async (defer) => {
-    const ctx = await lock(key);
-    defer(() => ctx.unlock()); // don't forget to unlock
+  const ctx = await lock(key);
+  defer(() => ctx.unlock()); // don't forget to unlock
 
-    // This block will never be run if there are other coroutines holding
-    // the lock.
-    //
-    // Other coroutines trying to lock the same key will also never be run
-    // before `unlock()`.
+  // This block will never be run if there are other coroutines holding
+  // the lock.
+  //
+  // Other coroutines trying to lock the same key will also never be run
+  // before `unlock()`.
 });
 ```
 
-Other than using the `lock()` function, we can also use `new Mutex()` to
-create a mutex instance that holds some shared resource which can only be
-accessed by one coroutine at a time.
+Other than using the `lock()` function, we can also use `new Mutex()` to create
+a mutex instance that holds some shared resource which can only be accessed by
+one coroutine at a time.
 
 **Example**
 
@@ -586,31 +621,31 @@ import { sleep } from "@ayonli/jsext/promise";
 const mutex = new Mutex(1);
 
 const concurrentOperation = func(async (defer) => {
-    const shared = await mutex.lock();
-    defer(() => shared.unlock()); // don't forget to unlock
+  const shared = await mutex.lock();
+  defer(() => shared.unlock()); // don't forget to unlock
 
-    const value1 = shared.value;
+  const value1 = shared.value;
 
-    await otherAsyncOperations();
+  await otherAsyncOperations();
 
-    shared.value += 1
-    const value2 = shared.value;
+  shared.value += 1;
+  const value2 = shared.value;
 
-    // Without mutex lock, the shared value may have been modified by other
-    // calls during `await otherAsyncOperation()`, and the following
-    // assertion will fail.
-    console.assert(value1 + 1 === value2);
+  // Without mutex lock, the shared value may have been modified by other
+  // calls during `await otherAsyncOperation()`, and the following
+  // assertion will fail.
+  console.assert(value1 + 1 === value2);
 });
 
 async function otherAsyncOperations() {
-    await sleep(100 * random(1, 10));
+  await sleep(100 * random(1, 10));
 }
 
 await Promise.all([
-    concurrentOperation(),
-    concurrentOperation(),
-    concurrentOperation(),
-    concurrentOperation(),
+  concurrentOperation(),
+  concurrentOperation(),
+  concurrentOperation(),
+  concurrentOperation(),
 ]);
 ```
 
@@ -621,17 +656,22 @@ await Promise.all([
 ```ts
 declare function read<I extends AsyncIterable<any>>(iterable: I): I;
 declare function read<T>(stream: ReadableStream<T>): AsyncIterable<T>;
-declare function read(es: EventSource, options?: { event?: string; }): AsyncIterable<string>;
-declare function read<T extends Uint8Array | string>(ws: WebSocket): AsyncIterable<T>;
+declare function read(
+  es: EventSource,
+  options?: { event?: string },
+): AsyncIterable<string>;
+declare function read<T extends Uint8Array | string>(
+  ws: WebSocket,
+): AsyncIterable<T>;
 declare function read<T>(target: EventTarget, eventMap?: {
-    message?: string;
-    error?: string;
-    close?: string;
+  message?: string;
+  error?: string;
+  close?: string;
 }): AsyncIterable<T>;
 declare function read<T>(target: NodeJS.EventEmitter, eventMap?: {
-    data?: string;
-    error?: string;
-    close?: string;
+  data?: string;
+  error?: string;
+  close?: string;
 }): AsyncIterable<T>;
 ```
 
@@ -646,7 +686,7 @@ import read from "@ayonli/jsext/read";
 const res = new Response("Hello, World!");
 
 for await (const chunk of read(res.body!)) {
-    console.log("receive chunk:", chunk);
+  console.log("receive chunk:", chunk);
 }
 ```
 
@@ -659,14 +699,14 @@ import read from "@ayonli/jsext/read";
 const sse = new EventSource("/sse/message");
 
 for await (const msg of read(sse)) {
-    console.log("receive message:", msg);
+  console.log("receive message:", msg);
 }
 
 // listen to a specific event
 const channel = new EventSource("/sse/broadcast");
 
 for await (const msg of read(channel, { event: "broadcast" })) {
-    console.log("receive message:", msg);
+  console.log("receive message:", msg);
 }
 ```
 
@@ -678,11 +718,11 @@ import read from "@ayonli/jsext/read";
 const ws = new WebSocket("/ws");
 
 for await (const data of read(ws)) {
-    if (typeof data === "string") {
-        console.log("receive text message:", data);
-    } else {
-        console.log("receive binary data:", data);
-    }
+  if (typeof data === "string") {
+    console.log("receive text message:", data);
+  } else {
+    console.log("receive binary data:", data);
+  }
 }
 ```
 
@@ -692,7 +732,7 @@ for await (const data of read(ws)) {
 import read from "@ayonli/jsext/read";
 
 for await (const msg of read(self)) {
-    console.log("receive message from the parent window:", msg);
+  console.log("receive message from the parent window:", msg);
 }
 ```
 
@@ -702,9 +742,10 @@ for await (const msg of read(self)) {
 import read from "@ayonli/jsext/read";
 
 for await (const msg of read(process)) {
-    console.log("receive message from the parent process:", msg);
+  console.log("receive message from the parent process:", msg);
 }
 ```
+
 ---
 
 ### readAll
@@ -737,20 +778,20 @@ import type { Channel } from "@ayonli/jsext/chan";
 declare function chan<T>(capacity?: number): Channel<T>;
 ```
 
-Inspired by Golang, cerates a `Channel` that can be used to transfer
-data across routines.
+Inspired by Golang, cerates a `Channel` that can be used to transfer data across
+routines.
 
 If `capacity` is not set, a non-buffered channel will be created. For a
-non-buffered channel, the sender and receiver must be present at the same
-time (theoretically), otherwise, the channel will block (non-IO aspect).
+non-buffered channel, the sender and receiver must be present at the same time
+(theoretically), otherwise, the channel will block (non-IO aspect).
 
 If `capacity` is set, a buffered channel will be created. For a buffered
 channel, data will be queued in the buffer first and then consumed by the
-receiver in FIFO order. Once the buffer size reaches the capacity limit, no
-more data will be sent unless there is new space available.
+receiver in FIFO order. Once the buffer size reaches the capacity limit, no more
+data will be sent unless there is new space available.
 
-It is possible to set the `capacity` to `Infinity` to allow the channel to
-never block and behave like a message queue.
+It is possible to set the `capacity` to `Infinity` to allow the channel to never
+block and behave like a message queue.
 
 Unlike `EventEmitter` or `EventTarget`, `Channel` guarantees the data will
 always be delivered, even if there is no receiver at the moment.
@@ -758,10 +799,10 @@ always be delivered, even if there is no receiver at the moment.
 Also, unlike Golang, `await channel.recv()` does not prevent the program from
 exiting.
 
-Channels can be used to send and receive streaming data between main thread
-and worker threads wrapped by `parallel()`, but once used that way,
-`channel.close()` must be explicitly called in order to release the channel
-for garbage collection.
+Channels can be used to send and receive streaming data between main thread and
+worker threads wrapped by `parallel()`, but once used that way,
+`channel.close()` must be explicitly called in order to release the channel for
+garbage collection.
 
 **Example (non-buffered)**
 
@@ -771,7 +812,7 @@ import chan from "@ayonli/jsext/chan";
 const channel = chan<number>();
 
 (async () => {
-    await channel.send(123);
+  await channel.send(123);
 })();
 
 const num = await channel.recv();
@@ -807,15 +848,15 @@ import { sequence } from "@ayonli/jsext/number";
 const channel = chan<number>();
 
 (async () => {
-    for (const num of sequence(1, 5)) {
-        await channel.send(num);
-    }
+  for (const num of sequence(1, 5)) {
+    await channel.send(num);
+  }
 
-    channel.close();
+  channel.close();
 })();
 
 for await (const num of channel) {
-    console.log(num);
+  console.log(num);
 }
 // output:
 // 1
@@ -832,8 +873,8 @@ for await (const num of channel) {
 ```ts
 import type { ThreadedFunctions } from "@ayonli/jsext/parallel";
 
-declare function parallel<M extends { [x: string]: any; }>(
-    mod: string | (() => Promise<M>)
+declare function parallel<M extends { [x: string]: any }>(
+  mod: string | (() => Promise<M>),
 ): ThreadedFunctions<M>;
 ```
 
@@ -847,27 +888,26 @@ In browsers and Deno, the `module` can only be an ES module.
 Data are cloned and transferred between threads via **Structured Clone**
 **Algorithm**.
 
-Apart from the standard data types supported by the algorithm, `Channel`
-can also be used to transfer data between threads. To do so, just passed a
-channel instance to the threaded function. But be aware, channel can only be
-used as a parameter, return a channel from the threaded function is not
-allowed. Once passed, the data can only be transferred into and out-from the
-function.
+Apart from the standard data types supported by the algorithm, `Channel` can
+also be used to transfer data between threads. To do so, just passed a channel
+instance to the threaded function. But be aware, channel can only be used as a
+parameter, return a channel from the threaded function is not allowed. Once
+passed, the data can only be transferred into and out-from the function.
 
 The difference between using a channel and a generator function for streaming
 processing is, for a generator function, `next(value)` is coupled with a
 `yield value`, the process is blocked between **next** calls, channel doesn't
-have this limit, we can use it to stream all the data into the function
-before processing and receiving any result.
+have this limit, we can use it to stream all the data into the function before
+processing and receiving any result.
 
-The threaded function also supports `ArrayBuffer`s as transferable objects.
-If an array buffer is presented as an argument or the direct property of an
-argument (assume it's a plain object), or the array buffer is the return
-value or the direct property of the return value (assume it's a plain object),
-it automatically becomes a transferrable object and will be transferred to
-the other thread instead of being cloned. This strategy allows us to easily
-compose objects like `Request` and `Response` instances into plain objects
-and pass them between threads without overhead.
+The threaded function also supports `ArrayBuffer`s as transferable objects. If
+an array buffer is presented as an argument or the direct property of an
+argument (assume it's a plain object), or the array buffer is the return value
+or the direct property of the return value (assume it's a plain object), it
+automatically becomes a transferrable object and will be transferred to the
+other thread instead of being cloned. This strategy allows us to easily compose
+objects like `Request` and `Response` instances into plain objects and pass them
+between threads without overhead.
 
 **Remarks**
 
@@ -877,10 +917,10 @@ create another worker thread.
 **Remarks**
 
 Cloning and transferring data between the main thread and worker threads are
-very heavy and slow, worker threads are only intended to run CPU-intensive
-tasks or divide tasks among multiple threads, they have no advantage when
-performing IO-intensive tasks such as handling HTTP requests, always prefer
-`cluster` module for that kind of purpose.
+very heavy and slow, worker threads are only intended to run CPU-intensive tasks
+or divide tasks among multiple threads, they have no advantage when performing
+IO-intensive tasks such as handling HTTP requests, always prefer `cluster`
+module for that kind of purpose.
 
 **Remarks**
 
@@ -898,11 +938,11 @@ received properly between threads.
   object properties)
 - `Exception` (as arguments, return values, thrown values, or shallow object
   properties)
-- `DOMException` (as arguments, return values, thrown values, or shallow
-  object properties)
+- `DOMException` (as arguments, return values, thrown values, or shallow object
+  properties)
 
-In order to handle errors properly between threads, throw well-known error
-types or use `Exception` (or `DOMException`) with error names in the threaded
+In order to handle errors properly between threads, throw well-known error types
+or use `Exception` (or `DOMException`) with error names in the threaded
 function.
 
 **Example (regular or async function)**
@@ -922,7 +962,7 @@ import parallel from "@ayonli/jsext/parallel";
 const mod = parallel(() => import("./examples/worker.mjs"));
 
 for await (const word of mod.sequence(["foo", "bar"])) {
-    console.log(word);
+  console.log(word);
 }
 // output:
 // foo
@@ -939,15 +979,15 @@ import { readAll } from "@ayonli/jsext/read";
 
 const mod = parallel(() => import("./examples/worker.mjs"));
 
-const channel = chan<{ value: number; done: boolean; }>();
+const channel = chan<{ value: number; done: boolean }>();
 const length = mod.twoTimesValues(channel);
 
 for (const value of sequence(0, 9)) {
-    await channel.send({ value, done: value === 9 });
+  await channel.send({ value, done: value === 9 });
 }
 
-const results = (await readAll(channel)).map(item => item.value);
-console.log(results);      // [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+const results = (await readAll(channel)).map((item) => item.value);
+console.log(results); // [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
 console.log(await length); // 10
 ```
 
@@ -961,43 +1001,45 @@ const mod = parallel(() => import("./examples/worker.mjs"));
 const arr = Uint8Array.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
 const length = await mod.transfer(arr.buffer);
 
-console.log(length);     // 10
+console.log(length); // 10
 console.log(arr.length); // 0
 ```
 
 **Remarks**
 
-If the application is to be bundled, use the following syntax to link the
-module instead, it will prevent the bundler from including the file and
-rewriting the path.
+If the application is to be bundled, use the following syntax to link the module
+instead, it will prevent the bundler from including the file and rewriting the
+path.
 
 ```ts
-const mod = parallel<typeof import("./examples/worker.mjs")>("./examples/worker.mjs");
+const mod = parallel<typeof import("./examples/worker.mjs")>(
+  "./examples/worker.mjs",
+);
 ```
 
 ---
 
 ```ts
 namespace parallel {
-    /**
-     * The maximum number of workers allowed to exist at the same time. If not
-     * set, the program by default uses CPU core numbers as the limit.
-     */
-    export var maxWorkers: number | undefined;
+  /**
+   * The maximum number of workers allowed to exist at the same time. If not
+   * set, the program by default uses CPU core numbers as the limit.
+   */
+  export var maxWorkers: number | undefined;
 
-    /**
-     * In browsers, by default, the program loads the worker entry directly from
-     * GitHub, which could be slow due to poor internet connection, we can copy
-     * the entry file `bundle/worker.mjs` to a local path of our website and set
-     * this option to that path so that it can be loaded locally.
-     * 
-     * Or, if the code is bundled, the program won't be able to automatically
-     * locate the entry file in the file system, in such case, we can also copy
-     * the entry file (`bundle/worker.mjs` for Bun, Deno and the browser,
-     * `bundle/worker-node.mjs` for Node.js) to a local directory and supply
-     * this option instead.
-     */
-    export var workerEntry: string | undefined;
+  /**
+   * In browsers, by default, the program loads the worker entry directly from
+   * GitHub, which could be slow due to poor internet connection, we can copy
+   * the entry file `bundle/worker.mjs` to a local path of our website and set
+   * this option to that path so that it can be loaded locally.
+   *
+   * Or, if the code is bundled, the program won't be able to automatically
+   * locate the entry file in the file system, in such case, we can also copy
+   * the entry file (`bundle/worker.mjs` for Bun, Deno and the browser,
+   * `bundle/worker-node.mjs` for Node.js) to a local directory and supply
+   * this option instead.
+   */
+  export var workerEntry: string | undefined;
 }
 ```
 
@@ -1006,7 +1048,10 @@ namespace parallel {
 ### run
 
 ```ts
-declare function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
+declare function run<R, A extends any[] = any[]>(
+  script: string,
+  args?: A,
+  options?: {
     /**
      * If not set, invoke the default function, otherwise invoke the specified
      * function.
@@ -1022,24 +1067,25 @@ declare function run<R, A extends any[] = any[]>(script: string, args?: A, optio
     /**
      * Choose whether to use `worker_threads` or `child_process` for running
      * the script. The default setting is `worker_threads`.
-     * 
+     *
      * In browsers and Deno, this option is ignored and will always use the web
      * worker.
-     * 
+     *
      * @deprecated Always prefer `worker_threads` over `child_process` since it
      * consumes less system resources and `child_process` may not work in
      * Windows. `child_process` support may be removed in the future once
      * considered thoroughly.
      */
     adapter?: "worker_threads" | "child_process";
-}): Promise<{
-    workerId: number;
-    /** Retrieves the return value of the function being called. */
-    result(): Promise<R>;
-    /** Iterates the yield value if the function being called returns a generator. */
-    iterate(): AsyncIterable<R>;
-    /** Terminates the worker thread and aborts the task. */
-    abort(reason?: Error | null): Promise<void>;
+  },
+): Promise<{
+  workerId: number;
+  /** Retrieves the return value of the function being called. */
+  result(): Promise<R>;
+  /** Iterates the yield value if the function being called returns a generator. */
+  iterate(): AsyncIterable<R>;
+  /** Terminates the worker thread and aborts the task. */
+  abort(reason?: Error | null): Promise<void>;
 }>;
 ```
 
@@ -1048,13 +1094,12 @@ Runs the given `script` in a worker thread and abort the task at any time.
 This function is similar to `parallel()`, many features applicable to
 `parallel()` are also applicable to `run()`, except the following:
 
-1. The `script` can only be a filename, and is relative to the current
-  working directory (or the current URL) if not absolute.
+1. The `script` can only be a filename, and is relative to the current working
+   directory (or the current URL) if not absolute.
 2. Only one task is allow to run at a time for one worker thread, set
-  `run.maxWorkers` to allow more tasks to be run at the same time if
-  needed.
+   `run.maxWorkers` to allow more tasks to be run at the same time if needed.
 3. By default, the worker thread is dropped after the task settles, set
-  `keepAlive` option in order to reused it.
+   `keepAlive` option in order to reused it.
 
 **Example (result)**
 
@@ -1071,12 +1116,12 @@ console.log(await job1.result()); // Hello, World
 import run from "@ayonli/jsext/run";
 
 const job2 = await run<string, [string[]]>(
-    "examples/worker.mjs",
-    [["foo", "bar"]],
-    { fn: "sequence" }
+  "examples/worker.mjs",
+  [["foo", "bar"]],
+  { fn: "sequence" },
 );
 for await (const word of job2.iterate()) {
-    console.log(word);
+  console.log(word);
 }
 // output:
 // foo
@@ -1090,7 +1135,7 @@ import run from "@ayonli/jsext/run";
 import _try from "@ayonli/jsext/try";
 
 const job3 = await run<string, [string]>("examples/worker.mjs", ["foobar"], {
-    fn: "takeTooLong",
+  fn: "takeTooLong",
 });
 await job3.abort();
 const [err, res] = await _try(job3.result());
@@ -1102,11 +1147,11 @@ console.assert(res === undefined);
 
 ```ts
 namespace run {
-    /**
-     * The maximum number of workers allowed to exist at the same time.
-     * If not set, use the same setting as {@link parallel.maxWorkers}.
-     */
-    export var maxWorkers: number | undefined;
+  /**
+   * The maximum number of workers allowed to exist at the same time.
+   * If not set, use the same setting as {@link parallel.maxWorkers}.
+   */
+  export var maxWorkers: number | undefined;
 }
 ```
 
@@ -1116,39 +1161,42 @@ namespace run {
 
 ```ts
 declare function example<T, A extends any[] = any[]>(
-    fn: (this: T, console: Console, ...args: A) => void | Promise<void>,
-    options?: {
-        /** Suppress logging to the terminal and only check the output. */
-        suppress?: boolean;
-    }
+  fn: (this: T, console: Console, ...args: A) => void | Promise<void>,
+  options?: {
+    /** Suppress logging to the terminal and only check the output. */
+    suppress?: boolean;
+  },
 ): (this: T, ...args: A) => Promise<void>;
 ```
 
-Inspired by Golang's **Example as Test** design, creates a function that
-carries example code with `// output:` comments, when the returned function
-is called, it will automatically check if the actual output matches the one
-declared in the comment.
+Inspired by Golang's **Example as Test** design, creates a function that carries
+example code with `// output:` comments, when the returned function is called,
+it will automatically check if the actual output matches the one declared in the
+comment.
 
-The example function receives a customized `console` object which will be
-used to log outputs instead of using the built-in `console`.
+The example function receives a customized `console` object which will be used
+to log outputs instead of using the built-in `console`.
 
 **Remarks**
 
-This function is used to simplify the process of writing tests, currently,
-it does not work in Bun, **tsx** and browsers, because Bun hasn't implement
-the `Console` constructor and removes comments during runtime, **tsx** also
-remove comments, and the function relies on Node.js built-in modules.
+This function is used to simplify the process of writing tests, currently, it
+does not work in Bun, **tsx** and browsers, because Bun hasn't implement the
+`Console` constructor and removes comments during runtime, **tsx** also remove
+comments, and the function relies on Node.js built-in modules.
 
 **Example**
 
 ```ts
 import example from "@ayonli/jsext/example";
 
-it("should output as expected", example(console => {
+it(
+  "should output as expected",
+  example((console) => {
     console.log("Hello, World!");
     // output:
     // Hello, World!
-}));
+  }),
+);
 ```
 
 ---
@@ -1157,16 +1205,16 @@ it("should output as expected", example(console => {
 
 ```ts
 declare function deprecate<T, Fn extends (this: T, ...args: any[]) => any>(
-    fn: Fn,
-    tip?: string,
-    once?: boolean
+  fn: Fn,
+  tip?: string,
+  once?: boolean,
 ): Fn;
 ```
 
 Marks a function as deprecated and returns a wrapped function.
 
-When the wrapped function is called, a deprecation warning will be emitted
-to the stdout.
+When the wrapped function is called, a deprecation warning will be emitted to
+the stdout.
 
 **Remarks** The original function must have a name.
 
@@ -1176,7 +1224,7 @@ to the stdout.
 import deprecate from "@ayonli/jsext/deprecate";
 
 const sum = deprecate(function sum(a: number, b: number) {
-    return a + b;
+  return a + b;
 }, "use `a + b` instead");
 console.log(sum(1, 2));
 // output:
@@ -1187,11 +1235,16 @@ console.log(sum(1, 2));
 ---
 
 ```ts
-declare function deprecate(target: string, forFn: Function, tip?: string, once?: boolean): void;
+declare function deprecate(
+  target: string,
+  forFn: Function,
+  tip?: string,
+  once?: boolean,
+): void;
 ```
 
-Emits a deprecation warning for the target, usually a parameter, an option,
-or the function's name, etc.
+Emits a deprecation warning for the target, usually a parameter, an option, or
+the function's name, etc.
 
 **Example**
 
@@ -1199,8 +1252,8 @@ or the function's name, etc.
 import deprecate from "@ayonli/jsext/deprecate";
 
 function pow(a: number, b: number) {
-    deprecate("pow()", pow, "use `a ** b` instead");
-    return a ** b;
+  deprecate("pow()", pow, "use `a ** b` instead");
+  return a ** b;
 }
 
 console.log(pow(2, 3));
@@ -1210,7 +1263,6 @@ console.log(pow(2, 3));
 ```
 
 ---
-
 
 ### isClass
 
@@ -1225,8 +1277,8 @@ Checks if a value is a class/constructor.
 ```ts
 import { isClass } from "@ayonli/jsext/class";
 
-console.assert(isClass(class Foo { }));
-console.assert(!isClass(function foo() { }));
+console.assert(isClass(class Foo {}));
+console.assert(!isClass(function foo() {}));
 ```
 
 ---
@@ -1234,7 +1286,10 @@ console.assert(!isClass(function foo() { }));
 ### isSubclassOf
 
 ```ts
-declare function isSubclassOf<A, B>(ctor1: Constructor<A>, ctor2: Constructor<B>): boolean;
+declare function isSubclassOf<A, B>(
+  ctor1: Constructor<A>,
+  ctor2: Constructor<B>,
+): boolean;
 ```
 
 Checks if a class is a subclass of another class.
@@ -1258,12 +1313,12 @@ console.assert(isSubclassOf(Moment, Object)); // all classes are subclasses of O
 import type { UnionToIntersection } from "@ayonli/jsext/class";
 
 declare function mixin<T extends Constructor<any>, M extends any[]>(
-    base: T,
-    ...mixins: { [X in keyof M]: Constructor<M[X]> }
+  base: T,
+  ...mixins: { [X in keyof M]: Constructor<M[X]> }
 ): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
 declare function mixin<T extends Constructor<any>, M extends any[]>(
-    base: T,
-    ...mixins: M
+  base: T,
+  ...mixins: M
 ): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
 ```
 
@@ -1274,24 +1329,24 @@ This function does not mutates the base class but create a pivot class instead.
 **Example**
 
 ```ts
-import { mixin, isSubclassOf } from "@ayonli/jsext/class";
+import { isSubclassOf, mixin } from "@ayonli/jsext/class";
 
 class Log {
-    log(text: string) {
-        console.log(text);
-    }
+  log(text: string) {
+    console.log(text);
+  }
 }
 
 class View {
-    display(data: Record<string, any>[]) {
-        console.table(data);
-    }
+  display(data: Record<string, any>[]) {
+    console.table(data);
+  }
 }
 
 class Controller extends mixin(View, Log) {
-    constructor(readonly topic: string) {
-        super();
-    }
+  constructor(readonly topic: string) {
+    super();
+  }
 }
 
 const ctrl = new Controller("foo");
@@ -1309,7 +1364,7 @@ console.assert(!isSubclassOf(Controller, Log));
 - `Channel<T>`
 - `Queue<T>`
 - `Mutex<T>`
-    - `Lock<T>`
+  - `Lock<T>`
 - `AsyncFunction`
 - `AsyncGeneratorFunction`
 - `AsyncFunctionConstructor`
@@ -1319,8 +1374,8 @@ console.assert(!isSubclassOf(Controller, Log));
 - `Optional<T, K extends keyof T>`
 - `Ensured<T, K extends keyof T>`
 
-*When [augment](#augmentations)ing, these types are exposed to the global scope*
-*(except for `Channel`, `Queue` and `Mutex`).*
+_When [augment](#augmentations)ing, these types are exposed to the global scope_
+_(except for `Channel`, `Queue` and `Mutex`)._
 
 ## Modules
 
@@ -1332,12 +1387,14 @@ console.assert(!isSubclassOf(Controller, Log));
 - [json](#json) Functions for parsing JSONs to specific structures.
 - [math](#math) Functions for mathematical calculations.
 - [promise](#promise) Functions for promise/async context handling.
-- [error](#error) Functions for converting errors to/from other types of objects.
+- [error](#error) Functions for converting errors to/from other types of
+  objects.
 - [collections](#collections) Additional collection data types.
+- [path](#path) Platform-independent utility functions for dealing with system
+  paths and URLs.
 
-
-**NOTE:** Configure `tsconfig.json` to set `compilerOptions.module` as `NodeNext`
-or `ESNext` instead of `CommonJS` in order to use sub-modules.
+**NOTE:** Configure `tsconfig.json` to set `compilerOptions.module` as
+`NodeNext` or `ESNext` instead of `CommonJS` in order to use sub-modules.
 
 **NOTE:** The following examples of module specifiers uses Node.js style, but
 they have Deno (legacy) and browser equivalents, like this:
@@ -1349,7 +1406,7 @@ they have Deno (legacy) and browser equivalents, like this:
 ### [string](https://jsr.io/@ayonli/jsext/doc/string/~)
 
 ```js
-import { compare, random, /* ... */ } from "@ayonli/jsext/string";
+import { compare, random /* ... */ } from "@ayonli/jsext/string";
 ```
 
 **Functions**
@@ -1376,7 +1433,7 @@ import { compare, random, /* ... */ } from "@ayonli/jsext/string";
 ### [number](https://jsr.io/@ayonli/jsext/doc/number/~)
 
 ```js
-import { isFloat, isNumeric, /* ... */ } from "@ayonli/jsext/number";
+import { isFloat, isNumeric /* ... */ } from "@ayonli/jsext/number";
 // or
 import "@ayonli/jsext/number/augment";
 ```
@@ -1393,7 +1450,7 @@ import "@ayonli/jsext/number/augment";
 ### [array](https://jsr.io/@ayonli/jsext/doc/array/~)
 
 ```js
-import { count, equals, /* ... */ } from "@ayonli/jsext/array";
+import { count, equals /* ... */ } from "@ayonli/jsext/array";
 ```
 
 **Functions**
@@ -1418,7 +1475,7 @@ import { count, equals, /* ... */ } from "@ayonli/jsext/array";
 ### [uint8array](https://jsr.io/@ayonli/jsext/doc/uint8array/~)
 
 ```js
-import { compare, equals, /* ... */ } from "@ayonli/jsext/uint8array";
+import { compare, equals /* ... */ } from "@ayonli/jsext/uint8array";
 ```
 
 **Functions**
@@ -1433,7 +1490,7 @@ import { compare, equals, /* ... */ } from "@ayonli/jsext/uint8array";
 ### [object](https://jsr.io/@ayonli/jsext/doc/object/~)
 
 ```js
-import { hasOwn, hasOwnMethod, /* ... */ } from "@ayonli/jsext/object";
+import { hasOwn, hasOwnMethod /* ... */ } from "@ayonli/jsext/object";
 ```
 
 **Functions**
@@ -1464,7 +1521,7 @@ import { hasOwn, hasOwnMethod, /* ... */ } from "@ayonli/jsext/object";
 ### [json](https://jsr.io/@ayonli/jsext/doc/json/~)
 
 ```js
-import { parseAs, /* ... */ } from "@ayonli/jsext/json";
+import { parseAs /* ... */ } from "@ayonli/jsext/json";
 ```
 
 **Functions**
@@ -1484,7 +1541,7 @@ import { parseAs, /* ... */ } from "@ayonli/jsext/json";
 ### [math](https://jsr.io/@ayonli/jsext/doc/math/~)
 
 ```js
-import { sum, avg, /* ... */ } from "@ayonli/jsext/math";
+import { avg, sum /* ... */ } from "@ayonli/jsext/math";
 ```
 
 **Functions**
@@ -1496,7 +1553,7 @@ import { sum, avg, /* ... */ } from "@ayonli/jsext/math";
 ### [promise](https://jsr.io/@ayonli/jsext/doc/promise/~)
 
 ```js
-import { timeout, after, /* ... */ } from "@ayonli/jsext/promise";
+import { after, timeout /* ... */ } from "@ayonli/jsext/promise";
 ```
 
 **Functions**
@@ -1509,14 +1566,14 @@ import { timeout, after, /* ... */ } from "@ayonli/jsext/promise";
 ### [error](https://jsr.io/@ayonli/jsext/doc/error/~)
 
 ```js
-import { Exception, toObject, /* ... */ } from "@ayonli/jsext/error";
+import { Exception, toObject /* ... */ } from "@ayonli/jsext/error";
 ```
 
 **Classes**
 
 - `Exception` (extends `Error`)
-    - `cause?: unknown`
-    - `code: number`
+  - `cause?: unknown`
+  - `code: number`
 
 **Functions**
 
@@ -1535,12 +1592,39 @@ import { BiMap, CiMap } from "@ayonli/jsext/collections";
 
 - `BiMap<K, V>` (extends `Map<K, V>`) Bi-directional map, keys and values are
   unique and map to each other.
-    - `prototype` (additional)
-        - `getKey(value: V): K | undefined`
-        - `hasValue(value: V): boolean`
-        - `deleteValue(value: V): boolean`
+  - `prototype` (additional)
+    - `getKey(value: V): K | undefined`
+    - `hasValue(value: V): boolean`
+    - `deleteValue(value: V): boolean`
 - `CiMap<K extends string, V>` (extends `Map<K, any>`) Case-insensitive map,
   keys are case-insensitive.
+
+### [path](https://jsr.io/@ayonli/jsext/doc/path/~)
+
+```js
+import { basename, dirname, resolve /* ... */ } from "@ayonli/jsext/path";
+```
+
+**Variables**
+
+- `sep: "/" | "\\"`
+
+**Functions**
+
+- `cwd(): string`
+- `isWindowsPath(path: string): boolean`
+- `isPosixPath(path: string): boolean`
+- `isUrl(str: string): boolean`
+- `isFileUrl(str: string): boolean`
+- `isAbsolute(path: string): boolean`
+- `endsWith(path: string, sub: string): boolean`
+- `join(...segments: string[]): string`
+- `normalize(path: string): string`
+- `sanitize(path: string): string`
+- `resolve(...segments: string[]): string`
+- `dirname(path: string): string`
+- `basename(path: string, suffix?: string): string`
+- `extname(path: string): string`
 
 ## Augmentations
 
@@ -1548,8 +1632,8 @@ This package supports augmenting functions to the corresponding built-in
 types/namespaces, but they should only be used for application development,
 don't use them when developing libraries.
 
-*NOTE: this feature is only available by the NPM package or in the Browser,*
-*They don't work by the JSR package.*
+_NOTE: this feature is only available by the NPM package or in the Browser,_
+_They don't work by the JSR package._
 
 ```js
 // import all
@@ -1571,149 +1655,148 @@ import "@ayonli/jsext/collections/augment";
 ### Augment String
 
 - `String`
-    - `compare(str1: string, str2: string): -1 | 0 | 1`
-    - `random(length: number, chars?: string): string`
-    - `prototype`
-        - `count(sub: string): number`
-        - `capitalize(all?: boolean): string`
-        - `hyphenate(): string`
-        - `bytes(): Uint8Array`
-        - `chars(): string[]`
-        - `words(): string[]`
-        - `lines(): string[]`
-        - `chunk(length: number): string[]`
-        - `truncate(length: number): string`
-        - `trim(chars?: string): string`
-        - `trimEnd(chars?: string): string`
-        - `trimStart(chars?: string): string`
-        - `stripEnd(suffix: string): string`
-        - `stripStart(prefix: string): string`
-        - `byteLength(): number`
-        - `isAscii(printableOnly?: boolean): boolean`
+  - `compare(str1: string, str2: string): -1 | 0 | 1`
+  - `random(length: number, chars?: string): string`
+  - `prototype`
+    - `count(sub: string): number`
+    - `capitalize(all?: boolean): string`
+    - `hyphenate(): string`
+    - `bytes(): Uint8Array`
+    - `chars(): string[]`
+    - `words(): string[]`
+    - `lines(): string[]`
+    - `chunk(length: number): string[]`
+    - `truncate(length: number): string`
+    - `trim(chars?: string): string`
+    - `trimEnd(chars?: string): string`
+    - `trimStart(chars?: string): string`
+    - `stripEnd(suffix: string): string`
+    - `stripStart(prefix: string): string`
+    - `byteLength(): number`
+    - `isAscii(printableOnly?: boolean): boolean`
 
 ### Augment Number
 
 - `Number`
-    - `isFloat(value: unknown): boolean`
-    - `isNumeric(value: unknown): boolean`
-    - `isBetween(value: number, [min, max]: [number, number]): boolean`
-    - `random(min: number, max: number): number`
-    - `range(min: number, max: number, step?: number): Generator<number, void, unknown>`
-    - `serial(loop?: boolean): Generator<number, void, unknown>`
+  - `isFloat(value: unknown): boolean`
+  - `isNumeric(value: unknown): boolean`
+  - `isBetween(value: number, [min, max]: [number, number]): boolean`
+  - `random(min: number, max: number): number`
+  - `range(min: number, max: number, step?: number): Generator<number, void, unknown>`
+  - `serial(loop?: boolean): Generator<number, void, unknown>`
 
 ### Augment Array
 
 - `Array<T>`
-    - `prototype`
-        - `first(): T | undefined`
-        - `last(): T | undefined`
-        - `random(remove?: boolean): T | undefined`
-        - `count(item: T): number`
-        - `equals(another: T[]): boolean`
-        - `split(delimiter: T): T[][]`
-        - `chunk(length: number): T[][]`
-        - `uniq(): T[]`
-        - `uniqBy<K extends string | number | symbol>(fn: (item: T, i: number) => K): T[]`
-        - `shuffle(): T[]`
-        - `toShuffled(): T[]`
-        - `toReversed(): T[]`
-        - `toSorted(fn?: ((a: T, b: T) => number) | undefined): T[]`
-        - `orderBy(key: keyof T, order?: "asc" | "desc"): T[]`
-        - `orderBy(fn: (item: T, i: number) => string | number | bigint, order?: "asc" | "desc"): T[]`
-        - `groupBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T[]>`
-        - `groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
-        - `keyBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
-        - `keyBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>`
+  - `prototype`
+    - `first(): T | undefined`
+    - `last(): T | undefined`
+    - `random(remove?: boolean): T | undefined`
+    - `count(item: T): number`
+    - `equals(another: T[]): boolean`
+    - `split(delimiter: T): T[][]`
+    - `chunk(length: number): T[][]`
+    - `uniq(): T[]`
+    - `uniqBy<K extends string | number | symbol>(fn: (item: T, i: number) => K): T[]`
+    - `shuffle(): T[]`
+    - `toShuffled(): T[]`
+    - `toReversed(): T[]`
+    - `toSorted(fn?: ((a: T, b: T) => number) | undefined): T[]`
+    - `orderBy(key: keyof T, order?: "asc" | "desc"): T[]`
+    - `orderBy(fn: (item: T, i: number) => string | number | bigint, order?: "asc" | "desc"): T[]`
+    - `groupBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T[]>`
+    - `groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
+    - `keyBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
+    - `keyBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>`
 
 ### Augment Uint8Array
 
 - `Uint8Array`
-    - `copy(src: Uint8Array, dest: Uint8Array): number`
-    - `concat<T extends Uint8Array>(...arrays: T[]): T`
-    - `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
-    - `prototype`
-        - `equals(another: Uint8Array): boolean`
-        - `split(delimiter: number): this[]`
-        - `chunk(length: number): this[]`
+  - `copy(src: Uint8Array, dest: Uint8Array): number`
+  - `concat<T extends Uint8Array>(...arrays: T[]): T`
+  - `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
+  - `prototype`
+    - `equals(another: Uint8Array): boolean`
+    - `split(delimiter: number): this[]`
+    - `chunk(length: number): this[]`
 
 ### Augment Object
 
 - `Object`
-    - `hasOwn(obj: any, key: string | number | symbol): boolean`
-    - `hasOwnMethod(obj: any, method: string | symbol): boolean`
-    - `patch<T extends {}, U>(target: T, source: U): T & U`
-    - `patch<T extends {}, U, V>(target: T, source1: U, source2: V): T & U & V`
-    - `patch<T extends {}, U, V, W>(target: T, source1: U, source2: V, source3: W): T & U & V & W`
-    - `patch(target: object, ...sources: any[]): any`
-    - `pick<T extends object, U extends keyof T>(obj: T, keys: U[]): Pick<T, U>`
-    - `pick<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
-    - `omit<T extends object, U extends keyof T>(obj: T, keys: U[]): Omit<T, U>`
-    - `omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
-    - `as(value: unknown, type: StringConstructor): string | null`
-    - `as(value: unknown, type: NumberConstructor): number | null`
-    - `as(value: unknown, type: BigIntConstructor): bigint | null`
-    - `as(value: unknown, type: BooleanConstructor): boolean | null`
-    - `as(value: unknown, type: SymbolConstructor): symbol | null`
-    - `as<T>(value: unknown, type: Constructor<T>): T | null`
-    - `typeOf<T>(value: T): TypeNames | Constructor<T>`
-    - `isValid(value: unknown): boolean`
-    - `isPlainObject(value: unknown): value is { [x: string | symbol]: any; }`
-    - `sanitize<T extends object>(obj: T, deep?: boolean, options?: { removeNulls?: boolean; removeEmptyStrings?: boolean; removeEmptyObjects?: boolean; removeArrayItems?: boolean; }): T`
-    - `sortKeys<T extends object>(obj: T, deep?: boolean): T`
-    - `flatKeys<T extends object>(obj: T, depth = 1, options?: { flatArrayIndices?: boolean; }): OmitChildrenNodes<T> & Record<string | number | symbol, any>`
+  - `hasOwn(obj: any, key: string | number | symbol): boolean`
+  - `hasOwnMethod(obj: any, method: string | symbol): boolean`
+  - `patch<T extends {}, U>(target: T, source: U): T & U`
+  - `patch<T extends {}, U, V>(target: T, source1: U, source2: V): T & U & V`
+  - `patch<T extends {}, U, V, W>(target: T, source1: U, source2: V, source3: W): T & U & V & W`
+  - `patch(target: object, ...sources: any[]): any`
+  - `pick<T extends object, U extends keyof T>(obj: T, keys: U[]): Pick<T, U>`
+  - `pick<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
+  - `omit<T extends object, U extends keyof T>(obj: T, keys: U[]): Omit<T, U>`
+  - `omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
+  - `as(value: unknown, type: StringConstructor): string | null`
+  - `as(value: unknown, type: NumberConstructor): number | null`
+  - `as(value: unknown, type: BigIntConstructor): bigint | null`
+  - `as(value: unknown, type: BooleanConstructor): boolean | null`
+  - `as(value: unknown, type: SymbolConstructor): symbol | null`
+  - `as<T>(value: unknown, type: Constructor<T>): T | null`
+  - `typeOf<T>(value: T): TypeNames | Constructor<T>`
+  - `isValid(value: unknown): boolean`
+  - `isPlainObject(value: unknown): value is { [x: string | symbol]: any; }`
+  - `sanitize<T extends object>(obj: T, deep?: boolean, options?: { removeNulls?: boolean; removeEmptyStrings?: boolean; removeEmptyObjects?: boolean; removeArrayItems?: boolean; }): T`
+  - `sortKeys<T extends object>(obj: T, deep?: boolean): T`
+  - `flatKeys<T extends object>(obj: T, depth = 1, options?: { flatArrayIndices?: boolean; }): OmitChildrenNodes<T> & Record<string | number | symbol, any>`
 
 ### Augment JSON
 
 - `JSON`
-    - `parseAs(text: string, type: StringConstructor): string | null`
-    - `parseAs(text: string, type: NumberConstructor): number | null`
-    - `parseAs(text: string, type: BigIntConstructor): bigint | null`
-    - `parseAs(text: string, type: BooleanConstructor): boolean | null`
-    - `parseAs<T>(text: string, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
-    - `as(data: unknown, type: StringConstructor): string | null`
-    - `as(data: unknown, type: NumberConstructor): number | null`
-    - `as(data: unknown, type: BigIntConstructor): bigint | null`
-    - `as(data: unknown, type: BooleanConstructor): boolean | null`
-    - `as<T>(data: unknown, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
-    - `type(ctor: Constructor<any>): PropertyDecorator`
+  - `parseAs(text: string, type: StringConstructor): string | null`
+  - `parseAs(text: string, type: NumberConstructor): number | null`
+  - `parseAs(text: string, type: BigIntConstructor): bigint | null`
+  - `parseAs(text: string, type: BooleanConstructor): boolean | null`
+  - `parseAs<T>(text: string, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
+  - `as(data: unknown, type: StringConstructor): string | null`
+  - `as(data: unknown, type: NumberConstructor): number | null`
+  - `as(data: unknown, type: BigIntConstructor): bigint | null`
+  - `as(data: unknown, type: BooleanConstructor): boolean | null`
+  - `as<T>(data: unknown, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
+  - `type(ctor: Constructor<any>): PropertyDecorator`
 
 ### Augment Math
 
 - `Math`
-    - `sum(...values: number[]): number`
-    - `avg(...values: number[]): number`
-    - `product(...values: number[]): number`
+  - `sum(...values: number[]): number`
+  - `avg(...values: number[]): number`
+  - `product(...values: number[]): number`
 
 ### Augment Promise
 
 - `Promise`
-    - `timeout<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
-    - `after<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
-    - `sleep(ms: number): Promise<void>`
-    - `until(test: () => boolean | Promise<boolean>): Promise<void>`
+  - `timeout<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
+  - `after<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
+  - `sleep(ms: number): Promise<void>`
+  - `until(test: () => boolean | Promise<boolean>): Promise<void>`
 
 ### Augment Error
 
 - `Error`
-    - `toObject<T extends Error>(err: T): { [x: string | symbol]: any; }`
-    - `fromObject<T extends Error>(obj: { [x: string | symbol]: any; }, ctor?: Constructor<T>): T`
-    - `toErrorEvent(err: Error, type?: string): ErrorEvent`
-    - `fromErrorEvent<T extends Error>(event: ErrorEvent): T | null`
-    - `prototype`
-        - `toJSON(): { [x: string | symbol]: any; }`
+  - `toObject<T extends Error>(err: T): { [x: string | symbol]: any; }`
+  - `fromObject<T extends Error>(obj: { [x: string | symbol]: any; }, ctor?: Constructor<T>): T`
+  - `toErrorEvent(err: Error, type?: string): ErrorEvent`
+  - `fromErrorEvent<T extends Error>(event: ErrorEvent): T | null`
+  - `prototype`
+    - `toJSON(): { [x: string | symbol]: any; }`
 
 - `globalThis`
-    - `Exception` (extends `Error`)
-        - `cause?: unknown`
-        - `code: number`
+  - `Exception` (extends `Error`)
+    - `cause?: unknown`
+    - `code: number`
 
 ### Augment Collections
 
 - `globalThis`
-    - `BiMap<K, V>` (extends `Map<K, V>`)
-        map to each other.
-        - `prototype` (additional)
-            - `getKey(value: V): K | undefined`
-            - `hasValue(value: V): boolean`
-            - `deleteValue(value: V): boolean`
-    - `CiMap<K extends string, V>` (extends `Map<K, any>`)
+  - `BiMap<K, V>` (extends `Map<K, V>`) map to each other.
+    - `prototype` (additional)
+      - `getKey(value: V): K | undefined`
+      - `hasValue(value: V): boolean`
+      - `deleteValue(value: V): boolean`
+  - `CiMap<K extends string, V>` (extends `Map<K, any>`)
