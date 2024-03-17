@@ -6,19 +6,19 @@
 
 import { stripEnd, trim } from "../string/index.ts";
 import {
+    endsWith,
     isAbsolute,
     isFileProtocol,
     isFileUrl,
     isNotQuery,
     isPosixPath,
-    isSubPath,
     isUrl,
     isVolume,
     isWindowsPath,
     split,
 } from "./util.ts";
 
-export { isWindowsPath, isPosixPath, isUrl, isFileUrl, isAbsolute, isSubPath };
+export { isWindowsPath, isPosixPath, isUrl, isFileUrl, isAbsolute, endsWith };
 
 declare const Deno: any;
 

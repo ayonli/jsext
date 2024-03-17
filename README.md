@@ -7,17 +7,20 @@ Additional functions for JavaScript to build strong applications.
 ```js
 // Node.js, Bun or Deno (jsr)
 import jsext from "@ayonli/jsext";
-import { _try, func /* ... */
-} from "@ayonli/jsext";
+import { _try, func /* ... */ } from "@ayonli/jsext";
 
 // Deno (legacy)
 import jsext from "https://lib.deno.dev/x/ayonli_jsext@latest/index.ts";
-import { _try, func /* ... */
+import {
+  _try,
+  func, /* ... */
 } from "https://lib.deno.dev/x/ayonli_jsext@latest/index.ts";
 
 // Browser
 import jsext from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/index.js";
-import { _try, func /* ... */
+import {
+  _try,
+  func, /* ... */
 } from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/index.js";
 ```
 
@@ -1403,8 +1406,7 @@ they have Deno (legacy) and browser equivalents, like this:
 ### [string](https://jsr.io/@ayonli/jsext/doc/string/~)
 
 ```js
-import { compare, random /* ... */
-} from "@ayonli/jsext/string";
+import { compare, random /* ... */ } from "@ayonli/jsext/string";
 ```
 
 **Functions**
@@ -1431,8 +1433,7 @@ import { compare, random /* ... */
 ### [number](https://jsr.io/@ayonli/jsext/doc/number/~)
 
 ```js
-import { isFloat, isNumeric /* ... */
-} from "@ayonli/jsext/number";
+import { isFloat, isNumeric /* ... */ } from "@ayonli/jsext/number";
 // or
 import "@ayonli/jsext/number/augment";
 ```
@@ -1449,8 +1450,7 @@ import "@ayonli/jsext/number/augment";
 ### [array](https://jsr.io/@ayonli/jsext/doc/array/~)
 
 ```js
-import { count, equals /* ... */
-} from "@ayonli/jsext/array";
+import { count, equals /* ... */ } from "@ayonli/jsext/array";
 ```
 
 **Functions**
@@ -1475,8 +1475,7 @@ import { count, equals /* ... */
 ### [uint8array](https://jsr.io/@ayonli/jsext/doc/uint8array/~)
 
 ```js
-import { compare, equals /* ... */
-} from "@ayonli/jsext/uint8array";
+import { compare, equals /* ... */ } from "@ayonli/jsext/uint8array";
 ```
 
 **Functions**
@@ -1491,8 +1490,7 @@ import { compare, equals /* ... */
 ### [object](https://jsr.io/@ayonli/jsext/doc/object/~)
 
 ```js
-import { hasOwn, hasOwnMethod /* ... */
-} from "@ayonli/jsext/object";
+import { hasOwn, hasOwnMethod /* ... */ } from "@ayonli/jsext/object";
 ```
 
 **Functions**
@@ -1523,8 +1521,7 @@ import { hasOwn, hasOwnMethod /* ... */
 ### [json](https://jsr.io/@ayonli/jsext/doc/json/~)
 
 ```js
-import { parseAs /* ... */
-} from "@ayonli/jsext/json";
+import { parseAs /* ... */ } from "@ayonli/jsext/json";
 ```
 
 **Functions**
@@ -1544,8 +1541,7 @@ import { parseAs /* ... */
 ### [math](https://jsr.io/@ayonli/jsext/doc/math/~)
 
 ```js
-import { avg, sum /* ... */
-} from "@ayonli/jsext/math";
+import { avg, sum /* ... */ } from "@ayonli/jsext/math";
 ```
 
 **Functions**
@@ -1557,8 +1553,7 @@ import { avg, sum /* ... */
 ### [promise](https://jsr.io/@ayonli/jsext/doc/promise/~)
 
 ```js
-import { after, timeout /* ... */
-} from "@ayonli/jsext/promise";
+import { after, timeout /* ... */ } from "@ayonli/jsext/promise";
 ```
 
 **Functions**
@@ -1571,8 +1566,7 @@ import { after, timeout /* ... */
 ### [error](https://jsr.io/@ayonli/jsext/doc/error/~)
 
 ```js
-import { Exception, toObject /* ... */
-} from "@ayonli/jsext/error";
+import { Exception, toObject /* ... */ } from "@ayonli/jsext/error";
 ```
 
 **Classes**
@@ -1608,8 +1602,7 @@ import { BiMap, CiMap } from "@ayonli/jsext/collections";
 ### [path](https://jsr.io/@ayonli/jsext/doc/path/~)
 
 ```js
-import { basename, dirname, resolve /* ... */
-} from "@ayonli/jsext/path";
+import { basename, dirname, resolve /* ... */ } from "@ayonli/jsext/path";
 ```
 
 **Variables**
@@ -1624,7 +1617,7 @@ import { basename, dirname, resolve /* ... */
 - `isUrl(str: string): boolean`
 - `isFileUrl(str: string): boolean`
 - `isAbsolute(path: string): boolean`
-- `isSubPath(sub: string, path: string): boolean`
+- `endsWith(path: string, sub: string): boolean`
 - `join(...segments: string[]): string`
 - `normalize(path: string): string`
 - `sanitize(path: string): string`

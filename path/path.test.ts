@@ -5,11 +5,11 @@ import {
     basename,
     cwd,
     dirname,
+    endsWith,
     extname,
     isAbsolute,
     isFileUrl,
     isPosixPath,
-    isSubPath,
     isUrl,
     isWindowsPath,
     join,
@@ -175,88 +175,88 @@ describe("path", () => {
         });
     });
 
-    describe("isSubPath", () => {
+    describe("endsWith", () => {
         it("windows path", () => {
-            ok(isSubPath("bar", "c:/foo/bar"));
-            ok(isSubPath("c:/foo/bar", "c:/foo/bar"));
-            ok(isSubPath("c:/foo/bar", "c:/foo/bar/"));
-            ok(isSubPath("c:/foo/bar/", "c:/foo/bar"));
-            ok(isSubPath("foo/bar", "c:/foo/bar"));
-            ok(isSubPath("foo/bar", "c:/foo/bar/"));
-            ok(isSubPath("foo/bar", "c:/foo/bar?foo=bar"));
-            ok(isSubPath("foo/bar", "c:/foo/bar#baz"));
-            ok(isSubPath("c:/foo/bar?foo=bar", "c:/foo/bar"));
-            ok(isSubPath("c:/foo/bar#baz", "c:/foo/bar"));
-            ok(!isSubPath("c:/bar", "c:/foo/bar"));
-            ok(!isSubPath("/bar", "c:/foo/bar"));
-            ok(!isSubPath("file:///bar", "c:/foo/bar"));
+            ok(endsWith("c:/foo/bar", "bar"));
+            ok(endsWith("c:/foo/bar", "c:/foo/bar"));
+            ok(endsWith("c:/foo/bar/", "c:/foo/bar"));
+            ok(endsWith("c:/foo/bar", "c:/foo/bar/"));
+            ok(endsWith("c:/foo/bar", "foo/bar"));
+            ok(endsWith("c:/foo/bar/", "foo/bar"));
+            ok(endsWith("c:/foo/bar?foo=bar", "foo/bar"));
+            ok(endsWith("c:/foo/bar#baz", "foo/bar"));
+            ok(endsWith("c:/foo/bar", "c:/foo/bar?foo=bar"));
+            ok(endsWith("c:/foo/bar", "c:/foo/bar#baz"));
+            ok(!endsWith("c:/foo/bar", "c:/bar"));
+            ok(!endsWith("c:/foo/bar", "/bar"));
+            ok(!endsWith("c:/foo/bar", "file:///bar"));
         });
 
         it("posix path", () => {
-            ok(isSubPath("bar", "/foo/bar"));
-            ok(isSubPath("foo/bar", "/foo/bar"));
-            ok(isSubPath("foo/bar", "/foo/bar/"));
-            ok(isSubPath("/foo/bar/", "/foo/bar"));
-            ok(isSubPath("foo/bar", "/foo/bar?foo=bar"));
-            ok(isSubPath("foo/bar", "/foo/bar#baz"));
-            ok(isSubPath("/foo/bar?foo=bar", "/foo/bar"));
-            ok(isSubPath("/foo/bar#baz", "/foo/bar"));
-            ok(!isSubPath("/bar", "/foo/bar"));
-            ok(!isSubPath("c:/bar", "/foo/bar"));
-            ok(!isSubPath("file:///bar", "/foo/bar"));
+            ok(endsWith("/foo/bar", "bar"));
+            ok(endsWith("/foo/bar", "foo/bar"));
+            ok(endsWith("/foo/bar/", "foo/bar"));
+            ok(endsWith("/foo/bar", "/foo/bar/"));
+            ok(endsWith("/foo/bar?foo=bar", "foo/bar"));
+            ok(endsWith("/foo/bar#baz", "foo/bar"));
+            ok(endsWith("/foo/bar", "/foo/bar?foo=bar"));
+            ok(endsWith("/foo/bar", "/foo/bar#baz"));
+            ok(!endsWith("/foo/bar", "/bar"));
+            ok(!endsWith("/foo/bar", "c:/bar"));
+            ok(!endsWith("/foo/bar", "file:///bar"));
         });
 
         it("url", () => {
-            ok(isSubPath("bar", "http://example.com/foo/bar"));
-            ok(isSubPath("foo/bar", "http://example.com/foo/bar"));
-            ok(isSubPath("foo/bar", "http://example.com/foo/bar?foo=bar#baz"));
-            ok(isSubPath("foo/bar?foo=bar", "http://example.com/foo/bar"));
-            ok(isSubPath("foo/bar?foo=bar#baz", "http://example.com/foo/bar"));
-            ok(isSubPath("foo/bar#baz", "http://example.com/foo/bar"));
-            ok(isSubPath("http://example.com/foo/bar", "http://example.com/foo/bar"));
-            ok(isSubPath("http://example.com/foo/bar/", "http://example.com/foo/bar"));
-            ok(isSubPath("http://example.com/foo/bar?foo=bar", "http://example.com/foo/bar"));
-            ok(isSubPath("http://example.com/foo/bar#baz", "http://example.com/foo/bar"));
-            ok(isSubPath("http://example.com/foo/bar?foo=bar#baz", "http://example.com/foo/bar"));
-            ok(!isSubPath("/bar", "http://example.com/foo/bar"));
-            ok(!isSubPath("c:/bar", "http://example.com/foo/bar"));
-            ok(!isSubPath("file:///bar", "http://example.com/foo/bar"));
+            ok(endsWith("http://example.com/foo/bar", "bar"));
+            ok(endsWith("http://example.com/foo/bar", "foo/bar"));
+            ok(endsWith("http://example.com/foo/bar?foo=bar#baz", "foo/bar"));
+            ok(endsWith("http://example.com/foo/bar", "foo/bar?foo=bar"));
+            ok(endsWith("http://example.com/foo/bar", "foo/bar?foo=bar#baz"));
+            ok(endsWith("http://example.com/foo/bar", "foo/bar#baz"));
+            ok(endsWith("http://example.com/foo/bar", "http://example.com/foo/bar"));
+            ok(endsWith("http://example.com/foo/bar", "http://example.com/foo/bar/"));
+            ok(endsWith("http://example.com/foo/bar", "http://example.com/foo/bar?foo=bar"));
+            ok(endsWith("http://example.com/foo/bar", "http://example.com/foo/bar#baz"));
+            ok(endsWith("http://example.com/foo/bar", "http://example.com/foo/bar?foo=bar#baz"));
+            ok(!endsWith("http://example.com/foo/bar", "/bar"));
+            ok(!endsWith("http://example.com/foo/bar", "c:/bar"));
+            ok(!endsWith("http://example.com/foo/bar", "file:///bar"));
         });
 
         it("file url", () => {
-            ok(isSubPath("bar", "file:///foo/bar"));
-            ok(isSubPath("foo/bar", "file:///foo/bar"));
-            ok(isSubPath("foo/bar", "file:///foo/bar/"));
-            ok(isSubPath("foo/bar", "file:///foo/bar?foo=bar"));
-            ok(isSubPath("foo/bar", "file:///foo/bar#baz"));
-            ok(isSubPath("bar?foo=bar", "file:///foo/bar"));
-            ok(isSubPath("bar#baz", "file:///foo/bar"));
-            ok(isSubPath("bar?foo=bar#baz", "file:///foo/bar"));
-            ok(isSubPath("file:///foo/bar", "file:///foo/bar"));
-            ok(isSubPath("file:/foo/bar", "file:///foo/bar"));
-            ok(isSubPath("file:///foo/bar", "file:/foo/bar"));
-            ok(isSubPath("file:///foo/bar?foo=bar", "file:///foo/bar"));
-            ok(isSubPath("file:///foo/bar#baz", "file:///foo/bar"));
-            ok(isSubPath("file:///foo/bar?foo=bar#baz", "file:///foo/bar"));
-            ok(!isSubPath("/bar", "file:///foo/bar"));
-            ok(!isSubPath("c:/bar", "file:///foo/bar"));
-            ok(!isSubPath("file:///bar", "file:///foo/bar"));
+            ok(endsWith("file:///foo/bar", "bar"));
+            ok(endsWith("file:///foo/bar", "foo/bar"));
+            ok(endsWith("file:///foo/bar/", "foo/bar"));
+            ok(endsWith("file:///foo/bar?foo=bar", "foo/bar"));
+            ok(endsWith("file:///foo/bar#baz", "foo/bar"));
+            ok(endsWith("file:///foo/bar", "bar?foo=bar"));
+            ok(endsWith("file:///foo/bar", "bar#baz"));
+            ok(endsWith("file:///foo/bar", "bar?foo=bar#baz"));
+            ok(endsWith("file:///foo/bar", "file:///foo/bar"));
+            ok(endsWith("file:///foo/bar", "file:/foo/bar"));
+            ok(endsWith("file:/foo/bar", "file:///foo/bar"));
+            ok(endsWith("file:///foo/bar", "file:///foo/bar?foo=bar"));
+            ok(endsWith("file:///foo/bar", "file:///foo/bar#baz"));
+            ok(endsWith("file:///foo/bar", "file:///foo/bar?foo=bar#baz"));
+            ok(!endsWith("file:///foo/bar", "/bar"));
+            ok(!endsWith("file:///foo/bar", "c:/bar"));
+            ok(!endsWith("file:///foo/bar", "file:///bar"));
         });
 
         it("relative path", () => {
-            ok(isSubPath("bar", "foo/bar"));
-            ok(isSubPath("bar?foo=bar", "foo/bar"));
-            ok(isSubPath("bar#baz", "foo/bar"));
-            ok(isSubPath("bar?foo=bar#baz", "foo/bar"));
-            ok(isSubPath("foo/bar", "foo/bar"));
-            ok(isSubPath("foo/bar", "foo/bar/"));
-            ok(isSubPath("foo/bar", "foo/bar?foo=bar"));
-            ok(isSubPath("foo/bar", "foo/bar#baz"));
-            ok(isSubPath("foo/bar", "foo/bar?foo=bar#baz"));
-            ok(isSubPath("foo/bar#baz", "foo/bar?foo=bar"));
-            ok(!isSubPath("/bar", "foo/bar"));
-            ok(!isSubPath("c:/bar", "foo/bar"));
-            ok(!isSubPath("file:///bar", "foo/bar"));
+            ok(endsWith("foo/bar", "bar"));
+            ok(endsWith("foo/bar", "bar?foo=bar"));
+            ok(endsWith("foo/bar", "bar#baz"));
+            ok(endsWith("foo/bar", "bar?foo=bar#baz"));
+            ok(endsWith("foo/bar", "foo/bar"));
+            ok(endsWith("foo/bar/", "foo/bar"));
+            ok(endsWith("foo/bar?foo=bar", "foo/bar"));
+            ok(endsWith("foo/bar#baz", "foo/bar"));
+            ok(endsWith("foo/bar?foo=bar#baz", "foo/bar"));
+            ok(endsWith("foo/bar?foo=bar", "foo/bar#baz"));
+            ok(!endsWith("foo/bar", "/bar"));
+            ok(!endsWith("foo/bar", "c:/bar"));
+            ok(!endsWith("foo/bar", "file:///bar"));
         });
     });
 

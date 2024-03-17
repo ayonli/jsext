@@ -54,24 +54,21 @@ export function isAbsolute(path: string): boolean {
 }
 
 /**
- * Checks if the given `sub` path is a sub-path of the `path`.
+ * Checks if the `path` ends with the given `sub` path. This function ignores
+ * the query string and the hash string, and is separator insensitive.
  * @experimental
  */
-export function isSubPath(sub: string, path: string): boolean {
-    const subs = split(sub).filter(isNotQuery);
-    const paths = split(path).filter(isNotQuery);
+export function endsWith(path: string, sub: string): boolean {
+    const paths = split(path).filter(isNotQuery).reverse();
+    const subs = split(sub).filter(isNotQuery).reverse();
 
-    if (subs.length > paths.length) {
+    if (paths.length < subs.length) {
         return false;
     }
 
-    for (const _sub of subs.reverse()) {
-        const _path = last(paths)!;
-
-        if (_path !== _sub) {
+    for (let i = 0; i < subs.length; i++) {
+        if (subs[i] !== paths[i]) {
             return false;
-        } else {
-            paths.pop();
         }
     }
 
