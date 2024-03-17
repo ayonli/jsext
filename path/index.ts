@@ -110,6 +110,30 @@ export function join(...segments: string[]): string {
     return path || ".";
 }
 
+function _normalize(...segments: string[]): string {
+    const path = join(...segments);
+    return isFileProtocol(path) ? path + "/" : path;
+}
+
+/**
+ * Normalizes the given `path`, resolving `..` and `.` segments. Note that
+ * resolving these segments does not necessarily mean that all will be
+ * eliminated. A `..` at the top-level will be preserved, and an empty path is
+ * canonically `.`.
+ * @experimental
+ */
+export function normalize(path: string): string {
+    return _normalize(path);
+}
+
+/**
+ * Similar to {@link normalize}, but also remove the search string and hash string if
+ * present.
+ */
+export function sanitize(path: string): string {
+    return _normalize(...split(path).filter(isNotQuery));
+}
+
 /**
  * Resolves path `segments` into a well-formed path.
  * @experimental
@@ -136,22 +160,6 @@ export function resolve(...segments: string[]): string {
     }
 
     return _normalize(..._paths);
-}
-
-function _normalize(...segments: string[]): string {
-    const path = join(...segments);
-    return isFileProtocol(path) ? path + "/" : path;
-}
-
-/**
- * Normalizes the given `path`, resolving `..` and `.` segments. Note that
- * resolving these segments does not necessarily mean that all will be
- * eliminated. A `..` at the top-level will be preserved, and an empty path is
- * canonically `.`.
- * @experimental
- */
-export function normalize(path: string): string {
-    return _normalize(path);
 }
 
 /**

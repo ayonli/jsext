@@ -15,6 +15,7 @@ import {
     join,
     normalize,
     resolve,
+    sanitize,
 } from "./index.ts";
 
 declare const Deno: any;
@@ -454,86 +455,6 @@ describe("path", () => {
         });
     });
 
-    describe("resolve", () => {
-        it("windows path", () => {
-            strictEqual(resolve("c:/foo/../bar"), "c:\\bar");
-            strictEqual(resolve("c:/foo", "bar"), "c:\\foo\\bar");
-            strictEqual(resolve("c:/foo", "../bar"), "c:\\bar");
-            strictEqual(resolve("c:/foo", "../bar", "baz"), "c:\\bar\\baz");
-            strictEqual(resolve("c:/foo", "c:/foo2", "../bar"), "c:\\bar");
-            strictEqual(resolve("c:/foo", "/foo", "../bar"), "/bar");
-            strictEqual(resolve("c:/", "foo", "bar"), "c:\\foo\\bar");
-            strictEqual(resolve("c:", "foo", "bar"), "c:\\foo\\bar");
-            strictEqual(resolve("c:/"), "c:\\");
-            strictEqual(resolve("c:"), "c:\\");
-            strictEqual(resolve("c:/foo", "http://localhost/foo", "../bar"), "http://localhost/bar");
-            strictEqual(resolve("c:/foo", "bar", "?foo=bar", "#baz"), "c:\\foo\\bar?foo=bar#baz");
-        });
-
-        it("posix path", () => {
-            strictEqual(resolve("/foo/../bar"), "/bar");
-            strictEqual(resolve("/foo", "bar"), "/foo/bar");
-            strictEqual(resolve("/foo", "../bar"), "/bar");
-            strictEqual(resolve("/foo", "../bar", "baz"), "/bar/baz");
-            strictEqual(resolve("/foo", "/foo2", "../bar"), "/bar");
-            strictEqual(resolve("/foo", "c:/foo", "../bar"), "c:\\bar");
-            strictEqual(resolve("/foo", "http://localhost/foo", "../bar"), "http://localhost/bar");
-            strictEqual(resolve("/foo", "bar", "?foo=bar", "#baz"), "/foo/bar?foo=bar#baz");
-        });
-
-        it("url", () => {
-            strictEqual(
-                resolve("http://example.com/foo/../bar?foo=bar#baz"),
-                "http://example.com/bar?foo=bar#baz"
-            );
-            strictEqual(resolve("http://example.com", "foo/../bar"), "http://example.com/bar");
-            strictEqual(resolve("http://example.com/foo", "./bar"), "http://example.com/foo/bar");
-            strictEqual(resolve("http://example.com/foo", "../bar"), "http://example.com/bar");
-            strictEqual(
-                resolve("http://example.com/foo", "../bar", "?foo=bar", "#baz"),
-                "http://example.com/bar?foo=bar#baz"
-            );
-            strictEqual(
-                resolve("http://example.com/foo", "http://example2.com/foo", "../bar"),
-                "http://example2.com/bar"
-            );
-            strictEqual(resolve("http://example.com", "/foo", "../bar"), "/bar");
-            strictEqual(resolve("http://example.com", "c:/foo", "../bar"), "c:\\bar");
-        });
-
-        it("file url", () => {
-            strictEqual(resolve("file:///foo/../bar"), "file:///bar");
-            strictEqual(resolve("file:///foo", "bar"), "file:///foo/bar");
-            strictEqual(resolve("file:///foo", "../bar"), "file:///bar");
-            strictEqual(resolve("file:///foo", "../bar", "baz"), "file:///bar/baz");
-            strictEqual(resolve("file:///foo", "file:///foo2", "../bar"), "file:///bar");
-            strictEqual(resolve("file:///foo", "/foo", "../bar"), "/bar");
-            strictEqual(resolve("file:/foo/bar", "../baz"), "file:///foo/baz");
-            strictEqual(
-                resolve("file:///foo", "http://localhost/foo", "../bar"),
-                "http://localhost/bar"
-            );
-            strictEqual(
-                resolve("file:///foo", "bar", "?foo=bar", "#baz"),
-                "file:///foo/bar?foo=bar#baz"
-            );
-        });
-
-        it("relative path", () => {
-            strictEqual(resolve(), path.resolve());
-            strictEqual(resolve(""), path.resolve());
-            strictEqual(resolve("", ""), path.resolve());
-            strictEqual(resolve("foo/../bar"), path.resolve("bar"));
-            strictEqual(resolve("foo", "bar"), path.resolve("foo", "bar"));
-            strictEqual(resolve("foo", "../bar"), path.resolve("foo", "../bar"));
-            strictEqual(resolve("foo", "../bar", "baz"), path.resolve("foo", "../bar", "baz"));
-            strictEqual(resolve("foo", "c:/foo", "../bar"), "c:\\bar");
-            strictEqual(resolve("foo", "/foo", "../bar"), "/bar");
-            strictEqual(resolve("foo", "http://localhost/foo", "../bar"), "http://localhost/bar");
-            strictEqual(resolve("foo", "bar", "?foo=bar", "#baz"), path.resolve("foo/bar?foo=bar#baz"));
-        });
-    });
-
     describe("normalize", () => {
         it("windows path", () => {
             strictEqual(normalize("c:/foo/../bar"), "c:\\bar");
@@ -630,6 +551,185 @@ describe("path", () => {
             strictEqual(normalize("foo/../bar?foo=bar"), "bar?foo=bar");
             strictEqual(normalize("foo/../bar#baz"), "bar#baz");
             strictEqual(normalize("foo/../bar?foo=bar#baz"), "bar?foo=bar#baz");
+        });
+    });
+
+    describe("sanitize", () => {
+        it("windows path", () => {
+            strictEqual(sanitize("c:/foo/../bar"), "c:\\bar");
+            strictEqual(sanitize("c:/foo/bar/.."), "c:\\foo");
+            strictEqual(sanitize("c:/foo/bar/../"), "c:\\foo");
+            strictEqual(sanitize("c:/foo/.."), "c:\\");
+            strictEqual(sanitize("c:/foo/../.."), "c:\\");
+            strictEqual(sanitize("c:/"), "c:\\");
+            strictEqual(sanitize("c:"), "c:\\");
+            strictEqual(sanitize("c:/foo/./bar"), "c:\\foo\\bar");
+            strictEqual(sanitize("c:/foo/././/bar"), "c:\\foo\\bar");
+            strictEqual(sanitize("c:/foo/bar/..?foo=bar"), "c:\\foo");
+            strictEqual(sanitize("c:/foo/bar/..#baz"), "c:\\foo");
+            strictEqual(sanitize("c:/foo/bar/..?foo=bar#baz"), "c:\\foo");
+        });
+
+        it("posix path", () => {
+            strictEqual(sanitize("/foo/../bar"), "/bar");
+            strictEqual(sanitize("/foo/bar/.."), "/foo");
+            strictEqual(sanitize("/foo/bar/../"), "/foo");
+            strictEqual(sanitize("/foo/.."), "/");
+            strictEqual(sanitize("/foo/../.."), "/");
+            strictEqual(sanitize("/foo/./bar"), "/foo/bar");
+            strictEqual(sanitize("/foo/././bar"), "/foo/bar");
+            strictEqual(sanitize("/foo/bar/..?foo=bar"), "/foo");
+            strictEqual(sanitize("/foo/bar/..#baz"), "/foo");
+            strictEqual(sanitize("/foo/bar/..?foo=bar#baz"), "/foo");
+        });
+
+        it("url", () => {
+            strictEqual(
+                sanitize("http://example.com/foo/../bar?foo=bar#baz"),
+                "http://example.com/bar"
+            );
+            strictEqual(
+                sanitize("http://example.com/foo/bar/..?foo=bar#baz"),
+                "http://example.com/foo"
+            );
+            strictEqual(
+                sanitize("http://example.com/foo/bar/../?foo=bar#baz"),
+                "http://example.com/foo"
+            );
+            strictEqual(
+                sanitize("http://example.com/foo/../../?foo=bar#baz"),
+                "http://example.com"
+            );
+            strictEqual(
+                sanitize("http://example.com/foo/./bar"),
+                "http://example.com/foo/bar"
+            );
+            strictEqual(
+                sanitize("http://example.com/foo/.."),
+                "http://example.com"
+            );
+            strictEqual(
+                sanitize("http://example.com/foo/../.."),
+                "http://example.com"
+            );
+        });
+
+        it("file url", () => {
+            strictEqual(sanitize("file:///foo/../bar"), "file:///bar");
+            strictEqual(sanitize("file:///foo/bar/.."), "file:///foo");
+            strictEqual(sanitize("file:///foo/bar/../"), "file:///foo");
+            strictEqual(sanitize("file:///foo/.."), "file:///");
+            strictEqual(sanitize("file:///foo/../.."), "file:///");
+            strictEqual(sanitize("file:///foo/./bar"), "file:///foo/bar");
+            strictEqual(sanitize("file:///foo/././/bar"), "file:///foo/bar");
+            strictEqual(sanitize("file:///foo/bar/..?foo=bar"), "file:///foo");
+            strictEqual(sanitize("file:///foo/bar/..#baz"), "file:///foo");
+            strictEqual(sanitize("file:///foo/bar/..?foo=bar#baz"), "file:///foo");
+            strictEqual(sanitize("file:/foo/bar/..?foo=bar#baz"), "file:///foo");
+        });
+
+        it("relative path", () => {
+            strictEqual(sanitize("foo/../bar"), "bar");
+            strictEqual(sanitize("foo\\..\\bar"), "bar");
+            strictEqual(sanitize("foo/bar/.."), "foo");
+            strictEqual(sanitize("foo\\bar\\.."), "foo");
+            strictEqual(sanitize("foo/bar/../"), "foo");
+            strictEqual(sanitize("foo\\bar\\..\\"), "foo");
+            strictEqual(sanitize("foo/.."), ".");
+            strictEqual(sanitize("foo\\.."), ".");
+            strictEqual(sanitize("foo/../.."), "..");
+            strictEqual(sanitize("foo\\..\\.."), "..");
+            strictEqual(sanitize("foo/./bar"), path.join("foo", "bar"));
+            strictEqual(sanitize("foo\\.\\bar"), path.join("foo", "bar"));
+            strictEqual(sanitize(""), ".");
+            strictEqual(sanitize("."), ".");
+            strictEqual(sanitize(".."), "..");
+            strictEqual(sanitize("../foo"), path.normalize("../foo"));
+            strictEqual(sanitize("../.."), path.normalize("../.."));
+            strictEqual(sanitize("../../foo"), path.normalize("../../foo"));
+            strictEqual(sanitize("foo/../bar?foo=bar"), "bar");
+            strictEqual(sanitize("foo/../bar#baz"), "bar");
+            strictEqual(sanitize("foo/../bar?foo=bar#baz"), "bar");
+        });
+    });
+
+    describe("resolve", () => {
+        it("windows path", () => {
+            strictEqual(resolve("c:/foo/../bar"), "c:\\bar");
+            strictEqual(resolve("c:/foo", "bar"), "c:\\foo\\bar");
+            strictEqual(resolve("c:/foo", "../bar"), "c:\\bar");
+            strictEqual(resolve("c:/foo", "../bar", "baz"), "c:\\bar\\baz");
+            strictEqual(resolve("c:/foo", "c:/foo2", "../bar"), "c:\\bar");
+            strictEqual(resolve("c:/foo", "/foo", "../bar"), "/bar");
+            strictEqual(resolve("c:/", "foo", "bar"), "c:\\foo\\bar");
+            strictEqual(resolve("c:", "foo", "bar"), "c:\\foo\\bar");
+            strictEqual(resolve("c:/"), "c:\\");
+            strictEqual(resolve("c:"), "c:\\");
+            strictEqual(resolve("c:/foo", "http://localhost/foo", "../bar"), "http://localhost/bar");
+            strictEqual(resolve("c:/foo", "bar", "?foo=bar", "#baz"), "c:\\foo\\bar?foo=bar#baz");
+        });
+
+        it("posix path", () => {
+            strictEqual(resolve("/foo/../bar"), "/bar");
+            strictEqual(resolve("/foo", "bar"), "/foo/bar");
+            strictEqual(resolve("/foo", "../bar"), "/bar");
+            strictEqual(resolve("/foo", "../bar", "baz"), "/bar/baz");
+            strictEqual(resolve("/foo", "/foo2", "../bar"), "/bar");
+            strictEqual(resolve("/foo", "c:/foo", "../bar"), "c:\\bar");
+            strictEqual(resolve("/foo", "http://localhost/foo", "../bar"), "http://localhost/bar");
+            strictEqual(resolve("/foo", "bar", "?foo=bar", "#baz"), "/foo/bar?foo=bar#baz");
+        });
+
+        it("url", () => {
+            strictEqual(
+                resolve("http://example.com/foo/../bar?foo=bar#baz"),
+                "http://example.com/bar?foo=bar#baz"
+            );
+            strictEqual(resolve("http://example.com", "foo/../bar"), "http://example.com/bar");
+            strictEqual(resolve("http://example.com/foo", "./bar"), "http://example.com/foo/bar");
+            strictEqual(resolve("http://example.com/foo", "../bar"), "http://example.com/bar");
+            strictEqual(
+                resolve("http://example.com/foo", "../bar", "?foo=bar", "#baz"),
+                "http://example.com/bar?foo=bar#baz"
+            );
+            strictEqual(
+                resolve("http://example.com/foo", "http://example2.com/foo", "../bar"),
+                "http://example2.com/bar"
+            );
+            strictEqual(resolve("http://example.com", "/foo", "../bar"), "/bar");
+            strictEqual(resolve("http://example.com", "c:/foo", "../bar"), "c:\\bar");
+        });
+
+        it("file url", () => {
+            strictEqual(resolve("file:///foo/../bar"), "file:///bar");
+            strictEqual(resolve("file:///foo", "bar"), "file:///foo/bar");
+            strictEqual(resolve("file:///foo", "../bar"), "file:///bar");
+            strictEqual(resolve("file:///foo", "../bar", "baz"), "file:///bar/baz");
+            strictEqual(resolve("file:///foo", "file:///foo2", "../bar"), "file:///bar");
+            strictEqual(resolve("file:///foo", "/foo", "../bar"), "/bar");
+            strictEqual(resolve("file:/foo/bar", "../baz"), "file:///foo/baz");
+            strictEqual(
+                resolve("file:///foo", "http://localhost/foo", "../bar"),
+                "http://localhost/bar"
+            );
+            strictEqual(
+                resolve("file:///foo", "bar", "?foo=bar", "#baz"),
+                "file:///foo/bar?foo=bar#baz"
+            );
+        });
+
+        it("relative path", () => {
+            strictEqual(resolve(), path.resolve());
+            strictEqual(resolve(""), path.resolve());
+            strictEqual(resolve("", ""), path.resolve());
+            strictEqual(resolve("foo/../bar"), path.resolve("bar"));
+            strictEqual(resolve("foo", "bar"), path.resolve("foo", "bar"));
+            strictEqual(resolve("foo", "../bar"), path.resolve("foo", "../bar"));
+            strictEqual(resolve("foo", "../bar", "baz"), path.resolve("foo", "../bar", "baz"));
+            strictEqual(resolve("foo", "c:/foo", "../bar"), "c:\\bar");
+            strictEqual(resolve("foo", "/foo", "../bar"), "/bar");
+            strictEqual(resolve("foo", "http://localhost/foo", "../bar"), "http://localhost/bar");
+            strictEqual(resolve("foo", "bar", "?foo=bar", "#baz"), path.resolve("foo/bar?foo=bar#baz"));
         });
     });
 
