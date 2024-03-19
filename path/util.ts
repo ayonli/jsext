@@ -75,11 +75,8 @@ export function endsWith(path: string, sub: string): boolean {
         subs[0] = subs[0]!.toLowerCase();
     }
 
-    paths.reverse();
-    subs.reverse();
-
-    for (let i = 0; i < subs.length; i++) {
-        if (subs[i] !== paths[i]) {
+    for (let i = subs.length - 1, j = paths.length - 1; i >= 0; i--, j--) {
+        if (subs[i] !== paths[j]) {
             return false;
         }
     }
