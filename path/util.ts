@@ -52,19 +52,18 @@ export function isAbsolute(path: string): boolean {
     return isPosixPath(path) || isWindowsPath(path) || isUrl(path);
 }
 
-/**
- * Checks if the `path` ends with the given `sub` path. This function ignores
- * the query string and the hash string, and is separator insensitive.
- * @experimental
- */
-export function endsWith(path: string, sub: string): boolean {
+function extractSegmentsForCompar(path: string, sub: string): {
+    result: boolean | undefined;
+    paths: string[];
+    subs: string[];
+} {
     const paths = split(path).filter(isNotQuery);
     const subs = split(sub).filter(isNotQuery);
 
     if (paths.length < subs.length) {
-        return false;
+        return { result: false, paths: [], subs: [] };
     } else if (!subs.length) {
-        return true;
+        return { result: true, paths: [], subs: [] };
     }
 
     if (isVolume(paths[0]!)) {
@@ -74,6 +73,79 @@ export function endsWith(path: string, sub: string): boolean {
     if (isVolume(subs[0]!)) {
         subs[0] = subs[0]!.toLowerCase();
     }
+
+    return { result: undefined, paths, subs };
+}
+
+/**
+ * Checks if the `path` contains the given `sub` path. This function ignores
+ * the query string and the hash string, and is separator insensitive.
+ * @experimental
+ */
+export function contains(path: string, sub: string): boolean {
+    const { result, paths, subs } = extractSegmentsForCompar(path, sub);
+
+    if (result !== undefined) {
+        return result;
+    }
+
+    const head = subs[0];
+    for (let i = 0; i < paths.length; i++) {
+        if (paths[i] !== head)
+            continue;
+
+        const pin = i;
+        let matched = 1;
+        let j = i;
+
+        while (matched < subs.length) {
+            j++;
+
+            if (paths[j] !== subs[j - pin]) {
+                break;
+            }
+
+            matched++;
+        }
+
+        if (matched === subs.length) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Checks if the `path` starts with the given `sub` path. This function ignores
+ * the query string and the hash string, and is separator insensitive.
+ * @experimental
+ */
+export function startsWith(path: string, sub: string): boolean {
+    const { result, paths, subs } = extractSegmentsForCompar(path, sub);
+
+    if (result !== undefined)
+        return result;
+
+    for (let i = 0; i < subs.length; i++) {
+        if (subs[i] !== paths[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Checks if the `path` ends with the given `sub` path. This function ignores
+ * the query string and the hash string, and is separator insensitive.
+ * @experimental
+ */
+export function endsWith(path: string, sub: string): boolean {
+    const { result, paths, subs } = extractSegmentsForCompar(path, sub);
+
+    if (result !== undefined)
+        return result;
 
     for (let i = subs.length - 1, j = paths.length - 1; i >= 0; i--, j--) {
         if (subs[i] !== paths[j]) {

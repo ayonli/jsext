@@ -6,6 +6,7 @@
 
 import { stripEnd, trim } from "../string/index.ts";
 import {
+    contains,
     endsWith,
     isAbsolute,
     isFileProtocol,
@@ -16,9 +17,19 @@ import {
     isVolume,
     isWindowsPath,
     split,
+    startsWith,
 } from "./util.ts";
 
-export { isWindowsPath, isPosixPath, isUrl, isFileUrl, isAbsolute, endsWith };
+export {
+    contains,
+    isWindowsPath,
+    isPosixPath,
+    isUrl,
+    isFileUrl,
+    isAbsolute,
+    endsWith,
+    startsWith,
+};
 
 declare const Deno: any;
 

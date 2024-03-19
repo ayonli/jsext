@@ -1617,6 +1617,8 @@ import { basename, dirname, resolve /* ... */ } from "@ayonli/jsext/path";
 - `isUrl(str: string): boolean`
 - `isFileUrl(str: string): boolean`
 - `isAbsolute(path: string): boolean`
+- `contains(path: string, sub: string): boolean`
+- `startsWith(path: string, sub: string): boolean`
 - `endsWith(path: string, sub: string): boolean`
 - `join(...segments: string[]): string`
 - `normalize(path: string): string`

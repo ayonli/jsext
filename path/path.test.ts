@@ -1,6 +1,6 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import * as path from "node:path";
-import { split } from "./util.ts";
+import { contains, split } from "./util.ts";
 import {
     basename,
     cwd,
@@ -16,6 +16,7 @@ import {
     normalize,
     resolve,
     sanitize,
+    startsWith,
 } from "./index.ts";
 
 declare const Deno: any;
@@ -172,6 +173,224 @@ describe("path", () => {
             ok(!isAbsolute("foo/bar?foo=bar"));
             ok(!isAbsolute("foo/bar#baz"));
             ok(!isAbsolute("foo/bar?foo=bar#baz"));
+        });
+    });
+
+    describe("contains", () => {
+        it("windows path", () => {
+            ok(contains("c:/foo/bar", ""));
+            ok(contains("c:/foo/bar", "c:"));
+            ok(contains("c:/foo/bar", "c:/"));
+            ok(contains("c:/foo/bar", "c:\\"));
+            ok(contains("c:/foo/bar", "c:/foo/bar"));
+            ok(contains("c:/foo/bar/", "c:/foo/bar"));
+            ok(contains("c:/foo/bar/", "c:/foo/bar/"));
+            ok(contains("c:/foo/bar", "c:/foo"));
+            ok(contains("c:/foo/bar/", "c:/foo/"));
+            ok(contains("c:/foo/bar?foo=bar", "c:/foo"));
+            ok(contains("c:/foo/bar#baz", "c:/foo"));
+            ok(contains("c:/foo/bar", "c:/foo?foo=bar"));
+            ok(contains("c:/foo/bar", "c:/foo#baz"));
+            ok(contains("c:/foo/bar", "c:/foo?foo=bar#baz"));
+            ok(contains("c:/foo/bar", "c:/foo#baz?foo=bar"));
+            ok(contains("c:/foo/bar", "c:/foo/bar?foo=bar"));
+            ok(contains("c:/foo/bar", "c:/foo/bar#baz"));
+            ok(contains("c:/foo/bar", "c:/foo/bar?foo=bar#baz"));
+            ok(contains("c:/foo/bar", "foo"));
+            ok(contains("c:/foo/bar", "bar"));
+            ok(!contains("c:/foo/bar", "c:/bar"));
+            ok(!contains("c:/foo/bar", "/foo/bar"));
+            ok(!contains("c:/foo/bar", "file:///c:/foo/bar"));
+        });
+
+        it("posix path", () => {
+            ok(contains("/foo/bar", ""));
+            ok(contains("/foo/bar", "/"));
+            ok(contains("/foo/bar", "/foo"));
+            ok(contains("/foo/bar", "/foo/"));
+            ok(contains("/foo/bar", "/foo/bar"));
+            ok(contains("/foo/bar/", "/foo/bar"));
+            ok(contains("/foo/bar/", "/foo/bar/"));
+            ok(contains("/foo/bar", "/foo?foo=bar"));
+            ok(contains("/foo/bar", "/foo#baz"));
+            ok(contains("/foo/bar", "/foo?foo=bar#baz"));
+            ok(contains("/foo/bar", "foo"));
+            ok(contains("/foo/bar", "bar"));
+            ok(!contains("/foo/bar", "/bar"));
+            ok(!contains("/foo/bar", "c:/foo/bar"));
+            ok(!contains("/foo/bar", "file:///foo/bar"));
+        });
+
+        it("url", () => {
+            ok(contains("http://example.com/foo/bar", ""));
+            ok(contains("http://example.com/foo/bar", "http://example.com"));
+            ok(contains("http://example.com/foo/bar", "http://example.com/"));
+            ok(contains("http://example.com/foo/bar", "http://example.com/foo"));
+            ok(contains("http://example.com/foo/bar", "http://example.com/foo/"));
+            ok(contains("http://example.com/foo/bar", "http://example.com/foo/bar"));
+            ok(contains("http://example.com/foo/bar/", "http://example.com/foo/bar"));
+            ok(contains("http://example.com/foo/bar/", "http://example.com/foo/bar/"));
+            ok(contains("http://example.com/foo/bar", "http://example.com/foo?foo=bar"));
+            ok(contains("http://example.com/foo/bar", "http://example.com/foo#baz"));
+            ok(contains("http://example.com/foo/bar", "http://example.com/foo?foo=bar#baz"));
+            ok(contains("http://example.com/foo/bar", "http://example.com/foo#baz?foo=bar"));
+            ok(contains("http://example.com/foo/bar", "foo/bar?foo=bar"));
+            ok(contains("http://example.com/foo/bar", "foo/bar#baz"));
+            ok(contains("http://example.com/foo/bar", "foo/bar?foo=bar#baz"));
+            ok(contains("http://example.com/foo/bar", "foo"));
+            ok(contains("http://example.com/foo/bar", "bar"));
+            ok(!contains("http://example.com/foo/bar", "/foo/bar"));
+            ok(!contains("http://example.com/foo/bar", "c:/foo/bar"));
+            ok(!contains("http://example.com/foo/bar", "http://example2.com/foo/bar"));
+            ok(!contains("http://example.com/foo/bar", "http://example.com/bar"));
+            ok(!contains("http://example.com/foo/bar", "example.com"));
+            ok(!contains("http://example.com/foo/bar", "file:///foo/bar"));
+        });
+
+        it("file url", () => {
+            ok(contains("file:///foo/bar", ""));
+            ok(contains("file:///foo/bar", "file://"));
+            ok(contains("file:///foo/bar", "file:///"));
+            ok(contains("file:///foo/bar", "file:///foo"));
+            ok(contains("file:///foo/bar", "file:///foo/"));
+            ok(contains("file:///foo/bar", "file://localhost/foo"));
+            ok(contains("file://localhost/foo/bar", "file:///foo"));
+            ok(contains("file:///foo/bar", "file:///foo/bar"));
+            ok(contains("file:///foo/bar/", "file:///foo/bar"));
+            ok(contains("file:///foo/bar/", "file:///foo/bar/"));
+            ok(contains("file:///foo/bar", "file:///foo?foo=bar"));
+            ok(contains("file:///foo/bar", "file:///foo#baz"));
+            ok(contains("file:///foo/bar", "file:///foo?foo=bar#baz"));
+            ok(contains("file:///foo/bar", "file:///foo#baz?foo=bar"));
+            ok(contains("file:///foo/bar", "foo/bar?foo=bar"));
+            ok(contains("file:///foo/bar", "foo/bar#baz"));
+            ok(contains("file:///foo/bar", "foo/bar?foo=bar#baz"));
+            ok(contains("file:///foo/bar", "foo"));
+            ok(contains("file:///foo/bar", "bar"));
+            ok(!contains("file:///foo/bar", "file:///bar"));
+            ok(!contains("file:///foo/bar", "file://example.com/foo"));
+            ok(!contains("file:///foo/bar", "http://example.com/foo"));
+            ok(!contains("file:///foo/bar", "file:///bar"));
+            ok(!contains("file:///foo/bar", "/foo/bar"));
+            ok(!contains("file:///foo/bar", "c:/foo/bar"));
+        });
+
+        it("relative path", () => {
+            ok(contains("foo/bar", ""));
+            ok(contains("foo/bar", "foo"));
+            ok(contains("foo/bar", "foo/"));
+            ok(contains("foo/bar", "foo/bar"));
+            ok(contains("foo/bar/", "foo/bar"));
+            ok(contains("foo/bar", "foo/bar/"));
+            ok(contains("foo/bar?foo=bar", "foo"));
+            ok(contains("foo/bar#baz", "foo"));
+            ok(contains("foo/bar?foo=bar#baz", "foo"));
+            ok(contains("foo/bar", "bar?foo=bar"));
+            ok(contains("foo/bar", "bar#baz"));
+            ok(contains("foo/bar", "bar?foo=bar#baz"));
+            ok(contains("foo/bar", "bar"));
+            ok(!contains("foo/bar", "/foo"));
+            ok(!contains("foo/bar", "/bar"));
+            ok(!contains("foo/bar", "c:/bar"));
+            ok(!contains("foo/bar", "file:///bar"));
+        });
+    });
+
+    describe("startsWith", () => {
+        it("windows path", () => {
+            ok(startsWith("c:/foo/bar", ""));
+            ok(startsWith("c:/foo/bar", "c:"));
+            ok(startsWith("c:/foo/bar", "c:/"));
+            ok(startsWith("c:/foo/bar", "c:\\"));
+            ok(startsWith("c:/foo/bar", "c:/foo/bar"));
+            ok(startsWith("c:/foo/bar/", "c:/foo/bar"));
+            ok(startsWith("c:/foo/bar", "c:/foo/bar/"));
+            ok(startsWith("c:/foo/bar/", "C:/foo/bar"));
+            ok(startsWith("c:/foo/bar", "C:/foo/bar/"));
+            ok(startsWith("C:/foo/bar/", "c:/foo/bar"));
+            ok(startsWith("C:/foo/bar", "c:/foo/bar/"));
+            ok(startsWith("c:/foo/bar", "c:/foo"));
+            ok(startsWith("c:/foo/bar/", "c:/foo/"));
+            ok(startsWith("c:/foo/bar?foo=bar", "c:/foo"));
+            ok(startsWith("c:/foo/bar#baz", "c:/foo"));
+            ok(startsWith("c:/foo/bar", "c:/foo?foo=bar"));
+            ok(startsWith("c:/foo/bar", "c:/foo#baz"));
+            ok(!startsWith("c:/foo/bar", "c:/bar"));
+            ok(!startsWith("c:/foo/bar", "foo"));
+            ok(!startsWith("c:/foo/bar", "/foo/bar"));
+            ok(!startsWith("c:/foo/bar", "file:///c:/foo/bar"));
+        });
+
+        it("posix path", () => {
+            ok(startsWith("/foo/bar", ""));
+            ok(startsWith("/foo/bar", "/"));
+            ok(startsWith("/foo/bar", "/foo"));
+            ok(startsWith("/foo/bar", "/foo/"));
+            ok(startsWith("/foo/bar", "/foo/bar"));
+            ok(startsWith("/foo/bar/", "/foo/bar"));
+            ok(startsWith("/foo/bar/", "/foo/bar/"));
+            ok(startsWith("/foo/bar", "/foo?foo=bar"));
+            ok(startsWith("/foo/bar", "/foo#baz"));
+            ok(startsWith("/foo/bar", "/foo?foo=bar#baz"));
+            ok(!startsWith("/foo/bar", "foo"));
+            ok(!startsWith("/foo/bar", "c:/foo/bar"));
+            ok(!startsWith("/foo/bar", "file:///foo/bar"));
+        });
+
+        it("url", () => {
+            ok(startsWith("http://example.com/foo/bar", ""));
+            ok(startsWith("http://example.com/foo/bar", "http://example.com"));
+            ok(startsWith("http://example.com/foo/bar", "http://example.com/"));
+            ok(startsWith("http://example.com/foo/bar", "http://example.com/foo"));
+            ok(startsWith("http://example.com/foo/bar", "http://example.com/foo/"));
+            ok(startsWith("http://example.com/foo/bar", "http://example.com/foo/bar"));
+            ok(startsWith("http://example.com/foo/bar/", "http://example.com/foo/bar"));
+            ok(startsWith("http://example.com/foo/bar", "http://example.com/foo/bar/"));
+            ok(startsWith("http://example.com/foo/bar/", "http://example.com/foo/bar/"));
+            ok(startsWith("http://example.com/foo/bar?foo=bar", "http://example.com/foo"));
+            ok(startsWith("http://example.com/foo/bar#baz", "http://example.com/foo"));
+            ok(startsWith("http://example.com/foo/bar", "http://example.com/foo?foo=bar"));
+            ok(startsWith("http://example.com/foo/bar", "http://example.com/foo#baz"));
+            ok(!startsWith("http://example.com/foo/bar", "http://example.com/bar"));
+            ok(!startsWith("http://example.com/foo/bar", "http://example2.com/foo"));
+            ok(!startsWith("http://example.com/foo/bar", "file:///foo/bar"));
+        });
+
+        it("file url", () => {
+            ok(startsWith("file:///foo/bar", ""));
+            ok(startsWith("file:///foo/bar", "file://"));
+            ok(startsWith("file:///foo/bar", "file:///"));
+            ok(startsWith("file:///foo/bar", "file:///foo"));
+            ok(startsWith("file:///foo/bar", "file:///foo/"));
+            ok(startsWith("file:///foo/bar", "file://localhost/foo"));
+            ok(startsWith("file://localhost/foo/bar", "file:///foo"));
+            ok(startsWith("file:///foo/bar", "file:///foo/bar"));
+            ok(startsWith("file:///foo/bar/", "file:///foo/bar"));
+            ok(startsWith("file:///foo/bar", "file:///foo/bar/"));
+            ok(startsWith("file:///foo/bar/", "file:///foo/bar/"));
+            ok(startsWith("file:///foo/bar?foo=bar", "file:///foo"));
+            ok(startsWith("file:///foo/bar#baz", "file:///foo"));
+            ok(startsWith("file:///foo/bar", "file:///foo?foo=bar"));
+            ok(startsWith("file:///foo/bar", "file:///foo#baz"));
+            ok(!startsWith("file:///foo/bar", "file:///bar"));
+            ok(!startsWith("file:///foo/bar", "file://example.com/foo"));
+            ok(!startsWith("file://example.com/foo/bar", "http://example.com/foo"));
+        });
+
+        it("relative path", () => {
+            ok(startsWith("foo/bar", ""));
+            ok(startsWith("foo/bar", "foo"));
+            ok(startsWith("foo/bar", "foo/"));
+            ok(startsWith("foo/bar", "foo/bar"));
+            ok(startsWith("foo/bar/", "foo/bar"));
+            ok(startsWith("foo/bar", "foo/bar/"));
+            ok(startsWith("foo/bar?foo=bar", "foo"));
+            ok(startsWith("foo/bar#baz", "foo"));
+            ok(startsWith("foo/bar", "foo?foo=bar"));
+            ok(startsWith("foo/bar", "foo#baz"));
+            ok(!startsWith("foo/bar", "bar"));
+            ok(!startsWith("foo/bar", "/bar"));
+            ok(!startsWith("foo/bar", "file:///bar"));
         });
     });
 
