@@ -75,6 +75,10 @@ describe("Uint8Array", () => {
             ok(!buf.equals(Buffer.from([2, 3, 4, 5, 6])));
             ok(arr.equals(buf));
         }
+
+        const largeArray1 = new Uint8Array(new Array(1024).fill(0).map((_, i) => i));
+        const largeArray2 = new Uint8Array(new Array(1024).fill(0).map((_, i) => i));
+        ok(largeArray1.equals(largeArray2));
     });
 
     it("Uint8Array.prototype.split", () => {

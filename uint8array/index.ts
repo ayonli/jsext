@@ -59,11 +59,32 @@ export function compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1 {
  * this array.
  */
 export function equals(arr1: Uint8Array, arr2: Uint8Array): boolean {
-    if (!(arr1 instanceof Uint8Array) || !(arr2 instanceof Uint8Array)) {
+    if (arr1.length < 1000) {
+        return _equals(arr1, arr2);
+    } else if (arr1 === arr2) {
+        return true;
+    } else if (arr1.length !== arr2.length) {
         return false;
     }
 
-    return _equals(arr1, arr2);
+    const len = arr1.length;
+    const compressible = Math.floor(len / 4);
+    const _arr1 = new Uint32Array(arr1.buffer, 0, compressible);
+    const _arr2 = new Uint32Array(arr2.buffer, 0, compressible);
+
+    for (let i = compressible * 4; i < len; i++) {
+        if (arr1[i] !== arr2[i]) {
+            return false;
+        }
+    }
+
+    for (let i = 0; i < _arr1.length; i++) {
+        if (_arr1[i] !== _arr2[i]) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /** Breaks the array into smaller chunks according to the given delimiter. */

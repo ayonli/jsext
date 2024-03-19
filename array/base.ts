@@ -18,7 +18,9 @@ export function count<T>(arr: RealArrayLike<T>, item: T): number {
  * this array-like object.
  */
 export function equals<T>(arr1: RealArrayLike<T>, arr2: RealArrayLike<T>): boolean {
-    if (arr1.length !== arr2.length) {
+    if (arr1 === arr2) {
+        return true;
+    } else if (arr1.length !== arr2.length) {
         return false;
     }
 
