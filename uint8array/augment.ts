@@ -11,14 +11,11 @@ declare global {
     }
 
     interface Uint8Array {
-        /**
-         * Compares this array to another array and see if it contains the same elements as
-         * this array.
-         */
+        /** Checks if the two byte arrays are equal to each other. */
         equals(another: Uint8Array): boolean;
-        /** Breaks the array into smaller chunks according to the given delimiter. */
+        /** Breaks the byte array into smaller chunks according to the given delimiter. */
         split(delimiter: number): this[];
-        /** Breaks the array into smaller chunks according to the given length. */
+        /** Breaks the byte array into smaller chunks according to the given length. */
         chunk(length: number): this[];
     }
 }
