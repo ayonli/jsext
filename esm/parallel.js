@@ -1,6 +1,6 @@
 import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
 import chan from './chan.js';
-import { sequence } from './number/index.js';
+import { serial } from './number/index.js';
 import { IsPath, isDeno, isNode, isBun, isMainThread } from './parallel/constants.js';
 import { sanitizeModuleId, resolveModule } from './parallel/utils/module.js';
 import { remoteTasks, acquireWorker, wrapArgs } from './parallel/utils/threads.js';
@@ -10,7 +10,7 @@ import { remoteTasks, acquireWorker, wrapArgs } from './parallel/utils/threads.j
  * threads and take advantage of multi-core CPUs, inspired by Golang.
  * @module
  */
-const taskIdCounter = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
+const taskIdCounter = serial(true);
 async function safeRemoteCall(worker, req, transferable, taskId) {
     try {
         worker.postMessage(req, transferable);

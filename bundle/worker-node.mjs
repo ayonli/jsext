@@ -18,7 +18,19 @@ const isMainThread = !isNodeWorkerThread
  * @module
  */
 /** Returns `true` if the given value is a float number, `false` otherwise. */
-/** Creates a generator that produces sequential numbers from `min` to `max` (inclusive). */
+/**
+ * Creates a generator that produces sequential numbers from `1` to
+ * `Number.MAX_SAFE_INTEGER`, useful for generating unique IDs.
+ *
+ * @param loop Repeat the sequence when the end is reached.
+ */
+function serial(loop = false) {
+    return sequence(1, Number.MAX_SAFE_INTEGER, 1, loop);
+}
+/**
+ * Creates a generator that produces sequential numbers from `min` to `max` (inclusive).
+ * @deprecated use {@link range} and {@link serial} instead.
+ */
 function* sequence(min, max, step = 1, loop = false) {
     let id = min;
     while (true) {
@@ -43,7 +55,7 @@ var _a;
 if (typeof Symbol.dispose === "undefined") {
     Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });
 }
-const idGenerator = sequence(1, Number.MAX_SAFE_INTEGER, 1, true);
+const idGenerator = serial(true);
 /**
  * A channel implementation that transfers data across routines, even across
  * multiple threads, inspired by Golang.
@@ -414,14 +426,7 @@ async function resolveModule(modId, baseUrl = undefined) {
                 }
                 catch (err) {
                     if (String(err).includes("Failed")) {
-                        // The content-type of the response isn't application/javascript, try to
-                        // download it and load it with object URL.
-                        const res = await fetch(url);
-                        const buf = await res.arrayBuffer();
-                        const blob = new Blob([new Uint8Array(buf)], {
-                            type: "application/javascript",
-                        });
-                        const _url = URL.createObjectURL(blob);
+                        const _url = await resolveRemoteModuleUrl(url);
                         module = await import(_url);
                         moduleCache.set(url, module);
                     }
@@ -436,6 +441,23 @@ async function resolveModule(modId, baseUrl = undefined) {
         module = module["default"]; // CommonJS module with exports.default
     }
     return module;
+}
+async function resolveRemoteModuleUrl(url) {
+    var _a;
+    // Use fetch to download the script and compose an object URL which can
+    // bypass CORS security constraint in the browser.
+    const res = await fetch(url);
+    let blob;
+    if ((_a = res.headers.get("content-type")) === null || _a === void 0 ? void 0 : _a.includes("/javascript")) {
+        blob = await res.blob();
+    }
+    else {
+        const buf = await res.arrayBuffer();
+        blob = new Blob([new Uint8Array(buf)], {
+            type: "application/javascript",
+        });
+    }
+    return URL.createObjectURL(blob);
 }
 
 /**

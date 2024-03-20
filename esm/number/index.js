@@ -46,7 +46,23 @@ function isBetween(value, [min, max]) {
 function random(min, max) {
     return min + Math.floor(Math.random() * (max - min + 1));
 }
-/** Creates a generator that produces sequential numbers from `min` to `max` (inclusive). */
+/** Generates a sequence of numbers from `min` to `max` (inclusive). */
+function range(min, max, step = 1) {
+    return sequence(min, max, step);
+}
+/**
+ * Creates a generator that produces sequential numbers from `1` to
+ * `Number.MAX_SAFE_INTEGER`, useful for generating unique IDs.
+ *
+ * @param loop Repeat the sequence when the end is reached.
+ */
+function serial(loop = false) {
+    return sequence(1, Number.MAX_SAFE_INTEGER, 1, loop);
+}
+/**
+ * Creates a generator that produces sequential numbers from `min` to `max` (inclusive).
+ * @deprecated use {@link range} and {@link serial} instead.
+ */
 function* sequence(min, max, step = 1, loop = false) {
     let id = min;
     while (true) {
@@ -62,5 +78,5 @@ function* sequence(min, max, step = 1, loop = false) {
     }
 }
 
-export { isBetween, isFloat, isNumeric, random, sequence };
+export { isBetween, isFloat, isNumeric, random, range, sequence, serial };
 //# sourceMappingURL=index.js.map

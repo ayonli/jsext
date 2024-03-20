@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.7.7",
+    "version": "0.7.10",
     "exports": {
         ".": "./index.ts",
         "./chan": "./chan.ts",
@@ -24,6 +24,7 @@
         "./math": "./math/index.ts",
         "./number": "./number/index.ts",
         "./object": "./object/index.ts",
+        "./path": "./path/index.ts",
         "./promise": "./promise/index.ts",
         "./string": "./string/index.ts",
         "./uint8array": "./uint8array/index.ts",

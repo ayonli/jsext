@@ -10,6 +10,26 @@ function read(source, eventMap = undefined) {
     if (isFunction(source[Symbol.asyncIterator])) {
         return source;
     }
+    else if (typeof ReadableStream === "function"
+        && source instanceof ReadableStream) {
+        const reader = source.getReader();
+        return {
+            [Symbol.asyncIterator]: async function* () {
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) {
+                            break;
+                        }
+                        yield value;
+                    }
+                }
+                finally {
+                    reader.releaseLock();
+                }
+            },
+        };
+    }
     const channel = chan(Infinity);
     const handleMessage = channel.send.bind(channel);
     const handleClose = channel.close.bind(channel);
