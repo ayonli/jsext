@@ -8,6 +8,7 @@ import { stripEnd, trim } from "../string/index.ts";
 import {
     contains,
     endsWith,
+    equals,
     isAbsolute,
     isFileProtocol,
     isFileUrl,
@@ -21,14 +22,15 @@ import {
 } from "./util.ts";
 
 export {
-    contains,
     isWindowsPath,
     isPosixPath,
     isUrl,
     isFileUrl,
     isAbsolute,
+    contains,
     endsWith,
     startsWith,
+    equals,
 };
 
 declare const Deno: any;

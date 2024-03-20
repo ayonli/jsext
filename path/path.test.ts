@@ -6,6 +6,7 @@ import {
     cwd,
     dirname,
     endsWith,
+    equals,
     extname,
     isAbsolute,
     isFileUrl,
@@ -176,6 +177,111 @@ describe("path", () => {
         });
     });
 
+    describe("split", () => {
+        it("windows path", () => {
+            deepStrictEqual(split("c:"), ["c:\\"]);
+            deepStrictEqual(split("c:/"), ["c:\\"]);
+            deepStrictEqual(split("c:\\"), ["c:\\"]);
+            deepStrictEqual(split("c:\\/"), ["c:\\"]);
+            deepStrictEqual(split("c:/foo"), ["c:\\", "foo"]);
+            deepStrictEqual(split("c:\\foo\\"), ["c:\\", "foo"]);
+            deepStrictEqual(split("c:/foo//bar"), ["c:\\", "foo", "bar"]);
+            deepStrictEqual(split("c:\\foo\\bar"), ["c:\\", "foo", "bar"]);
+            deepStrictEqual(split("c:/foo/bar/"), ["c:\\", "foo", "bar"]);
+            deepStrictEqual(split("c:\\foo\\bar\\"), ["c:\\", "foo", "bar"]);
+            deepStrictEqual(
+                split("c:\\foo\\bar?foo=bar#baz"),
+                ["c:\\", "foo", "bar", "?foo=bar", "#baz"]
+            );
+        });
+
+        it("posix path", () => {
+            deepStrictEqual(split("/"), ["/"]);
+            deepStrictEqual(split("//"), ["/"]);
+            deepStrictEqual(split("///"), ["/"]);
+            deepStrictEqual(split("/foo"), ["/", "foo"]);
+            deepStrictEqual(split("/foo/bar"), ["/", "foo", "bar"]);
+            deepStrictEqual(split("/foo/bar/"), ["/", "foo", "bar"]);
+            deepStrictEqual(split("/foo/bar?foo=bar#baz"), ["/", "foo", "bar", "?foo=bar", "#baz"]);
+        });
+
+        it("url", () => {
+            deepStrictEqual(split("http://example.com"), ["http://example.com"]);
+            deepStrictEqual(split("http://example.com/"), ["http://example.com"]);
+            deepStrictEqual(split("http://example.com?"), ["http://example.com"]);
+            deepStrictEqual(split("http://example.com#"), ["http://example.com"]);
+            deepStrictEqual(split("http://example.com/foo"), ["http://example.com", "foo"]);
+            deepStrictEqual(
+                split("http://example.com/foo/bar"),
+                ["http://example.com", "foo", "bar"]
+            );
+            deepStrictEqual(
+                split("http://example.com/foo/bar/"),
+                ["http://example.com", "foo", "bar"]
+            );
+            deepStrictEqual(
+                split("http://example.com/foo/bar?"),
+                ["http://example.com", "foo", "bar"]
+            );
+            deepStrictEqual(
+                split("http://example.com/foo/bar#"),
+                ["http://example.com", "foo", "bar"]
+            );
+            deepStrictEqual(
+                split("http://example.com/foo/bar?foo=bar"),
+                ["http://example.com", "foo", "bar", "?foo=bar"]
+            );
+            deepStrictEqual(
+                split("http://example.com/foo/bar#baz"),
+                ["http://example.com", "foo", "bar", "#baz"]
+            );
+            deepStrictEqual(
+                split("http://example.com/foo//bar///baz?foo=bar#baz"),
+                ["http://example.com", "foo", "bar", "baz", "?foo=bar", "#baz"]
+            );
+            deepStrictEqual(split("?foo=bar"), ["?foo=bar"]);
+            deepStrictEqual(split("#baz"), ["#baz"]);
+            deepStrictEqual(split("?foo=bar#baz"), ["?foo=bar", "#baz"]);
+            deepStrictEqual(split("?foo=hello&bar=world#baz"), ["?foo=hello&bar=world", "#baz"]);
+        });
+
+        it("file url", () => {
+            deepStrictEqual(split("file://"), ["file://"]);
+            deepStrictEqual(split("file:///"), ["file://"]);
+            deepStrictEqual(split("file:///foo"), ["file://", "foo"]);
+            deepStrictEqual(split("file:///foo/bar"), ["file://", "foo", "bar"]);
+            deepStrictEqual(split("file:///foo/bar/"), ["file://", "foo", "bar"]);
+            deepStrictEqual(split("file://localhost/foo/bar/"), ["file://", "foo", "bar"]);
+            deepStrictEqual(split("file:///c:/foo/bar/"), ["file://", "c:", "foo", "bar"]);
+            deepStrictEqual(split("file://localhost/c:/foo/bar/"), ["file://", "c:", "foo", "bar"]);
+            deepStrictEqual(
+                split("file://example.com/foo/bar/"),
+                ["file://example.com", "foo", "bar"]
+            );
+            deepStrictEqual(
+                split("file://example.com/foo/bar?foo=bar#baz"),
+                ["file://example.com", "foo", "bar", "?foo=bar", "#baz"]
+            );
+        });
+
+        it("relative path", () => {
+            deepStrictEqual(split("foo"), ["foo"]);
+            deepStrictEqual(split("foo/"), ["foo"]);
+            deepStrictEqual(split("foo/bar"), ["foo", "bar"]);
+            deepStrictEqual(split("foo//bar/"), ["foo", "bar"]);
+            deepStrictEqual(split("foo\\bar"), ["foo", "bar"]);
+            deepStrictEqual(split("foo\\bar\\"), ["foo", "bar"]);
+            deepStrictEqual(split("foo/bar?foo=bar"), ["foo", "bar", "?foo=bar"]);
+            deepStrictEqual(split(".."), [".."]);
+            deepStrictEqual(split("../foo/bar"), ["..", "foo", "bar"]);
+            deepStrictEqual(split("../../foo/bar"), ["..", "..", "foo", "bar"]);
+            deepStrictEqual(split("foo/../.."), ["foo", "..", ".."]);
+            deepStrictEqual(split("."), ["."]);
+            deepStrictEqual(split("./foo/bar"), [".", "foo", "bar"]);
+            deepStrictEqual(split(""), []);
+        });
+    });
+
     describe("contains", () => {
         it("windows path", () => {
             ok(contains("c:/foo/bar", ""));
@@ -294,6 +400,32 @@ describe("path", () => {
             ok(!contains("foo/bar", "c:/bar"));
             ok(!contains("foo/bar", "file:///bar"));
         });
+
+        it("case insensitive", () => {
+            ok(contains("c:/foo/bar", "C:/foo/bar", { caseInsensitive: true }));
+            ok(contains("c:/foo/bar", "Foo/bar", { caseInsensitive: true }));
+            ok(contains("/foo/bar", "Foo/bar", { caseInsensitive: true }));
+            ok(contains("file:///foo/bar", "Foo/bar", { caseInsensitive: true }));
+            ok(contains("file://example.com/foo/bar", "FILE://EXAMPLE.COM/Foo/bar", {
+                caseInsensitive: true,
+            }));
+        });
+
+        it("ignore file protocol", () => {
+            ok(contains("file:///foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
+            ok(contains("file://localhost/foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
+            ok(contains("file:/foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
+            ok(contains("file:c:/foo/bar", "c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(contains("file:/c:/foo/bar", "c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(contains("/foo/bar", "file:///foo/bar", { ignoreFileProtocol: true }));
+            ok(contains("/foo/bar", "file://localhost/foo/bar", { ignoreFileProtocol: true }));
+            ok(contains("/foo/bar", "file:/foo/bar", { ignoreFileProtocol: true }));
+            ok(contains("c:/foo/bar", "file:///c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(contains("c:/foo/bar", "file:/c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(contains("c:/foo/bar", "file:c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(!contains("file:///foo/bar", "c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(!contains("file:///c:/foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
+        });
     });
 
     describe("startsWith", () => {
@@ -392,6 +524,32 @@ describe("path", () => {
             ok(!startsWith("foo/bar", "/bar"));
             ok(!startsWith("foo/bar", "file:///bar"));
         });
+
+        it("case insensitive", () => {
+            ok(startsWith("c:/foo/bar", "C:/foo/bar", { caseInsensitive: true }));
+            ok(startsWith("c:/foo/bar", "C:/Foo", { caseInsensitive: true }));
+            ok(startsWith("/foo/bar", "/Foo", { caseInsensitive: true }));
+            ok(startsWith("file:///foo/bar", "FILE:///Foo", { caseInsensitive: true }));
+            ok(startsWith("file://example.com/foo/bar", "FILE://EXAMPLE.COM/Foo/bar", {
+                caseInsensitive: true,
+            }));
+        });
+
+        it("ignore file protocol", () => {
+            ok(startsWith("file:///foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
+            ok(startsWith("file://localhost/foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
+            ok(startsWith("file:/foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
+            ok(startsWith("file:c:/foo/bar", "c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(startsWith("file:/c:/foo/bar", "c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(startsWith("/foo/bar", "file:///foo/bar", { ignoreFileProtocol: true }));
+            ok(startsWith("/foo/bar", "file://localhost/foo/bar", { ignoreFileProtocol: true }));
+            ok(startsWith("/foo/bar", "file:/foo/bar", { ignoreFileProtocol: true }));
+            ok(startsWith("c:/foo/bar", "file:///c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(startsWith("c:/foo/bar", "file:/c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(startsWith("c:/foo/bar", "file:c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(!startsWith("file:///foo/bar", "c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(!startsWith("file:///c:/foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
+        });
     });
 
     describe("endsWith", () => {
@@ -486,107 +644,170 @@ describe("path", () => {
             ok(!endsWith("foo/bar", "c:/bar"));
             ok(!endsWith("foo/bar", "file:///bar"));
         });
+
+        it("case insensitive", () => {
+            ok(endsWith("c:/foo/bar", "C:/foo/bar", { caseInsensitive: true }));
+            ok(endsWith("c:/foo/bar", "Foo/bar", { caseInsensitive: true }));
+            ok(endsWith("/foo/bar", "Foo/bar", { caseInsensitive: true }));
+            ok(endsWith("file:///foo/bar", "Foo/bar", { caseInsensitive: true }));
+            ok(endsWith("file://example.com/foo/bar", "FILE://EXAMPLE.COM/Foo/bar", {
+                caseInsensitive: true,
+            }));
+        });
+
+        it("ignore file protocol", () => {
+            ok(endsWith("file:///foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
+            ok(endsWith("file://localhost/foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
+            ok(endsWith("file:/foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
+            ok(endsWith("file:c:/foo/bar", "c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(endsWith("file:/c:/foo/bar", "c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(endsWith("/foo/bar", "file:///foo/bar", { ignoreFileProtocol: true }));
+            ok(endsWith("/foo/bar", "file://localhost/foo/bar", { ignoreFileProtocol: true }));
+            ok(endsWith("/foo/bar", "file:/foo/bar", { ignoreFileProtocol: true }));
+            ok(endsWith("c:/foo/bar", "file:///c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(endsWith("c:/foo/bar", "file:/c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(endsWith("c:/foo/bar", "file:c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(!endsWith("file:///foo/bar", "c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(!endsWith("file:///c:/foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
+        });
     });
 
-    describe("split", () => {
+    describe("equals", () => {
         it("windows path", () => {
-            deepStrictEqual(split("c:"), ["c:\\"]);
-            deepStrictEqual(split("c:/"), ["c:\\"]);
-            deepStrictEqual(split("c:\\"), ["c:\\"]);
-            deepStrictEqual(split("c:\\/"), ["c:\\"]);
-            deepStrictEqual(split("c:/foo"), ["c:\\", "foo"]);
-            deepStrictEqual(split("c:\\foo\\"), ["c:\\", "foo"]);
-            deepStrictEqual(split("c:/foo//bar"), ["c:\\", "foo", "bar"]);
-            deepStrictEqual(split("c:\\foo\\bar"), ["c:\\", "foo", "bar"]);
-            deepStrictEqual(split("c:/foo/bar/"), ["c:\\", "foo", "bar"]);
-            deepStrictEqual(split("c:\\foo\\bar\\"), ["c:\\", "foo", "bar"]);
-            deepStrictEqual(
-                split("c:\\foo\\bar?foo=bar#baz"),
-                ["c:\\", "foo", "bar", "?foo=bar", "#baz"]
-            );
+            ok(equals("c:/foo/bar", "c:/foo/bar"));
+            ok(equals("c:/foo/bar", "c:/foo/bar/"));
+            ok(equals("c:/foo/bar/", "c:/foo/bar"));
+            ok(equals("c:/foo/bar/", "c:/foo/bar/"));
+            ok(equals("c:/foo/bar?foo=bar", "c:/foo/bar"));
+            ok(equals("c:/foo/bar#baz", "c:/foo/bar"));
+            ok(equals("c:/foo/bar?foo=bar#baz", "c:/foo/bar"));
+            ok(equals("c:/foo/bar", "c:/foo/bar?foo=bar"));
+            ok(equals("c:/foo/bar", "c:/foo/bar#baz"));
+            ok(equals("c:/foo/bar", "c:/foo/bar?foo=bar#baz"));
+            ok(!equals("c:/foo/bar", "foo"));
+            ok(!equals("c:/foo/bar", "bar"));
+            ok(!equals("c:/foo/bar", "c:/bar"));
+            ok(!equals("c:/foo/bar", "/foo/bar"));
+            ok(!equals("c:/foo/bar", "file:///c:/foo/bar"));
+            ok(!equals("c:/foo/bar", "c:/"));
+            ok(!equals("c:/foo/bar", "c:\\"));
+            ok(!equals("c:/foo/bar", ""));
         });
 
         it("posix path", () => {
-            deepStrictEqual(split("/"), ["/"]);
-            deepStrictEqual(split("//"), ["/"]);
-            deepStrictEqual(split("///"), ["/"]);
-            deepStrictEqual(split("/foo"), ["/", "foo"]);
-            deepStrictEqual(split("/foo/bar"), ["/", "foo", "bar"]);
-            deepStrictEqual(split("/foo/bar/"), ["/", "foo", "bar"]);
-            deepStrictEqual(split("/foo/bar?foo=bar#baz"), ["/", "foo", "bar", "?foo=bar", "#baz"]);
+            ok(equals("/foo/bar", "/foo/bar"));
+            ok(equals("/foo/bar", "/foo/bar/"));
+            ok(equals("/foo/bar/", "/foo/bar"));
+            ok(equals("/foo/bar/", "/foo/bar/"));
+            ok(equals("/foo/bar", "/foo/bar?foo=bar"));
+            ok(equals("/foo/bar", "/foo/bar#baz"));
+            ok(equals("/foo/bar", "/foo/bar?foo=bar#baz"));
+            ok(equals("/foo/bar?foo=bar", "/foo/bar"));
+            ok(equals("/foo/bar#baz", "/foo/bar"));
+            ok(equals("/foo/bar?foo=bar#baz", "/foo/bar"));
+            ok(!equals("/foo/bar", "foo"));
+            ok(!equals("/foo/bar", "bar"));
+            ok(!equals("/foo/bar", "/bar"));
+            ok(!equals("/foo/bar", "c:/foo/bar"));
+            ok(!equals("/foo/bar", "file:///foo/bar"));
+            ok(!equals("/foo/bar", ""));
         });
 
         it("url", () => {
-            deepStrictEqual(split("http://example.com"), ["http://example.com"]);
-            deepStrictEqual(split("http://example.com/"), ["http://example.com"]);
-            deepStrictEqual(split("http://example.com?"), ["http://example.com"]);
-            deepStrictEqual(split("http://example.com#"), ["http://example.com"]);
-            deepStrictEqual(split("http://example.com/foo"), ["http://example.com", "foo"]);
-            deepStrictEqual(
-                split("http://example.com/foo/bar"),
-                ["http://example.com", "foo", "bar"]
-            );
-            deepStrictEqual(
-                split("http://example.com/foo/bar/"),
-                ["http://example.com", "foo", "bar"]
-            );
-            deepStrictEqual(
-                split("http://example.com/foo/bar?"),
-                ["http://example.com", "foo", "bar"]
-            );
-            deepStrictEqual(
-                split("http://example.com/foo/bar#"),
-                ["http://example.com", "foo", "bar"]
-            );
-            deepStrictEqual(
-                split("http://example.com/foo/bar?foo=bar"),
-                ["http://example.com", "foo", "bar", "?foo=bar"]
-            );
-            deepStrictEqual(
-                split("http://example.com/foo/bar#baz"),
-                ["http://example.com", "foo", "bar", "#baz"]
-            );
-            deepStrictEqual(
-                split("http://example.com/foo//bar///baz?foo=bar#baz"),
-                ["http://example.com", "foo", "bar", "baz", "?foo=bar", "#baz"]
-            );
-            deepStrictEqual(split("?foo=bar"), ["?foo=bar"]);
-            deepStrictEqual(split("#baz"), ["#baz"]);
-            deepStrictEqual(split("?foo=bar#baz"), ["?foo=bar", "#baz"]);
-            deepStrictEqual(split("?foo=hello&bar=world#baz"), ["?foo=hello&bar=world", "#baz"]);
+            ok(equals("http://example.com/foo/bar", "http://example.com/foo/bar"));
+            ok(equals("http://example.com/foo/bar", "http://example.com/foo/bar/"));
+            ok(equals("http://example.com/foo/bar/", "http://example.com/foo/bar"));
+            ok(equals("http://example.com/foo/bar/", "http://example.com/foo/bar/"));
+            ok(equals("http://example.com/foo/bar", "http://example.com/foo/bar?foo=bar"));
+            ok(equals("http://example.com/foo/bar", "http://example.com/foo/bar#baz"));
+            ok(equals("http://example.com/foo/bar", "http://example.com/foo/bar?foo=bar#baz"));
+            ok(equals("http://example.com/foo/bar?foo=bar", "http://example.com/foo/bar"));
+            ok(equals("http://example.com/foo/bar#baz", "http://example.com/foo/bar"));
+            ok(equals("http://example.com/foo/bar?foo=bar#baz", "http://example.com/foo/bar"));
+            ok(!equals("http://example.com/foo/bar", "foo/bar?foo=bar"));
+            ok(!equals("http://example.com/foo/bar", "foo/bar#baz"));
+            ok(!equals("http://example.com/foo/bar", "foo/bar?foo=bar#baz"));
+            ok(!equals("http://example.com/foo/bar", "foo"));
+            ok(!equals("http://example.com/foo/bar", "bar"));
+            ok(!equals("http://example.com/foo/bar", "/foo/bar"));
+            ok(!equals("http://example.com/foo/bar", "c:/foo/bar"));
+            ok(!equals("http://example.com/foo/bar", "http://example2.com/foo/bar"));
+            ok(!equals("http://example.com/foo/bar", "http://example.com/bar"));
+            ok(!equals("http://example.com/foo/bar", "example.com"));
+            ok(!equals("http://example.com/foo/bar", "file:///foo/bar"));
+            ok(!equals("http://example.com/foo/bar", ""));
         });
 
         it("file url", () => {
-            deepStrictEqual(split("file:///"), ["file://"]);
-            deepStrictEqual(split("file:///foo"), ["file://", "foo"]);
-            deepStrictEqual(split("file:///foo/bar"), ["file://", "foo", "bar"]);
-            deepStrictEqual(split("file:///foo/bar/"), ["file://", "foo", "bar"]);
-            deepStrictEqual(split("file://localhost/foo/bar/"), ["file://", "foo", "bar"]);
-            deepStrictEqual(
-                split("file://example.com/foo/bar/"),
-                ["file://example.com", "foo", "bar"]
-            );
-            deepStrictEqual(
-                split("file://example.com/foo/bar?foo=bar#baz"),
-                ["file://example.com", "foo", "bar", "?foo=bar", "#baz"]
-            );
+            ok(equals("file:///foo/bar", "file:///foo/bar"));
+            ok(equals("file:///foo/bar", "file:///foo/bar/"));
+            ok(equals("file:///foo/bar/", "file://localhost/foo/bar"));
+            ok(equals("file://localhost/foo/bar", "file:///foo/bar"));
+            ok(equals("file:///foo/bar", "file://localhost/foo/bar"));
+            ok(equals("file://localhost/foo/bar", "file://localhost/foo/bar"));
+            ok(equals("file:///foo/bar", "file:///foo/bar"));
+            ok(equals("file:///foo/bar/", "file:///foo/bar"));
+            ok(equals("file:///foo/bar/", "file:///foo/bar/"));
+            ok(equals("file:///foo/bar", "file:///foo/bar?foo=bar"));
+            ok(equals("file:///foo/bar", "file:///foo/bar#baz"));
+            ok(equals("file:///foo/bar", "file:///foo/bar?foo=bar#baz"));
+            ok(equals("file:///foo/bar?foo=bar", "file:///foo/bar"));
+            ok(equals("file:///foo/bar#baz", "file:///foo/bar"));
+            ok(equals("file:///foo/bar?foo=bar#baz", "file:///foo/bar"));
+            ok(!equals("file:///foo/bar", "foo"));
+            ok(!equals("file:///foo/bar", "bar"));
+            ok(!equals("file:///foo/bar", "file://"));
+            ok(!equals("file:///foo/bar", "file:///"));
+            ok(!equals("file:///foo/bar", "file:///bar"));
+            ok(!equals("file:///foo/bar", "file://example.com/foo"));
+            ok(!equals("file:///foo/bar", "http://example.com/foo"));
+            ok(!equals("file:///foo/bar", "file:///bar"));
+            ok(!equals("file:///foo/bar", "/foo/bar"));
+            ok(!equals("file:///foo/bar", "c:/foo/bar"));
+            ok(!equals("file:///foo/bar", ""));
         });
 
         it("relative path", () => {
-            deepStrictEqual(split("foo"), ["foo"]);
-            deepStrictEqual(split("foo/"), ["foo"]);
-            deepStrictEqual(split("foo/bar"), ["foo", "bar"]);
-            deepStrictEqual(split("foo//bar/"), ["foo", "bar"]);
-            deepStrictEqual(split("foo\\bar"), ["foo", "bar"]);
-            deepStrictEqual(split("foo\\bar\\"), ["foo", "bar"]);
-            deepStrictEqual(split("foo/bar?foo=bar"), ["foo", "bar", "?foo=bar"]);
-            deepStrictEqual(split(".."), [".."]);
-            deepStrictEqual(split("../foo/bar"), ["..", "foo", "bar"]);
-            deepStrictEqual(split("../../foo/bar"), ["..", "..", "foo", "bar"]);
-            deepStrictEqual(split("foo/../.."), ["foo", "..", ".."]);
-            deepStrictEqual(split("."), ["."]);
-            deepStrictEqual(split("./foo/bar"), [".", "foo", "bar"]);
-            deepStrictEqual(split(""), []);
+            ok(equals("foo/bar", "foo/bar"));
+            ok(equals("foo/bar", "foo/bar/"));
+            ok(equals("foo/bar/", "foo/bar"));
+            ok(equals("foo/bar?foo=bar", "foo/bar"));
+            ok(equals("foo/bar#baz", "foo/bar"));
+            ok(equals("foo/bar?foo=bar#baz", "foo/bar"));
+            ok(equals("foo/bar", "foo/bar?foo=bar"));
+            ok(equals("foo/bar", "foo/bar#baz"));
+            ok(equals("foo/bar", "foo/bar?foo=bar#baz"));
+            ok(!equals("foo/bar", "bar"));
+            ok(!equals("foo/bar", "/foo/bar"));
+            ok(!equals("foo/bar", "/bar"));
+            ok(!equals("foo/bar", "c:/bar"));
+            ok(!equals("foo/bar", "file:///foo/bar"));
+            ok(!equals("foo/bar", ""));
+        });
+
+        it("case insensitive", () => {
+            ok(equals("c:/foo/bar", "C:/foo/bar", { caseInsensitive: true }));
+            ok(equals("c:/foo/bar", "C:/Foo/bar", { caseInsensitive: true }));
+            ok(equals("/foo/bar", "/Foo/bar", { caseInsensitive: true }));
+            ok(equals("file://example.com/foo/bar", "FILE://EXAMPLE.COM/Foo/bar", {
+                caseInsensitive: true,
+            }));
+        });
+
+        it("ignore file protocol", () => {
+            ok(equals("file:///foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
+            ok(equals("file://localhost/foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
+            ok(equals("file:/foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
+            ok(equals("file:c:/foo/bar", "c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(equals("file:/c:/foo/bar", "c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(equals("/foo/bar", "file:///foo/bar", { ignoreFileProtocol: true }));
+            ok(equals("/foo/bar", "file://localhost/foo/bar", { ignoreFileProtocol: true }));
+            ok(equals("/foo/bar", "file:/foo/bar", { ignoreFileProtocol: true }));
+            ok(equals("c:/foo/bar", "file:///c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(equals("c:/foo/bar", "file:/c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(equals("c:/foo/bar", "file:c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(!equals("file:///foo/bar", "c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(!equals("file:///c:/foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
         });
     });
 

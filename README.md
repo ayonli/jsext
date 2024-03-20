@@ -1617,9 +1617,6 @@ import { basename, dirname, resolve /* ... */ } from "@ayonli/jsext/path";
 - `isUrl(str: string): boolean`
 - `isFileUrl(str: string): boolean`
 - `isAbsolute(path: string): boolean`
-- `contains(path: string, sub: string): boolean`
-- `startsWith(path: string, sub: string): boolean`
-- `endsWith(path: string, sub: string): boolean`
 - `join(...segments: string[]): string`
 - `normalize(path: string): string`
 - `sanitize(path: string): string`
@@ -1627,6 +1624,10 @@ import { basename, dirname, resolve /* ... */ } from "@ayonli/jsext/path";
 - `dirname(path: string): string`
 - `basename(path: string, suffix?: string): string`
 - `extname(path: string): string`
+- `contains(path: string, sub: string, options?: { caseInsensitive?: boolean; ignoreFileProtocol?: boolean; }): boolean`
+- `startsWith(path: string, sub: string, options?: { caseInsensitive?: boolean; ignoreFileProtocol?: boolean; }): boolean`
+- `endsWith(path: string, sub: string, options?: { caseInsensitive?: boolean; ignoreFileProtocol?: boolean; }): boolean`
+- `equals(path1: string, path2: string, options?: { caseInsensitive?: boolean; ignoreFileProtocol?: boolean; }): boolean`
 
 ## Augmentations
 

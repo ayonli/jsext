@@ -52,110 +52,6 @@ export function isAbsolute(path: string): boolean {
     return isPosixPath(path) || isWindowsPath(path) || isUrl(path);
 }
 
-function extractSegmentsForCompar(path: string, sub: string): {
-    result: boolean | undefined;
-    paths: string[];
-    subs: string[];
-} {
-    const paths = split(path).filter(isNotQuery);
-    const subs = split(sub).filter(isNotQuery);
-
-    if (paths.length < subs.length) {
-        return { result: false, paths: [], subs: [] };
-    } else if (!subs.length) {
-        return { result: true, paths: [], subs: [] };
-    }
-
-    if (isVolume(paths[0]!)) {
-        paths[0] = paths[0]!.toLowerCase();
-    }
-
-    if (isVolume(subs[0]!)) {
-        subs[0] = subs[0]!.toLowerCase();
-    }
-
-    return { result: undefined, paths, subs };
-}
-
-/**
- * Checks if the `path` contains the given `sub` path. This function ignores
- * the query string and the hash string, and is separator insensitive.
- * @experimental
- */
-export function contains(path: string, sub: string): boolean {
-    const { result, paths, subs } = extractSegmentsForCompar(path, sub);
-
-    if (result !== undefined) {
-        return result;
-    }
-
-    const head = subs[0];
-    for (let i = 0; i < paths.length; i++) {
-        if (paths[i] !== head)
-            continue;
-
-        const pin = i;
-        let matched = 1;
-        let j = i;
-
-        while (matched < subs.length) {
-            j++;
-
-            if (paths[j] !== subs[j - pin]) {
-                break;
-            }
-
-            matched++;
-        }
-
-        if (matched === subs.length) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/**
- * Checks if the `path` starts with the given `sub` path. This function ignores
- * the query string and the hash string, and is separator insensitive.
- * @experimental
- */
-export function startsWith(path: string, sub: string): boolean {
-    const { result, paths, subs } = extractSegmentsForCompar(path, sub);
-
-    if (result !== undefined)
-        return result;
-
-    for (let i = 0; i < subs.length; i++) {
-        if (subs[i] !== paths[i]) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-/**
- * Checks if the `path` ends with the given `sub` path. This function ignores
- * the query string and the hash string, and is separator insensitive.
- * @experimental
- */
-export function endsWith(path: string, sub: string): boolean {
-    const { result, paths, subs } = extractSegmentsForCompar(path, sub);
-
-    if (result !== undefined)
-        return result;
-
-    for (let i = subs.length - 1, j = paths.length - 1; i >= 0; i--, j--) {
-        if (subs[i] !== paths[j]) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 /**
  * Splits the `path` into well-formed segments.
  * @experimental
@@ -220,4 +116,180 @@ export function split(path: string): string[] {
             }
         }
     }
+}
+
+function stripFileProtocol(path: string): string {
+    return path
+        .replace(/^file:\/\/(localhost)?\/?([a-z]:)/i, "$2")
+        .replace(/^file:\/?([a-z]:)/i, "$1")
+        .replace(/^file:\/\/(localhost)?\//i, "/")
+        .replace(/^file:\//i, "/");
+}
+
+function extractSegmentsForComparison(path: string, sub: string, options: {
+    caseInsensitive?: boolean;
+    ignoreFileProtocol?: boolean;
+} = {}): {
+    result: boolean | undefined;
+    paths: string[];
+    subs: string[];
+} {
+    if (options.caseInsensitive) {
+        path = path.toLowerCase();
+        sub = sub.toLowerCase();
+    }
+
+    if (options.ignoreFileProtocol) {
+        path = stripFileProtocol(path);
+        sub = stripFileProtocol(sub);
+    }
+
+    const paths = split(path).filter(isNotQuery);
+    const subs = split(sub).filter(isNotQuery);
+
+    if (paths.length < subs.length) {
+        return { result: false, paths: [], subs: [] };
+    }
+
+    if (!options.caseInsensitive) {
+        if (paths.length > 0 && isVolume(paths[0]!)) {
+            // Windows volume is always case-insensitive
+            paths[0] = paths[0]!.toLowerCase();
+        }
+
+        if (subs.length > 0 && isVolume(subs[0]!)) {
+            // Windows volume is always case-insensitive
+            subs[0] = subs[0]!.toLowerCase();
+        }
+    }
+
+    if (!subs.length) {
+        return { result: true, paths, subs };
+    }
+
+    return { result: undefined, paths, subs };
+}
+
+/**
+ * Checks if the `path` contains the given `sub` path.
+ * 
+ * This function is ignorant about the path separator, the query string and the
+ * hash string (if present). And is case-insensitive on Windows volume symbol
+ * by default.
+ * @experimental
+ */
+export function contains(path: string, sub: string, options: {
+    caseInsensitive?: boolean;
+    ignoreFileProtocol?: boolean;
+} = {}): boolean {
+    const { result, paths, subs } = extractSegmentsForComparison(path, sub, options);
+
+    if (result !== undefined) {
+        return result;
+    }
+
+    const head = subs[0];
+    for (let i = 0; i < paths.length; i++) {
+        if (paths[i] !== head)
+            continue;
+
+        const pin = i;
+        let matched = 1;
+        let j = i;
+
+        while (matched < subs.length) {
+            j++;
+
+            if (paths[j] !== subs[j - pin]) {
+                break;
+            }
+
+            matched++;
+        }
+
+        if (matched === subs.length) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Checks if the `path` starts with the given `sub` path.
+ * 
+ * This function is ignorant about the path separator, the query string and the
+ * hash string (if present). And is case-insensitive on Windows volume symbol
+ * by default.
+ * @experimental
+ */
+export function startsWith(path: string, sub: string, options: {
+    caseInsensitive?: boolean;
+    ignoreFileProtocol?: boolean;
+} = {}): boolean {
+    const { result, paths, subs } = extractSegmentsForComparison(path, sub, options);
+
+    if (result !== undefined)
+        return result;
+
+    for (let i = 0; i < subs.length; i++) {
+        if (subs[i] !== paths[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Checks if the `path` ends with the given `sub` path.
+ * 
+ * This function is ignorant about the path separator, the query string and the
+ * hash string (if present). And is case-insensitive on Windows volume symbol
+ * by default.
+ * @experimental
+ */
+export function endsWith(path: string, sub: string, options: {
+    caseInsensitive?: boolean;
+    ignoreFileProtocol?: boolean;
+} = {}): boolean {
+    const { result, paths, subs } = extractSegmentsForComparison(path, sub, options);
+
+    if (result !== undefined)
+        return result;
+
+    for (let i = subs.length - 1, j = paths.length - 1; i >= 0; i--, j--) {
+        if (subs[i] !== paths[j]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Checks if the `path1` and `path2` describe the same path.
+ * 
+ * This function is ignorant about the path separator, the query string and the
+ * hash string (if present). And is case-insensitive on Windows volume symbol
+ * by default.
+ * @experimental
+ */
+export function equals(path1: string, path2: string, options: {
+    caseInsensitive?: boolean;
+    ignoreFileProtocol?: boolean;
+} = {}): boolean {
+    const { result, paths, subs } = extractSegmentsForComparison(path1, path2, options);
+
+    if (result === false || paths.length !== subs.length) {
+        return false;
+    }
+
+    for (let i = 0; i < paths.length; i++) {
+        if (paths[i] !== subs[i]) {
+            return false;
+        }
+    }
+
+    return true;
 }
