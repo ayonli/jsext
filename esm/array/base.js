@@ -13,7 +13,10 @@ function count(arr, item) {
  * this array-like object.
  */
 function equals(arr1, arr2) {
-    if (arr1.length !== arr2.length) {
+    if (arr1 === arr2) {
+        return true;
+    }
+    else if (arr1.length !== arr2.length) {
         return false;
     }
     for (let i = 0; i < arr1.length; i++) {
