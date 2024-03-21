@@ -4,29 +4,47 @@
  */
 
 import { equals as _equals, split as _split, chunk as _chunk } from "../array/base.ts";
+import { as } from "../object/index.ts";
 import { sum } from "../math/index.ts";
 import type { Constructor } from "../index.ts";
 
 const defaultEncoder = new TextEncoder();
 const defaultDecoder = new TextDecoder();
 
+/**
+ * A byte array is a `Uint8Array` that can be coerced to a string with `utf8`
+ * encoding.
+ */
+export class ByteArray extends Uint8Array {
+    override toString(): string {
+        return text(this);
+    }
+
+    toJSON() {
+        return {
+            type: "ByteArray",
+            data: Array.from(this),
+        };
+    }
+}
+
 export default bytes;
 
 /** Converts the given data to a byte array. */
-export function bytes(str: string): Uint8Array;
-export function bytes(arr: ArrayLike<number>): Uint8Array;
-export function bytes(buf: ArrayBufferLike): Uint8Array;
-export function bytes(length: number): Uint8Array;
-export function bytes(data: any): Uint8Array {
+export function bytes(str: string): ByteArray;
+export function bytes(arr: ArrayLike<number>): ByteArray;
+export function bytes(buf: ArrayBufferLike): ByteArray;
+export function bytes(length: number): ByteArray;
+export function bytes(data: any): ByteArray {
     if (typeof data === "string") {
-        return defaultEncoder.encode(data);
+        return new ByteArray(defaultEncoder.encode(data).buffer);
     } else {
-        return new Uint8Array(data as any);
+        return new ByteArray(data as any);
     }
 }
 
 /**
- * Converts the byte array to a string.
+ * Converts the byte array (or `Uint8Array`) to a string.
  * @param encoding Default value: `utf8`.
  */
 export function text(
@@ -34,15 +52,21 @@ export function text(
     encoding: "utf8" | "hex" | "base64" = "utf8"
 ): string {
     if (encoding === "hex") {
-        return bytes.reduce((str, byte) => {
-            return str + byte.toString(16).padStart(2, "0");
-        }, "");
+        if (typeof Buffer === "function") {
+            return (as(bytes, Buffer) as Buffer ?? Buffer.from(bytes)).toString("hex");
+        } else {
+            return bytes.reduce((str, byte) => {
+                return str + byte.toString(16).padStart(2, "0");
+            }, "");
+        };
     } else if (encoding === "base64") {
         if (typeof Buffer === "function") {
-            return Buffer.from(bytes).toString("base64");
+            return (as(bytes, Buffer) as Buffer ?? Buffer.from(bytes)).toString("base64");
         } else {
             return btoa(defaultDecoder.decode(bytes));
         }
+    } else if (typeof Buffer === "function" && bytes instanceof Buffer) {
+        return bytes.toString("utf8");
     } else {
         return defaultDecoder.decode(bytes);
     }

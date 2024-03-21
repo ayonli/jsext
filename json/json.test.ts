@@ -1,5 +1,6 @@
 import "../augment.ts";
 import { deepStrictEqual, strictEqual } from "node:assert";
+import bytes, { ByteArray } from "../bytes/index.ts";
 
 describe("JSON", () => {
     describe("JSON.parseAs", () => {
@@ -77,6 +78,9 @@ describe("JSON", () => {
 
             const tArr = Uint8Array.from([1, 2, 3]);
             deepStrictEqual(JSON.parseAs(JSON.stringify(tArr), Uint8Array), tArr);
+
+            const bArr = bytes("Hello, World!");
+            deepStrictEqual(JSON.parseAs(JSON.stringify(bArr), ByteArray), bArr);
 
             if (typeof Buffer === "function") {
                 const buf = Buffer.from([1, 2, 3]);

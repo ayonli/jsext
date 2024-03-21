@@ -46,8 +46,8 @@ describe("String", () => {
 
     it("String.prototype.bytes", () => {
         const encoder = new TextEncoder();
-        deepStrictEqual("Hello, World!".bytes(), encoder.encode("Hello, World!"));
-        deepStrictEqual("你好，世界！".bytes(), encoder.encode("你好，世界！"));
+        deepStrictEqual("Hello, World!".bytes().buffer, encoder.encode("Hello, World!").buffer);
+        deepStrictEqual("你好，世界！".bytes().buffer, encoder.encode("你好，世界！").buffer);
     });
 
     it("String.prototype.chars", () => {

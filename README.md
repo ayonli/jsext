@@ -1382,7 +1382,9 @@ _(except for `Channel`, `Queue` and `Mutex`)._
 - [string](#string) Functions for dealing with strings.
 - [number](#number) Functions for dealing with numbers.
 - [array](#array) Functions for dealing with arrays.
-- [uint8array](#uint8array) Functions for dealing with `Uint8Array`s.
+- [bytes](#bytes) Functions for dealing with byte arrays (`Uint8Array`).
+    - Historically, this module was named `uint8array`, but that name has been
+      deprecated.
 - [object](#object) Functions for dealing with objects.
 - [json](#json) Functions for parsing JSONs to specific structures.
 - [math](#math) Functions for mathematical calculations.
@@ -1416,7 +1418,7 @@ import { compare, random /* ... */ } from "@ayonli/jsext/string";
 - `count(str: string, sub: string): number`
 - `capitalize(str: string, all?: boolean): string`
 - `hyphenate(str: string): string`
-- `bytes(str: string): Uint8Array`
+- `bytes(str: string): ByteArray` deprecated, use `bytes` module instead.
 - `chars(str: string): string[]`
 - `words(str: string): string[]`
 - `lines(str: string): string[]`
@@ -1472,14 +1474,19 @@ import { count, equals /* ... */ } from "@ayonli/jsext/array";
 - `keyBy<T, K extends string | number | symbol>(arr: T[], fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
 - `keyBy<T, K>(arr: T[], fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>`
 
-### [uint8array](https://jsr.io/@ayonli/jsext/doc/uint8array/~)
+### [bytes](https://jsr.io/@ayonli/jsext/doc/bytes/~)
 
 ```js
-import { compare, equals /* ... */ } from "@ayonli/jsext/uint8array";
+import bytes, { compare, equals /* ... */ } from "@ayonli/jsext/bytes";
 ```
 
 **Functions**
 
+- `bytes(str: string): Uint8Array`
+- `bytes(arr: ArrayLike<number>): Uint8Array`
+- `bytes(buf: ArrayBufferLike): Uint8Array`
+- `bytes(length: number): Uint8Array`
+- `text(bytes: Uint8Array, encoding?: "utf8" | "hex" | "base64"): string`
 - `copy(src: Uint8Array, dest: Uint8Array): number`
 - `concat<T extends Uint8Array>(...arrays: T[]): T`
 - `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
@@ -1633,9 +1640,9 @@ _This module is experimental._
 
 ## Augmentations
 
-This package supports augmenting functions to the corresponding built-in
-types/namespaces, but they should only be used for application development,
-don't use them when developing libraries.
+This package supports augmenting some modules' functions to the corresponding
+built-in types/namespaces, but they should only be used for application
+development, don't use them when developing libraries.
 
 _NOTE: this feature is only available by the NPM package or in the Browser,_
 _They don't work by the JSR package._
@@ -1648,7 +1655,6 @@ import "@ayonli/jsext/augment";
 import "@ayonli/jsext/string/augment";
 import "@ayonli/jsext/number/augment";
 import "@ayonli/jsext/array/augment";
-import "@ayonli/jsext/uint8array/augment";
 import "@ayonli/jsext/object/augment";
 import "@ayonli/jsext/json/augment";
 import "@ayonli/jsext/math/augment";
@@ -1666,7 +1672,7 @@ import "@ayonli/jsext/collections/augment";
     - `count(sub: string): number`
     - `capitalize(all?: boolean): string`
     - `hyphenate(): string`
-    - `bytes(): Uint8Array`
+    - `bytes(): ByteArray`
     - `chars(): string[]`
     - `words(): string[]`
     - `lines(): string[]`
@@ -1713,17 +1719,6 @@ import "@ayonli/jsext/collections/augment";
     - `groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
     - `keyBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
     - `keyBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>`
-
-### Augment Uint8Array
-
-- `Uint8Array`
-  - `copy(src: Uint8Array, dest: Uint8Array): number`
-  - `concat<T extends Uint8Array>(...arrays: T[]): T`
-  - `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
-  - `prototype`
-    - `equals(another: Uint8Array): boolean`
-    - `split(delimiter: number): this[]`
-    - `chunk(length: number): this[]`
 
 ### Augment Object
 

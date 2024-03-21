@@ -6,6 +6,7 @@
 import type { Constructor } from "../index.ts";
 import { isValid } from "../object/index.ts";
 import { fromObject } from "../error/index.ts";
+import bytes from "../bytes/index.ts";
 
 const typeRegistry = new Map<Object, { [prop: string | symbol]: Constructor<any>; }>();
 
@@ -112,7 +113,8 @@ export function as(data: unknown, type: any): any {
             return null;
         }
     } else if (!([String, Number, Boolean, Date, Array] as Function[]).includes(type)) {
-        if ((data as any).type === "Buffer" && Array.isArray((data as any).data)) { // Node.js Buffer
+        if ((data as any).type === "Buffer" && Array.isArray((data as any).data)) {
+            // Node.js Buffer
             if (typeof Buffer === "function" && type === Buffer) {
                 try {
                     return Buffer.from((data as any).data);
@@ -129,6 +131,13 @@ export function as(data: unknown, type: any): any {
                     return null;
                 }
             } else {
+                return null;
+            }
+        } else if ((data as any).type === "ByteArray" && Array.isArray((data as any).data)) {
+            // ByteArray
+            try {
+                return bytes((data as any).data);
+            } catch {
                 return null;
             }
         }

@@ -4,8 +4,8 @@
  */
 
 import { chunk as _chunk } from "../array/base.ts";
+import _bytes, { ByteArray } from "../bytes/index.ts";
 
-const encoder = new TextEncoder();
 const _chars = chars;
 
 /**
@@ -68,9 +68,12 @@ export function hyphenate(str: string): string {
     return str.replace(/(\S)\s+(\S)/g, (_, $1, $2) => $1 + "-" + $2);
 }
 
-/** Returns the bytes of the given string. */
-export function bytes(str: string): Uint8Array {
-    return encoder.encode(str);
+/**
+ * Returns the bytes of the given string.
+ * @deprecated use the `bytes` module instead.
+ */
+export function bytes(str: string): ByteArray {
+    return _bytes(str);
 }
 
 /** Returns the characters of the string (emojis are supported). */
@@ -166,7 +169,7 @@ export function stripStart(str: string, prefix: string): string {
 
 /** Returns the byte length of the string. */
 export function byteLength(str: string): number {
-    return bytes(str).byteLength;
+    return _bytes(str).byteLength;
 }
 
 /** Checks if all characters in this string are within the ASCII range. */

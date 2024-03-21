@@ -1,3 +1,4 @@
+import type { ByteArray } from "../bytes/index.ts";
 import {
     compare,
     random,
@@ -44,7 +45,7 @@ declare global {
         /** Replaces the spaces between non-empty characters of the string with hyphens (`-`). */
         hyphenate(): string;
         /** Returns the bytes of the given string. */
-        bytes(): Uint8Array;
+        bytes(): ByteArray;
         /** Returns the characters of the string (emojis are supported). */
         chars(): string[];
         /** Extracts words (in latin characters) from the string. */
