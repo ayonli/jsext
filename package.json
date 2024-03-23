@@ -139,6 +139,13 @@
             "import": "./esm/array/augment.js",
             "default": "./array/augment.ts"
         },
+        "./bytes": {
+            "types": "./types/bytes/index.d.ts",
+            "bun": "./bytes/index.ts",
+            "require": "./cjs/bytes/index.js",
+            "import": "./esm/bytes/index.js",
+            "default": "./bytes/index.ts"
+        },
         "./collections": {
             "types": "./types/collections/index.d.ts",
             "bun": "./collections/index.ts",
@@ -152,6 +159,13 @@
             "require": "./cjs/collections/augment.js",
             "import": "./esm/collections/augment.js",
             "default": "./collections/augment.ts"
+        },
+        "./dialog": {
+            "types": "./types/dialog/index.d.ts",
+            "bun": "./dialog/index.ts",
+            "require": "./cjs/dialog/index.js",
+            "import": "./esm/dialog/index.js",
+            "default": "./dialog/index.ts"
         },
         "./error": {
             "types": "./types/error/index.d.ts",

@@ -81,7 +81,7 @@ browser.
 - [mixin](#mixin) Defines a class that inherits methods from multiple base
   classes.
 
-And other functions in sub-[modules](#modules).
+And more functions in sub-[modules](#modules).
 
 ### _try
 
@@ -1382,9 +1382,6 @@ _(except for `Channel`, `Queue` and `Mutex`)._
 - [string](#string) Functions for dealing with strings.
 - [number](#number) Functions for dealing with numbers.
 - [array](#array) Functions for dealing with arrays.
-- [bytes](#bytes) Functions for dealing with byte arrays (`Uint8Array`).
-    - Historically, this module was named `uint8array`, but that name has been
-      deprecated.
 - [object](#object) Functions for dealing with objects.
 - [json](#json) Functions for parsing JSONs to specific structures.
 - [math](#math) Functions for mathematical calculations.
@@ -1392,8 +1389,12 @@ _(except for `Channel`, `Queue` and `Mutex`)._
 - [error](#error) Functions for converting errors to/from other types of
   objects.
 - [collections](#collections) Additional collection data types.
+- [bytes](#bytes) Functions for dealing with byte arrays (`Uint8Array`).
+  - Historically, this module was named `uint8array`, but that name has been
+    deprecated.
 - [path](#path) (Experimental) Platform-independent utility functions for
   dealing with system paths and URLs.
+- [dialog](#dialog) Asynchronous dialog functions for both browsers and Node.js.
 
 **NOTE:** Configure `tsconfig.json` to set `compilerOptions.module` as
 `NodeNext` or `ESNext` instead of `CommonJS` in order to use sub-modules.
@@ -1473,26 +1474,6 @@ import { count, equals /* ... */ } from "@ayonli/jsext/array";
 - `groupBy<T, K>(arr: T[], fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
 - `keyBy<T, K extends string | number | symbol>(arr: T[], fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
 - `keyBy<T, K>(arr: T[], fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>`
-
-### [bytes](https://jsr.io/@ayonli/jsext/doc/bytes/~)
-
-```js
-import bytes, { compare, equals /* ... */ } from "@ayonli/jsext/bytes";
-```
-
-**Functions**
-
-- `bytes(str: string): Uint8Array`
-- `bytes(arr: ArrayLike<number>): Uint8Array`
-- `bytes(buf: ArrayBufferLike): Uint8Array`
-- `bytes(length: number): Uint8Array`
-- `text(bytes: Uint8Array, encoding?: "utf8" | "hex" | "base64"): string`
-- `copy(src: Uint8Array, dest: Uint8Array): number`
-- `concat<T extends Uint8Array>(...arrays: T[]): T`
-- `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
-- `equals(arr1: Uint8Array, arr2: Uint8Array): boolean`
-- `split<T extends Uint8Array>(arr: T, delimiter: number): T[]`
-- `chunk<T extends Uint8Array>(arr: T, length: number): T[]`
 
 ### [object](https://jsr.io/@ayonli/jsext/doc/object/~)
 
@@ -1606,6 +1587,30 @@ import { BiMap, CiMap } from "@ayonli/jsext/collections";
 - `CiMap<K extends string, V>` (extends `Map<K, any>`) Case-insensitive map,
   keys are case-insensitive.
 
+### [bytes](https://jsr.io/@ayonli/jsext/doc/bytes/~)
+
+```js
+import bytes, { compare, equals /* ... */ } from "@ayonli/jsext/bytes";
+```
+
+**Classes**
+
+- `ByteArray`
+
+**Functions**
+
+- `bytes(str: string): ByteArray`
+- `bytes(arr: ArrayLike<number>): ByteArray`
+- `bytes(buf: ArrayBufferLike): ByteArray`
+- `bytes(length: number): ByteArray`
+- `text(bytes: Uint8Array, encoding?: "utf8" | "hex" | "base64"): string`
+- `copy(src: Uint8Array, dest: Uint8Array): number`
+- `concat<T extends Uint8Array>(...arrays: T[]): T`
+- `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
+- `equals(arr1: Uint8Array, arr2: Uint8Array): boolean`
+- `split<T extends Uint8Array>(arr: T, delimiter: number): T[]`
+- `chunk<T extends Uint8Array>(arr: T, length: number): T[]`
+
 ### [path](https://jsr.io/@ayonli/jsext/doc/path/~)
 
 ```js
@@ -1637,6 +1642,21 @@ _This module is experimental._
 - `startsWith(path: string, sub: string, options?: { caseInsensitive?: boolean; ignoreFileProtocol?: boolean; }): boolean`
 - `endsWith(path: string, sub: string, options?: { caseInsensitive?: boolean; ignoreFileProtocol?: boolean; }): boolean`
 - `equals(path1: string, path2: string, options?: { caseInsensitive?: boolean; ignoreFileProtocol?: boolean; }): boolean`
+
+### [dialog](https://jsr.io/@ayonli/jsext/doc/dialog/~)
+
+```js
+import { alert, confirm, prompt /* ... */ } from "@ayonli/jsext/dialog";
+```
+
+_This module is experimental._
+
+**Functions**
+
+- `alert(): Promise<void>`
+- `confirm(message: string): Promise<boolean>`
+- `prompt(message: string, defaultValue?: string | undefined): Promise<string>`
+- `progress<T>(message: string, fn: (set: (state: ProgressState) => void, signal: AbortSignal) => Promise<T>, onAbort: (() => T | never | Promise<T | never>) | undefined = undefined): Promise<T>`
 
 ## Augmentations
 

@@ -1,5 +1,7 @@
 /**
- * Asynchronous `alert`, `confirm` and `prompt` functions for both browsers and Node.js.
+ * Asynchronous dialog functions for both browsers and Node.js.
+ * 
+ * This includes `alert`, `confirm`, `prompt` and other non-standard dialogs.
  * 
  * @remarks Currently, this module doesn't work well in Deno since it doesn't
  * provide enough features for the `process.stdin` object.
@@ -30,7 +32,11 @@ type KeypressEventInfo = {
     shift: boolean;
 };
 
-export async function alert(message: string) {
+/**
+ * Displays a dialog with a message, and to wait until the user dismisses the
+ * dialog.
+ */
+export async function alert(message: string): Promise<void> {
     if (typeof Deno === "object") {
         return Promise.resolve(globalThis.alert(message));
     } else if (typeof document === "object") {
@@ -64,6 +70,10 @@ export async function alert(message: string) {
     }
 }
 
+/**
+ * Displays a dialog with a message, and to wait until the user either confirms
+ * or cancels the dialog.
+ */
 export async function confirm(message: string): Promise<boolean> {
     if (typeof Deno === "object") {
         return Promise.resolve(globalThis.confirm(message));
@@ -114,6 +124,10 @@ export async function confirm(message: string): Promise<boolean> {
     }
 }
 
+/**
+ * Displays a dialog with a message prompting the user to input some text, and to
+ * wait until the user either submits the text or cancels the dialog.
+ */
 export async function prompt(
     message: string,
     defaultValue: string | undefined = undefined
@@ -176,11 +190,30 @@ export async function prompt(
     }
 }
 
-export type SetProgress = (state: { percent?: number; message?: string; }) => void;
+export type ProgressState = {
+    /**
+     * Once set, the progress bar will be updated to display the given
+     * percentage. Valid values are between `0` and `100`.
+     */
+    percent?: number;
+    /**
+     * Once set, the progress dialog will be updated to display the given message.
+     */
+    message?: string;
+};
 
+/**
+ * Displays a dialog with a progress bar indicating the ongoing state of the
+ * `fn` function, and to wait until the job finishes or the user cancels the
+ * dialog.
+ * 
+ * @param onAbort If provided, the dialog will show a cancel button that allows
+ * the user to abort the task. This function can either return a default/fallback
+ * result or throw an error to indicate the cancellation.
+ */
 export async function progress<T>(
     message: string,
-    fn: (set: SetProgress, signal?: AbortSignal) => Promise<T>,
+    fn: (set: (state: ProgressState) => void, signal: AbortSignal) => Promise<T>,
     onAbort: (() => T | never | Promise<T | never>) | undefined = undefined
 ): Promise<T> {
     const ctrl = new AbortController();
@@ -213,7 +246,7 @@ export async function progress<T>(
         const { element: progressBar, setValue } = Progress();
         const dialog = Dialog({ onPressEscape: abort }, text);
 
-        const set = (state: { message?: string, percent?: number; }) => {
+        const set = (state: ProgressState) => {
             if (signal.aborted) {
                 return;
             }
@@ -254,7 +287,7 @@ export async function progress<T>(
         let lastMessage = stripEnd(message, "...");
         let lastPercent: number | undefined = undefined;
 
-        const set = (state: { message?: string, percent?: number; }) => {
+        const set = (state: ProgressState) => {
             if (signal.aborted) {
                 return;
             }
@@ -299,7 +332,7 @@ export async function progress<T>(
         let lastMessage = stripEnd(message, "...");
         let lastPercent: number | undefined = undefined;
 
-        const set = (state: { message?: string, percent?: number; }) => {
+        const set = (state: ProgressState) => {
             moveCursor(stdout, -writer.cursor, 0);
             clearLine(stdout, 1);
 

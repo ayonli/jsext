@@ -5,9 +5,9 @@ name: JSDOM
 
 on:
   push:
-    branches: [ "dialog" ]
+    branches: [ "dev" ]
   pull_request:
-    branches: [ "main", "dialog" ]
+    branches: [ "main", "dev" ]
 
 jobs:
   test:

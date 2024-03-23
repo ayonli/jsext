@@ -81,8 +81,23 @@ jobs:
 
       - run: deno run --allow-read --allow-net test-deno.ts
 
+  test-jsdom:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 21.x
+          cache: 'npm'
+
+      - run: npm i
+      - run: npm run test:jsdom
+
   publish-npm:
-    needs: [test-node, test-tsx, test-bun, test-deno]
+    needs: [test-node, test-tsx, test-bun, test-deno, test-jsdom]
     runs-on: ubuntu-latest
 
     steps:
