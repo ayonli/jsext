@@ -1,3 +1,5 @@
+import { closeDialog } from "./Dialog.ts";
+
 export default function CancelButton(props: {
     onClick: (event: MouseEvent, dialog: HTMLDialogElement) => void;
 }, text: string) {
@@ -21,10 +23,9 @@ export default function CancelButton(props: {
     });
 
     button.addEventListener("click", (event) => {
-        const dialog = (event.target as HTMLButtonElement)?.closest("dialog");
-        dialog!.close();
-        document.body.removeChild(dialog!);
-        props.onClick(event, dialog!);
+        const dialog = (event.target as HTMLButtonElement)?.closest("dialog")!;
+        closeDialog(dialog);
+        props.onClick(event, dialog);
     });
 
     return button;

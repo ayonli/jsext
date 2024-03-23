@@ -22,8 +22,7 @@ export default function Dialog(props: {
     if (onPressEscape) {
         dialog.addEventListener("cancel", (event) => {
             onPressEscape!(event);
-            dialog.close();
-            document.body.removeChild(dialog);
+            closeDialog(dialog);
         });
     }
 
@@ -31,8 +30,7 @@ export default function Dialog(props: {
         dialog.addEventListener("keypress", (event) => {
             if (event.key === "Enter") {
                 onPressEnter!(event, dialog);
-                dialog.close();
-                document.body.removeChild(dialog);
+                closeDialog(dialog);
             }
         });
     }
@@ -42,7 +40,13 @@ export default function Dialog(props: {
     });
 
     requestAnimationFrame(() => {
-        dialog.showModal();
+        if (typeof dialog.showModal === "function") {
+            dialog.showModal();
+        } else if (typeof dialog.show === "function") {
+            dialog.show();
+        } else {
+            dialog.open = true; // for testing with JSDOM
+        }
 
         if (!hasInput) {
             dialog.inert = false;
@@ -54,4 +58,20 @@ export default function Dialog(props: {
     });
 
     return dialog;
+}
+
+export function closeDialog(dialog: HTMLDialogElement) {
+    if (typeof dialog.close === "function") {
+        dialog.close();
+    } else {
+        dialog.open = false; // for testing with JSDOM
+    }
+
+    try {
+        document.body.removeChild(dialog);
+    } catch (err: any) {
+        if (err["name"] !== "NotFoundError") { // Ignore NotFoundError (in Safari)
+            throw err;
+        }
+    }
 }

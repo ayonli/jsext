@@ -32,8 +32,8 @@ if (message) {
 
             return { message: "Success!" };
         }, () => {
-            throw new Error("Aborted!");
-            // return { message: "Failed!" };
+            // throw new Error("Aborted!");
+            return { message: "Failed!" };
         });
 
         // console.log(result.message);

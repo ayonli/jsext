@@ -12,15 +12,23 @@
  */
 
 import { stripEnd } from "@ayonli/jsext/string";
-import Dialog from "./components/Dialog";
-import Text from "./components/Text";
-import Footer from "./components/Footer";
-import OkButton from "./components/OkButton";
-import CancelButton from "./components/CancelButton";
-import Input from "./components/Input";
-import Progress from "./components/Progress";
+import Dialog, { closeDialog } from "./components/Dialog.ts";
+import Text from "./components/Text.ts";
+import Footer from "./components/Footer.ts";
+import OkButton from "./components/OkButton.ts";
+import CancelButton from "./components/CancelButton.ts";
+import Input from "./components/Input.ts";
+import Progress from "./components/Progress.ts";
 
 declare const Deno: object;
+
+type KeypressEventInfo = {
+    sequence: string;
+    name: string;
+    ctrl: boolean;
+    meta: boolean;
+    shift: boolean;
+};
 
 export async function alert(message: string) {
     if (typeof Deno === "object") {
@@ -74,7 +82,7 @@ export async function confirm(message: string): Promise<boolean> {
                         }, "Cancel"),
                         OkButton({
                             onClick: () => resolve(true)
-                        }, "Ok")
+                        }, "OK")
                     )
                 )
             );
@@ -91,8 +99,8 @@ export async function confirm(message: string): Promise<boolean> {
         });
 
         const abort = new Promise<string>(resolve => {
-            stdin.on?.("keypress", (key: string | undefined) => {
-                if (key === undefined) {
+            stdin.on?.("keypress", (_, key: KeypressEventInfo) => {
+                if (key.name === "escape") {
                     resolve("N");
                 }
             });
@@ -133,7 +141,7 @@ export async function prompt(
                         }, "Cancel"),
                         OkButton({
                             onClick: handleConfirm,
-                        }, "Ok")
+                        }, "OK")
                     )
                 )
             );
@@ -154,8 +162,8 @@ export async function prompt(
         }
 
         const abort = new Promise<null>(resolve => {
-            stdin.on?.("keypress", (key: string | undefined) => {
-                if (key === undefined) {
+            stdin.on?.("keypress", (_, key: KeypressEventInfo) => {
+                if (key.name === "escape") {
                     resolve(null);
                 }
             });
@@ -203,12 +211,8 @@ export async function progress<T>(
     if (typeof document === "object") {
         const text = Text(message);
         const { element: progressBar, setValue } = Progress();
-        const dialog = Dialog({}, text);
+        const dialog = Dialog({ onPressEscape: abort }, text);
 
-        const close = () => {
-            dialog.close();
-            document.body.removeChild(dialog);
-        };
         const set = (state: { message?: string, percent?: number; }) => {
             if (signal.aborted) {
                 return;
@@ -244,7 +248,7 @@ export async function progress<T>(
         try {
             return await job;
         } finally {
-            signal.aborted || close();
+            signal.aborted || closeDialog(dialog);
         }
     } else if (typeof Deno === "object") {
         let lastMessage = stripEnd(message, "...");
@@ -320,8 +324,8 @@ export async function progress<T>(
         };
 
         if (onAbort) {
-            stdin.on?.("keypress", async (key: string | undefined) => {
-                if (key === undefined) {
+            stdin.on?.("keypress", (_, key: KeypressEventInfo) => {
+                if (key.name === "escape") {
                     abort();
                 }
             });

@@ -280,6 +280,7 @@
         "test:tsx": "node pretest.cjs && tsx ./node_modules/mocha/bin/mocha && node posttest.cjs",
         "test:bun": "bun run ./node_modules/mocha/bin/mocha",
         "test:deno": "deno run --allow-read --allow-net test-deno.ts",
+        "test:jsdom": "node pretest.cjs && tsx ./node_modules/mocha/bin/mocha -r global-jsdom/register && node posttest.cjs",
         "build": "rollup -c rollup.config.mjs && echo '{\"type\":\"module\"}' > ./esm/package.json && echo '{\"type\":\"commonjs\"}' > ./cjs/package.json && tsc -p types.tsconfig.json",
         "typing": "tsc --noEmit --watch",
         "prepublishOnly": "npm run build"
@@ -356,7 +357,9 @@
         "@types/ws": "^8.5.5",
         "eventsource": "1.1",
         "glob": "^10.3.10",
+        "global-jsdom": "^24.0.0",
         "isomorphic-ws": "^5.0.0",
+        "jsdom": "^24.0.0",
         "mocha": "^10.2.0",
         "rollup": "^3.29.2",
         "string-hash": "^1.1.3",
