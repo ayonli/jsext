@@ -19,6 +19,7 @@ import {
     unwrapReturnValue,
 } from "./parallel/utils/threads.ts";
 import parallel from "./parallel.ts";
+import { unrefTimer } from "./util.ts";
 
 declare var Deno: any;
 
@@ -239,6 +240,10 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
         await terminate();
         handleClose(err, true);
     }, options.timeout) : null;
+
+    if (timeout) {
+        unrefTimer(timeout);
+    }
 
     const handleMessage = async (msg: any) => {
         if (isChannelMessage(msg)) {
