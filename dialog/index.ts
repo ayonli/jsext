@@ -2,10 +2,10 @@
  * Asynchronous `alert`, `confirm` and `prompt` functions for both browsers and Node.js.
  * 
  * @remarks Currently, this module doesn't work well in Deno since it doesn't
- * provide enough features of the `process.stdin` object.
+ * provide enough features for the `process.stdin` object.
  * 
- * @remarks This module is experimental and has obvious issues in the Node.js
- * REPL environment.
+ * @remarks This module is experimental and breaks the process in Node.js REPL
+ * environment.
  * @experimental
  * 
  * @module
@@ -42,23 +42,17 @@ export async function alert(message: string) {
                 )
             );
         });
-    }
-
-    const { stdin, stdout } = await import("process");
-    const { createInterface } = await import("readline");
-    // @ts-ignore
-    const { default: repl } = await import("repl");
-    const writer = createInterface({
-        input: stdin,
-        output: stdout,
-    });
-    await new Promise<string>(resolve => {
-        writer.question(message + " [Enter] ", resolve);
-    });
-    writer.close();
-
-    if (repl.repl) {
-        stdin.resume(); // resume stdin to prevent the REPL from closing
+    } else {
+        const { stdin, stdout } = await import("process");
+        const { createInterface } = await import("readline");
+        const writer = createInterface({
+            input: stdin,
+            output: stdout,
+        });
+        await new Promise<string>(resolve => {
+            writer.question(message + " [Enter] ", resolve);
+        });
+        writer.close();
     }
 }
 
@@ -85,38 +79,28 @@ export async function confirm(message: string): Promise<boolean> {
                 )
             );
         });
-    }
-
-    const { stdin, stdout } = await import("process");
-    const { createInterface } = await import("readline");
-    // @ts-ignore
-    const { default: repl } = await import("repl");
-    const writer = createInterface({
-        input: stdin,
-        output: stdout,
-    });
-    const job = new Promise<string>(resolve => {
-        writer.question(message + " [y/N] ", resolve);
-    });
-
-    const abort = new Promise<boolean>(resolve => {
-        stdin.on?.("keypress", (key: string | undefined) => {
-            if (key === undefined) {
-                resolve(false);
-            }
-        });
-    });
-
-    let ok = await Promise.race([job, abort]);
-    writer.close();
-
-    if (repl.repl) {
-        stdin.resume(); // resume stdin to prevent the REPL from closing
-    }
-
-    if (typeof ok === "boolean") {
-        return false;
     } else {
+        const { stdin, stdout } = await import("process");
+        const { createInterface } = await import("readline");
+        const writer = createInterface({
+            input: stdin,
+            output: stdout,
+        });
+        const job = new Promise<string>(resolve => {
+            writer.question(message + " [y/N] ", resolve);
+        });
+
+        const abort = new Promise<string>(resolve => {
+            stdin.on?.("keypress", (key: string | undefined) => {
+                if (key === undefined) {
+                    resolve("N");
+                }
+            });
+        });
+
+        let ok = await Promise.race([job, abort]);
+        writer.close();
+
         ok = ok.toLowerCase().trim();
         return ok === "y" || ok === "yes";
     }
@@ -130,14 +114,16 @@ export async function prompt(
         return Promise.resolve(globalThis.prompt(message, defaultValue));
     } else if (typeof document === "object") {
         return new Promise<string | null>(resolve => {
+            const handleConfirm = (_: Event, dialog: HTMLDialogElement) => {
+                const input = dialog!.querySelector("input") as HTMLInputElement;
+                resolve(input.value);
+            };
+
             document.body.appendChild(
                 Dialog(
                     {
                         onPressEscape: () => resolve(null),
-                        onPressEnter: (_, dialog) => {
-                            const input = dialog!.querySelector("input") as HTMLInputElement;
-                            resolve(input.value);
-                        },
+                        onPressEnter: handleConfirm,
                     },
                     Text(message),
                     Input(defaultValue),
@@ -146,111 +132,135 @@ export async function prompt(
                             onClick: () => resolve(null),
                         }, "Cancel"),
                         OkButton({
-                            onClick: (_, dialog) => {
-                                const input = dialog!.querySelector("input") as HTMLInputElement;
-                                resolve(input.value);
-                            },
+                            onClick: handleConfirm,
                         }, "Ok")
                     )
                 )
             );
         });
+    } else {
+        const { stdin, stdout } = await import("process");
+        const { createInterface } = await import("readline");
+        const writer = createInterface({
+            input: stdin,
+            output: stdout,
+        });
+        const job = new Promise<string>(resolve => {
+            writer.question(message + " ", resolve);
+        });
+
+        if (defaultValue) {
+            writer.write(defaultValue);
+        }
+
+        const abort = new Promise<null>(resolve => {
+            stdin.on?.("keypress", (key: string | undefined) => {
+                if (key === undefined) {
+                    resolve(null);
+                }
+            });
+        });
+
+        const answer = await Promise.race([job, abort]);
+        writer.close();
+
+        return answer;
     }
+}
 
-    const { stdin, stdout } = await import("process");
-    const { createInterface } = await import("readline");
-    // @ts-ignore
-    const { default: repl } = await import("repl");
-    const writer = createInterface({
-        input: stdin,
-        output: stdout,
-    });
-    const job = new Promise<string>(resolve => {
-        writer.question(message + " ", resolve);
-    });
+export type SetProgress = (state: { percent?: number; message?: string; }) => void;
 
-    if (defaultValue) {
-        writer.write(defaultValue);
-    }
+export async function progress<T>(
+    message: string,
+    fn: (set: SetProgress, signal?: AbortSignal) => Promise<T>,
+    onAbort: (() => T | never | Promise<T | never>) | undefined = undefined
+): Promise<T> {
+    const ctrl = new AbortController();
+    const signal = ctrl.signal;
+    let fallback: { value: T; } | null = null;
+    const abort = async () => {
+        if (!onAbort)
+            return;
 
-    const abort = new Promise<null>(resolve => {
-        stdin.on?.("keypress", (key: string | undefined) => {
-            if (key === undefined) {
-                resolve(null);
+        try {
+            const result = await onAbort();
+            fallback = { value: result };
+            ctrl.abort();
+        } catch (err) {
+            ctrl.abort(err);
+        }
+    };
+    const handleAbort = () => new Promise<T>((resolve, reject) => {
+        signal.addEventListener("abort", () => {
+            if (fallback) {
+                resolve(fallback.value);
+            } else {
+                reject(signal.reason);
             }
         });
     });
 
-    const response = await Promise.race([job, abort]);
-    writer.close();
-
-    if (repl.repl) {
-        stdin.resume(); // resume stdin to prevent the REPL from closing
-    }
-
-    return response;
-}
-
-export async function progress<T>(
-    message: string,
-    fn: (set: (data: { message?: string, percent?: number; }) => void) => Promise<T>
-): Promise<T> {
     if (typeof document === "object") {
         const text = Text(message);
-        const progressBar = Progress();
-        const dialog = Dialog({}, text, progressBar);
+        const { element: progressBar, setValue } = Progress();
+        const dialog = Dialog({}, text);
+
         const close = () => {
             dialog.close();
             document.body.removeChild(dialog);
         };
-        const set = (data: { message?: string, percent?: number; }) => {
-            if (data.message) {
-                text.textContent = data.message;
+        const set = (state: { message?: string, percent?: number; }) => {
+            if (signal.aborted) {
+                return;
             }
 
-            if (data.percent !== undefined) {
-                progressBar.value = data.percent;
+            if (state.message) {
+                text.textContent = state.message;
+            }
+
+            if (state.percent !== undefined) {
+                setValue(state.percent);
             }
         };
 
+        if (onAbort) {
+            dialog.appendChild(
+                Footer(
+                    progressBar,
+                    CancelButton({ onClick: abort }, "Cancel")
+                )
+            );
+        } else {
+            dialog.appendChild(progressBar);
+        }
+
         document.body.appendChild(dialog);
+        let job = fn(set, signal);
 
-        return fn(set).then(result => {
-            dialog.removeChild(progressBar);
+        if (onAbort) {
+            job = Promise.race([job, handleAbort()]);
+        }
 
-            return new Promise<T>(resolve => {
-                dialog.addEventListener("cancel", close);
-                dialog.addEventListener("keypress", (event) => {
-                    if (event.key === "Enter") {
-                        close();
-                    }
-                });
-
-                dialog.appendChild(
-                    Footer(
-                        OkButton({
-                            onClick: () => resolve(result),
-                        }, "OK")
-                    )
-                );
-            });
-        }).catch(err => {
-            close();
-            throw err;
-        });
+        try {
+            return await job;
+        } finally {
+            signal.aborted || close();
+        }
     } else if (typeof Deno === "object") {
-        console.log(message);
-
         let lastMessage = stripEnd(message, "...");
         let lastPercent: number | undefined = undefined;
 
-        const set = (data: { message?: string, percent?: number; }) => {
-            if (data.message) {
-                lastMessage = data.message;
+        const set = (state: { message?: string, percent?: number; }) => {
+            if (signal.aborted) {
+                return;
             }
 
-            if (data.percent !== undefined) {
-                lastPercent = data.percent;
+            if (state.message) {
+                lastMessage = state.message;
+            }
+
+            if (state.percent !== undefined) {
+                lastPercent = state.percent;
             }
 
             if (lastPercent !== undefined) {
@@ -260,68 +270,76 @@ export async function progress<T>(
             }
         };
 
-        return fn(set);
-    }
+        console.log(message);
+        return await fn(set, signal);
+    } else {
+        const { stdin, stdout } = await import("process");
+        const { createInterface, clearLine, moveCursor } = await import("readline");
+        const writer = createInterface({
+            input: stdin,
+            output: stdout,
+        });
 
-    const { stdin, stdout } = await import("process");
-    const { createInterface, clearLine, moveCursor } = await import("readline");
-    const writer = createInterface({
-        input: stdin,
-        output: stdout,
-    });
+        let waitingIndicator = message.endsWith("...") ? "..." : "";
+        const waitingTimer = setInterval(() => {
+            if (waitingIndicator === "...") {
+                waitingIndicator = ".";
+                moveCursor(stdout, -2, 0);
+                clearLine(stdin, 1);
+            } else {
+                waitingIndicator += ".";
+                writer.write(".");
+            }
+        }, 1000);
 
-    writer.write(message);
+        let lastMessage = stripEnd(message, "...");
+        let lastPercent: number | undefined = undefined;
 
-    let waitingIndicator = message.endsWith("...") ? "..." : "";
-    const waitingTimer = setInterval(() => {
-        if (waitingIndicator === "...") {
-            waitingIndicator = ".";
-            moveCursor(stdout, -2, 0);
-            clearLine(stdin, 1);
-        } else {
-            waitingIndicator += ".";
-            writer.write(".");
+        const set = (state: { message?: string, percent?: number; }) => {
+            moveCursor(stdout, -writer.cursor, 0);
+            clearLine(stdout, 1);
+
+            if (signal.aborted) {
+                return;
+            }
+
+            if (state.message) {
+                lastMessage = state.message;
+            }
+
+            if (state.percent !== undefined) {
+                lastPercent = state.percent;
+            }
+
+            writer.write(lastMessage);
+
+            if (lastPercent !== undefined) {
+                writer.write(" ... " + lastPercent + "%");
+                clearInterval(waitingTimer as any);
+            }
+        };
+
+        if (onAbort) {
+            stdin.on?.("keypress", async (key: string | undefined) => {
+                if (key === undefined) {
+                    abort();
+                }
+            });
         }
-    }, 1000);
 
-    let lastMessage = stripEnd(message, "...");
-    let lastPercent: number | undefined = undefined;
+        writer.write(message);
+        let job = fn(set, signal);
 
-    const set = (data: { message?: string, percent?: number; }) => {
-        moveCursor(stdout, -writer.cursor, 0);
-        clearLine(stdout, 1);
-
-        if (data.message) {
-            lastMessage = data.message;
+        if (onAbort) {
+            job = Promise.race([job, handleAbort()]);
         }
 
-        if (data.percent !== undefined) {
-            lastPercent = data.percent;
-        }
-
-        writer.write(lastMessage);
-
-        if (lastPercent !== undefined) {
-            writer.write(" ... " + lastPercent + "%");
+        try {
+            return await job;
+        } finally {
             clearInterval(waitingTimer as any);
+            writer.write("\n");
+            writer.close();
         }
-    };
-
-    const job = fn(set);
-
-    try {
-        const result = await job;
-
-        clearInterval(waitingTimer as any);
-        writer.write("\n");
-        writer.close();
-
-        return result;
-    } catch (err) {
-        clearInterval(waitingTimer as any);
-        writer.write("\n");
-        writer.close();
-
-        throw err;
     }
 }

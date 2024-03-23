@@ -3,6 +3,7 @@ export default function Footer(...children: HTMLElement[]) {
 
     bottom.style.display = "flex";
     bottom.style.justifyContent = "flex-end";
+    bottom.style.alignItems = "center";
     bottom.style.gap = "0.5em";
 
     children.forEach(node => {
