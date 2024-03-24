@@ -1,9 +1,72 @@
 import { closeDialog } from './Dialog.js';
 
-function OkButton(props, text) {
+const locale = {
+    ar: "موافق",
+    be: "Добра",
+    bg: "ОК",
+    bn: "ঠিক আছে",
+    bs: "U redu",
+    cs: "OK",
+    da: "OK",
+    de: "OK",
+    el: "ΟΚ",
+    en: "OK",
+    es: "Aceptar",
+    et: "OK",
+    eu: "Ados",
+    fa: "باشه",
+    fi: "OK",
+    fr: "OK",
+    hi: "ठीक",
+    hu: "OK",
+    hy: "Լավ",
+    id: "OK",
+    is: "Í lagi",
+    it: "OK",
+    iw: "אישור",
+    ja: "OK",
+    ko: "확인",
+    lb: "OK",
+    lo: "ຕົກລົງ",
+    lv: "Labi",
+    lt: "Gerai",
+    mk: "Добро",
+    ml: "ശരി",
+    mi: "OK",
+    mn: "Зөв",
+    my: "အိုး",
+    ne: "ठिक",
+    nl: "OK",
+    no: "OK",
+    pl: "OK",
+    pt: "OK",
+    ro: "OK",
+    ru: "OK",
+    sa: "ठीक",
+    sk: "OK",
+    sl: "V redu",
+    so: "OK",
+    sq: "OK",
+    sv: "OK",
+    th: "ตกลง",
+    tl: "OK",
+    tr: "Tamam",
+    ug: "جەزملە",
+    uk: "OK",
+    vi: "OK",
+    zh: "确定",
+};
+function i18n(locale) {
+    let lang = "en";
+    if (typeof navigator === "object" && typeof navigator.language === "string") {
+        lang = navigator.language.split("-")[0];
+    }
+    return locale[lang] || locale["en"];
+}
+function OkButton(props) {
     const button = document.createElement("button");
-    button.textContent = text;
-    button.style.width = "5rem";
+    button.textContent = i18n(locale);
+    button.style.minWidth = "5rem";
     button.style.height = "2rem";
     button.style.borderStyle = "none";
     button.style.borderRadius = "1.5rem";
@@ -27,5 +90,5 @@ function OkButton(props, text) {
     return button;
 }
 
-export { OkButton as default };
+export { OkButton as default, i18n };
 //# sourceMappingURL=OkButton.js.map

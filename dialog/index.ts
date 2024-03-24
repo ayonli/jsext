@@ -51,7 +51,7 @@ export async function alert(message: string): Promise<void> {
                     Footer(
                         OkButton({
                             onClick: () => resolve(),
-                        }, "OK")
+                        })
                     )
                 )
             );
@@ -89,10 +89,10 @@ export async function confirm(message: string): Promise<boolean> {
                     Footer(
                         CancelButton({
                             onClick: () => resolve(false),
-                        }, "Cancel"),
+                        }),
                         OkButton({
                             onClick: () => resolve(true)
-                        }, "OK")
+                        })
                     )
                 )
             );
@@ -152,10 +152,10 @@ export async function prompt(
                     Footer(
                         CancelButton({
                             onClick: () => resolve(null),
-                        }, "Cancel"),
+                        }),
                         OkButton({
                             onClick: handleConfirm,
-                        }, "OK")
+                        })
                     )
                 )
             );
@@ -321,7 +321,7 @@ export async function progress<T>(
             dialog.appendChild(
                 Footer(
                     progressBar,
-                    CancelButton({ onClick: abort }, "Cancel")
+                    CancelButton({ onClick: abort })
                 )
             );
         } else {

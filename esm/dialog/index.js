@@ -36,7 +36,7 @@ async function alert(message) {
                 onPressEnter: () => resolve(),
             }, Text(message), Footer(OkButton({
                 onClick: () => resolve(),
-            }, "OK"))));
+            }))));
         });
     }
     else {
@@ -67,9 +67,9 @@ async function confirm(message) {
                 onPressEnter: () => resolve(true),
             }, Text(message), Footer(CancelButton({
                 onClick: () => resolve(false),
-            }, "Cancel"), OkButton({
+            }), OkButton({
                 onClick: () => resolve(true)
-            }, "OK"))));
+            }))));
         });
     }
     else {
@@ -115,9 +115,9 @@ async function prompt(message, defaultValue = "") {
                 onPressEnter: handleConfirm,
             }, Text(message), Input(defaultValue), Footer(CancelButton({
                 onClick: () => resolve(null),
-            }, "Cancel"), OkButton({
+            }), OkButton({
                 onClick: handleConfirm,
-            }, "OK"))));
+            }))));
         });
     }
     else {
@@ -255,7 +255,7 @@ async function progress(message, fn, onAbort = undefined) {
             }
         };
         if (onAbort) {
-            dialog.appendChild(Footer(progressBar, CancelButton({ onClick: abort }, "Cancel")));
+            dialog.appendChild(Footer(progressBar, CancelButton({ onClick: abort })));
         }
         else {
             dialog.appendChild(progressBar);
