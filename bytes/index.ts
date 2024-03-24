@@ -30,7 +30,18 @@ export class ByteArray extends Uint8Array {
 
 export default bytes;
 
-/** Converts the given data to a byte array. */
+/**
+ * Converts the given data to a byte array.
+ * 
+ * @example
+ * ```ts
+ * import bytes from "@ayonli/jsext/bytes";
+ * 
+ * const arr = bytes("Hello, World!");
+ * console.log(arr); // ByteArray(13) [Uint8Array] [ 72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33 ]
+ * console.log(String(arr)); // "Hello, World!"
+ * ```
+ */
 export function bytes(str: string): ByteArray;
 export function bytes(arr: ArrayLike<number>): ByteArray;
 export function bytes(buf: ArrayBufferLike): ByteArray;
