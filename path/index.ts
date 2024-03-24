@@ -1,5 +1,9 @@
 /**
  * Platform-independent utility functions for dealing with system paths and URLs.
+ * 
+ * The functions in this module are designed to be generic and work in any
+ * runtime, whether server-side or browsers. They can be used for both system
+ * paths and URLs.
  * @experimental
  * @module
  */
@@ -31,12 +35,14 @@ export {
     endsWith,
     startsWith,
     equals,
+    split,
 };
 
 declare const Deno: any;
 
 /**
- * Platform-specific path segment separator.
+ * Platform-specific path segment separator. The value is `\` on Windows
+ * server-side runtime, and `/` otherwise.
  * @experimental
  */
 export const sep: "/" | "\\" = (() => {
@@ -55,6 +61,8 @@ export const sep: "/" | "\\" = (() => {
 
 /**
  * Returns the current working directory.
+ * 
+ * NOTE: in the browser, this function returns the current origin and pathname.
  * @experimental
  */
 export function cwd(): string {
@@ -72,30 +80,58 @@ export function cwd(): string {
 /**
  * Concatenates all given `segments` into a well-formed path.
  * @experimental
+ * 
+ * @example
+ * ```ts
+ * import { join } from "@ayonli/jsext/path";
+ * 
+ * console.log(join("foo", "bar")); // "foo/bar" or "foo\\bar" on Windows
+ * console.log(join("/", "foo", "bar")); // "/foo/bar"
+ * console.log(join("C:\\", "foo", "bar")); // "C:\\foo\\bar"
+ * console.log(join("file:///foo", "bar", "..")) // "file:///foo"
+ * 
+ * console.log(join("http://example.com", "foo", "bar", "?query"));
+ * // "http://example.com/foo/bar?query"
+ * ```
  */
 export function join(...segments: string[]): string {
-    segments = segments.filter(s => s !== "");
+    let _paths: string[] = [];
 
-    if (!segments.length) {
-        return ".";
+    for (let i = 0; i < segments.length; i++) {
+        const path = segments[i]!;
+
+        if (path) {
+            if (isAbsolute(path)) {
+                _paths = [];
+            }
+
+            _paths.push(path);
+        }
     }
 
     const paths: string[] = [];
 
-    for (let i = 0; i < segments.length; i++) {
-        const segment = segments[i]!;
+    for (let i = 0; i < _paths.length; i++) {
+        let segment = _paths[i]!;
 
         for (const _segment of split(segment)) {
             if (_segment === "..") {
                 if (!paths.length || paths.every(p => p === "..")) {
                     paths.push("..");
-                } else if (paths.length > 1 || (paths[0] !== "/" && !isVolume(paths[0]!))) {
+                } else if (paths.length > 2
+                    || (paths.length === 2 && !isAbsolute(paths[1]!))
+                    || (paths.length === 1 && !isAbsolute(paths[0]!))
+                ) {
                     paths.pop();
                 }
             } else if (_segment && _segment !== ".") {
                 paths.push(_segment);
             }
         }
+    }
+
+    if (!paths.length) {
+        return ".";
     }
 
     const start = paths[0]!;
@@ -105,50 +141,65 @@ export function join(...segments: string[]): string {
     for (let i = 0; i < paths.length; i++) {
         const segment = paths[i]!;
 
-        if (segment) {
-            if (!path) {
+        if (!path || segment[0] === "?" || segment[0] === "#") {
+            path += segment;
+        } else if (isVolume(segment)) {
+            if (path) {
+                path += segment + "/";
+            } else {
                 path = segment;
-            } else if (segment[0] === "?" || segment[0] === "#") {
-                path += segment;
-            } else if (path === "/") {
-                path += trim(segment, "/\\");
-            } else if (isVolume(path)) {
-                path += isVolume(path, true) ? "\\" + segment : segment;
-            } else if (segment) {
-                path += _sep + trim(segment, "/\\");
             }
+        } else {
+            path += (path.endsWith(_sep) ? "" : _sep) + trim(segment, "/\\");
         }
     }
 
-    return path || ".";
-}
-
-function _normalize(...segments: string[]): string {
-    const path = join(...segments);
-    return isFileProtocol(path) ? path + "/" : path;
+    if (/^file:\/\/\/[a-z]:$/i.test(path)) {
+        return path + "/";
+    } else {
+        return path;
+    }
 }
 
 /**
- * Normalizes the given `path`, resolving `..` and `.` segments. Note that
- * resolving these segments does not necessarily mean that all will be
- * eliminated. A `..` at the top-level will be preserved, and an empty path is
- * canonically `.`.
+ * This function is similar to Node.js implementation, but does not preserve
+ * trailing slashes.
+ * 
+ * Since Node.js implementation is not well-designed and this function is
+ * identical as calling `join(path)`, so it is deprecated.
  * @experimental
+ * 
+ * @deprecated use {@link join} or {@link sanitize} instead.
  */
 export function normalize(path: string): string {
-    return _normalize(path);
+    return join(path);
 }
 
 /**
- * Similar to {@link normalize}, but also remove the search string and hash string if
- * present.
+ * Similar to {@link normalize}, but also remove the search string and hash
+ * string if present.
+ * @experimental
+ * 
+ * @example
+ * ```ts
+ * import { sanitize } from "@ayonli/jsext/path";
+ * 
+ * console.log(sanitize("foo/bar?query")); // "foo/bar"
+ * console.log(sanitize("foo/bar#hash")); // "foo/bar"
+ * console.log(sanitize("foo/bar/..?query#hash")); // "foo"
+ * console.log(sanitize("foo/./bar/..?query#hash")); // "foo"
+ * ```
  */
 export function sanitize(path: string): string {
-    return _normalize(...split(path).filter(isNotQuery));
+    return join(...split(path).filter(isNotQuery));
 }
 
 /**
  * Resolves path `segments` into a well-formed path.
+ * 
+ * This function is similar to {@link join}, except it always returns an
+ * absolute path based on current working directory if the input segments are not
+ * absolute by themselves.
  * @experimental
  */
 export function resolve(...segments: string[]): string {
@@ -160,24 +211,25 @@ export function resolve(...segments: string[]): string {
     }
 
     segments = isAbsolute(segments[0]!) ? segments : [_cwd, ...segments];
-    let _paths: string[] = [];
-
-    for (let i = 0; i < segments.length; i++) {
-        const path = segments[i]!;
-
-        if (isAbsolute(path)) {
-            _paths = [];
-        }
-
-        _paths.push(path);
-    }
-
-    return _normalize(..._paths);
+    return join(...segments);
 }
 
 /**
  * Returns the parent path of the given `path`.
  * @experimental
+ * 
+ * @example
+ * ```ts
+ * import { dirname } from "@ayonli/jsext/path";
+ * 
+ * console.log(dirname("foo/bar")); // "foo"
+ * console.log(dirname("/foo/bar")); // "/foo"
+ * console.log(dirname("C:\\foo\\bar")); // "C:\\foo"
+ * console.log(dirname("file:///foo/bar")); // "file:///foo"
+ * console.log(dirname("http://example.com/foo/bar")); // "http://example.com/foo"
+ * console.log(dirname("http://example.com/foo")); // "http://example.com"
+ * console.log(dirname("http://example.com/foo/bar?foo=bar#baz")); // "http://example.com/foo"
+ * ```
  */
 export function dirname(path: string): string {
     if (isUrl(path)) {
@@ -212,6 +264,18 @@ export function dirname(path: string): string {
  * Return the last portion of the given `path`. Trailing directory separators
  * are ignored, and optional `suffix` is removed.
  * @experimental
+ * 
+ * @example
+ * ```ts
+ * import { basename } from "@ayonli/jsext/path";
+ * 
+ * console.log(basename("/foo/bar")); // "bar"
+ * console.log(basename("c:\\foo\\bar")); // "bar"
+ * console.log(basename("file:///foo/bar")); // "bar"
+ * console.log(basename("http://example.com/foo/bar")); // "bar"
+ * console.log(basename("http://example.com/foo/bar?foo=bar#baz")); // "bar"
+ * console.log(basename("http://example.com/foo/bar.txt?foo=bar#baz", ".txt")); // "bar"
+ * ```
  */
 export function basename(path: string, suffix = ""): string {
     if (isUrl(path)) {
@@ -234,6 +298,17 @@ export function basename(path: string, suffix = ""): string {
 /**
  * Returns the extension of the `path` with leading period.
  * @experimental
+ * 
+ * @example
+ * ```ts
+ * import { extname } from "@ayonli/jsext/path";
+ * 
+ * console.log(extname("/foo/bar.txt")); // ".txt"
+ * console.log(extname("c:\\foo\\bar.txt")); // ".txt"
+ * console.log(extname("file:///foo/bar.txt")); // ".txt"
+ * console.log(extname("http://example.com/foo/bar.txt")); // ".txt"
+ * console.log(extname("http://example.com/foo/bar.txt?foo=bar#baz")); // ".txt"
+ * ```
  */
 export function extname(path: string): string {
     const base = basename(path);

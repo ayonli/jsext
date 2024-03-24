@@ -246,14 +246,15 @@ describe("path", () => {
         });
 
         it("file url", () => {
-            deepStrictEqual(split("file://"), ["file://"]);
-            deepStrictEqual(split("file:///"), ["file://"]);
-            deepStrictEqual(split("file:///foo"), ["file://", "foo"]);
-            deepStrictEqual(split("file:///foo/bar"), ["file://", "foo", "bar"]);
-            deepStrictEqual(split("file:///foo/bar/"), ["file://", "foo", "bar"]);
-            deepStrictEqual(split("file://localhost/foo/bar/"), ["file://", "foo", "bar"]);
-            deepStrictEqual(split("file:///c:/foo/bar/"), ["file://", "c:", "foo", "bar"]);
-            deepStrictEqual(split("file://localhost/c:/foo/bar/"), ["file://", "c:", "foo", "bar"]);
+            deepStrictEqual(split("file:"), ["file:///"]);
+            deepStrictEqual(split("file://"), ["file:///"]);
+            deepStrictEqual(split("file:///"), ["file:///"]);
+            deepStrictEqual(split("file:///foo"), ["file:///", "foo"]);
+            deepStrictEqual(split("file:///foo/bar"), ["file:///", "foo", "bar"]);
+            deepStrictEqual(split("file:///foo/bar/"), ["file:///", "foo", "bar"]);
+            deepStrictEqual(split("file://localhost/foo/bar/"), ["file:///", "foo", "bar"]);
+            deepStrictEqual(split("file:///c:/foo/bar/"), ["file:///", "c:", "foo", "bar"]);
+            deepStrictEqual(split("file://localhost/c:/foo/bar/"), ["file:///", "c:", "foo", "bar"]);
             deepStrictEqual(
                 split("file://example.com/foo/bar/"),
                 ["file://example.com", "foo", "bar"]
@@ -507,6 +508,7 @@ describe("path", () => {
             ok(!startsWith("file:///foo/bar", "file:///bar"));
             ok(!startsWith("file:///foo/bar", "file://example.com/foo"));
             ok(!startsWith("file://example.com/foo/bar", "http://example.com/foo"));
+            ok(startsWith("file:///C:/Windows/System32", "file:///c:/Windows"));
         });
 
         it("relative path", () => {
@@ -876,8 +878,12 @@ describe("path", () => {
         });
 
         it("file url", () => {
-            strictEqual(join("file://"), "file://");
+            strictEqual(join("file:"), "file:///");
+            strictEqual(join("file:/"), "file:///");
+            strictEqual(join("file://"), "file:///");
+            strictEqual(join("file:///"), "file:///");
             strictEqual(join("file://", "foo"), "file:///foo");
+            strictEqual(join("file:///", "foo"), "file:///foo");
             deepStrictEqual(join("file://", "foo", "bar"), "file:///foo/bar");
             deepStrictEqual(
                 join("file://", "foo", "bar", "?foo=bar", "#baz"),
@@ -886,6 +892,9 @@ describe("path", () => {
             deepStrictEqual(join("file://localhost", "foo", "bar"), "file:///foo/bar");
             deepStrictEqual(join("file://example.com", "foo", "bar"), "file://example.com/foo/bar");
             deepStrictEqual(join("file:/foo", "bar"), "file:///foo/bar");
+            deepStrictEqual(join("file:///foo", "bar", "../.."), "file:///");
+            deepStrictEqual(join("file:///c:/foo", "bar", "../.."), "file:///c:/");
+            deepStrictEqual(join("file:///c:/", "foo", "bar"), "file:///c:/foo/bar");
         });
 
         it("relative path", () => {

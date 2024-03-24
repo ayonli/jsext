@@ -9,6 +9,16 @@ function isVolume(path, strict = false) {
 /**
  * Checks if the given `path` is a Windows specific path.
  * @experimental
+ *
+ * @example
+ * ```ts
+ * import { isWindowsPath } from "@ayonli/jsext/path";
+ *
+ * console.assert(isWindowsPath("C:\\Windows\\System32"));
+ * console.assert(isWindowsPath("c:\\Windows\\System32")); // case-insensitive on volume
+ * console.assert(isWindowsPath("D:/Program Files")); // forward slash is also valid
+ * console.assert(isWindowsPath("E:")); // volume without path is also valid
+ * ```
  */
 function isWindowsPath(path) {
     return /^[a-z]:/i.test(path) && path.slice(1, 4) !== "://";
@@ -16,6 +26,13 @@ function isWindowsPath(path) {
 /**
  * Checks if the given `path` is a Posix specific path.
  * @experimental
+ *
+ * @example
+ * ```ts
+ * import { isPosixPath } from "@ayonli/jsext/path";
+ *
+ * console.assert(isPosixPath("/usr/bin"));
+ * ```
  */
 function isPosixPath(path) {
     return /^\//.test(path);
@@ -23,6 +40,18 @@ function isPosixPath(path) {
 /**
  * Checks if the given string is a URL, whether standard or non-standard.
  * @experimental
+ *
+ * @example
+ * ```ts
+ * import { isUrl } from "@ayonli/jsext/path";
+ *
+ * console.assert(isUrl("http://example.com"));
+ * console.assert(isUrl("https://example.com?foo=bar#baz"));
+ * console.assert(isUrl("ftp://example.com")); // ftp url
+ * console.assert(isUrl("file:///C:/Windows/System32")); // file url
+ * console.assert(isUrl("file://localhost/C:/Windows/System32")); // file url with hostname
+ * console.assert(isUrl("file:///usr/bin"));
+ * ```
  */
 function isUrl(str) {
     return /^[a-z](([a-z\-]+)?:\/\/\S+|[a-z\-]+:\/\/$)/i.test(str) || isFileUrl(str);
@@ -30,6 +59,17 @@ function isUrl(str) {
 /**
  * Checks if the given string is a file URL, whether with or without `//`.
  * @experimental
+ *
+ * @example
+ * ```ts
+ * import { isFileUrl } from "@ayonli/jsext/path";
+ *
+ * console.assert(isFileUrl("file:///C:/Windows/System32"));
+ * console.assert(isFileUrl("file://localhost/C:/Windows/System32"));
+ * console.assert(isFileUrl("file:///usr/bin"));
+ * console.assert(isFileUrl("file:/usr/bin"));
+ * console.assert(isFileUrl("file:///usr/bin?foo=bar"));
+ * ```
  */
 function isFileUrl(str) {
     return /^file:((\/\/|\/)\S+|\/?$)/i.test(str);
@@ -40,6 +80,17 @@ function isFileProtocol(path) {
 /**
  * Checks if the given `path` is an absolute path.
  * @experimental
+ *
+ * @example
+ * ```ts
+ * import { isAbsolute } from "@ayonli/jsext/path";
+ *
+ * console.assert(isAbsolute("/usr/bin"));
+ * console.assert(isAbsolute("C:\\Windows\\System32"));
+ * console.assert(isAbsolute("http://example.com"));
+ * console.assert(isAbsolute("file:///C:/Windows/System32"));
+ * console.assert(isAbsolute("file://localhost/C:/Windows/System32?foo=bar#baz"));
+ * ```
  */
 function isAbsolute(path) {
     return isPosixPath(path) || isWindowsPath(path) || isUrl(path);
@@ -47,6 +98,18 @@ function isAbsolute(path) {
 /**
  * Splits the `path` into well-formed segments.
  * @experimental
+ *
+ * @example
+ * ```ts
+ * import { split } from "@ayonli/jsext/path";
+ *
+ * console.log(split("/usr/bin")); // ["/", "usr", "bin"]
+ * console.log(split("C:\\Windows\\System32")); // ["C:\\", "Windows", "System32"]
+ * console.log(split("file:///user/bin")); // ["file:///", "usr", "bin"]
+ *
+ * console.log(split("http://example.com/foo/bar?foo=bar#baz"));
+ * // ["http://example.com", "foo", "bar", "?foo=bar", "#baz"]
+ * ```
  */
 function split(path) {
     if (!path) {
@@ -54,7 +117,10 @@ function split(path) {
     }
     else if (isUrl(path)) {
         const { protocol, host, pathname, search, hash } = new URL(path);
-        const origin = protocol + "//" + host;
+        let origin = protocol + "//" + host;
+        if (isFileProtocol(origin)) {
+            origin += "/";
+        }
         if (pathname === "/") {
             if (search && hash) {
                 return [origin, search, hash];
@@ -140,14 +206,18 @@ function extractSegmentsForComparison(path, sub, options = {}) {
         return { result: false, paths: [], subs: [] };
     }
     if (!options.caseInsensitive) {
-        if (paths.length > 0 && isVolume(paths[0])) {
-            // Windows volume is always case-insensitive
-            paths[0] = paths[0].toLowerCase();
-        }
-        if (subs.length > 0 && isVolume(subs[0])) {
-            // Windows volume is always case-insensitive
-            subs[0] = subs[0].toLowerCase();
-        }
+        paths.forEach((segment, i) => {
+            if (isVolume(segment)) {
+                // Windows volume is always case-insensitive
+                paths[i] = segment.toLowerCase();
+            }
+        });
+        subs.forEach((segment, i) => {
+            if (isVolume(segment)) {
+                // Windows volume is always case-insensitive
+                subs[i] = segment.toLowerCase();
+            }
+        });
     }
     if (!subs.length) {
         return { result: true, paths, subs };
@@ -157,10 +227,28 @@ function extractSegmentsForComparison(path, sub, options = {}) {
 /**
  * Checks if the `path` contains the given `sub` path.
  *
+ * This function doesn't check the path string directly, instead, it checks the
+ * path segments.
+
  * This function is ignorant about the path separator, the query string and the
  * hash string (if present). And is case-insensitive on Windows volume symbol
  * by default.
+ *
  * @experimental
+ *
+ * @example
+ * ```ts
+ * import { contains } from "@ayonli/jsext/path";
+ *
+ * console.assert(contains("/usr/bin", "/usr"));
+ * console.assert(contains("C:\\Windows\\System32", "Windows\\System32"));
+ * console.assert(contains("http://example.com/foo/bar", "foo"));
+ * console.assert(contains("file:///C:/Windows/System32", "C:/Windows/System32"));
+ *
+ * // To be noted, the origin portion of a URL is considered as a whole segment.
+ * console.assert(!contains("http://example.com/foo/bar", "example.com"));
+ * console.assert(contains("http://example.com/foo/b", "http://example.com"));
+ * ```
  */
 function contains(path, sub, options = {}) {
     const { result, paths, subs } = extractSegmentsForComparison(path, sub, options);
@@ -190,10 +278,32 @@ function contains(path, sub, options = {}) {
 /**
  * Checks if the `path` starts with the given `sub` path.
  *
+ * This function doesn't check the path string directly, instead, it checks the
+ * path segments.
+ *
  * This function is ignorant about the path separator, the query string and the
  * hash string (if present). And is case-insensitive on Windows volume symbol
  * by default.
  * @experimental
+ *
+ * @example
+ * ```ts
+ * import { startsWith } from "@ayonli/jsext/path";
+ *
+ * console.assert(startsWith("/usr/bin", "/usr"));
+ * console.assert(startsWith("C:\\Windows\\System32", "c:/Windows"));
+ * console.assert(startsWith("http://example.com/foo/bar", "http://example.com"));
+ * console.assert(startsWith("file:///C:/Windows/System32", "file:///c:/Windows"));
+ *
+ * // To be noted, the origin portion of a URL is considered as a whole segment.
+ * console.assert(!startsWith("http://example.com/foo/bar", "example.com"));
+ * console.assert(startsWith("http://example.com/foo/b", "http://example.com"));
+ *
+ * // ignore file protocol
+ * console.assert(startsWith("file:///C:/Windows/System32", "C:/Windows/System32", {
+ *     ignoreFileProtocol: true,
+ * }));
+ * ```
  */
 function startsWith(path, sub, options = {}) {
     const { result, paths, subs } = extractSegmentsForComparison(path, sub, options);
@@ -209,10 +319,26 @@ function startsWith(path, sub, options = {}) {
 /**
  * Checks if the `path` ends with the given `sub` path.
  *
+ * This function doesn't check the path string directly, instead, it checks the
+ * path segments.
+ *
  * This function is ignorant about the path separator, the query string and the
  * hash string (if present). And is case-insensitive on Windows volume symbol
  * by default.
  * @experimental
+ *
+ * @example
+ * ```ts
+ * import { endsWith } from "@ayonli/jsext/path";
+ *
+ * console.assert(endsWith("/usr/bin", "bin"));
+ * console.assert(endsWith("C:\\Windows\\System32", "System32"));
+ * console.assert(endsWith("http://example.com/foo/bar", "bar"));
+ * console.assert(endsWith("file:///C:/Windows/System32", "System32"));
+ *
+ * // To be noted, an absolute sub path has its own root.
+ * console.assert(!endsWith("/usr/bin", "/bin"));
+ * ```
  */
 function endsWith(path, sub, options = {}) {
     const { result, paths, subs } = extractSegmentsForComparison(path, sub, options);
@@ -228,10 +354,28 @@ function endsWith(path, sub, options = {}) {
 /**
  * Checks if the `path1` and `path2` describe the same path.
  *
+ * This function doesn't check the path string directly, instead, it checks the
+ * path segments.
+ *
  * This function is ignorant about the path separator, the query string and the
  * hash string (if present). And is case-insensitive on Windows volume symbol
  * by default.
  * @experimental
+ *
+ * @example
+ * ```ts
+ * import { equals } from "@ayonli/jsext/path";
+ *
+ * console.assert(equals("/usr/bin", "/usr/bin"));
+ * console.assert(equals("C:\\Windows\\System32", "c:/Windows/System32"));
+ * console.assert(equals("http://example.com/foo/bar?foo=bar", "http://example.com/foo/bar"));
+ * console.assert(equals("file://localhost/C:/Windows/System32", "file:///c:/Windows/System32"));
+ *
+ * // ignore file protocol
+ * console.assert(equals("file:///C:/Windows/System32", "C:\\Windows\\System32", {
+ *     ignoreFileProtocol: true,
+ * }));
+ * ```
  */
 function equals(path1, path2, options = {}) {
     const { result, paths, subs } = extractSegmentsForComparison(path1, path2, options);
