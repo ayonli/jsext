@@ -889,18 +889,14 @@ other thread instead of being cloned. This strategy allows us to easily compose
 objects like `Request` and `Response` instances into plain objects and pass them
 between threads without overhead.
 
-**NOTE:**
+**NOTE:** If the current module is already in a worker thread, use this function
+won't create another worker thread.
 
-If the current module is already in a worker thread, use this function won't
-create another worker thread.
-
-**NOTE:**
-
-Cloning and transferring data between the main thread and worker threads are
-very heavy and slow, worker threads are only intended to run CPU-intensive tasks
-or divide tasks among multiple threads, they have no advantage when performing
-IO-intensive tasks such as handling HTTP requests, always prefer `cluster`
-module for that kind of purpose.
+**NOTE:** Cloning and transferring data between the main thread and worker
+threads are very heavy and slow, worker threads are only intended to run
+CPU-intensive tasks or divide tasks among multiple threads, they have no
+advantage when performing IO-intensive tasks such as handling HTTP requests,
+always prefer `cluster` module for that kind of purpose.
 
 **NOTE:** For error instances, only the following types are guaranteed to be
 sent and received properly between threads.
