@@ -106,7 +106,7 @@ async function getWorkerEntry(parallel = {}) {
             }
             else {
                 const _dirname = getModuleDir(import.meta.url);
-                return join(_dirname, "/worker.ts");
+                return join(_dirname, "worker.ts");
             }
         }
     }

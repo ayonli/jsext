@@ -132,7 +132,7 @@ async function getWorkerEntry(parallel: {
                 return "jsr:@ayonli/jsext/worker.ts";
             } else {
                 const _dirname = getModuleDir(import.meta.url);
-                return path.join(_dirname, "/worker.ts");
+                return path.join(_dirname, "worker.ts");
             }
         }
     } else {
