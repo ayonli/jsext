@@ -20,7 +20,7 @@ export class ByteArray extends Uint8Array {
         return text(this);
     }
 
-    toJSON() {
+    toJSON(): { type: "ByteArray"; data: number[]; } {
         return {
             type: "ByteArray",
             data: Array.from(this),
