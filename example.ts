@@ -14,7 +14,7 @@ declare var Deno: any;
  * The example function receives a customized `console` object which will be
  * used to log outputs instead of using the built-in `console`.
  * 
- * @remarks
+ * **NOTE:**
  * This function is used to simplify the process of writing tests, currently,
  * it does not work in Bun, **tsx** and browsers, because Bun hasn't implement
  * the `Console` constructor and removes comments during runtime, **tsx** also

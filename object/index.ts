@@ -67,7 +67,7 @@ export function pick(obj: any, keys: (string | symbol)[]) {
 /**
  * Creates an object composed without the picked keys.
  * 
- * @remarks
+ * **NOTE:**
  * This function only collect keys from the object's own properties, except for type Error,
  * whose `name`, `message` and `cause` are always collected.
  */
@@ -148,9 +148,11 @@ export type TypeNames = "string"
 /**
  * Returns a string representation or the constructor of the value's type.
  * 
- * @remarks This function returns `"class"` for ES6 classes.
- * @remarks This function returns `"null"` for `null`.
- * @remarks This function returns `Object` for `Object.create(null)`.
+ * **NOTE:** This function returns `"class"` for ES6 classes.
+ * 
+ * **NOTE:** This function returns `"null"` for `null`.
+ * 
+ * **NOTE:** This function returns `Object` for `Object.create(null)`.
  */
 export function typeOf<T>(value: T): TypeNames | Constructor<T> {
     if (value === undefined) {
@@ -201,7 +203,7 @@ export function isPlainObject(value: unknown): value is { [x: string | symbol]: 
  * Creates an object base on the original object but without any invalid values
  * (except for `null`), and trims the value if it's a string.
  * 
- * @remarks This function only operates on plain objects and arrays.
+ * **NOTE:** This function only operates on plain objects and arrays.
  */
 export function sanitize<T extends object>(obj: T, deep = false, options: {
     removeNulls?: boolean;
@@ -279,8 +281,9 @@ export function sanitize<T extends object>(obj: T, deep = false, options: {
 /**
  * Creates an object with sorted keys (in ascending order) of the original object.
  * 
- * @remarks Symbol keys are not sorted and remain their original order.
- * @remarks This function only operates on plain objects and arrays.
+ * **NOTE:** Symbol keys are not sorted and remain their original order.
+ * 
+ * **NOTE:** This function only operates on plain objects and arrays.
  */
 export function sortKeys<T extends object>(obj: T, deep = false): T {
     return (function process(target: any, depth: number): any {
@@ -308,7 +311,7 @@ export type OmitChildrenNodes<T extends object> = Pick<T, {
  * Create an object with flatted keys of the original object, the children
  * nodes' properties will be transformed to a string-represented path.
  * 
- * @remarks This function only operates on plain objects and arrays.
+ * **NOTE:** This function only operates on plain objects and arrays.
  * 
  * @param depth Default value: `1`.
  * @example

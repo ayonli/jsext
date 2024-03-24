@@ -86,9 +86,11 @@ function as(value, type) {
 /**
  * Returns a string representation or the constructor of the value's type.
  *
- * @remarks This function returns `"class"` for ES6 classes.
- * @remarks This function returns `"null"` for `null`.
- * @remarks This function returns `Object` for `Object.create(null)`.
+ * **NOTE:** This function returns `"class"` for ES6 classes.
+ *
+ * **NOTE:** This function returns `"null"` for `null`.
+ *
+ * **NOTE:** This function returns `Object` for `Object.create(null)`.
  */
 function typeOf(value) {
     var _a, _b;
@@ -137,7 +139,7 @@ function isPlainObject(value) {
  * Creates an object base on the original object but without any invalid values
  * (except for `null`), and trims the value if it's a string.
  *
- * @remarks This function only operates on plain objects and arrays.
+ * **NOTE:** This function only operates on plain objects and arrays.
  */
 function sanitize(obj, deep = false, options = {}) {
     const { removeNulls, removeEmptyStrings, removeEmptyObjects, removeArrayItems } = options;
@@ -220,8 +222,9 @@ function sanitize(obj, deep = false, options = {}) {
 /**
  * Creates an object with sorted keys (in ascending order) of the original object.
  *
- * @remarks Symbol keys are not sorted and remain their original order.
- * @remarks This function only operates on plain objects and arrays.
+ * **NOTE:** Symbol keys are not sorted and remain their original order.
+ *
+ * **NOTE:** This function only operates on plain objects and arrays.
  */
 function sortKeys(obj, deep = false) {
     return (function process(target, depth) {
@@ -246,7 +249,7 @@ function sortKeys(obj, deep = false) {
  * Create an object with flatted keys of the original object, the children
  * nodes' properties will be transformed to a string-represented path.
  *
- * @remarks This function only operates on plain objects and arrays.
+ * **NOTE:** This function only operates on plain objects and arrays.
  *
  * @param depth Default value: `1`.
  * @example

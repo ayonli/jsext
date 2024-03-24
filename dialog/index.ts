@@ -3,10 +3,10 @@
  * 
  * This includes `alert`, `confirm`, `prompt` and other non-standard dialogs.
  * 
- * @remarks Currently, this module doesn't work well in Deno since it doesn't
+ * **NOTE:** Currently, this module doesn't work well in Deno since it doesn't
  * provide enough features for the `process.stdin` object.
  * 
- * @remarks This module is experimental and breaks the process in Node.js REPL
+ * **NOTE:** This module is experimental and breaks the process in Node.js REPL
  * environment.
  * @experimental
  * 

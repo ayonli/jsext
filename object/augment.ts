@@ -40,7 +40,7 @@ declare global {
         /**
          * Creates an object composed without the picked keys.
          * 
-         * @remarks
+         * **NOTE:**
          * This function only collect keys from the object's own properties, except for type Error,
          * whose `name`, `message` and `cause` are always collected.
          */
@@ -63,9 +63,11 @@ declare global {
         /**
          * Returns a string representation or the constructor of the value's type.
          * 
-         * @remarks This function returns `"class"` for ES6 classes.
-         * @remarks This function returns `"null"` for `null`.
-         * @remarks This function returns `Object` for `Object.create(null)`.
+         * **NOTE:** This function returns `"class"` for ES6 classes.
+         * 
+         * **NOTE:** This function returns `"null"` for `null`.
+         * 
+         * **NOTE:** This function returns `Object` for `Object.create(null)`.
          */
         typeOf<T>(value: T): TypeNames | Constructor<T>;
         /**
@@ -95,14 +97,14 @@ declare global {
         /**
          * Creates an object with sorted keys (in ascending order) of the original object.
          * 
-         * @remarks Symbol keys are not sorted and remain their original order.
+         * **NOTE:** Symbol keys are not sorted and remain their original order.
          */
         sortKeys<T extends object>(obj: T, deep?: boolean): T;
         /**
          * Create an object with flatted keys of the original object, the children
          * nodes' properties will be transformed to a string-represented path.
          * 
-         * @remarks This function only operates on plain objects and arrays.
+         * **NOTE:** This function only operates on plain objects and arrays.
          * 
          * @param depth Default value: `1`.
          * @example

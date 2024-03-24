@@ -225,18 +225,18 @@ function extractBaseUrl(stackTrace) {
  * compose objects like `Request` and `Response` instances into plain objects
  * and pass them between threads without overhead.
  *
- * @remarks
+ * **NOTE:**
  * If the current module is already in a worker thread, use this function won't
  * create another worker thread.
  *
- * @remarks
+ * **NOTE:**
  * Cloning and transferring data between the main thread and worker threads are
  * very heavy and slow, worker threads are only intended to run CPU-intensive
  * tasks or divide tasks among multiple threads, they have no advantage when
  * performing IO-intensive tasks such as handling HTTP requests, always prefer
  * `cluster` module for that kind of purpose.
  *
- * @remarks
+ * **NOTE:**
  * For error instances, only the following types are guaranteed to be sent and
  * received properly between threads.
  *
@@ -318,7 +318,7 @@ function extractBaseUrl(stackTrace) {
  * console.log(arr.length); // 0
  * ```
  *
- * @remarks
+ * **NOTE:**
  * If the application is to be bundled, use the following syntax to link the
  * module instead, it will prevent the bundler from including the file and
  * rewriting the path.

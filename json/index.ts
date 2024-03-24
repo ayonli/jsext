@@ -200,7 +200,7 @@ export function as(data: unknown, type: any): any {
  * 
  * When parsing JSON via {@link parseAs}, this property is guaranteed to be of the given type.
  * 
- * @remarks This decorator only supports TypeScript's `experimentalDecorators`.
+ * **NOTE:** This decorator only supports TypeScript's `experimentalDecorators`.
  * 
  * @example
  * ```ts

@@ -15,7 +15,7 @@ const warnedRecord = new Map<Function, boolean>();
  * When the wrapped function is called, a deprecation warning will be emitted
  * to the stdout.
  * 
- * @remarks The original function must have a name.
+ * **NOTE:** The original function must have a name.
  * 
  * @param tip Extra tip for the user to migrate.
  * @param once If set, the warning will only be emitted once.

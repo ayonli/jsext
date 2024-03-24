@@ -14,7 +14,7 @@ export function isFloat(value: unknown): boolean {
  * Returns `true` if the given value is a numeric value, `false` otherwise. A numeric value is a 
  * number, a bigint, or a string that can be converted to a number or bigint.
  * 
- * @remarks `NaN` is not considered numeric.
+ * **NOTE:** `NaN` is not considered numeric.
  * 
  * @param strict Only returns `true` when the value is of type `number`.
  */
@@ -64,7 +64,7 @@ export function range(
  * 
  * @param loop Repeat the sequence when the end is reached.
  */
-export function serial(loop = false): Generator < number, void, unknown > {
+export function serial(loop = false): Generator<number, void, unknown> {
     return sequence(1, Number.MAX_SAFE_INTEGER, 1, loop);
 }
 
