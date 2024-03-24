@@ -210,6 +210,63 @@ export type ProgressState = {
  * @param onAbort If provided, the dialog will show a cancel button that allows
  * the user to abort the task. This function can either return a default/fallback
  * result or throw an error to indicate the cancellation.
+ * 
+ * @example
+ * ```ts
+ * // default usage
+ * import { progress } from "@ayonli/jsext/dialog";
+ * 
+ * const result = await progress("Processing...", async () => {
+ *     // ... some long-running task
+ *     return { ok: true };
+ * });
+ * 
+ * console.log(result); // { ok: true }
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // update state
+ * import { progress } from "@ayonli/jsext/dialog";
+ * 
+ * const result = await progress("Processing...", async (set) => {
+ *     set({ percent: 0 });
+ *     // ... some long-running task
+ *     set({ percent: 50, message: "Halfway there!" });
+ *     // ... some long-running task
+ *     set({ percent: 100 });
+ * 
+ *     return { ok: true };
+ * });
+ * 
+ * console.log(result); // { ok: true }
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // abortable
+ * import { progress } from "@ayonli/jsext/dialog";
+ * 
+ * const result = await progress("Processing...", async (set, signal) => {
+ *     set({ percent: 0 });
+ * 
+ *     if (!signal.aborted) {
+ *         // ... some long-running task
+ *         set({ percent: 50, message: "Halfway there!" });
+ *     }
+ * 
+ *     if (!signal.aborted) {
+ *         // ... some long-running task
+ *         set({ percent: 100 });
+ *     }
+ * 
+ *     return { ok: true };
+ * }, () => {
+ *     return { ok: false };
+ * });
+ * 
+ * console.log(result); // { ok: true } or { ok: false }
+ * ```
  */
 export async function progress<T>(
     message: string,

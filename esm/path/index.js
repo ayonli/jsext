@@ -14,7 +14,6 @@ export { contains, endsWith, equals, isFileUrl, startsWith } from './util.js';
 /**
  * Platform-specific path segment separator. The value is `\` on Windows
  * server-side runtime, and `/` otherwise.
- *
  * @experimental
  */
 const sep = (() => {
