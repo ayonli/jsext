@@ -1,5 +1,6 @@
 import { isValid } from '../object/index.js';
 import { fromObject } from '../error/index.js';
+import bytes from '../bytes/index.js';
 
 /**
  * Functions for parsing JSONs to specific structures.
@@ -82,7 +83,8 @@ function as(data, type) {
         }
     }
     else if (![String, Number, Boolean, Date, Array].includes(type)) {
-        if (data.type === "Buffer" && Array.isArray(data.data)) { // Node.js Buffer
+        if (data.type === "Buffer" && Array.isArray(data.data)) {
+            // Node.js Buffer
             if (typeof Buffer === "function" && type === Buffer) {
                 try {
                     return Buffer.from(data.data);
@@ -105,6 +107,15 @@ function as(data, type) {
                 return null;
             }
         }
+        else if (data.type === "ByteArray" && Array.isArray(data.data)) {
+            // ByteArray
+            try {
+                return bytes(data.data);
+            }
+            catch (_f) {
+                return null;
+            }
+        }
         const keys = Object.getOwnPropertyNames(data);
         const values = Object.values(data);
         if (keys.slice(0, 50).map(Number).every(i => !Number.isNaN(i)) &&
@@ -115,7 +126,7 @@ function as(data, type) {
             try {
                 return type.from(Object.values(data));
             }
-            catch (_f) {
+            catch (_g) {
                 return null;
             }
         }

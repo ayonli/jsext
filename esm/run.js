@@ -6,6 +6,7 @@ import { sanitizeModuleId } from './parallel/utils/module.js';
 import { isChannelMessage, handleChannelMessage } from './parallel/utils/channel.js';
 import { getMaxParallelism, createWorker, wrapArgs, isCallResponse, unwrapReturnValue } from './parallel/utils/threads.js';
 import parallel from './parallel.js';
+import { unrefTimer } from './util.js';
 
 /**
  * Runs a script in another thread and abort at any time.
@@ -173,6 +174,9 @@ async function run(script, args, options) {
         await terminate();
         handleClose(err, true);
     }, options.timeout) : null;
+    if (timeout) {
+        unrefTimer(timeout);
+    }
     const handleMessage = async (msg) => {
         var _a, _b;
         if (isChannelMessage(msg)) {

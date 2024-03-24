@@ -1,7 +1,7 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { spawn } from "node:child_process";
 import { until } from "../promise/index.ts";
-import { isNode } from "../parallel/constants";
+import { isNode } from "../parallel/constants.ts";
 
 const isNodePrior16: boolean = isNode && parseInt(process.version.slice(1)) < 16;
 

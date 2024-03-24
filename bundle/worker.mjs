@@ -396,10 +396,57 @@ function hasGeneratorSpecials(obj) {
 }
 
 /**
- * Functions for dealing with strings.
+ * Functions for dealing with objects.
+ * @module
+ */
+/**
+ * Returns `true` if the specified object has the indicated property as its own property.
+ * If the property is inherited, or does not exist, the function returns `false`.
+ */
+function hasOwn(obj, key) {
+    return Object.prototype.hasOwnProperty.call(obj, key);
+}
+function pick(obj, keys) {
+    return keys.reduce((result, key) => {
+        if (key in obj && obj[key] !== undefined) {
+            result[key] = obj[key];
+        }
+        return result;
+    }, {});
+}
+function omit(obj, keys) {
+    const allKeys = Reflect.ownKeys(obj);
+    const keptKeys = allKeys.filter(key => !keys.includes(key));
+    const result = pick(obj, keptKeys);
+    // special treatment for Error types
+    if (obj instanceof Error) {
+        ["name", "message", "stack", "cause"].forEach(key => {
+            if (!keys.includes(key) &&
+                obj[key] !== undefined &&
+                !hasOwn(result, key)) {
+                result[key] = obj[key];
+            }
+        });
+    }
+    return result;
+}
+/**
+ * Returns `true` is the given value is a plain object, that is, an object created by
+ * the `Object` constructor or one with a `[[Prototype]]` of `null`.
+ */
+function isPlainObject(value) {
+    if (typeof value !== "object" || value === null)
+        return false;
+    const proto = Object.getPrototypeOf(value);
+    return proto === null || proto.constructor === Object;
+}
+
+/**
+ * Functions for dealing with byte arrays (`Uint8Array`).
  * @module
  */
 new TextEncoder();
+new TextDecoder();
 
 const moduleCache = new Map();
 async function resolveModule(modId, baseUrl = undefined) {
@@ -456,52 +503,6 @@ async function resolveRemoteModuleUrl(url) {
         });
     }
     return URL.createObjectURL(blob);
-}
-
-/**
- * Functions for dealing with objects.
- * @module
- */
-/**
- * Returns `true` if the specified object has the indicated property as its own property.
- * If the property is inherited, or does not exist, the function returns `false`.
- */
-function hasOwn(obj, key) {
-    return Object.prototype.hasOwnProperty.call(obj, key);
-}
-function pick(obj, keys) {
-    return keys.reduce((result, key) => {
-        if (key in obj && obj[key] !== undefined) {
-            result[key] = obj[key];
-        }
-        return result;
-    }, {});
-}
-function omit(obj, keys) {
-    const allKeys = Reflect.ownKeys(obj);
-    const keptKeys = allKeys.filter(key => !keys.includes(key));
-    const result = pick(obj, keptKeys);
-    // special treatment for Error types
-    if (obj instanceof Error) {
-        ["name", "message", "stack", "cause"].forEach(key => {
-            if (!keys.includes(key) &&
-                obj[key] !== undefined &&
-                !hasOwn(result, key)) {
-                result[key] = obj[key];
-            }
-        });
-    }
-    return result;
-}
-/**
- * Returns `true` is the given value is a plain object, that is, an object created by
- * the `Object` constructor or one with a `[[Prototype]]` of `null`.
- */
-function isPlainObject(value) {
-    if (typeof value !== "object" || value === null)
-        return false;
-    const proto = Object.getPrototypeOf(value);
-    return proto === null || proto.constructor === Object;
 }
 
 class Exception extends Error {

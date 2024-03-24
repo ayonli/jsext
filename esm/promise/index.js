@@ -1,3 +1,5 @@
+import { unrefTimer } from '../util.js';
+
 /**
  * Functions for promise/async context handling.
  * @module
@@ -6,9 +8,9 @@
 async function timeout(value, ms) {
     const result = await Promise.race([
         value,
-        new Promise((_, reject) => setTimeout(() => {
+        new Promise((_, reject) => unrefTimer(setTimeout(() => {
             reject(new Error(`operation timeout after ${ms}ms`));
-        }, ms))
+        }, ms)))
     ]);
     return result;
 }
@@ -32,7 +34,7 @@ async function sleep(ms) {
 /** Blocks the context until the test passes. */
 async function until(test) {
     while ((await test()) === false) {
-        await new Promise(resolve => setTimeout(resolve));
+        await sleep(0);
     }
 }
 

@@ -4,27 +4,7 @@ Additional functions for JavaScript to build strong applications.
 
 ## Import
 
-```js
-// Node.js, Bun or Deno (jsr)
-import jsext from "@ayonli/jsext";
-import { _try, func /* ... */ } from "@ayonli/jsext";
-
-// Deno (legacy)
-import jsext from "https://lib.deno.dev/x/ayonli_jsext@latest/index.ts";
-import {
-  _try,
-  func, /* ... */
-} from "https://lib.deno.dev/x/ayonli_jsext@latest/index.ts";
-
-// Browser
-import jsext from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/index.js";
-import {
-  _try,
-  func, /* ... */
-} from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/index.js";
-```
-
-Or import what are needed:
+The recommended way is to only import the ones that are needed:
 
 ```js
 // Node.js, Bun or Deno (jsr)
@@ -1379,444 +1359,57 @@ _(except for `Channel`, `Queue` and `Mutex`)._
 
 ## Modules
 
-- [string](#string) Functions for dealing with strings.
-- [number](#number) Functions for dealing with numbers.
-- [array](#array) Functions for dealing with arrays.
-- [object](#object) Functions for dealing with objects.
-- [json](#json) Functions for parsing JSONs to specific structures.
-- [math](#math) Functions for mathematical calculations.
-- [promise](#promise) Functions for promise/async context handling.
-- [error](#error) Functions for converting errors to/from other types of
+- [string](https://jsr.io/@ayonli/jsext/doc/string/~) Functions for dealing with
+  strings.
+- [number](https://jsr.io/@ayonli/jsext/doc/number/~) Functions for dealing with
+  numbers.
+- [array](https://jsr.io/@ayonli/jsext/doc/array/~) Functions for dealing with
+  arrays.
+- [object](https://jsr.io/@ayonli/jsext/doc/object/~) Functions for dealing with
   objects.
-- [collections](#collections) Additional collection data types.
-- [bytes](#bytes) Functions for dealing with byte arrays (`Uint8Array`).
+- [json](https://jsr.io/@ayonli/jsext/doc/json/~) Functions for parsing JSONs to
+  specific structures.
+- [math](https://jsr.io/@ayonli/jsext/doc/math/~) Functions for mathematical
+  calculations.
+- [promise](https://jsr.io/@ayonli/jsext/doc/promise/~) Functions for
+  promise/async context handling.
+- [error](https://jsr.io/@ayonli/jsext/doc/error/~) Functions for converting
+  errors to/from other types of objects.
+- [collections](https://jsr.io/@ayonli/jsext/doc/collections/~) Additional
+  collection data types.
+- [bytes](https://jsr.io/@ayonli/jsext/doc/bytes/~) Functions for dealing with
+  byte arrays (`Uint8Array`).
   - Historically, this module was named `uint8array`, but that name has been
     deprecated.
-- [path](#path) (Experimental) Platform-independent utility functions for
-  dealing with system paths and URLs.
-- [dialog](#dialog) Asynchronous dialog functions for both browsers and Node.js.
+- [path](https://jsr.io/@ayonli/jsext/doc/path/~) (Experimental)
+  Platform-independent utility functions for dealing with system paths and URLs.
+- [dialog](https://jsr.io/@ayonli/jsext/doc/dialog/~) (Experimental)
+  Asynchronous dialog functions for both browsers and Node.js.
 
-**NOTE:** Configure `tsconfig.json` to set `compilerOptions.module` as
-`NodeNext` or `ESNext` instead of `CommonJS` in order to use sub-modules.
-
-**NOTE:** The following examples of module specifiers uses Node.js style, but
-they have Deno (legacy) and browser equivalents, like this:
-
-- Node.js, Bun or Deno (jsr) `@ayonli/jsext/string`
-- Deno (legacy): `https://lib.deno.dev/x/ayonli_jsext@latest/string/index.ts`
-- Browser: `https://lib.deno.dev/x/ayonli_jsext@latest/esm/string/index.js`
-
-### [string](https://jsr.io/@ayonli/jsext/doc/string/~)
+We can import these modules either with the Node.js style, or use the URL style
+if the runtime supports, for example:
 
 ```js
+// Node.js, Bun, Deno (jsr)
 import { compare, random /* ... */ } from "@ayonli/jsext/string";
+
+// Deno (legacy)
+import {
+  compare,
+  random, /* ... */
+} from "https://lib.deno.dev/x/ayonli_jsext@latest/string/index.ts";
+
+// Browser
+import {
+  compare,
+  random, /* ... */
+} from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/string/index.js";
 ```
 
-**Functions**
-
-- `compare(str1: string, str2: string): -1 | 0 | 1`
-- `random(length: number, chars?: string): string`
-- `count(str: string, sub: string): number`
-- `capitalize(str: string, all?: boolean): string`
-- `hyphenate(str: string): string`
-- `bytes(str: string): ByteArray` deprecated, use `bytes` module instead.
-- `chars(str: string): string[]`
-- `words(str: string): string[]`
-- `lines(str: string): string[]`
-- `chunk(str: string, length: number): string[]`
-- `truncate(str: string, length: number): string`
-- `trim(str: string, chars?: string): string`
-- `trimEnd(str: string, chars?: string): string`
-- `trimStart(str: string, chars?: string): string`
-- `stripEnd(str: string, suffix: string): string`
-- `stripStart(str: string, prefix: string): string`
-- `byteLength(str: string): number`
-- `isAscii(str: string, printableOnly?: boolean): boolean`
-
-### [number](https://jsr.io/@ayonli/jsext/doc/number/~)
-
-```js
-import { isFloat, isNumeric /* ... */ } from "@ayonli/jsext/number";
-// or
-import "@ayonli/jsext/number/augment";
-```
-
-**Functions**
-
-- `isFloat(value: unknown): boolean`
-- `isNumeric(value: unknown): boolean`
-- `isBetween(value: number, [min, max]: [number, number]): boolean`
-- `random(min: number, max: number): number`
-- `range(min: number, max: number, step?: number): Generator<number, void, unknown>`
-- `serial(loop?: boolean): Generator<number, void, unknown>`
-
-### [array](https://jsr.io/@ayonli/jsext/doc/array/~)
-
-```js
-import { count, equals /* ... */ } from "@ayonli/jsext/array";
-```
-
-**Functions**
-
-- `first<T>(arr: T[]): T | undefined`
-- `last<T>(arr: T[]): T | undefined`
-- `random<T>(arr: T[], remove?: boolean): T | undefined`
-- `count<T>(arr: RealArrayLike<T>, item: T): number`
-- `equals<T>(arr1: RealArrayLike<T>, arr2: RealArrayLike<T>): boolean`
-- `split<T>(arr: RealArrayLike<T>, delimiter: T): RealArrayLike<T>[]`
-- `chunk<T>(arr: RealArrayLike<T>, length: number): RealArrayLike<T>[]`
-- `uniq<T>(arr: T[]): T[]`
-- `uniqBy<T, K extends string | number | symbol>(arr: T[], fn: (item: T, i: number) => K): T[]`
-- `shuffle<T>(arr: T[]): T[]`
-- `orderBy<T>(arr: T[], key: keyof T, order: "asc" | "desc" = "asc"): T[]`
-- `orderBy<T>(arr: T[], fn: (item: T, i: number) => string | number | bigint, order?: "asc" | "desc"): T[]`
-- `groupBy<T, K extends string | number | symbol>(arr: T[], fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T[]>`
-- `groupBy<T, K>(arr: T[], fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
-- `keyBy<T, K extends string | number | symbol>(arr: T[], fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
-- `keyBy<T, K>(arr: T[], fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>`
-
-### [object](https://jsr.io/@ayonli/jsext/doc/object/~)
-
-```js
-import { hasOwn, hasOwnMethod /* ... */ } from "@ayonli/jsext/object";
-```
-
-**Functions**
-
-- `hasOwn(obj: any, key: string | number | symbol): boolean`
-- `hasOwnMethod(obj: any, method: string | symbol): boolean`
-- `patch<T extends {}, U>(target: T, source: U): T & U`
-- `patch<T extends {}, U, V>(target: T, source1: U, source2: V): T & U & V`
-- `patch<T extends {}, U, V, W>(target: T, source1: U, source2: V, source3: W): T & U & V & W`
-- `patch(target: object, ...sources: any[]): any`
-- `pick<T extends object, U extends keyof T>(obj: T, keys: U[]): Pick<T, U>`
-- `pick<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
-- `omit<T extends object, U extends keyof T>(obj: T, keys: U[]): Omit<T, U>`
-- `omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
-- `as(value: unknown, type: StringConstructor): string | null`
-- `as(value: unknown, type: NumberConstructor): number | null`
-- `as(value: unknown, type: BigIntConstructor): bigint | null`
-- `as(value: unknown, type: BooleanConstructor): boolean | null`
-- `as(value: unknown, type: SymbolConstructor): symbol | null`
-- `as<T>(value: unknown, type: Constructor<T>): T | null`
-- `typeOf<T>(value: T): TypeNames | Constructor<T>`
-- `isValid(value: unknown): boolean`
-- `isPlainObject(value: unknown): value is { [x: string | symbol]: any; }`
-- `sanitize<T extends object>(obj: T, deep?: boolean, options?: { removeNulls?: boolean; removeEmptyStrings?: boolean; removeEmptyObjects?: boolean; removeArrayItems?: boolean; }): T`
-- `sortKeys<T extends object>(obj: T, deep?: boolean): T`
-- `flatKeys<T extends object>(obj: T, depth = 1, options?: { flatArrayIndices?: boolean; }): OmitChildrenNodes<T> & Record<string | number | symbol, any>`
-
-### [json](https://jsr.io/@ayonli/jsext/doc/json/~)
-
-```js
-import { parseAs /* ... */ } from "@ayonli/jsext/json";
-```
-
-**Functions**
-
-- `parseAs(text: string, type: StringConstructor): string | null`
-- `parseAs(text: string, type: NumberConstructor): number | null`
-- `parseAs(text: string, type: BigIntConstructor): bigint | null`
-- `parseAs(text: string, type: BooleanConstructor): boolean | null`
-- `parseAs<T>(text: string, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
-- `as(data: unknown, type: StringConstructor): string | null`
-- `as(data: unknown, type: NumberConstructor): number | null`
-- `as(data: unknown, type: BigIntConstructor): bigint | null`
-- `as(data: unknown, type: BooleanConstructor): boolean | null`
-- `as<T>(data: unknown, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
-- `type(ctor: Constructor<any>): PropertyDecorator`
-
-### [math](https://jsr.io/@ayonli/jsext/doc/math/~)
-
-```js
-import { avg, sum /* ... */ } from "@ayonli/jsext/math";
-```
-
-**Functions**
-
-- `sum(...values: number[]): number`
-- `avg(...values: number[]): number`
-- `product(...values: number[]): number`
-
-### [promise](https://jsr.io/@ayonli/jsext/doc/promise/~)
-
-```js
-import { after, timeout /* ... */ } from "@ayonli/jsext/promise";
-```
-
-**Functions**
-
-- `timeout<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
-- `after<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
-- `sleep(ms: number): Promise<void>`
-- `until(test: () => boolean | Promise<boolean>): Promise<void>`
-
-### [error](https://jsr.io/@ayonli/jsext/doc/error/~)
-
-```js
-import { Exception, toObject /* ... */ } from "@ayonli/jsext/error";
-```
-
-**Classes**
-
-- `Exception` (extends `Error`)
-  - `cause?: unknown`
-  - `code: number`
-
-**Functions**
-
-- `toObject<T extends Error>(err: T): { [x: string | symbol]: any; }`
-- `fromObject<T extends Error>(obj: { [x: string | symbol]: any; }, ctor?: Constructor<T>): T`
-- `toErrorEvent(err: Error, type?: string): ErrorEvent`
-- `fromErrorEvent<T extends Error>(event: ErrorEvent): T | null`
-
-### [collections](https://jsr.io/@ayonli/jsext/doc/collections/~)
-
-```js
-import { BiMap, CiMap } from "@ayonli/jsext/collections";
-```
-
-**Classes**
-
-- `BiMap<K, V>` (extends `Map<K, V>`) Bi-directional map, keys and values are
-  unique and map to each other.
-  - `prototype` (additional)
-    - `getKey(value: V): K | undefined`
-    - `hasValue(value: V): boolean`
-    - `deleteValue(value: V): boolean`
-- `CiMap<K extends string, V>` (extends `Map<K, any>`) Case-insensitive map,
-  keys are case-insensitive.
-
-### [bytes](https://jsr.io/@ayonli/jsext/doc/bytes/~)
-
-```js
-import bytes, { compare, equals /* ... */ } from "@ayonli/jsext/bytes";
-```
-
-**Classes**
-
-- `ByteArray`
-
-**Functions**
-
-- `bytes(str: string): ByteArray`
-- `bytes(arr: ArrayLike<number>): ByteArray`
-- `bytes(buf: ArrayBufferLike): ByteArray`
-- `bytes(length: number): ByteArray`
-- `text(bytes: Uint8Array, encoding?: "utf8" | "hex" | "base64"): string`
-- `copy(src: Uint8Array, dest: Uint8Array): number`
-- `concat<T extends Uint8Array>(...arrays: T[]): T`
-- `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
-- `equals(arr1: Uint8Array, arr2: Uint8Array): boolean`
-- `split<T extends Uint8Array>(arr: T, delimiter: number): T[]`
-- `chunk<T extends Uint8Array>(arr: T, length: number): T[]`
-
-### [path](https://jsr.io/@ayonli/jsext/doc/path/~)
-
-```js
-import { basename, dirname, resolve /* ... */ } from "@ayonli/jsext/path";
-```
-
-_This module is experimental._
-
-**Variables**
-
-- `sep: "/" | "\\"`
-
-**Functions**
-
-- `cwd(): string`
-- `isWindowsPath(path: string): boolean`
-- `isPosixPath(path: string): boolean`
-- `isUrl(str: string): boolean`
-- `isFileUrl(str: string): boolean`
-- `isAbsolute(path: string): boolean`
-- `join(...segments: string[]): string`
-- `normalize(path: string): string`
-- `sanitize(path: string): string`
-- `resolve(...segments: string[]): string`
-- `dirname(path: string): string`
-- `basename(path: string, suffix?: string): string`
-- `extname(path: string): string`
-- `contains(path: string, sub: string, options?: { caseInsensitive?: boolean; ignoreFileProtocol?: boolean; }): boolean`
-- `startsWith(path: string, sub: string, options?: { caseInsensitive?: boolean; ignoreFileProtocol?: boolean; }): boolean`
-- `endsWith(path: string, sub: string, options?: { caseInsensitive?: boolean; ignoreFileProtocol?: boolean; }): boolean`
-- `equals(path1: string, path2: string, options?: { caseInsensitive?: boolean; ignoreFileProtocol?: boolean; }): boolean`
-
-### [dialog](https://jsr.io/@ayonli/jsext/doc/dialog/~)
-
-```js
-import { alert, confirm, prompt /* ... */ } from "@ayonli/jsext/dialog";
-```
-
-_This module is experimental._
-
-**Functions**
-
-- `alert(): Promise<void>`
-- `confirm(message: string): Promise<boolean>`
-- `prompt(message: string, defaultValue?: string | undefined): Promise<string>`
-- `progress<T>(message: string, fn: (set: (state: ProgressState) => void, signal: AbortSignal) => Promise<T>, onAbort: (() => T | never | Promise<T | never>) | undefined = undefined): Promise<T>`
+**NOTE:** In a Node.js + TypeScript project, configure `tsconfig.json` to set
+`compilerOptions.module` as `NodeNext` or `ESNext` instead of `CommonJS` in
+order to use sub-modules.
 
 ## Augmentations
 
-This package supports augmenting some modules' functions to the corresponding
-built-in types/namespaces, but they should only be used for application
-development, don't use them when developing libraries.
-
-_NOTE: this feature is only available by the NPM package or in the Browser,_
-_They don't work by the JSR package._
-
-```js
-// import all
-import "@ayonli/jsext/augment";
-
-// import individual sub-modules
-import "@ayonli/jsext/string/augment";
-import "@ayonli/jsext/number/augment";
-import "@ayonli/jsext/array/augment";
-import "@ayonli/jsext/object/augment";
-import "@ayonli/jsext/json/augment";
-import "@ayonli/jsext/math/augment";
-import "@ayonli/jsext/promise/augment";
-import "@ayonli/jsext/error/augment";
-import "@ayonli/jsext/collections/augment";
-```
-
-### Augment String
-
-- `String`
-  - `compare(str1: string, str2: string): -1 | 0 | 1`
-  - `random(length: number, chars?: string): string`
-  - `prototype`
-    - `count(sub: string): number`
-    - `capitalize(all?: boolean): string`
-    - `hyphenate(): string`
-    - `bytes(): ByteArray`
-    - `chars(): string[]`
-    - `words(): string[]`
-    - `lines(): string[]`
-    - `chunk(length: number): string[]`
-    - `truncate(length: number): string`
-    - `trim(chars?: string): string`
-    - `trimEnd(chars?: string): string`
-    - `trimStart(chars?: string): string`
-    - `stripEnd(suffix: string): string`
-    - `stripStart(prefix: string): string`
-    - `byteLength(): number`
-    - `isAscii(printableOnly?: boolean): boolean`
-
-### Augment Number
-
-- `Number`
-  - `isFloat(value: unknown): boolean`
-  - `isNumeric(value: unknown): boolean`
-  - `isBetween(value: number, [min, max]: [number, number]): boolean`
-  - `random(min: number, max: number): number`
-  - `range(min: number, max: number, step?: number): Generator<number, void, unknown>`
-  - `serial(loop?: boolean): Generator<number, void, unknown>`
-
-### Augment Array
-
-- `Array<T>`
-  - `prototype`
-    - `first(): T | undefined`
-    - `last(): T | undefined`
-    - `random(remove?: boolean): T | undefined`
-    - `count(item: T): number`
-    - `equals(another: T[]): boolean`
-    - `split(delimiter: T): T[][]`
-    - `chunk(length: number): T[][]`
-    - `uniq(): T[]`
-    - `uniqBy<K extends string | number | symbol>(fn: (item: T, i: number) => K): T[]`
-    - `shuffle(): T[]`
-    - `toShuffled(): T[]`
-    - `toReversed(): T[]`
-    - `toSorted(fn?: ((a: T, b: T) => number) | undefined): T[]`
-    - `orderBy(key: keyof T, order?: "asc" | "desc"): T[]`
-    - `orderBy(fn: (item: T, i: number) => string | number | bigint, order?: "asc" | "desc"): T[]`
-    - `groupBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T[]>`
-    - `groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
-    - `keyBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
-    - `keyBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>`
-
-### Augment Object
-
-- `Object`
-  - `hasOwn(obj: any, key: string | number | symbol): boolean`
-  - `hasOwnMethod(obj: any, method: string | symbol): boolean`
-  - `patch<T extends {}, U>(target: T, source: U): T & U`
-  - `patch<T extends {}, U, V>(target: T, source1: U, source2: V): T & U & V`
-  - `patch<T extends {}, U, V, W>(target: T, source1: U, source2: V, source3: W): T & U & V & W`
-  - `patch(target: object, ...sources: any[]): any`
-  - `pick<T extends object, U extends keyof T>(obj: T, keys: U[]): Pick<T, U>`
-  - `pick<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
-  - `omit<T extends object, U extends keyof T>(obj: T, keys: U[]): Omit<T, U>`
-  - `omit<T>(obj: T, keys: (string | symbol)[]): Partial<T>`
-  - `as(value: unknown, type: StringConstructor): string | null`
-  - `as(value: unknown, type: NumberConstructor): number | null`
-  - `as(value: unknown, type: BigIntConstructor): bigint | null`
-  - `as(value: unknown, type: BooleanConstructor): boolean | null`
-  - `as(value: unknown, type: SymbolConstructor): symbol | null`
-  - `as<T>(value: unknown, type: Constructor<T>): T | null`
-  - `typeOf<T>(value: T): TypeNames | Constructor<T>`
-  - `isValid(value: unknown): boolean`
-  - `isPlainObject(value: unknown): value is { [x: string | symbol]: any; }`
-  - `sanitize<T extends object>(obj: T, deep?: boolean, options?: { removeNulls?: boolean; removeEmptyStrings?: boolean; removeEmptyObjects?: boolean; removeArrayItems?: boolean; }): T`
-  - `sortKeys<T extends object>(obj: T, deep?: boolean): T`
-  - `flatKeys<T extends object>(obj: T, depth = 1, options?: { flatArrayIndices?: boolean; }): OmitChildrenNodes<T> & Record<string | number | symbol, any>`
-
-### Augment JSON
-
-- `JSON`
-  - `parseAs(text: string, type: StringConstructor): string | null`
-  - `parseAs(text: string, type: NumberConstructor): number | null`
-  - `parseAs(text: string, type: BigIntConstructor): bigint | null`
-  - `parseAs(text: string, type: BooleanConstructor): boolean | null`
-  - `parseAs<T>(text: string, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
-  - `as(data: unknown, type: StringConstructor): string | null`
-  - `as(data: unknown, type: NumberConstructor): number | null`
-  - `as(data: unknown, type: BigIntConstructor): bigint | null`
-  - `as(data: unknown, type: BooleanConstructor): boolean | null`
-  - `as<T>(data: unknown, type: Constructor<T> & { fromJSON?(data: any): T; }): T | null`
-  - `type(ctor: Constructor<any>): PropertyDecorator`
-
-### Augment Math
-
-- `Math`
-  - `sum(...values: number[]): number`
-  - `avg(...values: number[]): number`
-  - `product(...values: number[]): number`
-
-### Augment Promise
-
-- `Promise`
-  - `timeout<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
-  - `after<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
-  - `sleep(ms: number): Promise<void>`
-  - `until(test: () => boolean | Promise<boolean>): Promise<void>`
-
-### Augment Error
-
-- `Error`
-  - `toObject<T extends Error>(err: T): { [x: string | symbol]: any; }`
-  - `fromObject<T extends Error>(obj: { [x: string | symbol]: any; }, ctor?: Constructor<T>): T`
-  - `toErrorEvent(err: Error, type?: string): ErrorEvent`
-  - `fromErrorEvent<T extends Error>(event: ErrorEvent): T | null`
-  - `prototype`
-    - `toJSON(): { [x: string | symbol]: any; }`
-
-- `globalThis`
-  - `Exception` (extends `Error`)
-    - `cause?: unknown`
-    - `code: number`
-
-### Augment Collections
-
-- `globalThis`
-  - `BiMap<K, V>` (extends `Map<K, V>`) map to each other.
-    - `prototype` (additional)
-      - `getKey(value: V): K | undefined`
-      - `hasValue(value: V): boolean`
-      - `deleteValue(value: V): boolean`
-  - `CiMap<K extends string, V>` (extends `Map<K, any>`)
+Check [augment.md](./augment.md).

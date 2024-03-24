@@ -1,10 +1,10 @@
 import { chunk as chunk$1 } from '../array/base.js';
+import bytes$1 from '../bytes/index.js';
 
 /**
  * Functions for dealing with strings.
  * @module
  */
-const encoder = new TextEncoder();
 const _chars = chars;
 /**
  * Compares two strings, returns `-1` if `a < b`, `0` if `a === b` and `1` if `a > b`.
@@ -58,9 +58,12 @@ function capitalize(str, all) {
 function hyphenate(str) {
     return str.replace(/(\S)\s+(\S)/g, (_, $1, $2) => $1 + "-" + $2);
 }
-/** Returns the bytes of the given string. */
+/**
+ * Returns the bytes of the given string.
+ * @deprecated use the `bytes` module instead.
+ */
 function bytes(str) {
-    return encoder.encode(str);
+    return bytes$1(str);
 }
 /** Returns the characters of the string (emojis are supported). */
 function chars(str) {
@@ -148,7 +151,7 @@ function stripStart(str, prefix) {
 }
 /** Returns the byte length of the string. */
 function byteLength(str) {
-    return bytes(str).byteLength;
+    return bytes$1(str).byteLength;
 }
 /** Checks if all characters in this string are within the ASCII range. */
 function isAscii(str, printableOnly = false) {
