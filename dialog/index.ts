@@ -13,7 +13,7 @@
  * @module
  */
 
-import { stripEnd } from "@ayonli/jsext/string";
+import { stripEnd } from "../string/index.ts";
 import Dialog, { closeDialog } from "./components/Dialog.ts";
 import Text from "./components/Text.ts";
 import Footer from "./components/Footer.ts";
