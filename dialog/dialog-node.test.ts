@@ -4,15 +4,14 @@ import { until } from "../promise/index.ts";
 import { isNodePrior16 } from "../parallel/constants.ts";
 
 describe("dialog", () => {
-    if (typeof document !== "undefined" || process.platform === "win32" || isNodePrior16) {
+    if (typeof document !== "undefined" || isNodePrior16) {
         return;
     }
 
     it("alert", async () => {
-        const cmd = spawn("npx", [
-            "tsx",
+        const cmd = spawn("node", [
             "-e",
-            "import { alert } from './dialog/index.ts'; alert('Hello, World!').then(console.log);"
+            `import("./esm/dialog/index.js").then(({ alert }) => alert("Hello, World!")).then(console.log);`
         ]);
         const outputs: string[] = [];
 
@@ -35,10 +34,9 @@ describe("dialog", () => {
 
     describe("confirm", () => {
         it("input 'y'", async () => {
-            const cmd = spawn("npx", [
-                "tsx",
+            const cmd = spawn("node", [
                 "-e",
-                "import { confirm } from './dialog/index.ts'; confirm('Are you sure?').then(console.log);"
+                `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
             ]);
             const outputs: string[] = [];
 
@@ -60,10 +58,9 @@ describe("dialog", () => {
         });
 
         it("input 'yes'", async () => {
-            const cmd = spawn("npx", [
-                "tsx",
+            const cmd = spawn("node", [
                 "-e",
-                "import { confirm } from './dialog/index.ts'; confirm('Are you sure?').then(console.log);"
+                `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
             ]);
             const outputs: string[] = [];
 
@@ -85,10 +82,9 @@ describe("dialog", () => {
         });
 
         it("input 'N'", async () => {
-            const cmd = spawn("npx", [
-                "tsx",
+            const cmd = spawn("node", [
                 "-e",
-                "import { confirm } from './dialog/index.ts'; confirm('Are you sure?').then(console.log);"
+                `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
             ]);
             const outputs: string[] = [];
 
@@ -110,10 +106,9 @@ describe("dialog", () => {
         });
 
         it("input 'n'", async () => {
-            const cmd = spawn("npx", [
-                "tsx",
+            const cmd = spawn("node", [
                 "-e",
-                "import { confirm } from './dialog/index.ts'; confirm('Are you sure?').then(console.log);"
+                `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
             ]);
             const outputs: string[] = [];
 
@@ -135,10 +130,9 @@ describe("dialog", () => {
         });
 
         it("input 'no'", async () => {
-            const cmd = spawn("npx", [
-                "tsx",
+            const cmd = spawn("node", [
                 "-e",
-                "import { confirm } from './dialog/index.ts'; confirm('Are you sure?').then(console.log);"
+                `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
             ]);
             const outputs: string[] = [];
 
@@ -160,10 +154,9 @@ describe("dialog", () => {
         });
 
         it("press Enter", async () => {
-            const cmd = spawn("npx", [
-                "tsx",
+            const cmd = spawn("node", [
                 "-e",
-                "import { confirm } from './dialog/index.ts'; confirm('Are you sure?').then(console.log);"
+                `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
             ]);
             const outputs: string[] = [];
 
@@ -187,10 +180,9 @@ describe("dialog", () => {
 
     describe("prompt", () => {
         it("input 'Hello, World!'", async () => {
-            const cmd = spawn("npx", [
-                "tsx",
+            const cmd = spawn("node", [
                 "-e",
-                "import { prompt } from './dialog/index.ts'; prompt('Enter something:').then(console.log);"
+                `import("./esm/dialog/index.js").then(({ prompt }) => prompt('Enter something:')).then(console.log);`
             ]);
             const outputs: string[] = [];
 
@@ -212,10 +204,9 @@ describe("dialog", () => {
         });
 
         it("press Enter", async () => {
-            const cmd = spawn("npx", [
-                "tsx",
+            const cmd = spawn("node", [
                 "-e",
-                "import { prompt } from './dialog/index.ts'; prompt('Enter something:').then(console.log);"
+                `import("./esm/dialog/index.js").then(({ prompt }) => prompt('Enter something:')).then(console.log);`
             ]);
             const outputs: string[] = [];
 
@@ -237,10 +228,9 @@ describe("dialog", () => {
         });
 
         it("default value", async () => {
-            const cmd = spawn("npx", [
-                "tsx",
+            const cmd = spawn("node", [
                 "-e",
-                "import { prompt } from './dialog/index.ts'; prompt('Enter something:', 'Hello, World!').then(console.log);"
+                `import("./esm/dialog/index.js").then(({ prompt }) => prompt('Enter something:', 'Hello, World!')).then(console.log);`
             ]);
             const outputs: string[] = [];
 
