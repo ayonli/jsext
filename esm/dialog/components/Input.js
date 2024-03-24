@@ -9,6 +9,7 @@ function Input(defaultValue = "") {
     input.style.border = "1px solid #ccc";
     input.style.borderRadius = "1.5rem";
     input.style.padding = "0 1rem";
+    input.style.fontSize = "1em";
     input.value = defaultValue !== null && defaultValue !== void 0 ? defaultValue : "";
     div.appendChild(input);
     return div;

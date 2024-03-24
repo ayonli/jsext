@@ -1,14 +1,14 @@
 export default function Footer(...children: HTMLElement[]) {
-    const bottom = document.createElement("footer");
+    const block = document.createElement("footer");
 
-    bottom.style.display = "flex";
-    bottom.style.justifyContent = "flex-end";
-    bottom.style.alignItems = "center";
-    bottom.style.gap = "0.5em";
+    block.style.display = "flex";
+    block.style.justifyContent = "flex-end";
+    block.style.alignItems = "center";
+    block.style.gap = "0.5em";
 
     children.forEach(node => {
-        bottom.appendChild(node);
+        block.appendChild(node);
     });
 
-    return bottom;
+    return block;
 }

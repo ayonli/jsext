@@ -13,6 +13,7 @@ export default function OkButton(props: {
     button.style.color = "#fff";
     button.style.backgroundColor = "#006bd6";
     button.style.userSelect = "none";
+    button.style.fontSize = "1em";
     button.style.fontWeight = "500";
 
     button.addEventListener("mouseover", () => {
