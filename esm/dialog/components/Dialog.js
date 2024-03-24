@@ -3,7 +3,7 @@ function Dialog(props, ...children) {
     const hasInput = children.some(node => node.querySelector("input"));
     const dialog = document.createElement("dialog");
     dialog.style.fontFamily = "Inter,sans-serif";
-    dialog.style.fontSize = "1rem";
+    dialog.style.fontSize = "13px";
     dialog.style.width = "416px";
     dialog.style.border = "1px solid #ccc";
     dialog.style.borderRadius = "13px";

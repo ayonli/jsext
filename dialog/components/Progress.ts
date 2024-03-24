@@ -13,7 +13,6 @@ export default function Progress() {
     progress.style.width = "100%";
 
     span.style.color = "#333";
-    span.style.fontSize = "0.9rem";
 
     div.appendChild(progress);
     div.appendChild(span);

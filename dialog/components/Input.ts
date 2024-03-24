@@ -3,7 +3,7 @@ export default function Input(defaultValue = "") {
     const input = document.createElement("input");
 
     div.style.display = "flex";
-    div.style.marginBlockEnd = "1rem";
+    div.style.margin = "0 0 1rem";
 
     input.autofocus = true;
     input.style.width = "100%";

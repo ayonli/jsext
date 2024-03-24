@@ -13,6 +13,7 @@ export default function CancelButton(props: {
     button.style.color = "#006bd6";
     button.style.backgroundColor = "#fff";
     button.style.userSelect = "none";
+    button.style.fontWeight = "500";
 
     button.addEventListener("mouseover", () => {
         button.style.backgroundColor = "#f0f0f0";

@@ -1,8 +1,7 @@
 function Text(message) {
     const text = document.createElement("p");
     text.textContent = message;
-    text.style.marginBlockStart = "0";
-    text.style.fontSize = "0.9rem";
+    text.style.margin = "0 0 1rem";
     return text;
 }
 

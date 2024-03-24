@@ -7,7 +7,7 @@ export default function Dialog(props: {
     const dialog = document.createElement("dialog");
 
     dialog.style.fontFamily = "Inter,sans-serif";
-    dialog.style.fontSize = "1rem";
+    dialog.style.fontSize = "13px";
     dialog.style.width = "416px";
     dialog.style.border = "1px solid #ccc";
     dialog.style.borderRadius = "13px";

@@ -10,6 +10,7 @@ function OkButton(props, text) {
     button.style.color = "#fff";
     button.style.backgroundColor = "#006bd6";
     button.style.userSelect = "none";
+    button.style.fontWeight = "500";
     button.addEventListener("mouseover", () => {
         button.style.backgroundColor = "#1677d8";
     });
