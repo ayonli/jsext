@@ -7,6 +7,7 @@ export const isBun = typeof Bun === "object";
 export const isNode: boolean = !isDeno && !isBun
     && typeof process === "object" && !!process.versions?.node;
 export const isNodePrior14: boolean = isNode && parseInt(process.version.slice(1)) < 14;
+export const isNodePrior16: boolean = isNode && parseInt(process.version.slice(1)) < 16;
 export const IsPath = /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/;
 declare var WorkerGlobalScope: any;
 

@@ -1,12 +1,10 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { spawn } from "node:child_process";
 import { until } from "../promise/index.ts";
-import { isNode } from "../parallel/constants.ts";
-
-const isNodePrior16: boolean = isNode && parseInt(process.version.slice(1)) < 16;
+import { isNodePrior16 } from "../parallel/constants.ts";
 
 describe("dialog", () => {
-    if (typeof document !== "undefined") {
+    if (typeof document !== "undefined" || process.platform === "win32" || isNodePrior16) {
         return;
     }
 
@@ -266,10 +264,6 @@ describe("dialog", () => {
 
     it("progress", async function () {
         this.timeout(10_000);
-
-        if (isNodePrior16) {
-            this.skip();
-        }
 
         const cmd = spawn("node", ["examples/dialog.mjs"]);
         const outputs: string[] = [];
