@@ -1396,10 +1396,6 @@ import {
 } from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/string/index.js";
 ```
 
-**NOTE:** In a Node.js + TypeScript project, configure `tsconfig.json` to set
-`compilerOptions.module` as `NodeNext` or `ESNext` instead of `CommonJS` in
-order to use sub-modules.
-
 ## Augmentations
 
 Check [augment.md](./augment.md).
