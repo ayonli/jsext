@@ -204,6 +204,8 @@ export function as(data: unknown, type: any): any {
  * 
  * @example
  * ```ts
+ * import { type } from "@ayonli/jsext/json";
+ * 
  * class Example {
  *     \@type(Date)
  *     date: Date;

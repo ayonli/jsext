@@ -99,7 +99,13 @@ export function omit(obj: any, keys: (string | symbol)[]) {
  * 
  * @example
  * ```ts
- * as(bar, SomeType)?.doSomething();
+ * import { as } from "@ayonli/jsext/object";
+ * 
+ * try {
+ *     // ... do something
+ * } catch (err) {
+ *     console.error(as(err, Error)?.message ?? String(err));
+ * }
  * ```
  */
 export function as(value: unknown, type: StringConstructor): string | null;
@@ -316,6 +322,8 @@ export type OmitChildrenNodes<T extends object> = Pick<T, {
  * @param depth Default value: `1`.
  * @example
  * ```ts
+ * import { flatKeys } from "@ayonli/jsext/object";
+ * 
  * const obj = flatKeys({ foo: { bar: "hello", baz: "world" } });
  * console.log(obj);
  * // { "foo.bar": "hello", "foo.baz": "world" }

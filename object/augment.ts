@@ -51,7 +51,11 @@ declare global {
          * otherwise returns `null`. This function is mainly used for the optional chaining syntax.
          * @example
          * ```ts
-         * Object.as(bar, SomeType)?.doSomething();
+         * try {
+         *     // ... do something
+         * } catch (err) {
+         *     console.error(Object.as(err, Error)?.message ?? String(err));
+         * }
          * ```
          */
         as(value: unknown, type: StringConstructor): string | null;
@@ -108,7 +112,11 @@ declare global {
          * 
          * @param depth Default value: `1`.
          * @example
-         *  Object.flatKeys({ foo: { bar: "Hello, World!" } }) === { "foo.bar": "Hello, World!" }
+         * ```ts
+         * const obj = Object.flatKeys({ foo: { bar: "hello", baz: "world" } });
+         * console.log(obj);
+         * // { "foo.bar": "hello", "foo.baz": "world" }
+         * ```
          */
         flatKeys<T extends Record<string, any>>(
             obj: T,
