@@ -32,11 +32,9 @@ async function alert(message) {
     else if (typeof document === "object") {
         return new Promise(resolve => {
             document.body.appendChild(Dialog({
-                onPressEscape: () => resolve(),
-                onPressEnter: () => resolve(),
-            }, Text(message), Footer(OkButton({
-                onClick: () => resolve(),
-            }))));
+                onCancel: () => resolve(),
+                onOk: () => resolve(),
+            }, Text(message), Footer(OkButton())));
         });
     }
     else {
@@ -63,13 +61,9 @@ async function confirm(message) {
     else if (typeof document === "object") {
         return new Promise(resolve => {
             document.body.appendChild(Dialog({
-                onPressEscape: () => resolve(false),
-                onPressEnter: () => resolve(true),
-            }, Text(message), Footer(CancelButton({
-                onClick: () => resolve(false),
-            }), OkButton({
-                onClick: () => resolve(true)
-            }))));
+                onCancel: () => resolve(false),
+                onOk: () => resolve(true),
+            }, Text(message), Footer(CancelButton(), OkButton())));
         });
     }
     else {
@@ -106,18 +100,13 @@ async function prompt(message, defaultValue = "") {
     }
     else if (typeof document === "object") {
         return new Promise(resolve => {
-            const handleConfirm = (_, dialog) => {
-                const input = dialog.querySelector("input");
-                resolve(input.value);
-            };
             document.body.appendChild(Dialog({
-                onPressEscape: () => resolve(null),
-                onPressEnter: handleConfirm,
-            }, Text(message), Input(defaultValue), Footer(CancelButton({
-                onClick: () => resolve(null),
-            }), OkButton({
-                onClick: handleConfirm,
-            }))));
+                onCancel: () => resolve(null),
+                onOk: (dialog) => {
+                    const input = dialog.querySelector("input");
+                    resolve(input.value);
+                },
+            }, Text(message), Input(defaultValue), Footer(CancelButton(), OkButton())));
         });
     }
     else {
@@ -242,7 +231,7 @@ async function progress(message, fn, onAbort = undefined) {
     if (typeof document === "object") {
         const text = Text(message);
         const { element: progressBar, setValue } = Progress();
-        const dialog = Dialog({ onPressEscape: abort }, text);
+        const dialog = Dialog({ onCancel: abort }, text);
         const set = (state) => {
             if (signal.aborted) {
                 return;
@@ -255,7 +244,7 @@ async function progress(message, fn, onAbort = undefined) {
             }
         };
         if (onAbort) {
-            dialog.appendChild(Footer(progressBar, CancelButton({ onClick: abort })));
+            dialog.appendChild(Footer(progressBar, CancelButton()));
         }
         else {
             dialog.appendChild(progressBar);
@@ -269,7 +258,7 @@ async function progress(message, fn, onAbort = undefined) {
             return await job;
         }
         finally {
-            signal.aborted || closeDialog(dialog);
+            signal.aborted || closeDialog(dialog, "OK");
         }
     }
     else if (typeof Deno === "object") {

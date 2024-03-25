@@ -57,11 +57,12 @@ const locale = {
     vi: "Hủy",
     zh: "取消",
 };
-function CancelButton(props) {
+function CancelButton() {
     const button = document.createElement("button");
     button.textContent = i18n(locale);
-    button.style.minWidth = "5rem";
-    button.style.height = "2rem";
+    button.style.minWidth = "80px";
+    button.style.height = "32px";
+    button.style.boxSizing = "border-box";
     button.style.border = "1px solid #8ebceb";
     button.style.borderRadius = "1.5rem";
     button.style.color = "#006bd6";
@@ -78,8 +79,7 @@ function CancelButton(props) {
     button.addEventListener("click", (event) => {
         var _a;
         const dialog = (_a = event.target) === null || _a === void 0 ? void 0 : _a.closest("dialog");
-        closeDialog(dialog);
-        props.onClick(event, dialog);
+        closeDialog(dialog, "Cancel");
     });
     return button;
 }

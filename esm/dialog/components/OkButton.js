@@ -63,11 +63,12 @@ function i18n(locale) {
     }
     return locale[lang] || locale["en"];
 }
-function OkButton(props) {
+function OkButton() {
     const button = document.createElement("button");
     button.textContent = i18n(locale);
-    button.style.minWidth = "5rem";
-    button.style.height = "2rem";
+    button.style.minWidth = "80px";
+    button.style.height = "32px";
+    button.style.boxSizing = "border-box";
     button.style.borderStyle = "none";
     button.style.borderRadius = "1.5rem";
     button.style.color = "#fff";
@@ -84,8 +85,7 @@ function OkButton(props) {
     button.addEventListener("click", (event) => {
         var _a;
         const dialog = (_a = event.target) === null || _a === void 0 ? void 0 : _a.closest("dialog");
-        closeDialog(dialog);
-        props.onClick(event, dialog);
+        closeDialog(dialog, "OK");
     });
     return button;
 }

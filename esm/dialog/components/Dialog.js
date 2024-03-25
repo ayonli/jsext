@@ -1,5 +1,6 @@
+const CloseEventListeners = new WeakMap();
 function Dialog(props, ...children) {
-    const { onPressEscape, onPressEnter } = props;
+    const { onCancel, onOk } = props;
     const hasInput = children.some(node => node.querySelector("input"));
     const dialog = document.createElement("dialog");
     dialog.style.fontFamily = "Inter,sans-serif";
@@ -13,20 +14,33 @@ function Dialog(props, ...children) {
     if (!hasInput) {
         dialog.inert = true;
     }
-    if (onPressEscape) {
-        dialog.addEventListener("cancel", (event) => {
-            onPressEscape(event);
-            closeDialog(dialog);
-        });
-    }
-    if (onPressEnter) {
-        dialog.addEventListener("keypress", (event) => {
-            if (event.key === "Enter") {
-                onPressEnter(event, dialog);
-                closeDialog(dialog);
+    const close = () => {
+        if (!dialog.returnValue || dialog.returnValue === "Cancel") {
+            onCancel === null || onCancel === void 0 ? void 0 : onCancel(dialog);
+        }
+        else if (dialog.returnValue === "OK") {
+            onOk === null || onOk === void 0 ? void 0 : onOk(dialog);
+        }
+        try {
+            document.body.removeChild(dialog);
+        }
+        catch (err) {
+            if (err["name"] !== "NotFoundError") { // Ignore NotFoundError (in Safari)
+                throw err;
             }
-        });
+        }
+    };
+    if (typeof dialog.close === "function") {
+        dialog.addEventListener("close", close);
     }
+    else { // jsdom
+        CloseEventListeners.set(dialog, close);
+    }
+    dialog.addEventListener("keypress", (event) => {
+        if (event.key === "Enter") {
+            closeDialog(dialog, "OK");
+        }
+    });
     children.forEach(child => {
         dialog.appendChild(child);
     });
@@ -49,19 +63,22 @@ function Dialog(props, ...children) {
     });
     return dialog;
 }
-function closeDialog(dialog) {
+function closeDialog(dialog, returnValue) {
     if (typeof dialog.close === "function") {
-        dialog.close();
+        dialog.close(returnValue);
     }
-    else {
-        dialog.open = false; // for testing with JSDOM
-    }
-    try {
-        document.body.removeChild(dialog);
-    }
-    catch (err) {
-        if (err["name"] !== "NotFoundError") { // Ignore NotFoundError (in Safari)
-            throw err;
+    else { // for testing with JSDOM
+        dialog.open = false;
+        dialog.returnValue = returnValue;
+        try {
+            dialog.dispatchEvent(new Event("close"));
+        }
+        catch (_a) {
+            const close = CloseEventListeners.get(dialog);
+            if (close) {
+                close();
+                CloseEventListeners.delete(dialog);
+            }
         }
     }
 }
