@@ -67,9 +67,7 @@ export function i18n(locale: { [lang: string]: string; }): string {
     return locale[lang] || locale["en"]!;
 }
 
-export default function OkButton(props: {
-    onClick: (event: MouseEvent, dialog: HTMLDialogElement) => void;
-}) {
+export default function OkButton() {
     const button = document.createElement("button");
 
     button.textContent = i18n(locale);
@@ -93,8 +91,7 @@ export default function OkButton(props: {
 
     button.addEventListener("click", (event) => {
         const dialog = (event.target as HTMLButtonElement)?.closest("dialog")!;
-        closeDialog(dialog);
-        props.onClick(event, dialog);
+        closeDialog(dialog, "OK");
     });
 
     return button;

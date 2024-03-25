@@ -44,14 +44,12 @@ export async function alert(message: string): Promise<void> {
             document.body.appendChild(
                 Dialog(
                     {
-                        onPressEscape: () => resolve(),
-                        onPressEnter: () => resolve(),
+                        onCancel: () => resolve(),
+                        onOk: () => resolve(),
                     },
                     Text(message),
                     Footer(
-                        OkButton({
-                            onClick: () => resolve(),
-                        })
+                        OkButton()
                     )
                 )
             );
@@ -82,17 +80,13 @@ export async function confirm(message: string): Promise<boolean> {
             document.body.appendChild(
                 Dialog(
                     {
-                        onPressEscape: () => resolve(false),
-                        onPressEnter: () => resolve(true),
+                        onCancel: () => resolve(false),
+                        onOk: () => resolve(true),
                     },
                     Text(message),
                     Footer(
-                        CancelButton({
-                            onClick: () => resolve(false),
-                        }),
-                        OkButton({
-                            onClick: () => resolve(true)
-                        })
+                        CancelButton(),
+                        OkButton()
                     )
                 )
             );
@@ -136,26 +130,20 @@ export async function prompt(
         return Promise.resolve(globalThis.prompt(message, defaultValue));
     } else if (typeof document === "object") {
         return new Promise<string | null>(resolve => {
-            const handleConfirm = (_: Event, dialog: HTMLDialogElement) => {
-                const input = dialog!.querySelector("input") as HTMLInputElement;
-                resolve(input.value);
-            };
-
             document.body.appendChild(
                 Dialog(
                     {
-                        onPressEscape: () => resolve(null),
-                        onPressEnter: handleConfirm,
+                        onCancel: () => resolve(null),
+                        onOk: (dialog: HTMLDialogElement) => {
+                            const input = dialog.querySelector("input") as HTMLInputElement;
+                            resolve(input.value);
+                        },
                     },
                     Text(message),
                     Input(defaultValue),
                     Footer(
-                        CancelButton({
-                            onClick: () => resolve(null),
-                        }),
-                        OkButton({
-                            onClick: handleConfirm,
-                        })
+                        CancelButton(),
+                        OkButton()
                     )
                 )
             );
@@ -301,7 +289,7 @@ export async function progress<T>(
     if (typeof document === "object") {
         const text = Text(message);
         const { element: progressBar, setValue } = Progress();
-        const dialog = Dialog({ onPressEscape: abort }, text);
+        const dialog = Dialog({ onCancel: abort }, text);
 
         const set = (state: ProgressState) => {
             if (signal.aborted) {
@@ -321,7 +309,7 @@ export async function progress<T>(
             dialog.appendChild(
                 Footer(
                     progressBar,
-                    CancelButton({ onClick: abort })
+                    CancelButton()
                 )
             );
         } else {
@@ -338,7 +326,7 @@ export async function progress<T>(
         try {
             return await job;
         } finally {
-            signal.aborted || closeDialog(dialog);
+            signal.aborted || closeDialog(dialog, "OK");
         }
     } else if (typeof Deno === "object") {
         let lastMessage = stripEnd(message, "...");

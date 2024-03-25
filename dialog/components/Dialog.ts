@@ -1,8 +1,10 @@
+const CloseEventListeners = new WeakMap<HTMLDialogElement, () => void>();
+
 export default function Dialog(props: {
-    onPressEscape?: (event: Event) => void;
-    onPressEnter?: (event: KeyboardEvent, dialog: HTMLDialogElement) => void;
+    onCancel?: (dialog: HTMLDialogElement) => void;
+    onOk?: (dialog: HTMLDialogElement) => void;
 }, ...children: HTMLElement[]) {
-    const { onPressEscape, onPressEnter } = props;
+    const { onCancel, onOk } = props;
     const hasInput = children.some(node => node.querySelector("input"));
     const dialog = document.createElement("dialog");
 
@@ -19,21 +21,33 @@ export default function Dialog(props: {
         dialog.inert = true;
     }
 
-    if (onPressEscape) {
-        dialog.addEventListener("cancel", (event) => {
-            onPressEscape!(event);
-            closeDialog(dialog);
-        });
+    const close = () => {
+        if (!dialog.returnValue || dialog.returnValue === "Cancel") {
+            onCancel?.(dialog);
+        } else if (dialog.returnValue === "OK") {
+            onOk?.(dialog);
+        }
+
+        try {
+            document.body.removeChild(dialog);
+        } catch (err: any) {
+            if (err["name"] !== "NotFoundError") { // Ignore NotFoundError (in Safari)
+                throw err;
+            }
+        }
+    };
+
+    if (typeof dialog.close === "function") {
+        dialog.addEventListener("close", close);
+    } else { // jsdom
+        CloseEventListeners.set(dialog, close);
     }
 
-    if (onPressEnter) {
-        dialog.addEventListener("keypress", (event) => {
-            if (event.key === "Enter") {
-                onPressEnter!(event, dialog);
-                closeDialog(dialog);
-            }
-        });
-    }
+    dialog.addEventListener("keypress", (event) => {
+        if (event.key === "Enter") {
+            closeDialog(dialog, "OK");
+        }
+    });
 
     children.forEach(child => {
         dialog.appendChild(child);
@@ -60,18 +74,22 @@ export default function Dialog(props: {
     return dialog;
 }
 
-export function closeDialog(dialog: HTMLDialogElement) {
+export function closeDialog(dialog: HTMLDialogElement, returnValue: "OK" | "Cancel") {
     if (typeof dialog.close === "function") {
-        dialog.close();
-    } else {
-        dialog.open = false; // for testing with JSDOM
-    }
+        dialog.close(returnValue);
+    } else { // for testing with JSDOM
+        dialog.open = false;
+        dialog.returnValue = returnValue;
 
-    try {
-        document.body.removeChild(dialog);
-    } catch (err: any) {
-        if (err["name"] !== "NotFoundError") { // Ignore NotFoundError (in Safari)
-            throw err;
+        try {
+            dialog.dispatchEvent(new Event("close"));
+        } catch {
+            const close = CloseEventListeners.get(dialog);
+
+            if (close) {
+                close();
+                CloseEventListeners.delete(dialog);
+            }
         }
     }
 }

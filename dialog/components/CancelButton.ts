@@ -58,9 +58,7 @@ const locale = {
     zh: "取消",
 };
 
-export default function CancelButton(props: {
-    onClick: (event: MouseEvent, dialog: HTMLDialogElement) => void;
-}) {
+export default function CancelButton() {
     const button = document.createElement("button");
 
     button.textContent = i18n(locale);
@@ -84,8 +82,7 @@ export default function CancelButton(props: {
 
     button.addEventListener("click", (event) => {
         const dialog = (event.target as HTMLButtonElement)?.closest("dialog")!;
-        closeDialog(dialog);
-        props.onClick(event, dialog);
+        closeDialog(dialog, "Cancel");
     });
 
     return button;
