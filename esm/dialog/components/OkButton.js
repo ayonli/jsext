@@ -77,7 +77,7 @@ function OkButton() {
     button.style.fontSize = "1em";
     button.style.fontWeight = "500";
     button.addEventListener("mouseover", () => {
-        button.style.backgroundColor = "#1677d8";
+        button.style.backgroundColor = "#0174e6";
     });
     button.addEventListener("mouseout", () => {
         button.style.backgroundColor = "#006bd6";
