@@ -62,8 +62,9 @@ export default function CancelButton() {
     const button = document.createElement("button");
 
     button.textContent = i18n(locale);
-    button.style.minWidth = "5rem";
-    button.style.height = "2rem";
+    button.style.minWidth = "80px";
+    button.style.height = "32px";
+    button.style.boxSizing = "border-box";
     button.style.border = "1px solid #8ebceb";
     button.style.borderRadius = "1.5rem";
     button.style.color = "#006bd6";

@@ -71,8 +71,9 @@ export default function OkButton() {
     const button = document.createElement("button");
 
     button.textContent = i18n(locale);
-    button.style.minWidth = "5rem";
-    button.style.height = "2rem";
+    button.style.minWidth = "80px";
+    button.style.height = "32px";
+    button.style.boxSizing = "border-box";
     button.style.borderStyle = "none";
     button.style.borderRadius = "1.5rem";
     button.style.color = "#fff";
