@@ -254,6 +254,8 @@ function sortKeys(obj, deep = false) {
  * @param depth Default value: `1`.
  * @example
  * ```ts
+ * import { flatKeys } from "@ayonli/jsext/object";
+ *
  * const obj = flatKeys({ foo: { bar: "hello", baz: "world" } });
  * console.log(obj);
  * // { "foo.bar": "hello", "foo.baz": "world" }

@@ -174,6 +174,8 @@ function as(data, type) {
  *
  * @example
  * ```ts
+ * import { type } from "@ayonli/jsext/json";
+ *
  * class Example {
  *     \@type(Date)
  *     date: Date;
