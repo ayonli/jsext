@@ -83,7 +83,7 @@ export default function OkButton() {
     button.style.fontWeight = "500";
 
     button.addEventListener("mouseover", () => {
-        button.style.backgroundColor = "#1677d8";
+        button.style.backgroundColor = "#0174e6";
     });
 
     button.addEventListener("mouseout", () => {

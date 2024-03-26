@@ -71,7 +71,7 @@ function CancelButton() {
     button.style.fontSize = "1em";
     button.style.fontWeight = "500";
     button.addEventListener("mouseover", () => {
-        button.style.backgroundColor = "#f0f0f0";
+        button.style.backgroundColor = "#f4f4f4";
     });
     button.addEventListener("mouseout", () => {
         button.style.backgroundColor = "#fff";
