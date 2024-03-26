@@ -138,5 +138,5 @@ function chunk(arr, length) {
     return chunk$1(arr, length);
 }
 
-export { ByteArray, bytes, chunk, compare, concat, copy, bytes as default, equals, split, text };
+export { ByteArray, chunk, compare, concat, copy, bytes as default, equals, split, text };
 //# sourceMappingURL=index.js.map
