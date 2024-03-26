@@ -69,7 +69,10 @@ export default [
             typescript({ moduleResolution: "bundler" }),
             resolve({ preferBuiltins: true }),
             commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
-            terser()
+            terser({
+                keep_classnames: true,
+                keep_fnames: true,
+            })
         ],
     },
     { // Worker for Bun, Deno and the browser

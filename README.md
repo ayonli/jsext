@@ -31,7 +31,7 @@ browser.
 <script>
     const jsext = window["@ayonli/jsext"];
     // this will also include the sub-modules and augmentations
-<script>
+</script>
 ```
 
 ## Functions

@@ -28,8 +28,6 @@ export class ByteArray extends Uint8Array {
     }
 }
 
-export default bytes;
-
 /**
  * Converts the given data to a byte array.
  * 
@@ -42,11 +40,11 @@ export default bytes;
  * console.log(String(arr)); // "Hello, World!"
  * ```
  */
-export function bytes(str: string): ByteArray;
-export function bytes(arr: ArrayLike<number>): ByteArray;
-export function bytes(buf: ArrayBufferLike): ByteArray;
-export function bytes(length: number): ByteArray;
-export function bytes(data: any): ByteArray {
+export default function bytes(str: string): ByteArray;
+export default function bytes(arr: ArrayLike<number>): ByteArray;
+export default function bytes(buf: ArrayBufferLike): ByteArray;
+export default function bytes(length: number): ByteArray;
+export default function bytes(data: any): ByteArray {
     if (typeof data === "string") {
         return new ByteArray(defaultEncoder.encode(data).buffer);
     } else {
