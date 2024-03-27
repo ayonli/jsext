@@ -38,8 +38,6 @@ export {
     split,
 };
 
-declare const Deno: any;
-
 /**
  * Platform-specific path segment separator. The value is `\` on Windows
  * server-side runtime, and `/` otherwise.

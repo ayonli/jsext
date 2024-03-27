@@ -22,8 +22,6 @@ import CancelButton from "./components/CancelButton.ts";
 import Input from "./components/Input.ts";
 import Progress from "./components/Progress.ts";
 
-declare const Deno: object;
-
 type KeypressEventInfo = {
     sequence: string;
     name: string;

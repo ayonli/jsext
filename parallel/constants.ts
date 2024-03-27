@@ -1,6 +1,5 @@
 export const id = Symbol.for("id");
 
-declare var Deno: any;
 declare var Bun: any;
 export const isDeno = typeof Deno === "object";
 export const isBun = typeof Bun === "object";

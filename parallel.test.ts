@@ -7,7 +7,6 @@ import Exception from "./error/Exception.ts";
 import * as path from "node:path";
 import { trim } from "./string/index.ts";
 
-declare var Deno: any;
 declare var Bun: any;
 declare var AggregateError: new (errors: Error[], message?: string, options?: { cause: unknown; }) => Error & { errors: Error[]; };
 

@@ -20,8 +20,6 @@ import {
     startsWith,
 } from "./index.ts";
 
-declare const Deno: any;
-
 describe("path", () => {
     it("sep", () => {
         if (typeof Deno === "object" && Deno.build?.os === "windows") {

@@ -48,6 +48,7 @@
         "exclude": [
             "**/augment.ts",
             "**/*.test.ts",
+            "**/*.d.ts",
             "worker-node.ts",
             "test-deno.ts",
             "bundle.ts",

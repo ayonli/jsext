@@ -21,8 +21,6 @@ import {
 import parallel from "./parallel.ts";
 import { unrefTimer } from "./util.ts";
 
-declare var Deno: any;
-
 type PoolRecord = {
     getWorker: Promise<{
         worker: Worker | BunWorker | NodeWorker | ChildProcess;
@@ -211,7 +209,7 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
             if (isNode || isBun) {
                 (gcTimer as NodeJS.Timeout).unref();
             } else if (isDeno) {
-                Deno.unrefTimer(gcTimer);
+                Deno.unrefTimer(gcTimer as unknown as number);
             }
         }
     } else {
@@ -481,6 +479,7 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
             release = () => {
                 worker.unref();
                 worker.onmessage = null;
+                // @ts-ignore
                 worker.onerror = null;
                 worker.removeEventListener("close", handleCloseEvent);
                 poolRecord && (poolRecord.busy = false);
@@ -517,6 +516,7 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
 
         release = () => {
             worker.onmessage = null;
+            // @ts-ignore
             worker.onerror = null;
             poolRecord && (poolRecord.busy = false);
         };

@@ -24,7 +24,6 @@ export type ThreadedFunctions<M, T extends FunctionProperties<M> = FunctionPrope
 };
 
 const taskIdCounter = serial(true);
-declare var Deno: any;
 
 async function safeRemoteCall(
     worker: Worker | BunWorker | NodeWorker,

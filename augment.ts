@@ -1,3 +1,4 @@
+/// <reference types="./lib.deno.d.ts" />
 import "./string/augment.ts";
 import "./number/augment.ts";
 import "./array/augment.ts";

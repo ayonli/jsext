@@ -3,8 +3,6 @@
  * @module
  */
 
-declare var Deno: any;
-
 /**
  * Inspired by Golang's **Example as Test** design, creates a function that
  * carries example code with `// output:` comments, when the returned function
