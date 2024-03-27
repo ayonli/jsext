@@ -21,11 +21,22 @@ import Progress from './components/Progress.js';
  *
  * @module
  */
+async function ownStdin(stdin, task) {
+    const rawMode = stdin.isRaw;
+    rawMode || stdin.setRawMode(true);
+    const _listeners = stdin.listeners("keypress");
+    stdin.removeAllListeners("keypress");
+    const result = await task(stdin);
+    _listeners.forEach(listener => stdin.addListener("keypress", listener));
+    stdin.setRawMode(rawMode);
+    return result;
+}
 /**
  * Displays a dialog with a message, and to wait until the user dismisses the
  * dialog.
  */
 async function alert(message) {
+    var _a;
     if (typeof Deno === "object") {
         return Promise.resolve(globalThis.alert(message));
     }
@@ -39,15 +50,39 @@ async function alert(message) {
     }
     else {
         const { stdin, stdout } = await import('process');
-        const { createInterface } = await import('readline');
-        const writer = createInterface({
-            input: stdin,
-            output: stdout,
+        const { createInterface } = await import('readline/promises');
+        const repl = await import('repl');
+        // @ts-ignore fix CommonJS import
+        const isRepl = !!((_a = repl.default) !== null && _a !== void 0 ? _a : repl).repl;
+        if (isRepl) {
+            return await ownStdin(stdin, async () => {
+                stdout.write(message + " [Enter] ");
+                await new Promise(resolve => {
+                    const listener = (_, key) => {
+                        if (key.name === "escape" ||
+                            key.name === "enter" ||
+                            key.name === "return" ||
+                            (key.name === "c" && key.ctrl)) {
+                            stdin.off("keypress", listener);
+                            resolve();
+                        }
+                    };
+                    stdin.on("keypress", listener);
+                });
+                stdout.write("\n");
+            });
+        }
+        const rl = createInterface({ input: stdin, output: stdout });
+        const job = rl.question(message + " [Enter] ");
+        const abort = new Promise(resolve => {
+            stdin.on("keypress", (_, key) => {
+                if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
+                    resolve("");
+                }
+            });
         });
-        await new Promise(resolve => {
-            writer.question(message + " [Enter] ", resolve);
-        });
-        writer.close();
+        await Promise.race([job, abort]);
+        rl.close();
     }
 }
 /**
@@ -55,6 +90,7 @@ async function alert(message) {
  * or cancels the dialog.
  */
 async function confirm(message) {
+    var _a;
     if (typeof Deno === "object") {
         return Promise.resolve(globalThis.confirm(message));
     }
@@ -68,25 +104,53 @@ async function confirm(message) {
     }
     else {
         const { stdin, stdout } = await import('process');
-        const { createInterface } = await import('readline');
-        const writer = createInterface({
-            input: stdin,
-            output: stdout,
-        });
-        const job = new Promise(resolve => {
-            writer.question(message + " [y/N] ", resolve);
-        });
+        const { createInterface } = await import('readline/promises');
+        const repl = await import('repl');
+        // @ts-ignore fix CommonJS import
+        const isRepl = !!((_a = repl.default) !== null && _a !== void 0 ? _a : repl).repl;
+        if (isRepl) {
+            return await ownStdin(stdin, async () => {
+                stdout.write(message + " [y/N] ");
+                const answer = await new Promise(resolve => {
+                    const buf = [];
+                    const listener = (char, key) => {
+                        if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
+                            stdin.off("keypress", listener);
+                            resolve("N");
+                        }
+                        else if (key.name === "enter" || key.name === "return") {
+                            stdin.off("keypress", listener);
+                            resolve(buf.join(""));
+                        }
+                        else if (key.name === "backspace") {
+                            stdout.moveCursor(-1, 0);
+                            stdout.clearLine(1);
+                            buf.pop();
+                        }
+                        else {
+                            stdout.write(char);
+                            buf.push(char);
+                        }
+                    };
+                    stdin.on("keypress", listener);
+                });
+                stdout.write("\n");
+                const ok = answer.toLowerCase().trim();
+                return ok === "y" || ok === "yes";
+            });
+        }
+        const rl = createInterface({ input: stdin, output: stdout });
+        const job = rl.question(message + " [y/N] ");
         const abort = new Promise(resolve => {
-            var _a;
-            (_a = stdin.on) === null || _a === void 0 ? void 0 : _a.call(stdin, "keypress", (_, key) => {
-                if (key.name === "escape") {
+            stdin.on("keypress", (_, key) => {
+                if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
                     resolve("N");
                 }
             });
         });
-        let ok = await Promise.race([job, abort]);
-        writer.close();
-        ok = ok.toLowerCase().trim();
+        const answer = await Promise.race([job, abort]);
+        const ok = answer.toLowerCase().trim();
+        rl.close();
         return ok === "y" || ok === "yes";
     }
 }
@@ -95,6 +159,7 @@ async function confirm(message) {
  * wait until the user either submits the text or cancels the dialog.
  */
 async function prompt(message, defaultValue = "") {
+    var _a;
     if (typeof Deno === "object") {
         return Promise.resolve(globalThis.prompt(message, defaultValue));
     }
@@ -111,27 +176,55 @@ async function prompt(message, defaultValue = "") {
     }
     else {
         const { stdin, stdout } = await import('process');
-        const { createInterface } = await import('readline');
-        const writer = createInterface({
-            input: stdin,
-            output: stdout,
-        });
-        const job = new Promise(resolve => {
-            writer.question(message + " ", resolve);
-        });
+        const { createInterface } = await import('readline/promises');
+        const repl = await import('repl');
+        // @ts-ignore fix CommonJS import
+        const isRepl = !!((_a = repl.default) !== null && _a !== void 0 ? _a : repl).repl;
+        if (isRepl) {
+            return await ownStdin(stdin, async () => {
+                stdout.write(message + " ");
+                const answer = await new Promise(resolve => {
+                    const buf = [];
+                    const listener = (char, key) => {
+                        if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
+                            stdin.off("keypress", listener);
+                            resolve(null);
+                        }
+                        else if (key.name === "enter" || key.name === "return") {
+                            stdin.off("keypress", listener);
+                            resolve(buf.join(""));
+                        }
+                        else if (key.name === "backspace") {
+                            stdout.moveCursor(-1, 0);
+                            stdout.clearLine(1);
+                            buf.pop();
+                        }
+                        else {
+                            stdout.write(char);
+                            buf.push(char);
+                        }
+                    };
+                    stdin.on("keypress", listener);
+                });
+                stdout.write("\n");
+                return answer;
+            });
+        }
+        const rl = createInterface({ input: stdin, output: stdout });
+        const job = rl.question(message + " ");
         if (defaultValue) {
-            writer.write(defaultValue);
+            rl.write(defaultValue);
         }
         const abort = new Promise(resolve => {
             var _a;
             (_a = stdin.on) === null || _a === void 0 ? void 0 : _a.call(stdin, "keypress", (_, key) => {
-                if (key.name === "escape") {
+                if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
                     resolve(null);
                 }
             });
         });
         const answer = await Promise.race([job, abort]);
-        writer.close();
+        rl.close();
         return answer;
     }
 }

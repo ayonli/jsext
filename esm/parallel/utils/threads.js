@@ -175,6 +175,7 @@ async function createWorker(options) {
                     reject(new Error(ev.message || "unable to start the worker"));
                 };
                 worker.addEventListener("open", () => {
+                    // @ts-ignore
                     worker.onerror = null;
                     resolve();
                 });

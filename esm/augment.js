@@ -10,6 +10,7 @@ import './error/augment.js';
 import './json/augment.js';
 import { AsyncFunction, AsyncGeneratorFunction } from './index.js';
 
+/// <reference types="./lib.deno.d.ts" />
 // @ts-ignore
 globalThis["AsyncFunction"] = AsyncFunction;
 // @ts-ignore

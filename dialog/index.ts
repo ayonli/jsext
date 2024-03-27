@@ -30,6 +30,23 @@ type KeypressEventInfo = {
     shift: boolean;
 };
 
+type NodeStdin = NodeJS.ReadStream & { fd: 0; };
+
+async function ownStdin<T>(stdin: NodeStdin, task: (stdin: NodeStdin) => Promise<T>) {
+    const rawMode = stdin.isRaw;
+    rawMode || stdin.setRawMode(true);
+
+    const _listeners = stdin.listeners("keypress");
+    stdin.removeAllListeners("keypress");
+
+    const result = await task(stdin);
+
+    _listeners.forEach(listener => stdin.addListener("keypress", listener as any));
+    stdin.setRawMode(rawMode);
+
+    return result;
+}
+
 /**
  * Displays a dialog with a message, and to wait until the user dismisses the
  * dialog.
@@ -54,15 +71,43 @@ export async function alert(message: string): Promise<void> {
         });
     } else {
         const { stdin, stdout } = await import("process");
-        const { createInterface } = await import("readline");
-        const writer = createInterface({
-            input: stdin,
-            output: stdout,
+        const { createInterface } = await import("readline/promises");
+        const repl = await import("repl");
+        // @ts-ignore fix CommonJS import
+        const isRepl = !!(repl.default ?? repl).repl;
+
+        if (isRepl) {
+            return await ownStdin(stdin, async () => {
+                stdout.write(message + " [Enter] ");
+                await new Promise<void>(resolve => {
+                    const listener = (_: string, key: KeypressEventInfo) => {
+                        if (key.name === "escape" ||
+                            key.name === "enter" ||
+                            key.name === "return" ||
+                            (key.name === "c" && key.ctrl)
+                        ) {
+                            stdin.off("keypress", listener);
+                            resolve();
+                        }
+                    };
+                    stdin.on("keypress", listener);
+                });
+                stdout.write("\n");
+            });
+        }
+
+        const rl = createInterface({ input: stdin, output: stdout });
+        const job = rl.question(message + " [Enter] ");
+        const abort = new Promise<string>(resolve => {
+            stdin.on("keypress", (_, key: KeypressEventInfo) => {
+                if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
+                    resolve("");
+                }
+            });
         });
-        await new Promise<string>(resolve => {
-            writer.question(message + " [Enter] ", resolve);
-        });
-        writer.close();
+
+        await Promise.race([job, abort]);
+        rl.close();
     }
 }
 
@@ -91,27 +136,55 @@ export async function confirm(message: string): Promise<boolean> {
         });
     } else {
         const { stdin, stdout } = await import("process");
-        const { createInterface } = await import("readline");
-        const writer = createInterface({
-            input: stdin,
-            output: stdout,
-        });
-        const job = new Promise<string>(resolve => {
-            writer.question(message + " [y/N] ", resolve);
-        });
+        const { createInterface } = await import("readline/promises");
+        const repl = await import("repl");
+        // @ts-ignore fix CommonJS import
+        const isRepl = !!(repl.default ?? repl).repl;
 
+        if (isRepl) {
+            return await ownStdin(stdin, async () => {
+                stdout.write(message + " [y/N] ");
+                const answer = await new Promise<string>(resolve => {
+                    const buf: string[] = [];
+                    const listener = (char: string, key: KeypressEventInfo) => {
+                        if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
+                            stdin.off("keypress", listener);
+                            resolve("N");
+                        } else if (key.name === "enter" || key.name === "return") {
+                            stdin.off("keypress", listener);
+                            resolve(buf.join(""));
+                        } else if (key.name === "backspace") {
+                            stdout.moveCursor(-1, 0);
+                            stdout.clearLine(1);
+                            buf.pop();
+                        } else {
+                            stdout.write(char);
+                            buf.push(char);
+                        }
+                    };
+                    stdin.on("keypress", listener);
+                });
+
+                stdout.write("\n");
+                const ok = answer.toLowerCase().trim();
+                return ok === "y" || ok === "yes";
+            });
+        }
+
+        const rl = createInterface({ input: stdin, output: stdout });
+        const job = rl.question(message + " [y/N] ");
         const abort = new Promise<string>(resolve => {
-            stdin.on?.("keypress", (_, key: KeypressEventInfo) => {
-                if (key.name === "escape") {
+            stdin.on("keypress", (_, key: KeypressEventInfo) => {
+                if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
                     resolve("N");
                 }
             });
         });
 
-        let ok = await Promise.race([job, abort]);
-        writer.close();
+        const answer = await Promise.race([job, abort]);
+        const ok = answer.toLowerCase().trim();
 
-        ok = ok.toLowerCase().trim();
+        rl.close();
         return ok === "y" || ok === "yes";
     }
 }
@@ -148,29 +221,57 @@ export async function prompt(
         });
     } else {
         const { stdin, stdout } = await import("process");
-        const { createInterface } = await import("readline");
-        const writer = createInterface({
-            input: stdin,
-            output: stdout,
-        });
-        const job = new Promise<string>(resolve => {
-            writer.question(message + " ", resolve);
-        });
+        const { createInterface } = await import("readline/promises");
+        const repl = await import("repl");
+        // @ts-ignore fix CommonJS import
+        const isRepl = !!(repl.default ?? repl).repl;
+
+        if (isRepl) {
+            return await ownStdin(stdin, async () => {
+                stdout.write(message + " ");
+                const answer = await new Promise<string | null>(resolve => {
+                    const buf: string[] = [];
+                    const listener = (char: string, key: KeypressEventInfo) => {
+                        if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
+                            stdin.off("keypress", listener);
+                            resolve(null);
+                        } else if (key.name === "enter" || key.name === "return") {
+                            stdin.off("keypress", listener);
+                            resolve(buf.join(""));
+                        } else if (key.name === "backspace") {
+                            stdout.moveCursor(-1, 0);
+                            stdout.clearLine(1);
+                            buf.pop();
+                        } else {
+                            stdout.write(char);
+                            buf.push(char);
+                        }
+                    };
+                    stdin.on("keypress", listener);
+                });
+
+                stdout.write("\n");
+                return answer;
+            });
+        }
+
+        const rl = createInterface({ input: stdin, output: stdout });
+        const job = rl.question(message + " ");
 
         if (defaultValue) {
-            writer.write(defaultValue);
+            rl.write(defaultValue);
         }
 
         const abort = new Promise<null>(resolve => {
             stdin.on?.("keypress", (_, key: KeypressEventInfo) => {
-                if (key.name === "escape") {
+                if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
                     resolve(null);
                 }
             });
         });
 
         const answer = await Promise.race([job, abort]);
-        writer.close();
+        rl.close();
 
         return answer;
     }

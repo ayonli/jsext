@@ -384,6 +384,7 @@ async function run(script, args, options) {
             release = () => {
                 worker.unref();
                 worker.onmessage = null;
+                // @ts-ignore
                 worker.onerror = null;
                 worker.removeEventListener("close", handleCloseEvent);
                 poolRecord && (poolRecord.busy = false);
@@ -412,6 +413,7 @@ async function run(script, args, options) {
         };
         release = () => {
             worker.onmessage = null;
+            // @ts-ignore
             worker.onerror = null;
             poolRecord && (poolRecord.busy = false);
         };
