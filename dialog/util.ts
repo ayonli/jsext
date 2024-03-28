@@ -1,3 +1,16 @@
+import bytes, { concat, equals } from "../bytes/index.ts";
+
+export const LF = "\n".charCodeAt(0); // ^J - Enter on Linux
+export const CR = "\r".charCodeAt(0); // ^M - Enter on macOS and Windows (CRLF)
+export const BS = "\b".charCodeAt(0); // ^H - Backspace on Linux and Windows
+export const DEL = 0x7f; // ^? - Backspace on macOS
+export const ESC = 0x1b; // ^[ - Escape
+export const CLR = bytes("\r\u001b[K"); // Clear the current line
+export const CLR_RIGHT = bytes("\u001b[0K");
+export const CLR_LEFT = bytes("\u001b[1K");
+export const LEFT = bytes("\u001b[D");
+export const RIGHT = bytes("\u001b[C");
+
 export type KeypressEventInfo = {
     sequence: string;
     name: string;
@@ -23,7 +36,37 @@ async function hijackStdin<T>(stdin: NodeStdin, task: () => Promise<T>) {
     return result;
 }
 
-export async function questionInRepl(
+export function listenForCancel() {
+    const ctrl = new AbortController();
+    const { signal } = ctrl;
+    const promise = new Promise<null>(resolve => {
+        const listener = (_: string | undefined, key: KeypressEventInfo) => {
+            if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
+                resolve(null);
+            }
+        };
+
+        process.stdin.on("keypress", listener);
+        signal.addEventListener("abort", () => {
+            process.stdin.off("keypress", listener);
+            resolve(null);
+        });
+    });
+
+    return {
+        signal,
+        promise,
+        cleanup: () => ctrl.abort(),
+    };
+}
+
+export async function isNodeRepl() {
+    const repl = await import("repl");
+    // @ts-ignore fix CommonJS import
+    return !!(repl.default ?? repl).repl;
+}
+
+export async function questionInNodeRepl(
     message: string,
     defaultValue = ""
 ): Promise<string | null> {
@@ -43,7 +86,17 @@ export async function questionInRepl(
 
         const answer = await new Promise<string | null>(resolve => {
             const listener = (char: string | undefined, key: KeypressEventInfo) => {
-                if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
+                if (key.name === "left") {
+                    if (cursor > 0) {
+                        stdout.moveCursor(-1, 0);
+                        cursor--;
+                    }
+                } else if (key.name === "right") {
+                    if (cursor < buf.length) {
+                        stdout.moveCursor(1, 0);
+                        cursor++;
+                    }
+                } else if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
                     stdin.off("keypress", listener);
                     resolve(null);
                 } else if (key.name === "enter" || key.name === "return") {
@@ -73,16 +126,6 @@ export async function questionInRepl(
                         cursor++;
                         stdout.moveCursor(-rest.length, 0);
                     }
-                } else if (key.name === "left") {
-                    if (cursor > 0) {
-                        stdout.moveCursor(-1, 0);
-                        cursor--;
-                    }
-                } else if (key.name === "right") {
-                    if (cursor < buf.length) {
-                        stdout.moveCursor(1, 0);
-                        cursor++;
-                    }
                 }
             };
             stdin.on("keypress", listener);
@@ -93,32 +136,84 @@ export async function questionInRepl(
     });
 }
 
-export async function isNodeRepl() {
-    const repl = await import("repl");
-    // @ts-ignore fix CommonJS import
-    return !!(repl.default ?? repl).repl;
+export function isDenoRepl() {
+    return typeof Deno === "object" && Deno.mainModule.endsWith("$deno$repl.ts");
 }
 
-export function listenForCancel() {
-    const ctrl = new AbortController();
-    const { signal } = ctrl;
-    const promise = new Promise<null>(resolve => {
-        const listener = (_: string | undefined, key: KeypressEventInfo) => {
-            if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
-                resolve(null);
+export async function questionInDeno(
+    message: string,
+    defaultValue = ""
+): Promise<string | null> {
+    const { stdin, stdout } = Deno;
+
+    if (!stdin.isTerminal()) {
+        return null;
+    }
+
+    stdin.setRaw(true, { cbreak: true });
+
+    const input = new Uint8Array(3);
+    const buf: string[] = [];
+    let cursor = 0;
+
+    await stdout.write(bytes(message));
+
+    if (defaultValue) {
+        await stdout.write(bytes(defaultValue));
+        buf.push(...defaultValue);
+        cursor += defaultValue.length;
+    }
+
+    while (true) {
+        const n = await stdin.read(input);
+        const char = bytes(input.slice(0, n ?? 0));
+
+        if (equals(char, LEFT)) {
+            if (cursor > 0) {
+                cursor--;
+                await stdout.write(LEFT);
             }
-        };
+        } else if (equals(char, RIGHT)) {
+            if (cursor < buf.length) {
+                cursor++;
+                await stdout.write(RIGHT);
+            }
+        } else if (n !== 1) {
+            continue;
+        } else if (char[0] === ESC) {
+            stdin.setRaw(false);
+            return null;
+        } else if (char[0] === CR || char[0] === LF) {
+            await stdout.write(bytes([LF]));
+            stdin.setRaw(false);
+            return buf.join("");
+        } else if (char[0] === BS || char[0] === DEL) {
+            if (cursor > 0) {
+                buf.splice(cursor - 1, 1);
+                cursor--;
+                const rest = buf.slice(cursor).join("");
 
-        process.stdin.on("keypress", listener);
-        signal.addEventListener("abort", () => {
-            process.stdin.off("keypress", listener);
-            resolve(null);
-        });
-    });
+                await stdout.write(LEFT);
+                await stdout.write(CLR_RIGHT);
 
-    return {
-        signal,
-        promise,
-        cleanup: () => ctrl.abort(),
-    };
+                if (rest) {
+                    await stdout.write(bytes(rest));
+                    await stdout.write(bytes(`\u001b[${rest.length}D`));
+                }
+            }
+        } else {
+            if (cursor === buf.length) {
+                buf.push(String(char));
+                cursor++;
+                await stdout.write(char);
+            } else {
+                buf.splice(cursor, 0, String(char));
+                const rest = buf.slice(cursor + 1).join("");
+
+                cursor++;
+                await stdout.write(concat(char, bytes(rest)));
+                await stdout.write(bytes(`\u001b[${rest.length}D`));
+            }
+        }
+    }
 }

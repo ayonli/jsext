@@ -5,7 +5,7 @@ import OkButton from './components/OkButton.js';
 import CancelButton from './components/CancelButton.js';
 import Input from './components/Input.js';
 export { default as progress } from './progress.js';
-import { isNodeRepl, questionInRepl, listenForCancel } from './util.js';
+import { isDenoRepl, questionInDeno, isNodeRepl, questionInNodeRepl, listenForCancel } from './util.js';
 
 /**
  * Asynchronous dialog functions for both browsers and Node.js.
@@ -18,12 +18,18 @@ import { isNodeRepl, questionInRepl, listenForCancel } from './util.js';
  * Displays a dialog with a message, and to wait until the user dismisses the
  * dialog.
  *
- * **NOTE**: Despite defined as an async function, in Deno, this function
+ * **NOTE**: Despite defined as an async function, in Deno REPL, this function
  * actually calls the global `alert` function directly, which is synchronous.
  */
 async function alert(message) {
     if (typeof Deno === "object") {
-        return Promise.resolve(globalThis.alert(message));
+        if (isDenoRepl()) {
+            return Promise.resolve(globalThis.alert(message));
+        }
+        else {
+            await questionInDeno(message + " [Enter] ");
+            return;
+        }
     }
     else if (typeof document === "object") {
         return new Promise(resolve => {
@@ -34,7 +40,7 @@ async function alert(message) {
         });
     }
     else if (await isNodeRepl()) {
-        await questionInRepl(message + " [Enter] ");
+        await questionInNodeRepl(message + " [Enter] ");
         return;
     }
     else {
@@ -53,12 +59,19 @@ async function alert(message) {
  * Displays a dialog with a message, and to wait until the user either confirms
  * or cancels the dialog.
  *
- * **NOTE**: Despite defined as an async function, in Deno, this function
+ * **NOTE**: Despite defined as an async function, in Deno REPL, this function
  * actually calls the global `confirm` function directly, which is synchronous.
  */
 async function confirm(message) {
     if (typeof Deno === "object") {
-        return Promise.resolve(globalThis.confirm(message));
+        if (isDenoRepl()) {
+            return Promise.resolve(globalThis.confirm(message));
+        }
+        else {
+            const answer = await questionInDeno(message + " [y/N] ");
+            const ok = answer === null || answer === void 0 ? void 0 : answer.toLowerCase().trim();
+            return ok === "y" || ok === "yes";
+        }
     }
     else if (typeof document === "object") {
         return new Promise(resolve => {
@@ -69,7 +82,7 @@ async function confirm(message) {
         });
     }
     else if (await isNodeRepl()) {
-        const answer = await questionInRepl(message + " [y/N] ");
+        const answer = await questionInNodeRepl(message + " [y/N] ");
         const ok = answer === null || answer === void 0 ? void 0 : answer.toLowerCase().trim();
         return ok === "y" || ok === "yes";
     }
@@ -91,12 +104,17 @@ async function confirm(message) {
  * Displays a dialog with a message prompting the user to input some text, and to
  * wait until the user either submits the text or cancels the dialog.
  *
- * **NOTE**: Despite defined as an async function, in Deno, this function
+ * **NOTE**: Despite defined as an async function, in Deno REPL, this function
  * actually calls the global `prompt` function directly, which is synchronous.
  */
 async function prompt(message, defaultValue = "") {
     if (typeof Deno === "object") {
-        return Promise.resolve(globalThis.prompt(message, defaultValue));
+        if (isDenoRepl()) {
+            return Promise.resolve(globalThis.prompt(message, defaultValue));
+        }
+        else {
+            return await questionInDeno(message + " ", defaultValue);
+        }
     }
     else if (typeof document === "object") {
         return new Promise(resolve => {
@@ -110,7 +128,7 @@ async function prompt(message, defaultValue = "") {
         });
     }
     else if (await isNodeRepl()) {
-        return await questionInRepl(message + " ", defaultValue);
+        return await questionInNodeRepl(message + " ", defaultValue);
     }
     else {
         const { createInterface } = await import('readline/promises');

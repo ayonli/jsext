@@ -14,7 +14,13 @@ import CancelButton from "./components/CancelButton.ts";
 import Input from "./components/Input.ts";
 import progress from "./progress.ts";
 import type { ProgressState } from "./progress.ts";
-import { listenForCancel, isNodeRepl, questionInRepl } from "./util.ts";
+import {
+    listenForCancel,
+    isNodeRepl,
+    questionInNodeRepl,
+    isDenoRepl,
+    questionInDeno,
+} from "./util.ts";
 
 export { progress, ProgressState };
 
@@ -22,12 +28,17 @@ export { progress, ProgressState };
  * Displays a dialog with a message, and to wait until the user dismisses the
  * dialog.
  * 
- * **NOTE**: Despite defined as an async function, in Deno, this function
+ * **NOTE**: Despite defined as an async function, in Deno REPL, this function
  * actually calls the global `alert` function directly, which is synchronous.
  */
 export async function alert(message: string): Promise<void> {
     if (typeof Deno === "object") {
-        return Promise.resolve(globalThis.alert(message));
+        if (isDenoRepl()) {
+            return Promise.resolve(globalThis.alert(message));
+        } else {
+            await questionInDeno(message + " [Enter] ");
+            return;
+        }
     } else if (typeof document === "object") {
         return new Promise<void>(resolve => {
             document.body.appendChild(
@@ -44,7 +55,7 @@ export async function alert(message: string): Promise<void> {
             );
         });
     } else if (await isNodeRepl()) {
-        await questionInRepl(message + " [Enter] ");
+        await questionInNodeRepl(message + " [Enter] ");
         return;
     } else {
         const { createInterface } = await import("readline/promises");
@@ -64,12 +75,18 @@ export async function alert(message: string): Promise<void> {
  * Displays a dialog with a message, and to wait until the user either confirms
  * or cancels the dialog.
  * 
- * **NOTE**: Despite defined as an async function, in Deno, this function
+ * **NOTE**: Despite defined as an async function, in Deno REPL, this function
  * actually calls the global `confirm` function directly, which is synchronous.
  */
 export async function confirm(message: string): Promise<boolean> {
     if (typeof Deno === "object") {
-        return Promise.resolve(globalThis.confirm(message));
+        if (isDenoRepl()) {
+            return Promise.resolve(globalThis.confirm(message));
+        } else {
+            const answer = await questionInDeno(message + " [y/N] ");
+            const ok = answer?.toLowerCase().trim();
+            return ok === "y" || ok === "yes";
+        }
     } else if (typeof document === "object") {
         return new Promise<boolean>(resolve => {
             document.body.appendChild(
@@ -87,7 +104,7 @@ export async function confirm(message: string): Promise<boolean> {
             );
         });
     } else if (await isNodeRepl()) {
-        const answer = await questionInRepl(message + " [y/N] ");
+        const answer = await questionInNodeRepl(message + " [y/N] ");
         const ok = answer?.toLowerCase().trim();
         return ok === "y" || ok === "yes";
     } else {
@@ -110,7 +127,7 @@ export async function confirm(message: string): Promise<boolean> {
  * Displays a dialog with a message prompting the user to input some text, and to
  * wait until the user either submits the text or cancels the dialog.
  * 
- * **NOTE**: Despite defined as an async function, in Deno, this function
+ * **NOTE**: Despite defined as an async function, in Deno REPL, this function
  * actually calls the global `prompt` function directly, which is synchronous.
  */
 export async function prompt(
@@ -118,7 +135,11 @@ export async function prompt(
     defaultValue: string = ""
 ): Promise<string | null> {
     if (typeof Deno === "object") {
-        return Promise.resolve(globalThis.prompt(message, defaultValue));
+        if (isDenoRepl()) {
+            return Promise.resolve(globalThis.prompt(message, defaultValue));
+        } else {
+            return await questionInDeno(message + " ", defaultValue);
+        }
     } else if (typeof document === "object") {
         return new Promise<string | null>(resolve => {
             document.body.appendChild(
@@ -140,7 +161,7 @@ export async function prompt(
             );
         });
     } else if (await isNodeRepl()) {
-        return await questionInRepl(message + " ", defaultValue);
+        return await questionInNodeRepl(message + " ", defaultValue);
     } else {
         const { createInterface } = await import("readline/promises");
         const rl = createInterface({ input: process.stdin, output: process.stdout });
