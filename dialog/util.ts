@@ -31,12 +31,14 @@ export async function questionInRepl(
 
     return await hijackStdin(stdin, async () => {
         const buf: string[] = [];
+        let cursor = 0;
 
         stdout.write(message);
 
         if (defaultValue) {
             stdout.write(defaultValue);
             buf.push(...defaultValue);
+            cursor += defaultValue.length;
         }
 
         const answer = await new Promise<string | null>(resolve => {
@@ -48,14 +50,39 @@ export async function questionInRepl(
                     stdin.off("keypress", listener);
                     resolve(buf.join(""));
                 } else if (key.name === "backspace") {
-                    if (buf.length) {
+                    if (cursor > 0) {
+                        buf.splice(cursor - 1, 1);
+                        cursor--;
+                        const rest = buf.slice(cursor).join("");
+
                         stdout.moveCursor(-1, 0);
                         stdout.clearLine(1);
-                        buf.pop();
+                        stdout.write(rest);
+                        stdout.moveCursor(-rest.length, 0);
                     }
                 } else if (char !== undefined) {
-                    stdout.write(char);
-                    buf.push(char);
+                    if (cursor === buf.length) {
+                        stdout.write(char);
+                        buf.push(char);
+                        cursor++;
+                    } else {
+                        buf.splice(cursor, 0, char);
+                        const rest = buf.slice(cursor + 1).join("");
+
+                        stdout.write(char + rest);
+                        cursor++;
+                        stdout.moveCursor(-rest.length, 0);
+                    }
+                } else if (key.name === "left") {
+                    if (cursor > 0) {
+                        stdout.moveCursor(-1, 0);
+                        cursor--;
+                    }
+                } else if (key.name === "right") {
+                    if (cursor < buf.length) {
+                        stdout.moveCursor(1, 0);
+                        cursor++;
+                    }
                 }
             };
             stdin.on("keypress", listener);
