@@ -79,16 +79,27 @@ async function isNodeRepl() {
     // @ts-ignore fix CommonJS import
     return !!((_a = repl.default) !== null && _a !== void 0 ? _a : repl).repl;
 }
-function handleCancel() {
-    return new Promise(resolve => {
-        process.stdin.on("keypress", (_, key) => {
+function listenForCancel() {
+    const ctrl = new AbortController();
+    const { signal } = ctrl;
+    const promise = new Promise(resolve => {
+        const listener = (_, key) => {
             if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
-                process.stdout.write("\n");
                 resolve(null);
             }
+        };
+        process.stdin.on("keypress", listener);
+        signal.addEventListener("abort", () => {
+            process.stdin.off("keypress", listener);
+            resolve(null);
         });
     });
+    return {
+        signal,
+        promise,
+        cleanup: () => ctrl.abort(),
+    };
 }
 
-export { handleCancel, isNodeRepl, questionInRepl };
+export { isNodeRepl, listenForCancel, questionInRepl };
 //# sourceMappingURL=util.js.map

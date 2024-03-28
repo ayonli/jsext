@@ -99,13 +99,26 @@ export async function isNodeRepl() {
     return !!(repl.default ?? repl).repl;
 }
 
-export function handleCancel(): Promise<null> {
-    return new Promise<null>(resolve => {
-        process.stdin.on("keypress", (_, key: KeypressEventInfo) => {
+export function listenForCancel() {
+    const ctrl = new AbortController();
+    const { signal } = ctrl;
+    const promise = new Promise<null>(resolve => {
+        const listener = (_: string | undefined, key: KeypressEventInfo) => {
             if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
-                process.stdout.write("\n");
                 resolve(null);
             }
+        };
+
+        process.stdin.on("keypress", listener);
+        signal.addEventListener("abort", () => {
+            process.stdin.off("keypress", listener);
+            resolve(null);
         });
     });
+
+    return {
+        signal,
+        promise,
+        cleanup: () => ctrl.abort(),
+    };
 }

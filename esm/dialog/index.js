@@ -1,12 +1,11 @@
-import { stripEnd } from '../string/index.js';
-import Dialog, { closeDialog } from './components/Dialog.js';
+import Dialog from './components/Dialog.js';
 import Text from './components/Text.js';
 import Footer from './components/Footer.js';
 import OkButton from './components/OkButton.js';
 import CancelButton from './components/CancelButton.js';
 import Input from './components/Input.js';
-import Progress from './components/Progress.js';
-import { isNodeRepl, questionInRepl, handleCancel } from './util.js';
+export { default as progress } from './progress.js';
+import { isNodeRepl, questionInRepl, listenForCancel } from './util.js';
 
 /**
  * Asynchronous dialog functions for both browsers and Node.js.
@@ -45,7 +44,12 @@ async function alert(message) {
     else {
         const { createInterface } = await import('readline/promises');
         const rl = createInterface({ input: process.stdin, output: process.stdout });
-        await Promise.race([rl.question(message + " [Enter] "), handleCancel()]);
+        const { signal, promise, cleanup } = listenForCancel();
+        await Promise.race([
+            rl.question(message + " [Enter] ", { signal }),
+            promise
+        ]);
+        cleanup();
         rl.close();
     }
 }
@@ -73,11 +77,13 @@ async function confirm(message) {
     else {
         const { createInterface } = await import('readline/promises');
         const rl = createInterface({ input: process.stdin, output: process.stdout });
+        const { signal, promise, cleanup } = listenForCancel();
         const answer = await Promise.race([
-            rl.question(message + " [y/N] "),
-            handleCancel()
+            rl.question(message + " [y/N] ", { signal }),
+            promise,
         ]);
         const ok = answer === null || answer === void 0 ? void 0 : answer.toLowerCase().trim();
+        cleanup();
         rl.close();
         return ok === "y" || ok === "yes";
     }
@@ -107,241 +113,17 @@ async function prompt(message, defaultValue = "") {
     else {
         const { createInterface } = await import('readline/promises');
         const rl = createInterface({ input: process.stdin, output: process.stdout });
+        const { signal, promise, cleanup } = listenForCancel();
+        const job = rl.question(message + " ", { signal });
         if (defaultValue) {
             rl.write(defaultValue);
         }
-        const answer = await Promise.race([
-            rl.question(message + " "),
-            handleCancel()
-        ]);
+        const answer = await Promise.race([job, promise]);
+        cleanup();
         rl.close();
         return answer;
     }
 }
-/**
- * Displays a dialog with a progress bar indicating the ongoing state of the
- * `fn` function, and to wait until the job finishes or the user cancels the
- * dialog.
- *
- * @param onAbort If provided, the dialog will show a cancel button that allows
- * the user to abort the task. This function can either return a default/fallback
- * result or throw an error to indicate the cancellation.
- *
- * @experimental
- *
- * @example
- * ```ts
- * // default usage
- * import { progress } from "@ayonli/jsext/dialog";
- *
- * const result = await progress("Processing...", async () => {
- *     // ... some long-running task
- *     return { ok: true };
- * });
- *
- * console.log(result); // { ok: true }
- * ```
- *
- * @example
- * ```ts
- * // update state
- * import { progress } from "@ayonli/jsext/dialog";
- *
- * const result = await progress("Processing...", async (set) => {
- *     set({ percent: 0 });
- *     // ... some long-running task
- *     set({ percent: 50, message: "Halfway there!" });
- *     // ... some long-running task
- *     set({ percent: 100 });
- *
- *     return { ok: true };
- * });
- *
- * console.log(result); // { ok: true }
- * ```
- *
- * @example
- * ```ts
- * // abortable
- * import { progress } from "@ayonli/jsext/dialog";
- *
- * const result = await progress("Processing...", async (set, signal) => {
- *     set({ percent: 0 });
- *
- *     if (!signal.aborted) {
- *         // ... some long-running task
- *         set({ percent: 50, message: "Halfway there!" });
- *     }
- *
- *     if (!signal.aborted) {
- *         // ... some long-running task
- *         set({ percent: 100 });
- *     }
- *
- *     return { ok: true };
- * }, () => {
- *     return { ok: false };
- * });
- *
- * console.log(result); // { ok: true } or { ok: false }
- * ```
- */
-async function progress(message, fn, onAbort = undefined) {
-    const ctrl = new AbortController();
-    const signal = ctrl.signal;
-    let fallback = null;
-    const abort = async () => {
-        if (!onAbort)
-            return;
-        try {
-            const result = await onAbort();
-            fallback = { value: result };
-            ctrl.abort();
-        }
-        catch (err) {
-            ctrl.abort(err);
-        }
-    };
-    const handleAbort = () => new Promise((resolve, reject) => {
-        signal.addEventListener("abort", () => {
-            if (fallback) {
-                resolve(fallback.value);
-            }
-            else {
-                reject(signal.reason);
-            }
-        });
-    });
-    if (typeof document === "object") {
-        const text = Text(message);
-        const { element: progressBar, setValue } = Progress();
-        const dialog = Dialog({ onCancel: abort }, text);
-        const set = (state) => {
-            if (signal.aborted) {
-                return;
-            }
-            if (state.message) {
-                text.textContent = state.message;
-            }
-            if (state.percent !== undefined) {
-                setValue(state.percent);
-            }
-        };
-        if (onAbort) {
-            dialog.appendChild(Footer(progressBar, CancelButton()));
-        }
-        else {
-            dialog.appendChild(progressBar);
-        }
-        document.body.appendChild(dialog);
-        let job = fn(set, signal);
-        if (onAbort) {
-            job = Promise.race([job, handleAbort()]);
-        }
-        try {
-            return await job;
-        }
-        finally {
-            signal.aborted || closeDialog(dialog, "OK");
-        }
-    }
-    else if (typeof Deno === "object") {
-        let lastMessage = stripEnd(message, "...");
-        let lastPercent = undefined;
-        const set = (state) => {
-            if (signal.aborted) {
-                return;
-            }
-            if (state.message) {
-                lastMessage = state.message;
-            }
-            if (state.percent !== undefined) {
-                lastPercent = state.percent;
-            }
-            if (lastPercent !== undefined) {
-                console.log(lastMessage + " ... " + lastPercent + "%");
-            }
-            else {
-                console.log(lastMessage);
-            }
-        };
-        console.log(message);
-        return await fn(set, signal);
-    }
-    else {
-        const { stdin, stdout } = process;
-        const handleProgress = async () => {
-            let cursor = message.length;
-            stdout.write(message);
-            let waitingIndicator = message.endsWith("...") ? "..." : "";
-            const waitingTimer = setInterval(() => {
-                if (waitingIndicator === "...") {
-                    waitingIndicator = ".";
-                    cursor -= 2;
-                    stdout.moveCursor(-2, 0);
-                    stdout.clearLine(1);
-                }
-                else {
-                    waitingIndicator += ".";
-                    cursor += 1;
-                    stdout.write(".");
-                }
-            }, 1000);
-            let lastMessage = stripEnd(message, "...");
-            let lastPercent = undefined;
-            const set = (state) => {
-                stdout.moveCursor(-cursor, 0);
-                stdout.clearLine(1);
-                if (signal.aborted) {
-                    return;
-                }
-                if (state.message) {
-                    lastMessage = state.message;
-                }
-                if (state.percent !== undefined) {
-                    lastPercent = state.percent;
-                }
-                cursor = lastMessage.length;
-                stdout.write(lastMessage);
-                if (lastPercent !== undefined) {
-                    const percentage = " ... " + lastPercent + "%";
-                    cursor += percentage.length;
-                    stdout.write(percentage);
-                    clearInterval(waitingTimer);
-                }
-            };
-            if (onAbort) {
-                stdin.on("keypress", (_, key) => {
-                    if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
-                        abort();
-                    }
-                });
-            }
-            let job = fn(set, signal);
-            if (onAbort) {
-                job = Promise.race([job, handleAbort()]);
-            }
-            try {
-                return await job;
-            }
-            finally {
-                clearInterval(waitingTimer);
-                stdout.write("\n");
-            }
-        };
-        if (await isNodeRepl()) {
-            return await handleProgress();
-        }
-        else {
-            const { createInterface } = await import('readline');
-            // this will keep the program running
-            const rl = createInterface({ input: stdin, output: stdout });
-            const result = await handleProgress();
-            rl.close();
-            return result;
-        }
-    }
-}
 
-export { alert, confirm, progress, prompt };
+export { alert, confirm, prompt };
 //# sourceMappingURL=index.js.map

@@ -1,8 +1,8 @@
 const CloseEventListeners = new WeakMap<HTMLDialogElement, () => void>();
 
 export default function Dialog(props: {
-    onCancel?: (dialog: HTMLDialogElement) => void;
-    onOk?: (dialog: HTMLDialogElement) => void;
+    onCancel?: ((dialog: HTMLDialogElement) => void) | undefined;
+    onOk?: ((dialog: HTMLDialogElement) => void) | undefined;
 }, ...children: HTMLElement[]) {
     const { onCancel, onOk } = props;
     const hasInput = children.some(node => node.querySelector("input"));
