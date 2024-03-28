@@ -60,7 +60,7 @@ export const sep: "/" | "\\" = (() => {
 /**
  * Returns the current working directory.
  * 
- * NOTE: in the browser, this function returns the current origin and pathname.
+ * **NOTE**: In the browser, this function returns the current origin and pathname.
  * @experimental
  */
 export function cwd(): string {

@@ -2,14 +2,7 @@
  * Asynchronous dialog functions for both browsers and Node.js.
  * 
  * This includes `alert`, `confirm`, `prompt` and other non-standard dialogs.
- * 
- * **NOTE:** Currently, this module doesn't work well in Deno since it doesn't
- * provide enough features for the `process.stdin` object.
- * 
- * **NOTE:** This module is experimental and breaks the process in Node.js REPL
- * environment.
  * @experimental
- * 
  * @module
  */
 
@@ -28,6 +21,9 @@ export { progress, ProgressState };
 /**
  * Displays a dialog with a message, and to wait until the user dismisses the
  * dialog.
+ * 
+ * **NOTE**: Despite defined as an async function, in Deno, this function
+ * actually calls the global `alert` function directly, which is synchronous.
  */
 export async function alert(message: string): Promise<void> {
     if (typeof Deno === "object") {
@@ -67,6 +63,9 @@ export async function alert(message: string): Promise<void> {
 /**
  * Displays a dialog with a message, and to wait until the user either confirms
  * or cancels the dialog.
+ * 
+ * **NOTE**: Despite defined as an async function, in Deno, this function
+ * actually calls the global `confirm` function directly, which is synchronous.
  */
 export async function confirm(message: string): Promise<boolean> {
     if (typeof Deno === "object") {
@@ -110,6 +109,9 @@ export async function confirm(message: string): Promise<boolean> {
 /**
  * Displays a dialog with a message prompting the user to input some text, and to
  * wait until the user either submits the text or cancels the dialog.
+ * 
+ * **NOTE**: Despite defined as an async function, in Deno, this function
+ * actually calls the global `prompt` function directly, which is synchronous.
  */
 export async function prompt(
     message: string,

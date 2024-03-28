@@ -195,11 +195,10 @@ async function handleNodeProgress(message, fn, options) {
  * `fn` function, and to wait until the job finishes or the user cancels the
  * dialog.
  *
- * @param onAbort If provided, the dialog will show a cancel button that allows
- * the user to abort the task. This function can either return a default/fallback
- * result or throw an error to indicate the cancellation.
- *
- * @experimental
+ * @param onAbort If provided, the dialog will show a cancel button (or listen
+ * for Escape in CLI) that allows the user to abort the task. This function can
+ * either return a default/fallback result or throw an error to indicate the
+ * cancellation.
  *
  * @example
  * ```ts
