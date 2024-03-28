@@ -127,6 +127,8 @@ async function prompt(message, defaultValue = "") {
  * the user to abort the task. This function can either return a default/fallback
  * result or throw an error to indicate the cancellation.
  *
+ * @experimental
+ *
  * @example
  * ```ts
  * // default usage
@@ -268,62 +270,75 @@ async function progress(message, fn, onAbort = undefined) {
     }
     else {
         const { stdin, stdout } = process;
-        const { createInterface, clearLine, moveCursor } = await import('readline');
-        const writer = createInterface({
-            input: stdin,
-            output: stdout,
-        });
-        let waitingIndicator = message.endsWith("...") ? "..." : "";
-        const waitingTimer = setInterval(() => {
-            if (waitingIndicator === "...") {
-                waitingIndicator = ".";
-                moveCursor(stdout, -2, 0);
-                clearLine(stdin, 1);
+        const handleProgress = async () => {
+            let cursor = message.length;
+            stdout.write(message);
+            let waitingIndicator = message.endsWith("...") ? "..." : "";
+            const waitingTimer = setInterval(() => {
+                if (waitingIndicator === "...") {
+                    waitingIndicator = ".";
+                    cursor -= 2;
+                    stdout.moveCursor(-2, 0);
+                    stdout.clearLine(1);
+                }
+                else {
+                    waitingIndicator += ".";
+                    cursor += 1;
+                    stdout.write(".");
+                }
+            }, 1000);
+            let lastMessage = stripEnd(message, "...");
+            let lastPercent = undefined;
+            const set = (state) => {
+                stdout.moveCursor(-cursor, 0);
+                stdout.clearLine(1);
+                if (signal.aborted) {
+                    return;
+                }
+                if (state.message) {
+                    lastMessage = state.message;
+                }
+                if (state.percent !== undefined) {
+                    lastPercent = state.percent;
+                }
+                cursor = lastMessage.length;
+                stdout.write(lastMessage);
+                if (lastPercent !== undefined) {
+                    const percentage = " ... " + lastPercent + "%";
+                    cursor += percentage.length;
+                    stdout.write(percentage);
+                    clearInterval(waitingTimer);
+                }
+            };
+            if (onAbort) {
+                stdin.on("keypress", (_, key) => {
+                    if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
+                        abort();
+                    }
+                });
             }
-            else {
-                waitingIndicator += ".";
-                writer.write(".");
+            let job = fn(set, signal);
+            if (onAbort) {
+                job = Promise.race([job, handleAbort()]);
             }
-        }, 1000);
-        let lastMessage = stripEnd(message, "...");
-        let lastPercent = undefined;
-        const set = (state) => {
-            moveCursor(stdout, -writer.cursor, 0);
-            clearLine(stdout, 1);
-            if (signal.aborted) {
-                return;
+            try {
+                return await job;
             }
-            if (state.message) {
-                lastMessage = state.message;
-            }
-            if (state.percent !== undefined) {
-                lastPercent = state.percent;
-            }
-            writer.write(lastMessage);
-            if (lastPercent !== undefined) {
-                writer.write(" ... " + lastPercent + "%");
+            finally {
                 clearInterval(waitingTimer);
+                stdout.write("\n");
             }
         };
-        if (onAbort) {
-            stdin.on("keypress", (_, key) => {
-                if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
-                    abort();
-                }
-            });
+        if (await isNodeRepl()) {
+            return await handleProgress();
         }
-        writer.write(message);
-        let job = fn(set, signal);
-        if (onAbort) {
-            job = Promise.race([job, handleAbort()]);
-        }
-        try {
-            return await job;
-        }
-        finally {
-            clearInterval(waitingTimer);
-            writer.write("\n");
-            writer.close();
+        else {
+            const { createInterface } = await import('readline');
+            // this will keep the program running
+            const rl = createInterface({ input: stdin, output: stdout });
+            const result = await handleProgress();
+            rl.close();
+            return result;
         }
     }
 }
