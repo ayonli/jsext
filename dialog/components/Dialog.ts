@@ -1,4 +1,10 @@
+import { useColorTheme } from "./util.ts";
+
 const CloseEventListeners = new WeakMap<HTMLDialogElement, () => void>();
+const lightBgColor = "#fff";
+const darkBgColor = "#222";
+const lightTextColor = "#000";
+const darkTextColor = "#fff";
 
 export default function Dialog(props: {
     onCancel?: ((dialog: HTMLDialogElement) => void) | undefined;
@@ -7,20 +13,27 @@ export default function Dialog(props: {
     const { onCancel, onOk } = props;
     const hasInput = children.some(node => node.querySelector("input"));
     const dialog = document.createElement("dialog");
+    const { theme, onChange } = useColorTheme();
 
     dialog.style.fontFamily = "Inter,sans-serif";
+    dialog.style.color = theme === "light" ? lightTextColor : darkTextColor;
     dialog.style.fontSize = "13px";
     dialog.style.width = "450px";
     dialog.style.boxSizing = "border-box";
     dialog.style.border = "1px solid #ccc";
     dialog.style.borderRadius = "13px";
     dialog.style.padding = "1rem";
-    dialog.style.backgroundColor = "#fff";
+    dialog.style.backgroundColor = theme === "light" ? lightBgColor : darkBgColor;
     dialog.style.outline = "none";
 
     if (!hasInput) {
         dialog.inert = true;
     }
+
+    onChange((theme) => {
+        dialog.style.color = theme === "light" ? lightTextColor : darkTextColor;
+        dialog.style.backgroundColor = theme === "light" ? lightBgColor : darkBgColor;
+    });
 
     const close = () => {
         if (!dialog.returnValue || dialog.returnValue === "Cancel") {

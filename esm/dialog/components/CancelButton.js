@@ -1,6 +1,10 @@
 import { closeDialog } from './Dialog.js';
-import { i18n } from './OkButton.js';
+import { useColorTheme, i18n } from './util.js';
 
+const lightBgColor = "#fff";
+const darkBgColor = "#222";
+const lightHoverBgColor = "#f4f4f4";
+const darkHoverBgColor = "#333";
 const locale = {
     ar: "إلغاء",
     be: "Адмяніць",
@@ -59,6 +63,7 @@ const locale = {
 };
 function CancelButton() {
     const button = document.createElement("button");
+    const { theme, onChange } = useColorTheme();
     button.textContent = i18n(locale);
     button.style.minWidth = "80px";
     button.style.height = "32px";
@@ -66,20 +71,25 @@ function CancelButton() {
     button.style.border = "1px solid #8ebceb";
     button.style.borderRadius = "1.5rem";
     button.style.color = "#006bd6";
-    button.style.backgroundColor = "#fff";
+    button.style.backgroundColor = theme === "light" ? lightBgColor : darkBgColor;
     button.style.userSelect = "none";
     button.style.fontSize = "1em";
     button.style.fontWeight = "500";
     button.addEventListener("mouseover", () => {
-        button.style.backgroundColor = "#f4f4f4";
+        const { theme } = useColorTheme();
+        button.style.backgroundColor = theme === "light" ? lightHoverBgColor : darkHoverBgColor;
     });
     button.addEventListener("mouseout", () => {
-        button.style.backgroundColor = "#fff";
+        const { theme } = useColorTheme();
+        button.style.backgroundColor = theme === "light" ? lightBgColor : darkBgColor;
     });
     button.addEventListener("click", (event) => {
         var _a;
         const dialog = (_a = event.target) === null || _a === void 0 ? void 0 : _a.closest("dialog");
         closeDialog(dialog, "Cancel");
+    });
+    onChange((theme) => {
+        button.style.backgroundColor = theme === "light" ? lightBgColor : darkBgColor;
     });
     return button;
 }
