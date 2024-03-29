@@ -58,12 +58,14 @@ export async function alert(message: string): Promise<void> {
         await questionInNodeRepl(message + " [Enter] ");
         return;
     } else {
-        const { createInterface } = await import("readline/promises");
+        const { createInterface } = await import("readline");
         const rl = createInterface({ input: process.stdin, output: process.stdout });
         const { signal, promise, cleanup } = listenForCancel();
 
         await Promise.race([
-            rl.question(message + " [Enter] ", { signal }),
+            new Promise<string>(resolve => {
+                rl.question(message + " [Enter] ", { signal }, resolve);
+            }),
             promise
         ]);
         cleanup();
@@ -108,11 +110,13 @@ export async function confirm(message: string): Promise<boolean> {
         const ok = answer?.toLowerCase().trim();
         return ok === "y" || ok === "yes";
     } else {
-        const { createInterface } = await import("readline/promises");
+        const { createInterface } = await import("readline");
         const rl = createInterface({ input: process.stdin, output: process.stdout });
         const { signal, promise, cleanup } = listenForCancel();
         const answer = await Promise.race([
-            rl.question(message + " [y/N] ", { signal }),
+            new Promise<string>(resolve => {
+                rl.question(message + " [y/N] ", { signal }, resolve);
+            }),
             promise,
         ]);
         const ok = answer?.toLowerCase().trim();
@@ -163,10 +167,12 @@ export async function prompt(
     } else if (await isNodeRepl()) {
         return await questionInNodeRepl(message + " ", defaultValue);
     } else {
-        const { createInterface } = await import("readline/promises");
+        const { createInterface } = await import("readline");
         const rl = createInterface({ input: process.stdin, output: process.stdout });
         const { signal, promise, cleanup } = listenForCancel();
-        const job = rl.question(message + " ", { signal });
+        const job = new Promise<string>(resolve => {
+            rl.question(message + " ", { signal }, resolve);
+        });
 
         if (defaultValue) {
             rl.write(defaultValue);
