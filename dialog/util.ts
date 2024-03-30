@@ -19,6 +19,9 @@ export const RIGHT = bytes("\u001b[C");
 export const UP = bytes("\u001b[A");
 export const DOWN = bytes("\u001b[B");
 
+export const WIDE_STR_RE = /^[^\x00-\xff]$/;
+export const EMOJI_RE = /^(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\u200d(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*$/u;
+
 export type KeypressEventInfo = {
     sequence: string;
     name: string;
@@ -32,16 +35,27 @@ export type NodeStdout = NodeJS.WriteStream & { fd: 1; };
 export type DenoStdin = typeof Deno.stdin;
 export type DenoStdout = typeof Deno.stdout;
 
+function charWith(char: string) {
+    if (WIDE_STR_RE.test(char)) {
+        return 2;
+    } else if (EMOJI_RE.test(char)) {
+        const _bytes = byteLength(char);
+        return _bytes === 1 || _bytes === 3 || _bytes === 6 ? 1 : 2;
+    } else {
+        return 1;
+    }
+}
+
+function strWidth(str: string) {
+    return sum(...chars(str).map(charWith));
+}
+
 function toLeft(str: string) {
-    const _chars = chars(str);
-    const length = sum(..._chars.map(char => Math.min(byteLength(char), 2)));
-    return bytes(`\u001b[${length}D`);
+    return bytes(`\u001b[${strWidth(str)}D`);
 }
 
 function toRight(str: string) {
-    const _chars = chars(str);
-    const length = sum(..._chars.map(char => Math.min(byteLength(char), 2)));
-    return bytes(`\u001b[${length}C`);
+    return bytes(`\u001b[${strWidth(str)}C`);
 }
 
 export async function read(stdin: NodeStdin | DenoStdin): Promise<ByteArray> {

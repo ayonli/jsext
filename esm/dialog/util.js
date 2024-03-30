@@ -18,15 +18,28 @@ const LEFT = bytes("\u001b[D");
 const RIGHT = bytes("\u001b[C");
 const UP = bytes("\u001b[A");
 const DOWN = bytes("\u001b[B");
+const WIDE_STR_RE = /^[^\x00-\xff]$/;
+const EMOJI_RE = /^(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\u200d(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*$/u;
+function charWith(char) {
+    if (WIDE_STR_RE.test(char)) {
+        return 2;
+    }
+    else if (EMOJI_RE.test(char)) {
+        const _bytes = byteLength(char);
+        return _bytes === 1 || _bytes === 3 || _bytes === 6 ? 1 : 2;
+    }
+    else {
+        return 1;
+    }
+}
+function strWidth(str) {
+    return sum(...chars(str).map(charWith));
+}
 function toLeft(str) {
-    const _chars = chars(str);
-    const length = sum(..._chars.map(char => Math.min(byteLength(char), 2)));
-    return bytes(`\u001b[${length}D`);
+    return bytes(`\u001b[${strWidth(str)}D`);
 }
 function toRight(str) {
-    const _chars = chars(str);
-    const length = sum(..._chars.map(char => Math.min(byteLength(char), 2)));
-    return bytes(`\u001b[${length}C`);
+    return bytes(`\u001b[${strWidth(str)}C`);
 }
 async function read(stdin) {
     if ("fd" in stdin) {
@@ -204,5 +217,5 @@ async function questionInDeno(message, defaultValue = "") {
     }
 }
 
-export { BS, CANCEL, CLR, CLR_LEFT, CLR_RIGHT, CR, DEL, DOWN, END, ESC, LEFT, LF, RIGHT, START, TAB, UP, isCancelEvent, isDenoRepl, isNodeRepl, questionInDeno, questionInNode, questionInNodeRepl, read, write, writeSync };
+export { BS, CANCEL, CLR, CLR_LEFT, CLR_RIGHT, CR, DEL, DOWN, EMOJI_RE, END, ESC, LEFT, LF, RIGHT, START, TAB, UP, WIDE_STR_RE, isCancelEvent, isDenoRepl, isNodeRepl, questionInDeno, questionInNode, questionInNodeRepl, read, write, writeSync };
 //# sourceMappingURL=util.js.map

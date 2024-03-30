@@ -12,6 +12,7 @@
       "npm:@types/node@^20.6.0": "npm:@types/node@20.10.7",
       "npm:@types/ws@^8.5.5": "npm:@types/ws@8.5.5",
       "npm:eventsource@1.1": "npm:eventsource@1.1.2",
+      "npm:fast-string-truncated-width": "npm:fast-string-truncated-width@1.1.0",
       "npm:glob@^10.3.10": "npm:glob@10.3.10",
       "npm:global-jsdom@^24.0.0": "npm:global-jsdom@24.0.0_jsdom@24.0.0",
       "npm:isomorphic-ws@^5.0.0": "npm:isomorphic-ws@5.0.0_ws@8.14.1",
@@ -548,6 +549,10 @@
       },
       "eventsource@1.1.2": {
         "integrity": "sha512-xAH3zWhgO2/3KIniEKYPr8plNSzlGINOUqYj0m0u7AB81iRw8b/3E73W6AuU+6klLbaSFmZnaETQ2lXPfAydrA==",
+        "dependencies": {}
+      },
+      "fast-string-truncated-width@1.1.0": {
+        "integrity": "sha512-FfsFREOllHpnSl6cxpLi6wvqd9UebrZPxWlOJCCcWoOJzy02xyjPbafF9tyg2Usnf3GLmRr5Q6s7n+GO+6VB5A==",
         "dependencies": {}
       },
       "fill-range@7.0.1": {
