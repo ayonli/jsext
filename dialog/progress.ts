@@ -5,10 +5,17 @@ import Dialog, { closeDialog } from "./components/Dialog.ts";
 import Footer from "./components/Footer.ts";
 import Progress from "./components/Progress.ts";
 import Text from "./components/Text.ts";
-import { KeypressEventInfo, isNodeRepl } from "./util.ts";
-
-const ESC = "\u001b".charCodeAt(0); // Escape
-const CLR = bytes("\r\u001b[K"); // Clear the current line
+import {
+    CLR,
+    DenoStdin,
+    DenoStdout,
+    LF,
+    NodeStdin,
+    NodeStdout,
+    isCancelEvent,
+    isNodeRepl,
+    writeSync,
+} from "./util.ts";
 
 export type ProgressState = {
     /**
@@ -22,9 +29,10 @@ export type ProgressState = {
     message?: string;
 };
 
-export type ProgressHandler<T> = (set: (state: ProgressState) => void, signal: AbortSignal) => Promise<T>;
+export type ProgressFunc<T> = (set: (state: ProgressState) => void, signal: AbortSignal) => Promise<T>;
+export type ProgressAbortHandler<T> = () => T | never | Promise<T | never>;
 
-async function handleDomProgress<T>(message: string, fn: ProgressHandler<T>, options: {
+async function handleDomProgress<T>(message: string, fn: ProgressFunc<T>, options: {
     signal: AbortSignal;
     abort?: (() => void) | undefined;
     listenForAbort?: (() => Promise<T>) | undefined;
@@ -73,15 +81,20 @@ async function handleDomProgress<T>(message: string, fn: ProgressHandler<T>, opt
     }
 }
 
-async function handleDenoProgress<T>(message: string, fn: ProgressHandler<T>, options: {
-    signal: AbortSignal;
-    abort?: (() => void) | undefined;
-    listenForAbort?: (() => Promise<T>) | undefined;
-}) {
+async function handleTerminalProgress(
+    stdin: NodeStdin | DenoStdin,
+    stdout: NodeStdout | DenoStdout,
+    message: string,
+    fn: ProgressFunc<any>,
+    options: {
+        signal: AbortSignal;
+        abort?: (() => void) | undefined;
+        listenForAbort?: (() => Promise<any>) | undefined;
+    }
+) {
     const { signal, abort, listenForAbort } = options;
-    const { stdin, stdout } = Deno;
 
-    stdout.writeSync(bytes(message));
+    writeSync(stdout, bytes(message));
 
     let lastMessage = stripEnd(message, "...");
     let lastPercent: number | undefined = undefined;
@@ -94,16 +107,16 @@ async function handleDenoProgress<T>(message: string, fn: ProgressHandler<T>, op
             waitingIndicator += ".";
         }
 
-        stdout.writeSync(CLR);
-        stdout.writeSync(bytes(lastMessage + waitingIndicator));
+        writeSync(stdout, CLR);
+        writeSync(stdout, bytes(lastMessage + waitingIndicator));
     }, 1000);
 
     const set = (state: ProgressState) => {
-        stdout.writeSync(CLR);
-
         if (signal.aborted) {
             return;
         }
+
+        writeSync(stdout, CLR);
 
         if (state.message) {
             lastMessage = state.message;
@@ -113,39 +126,42 @@ async function handleDenoProgress<T>(message: string, fn: ProgressHandler<T>, op
             lastPercent = state.percent;
         }
 
-        stdout.writeSync(bytes(lastMessage));
+        writeSync(stdout, bytes(lastMessage));
 
         if (lastPercent !== undefined) {
             const percentage = " ... " + lastPercent + "%";
 
-            stdout.writeSync(bytes(percentage));
+            writeSync(stdout, bytes(percentage));
             clearInterval(waitingTimer as any);
         }
     };
-    const keypressListener = new AbortController();
-    const finish = new Promise<null>(resolve => {
-        keypressListener.signal.addEventListener("abort", () => {
-            resolve(null);
-        });
-    });
+    const nodeReader = (buf: Uint8Array) => {
+        if (isCancelEvent(buf)) {
+            abort?.();
+        }
+    };
+    const denoReader = "fd" in stdin ? null : stdin.readable.getReader();
 
     if (abort) {
-        (async () => {
-            stdin.setRaw(true, { cbreak: true });
-            const c = new Uint8Array(1);
+        if ("fd" in stdin) {
+            stdin.on("data", nodeReader);
+        } else {
+            (async () => {
+                while (true) {
+                    try {
+                        const { done, value } = await denoReader!.read();
 
-            while (true) {
-                const n = await Promise.race([stdin.read(c), finish]);
-                if (n === null || n === 0) {
-                    break;
-                } else if (c[0] === ESC) {
-                    abort();
-                    break;
+                        if (done || isCancelEvent(value)) {
+                            signal.aborted || abort();
+                            break;
+                        }
+                    } catch {
+                        signal.aborted || abort();
+                        break;
+                    }
                 }
-            }
-
-            stdin.setRaw(false);
-        })();
+            })();
+        }
     }
 
     let job = fn(set, signal);
@@ -157,103 +173,63 @@ async function handleDenoProgress<T>(message: string, fn: ProgressHandler<T>, op
     try {
         return await job;
     } finally {
+        writeSync(stdout, bytes([LF]));
         clearInterval(waitingTimer as any);
-        keypressListener.abort();
-        stdout.writeSync(bytes("\n"));
+
+        if ("fd" in stdin) {
+            stdin.off("data", nodeReader);
+        } else {
+            denoReader?.releaseLock();
+        }
     }
 }
 
-async function handleNodeProgress<T>(message: string, fn: ProgressHandler<T>, options: {
+async function handleDenoProgress<T>(message: string, fn: ProgressFunc<T>, options: {
     signal: AbortSignal;
     abort?: (() => void) | undefined;
     listenForAbort?: (() => Promise<T>) | undefined;
-}) {
-    const { signal, abort, listenForAbort } = options;
+}): Promise<T | null> {
+    const { stdin, stdout } = Deno;
+
+    if (!stdin.isTerminal) {
+        return null;
+    }
+
+    stdin.setRaw(true);
+
+    try {
+        return await handleTerminalProgress(stdin, stdout, message, fn, options);
+    } finally {
+        stdin.setRaw(false);
+    }
+}
+
+async function handleNodeProgress<T>(message: string, fn: ProgressFunc<T>, options: {
+    signal: AbortSignal;
+    abort?: (() => void) | undefined;
+    listenForAbort?: (() => Promise<T>) | undefined;
+}): Promise<T | null> {
     const { stdin, stdout } = process;
-    const handleProgress = async () => {
-        let cursor = message.length;
-        stdout.write(message);
 
-        let waitingIndicator = message.endsWith("...") ? "..." : "";
-        const waitingTimer = setInterval(() => {
-            if (waitingIndicator === "...") {
-                waitingIndicator = ".";
-                cursor -= 2;
-                stdout.moveCursor(-2, 0);
-                stdout.clearLine(1);
-            } else {
-                waitingIndicator += ".";
-                cursor += 1;
-                stdout.write(".");
-            }
-        }, 1000);
+    if (!stdout.isTTY) {
+        return null;
+    }
 
-        let lastMessage = stripEnd(message, "...");
-        let lastPercent: number | undefined = undefined;
+    if (stdin.isPaused()) {
+        stdin.resume();
+    }
 
-        const set = (state: ProgressState) => {
-            if (signal.aborted) {
-                return;
-            }
+    const rawMode = stdin.isRaw;
+    rawMode || stdin.setRawMode(true);
 
-            stdout.moveCursor(-cursor, 0);
-            stdout.clearLine(1);
+    try {
+        return await handleTerminalProgress(stdin, stdout, message, fn, options);
+    } finally {
+        stdin.setRawMode(rawMode);
 
-            if (state.message) {
-                lastMessage = state.message;
-            }
-
-            if (state.percent !== undefined) {
-                lastPercent = state.percent;
-            }
-
-            cursor = lastMessage.length;
-            stdout.write(lastMessage);
-
-            if (lastPercent !== undefined) {
-                const percentage = " ... " + lastPercent + "%";
-
-                cursor += percentage.length;
-                stdout.write(percentage);
-                clearInterval(waitingTimer as any);
-            }
-        };
-
-        const keypressListener = (_: string, key: KeypressEventInfo) => {
-            if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
-                abort?.();
-            }
-        };
-
-        if (abort) {
-            stdin.on("keypress", keypressListener);
+        if (!(await isNodeRepl())) {
+            stdin.pause();
         }
-
-        let job = fn(set, signal);
-
-        if (listenForAbort) {
-            job = Promise.race([job, listenForAbort()]);
-        }
-
-        try {
-            return await job;
-        } finally {
-            clearInterval(waitingTimer as any);
-            abort && stdin.off("keypress", keypressListener);
-            stdout.write("\n");
-        }
-    };
-
-    if (await isNodeRepl()) {
-        return await handleProgress();
-    } else {
-        const { createInterface } = await import("readline");
-        // this will keep the program running
-        const rl = createInterface({ input: stdin, output: stdout });
-        const result = await handleProgress();
-
-        rl.close();
-        return result;
     }
 }
 
@@ -326,9 +302,9 @@ async function handleNodeProgress<T>(message: string, fn: ProgressHandler<T>, op
  */
 export default async function progress<T>(
     message: string,
-    fn: (set: (state: ProgressState) => void, signal: AbortSignal) => Promise<T>,
-    onAbort: (() => T | never | Promise<T | never>) | undefined = undefined
-): Promise<T> {
+    fn: ProgressFunc<T>,
+    onAbort: ProgressAbortHandler<T> | undefined = undefined
+): Promise<T | null> {
     const ctrl = new AbortController();
     const signal = ctrl.signal;
     let fallback: { value: T; } | null = null;

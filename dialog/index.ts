@@ -13,7 +13,7 @@ import OkButton from "./components/OkButton.ts";
 import CancelButton from "./components/CancelButton.ts";
 import Input from "./components/Input.ts";
 import progress from "./progress.ts";
-import type { ProgressState } from "./progress.ts";
+import type { ProgressState, ProgressFunc, ProgressAbortHandler } from "./progress.ts";
 import {
     isDenoRepl,
     isNodeRepl,
@@ -22,7 +22,7 @@ import {
     questionInNodeRepl,
 } from "./util.ts";
 
-export { progress, ProgressState };
+export { progress, ProgressState, ProgressFunc, ProgressAbortHandler };
 
 /**
  * Displays a dialog with a message, and to wait until the user dismisses the

@@ -5,10 +5,8 @@ import Dialog, { closeDialog } from './components/Dialog.js';
 import Footer from './components/Footer.js';
 import Progress from './components/Progress.js';
 import Text from './components/Text.js';
-import { isNodeRepl } from './util.js';
+import { isNodeRepl, writeSync, CLR, isCancelSequence, LF } from './util.js';
 
-const ESC = "\u001b".charCodeAt(0); // Escape
-const CLR = bytes("\r\u001b[K"); // Clear the current line
 async function handleDomProgress(message, fn, options) {
     const { signal, abort, listenForAbort } = options;
     const text = Text(message);
@@ -43,10 +41,9 @@ async function handleDomProgress(message, fn, options) {
         signal.aborted || closeDialog(dialog, "OK");
     }
 }
-async function handleDenoProgress(message, fn, options) {
+async function handleTerminalProgress(stdin, stdout, message, fn, options) {
     const { signal, abort, listenForAbort } = options;
-    const { stdin, stdout } = Deno;
-    stdout.writeSync(bytes(message));
+    writeSync(stdout, bytes(message));
     let lastMessage = stripEnd(message, "...");
     let lastPercent = undefined;
     let waitingIndicator = message.endsWith("...") ? "..." : "";
@@ -57,49 +54,54 @@ async function handleDenoProgress(message, fn, options) {
         else {
             waitingIndicator += ".";
         }
-        stdout.writeSync(CLR);
-        stdout.writeSync(bytes(lastMessage + waitingIndicator));
+        writeSync(stdout, CLR);
+        writeSync(stdout, bytes(lastMessage + waitingIndicator));
     }, 1000);
     const set = (state) => {
-        stdout.writeSync(CLR);
         if (signal.aborted) {
             return;
         }
+        writeSync(stdout, CLR);
         if (state.message) {
             lastMessage = state.message;
         }
         if (state.percent !== undefined) {
             lastPercent = state.percent;
         }
-        stdout.writeSync(bytes(lastMessage));
+        writeSync(stdout, bytes(lastMessage));
         if (lastPercent !== undefined) {
             const percentage = " ... " + lastPercent + "%";
-            stdout.writeSync(bytes(percentage));
+            writeSync(stdout, bytes(percentage));
             clearInterval(waitingTimer);
         }
     };
-    const keypressListener = new AbortController();
-    const finish = new Promise(resolve => {
-        keypressListener.signal.addEventListener("abort", () => {
-            resolve(null);
-        });
-    });
+    const nodeReader = (buf) => {
+        if (isCancelSequence(buf)) {
+            abort === null || abort === void 0 ? void 0 : abort();
+        }
+    };
+    const denoReader = "fd" in stdin ? null : stdin.readable.getReader();
     if (abort) {
-        (async () => {
-            stdin.setRaw(true, { cbreak: true });
-            const c = new Uint8Array(1);
-            while (true) {
-                const n = await Promise.race([stdin.read(c), finish]);
-                if (n === null || n === 0) {
-                    break;
+        if ("fd" in stdin) {
+            stdin.on("data", nodeReader);
+        }
+        else {
+            (async () => {
+                while (true) {
+                    try {
+                        const { done, value } = await denoReader.read();
+                        if (done || isCancelSequence(value)) {
+                            signal.aborted || abort();
+                            break;
+                        }
+                    }
+                    catch (_a) {
+                        signal.aborted || abort();
+                        break;
+                    }
                 }
-                else if (c[0] === ESC) {
-                    abort();
-                    break;
-                }
-            }
-            stdin.setRaw(false);
-        })();
+            })();
+        }
     }
     let job = fn(set, signal);
     if (listenForAbort) {
@@ -109,85 +111,47 @@ async function handleDenoProgress(message, fn, options) {
         return await job;
     }
     finally {
+        writeSync(stdout, bytes([LF]));
         clearInterval(waitingTimer);
-        keypressListener.abort();
-        stdout.writeSync(bytes("\n"));
+        if ("fd" in stdin) {
+            stdin.off("data", nodeReader);
+        }
+        else {
+            denoReader === null || denoReader === void 0 ? void 0 : denoReader.releaseLock();
+        }
+    }
+}
+async function handleDenoProgress(message, fn, options) {
+    const { stdin, stdout } = Deno;
+    if (!stdin.isTerminal) {
+        return null;
+    }
+    stdin.setRaw(true);
+    try {
+        return await handleTerminalProgress(stdin, stdout, message, fn, options);
+    }
+    finally {
+        stdin.setRaw(false);
     }
 }
 async function handleNodeProgress(message, fn, options) {
-    const { signal, abort, listenForAbort } = options;
     const { stdin, stdout } = process;
-    const handleProgress = async () => {
-        let cursor = message.length;
-        stdout.write(message);
-        let waitingIndicator = message.endsWith("...") ? "..." : "";
-        const waitingTimer = setInterval(() => {
-            if (waitingIndicator === "...") {
-                waitingIndicator = ".";
-                cursor -= 2;
-                stdout.moveCursor(-2, 0);
-                stdout.clearLine(1);
-            }
-            else {
-                waitingIndicator += ".";
-                cursor += 1;
-                stdout.write(".");
-            }
-        }, 1000);
-        let lastMessage = stripEnd(message, "...");
-        let lastPercent = undefined;
-        const set = (state) => {
-            if (signal.aborted) {
-                return;
-            }
-            stdout.moveCursor(-cursor, 0);
-            stdout.clearLine(1);
-            if (state.message) {
-                lastMessage = state.message;
-            }
-            if (state.percent !== undefined) {
-                lastPercent = state.percent;
-            }
-            cursor = lastMessage.length;
-            stdout.write(lastMessage);
-            if (lastPercent !== undefined) {
-                const percentage = " ... " + lastPercent + "%";
-                cursor += percentage.length;
-                stdout.write(percentage);
-                clearInterval(waitingTimer);
-            }
-        };
-        const keypressListener = (_, key) => {
-            if (key.name === "escape" || (key.name === "c" && key.ctrl)) {
-                abort === null || abort === void 0 ? void 0 : abort();
-            }
-        };
-        if (abort) {
-            stdin.on("keypress", keypressListener);
-        }
-        let job = fn(set, signal);
-        if (listenForAbort) {
-            job = Promise.race([job, listenForAbort()]);
-        }
-        try {
-            return await job;
-        }
-        finally {
-            clearInterval(waitingTimer);
-            abort && stdin.off("keypress", keypressListener);
-            stdout.write("\n");
-        }
-    };
-    if (await isNodeRepl()) {
-        return await handleProgress();
+    if (!stdout.isTTY) {
+        return null;
     }
-    else {
-        const { createInterface } = await import('readline');
-        // this will keep the program running
-        const rl = createInterface({ input: stdin, output: stdout });
-        const result = await handleProgress();
-        rl.close();
-        return result;
+    if (stdin.isPaused()) {
+        stdin.resume();
+    }
+    const rawMode = stdin.isRaw;
+    rawMode || stdin.setRawMode(true);
+    try {
+        return await handleTerminalProgress(stdin, stdout, message, fn, options);
+    }
+    finally {
+        stdin.setRawMode(rawMode);
+        if (!(await isNodeRepl())) {
+            stdin.pause();
+        }
     }
 }
 /**

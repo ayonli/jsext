@@ -277,7 +277,7 @@ describe("dialog", () => {
             strictEqual(await job, "Failed!");
         });
 
-        it("cancel with reject", async () => {
+        it("cancel with exception", async () => {
             const job = progress("Loading...", async (set) => {
                 await sleep(500);
                 set({ percent: 50, message: "Halfway there..." });

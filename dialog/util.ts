@@ -20,10 +20,12 @@ export type KeypressEventInfo = {
     shift: boolean;
 };
 
-type NodeStdin = NodeJS.ReadStream & { fd: 0; };
-type NodeStdout = NodeJS.WriteStream & { fd: 1; };
+export type NodeStdin = NodeJS.ReadStream & { fd: 0; };
+export type NodeStdout = NodeJS.WriteStream & { fd: 1; };
+export type DenoStdin = typeof Deno.stdin;
+export type DenoStdout = typeof Deno.stdout;
 
-async function read(stdin: NodeStdin | Deno.Reader): Promise<ByteArray> {
+export async function read(stdin: NodeStdin | DenoStdin): Promise<ByteArray> {
     if ("fd" in stdin) {
         return new Promise<ByteArray>(resolve => {
             stdin.once("data", (chunk: Buffer) => {
@@ -31,25 +33,44 @@ async function read(stdin: NodeStdin | Deno.Reader): Promise<ByteArray> {
             });
         });
     } else {
-        const buf = new Uint8Array(3);
-        const n = await stdin.read(buf);
-        return bytes(buf.slice(0, n ?? 0));
+        const reader = stdin.readable.getReader();
+        const { done, value } = await reader.read();
+
+        reader.releaseLock();
+
+        if (done) {
+            return bytes([]);
+        } else {
+            return bytes(value);
+        }
     }
 }
 
-async function write(stdout: NodeStdout | Deno.Writer, data: ByteArray) {
+export async function write(stdout: NodeStdout | DenoStdout, data: ByteArray) {
     if ("fd" in stdout) {
-        return new Promise<void>(resolve => {
+        await new Promise<void>(resolve => {
             stdout.write(data, () => resolve());
         });
     } else {
-        return stdout.write(data);
+        await stdout.write(data);
     }
 }
 
+export function writeSync(stdout: NodeStdout | DenoStdout, data: ByteArray) {
+    if ("fd" in stdout) {
+        write(stdout, data);
+    } else {
+        stdout.writeSync(data);
+    }
+}
+
+export function isCancelEvent(buf: Uint8Array) {
+    return buf.length === 1 && (buf[0] === ESC || buf[0] === CANCEL);
+}
+
 async function question(
-    stdin: NodeStdin | Deno.Reader,
-    stdout: NodeStdout | Deno.Writer,
+    stdin: NodeStdin | DenoStdin,
+    stdout: NodeStdout | DenoStdout,
     message: string,
     defaultValue: string = ""
 ) {
@@ -72,18 +93,18 @@ async function question(
         } else if (equals(char, LEFT)) {
             if (cursor > 0) {
                 cursor--;
-                await stdout.write(LEFT);
+                await write(stdout, LEFT);
             }
         } else if (equals(char, RIGHT)) {
             if (cursor < buf.length) {
                 cursor++;
-                await stdout.write(RIGHT);
+                await write(stdout, RIGHT);
             }
-        } else if (char[0] === ESC || char[0] === CANCEL) {
-            await stdout.write(bytes([LF]));
+        } else if (isCancelEvent(char)) {
+            await write(stdout, bytes([LF]));
             return null;
         } else if (char[0] === CR || char[0] === LF) {
-            await stdout.write(bytes([LF]));
+            await write(stdout, bytes([LF]));
             return buf.join("");
         } else if (char[0] === BS || char[0] === DEL) {
             if (cursor > 0) {
@@ -91,26 +112,26 @@ async function question(
                 cursor--;
                 const rest = buf.slice(cursor).join("");
 
-                await stdout.write(LEFT);
-                await stdout.write(CLR_RIGHT);
+                await write(stdout, LEFT);
+                await write(stdout, CLR_RIGHT);
 
                 if (rest) {
-                    await stdout.write(bytes(rest));
-                    await stdout.write(bytes(`\u001b[${rest.length}D`));
+                    await write(stdout, bytes(rest));
+                    await write(stdout, bytes(`\u001b[${rest.length}D`));
                 }
             }
         } else {
             if (cursor === buf.length) {
                 buf.push(String(char));
                 cursor++;
-                await stdout.write(char);
+                await write(stdout, char);
             } else {
                 buf.splice(cursor, 0, String(char));
                 const rest = buf.slice(cursor + 1).join("");
 
                 cursor++;
-                await stdout.write(concat(char, bytes(rest)));
-                await stdout.write(bytes(`\u001b[${rest.length}D`));
+                await write(stdout, concat(char, bytes(rest)));
+                await write(stdout, bytes(`\u001b[${rest.length}D`));
             }
         }
     }
@@ -159,15 +180,15 @@ export async function questionInNode(
     const rawMode = stdin.isRaw;
     rawMode || stdin.setRawMode(true);
 
-    const answer = await question(stdin, stdout, message, defaultValue);
+    try {
+        return await question(stdin, stdout, message, defaultValue);
+    } finally {
+        stdin.setRawMode(rawMode);
 
-    stdin.setRawMode(rawMode);
-
-    if (!(await isNodeRepl())) {
-        stdin.pause();
+        if (!(await isNodeRepl())) {
+            stdin.pause();
+        }
     }
-
-    return answer;
 }
 
 export function isDenoRepl() {
@@ -185,8 +206,10 @@ export async function questionInDeno(
     }
 
     stdin.setRaw(true);
-    const answer = await question(stdin, stdout, message, defaultValue);
 
-    stdin.setRaw(false);
-    return answer;
+    try {
+        return await question(stdin, stdout, message, defaultValue);
+    } finally {
+        stdin.setRaw(false);
+    }
 }

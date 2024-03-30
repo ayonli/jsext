@@ -38,6 +38,6 @@ if (message) {
 
         // console.log(result.message);
 
-        await alert(result.message);
+        await alert(result!.message);
     }
 }

@@ -1,8 +1,9 @@
 import { deepStrictEqual } from "node:assert";
 import { spawn, IPty, IPtyForkOptions } from "node-pty";
-// import { until } from "../promise/index.ts";
 import { isNodePrior16 } from "../parallel/constants.ts";
 import { sleep } from "../promise/index.ts";
+import bytes from "../bytes/index.ts";
+import { ESC } from "./util.ts";
 
 const useDeno = process.argv.includes("--deno");
 
@@ -44,17 +45,32 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
         return;
     }
 
-    it("alert", async () => {
-        const { cmd, output } = await runInSimulator(`examples/dialog/alert.ts`);
+    describe("alert", () => {
+        it("press Enter", async () => {
+            const { cmd, output } = await runInSimulator(`examples/dialog/alert.ts`);
 
-        cmd.write("\n");
-        const outputs = await output;
+            cmd.write("\n");
+            const outputs = await output;
 
-        deepStrictEqual(outputs, [
-            "Hello, World! [Enter] ",
-            "\u001b[90mundefined\u001b[39m",
-            ""
-        ]);
+            deepStrictEqual(outputs, [
+                "Hello, World! [Enter] ",
+                "\u001b[90mundefined\u001b[39m",
+                ""
+            ]);
+        });
+
+        it("press Escape", async () => {
+            const { cmd, output } = await runInSimulator(`examples/dialog/alert.ts`);
+
+            cmd.write(String(bytes([ESC])));
+            const outputs = await output;
+
+            deepStrictEqual(outputs, [
+                "Hello, World! [Enter] ",
+                "\u001b[90mundefined\u001b[39m",
+                ""
+            ]);
+        });
     });
 
     describe("confirm", () => {
@@ -145,6 +161,19 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                 ""
             ]);
         });
+
+        it("press Escape", async () => {
+            const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
+
+            cmd.write(String(bytes([ESC])));
+            const outputs = await output;
+
+            deepStrictEqual(outputs, [
+                "Are you sure? [y/N] ",
+                "\u001b[33mfalse\u001b[39m",
+                ""
+            ]);
+        });
     });
 
     describe("prompt", () => {
@@ -163,7 +192,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             ]);
         });
 
-        it("press Enter", async () => {
+        it("no input", async () => {
             const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
 
             cmd.write("\n");
@@ -188,49 +217,89 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                 ""
             ]);
         });
+
+        it("press Escape", async () => {
+            {
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+
+                cmd.write(String(bytes([ESC])));
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter something: ",
+                    "\u001b[1mnull\u001b[22m",
+                    ""
+                ]);
+            }
+
+            {
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt-default.ts");
+
+                cmd.write(String(bytes([ESC])));
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter something: Hello, World!",
+                    "\u001b[1mnull\u001b[22m",
+                    ""
+                ]);
+            }
+        });
     });
 
-    // it("progress", async function () {
-    //     this.timeout(10_000);
+    describe("progress", () => {
+        it("default", async function () {
+            this.timeout(10_000);
+            const { output } = await runInSimulator("examples/dialog/progress.ts");
+            const outputs = await output;
 
-    //     const cmd = spawn("node", ["examples/dialog.mjs"]);
-    //     const outputs: string[] = [];
+            deepStrictEqual(outputs, [
+                "Processing...\r\x1B[KProcessing.\r\x1B[KProcessing..\r\x1B[KProcessing...\r\x1B[KProcessing.",
+                "Success!",
+                ""
+            ]);
+        });
 
-    //     cmd.stdout.on("data", (chunk: Buffer) => {
-    //         outputs.push(String(chunk));
+        it("update", async function () {
+            this.timeout(10_000);
+            const { output } = await runInSimulator("examples/dialog/progress-update.ts");
+            const outputs = await output;
 
-    //         // Node.js bug, must print `outputs` so this event keeps emitting
-    //         // when `readline` module is used.  
-    //         console.log(outputs);
-    //     });
+            deepStrictEqual(outputs, [
+                "Processing...\r\x1B[KProcessing ... 0%\r\x1B[KProcessing ... 20%\r\x1B[KHalfway there! ... 50%\r\x1B[KHalfway there! ... 80%\r\x1B[KHalfway there! ... 100%",
+                "Success!",
+                ""
+            ]);
+        });
 
-    //     cmd.stdin.write("\n");
-    //     await new Promise<any>(resolve => {
-    //         cmd.stdout.once("data", resolve);
-    //     });
+        it("cancel with fallback", async function () {
+            this.timeout(10_000);
+            const { cmd, output } = await runInSimulator("examples/dialog/progress-cancel-fallback.ts");
 
-    //     cmd.stdin.write("y\n");
-    //     await new Promise<any>(resolve => {
-    //         cmd.stdout.once("data", resolve);
-    //     });
+            await sleep(3000);
+            cmd.write(String(bytes([ESC])));
 
-    //     await until(() => outputs.includes("Success! [Enter] "));
+            const outputs = await output;
+            deepStrictEqual(outputs, [
+                "Processing...\r\x1B[KProcessing.\r\x1B[KProcessing..",
+                "Failed!",
+                ""
+            ]);
+        });
 
-    //     cmd.stdin.write("\n");
-    //     await new Promise(resolve => {
-    //         cmd.once("exit", resolve);
-    //     });
+        it("cancel with exception", async function () {
+            this.timeout(10_000);
+            const { cmd, output } = await runInSimulator("examples/dialog/progress-cancel-throw.ts");
 
-    //     deepStrictEqual(outputs, [
-    //         "Input message: ",
-    //         "Confirm using 'Processing...' as title? [y/N] ",
-    //         "\x1B[0K",
-    //         "\x1B[0K",
-    //         "\x1B[0K",
-    //         "\x1B[0K",
-    //         "\x1B[0K",
-    //         "Success! [Enter] "
-    //     ]);
-    //     strictEqual(cmd.exitCode, 0);
-    // });
+            await sleep(3000);
+            cmd.write(String(bytes([ESC])));
+
+            const outputs = await output;
+            deepStrictEqual(outputs, [
+                "Processing...\r\x1B[KProcessing.\r\x1B[KProcessing..",
+                "Error: Failed!",
+                ""
+            ]);
+        });
+    });
 });

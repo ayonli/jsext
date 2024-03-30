@@ -20,20 +20,37 @@ async function read(stdin) {
         });
     }
     else {
-        const buf = new Uint8Array(3);
-        const n = await stdin.read(buf);
-        return bytes(buf.slice(0, n !== null && n !== void 0 ? n : 0));
+        const reader = stdin.readable.getReader();
+        const { done, value } = await reader.read();
+        reader.releaseLock();
+        if (done) {
+            return bytes([]);
+        }
+        else {
+            return bytes(value);
+        }
     }
 }
 async function write(stdout, data) {
     if ("fd" in stdout) {
-        return new Promise(resolve => {
+        await new Promise(resolve => {
             stdout.write(data, () => resolve());
         });
     }
     else {
-        return stdout.write(data);
+        await stdout.write(data);
     }
+}
+function writeSync(stdout, data) {
+    if ("fd" in stdout) {
+        write(stdout, data);
+    }
+    else {
+        stdout.writeSync(data);
+    }
+}
+function isCancelSequence(buf) {
+    return buf.length === 1 && (buf[0] === ESC || buf[0] === CANCEL);
 }
 async function question(stdin, stdout, message, defaultValue = "") {
     const buf = [];
@@ -52,21 +69,21 @@ async function question(stdin, stdout, message, defaultValue = "") {
         else if (equals(char, LEFT)) {
             if (cursor > 0) {
                 cursor--;
-                await stdout.write(LEFT);
+                await write(stdout, LEFT);
             }
         }
         else if (equals(char, RIGHT)) {
             if (cursor < buf.length) {
                 cursor++;
-                await stdout.write(RIGHT);
+                await write(stdout, RIGHT);
             }
         }
-        else if (char[0] === ESC || char[0] === CANCEL) {
-            await stdout.write(bytes([LF]));
+        else if (isCancelSequence(char)) {
+            await write(stdout, bytes([LF]));
             return null;
         }
         else if (char[0] === CR || char[0] === LF) {
-            await stdout.write(bytes([LF]));
+            await write(stdout, bytes([LF]));
             return buf.join("");
         }
         else if (char[0] === BS || char[0] === DEL) {
@@ -74,11 +91,11 @@ async function question(stdin, stdout, message, defaultValue = "") {
                 buf.splice(cursor - 1, 1);
                 cursor--;
                 const rest = buf.slice(cursor).join("");
-                await stdout.write(LEFT);
-                await stdout.write(CLR_RIGHT);
+                await write(stdout, LEFT);
+                await write(stdout, CLR_RIGHT);
                 if (rest) {
-                    await stdout.write(bytes(rest));
-                    await stdout.write(bytes(`\u001b[${rest.length}D`));
+                    await write(stdout, bytes(rest));
+                    await write(stdout, bytes(`\u001b[${rest.length}D`));
                 }
             }
         }
@@ -86,14 +103,14 @@ async function question(stdin, stdout, message, defaultValue = "") {
             if (cursor === buf.length) {
                 buf.push(String(char));
                 cursor++;
-                await stdout.write(char);
+                await write(stdout, char);
             }
             else {
                 buf.splice(cursor, 0, String(char));
                 const rest = buf.slice(cursor + 1).join("");
                 cursor++;
-                await stdout.write(concat(char, bytes(rest)));
-                await stdout.write(bytes(`\u001b[${rest.length}D`));
+                await write(stdout, concat(char, bytes(rest)));
+                await write(stdout, bytes(`\u001b[${rest.length}D`));
             }
         }
     }
@@ -126,12 +143,15 @@ async function questionInNode(message, defaultValue = "") {
     }
     const rawMode = stdin.isRaw;
     rawMode || stdin.setRawMode(true);
-    const answer = await question(stdin, stdout, message, defaultValue);
-    stdin.setRawMode(rawMode);
-    if (!(await isNodeRepl())) {
-        stdin.pause();
+    try {
+        return await question(stdin, stdout, message, defaultValue);
     }
-    return answer;
+    finally {
+        stdin.setRawMode(rawMode);
+        if (!(await isNodeRepl())) {
+            stdin.pause();
+        }
+    }
 }
 function isDenoRepl() {
     return typeof Deno === "object" && Deno.mainModule.endsWith("$deno$repl.ts");
@@ -142,10 +162,13 @@ async function questionInDeno(message, defaultValue = "") {
         return null;
     }
     stdin.setRaw(true);
-    const answer = await question(stdin, stdout, message, defaultValue);
-    stdin.setRaw(false);
-    return answer;
+    try {
+        return await question(stdin, stdout, message, defaultValue);
+    }
+    finally {
+        stdin.setRaw(false);
+    }
 }
 
-export { BS, CANCEL, CLR, CLR_LEFT, CLR_RIGHT, CR, DEL, ESC, LEFT, LF, RIGHT, isDenoRepl, isNodeRepl, questionInDeno, questionInNode, questionInNodeRepl };
+export { BS, CANCEL, CLR, CLR_LEFT, CLR_RIGHT, CR, DEL, ESC, LEFT, LF, RIGHT, isCancelSequence, isDenoRepl, isNodeRepl, questionInDeno, questionInNode, questionInNodeRepl, read, write, writeSync };
 //# sourceMappingURL=util.js.map
