@@ -10,8 +10,8 @@ bundle.ts
 augment.md
 tsconfig*
 mocha*
-prepublish.js
-postpublish.js
+prepublish.mjs
+postpublish.mjs
 test-deno.ts
 bundle/index.js
 bundle/index.js.map
