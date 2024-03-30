@@ -98,10 +98,38 @@ jobs:
           cache: 'npm'
 
       - run: npm i
+      - run: npm i -D jsdom
       - run: npm run test:jsdom
 
+  test-pty:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v5 
+        with:
+          python-version: '3.11' 
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - name: Setup Deno
+        # uses: denoland/setup-deno@v1
+        uses: denoland/setup-deno@61fe2df320078202e33d7d5ad347e7dcfa0e8f31  # v1.1.2
+        with:
+          deno-version: v1.x
+      - run: npm i
+      - run: npm i -D node-pty
+      - run: npm run test:pty
+
   publish-npm:
-    needs: [test-node, test-tsx, test-bun, test-deno, test-jsdom]
+    needs: [test-node, test-tsx, test-bun, test-deno, test-jsdom, test-pty]
     runs-on: ubuntu-latest
 
     steps:
@@ -126,7 +154,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
 
   publish-jsr:
-    needs: [test-node, test-tsx, test-bun, test-deno, test-jsdom]
+    needs: [test-node, test-tsx, test-bun, test-deno, test-jsdom, test-pty]
     runs-on: ubuntu-latest
 
     permissions:

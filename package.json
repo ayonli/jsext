@@ -386,6 +386,7 @@
         "ws": "^8.14.1"
     },
     "optionalDependencies": {
+        "jsdom": "^24.0.0",
         "node-pty": "^1.0.0"
     },
     "engines": {
