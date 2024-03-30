@@ -16,7 +16,7 @@ async function runInSimulator(filename: string) {
     let cmd: IPty;
 
     if (useDeno) {
-        cmd = spawn("deno", ["run", "-A", filename], options);
+        cmd = spawn("deno", ["run", "-A", "-q", filename], options);
     } else {
         cmd = spawn("tsx", [filename], options);
     }
