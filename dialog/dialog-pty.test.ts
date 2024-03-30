@@ -78,7 +78,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
 
             cmd.write("y");
-            await sleep(100);
+            await sleep(10);
             cmd.write("\n");
             const outputs = await output;
 
@@ -92,8 +92,12 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
         it("input 'yes'", async () => {
             const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
 
-            cmd.write("yes");
-            await sleep(100);
+            cmd.write("y");
+            await sleep(10);
+            cmd.write("e");
+            await sleep(10);
+            cmd.write("s");
+            await sleep(10);
             cmd.write("\n");
             const outputs = await output;
 
@@ -108,7 +112,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
 
             cmd.write("N");
-            await sleep(100);
+            await sleep(10);
             cmd.write("\n");
             const outputs = await output;
 
@@ -123,7 +127,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
 
             cmd.write("n");
-            await sleep(100);
+            await sleep(10);
             cmd.write("\n");
             const outputs = await output;
 
@@ -137,8 +141,10 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
         it("input 'no'", async () => {
             const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
 
-            cmd.write("no");
-            await sleep(100);
+            cmd.write("n");
+            await sleep(10);
+            cmd.write("o");
+            await sleep(10);
             cmd.write("\n");
             const outputs = await output;
 
@@ -180,8 +186,11 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
         it("input 'Hello, World!'", async () => {
             const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
 
-            cmd.write("Hello, World!");
-            await sleep(100);
+            for (const char of "Hello, World!") {
+                cmd.write(char);
+                await sleep(10);
+            }
+
             cmd.write("\n");
             const outputs = await output;
 
