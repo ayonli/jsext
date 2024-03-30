@@ -385,6 +385,9 @@
         "typescript": "^5.2.2",
         "ws": "^8.14.1"
     },
+    "optionalDependencies": {
+        "node-pty": "^1.0.0"
+    },
     "engines": {
         "node": ">=12"
     },

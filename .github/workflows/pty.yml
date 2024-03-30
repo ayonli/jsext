@@ -34,4 +34,5 @@ jobs:
         with:
           deno-version: v1.x
       - run: npm i
+      - run: npm i -D node-pty
       - run: npm run test:pty
