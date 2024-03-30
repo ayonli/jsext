@@ -5,7 +5,7 @@ import Dialog, { closeDialog } from './components/Dialog.js';
 import Footer from './components/Footer.js';
 import Progress from './components/Progress.js';
 import Text from './components/Text.js';
-import { isNodeRepl, writeSync, CLR, isCancelSequence, LF } from './util.js';
+import { isNodeRepl, writeSync, CLR, isCancelEvent, LF } from './util.js';
 
 async function handleDomProgress(message, fn, options) {
     const { signal, abort, listenForAbort } = options;
@@ -76,7 +76,7 @@ async function handleTerminalProgress(stdin, stdout, message, fn, options) {
         }
     };
     const nodeReader = (buf) => {
-        if (isCancelSequence(buf)) {
+        if (isCancelEvent(buf)) {
             abort === null || abort === void 0 ? void 0 : abort();
         }
     };
@@ -90,7 +90,7 @@ async function handleTerminalProgress(stdin, stdout, message, fn, options) {
                 while (true) {
                     try {
                         const { done, value } = await denoReader.read();
-                        if (done || isCancelSequence(value)) {
+                        if (done || isCancelEvent(value)) {
                             signal.aborted || abort();
                             break;
                         }

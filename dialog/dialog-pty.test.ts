@@ -276,7 +276,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             this.timeout(10_000);
             const { cmd, output } = await runInSimulator("examples/dialog/progress-cancel-fallback.ts");
 
-            await sleep(3000);
+            await sleep(2500);
             cmd.write(String(bytes([ESC])));
 
             const outputs = await output;
@@ -291,7 +291,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             this.timeout(10_000);
             const { cmd, output } = await runInSimulator("examples/dialog/progress-cancel-throw.ts");
 
-            await sleep(3000);
+            await sleep(2500);
             cmd.write(String(bytes([ESC])));
 
             const outputs = await output;

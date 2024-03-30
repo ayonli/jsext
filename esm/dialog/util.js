@@ -49,7 +49,7 @@ function writeSync(stdout, data) {
         stdout.writeSync(data);
     }
 }
-function isCancelSequence(buf) {
+function isCancelEvent(buf) {
     return buf.length === 1 && (buf[0] === ESC || buf[0] === CANCEL);
 }
 async function question(stdin, stdout, message, defaultValue = "") {
@@ -78,7 +78,7 @@ async function question(stdin, stdout, message, defaultValue = "") {
                 await write(stdout, RIGHT);
             }
         }
-        else if (isCancelSequence(char)) {
+        else if (isCancelEvent(char)) {
             await write(stdout, bytes([LF]));
             return null;
         }
@@ -99,7 +99,7 @@ async function question(stdin, stdout, message, defaultValue = "") {
                 }
             }
         }
-        else {
+        else if (char.length === 1) {
             if (cursor === buf.length) {
                 buf.push(String(char));
                 cursor++;
@@ -170,5 +170,5 @@ async function questionInDeno(message, defaultValue = "") {
     }
 }
 
-export { BS, CANCEL, CLR, CLR_LEFT, CLR_RIGHT, CR, DEL, ESC, LEFT, LF, RIGHT, isCancelSequence, isDenoRepl, isNodeRepl, questionInDeno, questionInNode, questionInNodeRepl, read, write, writeSync };
+export { BS, CANCEL, CLR, CLR_LEFT, CLR_RIGHT, CR, DEL, ESC, LEFT, LF, RIGHT, isCancelEvent, isDenoRepl, isNodeRepl, questionInDeno, questionInNode, questionInNodeRepl, read, write, writeSync };
 //# sourceMappingURL=util.js.map

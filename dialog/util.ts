@@ -120,7 +120,7 @@ async function question(
                     await write(stdout, bytes(`\u001b[${rest.length}D`));
                 }
             }
-        } else {
+        } else if (char.length === 1) {
             if (cursor === buf.length) {
                 buf.push(String(char));
                 cursor++;
