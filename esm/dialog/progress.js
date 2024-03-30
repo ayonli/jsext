@@ -111,7 +111,7 @@ async function handleTerminalProgress(stdin, stdout, message, fn, options) {
         return await job;
     }
     finally {
-        writeSync(stdout, bytes([LF]));
+        writeSync(stdout, LF);
         clearInterval(waitingTimer);
         if ("fd" in stdin) {
             stdin.off("data", nodeReader);

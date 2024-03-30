@@ -2,8 +2,7 @@ import { deepStrictEqual } from "node:assert";
 import { spawn, IPty, IPtyForkOptions } from "node-pty";
 import { isNodePrior16 } from "../parallel/constants.ts";
 import { sleep } from "../promise/index.ts";
-import bytes from "../bytes/index.ts";
-import { ESC } from "./util.ts";
+import { END, ESC, LEFT, RIGHT, START } from "./util.ts";
 
 const useDeno = process.argv.includes("--deno");
 
@@ -62,7 +61,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
         it("press Escape", async () => {
             const { cmd, output } = await runInSimulator(`examples/dialog/alert.ts`);
 
-            cmd.write(String(bytes([ESC])));
+            cmd.write(String(ESC));
             const outputs = await output;
 
             deepStrictEqual(outputs, [
@@ -171,7 +170,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
         it("press Escape", async () => {
             const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
 
-            cmd.write(String(bytes([ESC])));
+            cmd.write(String(ESC));
             const outputs = await output;
 
             deepStrictEqual(outputs, [
@@ -198,6 +197,24 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                 "Enter something: Hello, World!",
                 "Hello, World!",
                 "",
+            ]);
+        });
+
+        it("input '你好，世界！'", async () => {
+            const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+
+            for (const char of "你好，世界！") {
+                cmd.write(char);
+                await sleep(10);
+            }
+
+            cmd.write("\n");
+            const outputs = await output;
+
+            deepStrictEqual(outputs, [
+                "Enter something: 你好，世界！",
+                "你好，世界！",
+                ""
             ]);
         });
 
@@ -231,7 +248,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             {
                 const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
 
-                cmd.write(String(bytes([ESC])));
+                cmd.write(String(ESC));
                 const outputs = await output;
 
                 deepStrictEqual(outputs, [
@@ -244,12 +261,304 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             {
                 const { cmd, output } = await runInSimulator("examples/dialog/prompt-default.ts");
 
-                cmd.write(String(bytes([ESC])));
+                cmd.write(String(ESC));
                 const outputs = await output;
 
                 deepStrictEqual(outputs, [
                     "Enter something: Hello, World!",
                     "\u001b[1mnull\u001b[22m",
+                    ""
+                ]);
+            }
+        });
+
+        it("press backspace", async () => {
+            { // for 'Hello, World!'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+
+                for (const char of "Hello, World!") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write("\b");
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter something: Hello, World!\u001b[1D\u001b[0K",
+                    "Hello, World",
+                    ""
+                ]);
+            }
+
+            { // for '你好，世界！'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+
+                for (const char of "你好，世界！") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write("\b");
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter something: 你好，世界！\u001b[2D\u001b[0K",
+                    "你好，世界",
+                    ""
+                ]);
+            }
+        });
+
+        it("move cursor left", async () => {
+            { // for 'Hello, World!'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+
+                for (const char of "Hello, World!") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter something: Hello, World!\u001b[1D\u001b[1D\u001b[1D",
+                    "Hello, World!",
+                    ""
+                ]);
+            }
+
+            { // for '你好，世界！'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+
+                for (const char of "你好，世界！") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter something: 你好，世界！\u001b[2D\u001b[2D\u001b[2D",
+                    "你好，世界！",
+                    ""
+                ]);
+            }
+        });
+
+        it("move cursor right", async () => {
+            { // for 'Hello, World!'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+
+                for (const char of "Hello, World!") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(RIGHT));
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter something: Hello, World!\u001b[1D\u001b[1D\u001b[1C",
+                    "Hello, World!",
+                    ""
+                ]);
+            }
+
+            { // for '你好，世界！'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+
+                for (const char of "你好，世界！") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(RIGHT));
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter something: 你好，世界！\u001b[2D\u001b[2D\u001b[2C",
+                    "你好，世界！",
+                    ""
+                ]);
+            }
+        });
+
+        it("move cursor to start", async () => {
+            { // for 'Hello, World!'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+
+                for (const char of "Hello, World!") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write(String(START));
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter something: Hello, World!\u001b[13D",
+                    "Hello, World!",
+                    ""
+                ]);
+            }
+
+            { // for '你好，世界！'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+
+                for (const char of "你好，世界！") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write(String(START));
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter something: 你好，世界！\u001b[12D",
+                    "你好，世界！",
+                    ""
+                ]);
+            }
+        });
+
+        it("move cursor to end", async () => {
+            { // for 'Hello, World!'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+
+                for (const char of "Hello, World!") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(END));
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter something: Hello, World!\u001b[1D\u001b[1D\u001b[1D\u001b[3C",
+                    "Hello, World!",
+                    ""
+                ]);
+            }
+
+            { // for '你好，世界！'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+
+                for (const char of "你好，世界！") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(END));
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter something: 你好，世界！\u001b[2D\u001b[2D\u001b[2D\u001b[6C",
+                    "你好，世界！",
+                    ""
+                ]);
+            }
+        });
+
+        it("move cursor and backspace", async () => {
+            { // for 'Hello, World!'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+
+                for (const char of "Hello, World!") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write("\b");
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter something: Hello, World!\u001b[1D\u001b[1D\u001b[1D\u001b[1D\u001b[0Kld!\u001b[3D",
+                    "Hello, Wold!",
+                    ""
+                ]);
+            }
+
+            { // for '你好，世界！'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+
+                for (const char of "你好，世界！") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write("\b");
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter something: 你好，世界！\u001b[2D\u001b[2D\u001b[2D\u001b[2D\u001b[0K世界！\u001b[6D",
+                    "你好世界！",
                     ""
                 ]);
             }
@@ -286,7 +595,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             const { cmd, output } = await runInSimulator("examples/dialog/progress-cancel-fallback.ts");
 
             await sleep(2500);
-            cmd.write(String(bytes([ESC])));
+            cmd.write(String(ESC));
 
             const outputs = await output;
             deepStrictEqual(outputs, [
@@ -301,7 +610,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             const { cmd, output } = await runInSimulator("examples/dialog/progress-cancel-throw.ts");
 
             await sleep(2500);
-            cmd.write(String(bytes([ESC])));
+            cmd.write(String(ESC));
 
             const outputs = await output;
             deepStrictEqual(outputs, [

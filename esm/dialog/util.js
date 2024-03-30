@@ -1,16 +1,33 @@
 import bytes, { equals, concat } from '../bytes/index.js';
+import { sum } from '../math/index.js';
+import { chars, byteLength } from '../string/index.js';
 
-const LF = "\n".charCodeAt(0); // ^J - Enter on Linux
-const CR = "\r".charCodeAt(0); // ^M - Enter on macOS and Windows (CRLF)
-const BS = "\b".charCodeAt(0); // ^H - Backspace on Linux and Windows
-const DEL = 0x7f; // ^? - Backspace on macOS
-const ESC = 0x1b; // ^[ - Escape
-const CANCEL = 0x03; // ^C - Cancel
+const LF = bytes("\n"); // ^J - Enter on Linux
+const CR = bytes("\r"); // ^M - Enter on macOS and Windows (CRLF)
+const TAB = bytes("\t"); // ^I - Tab
+const BS = bytes("\b"); // ^H - Backspace on Linux and Windows
+const DEL = bytes([0x7f]); // ^? - Backspace on macOS
+const ESC = bytes([0x1b]); // ^[ - Escape
+const CANCEL = bytes([0x03]); // ^C - Cancel
+const START = bytes([0x01]); // ^A - Start of text
+const END = bytes([0x05]); // ^E - End of text
 const CLR = bytes("\r\u001b[K"); // Clear the current line
 const CLR_RIGHT = bytes("\u001b[0K");
 const CLR_LEFT = bytes("\u001b[1K");
 const LEFT = bytes("\u001b[D");
 const RIGHT = bytes("\u001b[C");
+const UP = bytes("\u001b[A");
+const DOWN = bytes("\u001b[B");
+function toLeft(str) {
+    const _chars = chars(str);
+    const length = sum(..._chars.map(char => Math.min(byteLength(char), 2)));
+    return bytes(`\u001b[${length}D`);
+}
+function toRight(str) {
+    const _chars = chars(str);
+    const length = sum(..._chars.map(char => Math.min(byteLength(char), 2)));
+    return bytes(`\u001b[${length}C`);
+}
 async function read(stdin) {
     if ("fd" in stdin) {
         return new Promise(resolve => {
@@ -50,7 +67,7 @@ function writeSync(stdout, data) {
     }
 }
 function isCancelEvent(buf) {
-    return buf.length === 1 && (buf[0] === ESC || buf[0] === CANCEL);
+    return equals(buf, ESC) || equals(buf, CANCEL);
 }
 async function question(stdin, stdout, message, defaultValue = "") {
     const buf = [];
@@ -58,59 +75,76 @@ async function question(stdin, stdout, message, defaultValue = "") {
     await write(stdout, bytes(message));
     if (defaultValue) {
         await write(stdout, bytes(defaultValue));
-        buf.push(...defaultValue);
-        cursor += defaultValue.length;
+        const _chars = chars(defaultValue);
+        buf.push(..._chars);
+        cursor += _chars.length;
     }
     while (true) {
-        const char = await read(stdin);
-        if (!char.length) {
+        const input = await read(stdin);
+        if (!input.length || equals(input, UP) || equals(input, DOWN)) {
             continue;
         }
-        else if (equals(char, LEFT)) {
+        else if (equals(input, LEFT)) {
             if (cursor > 0) {
-                cursor--;
-                await write(stdout, LEFT);
+                const char = buf[--cursor];
+                await write(stdout, toLeft(char));
             }
         }
-        else if (equals(char, RIGHT)) {
+        else if (equals(input, RIGHT)) {
             if (cursor < buf.length) {
-                cursor++;
-                await write(stdout, RIGHT);
+                const char = buf[cursor++];
+                await write(stdout, toRight(char));
             }
         }
-        else if (isCancelEvent(char)) {
-            await write(stdout, bytes([LF]));
+        else if (equals(input, START)) {
+            const left = buf.slice(0, cursor);
+            if (left.length) {
+                cursor = 0;
+                await write(stdout, toLeft(left.join("")));
+            }
+        }
+        else if (equals(input, END)) {
+            const right = buf.slice(cursor);
+            if (right.length) {
+                cursor = buf.length;
+                await write(stdout, toRight(right.join("")));
+            }
+        }
+        else if (isCancelEvent(input)) {
+            await write(stdout, LF);
             return null;
         }
-        else if (char[0] === CR || char[0] === LF) {
-            await write(stdout, bytes([LF]));
+        else if (equals(input, CR) || equals(input, LF)) {
+            await write(stdout, LF);
             return buf.join("");
         }
-        else if (char[0] === BS || char[0] === DEL) {
+        else if (equals(input, BS) || equals(input, DEL)) {
             if (cursor > 0) {
-                buf.splice(cursor - 1, 1);
                 cursor--;
-                const rest = buf.slice(cursor).join("");
-                await write(stdout, LEFT);
+                const [char] = buf.splice(cursor, 1);
+                const rest = buf.slice(cursor);
+                await write(stdout, toLeft(char));
                 await write(stdout, CLR_RIGHT);
-                if (rest) {
-                    await write(stdout, bytes(rest));
-                    await write(stdout, bytes(`\u001b[${rest.length}D`));
+                if (rest.length) {
+                    const output = rest.join("");
+                    await write(stdout, bytes(output));
+                    await write(stdout, toLeft(output));
                 }
             }
         }
-        else if (char.length === 1) {
+        else {
+            const _chars = chars(String(input));
             if (cursor === buf.length) {
-                buf.push(String(char));
-                cursor++;
-                await write(stdout, char);
+                buf.push(..._chars);
+                cursor += _chars.length;
+                await write(stdout, input);
             }
             else {
-                buf.splice(cursor, 0, String(char));
-                const rest = buf.slice(cursor + 1).join("");
-                cursor++;
-                await write(stdout, concat(char, bytes(rest)));
-                await write(stdout, bytes(`\u001b[${rest.length}D`));
+                buf.splice(cursor, 0, ..._chars);
+                cursor += _chars.length;
+                const rest = buf.slice(cursor).join("");
+                await write(stdout, concat(input, bytes(rest)));
+                await write(stdout, toLeft(rest));
             }
         }
     }
@@ -170,5 +204,5 @@ async function questionInDeno(message, defaultValue = "") {
     }
 }
 
-export { BS, CANCEL, CLR, CLR_LEFT, CLR_RIGHT, CR, DEL, ESC, LEFT, LF, RIGHT, isCancelEvent, isDenoRepl, isNodeRepl, questionInDeno, questionInNode, questionInNodeRepl, read, write, writeSync };
+export { BS, CANCEL, CLR, CLR_LEFT, CLR_RIGHT, CR, DEL, DOWN, END, ESC, LEFT, LF, RIGHT, START, TAB, UP, isCancelEvent, isDenoRepl, isNodeRepl, questionInDeno, questionInNode, questionInNodeRepl, read, write, writeSync };
 //# sourceMappingURL=util.js.map

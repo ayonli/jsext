@@ -173,7 +173,7 @@ async function handleTerminalProgress(
     try {
         return await job;
     } finally {
-        writeSync(stdout, bytes([LF]));
+        writeSync(stdout, LF);
         clearInterval(waitingTimer as any);
 
         if ("fd" in stdin) {

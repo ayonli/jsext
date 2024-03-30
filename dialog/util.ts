@@ -1,16 +1,23 @@
 import bytes, { ByteArray, concat, equals } from "../bytes/index.ts";
+import { sum } from "../math/index.ts";
+import { byteLength, chars } from "../string/index.ts";
 
-export const LF = "\n".charCodeAt(0); // ^J - Enter on Linux
-export const CR = "\r".charCodeAt(0); // ^M - Enter on macOS and Windows (CRLF)
-export const BS = "\b".charCodeAt(0); // ^H - Backspace on Linux and Windows
-export const DEL = 0x7f; // ^? - Backspace on macOS
-export const ESC = 0x1b; // ^[ - Escape
-export const CANCEL = 0x03; // ^C - Cancel
+export const LF = bytes("\n"); // ^J - Enter on Linux
+export const CR = bytes("\r"); // ^M - Enter on macOS and Windows (CRLF)
+export const TAB = bytes("\t"); // ^I - Tab
+export const BS = bytes("\b"); // ^H - Backspace on Linux and Windows
+export const DEL = bytes([0x7f]); // ^? - Backspace on macOS
+export const ESC = bytes([0x1b]); // ^[ - Escape
+export const CANCEL = bytes([0x03]); // ^C - Cancel
+export const START = bytes([0x01]); // ^A - Start of text
+export const END = bytes([0x05]); // ^E - End of text
 export const CLR = bytes("\r\u001b[K"); // Clear the current line
 export const CLR_RIGHT = bytes("\u001b[0K");
 export const CLR_LEFT = bytes("\u001b[1K");
 export const LEFT = bytes("\u001b[D");
 export const RIGHT = bytes("\u001b[C");
+export const UP = bytes("\u001b[A");
+export const DOWN = bytes("\u001b[B");
 
 export type KeypressEventInfo = {
     sequence: string;
@@ -24,6 +31,18 @@ export type NodeStdin = NodeJS.ReadStream & { fd: 0; };
 export type NodeStdout = NodeJS.WriteStream & { fd: 1; };
 export type DenoStdin = typeof Deno.stdin;
 export type DenoStdout = typeof Deno.stdout;
+
+function toLeft(str: string) {
+    const _chars = chars(str);
+    const length = sum(..._chars.map(char => Math.min(byteLength(char), 2)));
+    return bytes(`\u001b[${length}D`);
+}
+
+function toRight(str: string) {
+    const _chars = chars(str);
+    const length = sum(..._chars.map(char => Math.min(byteLength(char), 2)));
+    return bytes(`\u001b[${length}C`);
+}
 
 export async function read(stdin: NodeStdin | DenoStdin): Promise<ByteArray> {
     if ("fd" in stdin) {
@@ -65,7 +84,7 @@ export function writeSync(stdout: NodeStdout | DenoStdout, data: ByteArray) {
 }
 
 export function isCancelEvent(buf: Uint8Array) {
-    return buf.length === 1 && (buf[0] === ESC || buf[0] === CANCEL);
+    return equals(buf, ESC) || equals(buf, CANCEL);
 }
 
 async function question(
@@ -81,57 +100,75 @@ async function question(
 
     if (defaultValue) {
         await write(stdout, bytes(defaultValue));
-        buf.push(...defaultValue);
-        cursor += defaultValue.length;
+        const _chars = chars(defaultValue);
+        buf.push(..._chars);
+        cursor += _chars.length;
     }
 
     while (true) {
-        const char = await read(stdin);
+        const input = await read(stdin);
 
-        if (!char.length) {
+        if (!input.length || equals(input, UP) || equals(input, DOWN)) {
             continue;
-        } else if (equals(char, LEFT)) {
+        } else if (equals(input, LEFT)) {
             if (cursor > 0) {
-                cursor--;
-                await write(stdout, LEFT);
+                const char = buf[--cursor]!;
+                await write(stdout, toLeft(char));
             }
-        } else if (equals(char, RIGHT)) {
+        } else if (equals(input, RIGHT)) {
             if (cursor < buf.length) {
-                cursor++;
-                await write(stdout, RIGHT);
+                const char = buf[cursor++]!;
+                await write(stdout, toRight(char));
             }
-        } else if (isCancelEvent(char)) {
-            await write(stdout, bytes([LF]));
-            return null;
-        } else if (char[0] === CR || char[0] === LF) {
-            await write(stdout, bytes([LF]));
-            return buf.join("");
-        } else if (char[0] === BS || char[0] === DEL) {
-            if (cursor > 0) {
-                buf.splice(cursor - 1, 1);
-                cursor--;
-                const rest = buf.slice(cursor).join("");
+        } else if (equals(input, START)) {
+            const left = buf.slice(0, cursor);
 
-                await write(stdout, LEFT);
+            if (left.length) {
+                cursor = 0;
+                await write(stdout, toLeft(left.join("")));
+            }
+        } else if (equals(input, END)) {
+            const right = buf.slice(cursor);
+
+            if (right.length) {
+                cursor = buf.length;
+                await write(stdout, toRight(right.join("")));
+            }
+        } else if (isCancelEvent(input)) {
+            await write(stdout, LF);
+            return null;
+        } else if (equals(input, CR) || equals(input, LF)) {
+            await write(stdout, LF);
+            return buf.join("");
+        } else if (equals(input, BS) || equals(input, DEL)) {
+            if (cursor > 0) {
+                cursor--;
+                const [char] = buf.splice(cursor, 1);
+                const rest = buf.slice(cursor);
+
+                await write(stdout, toLeft(char!));
                 await write(stdout, CLR_RIGHT);
 
-                if (rest) {
-                    await write(stdout, bytes(rest));
-                    await write(stdout, bytes(`\u001b[${rest.length}D`));
+                if (rest.length) {
+                    const output = rest.join("");
+                    await write(stdout, bytes(output));
+                    await write(stdout, toLeft(output));
                 }
             }
-        } else if (char.length === 1) {
-            if (cursor === buf.length) {
-                buf.push(String(char));
-                cursor++;
-                await write(stdout, char);
-            } else {
-                buf.splice(cursor, 0, String(char));
-                const rest = buf.slice(cursor + 1).join("");
+        } else {
+            const _chars = chars(String(input));
 
-                cursor++;
-                await write(stdout, concat(char, bytes(rest)));
-                await write(stdout, bytes(`\u001b[${rest.length}D`));
+            if (cursor === buf.length) {
+                buf.push(..._chars);
+                cursor += _chars.length;
+                await write(stdout, input);
+            } else {
+                buf.splice(cursor, 0, ..._chars);
+                cursor += _chars.length;
+                const rest = buf.slice(cursor).join("");
+
+                await write(stdout, concat(input, bytes(rest)));
+                await write(stdout, toLeft(rest));
             }
         }
     }
