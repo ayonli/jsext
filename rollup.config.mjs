@@ -37,7 +37,7 @@ export default [
             preserveModulesRoot: ".",
         },
         plugins: [
-            typescript({ moduleResolution: "bundler" }),
+            typescript({ tsconfig: "tsconfig.build.json" }),
             resolve({ preferBuiltins: true }),
             commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
         ],
@@ -52,7 +52,7 @@ export default [
             preserveModulesRoot: ".",
         },
         plugins: [
-            typescript({ moduleResolution: "bundler" }),
+            typescript({ tsconfig: "tsconfig.build.json" }),
             resolve({ preferBuiltins: true }),
             commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
         ],
@@ -66,7 +66,7 @@ export default [
             sourcemap: true,
         },
         plugins: [
-            typescript({ moduleResolution: "bundler" }),
+            typescript({ tsconfig: "tsconfig.build.json" }),
             resolve({ preferBuiltins: true }),
             commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
             terser({
@@ -82,7 +82,7 @@ export default [
             format: "esm",
         },
         plugins: [
-            typescript({ moduleResolution: "bundler" }),
+            typescript({ tsconfig: "tsconfig.build.json" }),
             resolve({ preferBuiltins: true }),
             commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
         ],
@@ -94,7 +94,7 @@ export default [
             format: "esm",
         },
         plugins: [
-            typescript({ moduleResolution: "bundler" }),
+            typescript({ tsconfig: "tsconfig.build.json" }),
             resolve({ preferBuiltins: true }),
             commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
         ],

@@ -1,7 +1,33 @@
-import { deepStrictEqual, strictEqual } from "node:assert";
-import { spawn } from "node:child_process";
+import { deepStrictEqual } from "node:assert";
+import { spawn } from "node-pty";
 // import { until } from "../promise/index.ts";
 import { isNodePrior16 } from "../parallel/constants.ts";
+import { sleep } from "../promise/index.ts";
+
+async function runInNodeSimulator(code: string) {
+    const cmd = spawn("node", ["-e", code], {
+        cwd: process.cwd(),
+        env: process.env,
+        cols: 80,
+        rows: 30,
+    });
+    const _outputs: string[] = [];
+    const output = new Promise(resolve => {
+        cmd.onExit(resolve);
+    }).then(() => _outputs.join("").split(/\r\n|\n/));
+
+    await new Promise<void>(resolve => {
+        cmd.onData((chunk) => {
+            _outputs.push(chunk);
+            resolve();
+        });
+    });
+
+    return {
+        cmd,
+        output,
+    };
+}
 
 describe("dialog", () => {
     if (typeof document !== "undefined" || isNodePrior16) {
@@ -9,326 +35,168 @@ describe("dialog", () => {
     }
 
     it("alert", async () => {
-        const cmd = spawn("node", [
-            "-e",
+        const { cmd, output } = await runInNodeSimulator(
             `import("./esm/dialog/index.js").then(({ alert }) => alert("Hello, World!")).then(console.log);`
+        );
+
+        cmd.write("\n");
+        const outputs = await output;
+
+        deepStrictEqual(outputs, [
+            "Hello, World! [Enter] ",
+            "\u001b[90mundefined\u001b[39m",
+            ""
         ]);
-        const outputs: string[] = [];
-
-        cmd.stdout.on("data", (chunk: Buffer) => {
-            outputs.push(String(chunk));
-        });
-
-        cmd.stdin.write("\n");
-
-        await new Promise(resolve => {
-            cmd.once("exit", resolve);
-        });
-
-        try {
-            deepStrictEqual(outputs, [
-                "Hello, World! [Enter] ",
-                "undefined\n"
-            ]);
-        } catch {
-            // data may be flushed at the same time
-            deepStrictEqual(outputs, [
-                "Hello, World! [Enter] undefined\n"
-            ]);
-        }
-
-        strictEqual(cmd.exitCode, 0);
     });
 
     describe("confirm", () => {
         it("input 'y'", async () => {
-            const cmd = spawn("node", [
-                "-e",
-                `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
+            const { cmd, output } = await runInNodeSimulator(
+                `import("./esm/dialog/index.js").then(({ confirm }) => confirm("Are you sure?")).then(console.log);`
+            );
+
+            cmd.write("y");
+            await sleep(100);
+            cmd.write("\n");
+            const outputs = await output;
+
+            deepStrictEqual(outputs, [
+                "Are you sure? [y/N] y",
+                "\u001b[33mtrue\u001b[39m",
+                ""
             ]);
-            const outputs: string[] = [];
-
-            cmd.stdout.on("data", (chunk: Buffer) => {
-                outputs.push(String(chunk));
-            });
-
-            cmd.stdin.write("y\n");
-
-            await new Promise(resolve => {
-                cmd.once("exit", resolve);
-            });
-
-            try {
-                deepStrictEqual(outputs, [
-                    "Are you sure? [y/N] ",
-                    "true\n"
-                ]);
-            } catch {
-                // data may be flushed at the same time
-                deepStrictEqual(outputs, [
-                    "Are you sure? [y/N] true\n"
-                ]);
-            }
-
-            strictEqual(cmd.exitCode, 0);
         });
 
         it("input 'yes'", async () => {
-            const cmd = spawn("node", [
-                "-e",
+            const { cmd, output } = await runInNodeSimulator(
                 `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
+            );
+
+            cmd.write("yes");
+            await sleep(100);
+            cmd.write("\n");
+            const outputs = await output;
+
+            deepStrictEqual(outputs, [
+                "Are you sure? [y/N] yes",
+                "\u001b[33mtrue\u001b[39m",
+                ""
             ]);
-            const outputs: string[] = [];
-
-            cmd.stdout.on("data", (chunk: Buffer) => {
-                outputs.push(String(chunk));
-            });
-
-            cmd.stdin.write("yes\n");
-
-            await new Promise(resolve => {
-                cmd.once("exit", resolve);
-            });
-
-            try {
-                deepStrictEqual(outputs, [
-                    "Are you sure? [y/N] ",
-                    "true\n"
-                ]);
-            } catch {
-                // data may be flushed at the same time
-                deepStrictEqual(outputs, [
-                    "Are you sure? [y/N] true\n"
-                ]);
-            }
-
-            strictEqual(cmd.exitCode, 0);
         });
 
         it("input 'N'", async () => {
-            const cmd = spawn("node", [
-                "-e",
+            const { cmd, output } = await runInNodeSimulator(
                 `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
+            );
+
+            cmd.write("N");
+            await sleep(100);
+            cmd.write("\n");
+            const outputs = await output;
+
+            deepStrictEqual(outputs, [
+                "Are you sure? [y/N] N",
+                "\u001b[33mfalse\u001b[39m",
+                ""
             ]);
-            const outputs: string[] = [];
-
-            cmd.stdout.on("data", (chunk: Buffer) => {
-                outputs.push(String(chunk));
-            });
-
-            cmd.stdin.write("N\n");
-
-            await new Promise(resolve => {
-                cmd.once("exit", resolve);
-            });
-
-            try {
-                deepStrictEqual(outputs, [
-                    "Are you sure? [y/N] ",
-                    "false\n"
-                ]);
-            } catch {
-                // data may be flushed at the same time
-                deepStrictEqual(outputs, [
-                    "Are you sure? [y/N] false\n"
-                ]);
-            }
-
-            strictEqual(cmd.exitCode, 0);
         });
 
         it("input 'n'", async () => {
-            const cmd = spawn("node", [
-                "-e",
+            const { cmd, output } = await runInNodeSimulator(
                 `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
+            );
+
+            cmd.write("n");
+            await sleep(100);
+            cmd.write("\n");
+            const outputs = await output;
+
+            deepStrictEqual(outputs, [
+                "Are you sure? [y/N] n",
+                "\u001b[33mfalse\u001b[39m",
+                ""
             ]);
-            const outputs: string[] = [];
-
-            cmd.stdout.on("data", (chunk: Buffer) => {
-                outputs.push(String(chunk));
-            });
-
-            cmd.stdin.write("n\n");
-
-            await new Promise(resolve => {
-                cmd.once("exit", resolve);
-            });
-
-            try {
-                deepStrictEqual(outputs, [
-                    "Are you sure? [y/N] ",
-                    "false\n"
-                ]);
-            } catch {
-                // data may be flushed at the same time
-                deepStrictEqual(outputs, [
-                    "Are you sure? [y/N] false\n"
-                ]);
-            }
-
-            strictEqual(cmd.exitCode, 0);
         });
 
         it("input 'no'", async () => {
-            const cmd = spawn("node", [
-                "-e",
+            const { cmd, output } = await runInNodeSimulator(
                 `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
+            );
+
+            cmd.write("no");
+            await sleep(100);
+            cmd.write("\n");
+            const outputs = await output;
+
+            deepStrictEqual(outputs, [
+                "Are you sure? [y/N] no",
+                "\u001b[33mfalse\u001b[39m",
+                ""
             ]);
-            const outputs: string[] = [];
-
-            cmd.stdout.on("data", (chunk: Buffer) => {
-                outputs.push(String(chunk));
-            });
-
-            cmd.stdin.write("no\n");
-
-            await new Promise(resolve => {
-                cmd.once("exit", resolve);
-            });
-
-            try {
-                deepStrictEqual(outputs, [
-                    "Are you sure? [y/N] ",
-                    "false\n"
-                ]);
-            } catch {
-                // data may be flushed at the same time
-                deepStrictEqual(outputs, [
-                    "Are you sure? [y/N] false\n"
-                ]);
-            }
-
-            strictEqual(cmd.exitCode, 0);
         });
 
         it("press Enter", async () => {
-            const cmd = spawn("node", [
-                "-e",
+            const { cmd, output } = await runInNodeSimulator(
                 `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
+            );
+
+            cmd.write("\n");
+            const outputs = await output;
+
+            deepStrictEqual(outputs, [
+                "Are you sure? [y/N] ",
+                "\u001b[33mfalse\u001b[39m",
+                ""
             ]);
-            const outputs: string[] = [];
-
-            cmd.stdout.on("data", (chunk: Buffer) => {
-                outputs.push(String(chunk));
-            });
-
-            cmd.stdin.write("\n");
-
-            await new Promise(resolve => {
-                cmd.once("exit", resolve);
-            });
-
-            try {
-                deepStrictEqual(outputs, [
-                    "Are you sure? [y/N] ",
-                    "false\n"
-                ]);
-            } catch {
-                // data may be flushed at the same time
-                deepStrictEqual(outputs, [
-                    "Are you sure? [y/N] false\n"
-                ]);
-            }
-
-            strictEqual(cmd.exitCode, 0);
         });
     });
 
     describe("prompt", () => {
         it("input 'Hello, World!'", async () => {
-            const cmd = spawn("node", [
-                "-e",
+            const { cmd, output } = await runInNodeSimulator(
                 `import("./esm/dialog/index.js").then(({ prompt }) => prompt('Enter something:')).then(console.log);`
+            );
+
+            cmd.write("Hello, World!");
+            await sleep(100);
+            cmd.write("\n");
+            const outputs = await output;
+
+            deepStrictEqual(outputs, [
+                "Enter something: Hello, World!",
+                "Hello, World!",
+                "",
             ]);
-            const outputs: string[] = [];
-
-            cmd.stdout.on("data", (chunk: Buffer) => {
-                outputs.push(String(chunk));
-            });
-
-            cmd.stdin.write("Hello, World!\n");
-
-            await new Promise(resolve => {
-                cmd.once("exit", resolve);
-            });
-
-            try {
-                deepStrictEqual(outputs, [
-                    "Enter something: ",
-                    "Hello, World!\n"
-                ]);
-            } catch {
-                // data may be flushed at the same time
-                deepStrictEqual(outputs, [
-                    "Enter something: Hello, World!\n"
-                ]);
-            }
-
-            strictEqual(cmd.exitCode, 0);
         });
 
         it("press Enter", async () => {
-            const cmd = spawn("node", [
-                "-e",
+            const { cmd, output } = await runInNodeSimulator(
                 `import("./esm/dialog/index.js").then(({ prompt }) => prompt('Enter something:')).then(console.log);`
+            );
+
+            cmd.write("\n");
+            const outputs = await output;
+
+            deepStrictEqual(outputs, [
+                "Enter something: ",
+                "",
+                ""
             ]);
-            const outputs: string[] = [];
-
-            cmd.stdout.on("data", (chunk: Buffer) => {
-                outputs.push(String(chunk));
-            });
-
-            cmd.stdin.write("\n");
-
-            await new Promise(resolve => {
-                cmd.once("exit", resolve);
-            });
-
-            try {
-                deepStrictEqual(outputs, [
-                    "Enter something: ",
-                    "\n"
-                ]);
-            } catch {
-                // data may be flushed at the same time
-                deepStrictEqual(outputs, [
-                    "Enter something: \n"
-                ]);
-            }
-
-            strictEqual(cmd.exitCode, 0);
         });
 
         it("default value", async () => {
-            const cmd = spawn("node", [
-                "-e",
+            const { cmd, output } = await runInNodeSimulator(
                 `import("./esm/dialog/index.js").then(({ prompt }) => prompt('Enter something:', 'Hello, World!')).then(console.log);`
+            );
+
+            cmd.write("\n");
+            const outputs = await output;
+
+            deepStrictEqual(outputs, [
+                "Enter something: Hello, World!",
+                "Hello, World!",
+                ""
             ]);
-            const outputs: string[] = [];
-
-            cmd.stdout.on("data", (chunk: Buffer) => {
-                outputs.push(String(chunk));
-            });
-
-            cmd.stdin.write("\n");
-
-            await new Promise(resolve => {
-                cmd.once("exit", resolve);
-            });
-
-            try {
-                deepStrictEqual(outputs, [
-                    "Enter something: ",
-                    "Hello, World!\n"
-                ]);
-            } catch {
-                // data may be flushed at the same time
-                deepStrictEqual(outputs, [
-                    "Enter something: Hello, World!\n"
-                ]);
-            }
-
-            strictEqual(cmd.exitCode, 0);
         });
     });
 

@@ -15,11 +15,11 @@ import Input from "./components/Input.ts";
 import progress from "./progress.ts";
 import type { ProgressState } from "./progress.ts";
 import {
-    listenForCancel,
-    isNodeRepl,
-    questionInNodeRepl,
     isDenoRepl,
+    isNodeRepl,
     questionInDeno,
+    questionInNode,
+    questionInNodeRepl,
 } from "./util.ts";
 
 export { progress, ProgressState };
@@ -32,14 +32,7 @@ export { progress, ProgressState };
  * actually calls the global `alert` function directly, which is synchronous.
  */
 export async function alert(message: string): Promise<void> {
-    if (typeof Deno === "object") {
-        if (isDenoRepl()) {
-            return Promise.resolve(globalThis.alert(message));
-        } else {
-            await questionInDeno(message + " [Enter] ");
-            return;
-        }
-    } else if (typeof document === "object") {
+    if (typeof document === "object") {
         return new Promise<void>(resolve => {
             document.body.appendChild(
                 Dialog(
@@ -54,22 +47,19 @@ export async function alert(message: string): Promise<void> {
                 )
             );
         });
+    } else if (typeof Deno === "object") {
+        if (isDenoRepl()) {
+            return Promise.resolve(globalThis.alert(message));
+        } else {
+            await questionInDeno(message + " [Enter] ");
+            return;
+        }
     } else if (await isNodeRepl()) {
         await questionInNodeRepl(message + " [Enter] ");
         return;
     } else {
-        const { createInterface } = await import("readline");
-        const rl = createInterface({ input: process.stdin, output: process.stdout });
-        const { signal, promise, cleanup } = listenForCancel();
-
-        await Promise.race([
-            new Promise<string>(resolve => {
-                rl.question(message + " [Enter] ", { signal }, resolve);
-            }),
-            promise
-        ]);
-        cleanup();
-        rl.close();
+        await questionInNodeRepl(message + " [Enter] ");
+        return;
     }
 }
 
@@ -81,15 +71,7 @@ export async function alert(message: string): Promise<void> {
  * actually calls the global `confirm` function directly, which is synchronous.
  */
 export async function confirm(message: string): Promise<boolean> {
-    if (typeof Deno === "object") {
-        if (isDenoRepl()) {
-            return Promise.resolve(globalThis.confirm(message));
-        } else {
-            const answer = await questionInDeno(message + " [y/N] ");
-            const ok = answer?.toLowerCase().trim();
-            return ok === "y" || ok === "yes";
-        }
-    } else if (typeof document === "object") {
+    if (typeof document === "object") {
         return new Promise<boolean>(resolve => {
             document.body.appendChild(
                 Dialog(
@@ -105,24 +87,21 @@ export async function confirm(message: string): Promise<boolean> {
                 )
             );
         });
+    } else if (typeof Deno === "object") {
+        if (isDenoRepl()) {
+            return Promise.resolve(globalThis.confirm(message));
+        } else {
+            const answer = await questionInDeno(message + " [y/N] ");
+            const ok = answer?.toLowerCase().trim();
+            return ok === "y" || ok === "yes";
+        }
     } else if (await isNodeRepl()) {
         const answer = await questionInNodeRepl(message + " [y/N] ");
         const ok = answer?.toLowerCase().trim();
         return ok === "y" || ok === "yes";
     } else {
-        const { createInterface } = await import("readline");
-        const rl = createInterface({ input: process.stdin, output: process.stdout });
-        const { signal, promise, cleanup } = listenForCancel();
-        const answer = await Promise.race([
-            new Promise<string>(resolve => {
-                rl.question(message + " [y/N] ", { signal }, resolve);
-            }),
-            promise,
-        ]);
+        const answer = await questionInNode(message + " [y/N] ");
         const ok = answer?.toLowerCase().trim();
-
-        cleanup();
-        rl.close();
         return ok === "y" || ok === "yes";
     }
 }
@@ -138,13 +117,7 @@ export async function prompt(
     message: string,
     defaultValue: string = ""
 ): Promise<string | null> {
-    if (typeof Deno === "object") {
-        if (isDenoRepl()) {
-            return Promise.resolve(globalThis.prompt(message, defaultValue));
-        } else {
-            return await questionInDeno(message + " ", defaultValue);
-        }
-    } else if (typeof document === "object") {
+    if (typeof document === "object") {
         return new Promise<string | null>(resolve => {
             document.body.appendChild(
                 Dialog(
@@ -164,25 +137,15 @@ export async function prompt(
                 )
             );
         });
+    } else if (typeof Deno === "object") {
+        if (isDenoRepl()) {
+            return Promise.resolve(globalThis.prompt(message, defaultValue));
+        } else {
+            return await questionInDeno(message + " ", defaultValue);
+        }
     } else if (await isNodeRepl()) {
         return await questionInNodeRepl(message + " ", defaultValue);
     } else {
-        const { createInterface } = await import("readline");
-        const rl = createInterface({ input: process.stdin, output: process.stdout });
-        const { signal, promise, cleanup } = listenForCancel();
-        const job = new Promise<string>(resolve => {
-            rl.question(message + " ", { signal }, resolve);
-        });
-
-        if (defaultValue) {
-            rl.write(defaultValue);
-        }
-
-        const answer = await Promise.race([job, promise]);
-
-        cleanup();
-        rl.close();
-
-        return answer;
+        return await questionInNode(message + " ", defaultValue);
     }
 }

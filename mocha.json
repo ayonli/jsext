@@ -1,0 +1,10 @@
+{
+    "spec": [
+        "**/*.test.ts"
+    ],
+    "exclude": [
+        "node_modules/**/*",
+        "*-deno.test.ts",
+        "*/**-deno.test.ts"
+    ]
+}

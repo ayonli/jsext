@@ -5,7 +5,7 @@ import OkButton from './components/OkButton.js';
 import CancelButton from './components/CancelButton.js';
 import Input from './components/Input.js';
 export { default as progress } from './progress.js';
-import { isDenoRepl, questionInDeno, isNodeRepl, questionInNodeRepl, listenForCancel } from './util.js';
+import { isDenoRepl, questionInDeno, isNodeRepl, questionInNodeRepl, questionInNode } from './util.js';
 
 /**
  * Asynchronous dialog functions for both browsers and Node.js.
@@ -22,7 +22,15 @@ import { isDenoRepl, questionInDeno, isNodeRepl, questionInNodeRepl, listenForCa
  * actually calls the global `alert` function directly, which is synchronous.
  */
 async function alert(message) {
-    if (typeof Deno === "object") {
+    if (typeof document === "object") {
+        return new Promise(resolve => {
+            document.body.appendChild(Dialog({
+                onCancel: () => resolve(),
+                onOk: () => resolve(),
+            }, Text(message), Footer(OkButton())));
+        });
+    }
+    else if (typeof Deno === "object") {
         if (isDenoRepl()) {
             return Promise.resolve(globalThis.alert(message));
         }
@@ -31,30 +39,13 @@ async function alert(message) {
             return;
         }
     }
-    else if (typeof document === "object") {
-        return new Promise(resolve => {
-            document.body.appendChild(Dialog({
-                onCancel: () => resolve(),
-                onOk: () => resolve(),
-            }, Text(message), Footer(OkButton())));
-        });
-    }
     else if (await isNodeRepl()) {
         await questionInNodeRepl(message + " [Enter] ");
         return;
     }
     else {
-        const { createInterface } = await import('readline');
-        const rl = createInterface({ input: process.stdin, output: process.stdout });
-        const { signal, promise, cleanup } = listenForCancel();
-        await Promise.race([
-            new Promise(resolve => {
-                rl.question(message + " [Enter] ", { signal }, resolve);
-            }),
-            promise
-        ]);
-        cleanup();
-        rl.close();
+        await questionInNodeRepl(message + " [Enter] ");
+        return;
     }
 }
 /**
@@ -65,7 +56,15 @@ async function alert(message) {
  * actually calls the global `confirm` function directly, which is synchronous.
  */
 async function confirm(message) {
-    if (typeof Deno === "object") {
+    if (typeof document === "object") {
+        return new Promise(resolve => {
+            document.body.appendChild(Dialog({
+                onCancel: () => resolve(false),
+                onOk: () => resolve(true),
+            }, Text(message), Footer(CancelButton(), OkButton())));
+        });
+    }
+    else if (typeof Deno === "object") {
         if (isDenoRepl()) {
             return Promise.resolve(globalThis.confirm(message));
         }
@@ -75,32 +74,14 @@ async function confirm(message) {
             return ok === "y" || ok === "yes";
         }
     }
-    else if (typeof document === "object") {
-        return new Promise(resolve => {
-            document.body.appendChild(Dialog({
-                onCancel: () => resolve(false),
-                onOk: () => resolve(true),
-            }, Text(message), Footer(CancelButton(), OkButton())));
-        });
-    }
     else if (await isNodeRepl()) {
         const answer = await questionInNodeRepl(message + " [y/N] ");
         const ok = answer === null || answer === void 0 ? void 0 : answer.toLowerCase().trim();
         return ok === "y" || ok === "yes";
     }
     else {
-        const { createInterface } = await import('readline');
-        const rl = createInterface({ input: process.stdin, output: process.stdout });
-        const { signal, promise, cleanup } = listenForCancel();
-        const answer = await Promise.race([
-            new Promise(resolve => {
-                rl.question(message + " [y/N] ", { signal }, resolve);
-            }),
-            promise,
-        ]);
+        const answer = await questionInNode(message + " [y/N] ");
         const ok = answer === null || answer === void 0 ? void 0 : answer.toLowerCase().trim();
-        cleanup();
-        rl.close();
         return ok === "y" || ok === "yes";
     }
 }
@@ -112,15 +93,7 @@ async function confirm(message) {
  * actually calls the global `prompt` function directly, which is synchronous.
  */
 async function prompt(message, defaultValue = "") {
-    if (typeof Deno === "object") {
-        if (isDenoRepl()) {
-            return Promise.resolve(globalThis.prompt(message, defaultValue));
-        }
-        else {
-            return await questionInDeno(message + " ", defaultValue);
-        }
-    }
-    else if (typeof document === "object") {
+    if (typeof document === "object") {
         return new Promise(resolve => {
             document.body.appendChild(Dialog({
                 onCancel: () => resolve(null),
@@ -131,23 +104,19 @@ async function prompt(message, defaultValue = "") {
             }, Text(message), Input(defaultValue), Footer(CancelButton(), OkButton())));
         });
     }
+    else if (typeof Deno === "object") {
+        if (isDenoRepl()) {
+            return Promise.resolve(globalThis.prompt(message, defaultValue));
+        }
+        else {
+            return await questionInDeno(message + " ", defaultValue);
+        }
+    }
     else if (await isNodeRepl()) {
         return await questionInNodeRepl(message + " ", defaultValue);
     }
     else {
-        const { createInterface } = await import('readline');
-        const rl = createInterface({ input: process.stdin, output: process.stdout });
-        const { signal, promise, cleanup } = listenForCancel();
-        const job = new Promise(resolve => {
-            rl.question(message + " ", { signal }, resolve);
-        });
-        if (defaultValue) {
-            rl.write(defaultValue);
-        }
-        const answer = await Promise.race([job, promise]);
-        cleanup();
-        rl.close();
-        return answer;
+        return await questionInNode(message + " ", defaultValue);
     }
 }
 

@@ -8,6 +8,7 @@
         "sourceMap": true,
         "noEmit": true,
         "allowImportingTsExtensions": true,
+        "moduleResolution": "NodeNext",
         "strict": true,
         "noUnusedParameters": true,
         "noUnusedLocals": true,
@@ -41,11 +42,5 @@
         "examples",
         "test-*.ts",
         "*deno.test.ts"
-    ],
-    "ts-node": {
-        "compilerOptions": {
-            "moduleResolution": "NodeNext",
-            "esModuleInterop": true
-        }
-    }
+    ]
 }

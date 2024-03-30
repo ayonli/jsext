@@ -290,12 +290,12 @@
     "scripts": {
         "pretest": "node pretest.cjs",
         "posttest": "node posttest.cjs",
-        "test": "node --no-warnings=ExperimentalWarning --loader=ts-node/esm ./node_modules/mocha/bin/mocha",
-        "test:tsx": "node pretest.cjs && tsx ./node_modules/mocha/bin/mocha && node posttest.cjs",
-        "test:bun": "bun run ./node_modules/mocha/bin/mocha",
+        "test": "node --no-warnings=ExperimentalWarning --loader=ts-node/esm ./node_modules/mocha/bin/mocha --config mocha.json",
+        "test:bun": "bun run ./node_modules/mocha/bin/mocha --config mocha.bun.json",
+        "test:tsx": "node pretest.cjs && tsx ./node_modules/mocha/bin/mocha --config mocha.json && node posttest.cjs",
+        "test:jsdom": "node pretest.cjs && tsx ./node_modules/mocha/bin/mocha --config mocha.jsdom.json -r global-jsdom/register && node posttest.cjs",
         "test:deno": "deno run --allow-read --allow-net test-deno.ts",
-        "test:jsdom": "node pretest.cjs && tsx ./node_modules/mocha/bin/mocha -r global-jsdom/register && node posttest.cjs",
-        "build": "rollup -c rollup.config.mjs && echo '{\"type\":\"module\"}' > ./esm/package.json && echo '{\"type\":\"commonjs\"}' > ./cjs/package.json && tsc -p types.tsconfig.json",
+        "build": "rollup -c rollup.config.mjs && echo '{\"type\":\"module\"}' > ./esm/package.json && echo '{\"type\":\"commonjs\"}' > ./cjs/package.json && tsc -p tsconfig.types.json",
         "typing": "tsc --noEmit --watch",
         "prepublishOnly": "npm run build"
     },
@@ -375,6 +375,8 @@
         "isomorphic-ws": "^5.0.0",
         "jsdom": "^24.0.0",
         "mocha": "^10.2.0",
+        "node-pty": "^1.0.0",
+        "ps-list": "^8.1.1",
         "rollup": "^3.29.2",
         "string-hash": "^1.1.3",
         "ts-node": "^10.9.1",
@@ -385,14 +387,5 @@
     },
     "engines": {
         "node": ">=12"
-    },
-    "mocha": {
-        "spec": [
-            "**/*.test.ts"
-        ],
-        "exclude": [
-            "*-deno.test.ts",
-            "*/**-deno.test.ts"
-        ]
     }
 }
