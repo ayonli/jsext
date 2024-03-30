@@ -1,3 +1,4 @@
+import { isFullWidth, isWide } from "../external/code-point-utils/index.ts";
 import bytes, { ByteArray, concat, equals } from "../bytes/index.ts";
 import { sum } from "../math/index.ts";
 import { byteLength, chars } from "../string/index.ts";
@@ -39,7 +40,7 @@ function charWith(char: string) {
     if (EMOJI_RE.test(char)) {
         const _bytes = byteLength(char);
         return _bytes === 1 || _bytes === 3 || _bytes === 6 ? 1 : 2;
-    } else if (WIDE_STR_RE.test(char)) {
+    } else if (isWide(char.codePointAt(0)!) || isFullWidth(char.codePointAt(0)!)) {
         return 2;
     } else {
         return 1;
