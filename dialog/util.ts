@@ -36,7 +36,7 @@ export type NodeStdout = NodeJS.WriteStream & { fd: 1; };
 export type DenoStdin = typeof Deno.stdin;
 export type DenoStdout = typeof Deno.stdout;
 
-function charWith(char: string) {
+function charWidth(char: string) {
     if (EMOJI_RE.test(char)) {
         const _bytes = byteLength(char);
         return _bytes === 1 || _bytes === 3 || _bytes === 6 ? 1 : 2;
@@ -48,7 +48,7 @@ function charWith(char: string) {
 }
 
 function strWidth(str: string) {
-    return sum(...chars(str).map(charWith));
+    return sum(...chars(str).map(charWidth));
 }
 
 function toLeft(str: string) {

@@ -1,3 +1,4 @@
+import { isWide, isFullWidth } from '../external/code-point-utils/index.js';
 import bytes, { equals, concat } from '../bytes/index.js';
 import { sum } from '../math/index.js';
 import { chars, byteLength } from '../string/index.js';
@@ -20,12 +21,12 @@ const UP = bytes("\u001b[A");
 const DOWN = bytes("\u001b[B");
 const WIDE_STR_RE = /^[^\x00-\xff]$/;
 const EMOJI_RE = /^(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\u200d(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*$/u;
-function charWith(char) {
+function charWidth(char) {
     if (EMOJI_RE.test(char)) {
         const _bytes = byteLength(char);
         return _bytes === 1 || _bytes === 3 || _bytes === 6 ? 1 : 2;
     }
-    else if (WIDE_STR_RE.test(char)) {
+    else if (isWide(char.codePointAt(0)) || isFullWidth(char.codePointAt(0))) {
         return 2;
     }
     else {
@@ -33,7 +34,7 @@ function charWith(char) {
     }
 }
 function strWidth(str) {
-    return sum(...chars(str).map(charWith));
+    return sum(...chars(str).map(charWidth));
 }
 function toLeft(str) {
     return bytes(`\u001b[${strWidth(str)}D`);
