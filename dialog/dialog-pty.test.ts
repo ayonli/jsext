@@ -1,16 +1,26 @@
 import { deepStrictEqual } from "node:assert";
-import { spawn } from "node-pty";
+import { spawn, IPty, IPtyForkOptions } from "node-pty";
 // import { until } from "../promise/index.ts";
 import { isNodePrior16 } from "../parallel/constants.ts";
 import { sleep } from "../promise/index.ts";
 
-async function runInNodeSimulator(code: string) {
-    const cmd = spawn("node", ["-e", code], {
+const useDeno = process.argv.includes("--deno");
+
+async function runInSimulator(filename: string) {
+    const options: IPtyForkOptions = {
         cwd: process.cwd(),
         env: process.env,
         cols: 80,
         rows: 30,
-    });
+    };
+    let cmd: IPty;
+
+    if (useDeno) {
+        cmd = spawn("deno", ["run", "-A", filename], options);
+    } else {
+        cmd = spawn("tsx", [filename], options);
+    }
+
     const _outputs: string[] = [];
     const output = new Promise(resolve => {
         cmd.onExit(resolve);
@@ -29,15 +39,13 @@ async function runInNodeSimulator(code: string) {
     };
 }
 
-describe("dialog", () => {
+describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
     if (typeof document !== "undefined" || isNodePrior16) {
         return;
     }
 
     it("alert", async () => {
-        const { cmd, output } = await runInNodeSimulator(
-            `import("./esm/dialog/index.js").then(({ alert }) => alert("Hello, World!")).then(console.log);`
-        );
+        const { cmd, output } = await runInSimulator(`examples/dialog/alert.ts`);
 
         cmd.write("\n");
         const outputs = await output;
@@ -51,9 +59,7 @@ describe("dialog", () => {
 
     describe("confirm", () => {
         it("input 'y'", async () => {
-            const { cmd, output } = await runInNodeSimulator(
-                `import("./esm/dialog/index.js").then(({ confirm }) => confirm("Are you sure?")).then(console.log);`
-            );
+            const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
 
             cmd.write("y");
             await sleep(100);
@@ -68,9 +74,7 @@ describe("dialog", () => {
         });
 
         it("input 'yes'", async () => {
-            const { cmd, output } = await runInNodeSimulator(
-                `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
-            );
+            const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
 
             cmd.write("yes");
             await sleep(100);
@@ -85,9 +89,7 @@ describe("dialog", () => {
         });
 
         it("input 'N'", async () => {
-            const { cmd, output } = await runInNodeSimulator(
-                `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
-            );
+            const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
 
             cmd.write("N");
             await sleep(100);
@@ -102,9 +104,7 @@ describe("dialog", () => {
         });
 
         it("input 'n'", async () => {
-            const { cmd, output } = await runInNodeSimulator(
-                `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
-            );
+            const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
 
             cmd.write("n");
             await sleep(100);
@@ -119,9 +119,7 @@ describe("dialog", () => {
         });
 
         it("input 'no'", async () => {
-            const { cmd, output } = await runInNodeSimulator(
-                `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
-            );
+            const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
 
             cmd.write("no");
             await sleep(100);
@@ -136,9 +134,7 @@ describe("dialog", () => {
         });
 
         it("press Enter", async () => {
-            const { cmd, output } = await runInNodeSimulator(
-                `import("./esm/dialog/index.js").then(({ confirm }) => confirm('Are you sure?')).then(console.log);`
-            );
+            const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
 
             cmd.write("\n");
             const outputs = await output;
@@ -153,9 +149,7 @@ describe("dialog", () => {
 
     describe("prompt", () => {
         it("input 'Hello, World!'", async () => {
-            const { cmd, output } = await runInNodeSimulator(
-                `import("./esm/dialog/index.js").then(({ prompt }) => prompt('Enter something:')).then(console.log);`
-            );
+            const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
 
             cmd.write("Hello, World!");
             await sleep(100);
@@ -170,9 +164,7 @@ describe("dialog", () => {
         });
 
         it("press Enter", async () => {
-            const { cmd, output } = await runInNodeSimulator(
-                `import("./esm/dialog/index.js").then(({ prompt }) => prompt('Enter something:')).then(console.log);`
-            );
+            const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
 
             cmd.write("\n");
             const outputs = await output;
@@ -185,9 +177,7 @@ describe("dialog", () => {
         });
 
         it("default value", async () => {
-            const { cmd, output } = await runInNodeSimulator(
-                `import("./esm/dialog/index.js").then(({ prompt }) => prompt('Enter something:', 'Hello, World!')).then(console.log);`
-            );
+            const { cmd, output } = await runInSimulator("examples/dialog/prompt-default.ts");
 
             cmd.write("\n");
             const outputs = await output;

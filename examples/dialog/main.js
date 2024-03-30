@@ -1,5 +1,5 @@
-import { alert, confirm, prompt, progress } from "../esm/dialog/index.js";
-import { sleep } from "../esm/promise/index.js";
+import { alert, confirm, prompt, progress } from "../../esm/dialog/index.js";
+import { sleep } from "../../esm/promise/index.js";
 
 const message = await prompt("Input message:", "Processing...");
 

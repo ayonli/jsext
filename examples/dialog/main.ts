@@ -1,5 +1,5 @@
-import { alert, confirm, prompt, progress } from "../dialog/index.ts";
-import { sleep } from "../promise/index.ts";
+import { alert, confirm, prompt, progress } from "../../dialog/index.ts";
+import { sleep } from "../../promise/index.ts";
 
 const message = await prompt("Input message:", "Processing...");
 

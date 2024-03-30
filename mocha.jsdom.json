@@ -1,11 +1,12 @@
 {
     "spec": [
-        "**/*.test.ts"
+        "**/*-jsdom.test.ts"
     ],
     "exclude": [
         "node_modules/**/*",
         "*-deno.test.ts",
         "*/**-deno.test.ts",
-        "dialog/dialog-node.test.ts"
+        "*-pty.test.ts",
+        "*/**-pty.test.ts"
     ]
 }

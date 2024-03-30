@@ -288,16 +288,16 @@
         }
     },
     "scripts": {
-        "pretest": "node pretest.cjs",
-        "posttest": "node posttest.cjs",
         "test": "node --no-warnings=ExperimentalWarning --loader=ts-node/esm ./node_modules/mocha/bin/mocha --config mocha.json",
-        "test:bun": "bun run ./node_modules/mocha/bin/mocha --config mocha.bun.json",
-        "test:tsx": "node pretest.cjs && tsx ./node_modules/mocha/bin/mocha --config mocha.json && node posttest.cjs",
-        "test:jsdom": "node pretest.cjs && tsx ./node_modules/mocha/bin/mocha --config mocha.jsdom.json -r global-jsdom/register && node posttest.cjs",
+        "test:bun": "bun run ./node_modules/mocha/bin/mocha --config mocha.json",
+        "test:tsx": "tsx ./node_modules/mocha/bin/mocha --config mocha.json",
+        "test:jsdom": "tsx ./node_modules/mocha/bin/mocha --config mocha.jsdom.json -r global-jsdom/register",
+        "test:pty": "tsx ./node_modules/mocha/bin/mocha --config mocha.pty.json && tsx ./node_modules/mocha/bin/mocha --config mocha.pty.json --deno",
         "test:deno": "deno run --allow-read --allow-net test-deno.ts",
-        "build": "rollup -c rollup.config.mjs && echo '{\"type\":\"module\"}' > ./esm/package.json && echo '{\"type\":\"commonjs\"}' > ./cjs/package.json && tsc -p tsconfig.types.json",
+        "build": "rollup -c rollup.config.js && echo '{\"type\":\"module\"}' > ./esm/package.json && echo '{\"type\":\"commonjs\"}' > ./cjs/package.json && tsc -p tsconfig.types.json",
         "typing": "tsc --noEmit --watch",
-        "prepublishOnly": "npm run build"
+        "prepublishOnly": "npm run build && node prepublish.mjs",
+        "postpublish": "node postpublish.mjs"
     },
     "repository": {
         "type": "git",
@@ -387,5 +387,6 @@
     },
     "engines": {
         "node": ">=12"
-    }
+    },
+    "type": "module"
 }
