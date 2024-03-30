@@ -36,11 +36,11 @@ export type DenoStdin = typeof Deno.stdin;
 export type DenoStdout = typeof Deno.stdout;
 
 function charWith(char: string) {
-    if (WIDE_STR_RE.test(char)) {
-        return 2;
-    } else if (EMOJI_RE.test(char)) {
+    if (EMOJI_RE.test(char)) {
         const _bytes = byteLength(char);
         return _bytes === 1 || _bytes === 3 || _bytes === 6 ? 1 : 2;
+    } else if (WIDE_STR_RE.test(char)) {
+        return 2;
     } else {
         return 1;
     }

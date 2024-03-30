@@ -21,12 +21,12 @@ const DOWN = bytes("\u001b[B");
 const WIDE_STR_RE = /^[^\x00-\xff]$/;
 const EMOJI_RE = /^(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\u200d(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*$/u;
 function charWith(char) {
-    if (WIDE_STR_RE.test(char)) {
-        return 2;
-    }
-    else if (EMOJI_RE.test(char)) {
+    if (EMOJI_RE.test(char)) {
         const _bytes = byteLength(char);
         return _bytes === 1 || _bytes === 3 || _bytes === 6 ? 1 : 2;
+    }
+    else if (WIDE_STR_RE.test(char)) {
+        return 2;
     }
     else {
         return 1;
