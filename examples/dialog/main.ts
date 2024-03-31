@@ -1,5 +1,5 @@
-import { alert, confirm, prompt, progress } from "../esm/dialog/index.js";
-import { sleep } from "../esm/promise/index.js";
+import { alert, confirm, prompt, progress } from "../../dialog/index.ts";
+import { sleep } from "../../promise/index.ts";
 
 const message = await prompt("Input message:", "Processing...");
 
@@ -38,6 +38,6 @@ if (message) {
 
         // console.log(result.message);
 
-        await alert(result.message);
+        await alert(result!.message);
     }
 }

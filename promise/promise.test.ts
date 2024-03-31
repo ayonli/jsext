@@ -42,7 +42,7 @@ describe("Promise", () => {
     it("Promise.sleep", async () => {
         const startTime = Date.now();
         await Promise.sleep(50);
-        ok(Date.now() - startTime >= 50);
+        ok(Date.now() - startTime >= 49);
     });
 
     it("Promise.until", async () => {

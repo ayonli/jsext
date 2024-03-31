@@ -1,9 +1,9 @@
+/// <reference types="../../lib.deno.d.ts" />
 import { parallel, chan } from "../../index.ts";
 import { readChannel, wireChannel } from "./util.ts";
 import { default as handle } from "./handler.ts";
 const { parallelHandle } = parallel(() => import("./worker.ts"));
 
-declare var Deno: any;
 declare var WorkerGlobalScope: any;
 const isMainThread = typeof WorkerGlobalScope === "undefined";
 

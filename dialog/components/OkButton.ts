@@ -1,4 +1,5 @@
 import { closeDialog } from "./Dialog.ts";
+import { i18n } from "./util.ts";
 
 const locale = {
     ar: "موافق",
@@ -56,16 +57,6 @@ const locale = {
     vi: "OK",
     zh: "确定",
 };
-
-export function i18n(locale: { [lang: string]: string; }): string {
-    let lang = "en";
-
-    if (typeof navigator === "object" && typeof navigator.language === "string") {
-        lang = navigator.language.split("-")[0]!;
-    }
-
-    return locale[lang] || locale["en"]!;
-}
 
 export default function OkButton() {
     const button = document.createElement("button");

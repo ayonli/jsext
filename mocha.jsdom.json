@@ -1,0 +1,12 @@
+{
+    "spec": [
+        "**/*-jsdom.test.ts"
+    ],
+    "exclude": [
+        "node_modules/**/*",
+        "*-deno.test.ts",
+        "*/**-deno.test.ts",
+        "*-pty.test.ts",
+        "*/**-pty.test.ts"
+    ]
+}

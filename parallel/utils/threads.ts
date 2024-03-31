@@ -16,8 +16,6 @@ import {
 } from "../../error/index.ts";
 import * as path from "../../path/index.ts";
 
-declare var Deno: any;
-
 const workerIdCounter = serial(true);
 type PoolRecord = {
     getWorker: Promise<Worker | BunWorker | NodeWorker>;
@@ -210,6 +208,7 @@ export async function createWorker(options: {
                     reject(new Error(ev.message || "unable to start the worker"));
                 };
                 worker.addEventListener("open", () => {
+                    // @ts-ignore
                     worker.onerror = null;
                     resolve();
                 });
@@ -409,7 +408,7 @@ export async function acquireWorker(taskId: number, parallel: {
             if (isNode || isBun) {
                 (gcTimer as NodeJS.Timeout).unref();
             } else if (isDeno) {
-                Deno.unrefTimer(gcTimer);
+                Deno.unrefTimer(gcTimer as unknown as number);
             }
         }
     } else {

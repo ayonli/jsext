@@ -38,8 +38,6 @@ export {
     split,
 };
 
-declare const Deno: any;
-
 /**
  * Platform-specific path segment separator. The value is `\` on Windows
  * server-side runtime, and `/` otherwise.
@@ -62,7 +60,7 @@ export const sep: "/" | "\\" = (() => {
 /**
  * Returns the current working directory.
  * 
- * NOTE: in the browser, this function returns the current origin and pathname.
+ * **NOTE**: In the browser, this function returns the current origin and pathname.
  * @experimental
  */
 export function cwd(): string {

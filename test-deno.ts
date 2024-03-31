@@ -8,13 +8,21 @@ mocha.checkLeaks();
 
 const iterator = globber({
     cwd: dirname(fromFileUrl(import.meta.url)),
-    include: ["*.test.ts", "*/**.test.ts"],
-    exclude: ["*-node.test.ts", "*/**-node.test.ts"],
+    include: ["**/*.test.ts"],
+    exclude: [
+        "node_modules/**/*",
+        "*-node.test.ts",
+        "*/**-node.test.ts",
+        "*-jsdom.test.ts",
+        "*/**-jsdom.test.ts",
+        "*-pty.test.ts",
+        "*/**-pty.test.ts"
+    ],
 });
 
 for await (const file of iterator) {
-    const filename: string = file.absolute
-    const url = (/^[a-zA-Z]:/.test(filename) ? "file:///" : "file://") + filename
+    const filename: string = file.absolute;
+    const url = (/^[a-zA-Z]:/.test(filename) ? "file:///" : "file://") + filename;
     await import(url);
 }
 

@@ -1,4 +1,5 @@
 import { closeDialog } from './Dialog.js';
+import { i18n } from './util.js';
 
 const locale = {
     ar: "موافق",
@@ -56,13 +57,6 @@ const locale = {
     vi: "OK",
     zh: "确定",
 };
-function i18n(locale) {
-    let lang = "en";
-    if (typeof navigator === "object" && typeof navigator.language === "string") {
-        lang = navigator.language.split("-")[0];
-    }
-    return locale[lang] || locale["en"];
-}
 function OkButton() {
     const button = document.createElement("button");
     button.textContent = i18n(locale);
@@ -90,5 +84,5 @@ function OkButton() {
     return button;
 }
 
-export { OkButton as default, i18n };
+export { OkButton as default };
 //# sourceMappingURL=OkButton.js.map
