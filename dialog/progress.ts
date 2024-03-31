@@ -5,17 +5,16 @@ import Dialog, { closeDialog } from "./components/Dialog.ts";
 import Footer from "./components/Footer.ts";
 import Progress from "./components/Progress.ts";
 import Text from "./components/Text.ts";
+import { CLR, LF } from "./terminal/constants.ts";
 import {
-    CLR,
     DenoStdin,
     DenoStdout,
-    LF,
     NodeStdin,
     NodeStdout,
     isCancelEvent,
     isNodeRepl,
     writeSync,
-} from "./util.ts";
+} from "./terminal/util.ts";
 
 export type ProgressState = {
     /**

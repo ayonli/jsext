@@ -14,13 +14,12 @@ import CancelButton from "./components/CancelButton.ts";
 import Input from "./components/Input.ts";
 import progress from "./progress.ts";
 import type { ProgressState, ProgressFunc, ProgressAbortHandler } from "./progress.ts";
+import { isNodeRepl } from "./terminal/util.ts";
 import {
-    isDenoRepl,
-    isNodeRepl,
     questionInDeno,
     questionInNode,
     questionInNodeRepl,
-} from "./util.ts";
+} from "./terminal/index.ts";
 
 export { progress, ProgressState, ProgressFunc, ProgressAbortHandler };
 
@@ -48,12 +47,12 @@ export async function alert(message: string): Promise<void> {
             );
         });
     } else if (typeof Deno === "object") {
-        if (isDenoRepl()) {
-            return Promise.resolve(globalThis.alert(message));
-        } else {
-            await questionInDeno(message + " [Enter] ");
-            return;
-        }
+        // if (isDenoRepl()) {
+        //     return Promise.resolve(globalThis.alert(message));
+        // } else {
+        await questionInDeno(message + " [Enter] ");
+        return;
+        // }
     } else if (await isNodeRepl()) {
         await questionInNodeRepl(message + " [Enter] ");
         return;
@@ -88,13 +87,9 @@ export async function confirm(message: string): Promise<boolean> {
             );
         });
     } else if (typeof Deno === "object") {
-        if (isDenoRepl()) {
-            return Promise.resolve(globalThis.confirm(message));
-        } else {
-            const answer = await questionInDeno(message + " [y/N] ");
-            const ok = answer?.toLowerCase().trim();
-            return ok === "y" || ok === "yes";
-        }
+        const answer = await questionInDeno(message + " [y/N] ");
+        const ok = answer?.toLowerCase().trim();
+        return ok === "y" || ok === "yes";
     } else if (await isNodeRepl()) {
         const answer = await questionInNodeRepl(message + " [y/N] ");
         const ok = answer?.toLowerCase().trim();
@@ -138,11 +133,7 @@ export async function prompt(
             );
         });
     } else if (typeof Deno === "object") {
-        if (isDenoRepl()) {
-            return Promise.resolve(globalThis.prompt(message, defaultValue));
-        } else {
-            return await questionInDeno(message + " ", defaultValue);
-        }
+        return await questionInDeno(message + " ", defaultValue);
     } else if (await isNodeRepl()) {
         return await questionInNodeRepl(message + " ", defaultValue);
     } else {
