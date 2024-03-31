@@ -1,10 +1,10 @@
 import bytes from '../bytes/index.js';
 import { stripEnd } from '../string/index.js';
-import CancelButton from './components/CancelButton.js';
-import Dialog, { closeDialog } from './components/Dialog.js';
-import Footer from './components/Footer.js';
-import Progress from './components/Progress.js';
-import Text from './components/Text.js';
+import CancelButton from './browser/CancelButton.js';
+import Dialog, { closeDialog } from './browser/Dialog.js';
+import Footer from './browser/Footer.js';
+import Progress from './browser/Progress.js';
+import Text from './browser/Text.js';
 import { CLR, LF } from './terminal/constants.js';
 import { isNodeRepl, writeSync, isCancelEvent } from './terminal/util.js';
 

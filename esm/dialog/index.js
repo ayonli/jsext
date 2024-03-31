@@ -1,12 +1,7 @@
-import Dialog from './components/Dialog.js';
-import Text from './components/Text.js';
-import Footer from './components/Footer.js';
-import OkButton from './components/OkButton.js';
-import CancelButton from './components/CancelButton.js';
-import Input from './components/Input.js';
 export { default as progress } from './progress.js';
-import { isNodeRepl } from './terminal/util.js';
+import { alertInBrowser, confirmInBrowser, promptInBrowser } from './browser/index.js';
 import { questionInDeno, questionInNodeRepl, questionInNode } from './terminal/index.js';
+import { isNodeRepl } from './terminal/util.js';
 
 /**
  * Asynchronous dialog functions for both browsers and Node.js.
@@ -21,12 +16,7 @@ import { questionInDeno, questionInNodeRepl, questionInNode } from './terminal/i
  */
 async function alert(message) {
     if (typeof document === "object") {
-        await new Promise(resolve => {
-            document.body.appendChild(Dialog({
-                onCancel: () => resolve(),
-                onOk: () => resolve(),
-            }, Text(message), Footer(OkButton())));
-        });
+        await alertInBrowser(message);
     }
     else if (typeof Deno === "object") {
         await questionInDeno(message + " [Enter] ");
@@ -44,12 +34,7 @@ async function alert(message) {
  */
 async function confirm(message) {
     if (typeof document === "object") {
-        return new Promise(resolve => {
-            document.body.appendChild(Dialog({
-                onCancel: () => resolve(false),
-                onOk: () => resolve(true),
-            }, Text(message), Footer(CancelButton(), OkButton())));
-        });
+        return await confirmInBrowser(message);
     }
     else {
         let answer;
@@ -78,15 +63,7 @@ async function prompt(message, options = "") {
         ? typeof options === "object" ? ((_b = options.mask) !== null && _b !== void 0 ? _b : "*") : "*"
         : undefined;
     if (typeof document === "object") {
-        return new Promise(resolve => {
-            document.body.appendChild(Dialog({
-                onCancel: () => resolve(null),
-                onOk: (dialog) => {
-                    const input = dialog.querySelector("input");
-                    resolve(input.value);
-                },
-            }, Text(message), Input({ type, value: defaultValue }), Footer(CancelButton(), OkButton())));
-        });
+        return await promptInBrowser(message, { type, defaultValue });
     }
     else if (typeof Deno === "object") {
         return await questionInDeno(message + " ", { defaultValue, mask });

@@ -6,20 +6,11 @@
  * @module
  */
 
-import Dialog from "./components/Dialog.ts";
-import Text from "./components/Text.ts";
-import Footer from "./components/Footer.ts";
-import OkButton from "./components/OkButton.ts";
-import CancelButton from "./components/CancelButton.ts";
-import Input from "./components/Input.ts";
 import progress from "./progress.ts";
 import type { ProgressState, ProgressFunc, ProgressAbortHandler } from "./progress.ts";
+import { alertInBrowser, confirmInBrowser, promptInBrowser } from "./browser/index.ts";
+import { questionInDeno, questionInNode, questionInNodeRepl } from "./terminal/index.ts";
 import { isNodeRepl } from "./terminal/util.ts";
-import {
-    questionInDeno,
-    questionInNode,
-    questionInNodeRepl,
-} from "./terminal/index.ts";
 
 export { progress, ProgressState, ProgressFunc, ProgressAbortHandler };
 
@@ -29,20 +20,7 @@ export { progress, ProgressState, ProgressFunc, ProgressAbortHandler };
  */
 export async function alert(message: string): Promise<void> {
     if (typeof document === "object") {
-        await new Promise<void>(resolve => {
-            document.body.appendChild(
-                Dialog(
-                    {
-                        onCancel: () => resolve(),
-                        onOk: () => resolve(),
-                    },
-                    Text(message),
-                    Footer(
-                        OkButton()
-                    )
-                )
-            );
-        });
+        await alertInBrowser(message);
     } else if (typeof Deno === "object") {
         await questionInDeno(message + " [Enter] ");
     } else if (await isNodeRepl()) {
@@ -58,21 +36,7 @@ export async function alert(message: string): Promise<void> {
  */
 export async function confirm(message: string): Promise<boolean> {
     if (typeof document === "object") {
-        return new Promise<boolean>(resolve => {
-            document.body.appendChild(
-                Dialog(
-                    {
-                        onCancel: () => resolve(false),
-                        onOk: () => resolve(true),
-                    },
-                    Text(message),
-                    Footer(
-                        CancelButton(),
-                        OkButton()
-                    )
-                )
-            );
-        });
+        return await confirmInBrowser(message);
     } else {
         let answer: string | null;
 
@@ -128,25 +92,7 @@ export async function prompt(
         : undefined;
 
     if (typeof document === "object") {
-        return new Promise<string | null>(resolve => {
-            document.body.appendChild(
-                Dialog(
-                    {
-                        onCancel: () => resolve(null),
-                        onOk: (dialog: HTMLDialogElement) => {
-                            const input = dialog.querySelector("input") as HTMLInputElement;
-                            resolve(input.value);
-                        },
-                    },
-                    Text(message),
-                    Input({ type, value: defaultValue }),
-                    Footer(
-                        CancelButton(),
-                        OkButton()
-                    )
-                )
-            );
-        });
+        return await promptInBrowser(message, { type, defaultValue });
     } else if (typeof Deno === "object") {
         return await questionInDeno(message + " ", { defaultValue, mask });
     } else if (await isNodeRepl()) {

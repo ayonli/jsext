@@ -1,10 +1,10 @@
 import bytes from "../bytes/index.ts";
 import { stripEnd } from "../string/index.ts";
-import CancelButton from "./components/CancelButton.ts";
-import Dialog, { closeDialog } from "./components/Dialog.ts";
-import Footer from "./components/Footer.ts";
-import Progress from "./components/Progress.ts";
-import Text from "./components/Text.ts";
+import CancelButton from "./browser/CancelButton.ts";
+import Dialog, { closeDialog } from "./browser/Dialog.ts";
+import Footer from "./browser/Footer.ts";
+import Progress from "./browser/Progress.ts";
+import Text from "./browser/Text.ts";
 import { CLR, LF } from "./terminal/constants.ts";
 import {
     DenoStdin,
