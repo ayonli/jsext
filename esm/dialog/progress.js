@@ -5,7 +5,8 @@ import Dialog, { closeDialog } from './components/Dialog.js';
 import Footer from './components/Footer.js';
 import Progress from './components/Progress.js';
 import Text from './components/Text.js';
-import { isNodeRepl, writeSync, CLR, isCancelEvent, LF } from './util.js';
+import { CLR, LF } from './terminal/constants.js';
+import { isNodeRepl, writeSync, isCancelEvent } from './terminal/util.js';
 
 async function handleDomProgress(message, fn, options) {
     const { signal, abort, listenForAbort } = options;

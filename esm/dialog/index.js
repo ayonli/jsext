@@ -5,7 +5,8 @@ import OkButton from './components/OkButton.js';
 import CancelButton from './components/CancelButton.js';
 import Input from './components/Input.js';
 export { default as progress } from './progress.js';
-import { isDenoRepl, questionInDeno, isNodeRepl, questionInNodeRepl, questionInNode } from './util.js';
+import { isNodeRepl } from './terminal/util.js';
+import { questionInDeno, questionInNodeRepl, questionInNode } from './terminal/index.js';
 
 /**
  * Asynchronous dialog functions for both browsers and Node.js.
@@ -31,13 +32,12 @@ async function alert(message) {
         });
     }
     else if (typeof Deno === "object") {
-        if (isDenoRepl()) {
-            return Promise.resolve(globalThis.alert(message));
-        }
-        else {
-            await questionInDeno(message + " [Enter] ");
-            return;
-        }
+        // if (isDenoRepl()) {
+        //     return Promise.resolve(globalThis.alert(message));
+        // } else {
+        await questionInDeno(message + " [Enter] ");
+        return;
+        // }
     }
     else if (await isNodeRepl()) {
         await questionInNodeRepl(message + " [Enter] ");
@@ -65,14 +65,9 @@ async function confirm(message) {
         });
     }
     else if (typeof Deno === "object") {
-        if (isDenoRepl()) {
-            return Promise.resolve(globalThis.confirm(message));
-        }
-        else {
-            const answer = await questionInDeno(message + " [y/N] ");
-            const ok = answer === null || answer === void 0 ? void 0 : answer.toLowerCase().trim();
-            return ok === "y" || ok === "yes";
-        }
+        const answer = await questionInDeno(message + " [y/N] ");
+        const ok = answer === null || answer === void 0 ? void 0 : answer.toLowerCase().trim();
+        return ok === "y" || ok === "yes";
     }
     else if (await isNodeRepl()) {
         const answer = await questionInNodeRepl(message + " [y/N] ");
@@ -105,12 +100,7 @@ async function prompt(message, defaultValue = "") {
         });
     }
     else if (typeof Deno === "object") {
-        if (isDenoRepl()) {
-            return Promise.resolve(globalThis.prompt(message, defaultValue));
-        }
-        else {
-            return await questionInDeno(message + " ", defaultValue);
-        }
+        return await questionInDeno(message + " ", defaultValue);
     }
     else if (await isNodeRepl()) {
         return await questionInNodeRepl(message + " ", defaultValue);
