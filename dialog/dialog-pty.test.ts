@@ -244,6 +244,44 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             ]);
         });
 
+        it("input password", async () => {
+            { // for 'Hello, World!'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
+
+                for (const char of "Hello, World!") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter password: *************",
+                    "Hello, World!",
+                    ""
+                ]);
+            }
+
+            { // for '你好，世界！'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
+
+                for (const char of "你好，世界！") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter password: ******",
+                    "你好，世界！",
+                    ""
+                ]);
+            }
+        });
+
         it("press Escape", async () => {
             {
                 const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");

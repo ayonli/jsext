@@ -102,6 +102,64 @@ describe("dialog", () => {
     });
 
     describe("prompt", () => {
+        it("input text", async () => {
+            const job = prompt("What's your name?");
+            const dialog = document.body.querySelector("dialog")!;
+            ok(dialog !== null);
+
+            const p = dialog.querySelector("p")!;
+            ok(p !== null);
+            strictEqual(p.textContent, "What's your name?");
+
+            const input = dialog.querySelector("input")!;
+            ok(input !== null);
+            strictEqual(input.value, "");
+            strictEqual(input.type, "text");
+
+            const buttons = dialog.querySelectorAll("button");
+            strictEqual(buttons.length, 2);
+
+            const [cancelButton, okButton] = buttons;
+            strictEqual(okButton!.textContent, "OK");
+            strictEqual(cancelButton!.textContent, "Cancel");
+
+            await until(() => dialog.open);
+            input.value = "Alice";
+            okButton!.click();
+
+            await until(() => !dialog.open);
+            strictEqual(await job, "Alice");
+        });
+
+        it("input password", async () => {
+            const job = prompt("What's your password?", { type: "password" });
+            const dialog = document.body.querySelector("dialog")!;
+            ok(dialog !== null);
+
+            const p = dialog.querySelector("p")!;
+            ok(p !== null);
+            strictEqual(p.textContent, "What's your password?");
+
+            const input = dialog.querySelector("input")!;
+            ok(input !== null);
+            strictEqual(input.value, "");
+            strictEqual(input.type, "password");
+
+            const buttons = dialog.querySelectorAll("button");
+            strictEqual(buttons.length, 2);
+
+            const [cancelButton, okButton] = buttons;
+            strictEqual(okButton!.textContent, "OK");
+            strictEqual(cancelButton!.textContent, "Cancel");
+
+            await until(() => dialog.open);
+            input.value = "password123";
+            okButton!.click();
+
+            await until(() => !dialog.open);
+            strictEqual(await job, "password123");
+        });
+
         it("click OK", async () => {
             const job = prompt("What's your name?");
             const dialog = document.body.querySelector("dialog")!;
