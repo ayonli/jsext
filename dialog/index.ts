@@ -32,7 +32,7 @@ export { progress, ProgressState, ProgressFunc, ProgressAbortHandler };
  */
 export async function alert(message: string): Promise<void> {
     if (typeof document === "object") {
-        return new Promise<void>(resolve => {
+        await new Promise<void>(resolve => {
             document.body.appendChild(
                 Dialog(
                     {
@@ -47,18 +47,11 @@ export async function alert(message: string): Promise<void> {
             );
         });
     } else if (typeof Deno === "object") {
-        // if (isDenoRepl()) {
-        //     return Promise.resolve(globalThis.alert(message));
-        // } else {
         await questionInDeno(message + " [Enter] ");
-        return;
-        // }
     } else if (await isNodeRepl()) {
         await questionInNodeRepl(message + " [Enter] ");
-        return;
     } else {
         await questionInNodeRepl(message + " [Enter] ");
-        return;
     }
 }
 
@@ -86,16 +79,17 @@ export async function confirm(message: string): Promise<boolean> {
                 )
             );
         });
-    } else if (typeof Deno === "object") {
-        const answer = await questionInDeno(message + " [y/N] ");
-        const ok = answer?.toLowerCase().trim();
-        return ok === "y" || ok === "yes";
-    } else if (await isNodeRepl()) {
-        const answer = await questionInNodeRepl(message + " [y/N] ");
-        const ok = answer?.toLowerCase().trim();
-        return ok === "y" || ok === "yes";
     } else {
-        const answer = await questionInNode(message + " [y/N] ");
+        let answer: string | null;
+
+        if (typeof Deno === "object") {
+            answer = await questionInDeno(message + " [y/N] ");
+        } else if (await isNodeRepl()) {
+            answer = await questionInNodeRepl(message + " [y/N] ");
+        } else {
+            answer = await questionInNode(message + " [y/N] ");
+        }
+
         const ok = answer?.toLowerCase().trim();
         return ok === "y" || ok === "yes";
     }
@@ -110,8 +104,38 @@ export async function confirm(message: string): Promise<boolean> {
  */
 export async function prompt(
     message: string,
-    defaultValue: string = ""
+    defaultValue?: string | undefined
+): Promise<string | null>;
+export async function prompt(
+    message: string,
+    options?: {
+        defaultValue?: string | undefined;
+        type?: "text" | "password";
+        /**
+         * Terminal only, used when `type` is `password`. The default value is
+         * `*`, use an empty string if you don't want to show any character.
+         */
+        mask?: string;
+    }
+): Promise<string | null>;
+export async function prompt(
+    message: string,
+    options: string | {
+        defaultValue?: string | undefined;
+        type?: "text" | "password";
+        mask?: string;
+    } = ""
 ): Promise<string | null> {
+    const defaultValue = typeof options === "string"
+        ? options
+        : options.defaultValue;
+    const type = typeof options === "object"
+        ? options.type ?? "text"
+        : "text";
+    const mask = type === "password"
+        ? typeof options === "object" ? (options.mask ?? "*") : "*"
+        : undefined;
+
     if (typeof document === "object") {
         return new Promise<string | null>(resolve => {
             document.body.appendChild(
@@ -124,7 +148,7 @@ export async function prompt(
                         },
                     },
                     Text(message),
-                    Input(defaultValue),
+                    Input({ type, value: defaultValue }),
                     Footer(
                         CancelButton(),
                         OkButton()
@@ -133,10 +157,10 @@ export async function prompt(
             );
         });
     } else if (typeof Deno === "object") {
-        return await questionInDeno(message + " ", defaultValue);
+        return await questionInDeno(message + " ", { defaultValue, mask });
     } else if (await isNodeRepl()) {
-        return await questionInNodeRepl(message + " ", defaultValue);
+        return await questionInNodeRepl(message + " ", { defaultValue, mask });
     } else {
-        return await questionInNode(message + " ", defaultValue);
+        return await questionInNode(message + " ", { defaultValue, mask });
     }
 }

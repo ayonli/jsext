@@ -25,23 +25,13 @@ function toLeft(str) {
 function toRight(str) {
     return bytes(`\u001b[${strWidth(str)}C`);
 }
-async function read(stdin, preferSync = false) {
+async function read(stdin) {
     if ("fd" in stdin) {
         return new Promise(resolve => {
             stdin.once("data", (chunk) => {
                 resolve(bytes(chunk));
             });
         });
-    }
-    else if (preferSync) {
-        const buf = new Uint8Array(1024);
-        const n = stdin.readSync(buf);
-        if (n === null) {
-            return bytes([]);
-        }
-        else {
-            return bytes(buf.slice(0, n));
-        }
     }
     else {
         const reader = stdin.readable.getReader();

@@ -3,15 +3,24 @@ import { chars } from '../../string/index.js';
 import { UP, DOWN, LEFT, RIGHT, START, END, LF, CR, BS, DEL, CLR_RIGHT } from './constants.js';
 import { write, read, toLeft, toRight, isCancelEvent } from './util.js';
 
-async function question(stdin, stdout, message, defaultValue = "") {
+function getMasks(mask, length) {
+    return new Array(length).fill(mask).join("");
+}
+async function question(message, options) {
+    const { stdin, stdout, defaultValue = "", mask } = options;
     const buf = [];
     let cursor = 0;
     await write(stdout, bytes(message));
     if (defaultValue) {
-        await write(stdout, bytes(defaultValue));
         const _chars = chars(defaultValue);
         buf.push(..._chars);
         cursor += _chars.length;
+        if (mask === undefined) {
+            await write(stdout, bytes(defaultValue));
+        }
+        else if (mask) {
+            await write(stdout, bytes(getMasks(mask, _chars.length)));
+        }
     }
     while (true) {
         const input = await read(stdin);
@@ -21,27 +30,47 @@ async function question(stdin, stdout, message, defaultValue = "") {
         else if (equals(input, LEFT)) {
             if (cursor > 0) {
                 const char = buf[--cursor];
-                await write(stdout, toLeft(char));
+                if (mask === undefined) {
+                    await write(stdout, toLeft(char));
+                }
+                else if (mask) {
+                    await write(stdout, toLeft(mask));
+                }
             }
         }
         else if (equals(input, RIGHT)) {
             if (cursor < buf.length) {
                 const char = buf[cursor++];
-                await write(stdout, toRight(char));
+                if (mask === undefined) {
+                    await write(stdout, toRight(char));
+                }
+                else if (mask) {
+                    await write(stdout, toRight(mask));
+                }
             }
         }
         else if (equals(input, START)) {
             const left = buf.slice(0, cursor);
             if (left.length) {
                 cursor = 0;
-                await write(stdout, toLeft(left.join("")));
+                if (mask === undefined) {
+                    await write(stdout, toLeft(left.join("")));
+                }
+                else if (mask) {
+                    await write(stdout, toLeft(getMasks(mask, left.length)));
+                }
             }
         }
         else if (equals(input, END)) {
             const right = buf.slice(cursor);
             if (right.length) {
                 cursor = buf.length;
-                await write(stdout, toRight(right.join("")));
+                if (mask === undefined) {
+                    await write(stdout, toRight(right.join("")));
+                }
+                else if (mask) {
+                    await write(stdout, toRight(getMasks(mask, right.length)));
+                }
             }
         }
         else if (isCancelEvent(input)) {
@@ -57,12 +86,23 @@ async function question(stdin, stdout, message, defaultValue = "") {
                 cursor--;
                 const [char] = buf.splice(cursor, 1);
                 const rest = buf.slice(cursor);
-                await write(stdout, toLeft(char));
-                await write(stdout, CLR_RIGHT);
-                if (rest.length) {
-                    const output = rest.join("");
-                    await write(stdout, bytes(output));
-                    await write(stdout, toLeft(output));
+                if (mask === undefined) {
+                    await write(stdout, toLeft(char));
+                    await write(stdout, CLR_RIGHT);
+                    if (rest.length) {
+                        const output = rest.join("");
+                        await write(stdout, bytes(output));
+                        await write(stdout, toLeft(output));
+                    }
+                }
+                else if (mask) {
+                    await write(stdout, toLeft(mask));
+                    await write(stdout, CLR_RIGHT);
+                    if (rest.length) {
+                        const output = getMasks(mask, rest.length);
+                        await write(stdout, bytes(output));
+                        await write(stdout, toLeft(output));
+                    }
                 }
             }
         }
@@ -71,14 +111,27 @@ async function question(stdin, stdout, message, defaultValue = "") {
             if (cursor === buf.length) {
                 buf.push(..._chars);
                 cursor += _chars.length;
-                await write(stdout, input);
+                if (mask === undefined) {
+                    await write(stdout, input);
+                }
+                else if (mask) {
+                    await write(stdout, bytes(getMasks(mask, _chars.length)));
+                }
             }
             else {
                 buf.splice(cursor, 0, ..._chars);
                 cursor += _chars.length;
-                const rest = buf.slice(cursor).join("");
-                await write(stdout, concat(input, bytes(rest)));
-                await write(stdout, toLeft(rest));
+                if (mask === undefined) {
+                    const rest = buf.slice(cursor).join("");
+                    await write(stdout, concat(input, bytes(rest)));
+                    await write(stdout, toLeft(rest));
+                }
+                else if (mask) {
+                    const output = getMasks(mask, _chars.length);
+                    const rest = getMasks(mask, buf.slice(cursor).length);
+                    await write(stdout, bytes(output + rest));
+                    await write(stdout, toLeft(rest));
+                }
             }
         }
     }

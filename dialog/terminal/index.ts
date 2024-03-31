@@ -1,10 +1,10 @@
 import { hijackNodeStdin, isNodeRepl } from "./util.ts";
 import question from "./question.ts";
 
-export async function questionInDeno(
-    message: string,
-    defaultValue = ""
-): Promise<string | null> {
+export async function questionInDeno(message: string, options: {
+    defaultValue?: string | undefined;
+    mask?: string | undefined;
+} = {}): Promise<string | null> {
     const { stdin, stdout } = Deno;
 
     if (!stdin.isTerminal()) {
@@ -14,16 +14,16 @@ export async function questionInDeno(
     stdin.setRaw(true);
 
     try {
-        return await question(stdin, stdout, message, defaultValue);
+        return await question(message, { stdin, stdout, ...options });
     } finally {
         stdin.setRaw(false);
     }
 }
 
-export async function questionInNode(
-    message: string,
-    defaultValue = ""
-) {
+export async function questionInNode(message: string, options: {
+    defaultValue?: string | undefined;
+    mask?: string | undefined;
+} = {}) {
     const { stdin, stdout } = process;
 
     if (!stdout.isTTY) {
@@ -38,7 +38,7 @@ export async function questionInNode(
     rawMode || stdin.setRawMode(true);
 
     try {
-        return await question(stdin, stdout, message, defaultValue);
+        return await question(message, { stdin, stdout, ...options });
     } finally {
         stdin.setRawMode(rawMode);
 
@@ -48,11 +48,11 @@ export async function questionInNode(
     }
 }
 
-export async function questionInNodeRepl(
-    message: string,
-    defaultValue = ""
-): Promise<string | null> {
+export async function questionInNodeRepl(message: string, options: {
+    defaultValue?: string | undefined;
+    mask?: string | undefined;
+} = {}): Promise<string | null> {
     return await hijackNodeStdin(process.stdin, async () => {
-        return await questionInNode(message, defaultValue);
+        return await questionInNode(message, options);
     });
 }

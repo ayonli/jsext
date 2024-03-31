@@ -24,7 +24,7 @@ import { questionInDeno, questionInNodeRepl, questionInNode } from './terminal/i
  */
 async function alert(message) {
     if (typeof document === "object") {
-        return new Promise(resolve => {
+        await new Promise(resolve => {
             document.body.appendChild(Dialog({
                 onCancel: () => resolve(),
                 onOk: () => resolve(),
@@ -32,20 +32,13 @@ async function alert(message) {
         });
     }
     else if (typeof Deno === "object") {
-        // if (isDenoRepl()) {
-        //     return Promise.resolve(globalThis.alert(message));
-        // } else {
         await questionInDeno(message + " [Enter] ");
-        return;
-        // }
     }
     else if (await isNodeRepl()) {
         await questionInNodeRepl(message + " [Enter] ");
-        return;
     }
     else {
         await questionInNodeRepl(message + " [Enter] ");
-        return;
     }
 }
 /**
@@ -64,30 +57,32 @@ async function confirm(message) {
             }, Text(message), Footer(CancelButton(), OkButton())));
         });
     }
-    else if (typeof Deno === "object") {
-        const answer = await questionInDeno(message + " [y/N] ");
-        const ok = answer === null || answer === void 0 ? void 0 : answer.toLowerCase().trim();
-        return ok === "y" || ok === "yes";
-    }
-    else if (await isNodeRepl()) {
-        const answer = await questionInNodeRepl(message + " [y/N] ");
-        const ok = answer === null || answer === void 0 ? void 0 : answer.toLowerCase().trim();
-        return ok === "y" || ok === "yes";
-    }
     else {
-        const answer = await questionInNode(message + " [y/N] ");
+        let answer;
+        if (typeof Deno === "object") {
+            answer = await questionInDeno(message + " [y/N] ");
+        }
+        else if (await isNodeRepl()) {
+            answer = await questionInNodeRepl(message + " [y/N] ");
+        }
+        else {
+            answer = await questionInNode(message + " [y/N] ");
+        }
         const ok = answer === null || answer === void 0 ? void 0 : answer.toLowerCase().trim();
         return ok === "y" || ok === "yes";
     }
 }
-/**
- * Displays a dialog with a message prompting the user to input some text, and to
- * wait until the user either submits the text or cancels the dialog.
- *
- * **NOTE**: Despite defined as an async function, in Deno REPL, this function
- * actually calls the global `prompt` function directly, which is synchronous.
- */
-async function prompt(message, defaultValue = "") {
+async function prompt(message, options = "") {
+    var _a, _b;
+    const defaultValue = typeof options === "string"
+        ? options
+        : options.defaultValue;
+    const type = typeof options === "object"
+        ? (_a = options.type) !== null && _a !== void 0 ? _a : "text"
+        : "text";
+    const mask = type === "password"
+        ? typeof options === "object" ? ((_b = options.mask) !== null && _b !== void 0 ? _b : "*") : "*"
+        : undefined;
     if (typeof document === "object") {
         return new Promise(resolve => {
             document.body.appendChild(Dialog({
@@ -96,17 +91,17 @@ async function prompt(message, defaultValue = "") {
                     const input = dialog.querySelector("input");
                     resolve(input.value);
                 },
-            }, Text(message), Input(defaultValue), Footer(CancelButton(), OkButton())));
+            }, Text(message), Input({ type, value: defaultValue }), Footer(CancelButton(), OkButton())));
         });
     }
     else if (typeof Deno === "object") {
-        return await questionInDeno(message + " ", defaultValue);
+        return await questionInDeno(message + " ", { defaultValue, mask });
     }
     else if (await isNodeRepl()) {
-        return await questionInNodeRepl(message + " ", defaultValue);
+        return await questionInNodeRepl(message + " ", { defaultValue, mask });
     }
     else {
-        return await questionInNode(message + " ", defaultValue);
+        return await questionInNode(message + " ", { defaultValue, mask });
     }
 }
 

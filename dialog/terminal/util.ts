@@ -40,22 +40,13 @@ export function toRight(str: string) {
     return bytes(`\u001b[${strWidth(str)}C`);
 }
 
-export async function read(stdin: NodeStdin | DenoStdin, preferSync = false): Promise<ByteArray> {
+export async function read(stdin: NodeStdin | DenoStdin): Promise<ByteArray> {
     if ("fd" in stdin) {
         return new Promise<ByteArray>(resolve => {
             stdin.once("data", (chunk: Buffer) => {
                 resolve(bytes(chunk));
             });
         });
-    } else if (preferSync) {
-        const buf = new Uint8Array(1024);
-        const n = stdin.readSync(buf);
-
-        if (n === null) {
-            return bytes([]);
-        } else {
-            return bytes(buf.slice(0, n));
-        }
     } else {
         const reader = stdin.readable.getReader();
         const { done, value } = await reader.read();

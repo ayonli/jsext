@@ -5,7 +5,10 @@ const darkBgColor = "#222";
 const lightTextColor = "#000";
 const darkTextColor = "#fff";
 
-export default function Input(defaultValue = "") {
+export default function Input(props: {
+    type?: "text" | "password" | "number";
+    value?: string | undefined;
+}) {
     const div = document.createElement("div");
     const input = document.createElement("input");
     const { theme, onChange } = useColorTheme();
@@ -23,7 +26,8 @@ export default function Input(defaultValue = "") {
     input.style.fontSize = "1em";
     input.style.color = theme === "light" ? lightTextColor : darkTextColor;
     input.style.backgroundColor = theme === "light" ? lightBgColor : darkBgColor;
-    input.value = defaultValue ?? "";
+    input.type = props.type ?? "text";
+    input.value = props.value ?? "";
 
     onChange((theme) => {
         input.style.color = theme === "light" ? lightTextColor : darkTextColor;
