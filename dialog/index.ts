@@ -26,9 +26,6 @@ export { progress, ProgressState, ProgressFunc, ProgressAbortHandler };
 /**
  * Displays a dialog with a message, and to wait until the user dismisses the
  * dialog.
- * 
- * **NOTE**: Despite defined as an async function, in Deno REPL, this function
- * actually calls the global `alert` function directly, which is synchronous.
  */
 export async function alert(message: string): Promise<void> {
     if (typeof document === "object") {
@@ -58,9 +55,6 @@ export async function alert(message: string): Promise<void> {
 /**
  * Displays a dialog with a message, and to wait until the user either confirms
  * or cancels the dialog.
- * 
- * **NOTE**: Despite defined as an async function, in Deno REPL, this function
- * actually calls the global `confirm` function directly, which is synchronous.
  */
 export async function confirm(message: string): Promise<boolean> {
     if (typeof document === "object") {
@@ -98,9 +92,6 @@ export async function confirm(message: string): Promise<boolean> {
 /**
  * Displays a dialog with a message prompting the user to input some text, and to
  * wait until the user either submits the text or cancels the dialog.
- * 
- * **NOTE**: Despite defined as an async function, in Deno REPL, this function
- * actually calls the global `prompt` function directly, which is synchronous.
  */
 export async function prompt(
     message: string,

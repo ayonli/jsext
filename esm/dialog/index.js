@@ -18,9 +18,6 @@ import { questionInDeno, questionInNodeRepl, questionInNode } from './terminal/i
 /**
  * Displays a dialog with a message, and to wait until the user dismisses the
  * dialog.
- *
- * **NOTE**: Despite defined as an async function, in Deno REPL, this function
- * actually calls the global `alert` function directly, which is synchronous.
  */
 async function alert(message) {
     if (typeof document === "object") {
@@ -44,9 +41,6 @@ async function alert(message) {
 /**
  * Displays a dialog with a message, and to wait until the user either confirms
  * or cancels the dialog.
- *
- * **NOTE**: Despite defined as an async function, in Deno REPL, this function
- * actually calls the global `confirm` function directly, which is synchronous.
  */
 async function confirm(message) {
     if (typeof document === "object") {
