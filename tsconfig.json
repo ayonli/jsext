@@ -8,7 +8,7 @@
         "sourceMap": true,
         "noEmit": true,
         "allowImportingTsExtensions": true,
-        "moduleResolution": "NodeNext",
+        "moduleResolution": "bundler",
         "strict": true,
         "noUnusedParameters": true,
         "noUnusedLocals": true,

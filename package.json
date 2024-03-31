@@ -382,7 +382,7 @@
         "ts-node": "^10.9.1",
         "tslib": "^2.6.2",
         "tsx": "^4.7.1",
-        "typescript": "^5.2.2",
+        "typescript": "^5.4.3",
         "ws": "^8.14.1"
     },
     "optionalDependencies": {

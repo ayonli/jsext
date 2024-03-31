@@ -230,7 +230,7 @@ function sortKeys(obj, deep = false) {
     return (function process(target, depth) {
         if (isPlainObject(target)) {
             return !depth || deep ? [
-                ...Object.getOwnPropertyNames(target).sort(),
+                ...Object.getOwnPropertyNames(target).sort(), // sort the string keys
                 ...Object.getOwnPropertySymbols(target)
             ].reduce((result, key) => {
                 result[key] = process(target[key], depth + 1);
