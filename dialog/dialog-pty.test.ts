@@ -350,6 +350,46 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                     ""
                 ]);
             }
+
+            { // for password 'Hello, World!'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
+
+                for (const char of "Hello, World!") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write("\b");
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter password: *************\u001b[1D\u001b[0K",
+                    "Hello, World",
+                    ""
+                ]);
+            }
+
+            { // for password '你好，世界！'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
+
+                for (const char of "你好，世界！") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write("\b");
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter password: ******\u001b[1D\u001b[0K",
+                    "你好，世界",
+                    ""
+                ]);
+            }
         });
 
         it("move cursor left", async () => {
@@ -596,6 +636,58 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
 
                 deepStrictEqual(outputs, [
                     "Enter something: 你好，世界！\u001b[2D\u001b[2D\u001b[2D\u001b[2D\u001b[0K世界！\u001b[6D",
+                    "你好世界！",
+                    ""
+                ]);
+            }
+
+            { // for password 'Hello, World!'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
+
+                for (const char of "Hello, World!") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write("\b");
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter password: *************\u001b[1D\u001b[1D\u001b[1D\u001b[1D\u001b[0K***\u001b[3D",
+                    "Hello, Wold!",
+                    ""
+                ]);
+            }
+
+            { // for password '你好，世界！'
+                const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
+
+                for (const char of "你好，世界！") {
+                    cmd.write(char);
+                    await sleep(10);
+                }
+
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write("\b");
+                await sleep(10);
+                cmd.write("\n");
+                const outputs = await output;
+
+                deepStrictEqual(outputs, [
+                    "Enter password: ******\u001b[1D\u001b[1D\u001b[1D\u001b[1D\u001b[0K***\u001b[3D",
                     "你好世界！",
                     ""
                 ]);
