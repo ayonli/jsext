@@ -39,16 +39,16 @@ async function confirm(message) {
     else {
         let answer;
         if (typeof Deno === "object") {
-            answer = await questionInDeno(message + " [y/N] ");
+            answer = await questionInDeno(message + " [Y/n] ");
         }
         else if (await isNodeRepl()) {
-            answer = await questionInNodeRepl(message + " [y/N] ");
+            answer = await questionInNodeRepl(message + " [Y/n] ");
         }
         else {
-            answer = await questionInNode(message + " [y/N] ");
+            answer = await questionInNode(message + " [Y/n] ");
         }
         const ok = answer === null || answer === void 0 ? void 0 : answer.toLowerCase().trim();
-        return ok === "y" || ok === "yes";
+        return ok === "" || ok === "y" || ok === "yes";
     }
 }
 async function prompt(message, options = "") {
