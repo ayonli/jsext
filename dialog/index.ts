@@ -41,15 +41,15 @@ export async function confirm(message: string): Promise<boolean> {
         let answer: string | null;
 
         if (typeof Deno === "object") {
-            answer = await questionInDeno(message + " [y/N] ");
+            answer = await questionInDeno(message + " [Y/n] ");
         } else if (await isNodeRepl()) {
-            answer = await questionInNodeRepl(message + " [y/N] ");
+            answer = await questionInNodeRepl(message + " [Y/n] ");
         } else {
-            answer = await questionInNode(message + " [y/N] ");
+            answer = await questionInNode(message + " [Y/n] ");
         }
 
         const ok = answer?.toLowerCase().trim();
-        return ok === "y" || ok === "yes";
+        return ok === "" || ok === "y" || ok === "yes";
     }
 }
 

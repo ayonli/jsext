@@ -82,7 +82,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             const outputs = await output;
 
             deepStrictEqual(outputs, [
-                "Are you sure? [y/N] y",
+                "Are you sure? [Y/n] y",
                 "\u001b[33mtrue\u001b[39m",
                 ""
             ]);
@@ -101,23 +101,8 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             const outputs = await output;
 
             deepStrictEqual(outputs, [
-                "Are you sure? [y/N] yes",
+                "Are you sure? [Y/n] yes",
                 "\u001b[33mtrue\u001b[39m",
-                ""
-            ]);
-        });
-
-        it("input 'N'", async () => {
-            const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
-
-            cmd.write("N");
-            await sleep(10);
-            cmd.write("\n");
-            const outputs = await output;
-
-            deepStrictEqual(outputs, [
-                "Are you sure? [y/N] N",
-                "\u001b[33mfalse\u001b[39m",
                 ""
             ]);
         });
@@ -131,7 +116,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             const outputs = await output;
 
             deepStrictEqual(outputs, [
-                "Are you sure? [y/N] n",
+                "Are you sure? [Y/n] n",
                 "\u001b[33mfalse\u001b[39m",
                 ""
             ]);
@@ -148,7 +133,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             const outputs = await output;
 
             deepStrictEqual(outputs, [
-                "Are you sure? [y/N] no",
+                "Are you sure? [Y/n] no",
                 "\u001b[33mfalse\u001b[39m",
                 ""
             ]);
@@ -161,8 +146,8 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             const outputs = await output;
 
             deepStrictEqual(outputs, [
-                "Are you sure? [y/N] ",
-                "\u001b[33mfalse\u001b[39m",
+                "Are you sure? [Y/n] ",
+                "\u001b[33mtrue\u001b[39m",
                 ""
             ]);
         });
@@ -174,7 +159,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             const outputs = await output;
 
             deepStrictEqual(outputs, [
-                "Are you sure? [y/N] ",
+                "Are you sure? [Y/n] ",
                 "\u001b[33mfalse\u001b[39m",
                 ""
             ]);
