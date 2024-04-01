@@ -739,7 +739,7 @@ Reads all values from the iterable object at once.
 **Example**
 
 ```ts
-import { readAll } from "@ayonli/jsext/read";
+import readAll from "@ayonli/jsext/readAll";
 import * as fs from "node:fs";
 
 const file = fs.createReadStream("./package.json");

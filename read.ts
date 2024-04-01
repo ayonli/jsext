@@ -4,7 +4,8 @@
  */
 
 import chan from "./chan.ts";
-import { isFunction } from "./util.ts";
+import { asIterable, isFunction } from "./util.ts";
+import _readAll from "./readAll.ts";
 
 /**
  * Wraps a source as an AsyncIterable object that can be used in the
@@ -99,29 +100,10 @@ export default function read<T>(source: any, eventMap: {
     error?: string;
     close?: string;
 } | undefined = undefined): AsyncIterable<T> {
-    if (isFunction(source[Symbol.asyncIterator])) {
-        return source;
-    } else if (typeof ReadableStream === "function"
-        && source instanceof ReadableStream
-    ) {
-        const reader = source.getReader();
-        return {
-            [Symbol.asyncIterator]: async function* () {
-                try {
-                    while (true) {
-                        const { done, value } = await reader.read();
+    const iterable = asIterable(source);
 
-                        if (done) {
-                            break;
-                        }
-
-                        yield value;
-                    }
-                } finally {
-                    reader.releaseLock();
-                }
-            },
-        };
+    if (iterable) {
+        return iterable;
     }
 
     const channel = chan<T>(Infinity);
@@ -267,25 +249,6 @@ export default function read<T>(source: any, eventMap: {
 }
 
 /**
- * Reads all values from the iterable object at once.
- * 
- * @example
- * ```ts
- * import { readAll } from "@ayonli/jsext/read";
- * import * as fs from "node:fs";
- * 
- * const file = fs.createReadStream("./package.json");
- * const chunks = await readAll(file);
- * 
- * console.log(chunks);
- * ```
+ * @deprecated import `readAll` from `@ayonli/jsext/readAll` instead.
  */
-export async function readAll<T>(iterable: AsyncIterable<T>): Promise<T[]> {
-    const list: T[] = [];
-
-    for await (const chunk of iterable) {
-        list.push(chunk);
-    }
-
-    return list;
-}
+export const readAll = _readAll;

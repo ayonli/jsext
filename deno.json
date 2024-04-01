@@ -13,6 +13,7 @@
         "./parallel": "./parallel.ts",
         "./queue": "./queue.ts",
         "./read": "./read.ts",
+        "./readAll": "./readAll.ts",
         "./run": "./run.ts",
         "./throttle": "./throttle.ts",
         "./try": "./try.ts",

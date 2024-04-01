@@ -97,6 +97,13 @@
             "import": "./esm/read.js",
             "default": "./read.ts"
         },
+        "./readAll": {
+            "types": "./types/readAll.d.ts",
+            "bun": "./readAll.ts",
+            "require": "./cjs/readAll.js",
+            "import": "./esm/readAll.js",
+            "default": "./readAll.ts"
+        },
         "./run": {
             "types": "./types/run.d.ts",
             "bun": "./run.ts",
