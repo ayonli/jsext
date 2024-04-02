@@ -1,6 +1,9 @@
 /**
  * Writes unit tests as if writing examples, inspired by Golang.
  * @module
+ * @deprecated It turns out that this module isn't really helpful, and has
+ * compatibility issues with Bun, **tsx** and browsers, it will be removed in
+ * the future.
  */
 /**
  * Inspired by Golang's **Example as Test** design, creates a function that
@@ -27,6 +30,10 @@
  *     // Hello, World!
  * }));
  * ```
+ *
+ * @deprecated It turns out that this function isn't really helpful, and has
+ * compatibility issues with Bun, **tsx** and browsers, it will be removed in
+ * the future.
  */
 function example(fn, options = undefined) {
     const call = {};

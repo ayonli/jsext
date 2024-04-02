@@ -1,6 +1,9 @@
 /**
  * Writes unit tests as if writing examples, inspired by Golang.
  * @module
+ * @deprecated It turns out that this module isn't really helpful, and has
+ * compatibility issues with Bun, **tsx** and browsers, it will be removed in
+ * the future.
  */
 
 /**
@@ -28,6 +31,10 @@
  *     // Hello, World!
  * }));
  * ```
+ * 
+ * @deprecated It turns out that this function isn't really helpful, and has
+ * compatibility issues with Bun, **tsx** and browsers, it will be removed in
+ * the future.
  */
 export default function example<T, A extends any[] = any[]>(
     fn: (this: T, console: Console, ...args: A) => void | Promise<void>,

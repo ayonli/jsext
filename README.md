@@ -50,8 +50,6 @@ browser.
 - [parallel](#parallel) Runs functions in parallel threads and take advantage of
   multi-core CPUs, inspired by Golang.
 - [run](#run) Runs a script in another thread and abort at any time.
-- [example](#example) Writes unit tests as if writing examples, inspired by
-  Golang.
 - [deprecate](#deprecate) Marks a function as deprecated and emit warnings when
   it is called.
 
@@ -1119,48 +1117,6 @@ namespace run {
    */
   export var maxWorkers: number | undefined;
 }
-```
-
----
-
-### example
-
-```ts
-declare function example<T, A extends any[] = any[]>(
-  fn: (this: T, console: Console, ...args: A) => void | Promise<void>,
-  options?: {
-    /** Suppress logging to the terminal and only check the output. */
-    suppress?: boolean;
-  },
-): (this: T, ...args: A) => Promise<void>;
-```
-
-Inspired by Golang's **Example as Test** design, creates a function that carries
-example code with `// output:` comments, when the returned function is called,
-it will automatically check if the actual output matches the one declared in the
-comment.
-
-The example function receives a customized `console` object which will be used
-to log outputs instead of using the built-in `console`.
-
-**NOTE:** This function is used to simplify the process of writing tests,
-currently, it does not work in Bun, **tsx** and browsers, because Bun hasn't
-implement the `Console` constructor and removes comments during runtime, **tsx**
-also remove comments, and the function relies on Node.js built-in modules.
-
-**Example**
-
-```ts
-import example from "@ayonli/jsext/example";
-
-it(
-  "should output as expected",
-  example((console) => {
-    console.log("Hello, World!");
-    // output:
-    // Hello, World!
-  }),
-);
 ```
 
 ---
