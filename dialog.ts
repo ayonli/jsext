@@ -1,5 +1,5 @@
 /**
- * Asynchronous dialog functions for both browsers and Node.js.
+ * Asynchronous dialog functions for both browsers and terminals.
  * 
  * This includes `alert`, `confirm`, `prompt` and other non-standard dialogs.
  * @experimental

@@ -1265,7 +1265,7 @@ Each of these modules includes specific functions for their target categories:
 - [collections](https://jsr.io/@ayonli/jsext/doc/collections/~) Additional
   collection data types.
 - [dialog](https://jsr.io/@ayonli/jsext/doc/dialog/~) (Experimental)
-  Asynchronous dialog functions for both browsers and Node.js.
+  Asynchronous dialog functions for both browsers and terminals.
 - [error](https://jsr.io/@ayonli/jsext/doc/error/~) Functions for converting
   errors to/from other types of objects.
 - [json](https://jsr.io/@ayonli/jsext/doc/json/~) Functions for parsing JSONs to
