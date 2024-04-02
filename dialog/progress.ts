@@ -1,5 +1,5 @@
-import bytes from "../bytes/index.ts";
-import { stripEnd } from "../string/index.ts";
+import bytes from "../bytes.ts";
+import { stripEnd } from "../string.ts";
 import CancelButton from "./browser/CancelButton.ts";
 import Dialog, { closeDialog } from "./browser/Dialog.ts";
 import Footer from "./browser/Footer.ts";

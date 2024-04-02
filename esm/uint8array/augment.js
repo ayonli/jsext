@@ -1,4 +1,4 @@
-import { copy, concat, compare, equals, split, chunk } from '../bytes/index.js';
+import { copy, concat, compare, equals, split, chunk } from '../bytes.js';
 
 Uint8Array.copy = copy;
 Uint8Array.concat = concat;

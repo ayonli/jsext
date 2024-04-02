@@ -1,5 +1,5 @@
 import { isNode, isBun, IsPath, isDeno } from '../constants.js';
-import { trim } from '../../string/index.js';
+import { trim } from '../../string.js';
 
 const moduleCache = new Map();
 function sanitizeModuleId(id, strict = false) {

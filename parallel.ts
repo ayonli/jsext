@@ -6,7 +6,7 @@
 
 import { ThenableAsyncGenerator, ThenableAsyncGeneratorLike } from "./external/thenable-generator/index.ts";
 import chan, { Channel } from "./chan.ts";
-import { serial } from "./number/index.ts";
+import { serial } from "./number.ts";
 import { BunWorker, CallRequest, NodeWorker } from "./parallel/types.ts";
 import { isBun, isDeno, isNode, IsPath, isMainThread } from "./parallel/constants.ts";
 import { resolveModule, sanitizeModuleId } from "./parallel/utils/module.ts";

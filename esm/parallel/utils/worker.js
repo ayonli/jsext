@@ -1,8 +1,8 @@
 import { isAsyncGenerator, isGenerator } from '../../external/check-iterable/index.js';
 import { unwrapChannel } from './channel.js';
 import { resolveModule } from './module.js';
-import { isPlainObject } from '../../object/index.js';
-import { fromObject, isDOMException, isAggregateError, toObject } from '../../error/index.js';
+import { isPlainObject } from '../../object.js';
+import { fromObject, isDOMException, isAggregateError, toObject } from '../../error.js';
 import Exception from '../../error/Exception.js';
 
 const pendingTasks = new Map();

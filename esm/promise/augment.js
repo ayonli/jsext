@@ -1,4 +1,4 @@
-import { timeout, after, sleep, until } from './index.js';
+import { timeout, after, sleep, until } from '../promise.js';
 
 Promise.timeout = timeout;
 Promise.after = after;

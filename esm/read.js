@@ -1,5 +1,6 @@
 import chan from './chan.js';
-import { isFunction } from './util.js';
+import { asIterable, isFunction } from './util.js';
+import readAll$1 from './readAll.js';
 
 /**
  * This module includes functions for reading data from various kinds of streams.
@@ -7,28 +8,9 @@ import { isFunction } from './util.js';
  */
 function read(source, eventMap = undefined) {
     var _a;
-    if (isFunction(source[Symbol.asyncIterator])) {
-        return source;
-    }
-    else if (typeof ReadableStream === "function"
-        && source instanceof ReadableStream) {
-        const reader = source.getReader();
-        return {
-            [Symbol.asyncIterator]: async function* () {
-                try {
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) {
-                            break;
-                        }
-                        yield value;
-                    }
-                }
-                finally {
-                    reader.releaseLock();
-                }
-            },
-        };
+    const iterable = asIterable(source);
+    if (iterable) {
+        return iterable;
     }
     const channel = chan(Infinity);
     const handleMessage = channel.send.bind(channel);
@@ -170,26 +152,9 @@ function read(source, eventMap = undefined) {
     };
 }
 /**
- * Reads all values from the iterable object at once.
- *
- * @example
- * ```ts
- * import { readAll } from "@ayonli/jsext/read";
- * import * as fs from "node:fs";
- *
- * const file = fs.createReadStream("./package.json");
- * const chunks = await readAll(file);
- *
- * console.log(chunks);
- * ```
+ * @deprecated import `readAll` from `@ayonli/jsext/readAll` instead.
  */
-async function readAll(iterable) {
-    const list = [];
-    for await (const chunk of iterable) {
-        list.push(chunk);
-    }
-    return list;
-}
+const readAll = readAll$1;
 
 export { read as default, readAll };
 //# sourceMappingURL=read.js.map

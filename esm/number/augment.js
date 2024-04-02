@@ -1,4 +1,4 @@
-import { isFloat, isNumeric, isBetween, random, range, serial, sequence } from './index.js';
+import { isFloat, isNumeric, isBetween, random, range, serial, sequence } from '../number.js';
 
 Number.isFloat = isFloat;
 Number.isNumeric = isNumeric;

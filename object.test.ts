@@ -1,4 +1,4 @@
-import "../augment.ts";
+import "./augment.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 
 describe("Object", () => {

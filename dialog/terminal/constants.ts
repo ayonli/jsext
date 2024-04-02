@@ -1,4 +1,4 @@
-import bytes from "../../bytes/index.ts";
+import bytes from "../../bytes.ts";
 
 export const LF = bytes("\n"); // ^J - Enter on Linux
 export const CR = bytes("\r"); // ^M - Enter on macOS and Windows (CRLF)

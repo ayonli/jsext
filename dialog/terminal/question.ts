@@ -1,5 +1,5 @@
-import bytes, { concat, equals } from "../../bytes/index.ts";
-import { chars } from "../../string/index.ts";
+import bytes, { concat, equals } from "../../bytes.ts";
+import { chars } from "../../string.ts";
 import {
     BS,
     CLR_RIGHT,

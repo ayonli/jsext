@@ -1,4 +1,4 @@
-import "../augment.ts";
+import "./augment.ts";
 import { strictEqual } from "node:assert";
 
 describe("Math", () => {

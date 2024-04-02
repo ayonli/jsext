@@ -1,5 +1,5 @@
 import { IsPath, isBun, isDeno, isNode } from "../constants.ts";
-import { trim } from "../../string/index.ts";
+import { trim } from "../../string.ts";
 
 const moduleCache = new Map();
 

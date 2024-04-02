@@ -1,6 +1,6 @@
-import "../augment.ts";
+import "./augment.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { isNode } from "../parallel/constants.ts";
+import { isNode } from "./parallel/constants.ts";
 
 const isNodePrior16 = isNode && parseInt(process.version.slice(1)) < 16;
 

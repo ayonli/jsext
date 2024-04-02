@@ -1,5 +1,5 @@
-import "../augment.ts";
-import jsext from "../index.ts";
+import "./augment.ts";
+import jsext from "./index.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 
 describe("Promise", () => {

@@ -1,7 +1,7 @@
 import { isWide, isFullWidth } from '../../external/code-point-utils/index.js';
-import bytes, { equals } from '../../bytes/index.js';
-import { sum } from '../../math/index.js';
-import { chars, byteLength } from '../../string/index.js';
+import bytes, { equals } from '../../bytes.js';
+import { sum } from '../../math.js';
+import { chars, byteLength } from '../../string.js';
 import { ESC, CANCEL, EMOJI_RE } from './constants.js';
 
 function charWidth(char) {

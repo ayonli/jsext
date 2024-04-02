@@ -1,7 +1,7 @@
 import { isFullWidth, isWide } from "../../external/code-point-utils/index.ts";
-import bytes, { ByteArray, equals } from "../../bytes/index.ts";
-import { sum } from "../../math/index.ts";
-import { byteLength, chars } from "../../string/index.ts";
+import bytes, { ByteArray, equals } from "../../bytes.ts";
+import { sum } from "../../math.ts";
+import { byteLength, chars } from "../../string.ts";
 import { CANCEL, EMOJI_RE, ESC } from "./constants.ts";
 
 export type KeypressEventInfo = {

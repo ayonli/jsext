@@ -1,5 +1,5 @@
-import bytes from '../bytes/index.js';
-import { stripEnd } from '../string/index.js';
+import bytes from '../bytes.js';
+import { stripEnd } from '../string.js';
 import CancelButton from './browser/CancelButton.js';
 import Dialog, { closeDialog } from './browser/Dialog.js';
 import Footer from './browser/Footer.js';

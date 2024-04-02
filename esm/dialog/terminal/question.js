@@ -1,5 +1,5 @@
-import bytes, { equals, concat } from '../../bytes/index.js';
-import { chars } from '../../string/index.js';
+import bytes, { equals, concat } from '../../bytes.js';
+import { chars } from '../../string.js';
 import { UP, DOWN, LEFT, RIGHT, START, END, LF, CR, BS, DEL, CLR_RIGHT } from './constants.js';
 import { write, read, toLeft, toRight, isCancelEvent } from './util.js';
 

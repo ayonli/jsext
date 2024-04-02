@@ -60,9 +60,9 @@ export default [
     { // Bundle
         input: "bundle.ts",
         output: {
-            file: "bundle/index.js",
+            file: "bundle/jsext.js",
             format: "umd",
-            name: "@ayonli/jsext",
+            name: "jsext",
             sourcemap: true,
         },
         plugins: [

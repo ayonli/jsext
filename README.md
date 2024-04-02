@@ -27,9 +27,7 @@ There is also a bundled version that can be loaded via a `<script>` tag in the
 browser.
 
 ```html
-<script src="https://lib.deno.dev/x/ayonli_jsext@latest/bundle/index.js"></script>
-<script>
-    const jsext = window["@ayonli/jsext"];
+<script src="https://lib.deno.dev/x/ayonli_jsext@latest/bundle/jsext.js">
     // this will also include the sub-modules and augmentations
 </script>
 ```
@@ -61,7 +59,7 @@ browser.
 - [mixin](#mixin) Defines a class that inherits methods from multiple base
   classes.
 
-And more functions in sub-[modules](#modules).
+And more functions in [sub-categories](#sub-categories).
 
 ### _try
 
@@ -1347,7 +1345,9 @@ console.assert(!isSubclassOf(Controller, Log));
 _When [augment](#augmentations)ing, these types are exposed to the global scope_
 _(except for `Channel`, `Queue` and `Mutex`)._
 
-## Modules
+## Sub-categories
+
+Each of these modules includes specific functions for their target categories:
 
 - [string](https://jsr.io/@ayonli/jsext/doc/string/~) Functions for dealing with
   strings.
@@ -1387,13 +1387,13 @@ import { compare, random /* ... */ } from "@ayonli/jsext/string";
 import {
   compare,
   random, /* ... */
-} from "https://lib.deno.dev/x/ayonli_jsext@latest/string/index.ts";
+} from "https://lib.deno.dev/x/ayonli_jsext@latest/string.ts";
 
 // Browser
 import {
   compare,
   random, /* ... */
-} from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/string/index.js";
+} from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/string.js";
 ```
 
 ## Augmentations

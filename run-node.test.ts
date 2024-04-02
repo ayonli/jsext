@@ -1,10 +1,10 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import jsext from "./index.ts";
-import { range } from "./number/index.ts";
-import { fromObject } from "./error/index.ts";
-import { sum } from "./math/index.ts";
+import { range } from "./number.ts";
+import { fromObject } from "./error.ts";
+import { sum } from "./math.ts";
 import { isNode } from "./parallel/constants.ts";
-import { trim } from "./string/index.ts";
+import { trim } from "./string.ts";
 import * as path from "node:path";
 
 declare var Bun: any;

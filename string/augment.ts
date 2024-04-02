@@ -1,4 +1,4 @@
-import type { ByteArray } from "../bytes/index.ts";
+import type { ByteArray } from "../bytes.ts";
 import {
     compare,
     random,

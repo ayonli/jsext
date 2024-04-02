@@ -4,7 +4,7 @@
  */
 
 import type { Constructor } from "./index.ts";
-import { hasOwn } from "./object/index.ts";
+import { hasOwn } from "./object.ts";
 
 /**
  * Checks if a value is a class/constructor.

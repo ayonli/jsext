@@ -2,14 +2,14 @@ import { isAsyncGenerator, isGenerator } from "../../external/check-iterable/ind
 import { CallRequest, CallResponse, ChannelMessage } from "../types.ts";
 import { unwrapChannel } from "./channel.ts";
 import { resolveModule } from "./module.ts";
-import { isPlainObject } from "../../object/index.ts";
+import { isPlainObject } from "../../object.ts";
 import {
     Exception,
     fromObject,
     isAggregateError,
     isDOMException,
     toObject,
-} from "../../error/index.ts"; 
+} from "../../error.ts";
 
 const pendingTasks = new Map<number, AsyncGenerator | Generator>();
 

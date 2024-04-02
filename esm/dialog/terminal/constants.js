@@ -1,4 +1,4 @@
-import bytes from '../../bytes/index.js';
+import bytes from '../../bytes.js';
 
 const LF = bytes("\n"); // ^J - Enter on Linux
 const CR = bytes("\r"); // ^M - Enter on macOS and Windows (CRLF)

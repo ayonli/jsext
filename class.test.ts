@@ -1,5 +1,5 @@
 import { ok, strictEqual } from "node:assert";
-import { hasOwn } from "./object/index.ts";
+import { hasOwn } from "./object.ts";
 import jsext, { AsyncFunction, AsyncGeneratorFunction } from "./index.ts";
 
 describe("jsext.isClass", () => {

@@ -1,6 +1,6 @@
 
 import { deepStrictEqual, strictEqual } from "node:assert";
-import { words } from "./string/index.ts";
+import { words } from "./string.ts";
 import jsext from "./index.ts";
 
 describe("jsext.func", () => {

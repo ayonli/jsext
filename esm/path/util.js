@@ -1,4 +1,4 @@
-import { trim, trimEnd } from '../string/index.js';
+import { trim, trimEnd } from '../string.js';
 
 function isNotQuery(str) {
     return str[0] !== "?" && str[0] !== "#";

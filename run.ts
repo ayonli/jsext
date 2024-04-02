@@ -5,8 +5,8 @@
 
 import type { ChildProcess } from "node:child_process";
 import chan, { Channel } from "./chan.ts";
-import { isPlainObject } from "./object/index.ts";
-import { fromErrorEvent, fromObject } from "./error/index.ts";
+import { isPlainObject } from "./object.ts";
+import { fromErrorEvent, fromObject } from "./error.ts";
 import { BunWorker, NodeWorker, CallRequest, CallResponse } from "./parallel/types.ts";
 import { isNode, isBun, isDeno, IsPath } from "./parallel/constants.ts";
 import { sanitizeModuleId } from "./parallel/utils/module.ts";

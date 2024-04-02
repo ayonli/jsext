@@ -1,11 +1,11 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import jsext from "./index.ts";
-import { sequence } from "./number/index.ts";
-import { sum } from "./math/index.ts";
-import { pick } from "./object/index.ts";
+import { sequence } from "./number.ts";
+import { sum } from "./math.ts";
+import { pick } from "./object.ts";
 import Exception from "./error/Exception.ts";
 import * as path from "node:path";
-import { trim } from "./string/index.ts";
+import { trim } from "./string.ts";
 
 declare var Bun: any;
 declare var AggregateError: new (errors: Error[], message?: string, options?: { cause: unknown; }) => Error & { errors: Error[]; };

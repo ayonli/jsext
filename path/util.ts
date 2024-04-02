@@ -1,4 +1,4 @@
-import { trim, trimEnd } from "../string/index.ts";
+import { trim, trimEnd } from "../string.ts";
 
 export function isNotQuery(str: string): boolean {
     return str[0] !== "?" && str[0] !== "#";

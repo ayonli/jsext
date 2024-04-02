@@ -1,7 +1,7 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
-import { sleep } from "./promise/index.ts";
-import { random, range } from "./number/index.ts";
-import { sum } from "./math/index.ts";
+import { sleep } from "./promise.ts";
+import { random, range } from "./number.ts";
+import { sum } from "./math.ts";
 import jsext from "./index.ts";
 
 describe("jsext.chan", () => {

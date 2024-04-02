@@ -1,5 +1,5 @@
-import { alert, confirm, prompt, progress } from "../../dialog/index.ts";
-import { sleep } from "../../promise/index.ts";
+import { alert, confirm, prompt, progress } from "../../dialog.ts";
+import { sleep } from "../../promise.ts";
 
 await (async () => {
     const email = await prompt("Input email:", "john.doe@example.com");

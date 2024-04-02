@@ -4,4 +4,4 @@
  * @deprecated use `bytes` module instead.
  */
 
-export * from "../bytes/index.ts";
+export * from "../bytes.ts";

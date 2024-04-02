@@ -1,6 +1,6 @@
 import chan from './chan.js';
-import { isPlainObject } from './object/index.js';
-import { fromErrorEvent, fromObject } from './error/index.js';
+import { isPlainObject } from './object.js';
+import { fromErrorEvent, fromObject } from './error.js';
 import { isDeno, isNode, isBun, IsPath } from './parallel/constants.js';
 import { sanitizeModuleId } from './parallel/utils/module.js';
 import { isChannelMessage, handleChannelMessage } from './parallel/utils/channel.js';

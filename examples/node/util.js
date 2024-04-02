@@ -1,4 +1,4 @@
-import { as } from "../../esm/json/index.js";
+import { as } from "../../esm/json.js";
 
 /**
  * 

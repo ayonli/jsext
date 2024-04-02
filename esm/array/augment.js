@@ -1,4 +1,4 @@
-import { first, last, random, count, equals, split, chunk, uniq, uniqBy, shuffle, orderBy, groupBy, keyBy } from './index.js';
+import { first, last, random, count, equals, split, chunk, uniq, uniqBy, shuffle, orderBy, groupBy, keyBy } from '../array.js';
 
 Array.prototype.first = function first$1() {
     return first(this);

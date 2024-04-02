@@ -4,7 +4,7 @@
  * @module
  */
 
-import { serial } from "./number/index.ts";
+import { serial } from "./number.ts";
 import { id } from "./parallel/constants.ts";
 
 if (typeof Symbol.dispose === "undefined") {

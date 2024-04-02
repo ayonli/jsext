@@ -1,5 +1,5 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
-import { sleep } from "./promise/index.ts";
+import { sleep } from "./promise.ts";
 import jsext, { Mutex, _try } from "./index.ts";
 
 describe("jsext.lock", () => {

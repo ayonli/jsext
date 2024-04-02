@@ -1,4 +1,4 @@
-import { serial } from './number/index.js';
+import { serial } from './number.js';
 import { id } from './parallel/constants.js';
 
 /**

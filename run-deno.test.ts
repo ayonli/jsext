@@ -1,7 +1,7 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import jsext from "./index.ts";
-import { sequence } from "./number/index.ts";
-import { sum } from "./math/index.ts";
+import { sequence } from "./number.ts";
+import { sum } from "./math.ts";
 
 describe("jsext.run", () => {
     it("ES Module", async () => {

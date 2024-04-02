@@ -1,6 +1,6 @@
 import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
 import chan from './chan.js';
-import { serial } from './number/index.js';
+import { serial } from './number.js';
 import { IsPath, isDeno, isNode, isBun, isMainThread } from './parallel/constants.js';
 import { sanitizeModuleId, resolveModule } from './parallel/utils/module.js';
 import { remoteTasks, acquireWorker, wrapArgs } from './parallel/utils/threads.js';

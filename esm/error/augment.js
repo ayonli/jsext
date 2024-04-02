@@ -1,4 +1,4 @@
-import { toObject, fromObject, toErrorEvent, fromErrorEvent } from './index.js';
+import { toObject, fromObject, toErrorEvent, fromErrorEvent } from '../error.js';
 import Exception from './Exception.js';
 
 //@ts-ignore

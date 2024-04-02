@@ -4,8 +4,8 @@ import { BunWorker, NodeWorker, CallResponse, ChannelMessage } from "../types.ts
 import { isBun, isDeno, isNode, isNodePrior14 } from "../constants.ts";
 import { handleChannelMessage, isChannelMessage, wrapChannel } from "./channel.ts";
 import { resolveRemoteModuleUrl } from "./module.ts";
-import { isPlainObject } from "../../object/index.ts";
-import { serial } from "../../number/index.ts";
+import { isPlainObject } from "../../object.ts";
+import { serial } from "../../number.ts";
 import {
     Exception,
     fromErrorEvent,
@@ -13,8 +13,8 @@ import {
     isAggregateError,
     isDOMException,
     toObject,
-} from "../../error/index.ts";
-import * as path from "../../path/index.ts";
+} from "../../error.ts";
+import * as path from "../../path.ts";
 
 const workerIdCounter = serial(true);
 type PoolRecord = {

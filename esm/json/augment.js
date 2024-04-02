@@ -1,4 +1,4 @@
-import { parseAs, as, type } from './index.js';
+import { parseAs, as, type } from '../json.js';
 
 JSON.parseAs = parseAs;
 JSON.as = as;

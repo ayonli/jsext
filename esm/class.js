@@ -1,4 +1,4 @@
-import { hasOwn } from './object/index.js';
+import { hasOwn } from './object.js';
 
 /**
  * This module includes functions for dealing with classes.

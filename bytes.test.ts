@@ -1,5 +1,5 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
-import bytes, { ByteArray, compare, concat, copy, split, text } from "./index.ts";
+import bytes, { ByteArray, compare, concat, copy, split, text } from "./bytes.ts";
 
 describe("bytes", () => {
     describe("ByteArray", () => {

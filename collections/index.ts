@@ -1,9 +1,6 @@
 /**
- * Additional collection data types.
+ * @deprecated This is a redundant entry of the `collections` module. will be
+ * removed in the next major version.
  * @module
  */
-
-import BiMap from "./BiMap.ts";
-import CiMap from "./CiMap.ts";
-
-export { BiMap, CiMap };
+export * from "../collections.ts";

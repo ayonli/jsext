@@ -1,6 +1,6 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import * as path from "node:path";
-import { contains, split } from "./util.ts";
+import { contains, split } from "./path/util.ts";
 import {
     basename,
     cwd,
@@ -18,7 +18,7 @@ import {
     resolve,
     sanitize,
     startsWith,
-} from "./index.ts";
+} from "./path.ts";
 
 describe("path", () => {
     it("sep", () => {

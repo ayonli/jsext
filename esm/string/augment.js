@@ -1,4 +1,4 @@
-import { compare, random, count, capitalize, hyphenate, bytes, chars, words, lines, chunk, truncate, trim, trimEnd, trimStart, stripEnd, stripStart, byteLength, isAscii } from './index.js';
+import { compare, random, count, capitalize, hyphenate, bytes, chars, words, lines, chunk, truncate, trim, trimEnd, trimStart, stripEnd, stripStart, byteLength, isAscii } from '../string.js';
 
 String.compare = compare;
 String.random = random;

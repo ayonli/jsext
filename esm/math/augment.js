@@ -1,4 +1,4 @@
-import { sum, avg, product } from './index.js';
+import { sum, avg, product } from '../math.js';
 
 Math.sum = sum;
 Math.avg = avg;

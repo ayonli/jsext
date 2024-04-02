@@ -1,6 +1,6 @@
-import "../augment.ts";
+import "./augment.ts";
 import { deepStrictEqual, strictEqual } from "node:assert";
-import bytes, { ByteArray } from "../bytes/index.ts";
+import bytes, { ByteArray } from "./bytes.ts";
 
 describe("JSON", () => {
     describe("JSON.parseAs", () => {

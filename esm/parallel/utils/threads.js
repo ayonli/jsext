@@ -2,10 +2,10 @@ import { Channel } from '../../chan.js';
 import { isNode, isBun, isDeno, isNodePrior14 } from '../constants.js';
 import { wrapChannel, isChannelMessage, handleChannelMessage } from './channel.js';
 import { resolveRemoteModuleUrl } from './module.js';
-import { isPlainObject } from '../../object/index.js';
-import { serial } from '../../number/index.js';
-import { fromErrorEvent, isDOMException, isAggregateError, toObject, fromObject } from '../../error/index.js';
-import { join, cwd, extname, resolve, dirname } from '../../path/index.js';
+import { isPlainObject } from '../../object.js';
+import { serial } from '../../number.js';
+import { fromErrorEvent, isDOMException, isAggregateError, toObject, fromObject } from '../../error.js';
+import { join, cwd, extname, resolve, dirname } from '../../path.js';
 import Exception from '../../error/Exception.js';
 import { isUrl, endsWith } from '../../path/util.js';
 

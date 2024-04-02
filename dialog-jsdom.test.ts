@@ -1,8 +1,8 @@
 import { ok, strictEqual } from "node:assert";
-import { alert, confirm, prompt, progress } from "./index.ts";
-import { sleep, until } from "../promise/index.ts";
-import { as } from "../object/index.ts";
-import _try from "../try.ts";
+import { alert, confirm, prompt, progress } from "./dialog/index.ts";
+import { sleep, until } from "./promise.ts";
+import { as } from "./object.ts";
+import _try from "./try.ts";
 
 describe("dialog", () => {
     if (typeof document === "undefined") {
