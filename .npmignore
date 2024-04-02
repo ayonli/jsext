@@ -8,6 +8,20 @@ examples/
 *.config.mjs
 bundle.ts
 augment.md
+*/augment.*
+*/index.*
+!cjs/augment.*
+!cjs/index.*
+!esm/augment.*
+!esm/index.*
+!types/augment.*
+!types/index.*
+cjs/*/augment.*
+cjs/*/index.*
+esm/*/augment.*
+esm/*/index.*
+types/*/augment.*
+types/*/index.*
 tsconfig*
 mocha*
 prepublish.mjs
@@ -19,4 +33,5 @@ bundle/index.js.map
 !bundle/worker-node.mjs
 deno.json
 deno.lock
+lib.deno.d.ts
 .python-version

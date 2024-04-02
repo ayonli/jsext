@@ -140,11 +140,11 @@
             "default": "./array.ts"
         },
         "./array/augment": {
-            "types": "./types/array/augment.d.ts",
-            "bun": "./array/augment.ts",
-            "require": "./cjs/array/augment.js",
-            "import": "./esm/array/augment.js",
-            "default": "./array/augment.ts"
+            "types": "./types/augment/array.d.ts",
+            "bun": "./augment/array.ts",
+            "require": "./cjs/augment/array.js",
+            "import": "./esm/augment/array.js",
+            "default": "./augment/array.ts"
         },
         "./bytes": {
             "types": "./types/bytes.d.ts",
@@ -168,11 +168,11 @@
             "default": "./collections.ts"
         },
         "./collections/augment": {
-            "types": "./types/collections/augment.d.ts",
-            "bun": "./collections/augment.ts",
-            "require": "./cjs/collections/augment.js",
-            "import": "./esm/collections/augment.js",
-            "default": "./collections/augment.ts"
+            "types": "./types/augment/collections.d.ts",
+            "bun": "./augment/collections.ts",
+            "require": "./cjs/augment/collections.js",
+            "import": "./esm/augment/collections.js",
+            "default": "./augment/collections.ts"
         },
         "./dialog": {
             "types": "./types/dialog.d.ts",
@@ -189,11 +189,11 @@
             "default": "./error.ts"
         },
         "./error/augment": {
-            "types": "./types/error/augment.d.ts",
-            "bun": "./error/augment.ts",
-            "require": "./cjs/error/augment.js",
-            "import": "./esm/error/augment.js",
-            "default": "./error/augment.ts"
+            "types": "./types/augment/error.d.ts",
+            "bun": "./augment/error.ts",
+            "require": "./cjs/augment/error.js",
+            "import": "./esm/augment/error.js",
+            "default": "./augment/error.ts"
         },
         "./json": {
             "types": "./types/json.d.ts",
@@ -203,11 +203,11 @@
             "default": "./json.ts"
         },
         "./json/augment": {
-            "types": "./types/json/augment.d.ts",
-            "bun": "./json/augment.ts",
-            "require": "./cjs/json/augment.js",
-            "import": "./esm/json/augment.js",
-            "default": "./json/augment.ts"
+            "types": "./types/augment/json.d.ts",
+            "bun": "./augment/json.ts",
+            "require": "./cjs/augment/json.js",
+            "import": "./esm/augment/json.js",
+            "default": "./augment/json.ts"
         },
         "./math": {
             "types": "./types/math.d.ts",
@@ -217,11 +217,11 @@
             "default": "./math.ts"
         },
         "./math/augment": {
-            "types": "./types/math/augment.d.ts",
-            "bun": "./math/augment.ts",
-            "require": "./cjs/math/augment.js",
-            "import": "./esm/math/augment.js",
-            "default": "./math/augment.ts"
+            "types": "./types/augment/math.d.ts",
+            "bun": "./augment/math.ts",
+            "require": "./cjs/augment/math.js",
+            "import": "./esm/augment/math.js",
+            "default": "./augment/math.ts"
         },
         "./number": {
             "types": "./types/number.d.ts",
@@ -231,11 +231,11 @@
             "default": "./number.ts"
         },
         "./number/augment": {
-            "types": "./types/number/augment.d.ts",
-            "bun": "./number/augment.ts",
-            "require": "./cjs/number/augment.js",
-            "import": "./esm/number/augment.js",
-            "default": "./number/augment.ts"
+            "types": "./types/augment/number.d.ts",
+            "bun": "./augment/number.ts",
+            "require": "./cjs/augment/number.js",
+            "import": "./esm/augment/number.js",
+            "default": "./augment/number.ts"
         },
         "./object": {
             "types": "./types/object.d.ts",
@@ -245,11 +245,11 @@
             "default": "./object.ts"
         },
         "./object/augment": {
-            "types": "./types/object/augment.d.ts",
-            "bun": "./object/augment.ts",
-            "require": "./cjs/object/augment.js",
-            "import": "./esm/object/augment.js",
-            "default": "./object/augment.ts"
+            "types": "./types/augment/object.d.ts",
+            "bun": "./augment/object.ts",
+            "require": "./cjs/augment/object.js",
+            "import": "./esm/augment/object.js",
+            "default": "./augment/object.ts"
         },
         "./path": {
             "types": "./types/path.d.ts",
@@ -266,11 +266,11 @@
             "default": "./promise.ts"
         },
         "./promise/augment": {
-            "types": "./types/promise/augment.d.ts",
-            "bun": "./promise/augment.ts",
-            "require": "./cjs/promise/augment.js",
-            "import": "./esm/promise/augment.js",
-            "default": "./promise/augment.ts"
+            "types": "./types/augment/promise.d.ts",
+            "bun": "./augment/promise.ts",
+            "require": "./cjs/augment/promise.js",
+            "import": "./esm/augment/promise.js",
+            "default": "./augment/promise.ts"
         },
         "./string": {
             "types": "./types/string.d.ts",
@@ -280,11 +280,11 @@
             "default": "./string.ts"
         },
         "./string/augment": {
-            "types": "./types/string/augment.d.ts",
-            "bun": "./string/augment.ts",
-            "require": "./cjs/string/augment.js",
-            "import": "./esm/string/augment.js",
-            "default": "./string/augment.ts"
+            "types": "./types/augment/string.d.ts",
+            "bun": "./augment/string.ts",
+            "require": "./cjs/augment/string.js",
+            "import": "./esm/augment/string.js",
+            "default": "./augment/string.ts"
         },
         "./uint8array": {
             "types": "./types/uint8array/index.d.ts",
@@ -294,11 +294,11 @@
             "default": "./uint8array/index.ts"
         },
         "./uint8array/augment": {
-            "types": "./types/uint8array/augment.d.ts",
-            "bun": "./uint8array/augment.ts",
-            "require": "./cjs/uint8array/augment.js",
-            "import": "./esm/uint8array/augment.js",
-            "default": "./uint8array/augment.ts"
+            "types": "./types/augment/uint8array.d.ts",
+            "bun": "./augment/uint8array.ts",
+            "require": "./cjs/augment/uint8array.js",
+            "import": "./esm/augment/uint8array.js",
+            "default": "./augment/uint8array.ts"
         }
     },
     "scripts": {
