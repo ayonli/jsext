@@ -1,6 +1,6 @@
 ## Augmentations
 
-This package supports augmenting some modules' functions to the corresponding
+This package supports augmenting some categories' functions to the corresponding
 built-in types/namespaces, but they should only be used for application
 development, don't use them when developing libraries.
 
@@ -11,16 +11,17 @@ _They don't work by the JSR package._
 // import all
 import "@ayonli/jsext/augment";
 
-// import individual sub-modules
-import "@ayonli/jsext/string/augment";
-import "@ayonli/jsext/number/augment";
-import "@ayonli/jsext/array/augment";
-import "@ayonli/jsext/object/augment";
-import "@ayonli/jsext/json/augment";
-import "@ayonli/jsext/math/augment";
-import "@ayonli/jsext/promise/augment";
-import "@ayonli/jsext/error/augment";
-import "@ayonli/jsext/collections/augment";
+// import individual category
+import "@ayonli/jsext/augment/string";
+import "@ayonli/jsext/augment/number";
+import "@ayonli/jsext/augment/array";
+import "@ayonli/jsext/augment/uint8array";
+import "@ayonli/jsext/augment/object";
+import "@ayonli/jsext/augment/json";
+import "@ayonli/jsext/augment/math";
+import "@ayonli/jsext/augment/promise";
+import "@ayonli/jsext/augment/error";
+import "@ayonli/jsext/augment/collections";
 ```
 
 ### Augment String
@@ -79,6 +80,17 @@ import "@ayonli/jsext/collections/augment";
     - `groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
     - `keyBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
     - `keyBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>`
+
+### Augment Uint8Array
+
+- `Uint8Array`
+  - `copy(src: Uint8Array, dest: Uint8Array): number`
+  - `concat<T extends Uint8Array>(...arrays: T[]): T`
+  - `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
+  - `prototype`
+    - `equals(another: Uint8Array): boolean`
+    - `split(delimiter: number): this[]`
+    - `chunk(length: number): this[]`
 
 ### Augment Object
 

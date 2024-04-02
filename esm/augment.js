@@ -1,13 +1,13 @@
-import './string/augment.js';
-import './number/augment.js';
-import './array/augment.js';
-import './uint8array/augment.js';
-import './object/augment.js';
-import './math/augment.js';
-import './promise/augment.js';
-import './collections/augment.js';
-import './error/augment.js';
-import './json/augment.js';
+import './augment/string.js';
+import './augment/number.js';
+import './augment/array.js';
+import './augment/uint8array.js';
+import './augment/object.js';
+import './augment/math.js';
+import './augment/promise.js';
+import './augment/collections.js';
+import './augment/error.js';
+import './augment/json.js';
 import { AsyncFunction, AsyncGeneratorFunction } from './index.js';
 
 /// <reference types="./lib.deno.d.ts" />

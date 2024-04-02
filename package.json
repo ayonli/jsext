@@ -20,19 +20,19 @@
             "import": "./esm/augment.js",
             "default": "./augment.ts"
         },
+        "./augment/*": {
+            "types": "./types/augment/*.d.ts",
+            "bun": "./augment/*.ts",
+            "require": "./cjs/augment/*.js",
+            "import": "./esm/augment/*.js",
+            "default": "./augment/*.ts"
+        },
         "./chan": {
             "types": "./types/chan.d.ts",
             "bun": "./chan.ts",
             "require": "./cjs/chan.js",
             "import": "./esm/chan.js",
             "default": "./chan.ts"
-        },
-        "./class": {
-            "types": "./types/class.d.ts",
-            "bun": "./class.ts",
-            "require": "./cjs/class.js",
-            "import": "./esm/class.js",
-            "default": "./class.ts"
         },
         "./debounce": {
             "types": "./types/debounce.d.ts",
@@ -152,6 +152,13 @@
             "require": "./cjs/bytes.js",
             "import": "./esm/bytes.js",
             "default": "./bytes.ts"
+        },
+        "./class": {
+            "types": "./types/class.d.ts",
+            "bun": "./class.ts",
+            "require": "./cjs/class.js",
+            "import": "./esm/class.js",
+            "default": "./class.ts"
         },
         "./collections": {
             "types": "./types/collections.d.ts",

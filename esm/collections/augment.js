@@ -1,8 +1,2 @@
-import BiMap from './BiMap.js';
-import CiMap from './CiMap.js';
-
-// @ts-ignore
-globalThis["BiMap"] = BiMap;
-// @ts-ignore
-globalThis["CiMap"] = CiMap;
+import '../augment/collections.js';
 //# sourceMappingURL=augment.js.map

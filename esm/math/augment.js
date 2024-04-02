@@ -1,6 +1,2 @@
-import { sum, avg, product } from '../math.js';
-
-Math.sum = sum;
-Math.avg = avg;
-Math.product = product;
+import '../augment/math.js';
 //# sourceMappingURL=augment.js.map

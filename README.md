@@ -7,19 +7,19 @@ Additional functions for JavaScript to build strong applications.
 The recommended way is to only import the ones that are needed:
 
 ```js
-// Node.js, Bun or Deno (jsr)
+// Node.js, Bun, Deno (JSR) or Cloudflare Workers
 import _try from "@ayonli/jsext/try";
 import func from "@ayonli/jsext/func";
 // ...
 
-// Deno (legacy)
+// Deno (URL)
 import _try from "https://lib.deno.dev/x/ayonli_jsext@latest/try.ts";
 import func from "https://lib.deno.dev/x/ayonli_jsext@latest/func.ts";
 // ...
 
-// Browser
-import _try from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/try.js";
-import func from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/func.js";
+// Browsers (ESM)
+import _try from "https://ayonli.github.io/jsext/esm/try.js";
+import func from "https://ayonli.github.io/jsext/esm/func.js";
 // ...
 ```
 
@@ -27,7 +27,7 @@ There is also a bundled version that can be loaded via a `<script>` tag in the
 browser.
 
 ```html
-<script src="https://lib.deno.dev/x/ayonli_jsext@latest/bundle/jsext.js">
+<script src="https://ayonli.github.io/jsext/bundle/jsext.js">
     // this will also include the sub-modules and augmentations
 </script>
 ```
@@ -54,10 +54,6 @@ browser.
   Golang.
 - [deprecate](#deprecate) Marks a function as deprecated and emit warnings when
   it is called.
-- [isClass](#isclass) Checks if a value is a class/constructor.
-- [isSubclassOf](#issubclassof) Checks if a class is a subset of another class.
-- [mixin](#mixin) Defines a class that inherits methods from multiple base
-  classes.
 
 And more functions in [sub-categories](#sub-categories).
 
@@ -1232,101 +1228,6 @@ console.log(pow(2, 3));
 
 ---
 
-### isClass
-
-```ts
-declare function isClass(value: unknown): value is Constructor<any>;
-```
-
-Checks if a value is a class/constructor.
-
-**Example**
-
-```ts
-import { isClass } from "@ayonli/jsext/class";
-
-console.assert(isClass(class Foo {}));
-console.assert(!isClass(function foo() {}));
-```
-
----
-
-### isSubclassOf
-
-```ts
-declare function isSubclassOf<A, B>(
-  ctor1: Constructor<A>,
-  ctor2: Constructor<B>,
-): boolean;
-```
-
-Checks if a class is a subclass of another class.
-
-**Example**
-
-```ts
-import { isSubclassOf } from "@ayonli/jsext/class";
-
-class Moment extends Date {}
-
-console.assert(isSubclassOf(Moment, Date));
-console.assert(isSubclassOf(Moment, Object)); // all classes are subclasses of Object
-```
-
----
-
-### mixin
-
-```ts
-import type { UnionToIntersection } from "@ayonli/jsext/class";
-
-declare function mixin<T extends Constructor<any>, M extends any[]>(
-  base: T,
-  ...mixins: { [X in keyof M]: Constructor<M[X]> }
-): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
-declare function mixin<T extends Constructor<any>, M extends any[]>(
-  base: T,
-  ...mixins: M
-): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
-```
-
-Returns an extended class that combines all mixin methods.
-
-This function does not mutates the base class but create a pivot class instead.
-
-**Example**
-
-```ts
-import { isSubclassOf, mixin } from "@ayonli/jsext/class";
-
-class Log {
-  log(text: string) {
-    console.log(text);
-  }
-}
-
-class View {
-  display(data: Record<string, any>[]) {
-    console.table(data);
-  }
-}
-
-class Controller extends mixin(View, Log) {
-  constructor(readonly topic: string) {
-    super();
-  }
-}
-
-const ctrl = new Controller("foo");
-ctrl.log("something is happening");
-ctrl.display([{ topic: ctrl.topic, content: "something is happening" }]);
-
-console.assert(isSubclassOf(Controller, View));
-console.assert(!isSubclassOf(Controller, Log));
-```
-
----
-
 ## Classes and Types
 
 - `Channel<T>`
@@ -1375,26 +1276,8 @@ Each of these modules includes specific functions for their target categories:
   Platform-independent utility functions for dealing with system paths and URLs.
 - [dialog](https://jsr.io/@ayonli/jsext/doc/dialog/~) (Experimental)
   Asynchronous dialog functions for both browsers and Node.js.
-
-We can import these modules either with the Node.js style, or use the URL style
-if the runtime supports, for example:
-
-```js
-// Node.js, Bun, Deno (jsr)
-import { compare, random /* ... */ } from "@ayonli/jsext/string";
-
-// Deno (legacy)
-import {
-  compare,
-  random, /* ... */
-} from "https://lib.deno.dev/x/ayonli_jsext@latest/string.ts";
-
-// Browser
-import {
-  compare,
-  random, /* ... */
-} from "https://lib.deno.dev/x/ayonli_jsext@latest/esm/string.js";
-```
+- [class](https://jsr.io/@ayonli/jsext/doc/class/~) Functions for dealing with
+  ES6 classes.
 
 ## Augmentations
 

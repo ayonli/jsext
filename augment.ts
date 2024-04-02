@@ -1,14 +1,14 @@
 /// <reference types="./lib.deno.d.ts" />
-import "./string/augment.ts";
-import "./number/augment.ts";
-import "./array/augment.ts";
-import "./uint8array/augment.ts";
-import "./object/augment.ts";
-import "./math/augment.ts";
-import "./promise/augment.ts";
-import "./collections/augment.ts";
-import "./error/augment.ts";
-import "./json/augment.ts";
+import "./augment/string.ts";
+import "./augment/number.ts";
+import "./augment/array.ts";
+import "./augment/uint8array.ts";
+import "./augment/object.ts";
+import "./augment/math.ts";
+import "./augment/promise.ts";
+import "./augment/collections.ts";
+import "./augment/error.ts";
+import "./augment/json.ts";
 import { AsyncFunction, AsyncGeneratorFunction } from "./index.ts";
 
 declare global {

@@ -1,6 +1,2 @@
-import { parseAs, as, type } from '../json.js';
-
-JSON.parseAs = parseAs;
-JSON.as = as;
-JSON.type = type;
+import '../augment/json.js';
 //# sourceMappingURL=augment.js.map
