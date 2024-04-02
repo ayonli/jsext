@@ -1,6 +1,6 @@
 import { ok, strictEqual } from "node:assert";
 import { alert, confirm, prompt, progress } from "./dialog/index.ts";
-import { sleep, until } from "./promise.ts";
+import { sleep, until } from "./async.ts";
 import { as } from "./object.ts";
 import _try from "./try.ts";
 

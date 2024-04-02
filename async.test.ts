@@ -2,8 +2,8 @@ import "./augment.ts";
 import jsext from "./index.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 
-describe("Promise", () => {
-    it("Promise.timeout", async () => {
+describe("async", () => {
+    it("timeout", async () => {
         const res1 = await Promise.timeout(Promise.resolve(1), 50);
 
         strictEqual(res1, 1);
@@ -18,7 +18,7 @@ describe("Promise", () => {
         deepStrictEqual(err, new Error("operation timeout after 50ms"));
     });
 
-    it("Promise.after", async () => {
+    it("after", async () => {
         let startTime = Date.now();
         const res1 = await Promise.after(Promise.resolve(1), 50);
         const duration = Date.now() - startTime;
@@ -39,13 +39,13 @@ describe("Promise", () => {
         ok(duration2 >= 99);
     });
 
-    it("Promise.sleep", async () => {
+    it("sleep", async () => {
         const startTime = Date.now();
         await Promise.sleep(50);
         ok(Date.now() - startTime >= 49);
     });
 
-    it("Promise.until", async () => {
+    it("until", async () => {
         let result = 0;
         await Promise.until(() => (++result) === 10);
         strictEqual(result, 10);

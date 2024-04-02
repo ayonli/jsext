@@ -3,4 +3,4 @@
  * in the next major version.
  * @module
  */
-export * from "../promise.ts";
+export * from "../async.ts";

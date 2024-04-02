@@ -1,5 +1,5 @@
 import { deepStrictEqual, ok } from "node:assert";
-import { sleep } from "./promise.ts";
+import { sleep } from "./async.ts";
 import jsext from "./index.ts";
 
 describe("jsext.throttle", () => {

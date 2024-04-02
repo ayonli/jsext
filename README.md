@@ -1250,34 +1250,36 @@ _(except for `Channel`, `Queue` and `Mutex`)._
 
 Each of these modules includes specific functions for their target categories:
 
-- [string](https://jsr.io/@ayonli/jsext/doc/string/~) Functions for dealing with
-  strings.
-- [number](https://jsr.io/@ayonli/jsext/doc/number/~) Functions for dealing with
-  numbers.
+- [async](https://jsr.io/@ayonli/jsext/doc/async/~) Functions for async/promise
+  context handling.
+  - Historically, this module was named `promise`, but that name has been
+    deprecated.
 - [array](https://jsr.io/@ayonli/jsext/doc/array/~) Functions for dealing with
   arrays.
-- [object](https://jsr.io/@ayonli/jsext/doc/object/~) Functions for dealing with
-  objects.
-- [json](https://jsr.io/@ayonli/jsext/doc/json/~) Functions for parsing JSONs to
-  specific structures.
-- [math](https://jsr.io/@ayonli/jsext/doc/math/~) Functions for mathematical
-  calculations.
-- [promise](https://jsr.io/@ayonli/jsext/doc/promise/~) Functions for
-  promise/async context handling.
-- [error](https://jsr.io/@ayonli/jsext/doc/error/~) Functions for converting
-  errors to/from other types of objects.
-- [collections](https://jsr.io/@ayonli/jsext/doc/collections/~) Additional
-  collection data types.
 - [bytes](https://jsr.io/@ayonli/jsext/doc/bytes/~) Functions for dealing with
   byte arrays (`Uint8Array`).
   - Historically, this module was named `uint8array`, but that name has been
     deprecated.
-- [path](https://jsr.io/@ayonli/jsext/doc/path/~) (Experimental)
-  Platform-independent utility functions for dealing with system paths and URLs.
-- [dialog](https://jsr.io/@ayonli/jsext/doc/dialog/~) (Experimental)
-  Asynchronous dialog functions for both browsers and Node.js.
 - [class](https://jsr.io/@ayonli/jsext/doc/class/~) Functions for dealing with
   ES6 classes.
+- [collections](https://jsr.io/@ayonli/jsext/doc/collections/~) Additional
+  collection data types.
+- [dialog](https://jsr.io/@ayonli/jsext/doc/dialog/~) (Experimental)
+  Asynchronous dialog functions for both browsers and Node.js.
+- [error](https://jsr.io/@ayonli/jsext/doc/error/~) Functions for converting
+  errors to/from other types of objects.
+- [json](https://jsr.io/@ayonli/jsext/doc/json/~) Functions for parsing JSONs to
+  specific structures.
+- [math](https://jsr.io/@ayonli/jsext/doc/math/~) Functions for mathematical
+  calculations.
+- [number](https://jsr.io/@ayonli/jsext/doc/number/~) Functions for dealing with
+  numbers.
+- [object](https://jsr.io/@ayonli/jsext/doc/object/~) Functions for dealing with
+  objects.
+- [path](https://jsr.io/@ayonli/jsext/doc/path/~) (Experimental)
+  Platform-independent utility functions for dealing with system paths and URLs.
+- [string](https://jsr.io/@ayonli/jsext/doc/string/~) Functions for dealing with
+  strings.
 
 ## Augmentations
 

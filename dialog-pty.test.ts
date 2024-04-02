@@ -1,7 +1,7 @@
 import { deepStrictEqual } from "node:assert";
 import { spawn, IPty, IPtyForkOptions } from "node-pty";
 import { isNodePrior16 } from "./parallel/constants.ts";
-import { sleep } from "./promise.ts";
+import { sleep } from "./async.ts";
 import { END, ESC, LEFT, RIGHT, START } from "./dialog/terminal/constants.ts";
 
 const useDeno = process.argv.includes("--deno");

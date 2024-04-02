@@ -1,5 +1,5 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
-import { sleep } from "./promise.ts";
+import { sleep } from "./async.ts";
 import { random, range } from "./number.ts";
 import { sum } from "./math.ts";
 import jsext from "./index.ts";

@@ -6,7 +6,7 @@ import * as array from "./array.ts";
 import * as object from "./object.ts";
 import * as json from "./json.ts";
 import * as math from "./math.ts";
-import * as promise from "./promise.ts";
+import * as promise from "./async.ts";
 import * as error from "./error.ts";
 import * as collections from "./collections.ts";
 import * as bytes from "./bytes.ts";

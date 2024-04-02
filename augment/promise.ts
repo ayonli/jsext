@@ -1,4 +1,4 @@
-import { after, sleep, timeout, until } from "../promise.ts";
+import { after, sleep, timeout, until } from "../async.ts";
 
 declare global {
     interface PromiseConstructor {

@@ -1,4 +1,4 @@
-import { timeout, after, sleep, until } from '../promise.js';
+import { timeout, after, sleep, until } from '../async.js';
 
 Promise.timeout = timeout;
 Promise.after = after;
