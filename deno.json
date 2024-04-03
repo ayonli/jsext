@@ -18,6 +18,7 @@
         "./throttle": "./throttle.ts",
         "./try": "./try.ts",
         "./wrap": "./wrap.ts",
+        "./async": "./async.ts",
         "./array": "./array.ts",
         "./bytes": "./bytes.ts",
         "./collections": "./collections.ts",
@@ -28,7 +29,6 @@
         "./number": "./number.ts",
         "./object": "./object.ts",
         "./path": "./path.ts",
-        "./promise": "./promise.ts",
         "./string": "./string.ts",
         "./worker.ts": "./worker.ts"
     },

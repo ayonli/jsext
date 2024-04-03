@@ -1,5 +1,5 @@
 import { progress } from "../../dialog.ts";
-import { sleep } from "../../promise.ts";
+import { sleep } from "../../async.ts";
 
 try {
     const result = await progress("Processing...", async () => {

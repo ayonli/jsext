@@ -132,6 +132,13 @@
             "import": "./esm/wrap.js",
             "default": "./wrap.ts"
         },
+        "./async": {
+            "types": "./types/async.d.ts",
+            "bun": "./async.ts",
+            "require": "./cjs/async.js",
+            "import": "./esm/async.js",
+            "default": "./async.ts"
+        },
         "./array": {
             "types": "./types/array.d.ts",
             "bun": "./array.ts",
@@ -259,11 +266,11 @@
             "default": "./path.ts"
         },
         "./promise": {
-            "types": "./types/promise.d.ts",
-            "bun": "./promise.ts",
-            "require": "./cjs/promise.js",
-            "import": "./esm/promise.js",
-            "default": "./promise.ts"
+            "types": "./types/async.d.ts",
+            "bun": "./async.ts",
+            "require": "./cjs/async.js",
+            "import": "./esm/async.js",
+            "default": "./async.ts"
         },
         "./promise/augment": {
             "types": "./types/augment/promise.d.ts",
@@ -287,11 +294,11 @@
             "default": "./augment/string.ts"
         },
         "./uint8array": {
-            "types": "./types/uint8array/index.d.ts",
-            "bun": "./uint8array/index.ts",
-            "require": "./cjs/uint8array/index.js",
-            "import": "./esm/uint8array/index.js",
-            "default": "./uint8array/index.ts"
+            "types": "./types/bytes.d.ts",
+            "bun": "./bytes.ts",
+            "require": "./cjs/bytes.js",
+            "import": "./esm/bytes.js",
+            "default": "./bytes.ts"
         },
         "./uint8array/augment": {
             "types": "./types/augment/uint8array.d.ts",
