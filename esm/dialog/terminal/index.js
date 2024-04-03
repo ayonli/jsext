@@ -1,4 +1,4 @@
-import { isNodeRepl, hijackNodeStdin } from './util.js';
+import { hijackNodeStdin } from './util.js';
 import question from './question.js';
 
 async function questionInDeno(message, options = {}) {
@@ -19,26 +19,17 @@ async function questionInNode(message, options = {}) {
     if (!stdout.isTTY) {
         return null;
     }
-    if (stdin.isPaused()) {
-        stdin.resume();
-    }
-    const rawMode = stdin.isRaw;
-    rawMode || stdin.setRawMode(true);
-    try {
-        return await question(message, { stdin, stdout, ...options });
-    }
-    finally {
-        stdin.setRawMode(rawMode);
-        if (!(await isNodeRepl())) {
-            stdin.pause();
+    return await hijackNodeStdin(stdin, async () => {
+        const rawMode = stdin.isRaw;
+        rawMode || stdin.setRawMode(true);
+        try {
+            return await question(message, { stdin, stdout, ...options });
         }
-    }
-}
-async function questionInNodeRepl(message, options = {}) {
-    return await hijackNodeStdin(process.stdin, async () => {
-        return await questionInNode(message, options);
+        finally {
+            stdin.setRawMode(rawMode);
+        }
     });
 }
 
-export { questionInDeno, questionInNode, questionInNodeRepl };
+export { questionInDeno, questionInNode };
 //# sourceMappingURL=index.js.map

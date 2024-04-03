@@ -1,7 +1,6 @@
 export { default as progress } from './dialog/progress.js';
 import { alertInBrowser, confirmInBrowser, promptInBrowser } from './dialog/browser/index.js';
-import { questionInDeno, questionInNodeRepl, questionInNode } from './dialog/terminal/index.js';
-import { isNodeRepl } from './dialog/terminal/util.js';
+import { questionInDeno, questionInNode } from './dialog/terminal/index.js';
 
 /**
  * Asynchronous dialog functions for both browsers and terminals.
@@ -21,11 +20,8 @@ async function alert(message) {
     else if (typeof Deno === "object") {
         await questionInDeno(message + " [Enter] ");
     }
-    else if (await isNodeRepl()) {
-        await questionInNodeRepl(message + " [Enter] ");
-    }
     else {
-        await questionInNodeRepl(message + " [Enter] ");
+        await questionInNode(message + " [Enter] ");
     }
 }
 /**
@@ -40,9 +36,6 @@ async function confirm(message) {
         let answer;
         if (typeof Deno === "object") {
             answer = await questionInDeno(message + " [Y/n] ");
-        }
-        else if (await isNodeRepl()) {
-            answer = await questionInNodeRepl(message + " [Y/n] ");
         }
         else {
             answer = await questionInNode(message + " [Y/n] ");
@@ -67,9 +60,6 @@ async function prompt(message, options = "") {
     }
     else if (typeof Deno === "object") {
         return await questionInDeno(message + " ", { defaultValue, mask });
-    }
-    else if (await isNodeRepl()) {
-        return await questionInNodeRepl(message + " ", { defaultValue, mask });
     }
     else {
         return await questionInNode(message + " ", { defaultValue, mask });

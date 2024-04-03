@@ -6,7 +6,7 @@ import Footer from './browser/Footer.js';
 import Progress from './browser/Progress.js';
 import Text from './browser/Text.js';
 import { CLR, LF } from './terminal/constants.js';
-import { isNodeRepl, writeSync, isCancelEvent } from './terminal/util.js';
+import { hijackNodeStdin, writeSync, isCancelEvent } from './terminal/util.js';
 
 async function handleDomProgress(message, fn, options) {
     const { signal, abort, listenForAbort } = options;
@@ -140,20 +140,16 @@ async function handleNodeProgress(message, fn, options) {
     if (!stdout.isTTY) {
         return null;
     }
-    if (stdin.isPaused()) {
-        stdin.resume();
-    }
-    const rawMode = stdin.isRaw;
-    rawMode || stdin.setRawMode(true);
-    try {
-        return await handleTerminalProgress(stdin, stdout, message, fn, options);
-    }
-    finally {
-        stdin.setRawMode(rawMode);
-        if (!(await isNodeRepl())) {
-            stdin.pause();
+    return hijackNodeStdin(stdin, async () => {
+        const rawMode = stdin.isRaw;
+        rawMode || stdin.setRawMode(true);
+        try {
+            return await handleTerminalProgress(stdin, stdout, message, fn, options);
         }
-    }
+        finally {
+            stdin.setRawMode(rawMode);
+        }
+    });
 }
 /**
  * Displays a dialog with a progress bar indicating the ongoing state of the

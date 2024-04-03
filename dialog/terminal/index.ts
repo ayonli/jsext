@@ -1,4 +1,4 @@
-import { hijackNodeStdin, isNodeRepl } from "./util.ts";
+import { hijackNodeStdin } from "./util.ts";
 import question from "./question.ts";
 
 export async function questionInDeno(message: string, options: {
@@ -30,29 +30,14 @@ export async function questionInNode(message: string, options: {
         return null;
     }
 
-    if (stdin.isPaused()) {
-        stdin.resume();
-    }
+    return await hijackNodeStdin(stdin, async () => {
+        const rawMode = stdin.isRaw;
+        rawMode || stdin.setRawMode(true);
 
-    const rawMode = stdin.isRaw;
-    rawMode || stdin.setRawMode(true);
-
-    try {
-        return await question(message, { stdin, stdout, ...options });
-    } finally {
-        stdin.setRawMode(rawMode);
-
-        if (!(await isNodeRepl())) {
-            stdin.pause();
+        try {
+            return await question(message, { stdin, stdout, ...options });
+        } finally {
+            stdin.setRawMode(rawMode);
         }
-    }
-}
-
-export async function questionInNodeRepl(message: string, options: {
-    defaultValue?: string | undefined;
-    mask?: string | undefined;
-} = {}): Promise<string | null> {
-    return await hijackNodeStdin(process.stdin, async () => {
-        return await questionInNode(message, options);
     });
 }

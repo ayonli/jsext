@@ -9,8 +9,7 @@
 import progress from "./dialog/progress.ts";
 import type { ProgressState, ProgressFunc, ProgressAbortHandler } from "./dialog/progress.ts";
 import { alertInBrowser, confirmInBrowser, promptInBrowser } from "./dialog/browser/index.ts";
-import { questionInDeno, questionInNode, questionInNodeRepl } from "./dialog/terminal/index.ts";
-import { isNodeRepl } from "./dialog/terminal/util.ts";
+import { questionInDeno, questionInNode } from "./dialog/terminal/index.ts";
 
 export { progress, ProgressState, ProgressFunc, ProgressAbortHandler };
 
@@ -23,10 +22,8 @@ export async function alert(message: string): Promise<void> {
         await alertInBrowser(message);
     } else if (typeof Deno === "object") {
         await questionInDeno(message + " [Enter] ");
-    } else if (await isNodeRepl()) {
-        await questionInNodeRepl(message + " [Enter] ");
     } else {
-        await questionInNodeRepl(message + " [Enter] ");
+        await questionInNode(message + " [Enter] ");
     }
 }
 
@@ -42,8 +39,6 @@ export async function confirm(message: string): Promise<boolean> {
 
         if (typeof Deno === "object") {
             answer = await questionInDeno(message + " [Y/n] ");
-        } else if (await isNodeRepl()) {
-            answer = await questionInNodeRepl(message + " [Y/n] ");
         } else {
             answer = await questionInNode(message + " [Y/n] ");
         }
@@ -95,8 +90,6 @@ export async function prompt(
         return await promptInBrowser(message, { type, defaultValue });
     } else if (typeof Deno === "object") {
         return await questionInDeno(message + " ", { defaultValue, mask });
-    } else if (await isNodeRepl()) {
-        return await questionInNodeRepl(message + " ", { defaultValue, mask });
     } else {
         return await questionInNode(message + " ", { defaultValue, mask });
     }

@@ -11,8 +11,8 @@ import {
     DenoStdout,
     NodeStdin,
     NodeStdout,
+    hijackNodeStdin,
     isCancelEvent,
-    isNodeRepl,
     writeSync,
 } from "./terminal/util.ts";
 
@@ -214,22 +214,16 @@ async function handleNodeProgress<T>(message: string, fn: ProgressFunc<T>, optio
         return null;
     }
 
-    if (stdin.isPaused()) {
-        stdin.resume();
-    }
+    return hijackNodeStdin(stdin, async () => {
+        const rawMode = stdin.isRaw;
+        rawMode || stdin.setRawMode(true);
 
-    const rawMode = stdin.isRaw;
-    rawMode || stdin.setRawMode(true);
-
-    try {
-        return await handleTerminalProgress(stdin, stdout, message, fn, options);
-    } finally {
-        stdin.setRawMode(rawMode);
-
-        if (!(await isNodeRepl())) {
-            stdin.pause();
+        try {
+            return await handleTerminalProgress(stdin, stdout, message, fn, options);
+        } finally {
+            stdin.setRawMode(rawMode);
         }
-    }
+    });
 }
 
 /**

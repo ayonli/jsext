@@ -67,18 +67,25 @@ function isCancelEvent(buf) {
     return equals(buf, ESC) || equals(buf, CANCEL);
 }
 async function hijackNodeStdin(stdin, task) {
-    const _listeners = stdin.listeners("keypress");
-    stdin.removeAllListeners("keypress");
-    const result = await task();
-    _listeners.forEach(listener => stdin.addListener("keypress", listener));
-    return result;
-}
-async function isNodeRepl() {
-    var _a;
-    const repl = await import('repl');
-    // @ts-ignore fix CommonJS import
-    return !!((_a = repl.default) !== null && _a !== void 0 ? _a : repl).repl;
+    if (stdin.isPaused()) {
+        stdin.resume();
+    }
+    const listeners = [...stdin.listeners("data")]; // copy listeners in cased being modified
+    if (listeners === null || listeners === void 0 ? void 0 : listeners.length) {
+        stdin.removeAllListeners("data");
+    }
+    try {
+        return await task();
+    }
+    finally {
+        if (listeners === null || listeners === void 0 ? void 0 : listeners.length) {
+            listeners.forEach(listener => stdin.addListener("data", listener));
+        }
+        else {
+            stdin.pause();
+        }
+    }
 }
 
-export { hijackNodeStdin, isCancelEvent, isNodeRepl, read, toLeft, toRight, write, writeSync };
+export { hijackNodeStdin, isCancelEvent, read, toLeft, toRight, write, writeSync };
 //# sourceMappingURL=util.js.map

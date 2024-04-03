@@ -84,18 +84,23 @@ export function isCancelEvent(buf: Uint8Array) {
 }
 
 export async function hijackNodeStdin<T>(stdin: NodeStdin, task: () => Promise<T>) {
-    const _listeners = stdin.listeners("keypress");
-    stdin.removeAllListeners("keypress");
+    if (stdin.isPaused()) {
+        stdin.resume();
+    }
 
-    const result = await task();
+    const listeners = [...stdin.listeners("data")]; // copy listeners in cased being modified
 
-    _listeners.forEach(listener => stdin.addListener("keypress", listener as any));
+    if (listeners?.length) {
+        stdin.removeAllListeners("data");
+    }
 
-    return result;
-}
-
-export async function isNodeRepl() {
-    const repl = await import("repl");
-    // @ts-ignore fix CommonJS import
-    return !!(repl.default ?? repl).repl;
+    try {
+        return await task();
+    } finally {
+        if (listeners?.length) {
+            listeners.forEach(listener => stdin.addListener("data", listener as any));
+        } else {
+            stdin.pause();
+        }
+    }
 }
