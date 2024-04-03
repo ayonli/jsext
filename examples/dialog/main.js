@@ -1,5 +1,5 @@
 import { alert, confirm, prompt, progress } from "../../esm/dialog.js";
-import { sleep } from "../../esm/promise.js";
+import { sleep } from "../../esm/async.js";
 
 await (async () => {
     const email = await prompt("Input email:", "john.doe@example.com");
