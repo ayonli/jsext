@@ -45,9 +45,39 @@ describe("async", () => {
         ok(Date.now() - startTime >= 49);
     });
 
-    it("until", async () => {
-        let result = 0;
-        await Promise.until(() => (++result) === 10);
-        strictEqual(result, 10);
+    describe("until", () => {
+        it("return true", async () => {
+            let result = 0;
+            const ok = await Promise.until(() => (++result) === 10);
+            strictEqual(ok, true);
+            strictEqual(result, 10);
+        });
+
+        it("return truthy", async () => {
+            let value: string | undefined = undefined;
+            const timer = setTimeout(() => {
+                value = "ok";
+            }, 50);
+
+            const result = await Promise.until(() => value);
+            clearTimeout(timer);
+            strictEqual(result, "ok");
+        });
+
+        it("handle exception", async () => {
+            let value: string | undefined = undefined;
+            const timer = setTimeout(() => {
+                value = "ok";
+            }, 50);
+
+            const result = await Promise.until(() => {
+                if (value !== "ok") {
+                    throw new Error("error");
+                }
+                return value;
+            });
+            clearTimeout(timer);
+            strictEqual(result, "ok");
+        });
     });
 });

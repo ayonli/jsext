@@ -27,14 +27,31 @@ async function after(value, ms) {
         throw result.reason;
     }
 }
-/** Blocks the context for a given time. */
+/** Blocks the context for a given duration. */
 async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-/** Blocks the context until the test passes. */
+/**
+ * Blocks the context until the test returns a truthy value, which is not `false`,
+ * `null` or `undefined`. If the test throws an error, it will be treated as a
+ * falsy value and the loop continues.
+ *
+ * This functions returns the same result as the test function when passed.
+ */
 async function until(test) {
-    while ((await test()) === false) {
-        await sleep(0);
+    while (true) {
+        try {
+            const result = await test();
+            if (result !== false && result !== null && result !== undefined) {
+                return result;
+            }
+            else {
+                await sleep(0);
+            }
+        }
+        catch (_a) {
+            await sleep(0);
+        }
     }
 }
 

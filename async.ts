@@ -30,14 +30,32 @@ export async function after<T>(value: T | PromiseLike<T>, ms: number): Promise<T
     }
 }
 
-/** Blocks the context for a given time. */
+/** Blocks the context for a given duration. */
 export async function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/** Blocks the context until the test passes. */
-export async function until(test: () => boolean | Promise<boolean>): Promise<void> {
-    while ((await test()) === false) {
-        await sleep(0);
+/**
+ * Blocks the context until the test returns a truthy value, which is not `false`,
+ * `null` or `undefined`. If the test throws an error, it will be treated as a
+ * falsy value and the loop continues.
+ * 
+ * This functions returns the same result as the test function when passed.
+ */
+export async function until<T>(
+    test: () => T | Promise<T>
+): Promise<T extends false | null | undefined ? never : T> {
+    while (true) {
+        try {
+            const result = await test();
+
+            if (result !== false && result !== null && result !== undefined) {
+                return result as any;
+            } else {
+                await sleep(0);
+            }
+        } catch {
+            await sleep(0);
+        }
     }
 }
