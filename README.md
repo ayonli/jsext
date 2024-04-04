@@ -199,9 +199,9 @@ result in an `[err, val]` tuple.
 
 ```ts
 import _try from "@ayonli/jsext/try";
-import { sequence } from "@ayonli/jsext/number";
+import { range } from "@ayonli/jsext/number";
 
-const iter = sequence(1, 10);
+const iter = range(1, 10);
 
 for (const [err, val] of _try(iter)) {
   if (err) {
@@ -340,7 +340,7 @@ previous result will be returned and the `handler` function will not be invoked.
 
 ```ts
 import throttle from "@ayonli/jsext/throttle";
-import { sleep } from "@ayonli/jsext/promise";
+import { sleep } from "@ayonli/jsext/async";
 
 const fn = throttle((input: string) => input, 1_000);
 console.log(fn("foo")); // foo
@@ -354,7 +354,7 @@ console.log(fn("bar")); // bar
 
 ```ts
 import throttle from "@ayonli/jsext/throttle";
-import { sleep } from "@ayonli/jsext/promise";
+import { sleep } from "@ayonli/jsext/async";
 
 const out1 = await throttle(() => Promise.resolve("foo"), {
   duration: 1_000,
@@ -418,7 +418,7 @@ so multiple calls can be merged into one.
 
 ```ts
 import debounce from "@ayonli/jsext/debounce";
-import { sleep } from "@ayonli/jsext/promise";
+import { sleep } from "@ayonli/jsext/async";
 
 let count = 0;
 
@@ -588,7 +588,7 @@ one coroutine at a time.
 import { Mutex } from "@ayonli/jsext/lock";
 import func from "@ayonli/jsext/func";
 import { random } from "@ayonli/jsext/number";
-import { sleep } from "@ayonli/jsext/promise";
+import { sleep } from "@ayonli/jsext/async";
 
 const mutex = new Mutex(1);
 
@@ -815,12 +815,12 @@ console.log(num3); // 789
 
 ```ts
 import chan from "@ayonli/jsext/chan";
-import { sequence } from "@ayonli/jsext/number";
+import { range } from "@ayonli/jsext/number";
 
 const channel = chan<number>();
 
 (async () => {
-  for (const num of sequence(1, 5)) {
+  for (const num of range(1, 5)) {
     await channel.send(num);
   }
 
@@ -940,15 +940,15 @@ for await (const word of mod.sequence(["foo", "bar"])) {
 ```ts
 import parallel from "@ayonli/jsext/parallel";
 import chan from "@ayonli/jsext/chan";
-import { sequence } from "@ayonli/jsext/number";
-import { readAll } from "@ayonli/jsext/read";
+import { range } from "@ayonli/jsext/number";
+import readAll from "@ayonli/jsext/readAll";
 
 const mod = parallel(() => import("./examples/worker.mjs"));
 
 const channel = chan<{ value: number; done: boolean }>();
 const length = mod.twoTimesValues(channel);
 
-for (const value of sequence(0, 9)) {
+for (const value of range(0, 9)) {
   await channel.send({ value, done: value === 9 });
 }
 

@@ -26,7 +26,7 @@ const _unlocked = Symbol.for("unlocked");
  * import { Mutex } from "@ayonli/jsext/lock";
  * import func from "@ayonli/jsext/func";
  * import { random } from "@ayonli/jsext/number";
- * import { sleep } from "@ayonli/jsext/promise";
+ * import { sleep } from "@ayonli/jsext/async";
  *
  * const mutex = new Mutex(1);
  *

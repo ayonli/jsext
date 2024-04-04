@@ -287,15 +287,15 @@ function extractBaseUrl(stackTrace) {
  * // use channel
  * import parallel from "@ayonli/jsext/parallel";
  * import chan from "@ayonli/jsext/chan";
- * import { sequence } from "@ayonli/jsext/number";
- * import { readAll } from "@ayonli/jsext/read";
+ * import { range } from "@ayonli/jsext/number";
+ * import readAll from "@ayonli/jsext/readAll";
  *
  * const mod = parallel(() => import("./examples/worker.mjs"));
  *
  * const channel = chan<{ value: number; done: boolean; }>();
  * const length = mod.twoTimesValues(channel);
  *
- * for (const value of sequence(0, 9)) {
+ * for (const value of range(0, 9)) {
  *     await channel.push({ value, done: value === 9 });
  * }
  *

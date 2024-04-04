@@ -129,9 +129,9 @@ export default function _try<E = unknown, T = any, TReturn = any, TNext = unknow
  * @example
  * ```ts
  * import _try from "@ayonli/jsext/try";
- * import { sequence } from "@ayonli/jsext/number";
+ * import { range } from "@ayonli/jsext/number";
  * 
- * const iter = sequence(1, 10);
+ * const iter = range(1, 10);
  * 
  * for (const [err, val] of _try(iter)) {
  *     if (err) {

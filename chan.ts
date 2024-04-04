@@ -257,12 +257,12 @@ export class Channel<T> implements AsyncIterable<T> {
  * ```ts
  * // iterable
  * import chan from "@ayonli/jsext/chan";
- * import { sequence } from "@ayonli/jsext/number";
+ * import { range } from "@ayonli/jsext/number";
  * 
  * const channel = chan<number>();
  * 
  * (async () => {
- *     for (const num of sequence(1, 5)) {
+ *     for (const num of range(1, 5)) {
  *         await channel.send(num);
  *     }
  * 

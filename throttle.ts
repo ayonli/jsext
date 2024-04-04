@@ -22,7 +22,7 @@ const Cache = new Map<any, Throttle>();
  * @example
  * ```ts
  * import throttle from "@ayonli/jsext/throttle";
- * import { sleep } from "@ayonli/jsext/promise";
+ * import { sleep } from "@ayonli/jsext/async";
  * 
  * const fn = throttle((input: string) => input, 1_000);
  * console.log(fn("foo")); // foo
@@ -40,7 +40,7 @@ export default function throttle<I, Fn extends (this: I, ...args: any[]) => any>
  * @example
  * ```ts
  * import throttle from "@ayonli/jsext/throttle";
- * import { sleep } from "@ayonli/jsext/promise";
+ * import { sleep } from "@ayonli/jsext/async";
  * 
  * const out1 = await throttle(() => Promise.resolve("foo"), {
  *     duration: 1_000,

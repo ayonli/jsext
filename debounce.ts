@@ -30,7 +30,7 @@ const registry = new Map<any, Debounce>();
  * @example
  * ```ts
  * import debounce from "@ayonli/jsext/debounce";
- * import { sleep } from "@ayonli/jsext/promise";
+ * import { sleep } from "@ayonli/jsext/async";
  * 
  * let count = 0;
  * 
