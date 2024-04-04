@@ -20,7 +20,10 @@ export type DenoStdout = typeof Deno.stdout;
 function charWidth(char: string) {
     if (EMOJI_RE.test(char)) {
         const _bytes = byteLength(char);
-        return _bytes === 1 || _bytes === 3 || _bytes === 6 ? 1 : 2;
+
+        // Most emojis are 4 bytes wide, but some are 3 bytes in Windows/Linux,
+        // and 6 bytes in macOS.
+        return _bytes === 3 || _bytes === 6 ? 1 : 2;
     } else if (isWide(char.codePointAt(0)!) || isFullWidth(char.codePointAt(0)!)) {
         return 2;
     } else {

@@ -206,7 +206,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
         it("input emojis", async () => {
             const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
 
-            for (const char of ["👋", "🌍", "🚀", "♥️"]) {
+            for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                 cmd.write(char);
                 await sleep(10);
             }
@@ -215,8 +215,8 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             const outputs = await output;
 
             deepStrictEqual(outputs, [
-                "Enter something: 👋🌍🚀♥️",
-                "👋🌍🚀♥️",
+                "Enter something: 👋🌍🚀♥️♣",
+                "👋🌍🚀♥️♣",
                 ""
             ]);
         });
@@ -289,7 +289,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             { // for emojis
                 const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
 
-                for (const char of ["👋", "🌍", "🚀", "♥️"]) {
+                for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
                     await sleep(10);
                 }
@@ -298,8 +298,8 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                 const outputs = await output;
 
                 deepStrictEqual(outputs, [
-                    "Enter password: ****",
-                    "👋🌍🚀♥️",
+                    "Enter password: *****",
+                    "👋🌍🚀♥️♣",
                     ""
                 ]);
             }
@@ -381,7 +381,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             { // for emojis
                 const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
 
-                for (const char of ["👋", "🌍", "🚀", "♥️"]) {
+                for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
                     await sleep(10);
                 }
@@ -390,11 +390,13 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                 await sleep(10);
                 cmd.write("\b");
                 await sleep(10);
+                cmd.write("\b");
+                await sleep(10);
                 cmd.write("\n");
                 const outputs = await output;
 
                 deepStrictEqual(outputs, [
-                    "Enter something: 👋🌍🚀♥️\u001b[1D\u001b[0K\u001b[2D\u001b[0K",
+                    "Enter something: 👋🌍🚀♥️♣\u001b[1D\u001b[0K\u001b[1D\u001b[0K\u001b[2D\u001b[0K",
                     "👋🌍",
                     ""
                 ]);
@@ -445,7 +447,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             { // for password emojis
                 const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
 
-                for (const char of ["👋", "🌍", "🚀", "♥️"]) {
+                for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
                     await sleep(10);
                 }
@@ -454,11 +456,13 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                 await sleep(10);
                 cmd.write("\b");
                 await sleep(10);
+                cmd.write("\b");
+                await sleep(10);
                 cmd.write("\n");
                 const outputs = await output;
 
                 deepStrictEqual(outputs, [
-                    "Enter password: ****\u001b[1D\u001b[0K\u001b[1D\u001b[0K",
+                    "Enter password: *****\u001b[1D\u001b[0K\u001b[1D\u001b[0K\u001b[1D\u001b[0K",
                     "👋🌍",
                     ""
                 ]);
@@ -519,7 +523,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             { // for emojis
                 const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
 
-                for (const char of ["👋", "🌍", "🚀", "♥️"]) {
+                for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
                     await sleep(10);
                 }
@@ -534,8 +538,8 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                 const outputs = await output;
 
                 deepStrictEqual(outputs, [
-                    "Enter something: 👋🌍🚀♥️\u001b[1D\u001b[2D\u001b[2D",
-                    "👋🌍🚀♥️",
+                    "Enter something: 👋🌍🚀♥️♣\u001b[1D\u001b[1D\u001b[2D",
+                    "👋🌍🚀♥️♣",
                     ""
                 ]);
             }
@@ -595,7 +599,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             { // for emojis
                 const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
 
-                for (const char of ["👋", "🌍", "🚀", "♥️"]) {
+                for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
                     await sleep(10);
                 }
@@ -603,6 +607,10 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                 cmd.write(String(LEFT));
                 await sleep(10);
                 cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(LEFT));
+                await sleep(10);
+                cmd.write(String(RIGHT));
                 await sleep(10);
                 cmd.write(String(RIGHT));
                 await sleep(10);
@@ -612,8 +620,8 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                 const outputs = await output;
 
                 deepStrictEqual(outputs, [
-                    "Enter something: 👋🌍🚀♥️\u001b[1D\u001b[2D\u001b[2C\u001b[1C",
-                    "👋🌍🚀♥️",
+                    "Enter something: 👋🌍🚀♥️♣\u001b[1D\u001b[1D\u001b[2D\u001b[2C\u001b[1C\u001b[1C",
+                    "👋🌍🚀♥️♣",
                     ""
                 ]);
             }
@@ -665,7 +673,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             { // for emojis
                 const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
 
-                for (const char of ["👋", "🌍", "🚀", "♥️"]) {
+                for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
                     await sleep(10);
                 }
@@ -676,8 +684,8 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                 const outputs = await output;
 
                 deepStrictEqual(outputs, [
-                    "Enter something: 👋🌍🚀♥️\u001b[7D",
-                    "👋🌍🚀♥️",
+                    "Enter something: 👋🌍🚀♥️♣\u001b[8D",
+                    "👋🌍🚀♥️♣",
                     ""
                 ]);
             }
@@ -741,7 +749,7 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             { // for emojis
                 const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
 
-                for (const char of ["👋", "🌍", "🚀", "♥️"]) {
+                for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
                     await sleep(10);
                 }
@@ -758,8 +766,8 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                 const outputs = await output;
 
                 deepStrictEqual(outputs, [
-                    "Enter something: 👋🌍🚀♥️\u001b[1D\u001b[2D\u001b[2D\u001b[5C",
-                    "👋🌍🚀♥️",
+                    "Enter something: 👋🌍🚀♥️♣\u001b[1D\u001b[1D\u001b[2D\u001b[4C",
+                    "👋🌍🚀♥️♣",
                     ""
                 ]);
             }
@@ -823,11 +831,13 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             { // for emojis
                 const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
 
-                for (const char of ["👋", "🌍", "🚀", "♥️"]) {
+                for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
                     await sleep(10);
                 }
 
+                cmd.write(String(LEFT));
+                await sleep(10);
                 cmd.write(String(LEFT));
                 await sleep(10);
                 cmd.write(String(LEFT));
@@ -838,8 +848,8 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                 const outputs = await output;
 
                 deepStrictEqual(outputs, [
-                    "Enter something: 👋🌍🚀♥️\u001b[1D\u001b[2D\u001b[2D\u001b[0K🚀♥️\u001b[3D",
-                    "👋🚀♥️",
+                    "Enter something: 👋🌍🚀♥️♣\u001b[1D\u001b[1D\u001b[2D\u001b[2D\u001b[0K🚀♥️♣\u001b[4D",
+                    "👋🚀♥️♣",
                     ""
                 ]);
             }
@@ -899,11 +909,13 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             { // for password emojis
                 const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
 
-                for (const char of ["👋", "🌍", "🚀", "♥️"]) {
+                for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
                     await sleep(10);
                 }
 
+                cmd.write(String(LEFT));
+                await sleep(10);
                 cmd.write(String(LEFT));
                 await sleep(10);
                 cmd.write("\b");
@@ -912,8 +924,8 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                 const outputs = await output;
 
                 deepStrictEqual(outputs, [
-                    "Enter password: ****\u001b[1D\u001b[1D\u001b[0K*\u001b[1D",
-                    "👋🌍♥️",
+                    "Enter password: *****\u001b[1D\u001b[1D\u001b[1D\u001b[0K**\u001b[2D",
+                    "👋🌍♥️♣",
                     ""
                 ]);
             }
