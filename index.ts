@@ -13,7 +13,6 @@ import run from "./run.ts";
 import example from "./example.ts";
 import deprecate from "./deprecate.ts";
 import { isClass, isSubclassOf, mixin } from "./class.ts";
-import mixins from "./mixins.ts";
 
 export { Channel, Queue, Mutex };
 export const AsyncFunction = (async function () { }).constructor as AsyncFunctionConstructor;
@@ -52,7 +51,7 @@ export type Optional<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
 export type Ensured<T, K extends keyof T> = Required<Pick<T, K>> & Omit<T, K>;
 
 /**
- * The entry of jsext main functions.
+ * The entry of jsext major functions.
  */
 const jsext = {
     _try,
@@ -74,7 +73,8 @@ const jsext = {
     isClass,
     isSubclassOf,
     mixin,
-    mixins,
+    /** @deprecated use `mixin` instead */
+    mixins: mixin,
 };
 
 export {
@@ -96,5 +96,7 @@ export {
     isClass,
     isSubclassOf,
     mixin,
-    mixins,
 };
+
+/** @deprecated use `mixin` instead */
+export const mixins = mixin;

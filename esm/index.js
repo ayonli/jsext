@@ -20,7 +20,7 @@ import { isClass, isSubclassOf, mixin } from './class.js';
 const AsyncFunction = (async function () { }).constructor;
 const AsyncGeneratorFunction = (async function* () { }).constructor;
 /**
- * The entry of jsext main functions.
+ * The entry of jsext major functions.
  */
 const jsext = {
     _try,
@@ -42,8 +42,11 @@ const jsext = {
     isClass,
     isSubclassOf,
     mixin,
+    /** @deprecated use `mixin` instead */
     mixins: mixin,
 };
+/** @deprecated use `mixin` instead */
+const mixins = mixin;
 
-export { AsyncFunction, AsyncGeneratorFunction, _try, chan, debounce, jsext as default, deprecate, example, func, isClass, isSubclassOf, lock, mixin, mixin as mixins, parallel, queue, read, readAll, run, throttle, wrap };
+export { AsyncFunction, AsyncGeneratorFunction, _try, chan, debounce, jsext as default, deprecate, example, func, isClass, isSubclassOf, lock, mixin, mixins, parallel, queue, read, readAll, run, throttle, wrap };
 //# sourceMappingURL=index.js.map
