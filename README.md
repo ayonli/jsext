@@ -35,9 +35,11 @@ browser.
 ## Functions
 
 - [_try](#_try) Calls a function safely and return errors when captured.
-- [func](#func) Defines a function along with a `defer` keyword, inspired by
+- [func](#func) Declares a function along with a `defer` keyword, inspired by
   Golang.
 - [wrap](#wrap) Wraps a function for decorator pattern but keep its signature.
+- [mixin](#mixin) Declares a class that combines all methods from the base
+  classes.
 - [throttle](#throttle) Throttles function calls for frequent access.
 - [debounce](#debounce) Debounces function calls for frequent access.
 - [queue](#queue) Handles tasks sequentially and prevent concurrency conflicts.
@@ -296,6 +298,59 @@ const show = wrap(log, function (fn, text) {
 console.log(show.name); // log
 console.log(show.length); // 1
 console.assert(show.toString() === log.toString());
+```
+
+---
+
+### mixin
+
+```ts
+import { Constructor } from "@ayonli/jsext";
+import { UnionToIntersection } from "@ayonli/jsext/mixin";
+
+declare function mixin<T extends Constructor<any>, M extends any[]>(
+  base: T,
+  ...mixins: { [X in keyof M]: Constructor<M[X]> }
+): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
+declare function mixin<T extends Constructor<any>, M extends any[]>(
+  base: T,
+  ...mixins: M
+): T & Constructor<UnionToIntersection<FlatArray<M, 1>>>;
+```
+
+Creates a class that combines all methods from the given base class and mixin
+classes.
+
+**Example**
+
+```ts
+import mixin from "@ayonli/jsext/mixin";
+import { isSubclassOf } from "@ayonli/jsext/class";
+
+class Log {
+  log(text: string) {
+    console.log(text);
+  }
+}
+
+class View {
+  display(data: Record<string, any>[]) {
+    console.table(data);
+  }
+}
+
+class Controller extends mixin(View, Log) {
+  constructor(readonly topic: string) {
+    super();
+  }
+}
+
+const ctrl = new Controller("foo");
+ctrl.log("something is happening");
+ctrl.display([{ topic: ctrl.topic, content: "something is happening" }]);
+
+console.assert(isSubclassOf(Controller, View));
+console.assert(!isSubclassOf(Controller, Log));
 ```
 
 ---

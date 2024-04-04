@@ -167,6 +167,13 @@
             "import": "./esm/augment/math.js",
             "default": "./augment/math.ts"
         },
+        "./mixin": {
+            "types": "./types/mixin.d.ts",
+            "bun": "./mixin.ts",
+            "require": "./cjs/mixin.js",
+            "import": "./esm/mixin.js",
+            "default": "./mixin.ts"
+        },
         "./mixins": {
             "types": "./types/mixins.d.ts",
             "bun": "./mixins.ts",

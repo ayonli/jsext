@@ -1,6 +1,7 @@
 import _try from "./try.ts";
 import func from "./func.ts";
 import wrap from "./wrap.ts";
+import mixin from "./mixin.ts";
 import throttle from "./throttle.ts";
 import debounce from "./debounce.ts";
 import queue, { Queue } from "./queue.ts";
@@ -12,7 +13,7 @@ import parallel from "./parallel.ts";
 import run from "./run.ts";
 import example from "./example.ts";
 import deprecate from "./deprecate.ts";
-import { isClass, isSubclassOf, mixin } from "./class.ts";
+import { isClass as _isClass, isSubclassOf as _isSubclassOf } from "./class.ts";
 
 export { Channel, Queue, Mutex };
 export const AsyncFunction = (async function () { }).constructor as AsyncFunctionConstructor;
@@ -59,6 +60,7 @@ const jsext = {
     try: _try,
     func,
     wrap,
+    mixin,
     throttle,
     debounce,
     queue,
@@ -70,9 +72,10 @@ const jsext = {
     run,
     example,
     deprecate,
-    isClass,
-    isSubclassOf,
-    mixin,
+    /** @deprecated import `isClass` from `@ayonli/jsext/class` instead. */
+    isClass: _isClass,
+    /** @deprecated import `isSubclassOf` from `@ayonli/jsext/class` instead. */
+    isSubclassOf: _isSubclassOf,
     /** @deprecated use `mixin` instead */
     mixins: mixin,
 };
@@ -82,6 +85,7 @@ export {
     _try,
     func,
     wrap,
+    mixin,
     throttle,
     debounce,
     queue,
@@ -93,10 +97,13 @@ export {
     run,
     example,
     deprecate,
-    isClass,
-    isSubclassOf,
-    mixin,
 };
+
+/** @deprecated import `isClass` from `@ayonli/jsext/class` instead. */
+export const isClass = _isClass;
+
+/** @deprecated import `isSubclassOf` from `@ayonli/jsext/class` instead. */
+export const isSubclassOf = _isSubclassOf;
 
 /** @deprecated use `mixin` instead */
 export const mixins = mixin;

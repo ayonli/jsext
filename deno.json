@@ -18,6 +18,7 @@
         "./json": "./json.ts",
         "./lock": "./lock.ts",
         "./math": "./math.ts",
+        "./mixin": "./mixin.ts",
         "./number": "./number.ts",
         "./object": "./object.ts",
         "./parallel": "./parallel.ts",

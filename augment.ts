@@ -29,7 +29,7 @@ declare global {
         readonly prototype: AsyncFunction;
     }
 
-    interface Constructor<T> extends Function {
+    interface Constructor<T = object> extends Function {
         new(...args: any[]): T;
         prototype: T;
     }

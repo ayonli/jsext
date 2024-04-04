@@ -1,4 +1,9 @@
-import { isSubclassOf, mixin } from "./class.ts";
+/**
+ * @deprecated use `mixin` and `class` module instead.
+ * @module
+ */
+import mixin from "./mixin.ts";
+import { isSubclassOf } from "./class.ts";
 
 export {
     /**
@@ -8,7 +13,7 @@ export {
     isSubclassOf,
 
     /**
-     * @deprecated This is a redundant re-export of the `mixin` from `@ayonli/jsext/class`,
+     * @deprecated This is a redundant re-export of the `mixin` module,
      *  will be removed in the next major version.
      */
     mixin as default,
