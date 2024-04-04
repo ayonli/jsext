@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.8.5",
+    "version": "0.8.6",
     "exports": {
         ".": "./index.ts",
         "./chan": "./chan.ts",
@@ -46,14 +46,19 @@
             "bundle/worker-node.mjs"
         ],
         "exclude": [
-            "**/augment.ts",
             "**/*.test.ts",
-            "**/*.d.ts",
+            "*/augment.ts",
+            "*/index.ts",
+            "augment.ts",
+            "augment/*",
             "worker-node.ts",
             "test-deno.ts",
             "bundle.ts",
             "examples/*",
-            "augment/*"
+            "node_modules/*",
+            "promise/*",
+            "uint8array/*",
+            "types/*"
         ]
     }
 }

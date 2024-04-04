@@ -1,5 +1,4 @@
-.vscode/
-.github/
+.*
 node_modules/
 examples/
 *.test.ts
@@ -7,6 +6,8 @@ examples/
 *.config.js
 *.config.mjs
 bundle.ts
+bundle/jsext.*
+types/bundle.d.ts
 augment.md
 */augment.*
 */index.*
@@ -27,11 +28,9 @@ mocha*
 prepublish.mjs
 postpublish.mjs
 test-deno.ts
-bundle/index.js
-bundle/index.js.map
-!bundle/worker.mjs
-!bundle/worker-node.mjs
 deno.json
 deno.lock
 lib.deno.d.ts
-.python-version
+types/external/*
+types/worker-node.d.ts
+types/worker.d.ts
