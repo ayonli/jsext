@@ -61,7 +61,12 @@ export async function macChooseOneFile(title = "", type = ""): Promise<File | nu
 
     if (!code) {
         const path = stdout.trim();
-        return await readFile(path);
+
+        if (path) {
+            return await readFile(path);
+        } else {
+            return null;
+        }
     } else {
         if (stderr.includes("User canceled")) {
             return null;
@@ -78,8 +83,14 @@ export async function macChooseMultipleFiles(title = "", type = ""): Promise<Fil
     ]);
 
     if (!code) {
-        const paths = lines(stdout.trim());
-        return await Promise.all(paths.map(path => readFile(path)));
+        const output = stdout.trim();
+
+        if (output) {
+            const paths = lines(stdout.trim());
+            return await Promise.all(paths.map(path => readFile(path)));
+        } else {
+            return [];
+        }
     } else {
         if (stderr.includes("User canceled")) {
             return [];
@@ -97,10 +108,26 @@ export async function macChooseFolder(title = ""): Promise<File[]> {
 
     if (!code) {
         const dir = stdout.trim();
+
+        if (!dir) {
+            return [];
+        }
+
         const folder = basename(dir);
-        const paths: string[] = (await readAll(Deno.readDir(dir)))
-            .filter(item => item.isFile)
-            .map(item => join(dir, item.name));
+        let filenames: string[] = [];
+
+        if (typeof Deno === "object") {
+            filenames = (await readAll(Deno.readDir(dir)))
+                .filter(item => item.isFile)
+                .map(item => item.name);
+        } else {
+            const { readdir } = await import("fs/promises");
+            filenames = (await readdir(dir, { withFileTypes: true }))
+                .filter(item => item.isFile())
+                .map(item => item.name);
+        }
+
+        const paths = filenames.map(name => join(dir, name));
 
         return await Promise.all(paths.map(path => readFile(path, folder)));
     } else {

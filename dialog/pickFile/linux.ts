@@ -62,8 +62,14 @@ export async function linuxChooseMultipleFiles(title = "", type = ""): Promise<F
     const { code, stdout, stderr } = await run("zenity", args);
 
     if (!code) {
-        const paths = lines(stdout.trim());
-        return await Promise.all(paths.map(path => readFile(path)));
+        const output = stdout.trim();
+
+        if (output) {
+            const paths = lines(stdout.trim());
+            return await Promise.all(paths.map(path => readFile(path)));
+        } else {
+            return [];
+        }
     } else if (code === 1) {
         return [];
     } else {
@@ -80,6 +86,11 @@ export async function linuxChooseFolder(title = ""): Promise<File[]> {
 
     if (!code) {
         const dir = stdout.trim();
+
+        if (!dir) {
+            return [];
+        }
+
         const folder = basename(dir);
         let filenames: string[] = [];
 

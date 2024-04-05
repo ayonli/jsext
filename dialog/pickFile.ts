@@ -1,6 +1,7 @@
 import { platform } from "./terminal/util.ts";
 import { macChooseFolder, macChooseMultipleFiles, macChooseOneFile } from "./pickFile/mac.ts";
 import { linuxChooseFolder, linuxChooseMultipleFiles, linuxChooseOneFile } from "./pickFile/linux.ts";
+import { windowsChooseFolder, windowsChooseMultipleFiles, windowsChooseOneFile } from "./pickFile/windows.ts";
 
 export default function pickFile(options: {
     title?: string;
@@ -57,6 +58,14 @@ export default async function pickFile(options: {
             return await linuxChooseMultipleFiles(title, type);
         } else {
             return await linuxChooseOneFile(title, type);
+        }
+    } else if (platform() === "windows") {
+        if (folder) {
+            return await windowsChooseFolder(title);
+        } else if (multiple) {
+            return await windowsChooseMultipleFiles(title, type);
+        } else {
+            return await windowsChooseOneFile(title, type);
         }
     }
 
