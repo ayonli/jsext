@@ -94,9 +94,9 @@ categories:
 ## Types
 
 - `AsyncFunction` This is the very constructor/class of all async functions.
+- `AsyncFunctionConstructor`
 - `AsyncGeneratorFunction` This is the very constructor/class of all async
   generator functions.
-- `AsyncFunctionConstructor`
 - `Constructor<T>` This interface represents the constructor/class of the given
   `T` type.
 - `RealArrayLike<T>` A real-array-like object is an array-like object with a
