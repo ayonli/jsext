@@ -956,7 +956,7 @@ describe("path", () => {
                 join("foo", "bar", "?foo=bar", "#baz"),
                 path.join("foo", "bar") + "?foo=bar#baz"
             );
-            strictEqual(join("目录", "文件"), "目录/文件");
+            strictEqual(join("目录", "文件"), path.join("目录", "文件"));
         });
     });
 
