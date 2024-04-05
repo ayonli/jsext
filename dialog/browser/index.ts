@@ -1,9 +1,11 @@
 import CancelButton from "./CancelButton.ts";
-import Dialog from "./Dialog.ts";
+import Dialog, { closeDialog } from "./Dialog.ts";
 import Footer from "./Footer.ts";
 import Input from "./Input.ts";
 import OkButton from "./OkButton.ts";
+import Progress from "./Progress.ts";
 import Text from "./Text.ts";
+import type { ProgressFunc, ProgressState } from "../index.ts";
 
 export async function alertInBrowser(message: string) {
     await new Promise<void>(resolve => {
@@ -64,4 +66,53 @@ export async function promptInBrowser(message: string, options: {
             )
         );
     });
+}
+
+export async function progressInBrowser<T>(message: string, fn: ProgressFunc<T>, options: {
+    signal: AbortSignal;
+    abort?: (() => void) | undefined;
+    listenForAbort?: (() => Promise<T>) | undefined;
+}) {
+    const { signal, abort, listenForAbort } = options;
+    const text = Text(message);
+    const { element: progressBar, setValue } = Progress();
+    const dialog = Dialog({ onCancel: abort }, text);
+
+    const set = (state: ProgressState) => {
+        if (signal.aborted) {
+            return;
+        }
+
+        if (state.message) {
+            text.textContent = state.message;
+        }
+
+        if (state.percent !== undefined) {
+            setValue(state.percent);
+        }
+    };
+
+    if (abort) {
+        dialog.appendChild(
+            Footer(
+                progressBar,
+                CancelButton()
+            )
+        );
+    } else {
+        dialog.appendChild(progressBar);
+    }
+
+    document.body.appendChild(dialog);
+    let job = fn(set, signal);
+
+    if (listenForAbort) {
+        job = Promise.race([job, listenForAbort()]);
+    }
+
+    try {
+        return await job;
+    } finally {
+        signal.aborted || closeDialog(dialog, "OK");
+    }
 }

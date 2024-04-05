@@ -1,8 +1,9 @@
 import CancelButton from './CancelButton.js';
-import Dialog from './Dialog.js';
+import Dialog, { closeDialog } from './Dialog.js';
 import Footer from './Footer.js';
 import Input from './Input.js';
 import OkButton from './OkButton.js';
+import Progress from './Progress.js';
 import Text from './Text.js';
 
 async function alertInBrowser(message) {
@@ -33,6 +34,40 @@ async function promptInBrowser(message, options) {
         }, Text(message), Input({ type, value: defaultValue }), Footer(CancelButton(), OkButton())));
     });
 }
+async function progressInBrowser(message, fn, options) {
+    const { signal, abort, listenForAbort } = options;
+    const text = Text(message);
+    const { element: progressBar, setValue } = Progress();
+    const dialog = Dialog({ onCancel: abort }, text);
+    const set = (state) => {
+        if (signal.aborted) {
+            return;
+        }
+        if (state.message) {
+            text.textContent = state.message;
+        }
+        if (state.percent !== undefined) {
+            setValue(state.percent);
+        }
+    };
+    if (abort) {
+        dialog.appendChild(Footer(progressBar, CancelButton()));
+    }
+    else {
+        dialog.appendChild(progressBar);
+    }
+    document.body.appendChild(dialog);
+    let job = fn(set, signal);
+    if (listenForAbort) {
+        job = Promise.race([job, listenForAbort()]);
+    }
+    try {
+        return await job;
+    }
+    finally {
+        signal.aborted || closeDialog(dialog, "OK");
+    }
+}
 
-export { alertInBrowser, confirmInBrowser, promptInBrowser };
+export { alertInBrowser, confirmInBrowser, progressInBrowser, promptInBrowser };
 //# sourceMappingURL=index.js.map

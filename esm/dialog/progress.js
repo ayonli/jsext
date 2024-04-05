@@ -1,156 +1,6 @@
-import bytes from '../bytes.js';
-import { stripEnd } from '../string.js';
-import CancelButton from './browser/CancelButton.js';
-import Dialog, { closeDialog } from './browser/Dialog.js';
-import Footer from './browser/Footer.js';
-import Progress from './browser/Progress.js';
-import Text from './browser/Text.js';
-import { CLR, LF } from './terminal/constants.js';
-import { hijackNodeStdin, writeSync, isCancelEvent } from './terminal/util.js';
+import { progressInBrowser } from './browser/index.js';
+import { progressInDeno, progressInNode } from './terminal/progress.js';
 
-async function handleDomProgress(message, fn, options) {
-    const { signal, abort, listenForAbort } = options;
-    const text = Text(message);
-    const { element: progressBar, setValue } = Progress();
-    const dialog = Dialog({ onCancel: abort }, text);
-    const set = (state) => {
-        if (signal.aborted) {
-            return;
-        }
-        if (state.message) {
-            text.textContent = state.message;
-        }
-        if (state.percent !== undefined) {
-            setValue(state.percent);
-        }
-    };
-    if (abort) {
-        dialog.appendChild(Footer(progressBar, CancelButton()));
-    }
-    else {
-        dialog.appendChild(progressBar);
-    }
-    document.body.appendChild(dialog);
-    let job = fn(set, signal);
-    if (listenForAbort) {
-        job = Promise.race([job, listenForAbort()]);
-    }
-    try {
-        return await job;
-    }
-    finally {
-        signal.aborted || closeDialog(dialog, "OK");
-    }
-}
-async function handleTerminalProgress(stdin, stdout, message, fn, options) {
-    const { signal, abort, listenForAbort } = options;
-    writeSync(stdout, bytes(message));
-    let lastMessage = stripEnd(message, "...");
-    let lastPercent = undefined;
-    let waitingIndicator = message.endsWith("...") ? "..." : "";
-    const waitingTimer = setInterval(() => {
-        if (waitingIndicator === "...") {
-            waitingIndicator = ".";
-        }
-        else {
-            waitingIndicator += ".";
-        }
-        writeSync(stdout, CLR);
-        writeSync(stdout, bytes(lastMessage + waitingIndicator));
-    }, 1000);
-    const set = (state) => {
-        if (signal.aborted) {
-            return;
-        }
-        writeSync(stdout, CLR);
-        if (state.message) {
-            lastMessage = state.message;
-        }
-        if (state.percent !== undefined) {
-            lastPercent = state.percent;
-        }
-        writeSync(stdout, bytes(lastMessage));
-        if (lastPercent !== undefined) {
-            const percentage = " ... " + lastPercent + "%";
-            writeSync(stdout, bytes(percentage));
-            clearInterval(waitingTimer);
-        }
-    };
-    const nodeReader = (buf) => {
-        if (isCancelEvent(buf)) {
-            abort === null || abort === void 0 ? void 0 : abort();
-        }
-    };
-    const denoReader = "fd" in stdin ? null : stdin.readable.getReader();
-    if (abort) {
-        if ("fd" in stdin) {
-            stdin.on("data", nodeReader);
-        }
-        else {
-            (async () => {
-                while (true) {
-                    try {
-                        const { done, value } = await denoReader.read();
-                        if (done || isCancelEvent(value)) {
-                            signal.aborted || abort();
-                            break;
-                        }
-                    }
-                    catch (_a) {
-                        signal.aborted || abort();
-                        break;
-                    }
-                }
-            })();
-        }
-    }
-    let job = fn(set, signal);
-    if (listenForAbort) {
-        job = Promise.race([job, listenForAbort()]);
-    }
-    try {
-        return await job;
-    }
-    finally {
-        writeSync(stdout, LF);
-        clearInterval(waitingTimer);
-        if ("fd" in stdin) {
-            stdin.off("data", nodeReader);
-        }
-        else {
-            denoReader === null || denoReader === void 0 ? void 0 : denoReader.releaseLock();
-        }
-    }
-}
-async function handleDenoProgress(message, fn, options) {
-    const { stdin, stdout } = Deno;
-    if (!stdin.isTerminal) {
-        return null;
-    }
-    stdin.setRaw(true);
-    try {
-        return await handleTerminalProgress(stdin, stdout, message, fn, options);
-    }
-    finally {
-        stdin.setRaw(false);
-    }
-}
-async function handleNodeProgress(message, fn, options) {
-    const { stdin, stdout } = process;
-    if (!stdout.isTTY) {
-        return null;
-    }
-    return hijackNodeStdin(stdin, async () => {
-        const rawMode = stdin.isRaw;
-        rawMode || stdin.setRawMode(true);
-        try {
-            return await handleTerminalProgress(stdin, stdout, message, fn, options);
-        }
-        finally {
-            stdin.setRawMode(rawMode);
-        }
-    });
-}
 /**
  * Displays a dialog with a progress bar indicating the ongoing state of the
  * `fn` function, and to wait until the job finishes or the user cancels the
@@ -243,13 +93,13 @@ async function progress(message, fn, onAbort = undefined) {
         });
     });
     if (typeof document === "object") {
-        return await handleDomProgress(message, fn, { signal, abort, listenForAbort });
+        return await progressInBrowser(message, fn, { signal, abort, listenForAbort });
     }
     else if (typeof Deno === "object") {
-        return await handleDenoProgress(message, fn, { signal, abort, listenForAbort });
+        return await progressInDeno(message, fn, { signal, abort, listenForAbort });
     }
     else {
-        return await handleNodeProgress(message, fn, { signal, abort, listenForAbort });
+        return await progressInNode(message, fn, { signal, abort, listenForAbort });
     }
 }
 
