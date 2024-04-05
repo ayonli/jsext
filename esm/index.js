@@ -16,9 +16,11 @@ import parallel from './parallel.js';
 import run from './run.js';
 import example from './example.js';
 import deprecate from './deprecate.js';
-import { isClass as isClass$1, isSubclassOf as isSubclassOf$1 } from './class.js';
+import { isClass, isSubclassOf } from './class.js';
 
+/** This is the very constructor/class of all async functions. */
 const AsyncFunction = (async function () { }).constructor;
+/** This is the very constructor/class of all async generator functions. */
 const AsyncGeneratorFunction = (async function* () { }).constructor;
 /**
  * The entry of jsext major functions.
@@ -42,16 +44,12 @@ const jsext = {
     example,
     deprecate,
     /** @deprecated import `isClass` from `@ayonli/jsext/class` instead. */
-    isClass: isClass$1,
+    isClass,
     /** @deprecated import `isSubclassOf` from `@ayonli/jsext/class` instead. */
-    isSubclassOf: isSubclassOf$1,
+    isSubclassOf,
     /** @deprecated use `mixin` instead */
     mixins: mixin,
 };
-/** @deprecated import `isClass` from `@ayonli/jsext/class` instead. */
-const isClass = isClass$1;
-/** @deprecated import `isSubclassOf` from `@ayonli/jsext/class` instead. */
-const isSubclassOf = isSubclassOf$1;
 /** @deprecated use `mixin` instead */
 const mixins = mixin;
 
