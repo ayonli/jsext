@@ -196,7 +196,7 @@ function dirname(path) {
     if (isUrl(path)) {
         const { protocol, host, pathname } = new URL(path);
         const origin = protocol + "//" + host;
-        const _dirname = dirname(pathname);
+        const _dirname = dirname(decodeURI(pathname));
         if (_dirname === "/") {
             return isFileProtocol(origin) ? origin + "/" : origin;
         }
@@ -244,7 +244,7 @@ function dirname(path) {
 function basename(path, suffix = "") {
     if (isUrl(path)) {
         const { pathname } = new URL(path);
-        return basename(pathname, suffix);
+        return basename(decodeURI(pathname), suffix);
     }
     else {
         const segments = split(path).filter(isNotQuery);

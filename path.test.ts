@@ -57,6 +57,7 @@ describe("path", () => {
         ok(isWindowsPath("c:\\foo\\bar#baz"));
         ok(isWindowsPath("c:/foo/bar?foo=bar#baz"));
         ok(isWindowsPath("c:\\foo\\bar?foo=bar#baz"));
+        ok(isWindowsPath("c:\\目录\\文件"));
         ok(!isWindowsPath("/"));
         ok(!isWindowsPath("\\"));
         ok(!isWindowsPath("http://"));
@@ -70,6 +71,7 @@ describe("path", () => {
         ok(isPosixPath("/foo/bar?foo=bar"));
         ok(isPosixPath("/foo/bar#baz"));
         ok(isPosixPath("/foo/bar?foo=bar#baz"));
+        ok(isPosixPath("/目录/文件"));
         ok(!isPosixPath("\\"));
         ok(!isPosixPath("c:"));
         ok(!isPosixPath("c:/"));
@@ -100,6 +102,7 @@ describe("path", () => {
         ok(isUrl("http://example.com/foo/bar?foo=bar"));
         ok(isUrl("http://example.com/foo/bar#baz"));
         ok(isUrl("http://example.com/foo/bar?foo=bar#baz"));
+        ok(isUrl("http://example.com/目录/文件"));
         ok(!isUrl("http:example.com/foo/bar"));
         ok(!isUrl("example.com/foo/bar"));
         ok(!isUrl("foo/bar"));
@@ -119,6 +122,8 @@ describe("path", () => {
         ok(isFileUrl("file:/foo/bar?foo=bar"));
         ok(isFileUrl("file:/foo/bar#baz"));
         ok(isFileUrl("file:/foo/bar?foo=bar#baz"));
+        ok(isFileUrl("file:///目录/文件"));
+        ok(isFileUrl("file:/目录/文件"));
     });
 
     describe("isAbsolute", () => {
@@ -135,6 +140,7 @@ describe("path", () => {
             ok(isAbsolute("c:\\foo\\bar#baz"));
             ok(isAbsolute("c:/foo/bar?foo=bar#baz"));
             ok(isAbsolute("c:\\foo\\bar?foo=bar#baz"));
+            ok(isAbsolute("c:\\目录\\文件"));
         });
 
         it("posix path", () => {
@@ -143,6 +149,7 @@ describe("path", () => {
             ok(isAbsolute("/foo/bar?foo=bar"));
             ok(isAbsolute("/foo/bar#baz"));
             ok(isAbsolute("/foo/bar?foo=bar#baz"));
+            ok(isAbsolute("/目录/文件"));
         });
 
         it("url", () => {
@@ -151,6 +158,7 @@ describe("path", () => {
             ok(isAbsolute("http://example.com/foo/bar?foo=bar"));
             ok(isAbsolute("http://example.com/foo/bar#baz"));
             ok(isAbsolute("http://example.com/foo/bar?foo=bar#baz"));
+            ok(isAbsolute("http://example.com/目录/文件"));
         });
 
         it("file url", () => {
@@ -159,6 +167,7 @@ describe("path", () => {
             ok(isAbsolute("file:///foo/bar?foo=bar"));
             ok(isAbsolute("file:///foo/bar#baz"));
             ok(isAbsolute("file:///foo/bar?foo=bar#baz"));
+            ok(isAbsolute("file:///目录/文件"));
         });
 
         it("relative path", () => {
@@ -172,6 +181,7 @@ describe("path", () => {
             ok(!isAbsolute("foo/bar?foo=bar"));
             ok(!isAbsolute("foo/bar#baz"));
             ok(!isAbsolute("foo/bar?foo=bar#baz"));
+            ok(!isAbsolute("目录/文件?foo=bar#baz"));
         });
     });
 
@@ -191,6 +201,7 @@ describe("path", () => {
                 split("c:\\foo\\bar?foo=bar#baz"),
                 ["c:\\", "foo", "bar", "?foo=bar", "#baz"]
             );
+            deepStrictEqual(split("c:/目录/文件"), ["c:\\", "目录", "文件"]);
         });
 
         it("posix path", () => {
@@ -201,6 +212,7 @@ describe("path", () => {
             deepStrictEqual(split("/foo/bar"), ["/", "foo", "bar"]);
             deepStrictEqual(split("/foo/bar/"), ["/", "foo", "bar"]);
             deepStrictEqual(split("/foo/bar?foo=bar#baz"), ["/", "foo", "bar", "?foo=bar", "#baz"]);
+            deepStrictEqual(split("/目录/文件"), ["/", "目录", "文件"]);
         });
 
         it("url", () => {
@@ -241,6 +253,10 @@ describe("path", () => {
             deepStrictEqual(split("#baz"), ["#baz"]);
             deepStrictEqual(split("?foo=bar#baz"), ["?foo=bar", "#baz"]);
             deepStrictEqual(split("?foo=hello&bar=world#baz"), ["?foo=hello&bar=world", "#baz"]);
+            deepStrictEqual(
+                split("http://example.com/目录/文件"),
+                ["http://example.com", "目录", "文件"]
+            );
         });
 
         it("file url", () => {
@@ -261,6 +277,7 @@ describe("path", () => {
                 split("file://example.com/foo/bar?foo=bar#baz"),
                 ["file://example.com", "foo", "bar", "?foo=bar", "#baz"]
             );
+            deepStrictEqual(split("file:///目录/文件"), ["file:///", "目录", "文件"]);
         });
 
         it("relative path", () => {
@@ -277,6 +294,7 @@ describe("path", () => {
             deepStrictEqual(split("foo/../.."), ["foo", "..", ".."]);
             deepStrictEqual(split("."), ["."]);
             deepStrictEqual(split("./foo/bar"), [".", "foo", "bar"]);
+            deepStrictEqual(split("./文件/目录"), [".", "文件", "目录"]);
             deepStrictEqual(split(""), []);
         });
     });
@@ -303,6 +321,8 @@ describe("path", () => {
             ok(contains("c:/foo/bar", "c:/foo/bar?foo=bar#baz"));
             ok(contains("c:/foo/bar", "foo"));
             ok(contains("c:/foo/bar", "bar"));
+            ok(contains("c:/目录/文件", "目录"));
+            ok(contains("c:/目录/文件", "文件"));
             ok(!contains("c:/foo/bar", "c:/bar"));
             ok(!contains("c:/foo/bar", "/foo/bar"));
             ok(!contains("c:/foo/bar", "file:///c:/foo/bar"));
@@ -321,6 +341,8 @@ describe("path", () => {
             ok(contains("/foo/bar", "/foo?foo=bar#baz"));
             ok(contains("/foo/bar", "foo"));
             ok(contains("/foo/bar", "bar"));
+            ok(contains("/目录/文件", "目录"));
+            ok(contains("/目录/文件", "文件"));
             ok(!contains("/foo/bar", "/bar"));
             ok(!contains("/foo/bar", "c:/foo/bar"));
             ok(!contains("/foo/bar", "file:///foo/bar"));
@@ -344,6 +366,8 @@ describe("path", () => {
             ok(contains("http://example.com/foo/bar", "foo/bar?foo=bar#baz"));
             ok(contains("http://example.com/foo/bar", "foo"));
             ok(contains("http://example.com/foo/bar", "bar"));
+            ok(contains("http://example.com/目录/文件", "目录"));
+            ok(contains("http://example.com/目录/文件", "文件"));
             ok(!contains("http://example.com/foo/bar", "/foo/bar"));
             ok(!contains("http://example.com/foo/bar", "c:/foo/bar"));
             ok(!contains("http://example.com/foo/bar", "http://example2.com/foo/bar"));
@@ -372,6 +396,8 @@ describe("path", () => {
             ok(contains("file:///foo/bar", "foo/bar?foo=bar#baz"));
             ok(contains("file:///foo/bar", "foo"));
             ok(contains("file:///foo/bar", "bar"));
+            ok(contains("file:///目录/文件", "目录"));
+            ok(contains("file:///目录/文件", "文件"));
             ok(!contains("file:///foo/bar", "file:///bar"));
             ok(!contains("file:///foo/bar", "file://example.com/foo"));
             ok(!contains("file:///foo/bar", "http://example.com/foo"));
@@ -394,6 +420,8 @@ describe("path", () => {
             ok(contains("foo/bar", "bar#baz"));
             ok(contains("foo/bar", "bar?foo=bar#baz"));
             ok(contains("foo/bar", "bar"));
+            ok(contains("目录/文件", "目录"));
+            ok(contains("目录/文件", "文件"));
             ok(!contains("foo/bar", "/foo"));
             ok(!contains("foo/bar", "/bar"));
             ok(!contains("foo/bar", "c:/bar"));
@@ -569,6 +597,8 @@ describe("path", () => {
             ok(endsWith("c:/foo/bar#baz", "foo/bar"));
             ok(endsWith("c:/foo/bar", "c:/foo/bar?foo=bar"));
             ok(endsWith("c:/foo/bar", "c:/foo/bar#baz"));
+            ok(endsWith("c:/目录/文件", "目录/文件"));
+            ok(endsWith("c:/目录/文件", "文件"));
             ok(!endsWith("c:/foo/bar", "c:/bar"));
             ok(!endsWith("c:/foo/bar", "/bar"));
             ok(!endsWith("c:/foo/bar", "file:///bar"));
@@ -584,6 +614,8 @@ describe("path", () => {
             ok(endsWith("/foo/bar#baz", "foo/bar"));
             ok(endsWith("/foo/bar", "/foo/bar?foo=bar"));
             ok(endsWith("/foo/bar", "/foo/bar#baz"));
+            ok(endsWith("/目录/文件", "目录/文件"));
+            ok(endsWith("/目录/文件", "文件"));
             ok(!endsWith("/foo/bar", "/bar"));
             ok(!endsWith("/foo/bar", "c:/bar"));
             ok(!endsWith("/foo/bar", "file:///bar"));
@@ -602,6 +634,8 @@ describe("path", () => {
             ok(endsWith("http://example.com/foo/bar", "http://example.com/foo/bar?foo=bar"));
             ok(endsWith("http://example.com/foo/bar", "http://example.com/foo/bar#baz"));
             ok(endsWith("http://example.com/foo/bar", "http://example.com/foo/bar?foo=bar#baz"));
+            ok(endsWith("http://example.com/目录/文件", "目录/文件"));
+            ok(endsWith("http://example.com/目录/文件", "文件"));
             ok(!endsWith("http://example.com/foo/bar", "/bar"));
             ok(!endsWith("http://example.com/foo/bar", "c:/bar"));
             ok(!endsWith("http://example.com/foo/bar", "file:///bar"));
@@ -623,6 +657,8 @@ describe("path", () => {
             ok(endsWith("file:///foo/bar", "file:///foo/bar?foo=bar"));
             ok(endsWith("file:///foo/bar", "file:///foo/bar#baz"));
             ok(endsWith("file:///foo/bar", "file:///foo/bar?foo=bar#baz"));
+            ok(endsWith("file:///目录/文件", "目录/文件"));
+            ok(endsWith("file:///目录/文件", "文件"));
             ok(!endsWith("file:///foo/bar", "/bar"));
             ok(!endsWith("file:///foo/bar", "c:/bar"));
             ok(!endsWith("file:///foo/bar", "file:///bar"));
@@ -640,6 +676,8 @@ describe("path", () => {
             ok(endsWith("foo/bar#baz", "foo/bar"));
             ok(endsWith("foo/bar?foo=bar#baz", "foo/bar"));
             ok(endsWith("foo/bar?foo=bar", "foo/bar#baz"));
+            ok(endsWith("目录/文件", "目录/文件"));
+            ok(endsWith("目录/文件", "文件"));
             ok(!endsWith("foo/bar", "/bar"));
             ok(!endsWith("foo/bar", "c:/bar"));
             ok(!endsWith("foo/bar", "file:///bar"));
@@ -684,6 +722,7 @@ describe("path", () => {
             ok(equals("c:/foo/bar", "c:/foo/bar?foo=bar"));
             ok(equals("c:/foo/bar", "c:/foo/bar#baz"));
             ok(equals("c:/foo/bar", "c:/foo/bar?foo=bar#baz"));
+            ok(equals("c:/目录/文件", "c:/目录/文件"));
             ok(!equals("c:/foo/bar", "foo"));
             ok(!equals("c:/foo/bar", "bar"));
             ok(!equals("c:/foo/bar", "c:/bar"));
@@ -705,6 +744,7 @@ describe("path", () => {
             ok(equals("/foo/bar?foo=bar", "/foo/bar"));
             ok(equals("/foo/bar#baz", "/foo/bar"));
             ok(equals("/foo/bar?foo=bar#baz", "/foo/bar"));
+            ok(equals("/目录/文件", "/目录/文件"));
             ok(!equals("/foo/bar", "foo"));
             ok(!equals("/foo/bar", "bar"));
             ok(!equals("/foo/bar", "/bar"));
@@ -724,6 +764,7 @@ describe("path", () => {
             ok(equals("http://example.com/foo/bar?foo=bar", "http://example.com/foo/bar"));
             ok(equals("http://example.com/foo/bar#baz", "http://example.com/foo/bar"));
             ok(equals("http://example.com/foo/bar?foo=bar#baz", "http://example.com/foo/bar"));
+            ok(equals("http://example.com/目录/文件", "http://example.com/目录/文件"));
             ok(!equals("http://example.com/foo/bar", "foo/bar?foo=bar"));
             ok(!equals("http://example.com/foo/bar", "foo/bar#baz"));
             ok(!equals("http://example.com/foo/bar", "foo/bar?foo=bar#baz"));
@@ -754,6 +795,7 @@ describe("path", () => {
             ok(equals("file:///foo/bar?foo=bar", "file:///foo/bar"));
             ok(equals("file:///foo/bar#baz", "file:///foo/bar"));
             ok(equals("file:///foo/bar?foo=bar#baz", "file:///foo/bar"));
+            ok(equals("file:///目录/文件", "file:///目录/文件"));
             ok(!equals("file:///foo/bar", "foo"));
             ok(!equals("file:///foo/bar", "bar"));
             ok(!equals("file:///foo/bar", "file://"));
@@ -777,6 +819,7 @@ describe("path", () => {
             ok(equals("foo/bar", "foo/bar?foo=bar"));
             ok(equals("foo/bar", "foo/bar#baz"));
             ok(equals("foo/bar", "foo/bar?foo=bar#baz"));
+            ok(equals("目录/文件", "目录/文件"));
             ok(!equals("foo/bar", "bar"));
             ok(!equals("foo/bar", "/foo/bar"));
             ok(!equals("foo/bar", "/bar"));
@@ -806,6 +849,7 @@ describe("path", () => {
             ok(equals("c:/foo/bar", "file:///c:/foo/bar", { ignoreFileProtocol: true }));
             ok(equals("c:/foo/bar", "file:/c:/foo/bar", { ignoreFileProtocol: true }));
             ok(equals("c:/foo/bar", "file:c:/foo/bar", { ignoreFileProtocol: true }));
+            ok(equals("c:/目录/文件", "file:///c:/目录/文件", { ignoreFileProtocol: true }));
             ok(!equals("file:///foo/bar", "c:/foo/bar", { ignoreFileProtocol: true }));
             ok(!equals("file:///c:/foo/bar", "/foo/bar", { ignoreFileProtocol: true }));
         });
@@ -825,6 +869,7 @@ describe("path", () => {
             strictEqual(join("c://", "foo", "bar", "..", "baz"), "c:\\foo\\baz");
             strictEqual(join("c:/foo", "bar", "?foo=bar", "#baz"), "c:\\foo\\bar?foo=bar#baz");
             strictEqual(join("c:\\foo", "bar", "?foo=bar", "#baz"), "c:\\foo\\bar?foo=bar#baz");
+            strictEqual(join("c:\\", "目录", "文件"), "c:\\目录\\文件");
         });
 
         it("posix path", () => {
@@ -835,6 +880,7 @@ describe("path", () => {
             strictEqual(join("/", "foo", "bar", "..", "baz"), "/foo/baz");
             strictEqual(join("/", "foo", "bar", "../baz"), "/foo/baz");
             strictEqual(join("/", "foo", "bar", "?foo=bar", "#baz"), "/foo/bar?foo=bar#baz");
+            strictEqual(join("/", "目录", "文件"), "/目录/文件");
         });
 
         it("url", () => {
@@ -873,6 +919,7 @@ describe("path", () => {
                 join("http://example.com/foo/../bar", "?foo=bar#baz"),
                 "http://example.com/bar?foo=bar#baz"
             );
+            strictEqual(join("http://example.com", "目录", "文件"), "http://example.com/目录/文件");
         });
 
         it("file url", () => {
@@ -882,17 +929,18 @@ describe("path", () => {
             strictEqual(join("file:///"), "file:///");
             strictEqual(join("file://", "foo"), "file:///foo");
             strictEqual(join("file:///", "foo"), "file:///foo");
-            deepStrictEqual(join("file://", "foo", "bar"), "file:///foo/bar");
-            deepStrictEqual(
+            strictEqual(join("file://", "foo", "bar"), "file:///foo/bar");
+            strictEqual(
                 join("file://", "foo", "bar", "?foo=bar", "#baz"),
                 "file:///foo/bar?foo=bar#baz"
             );
-            deepStrictEqual(join("file://localhost", "foo", "bar"), "file:///foo/bar");
-            deepStrictEqual(join("file://example.com", "foo", "bar"), "file://example.com/foo/bar");
-            deepStrictEqual(join("file:/foo", "bar"), "file:///foo/bar");
-            deepStrictEqual(join("file:///foo", "bar", "../.."), "file:///");
-            deepStrictEqual(join("file:///c:/foo", "bar", "../.."), "file:///c:/");
-            deepStrictEqual(join("file:///c:/", "foo", "bar"), "file:///c:/foo/bar");
+            strictEqual(join("file://localhost", "foo", "bar"), "file:///foo/bar");
+            strictEqual(join("file://example.com", "foo", "bar"), "file://example.com/foo/bar");
+            strictEqual(join("file:/foo", "bar"), "file:///foo/bar");
+            strictEqual(join("file:///foo", "bar", "../.."), "file:///");
+            strictEqual(join("file:///c:/foo", "bar", "../.."), "file:///c:/");
+            strictEqual(join("file:///c:/", "foo", "bar"), "file:///c:/foo/bar");
+            strictEqual(join("file:///c:/", "目录", "文件"), "file:///c:/目录/文件");
         });
 
         it("relative path", () => {
@@ -908,6 +956,7 @@ describe("path", () => {
                 join("foo", "bar", "?foo=bar", "#baz"),
                 path.join("foo", "bar") + "?foo=bar#baz"
             );
+            strictEqual(join("目录", "文件"), "目录/文件");
         });
     });
 

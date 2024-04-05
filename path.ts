@@ -233,7 +233,7 @@ export function dirname(path: string): string {
     if (isUrl(path)) {
         const { protocol, host, pathname } = new URL(path);
         const origin = protocol + "//" + host;
-        const _dirname = dirname(pathname);
+        const _dirname = dirname(decodeURI(pathname));
 
         if (_dirname === "/") {
             return isFileProtocol(origin) ? origin + "/" : origin;
@@ -278,7 +278,7 @@ export function dirname(path: string): string {
 export function basename(path: string, suffix = ""): string {
     if (isUrl(path)) {
         const { pathname } = new URL(path);
-        return basename(pathname, suffix);
+        return basename(decodeURI(pathname), suffix);
     } else {
         const segments = split(path).filter(isNotQuery);
         const _basename = segments.pop();

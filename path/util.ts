@@ -141,7 +141,7 @@ export function split(path: string): string[] {
                 return [origin];
             }
         } else {
-            const segments = trim(pathname, "/").split(/[/\\]+/);
+            const segments = trim(decodeURI(pathname), "/").split(/[/\\]+/);
 
             if (search && hash) {
                 return [origin, ...segments, search, hash];

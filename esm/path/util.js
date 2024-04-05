@@ -136,7 +136,7 @@ function split(path) {
             }
         }
         else {
-            const segments = trim(pathname, "/").split(/[/\\]+/);
+            const segments = trim(decodeURI(pathname), "/").split(/[/\\]+/);
             if (search && hash) {
                 return [origin, ...segments, search, hash];
             }
