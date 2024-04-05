@@ -93,14 +93,20 @@ categories:
 
 ## Types
 
-- `AsyncFunction`
-- `AsyncGeneratorFunction`
+- `AsyncFunction` This is the very constructor/class of all async functions.
+- `AsyncGeneratorFunction` This is the very constructor/class of all async
+  generator functions.
 - `AsyncFunctionConstructor`
-- `Constructor<T>`
-- `RealArrayLike<T>`
-- `TypedArray`
-- `Optional<T, K extends keyof T>`
-- `Ensured<T, K extends keyof T>`
+- `Constructor<T>` This interface represents the constructor/class of the given
+  `T` type.
+- `RealArrayLike<T>` A real-array-like object is an array-like object with a
+  `slice` method.
+- `TypedArray` See
+  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray
+- `Optional<T, K extends keyof T>` Constructs a type by making the specified
+  keys optional.
+- `Ensured<T, K extends keyof T>` Constructs a type by ensuring the specified
+  keys are required.
 
 ## Augmentation
 
