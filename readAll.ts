@@ -1,3 +1,8 @@
+/**
+ * Reads all streaming data at once.
+ * @module
+ */
+
 import { asIterable } from "./util.ts";
 
 /**

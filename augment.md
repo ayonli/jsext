@@ -29,8 +29,8 @@ import "@ayonli/jsext/augment/uint8array";
 _When import `@ayonli/jsext/augment`_
 
 - `AsyncFunction`
-- `AsyncGeneratorFunction`
 - `AsyncFunctionConstructor`
+- `AsyncGeneratorFunction`
 - `Constructor<T>`
 - `RealArrayLike<T>`
 - `TypedArray`

@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.8.6",
+    "version": "0.8.7",
     "description": "Additional functions for JavaScript to build strong applications.",
     "main": "./cjs/index.js",
     "module": "./esm/index.js",
@@ -318,7 +318,7 @@
     "scripts": {
         "test": "node --no-warnings=ExperimentalWarning --loader=ts-node/esm ./node_modules/mocha/bin/mocha --config mocha.json",
         "test:bun": "bun run ./node_modules/mocha/bin/mocha --config mocha.json",
-        "test:tsx": "tsx ./node_modules/mocha/bin/mocha --config mocha.json",
+        "test:tsx": "tsc --noEmit && tsx ./node_modules/mocha/bin/mocha --config mocha.json",
         "test:jsdom": "tsx ./node_modules/mocha/bin/mocha --config mocha.jsdom.json -r global-jsdom/register",
         "test:pty": "tsx ./node_modules/mocha/bin/mocha --config mocha.pty.json && tsx ./node_modules/mocha/bin/mocha --config mocha.pty.json --deno",
         "test:deno": "deno run --allow-read --allow-net test-deno.ts",

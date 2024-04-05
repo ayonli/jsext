@@ -1,6 +1,10 @@
 import { hasOwn } from './object.js';
 
 /**
+ * Declares a class that combines all methods from the base classes.
+ * @module
+ */
+/**
  * Merges properties and methods only if they're missing in the class.
  */
 function mergeIfNotExists(proto, source, mergeSuper = false) {

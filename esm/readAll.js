@@ -1,6 +1,10 @@
 import { asIterable } from './util.js';
 
 /**
+ * Reads all streaming data at once.
+ * @module
+ */
+/**
  * Reads all values from the iterable object at once.
  *
  * @example

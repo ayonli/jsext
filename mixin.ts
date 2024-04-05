@@ -1,3 +1,8 @@
+/**
+ * Declares a class that combines all methods from the base classes.
+ * @module
+ */
+
 import type { Constructor } from "./index.ts";
 import { hasOwn } from "./object.ts";
 

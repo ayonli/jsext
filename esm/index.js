@@ -4,20 +4,23 @@ import wrap from './wrap.js';
 import mixin from './mixin.js';
 import throttle from './throttle.js';
 import debounce from './debounce.js';
-import queue from './queue.js';
-export { Queue } from './queue.js';
-import lock from './lock.js';
-export { Mutex } from './lock.js';
+import queue, { Queue as Queue$1 } from './queue.js';
+import lock, { Mutex as Mutex$1 } from './lock.js';
 import read from './read.js';
 import readAll from './readAll.js';
-import chan from './chan.js';
-export { Channel } from './chan.js';
+import chan, { Channel as Channel$1 } from './chan.js';
 import parallel from './parallel.js';
 import run from './run.js';
 import example from './example.js';
 import deprecate from './deprecate.js';
-import { isClass, isSubclassOf } from './class.js';
+import { isClass as isClass$1, isSubclassOf as isSubclassOf$1 } from './class.js';
 
+/** @deprecated import `Queue` from `@ayonli/jsext/queue` instead. */
+const Queue = Queue$1;
+/** @deprecated import `Mutex` from `@ayonli/jsext/lock` instead. */
+const Mutex = Mutex$1;
+/** @deprecated import `Channel` from `@ayonli/jsext/chan` instead. */
+const Channel = Channel$1;
 /** This is the very constructor/class of all async functions. */
 const AsyncFunction = (async function () { }).constructor;
 /** This is the very constructor/class of all async generator functions. */
@@ -44,14 +47,18 @@ const jsext = {
     example,
     deprecate,
     /** @deprecated import `isClass` from `@ayonli/jsext/class` instead. */
-    isClass,
+    isClass: isClass$1,
     /** @deprecated import `isSubclassOf` from `@ayonli/jsext/class` instead. */
-    isSubclassOf,
+    isSubclassOf: isSubclassOf$1,
     /** @deprecated use `mixin` instead */
     mixins: mixin,
 };
+/** @deprecated import `isClass` from `@ayonli/jsext/class` instead. */
+const isClass = isClass$1;
+/** @deprecated import `isSubclassOf` from `@ayonli/jsext/class` instead. */
+const isSubclassOf = isSubclassOf$1;
 /** @deprecated use `mixin` instead */
 const mixins = mixin;
 
-export { AsyncFunction, AsyncGeneratorFunction, _try, chan, debounce, jsext as default, deprecate, example, func, isClass, isSubclassOf, lock, mixin, mixins, parallel, queue, read, readAll, run, throttle, wrap };
+export { AsyncFunction, AsyncGeneratorFunction, Channel, Mutex, Queue, _try, chan, debounce, jsext as default, deprecate, example, func, isClass, isSubclassOf, lock, mixin, mixins, parallel, queue, read, readAll, run, throttle, wrap };
 //# sourceMappingURL=index.js.map
