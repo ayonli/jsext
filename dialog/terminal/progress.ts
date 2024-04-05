@@ -1,6 +1,6 @@
 import bytes from "../../bytes.ts";
 import { stripEnd } from "../../string.ts";
-import type { ProgressFunc, ProgressState } from "../index.ts";
+import type { ProgressFunc, ProgressState } from "../../dialog.ts";
 import { CLR, LF } from "./constants.ts";
 import {
     DenoStdin,

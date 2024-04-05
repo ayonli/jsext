@@ -5,7 +5,7 @@ import Input from "./Input.ts";
 import OkButton from "./OkButton.ts";
 import Progress from "./Progress.ts";
 import Text from "./Text.ts";
-import type { ProgressFunc, ProgressState } from "../index.ts";
+import type { ProgressFunc, ProgressState } from "../../dialog.ts";
 
 export async function alertInBrowser(message: string) {
     await new Promise<void>(resolve => {
