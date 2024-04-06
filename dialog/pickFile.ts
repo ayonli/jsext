@@ -1,4 +1,4 @@
-import { platform } from "./pickFile/util.ts";
+import { platform } from "./terminal/util.ts";
 import { macChooseFolder, macChooseMultipleFiles, macChooseOneFile } from "./pickFile/mac.ts";
 import { linuxChooseFolder, linuxChooseMultipleFiles, linuxChooseOneFile } from "./pickFile/linux.ts";
 

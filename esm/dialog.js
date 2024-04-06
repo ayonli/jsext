@@ -1,7 +1,9 @@
 export { default as progress } from './dialog/progress.js';
 export { default as pickFile } from './dialog/pickFile.js';
 import { alertInBrowser, confirmInBrowser, promptInBrowser } from './dialog/browser/index.js';
-import { questionInDeno, questionInNode } from './dialog/terminal/index.js';
+import alertInTerminal from './dialog/terminal/alert.js';
+import confirmInTerminal from './dialog/terminal/confirm.js';
+import promptInTerminal from './dialog/terminal/prompt.js';
 
 /**
  * Asynchronous dialog functions for both browsers and terminals.
@@ -14,39 +16,28 @@ import { questionInDeno, questionInNode } from './dialog/terminal/index.js';
  * Displays a dialog with a message, and to wait until the user dismisses the
  * dialog.
  */
-async function alert(message) {
+async function alert(message, options = {}) {
     if (typeof document === "object") {
         await alertInBrowser(message);
     }
-    else if (typeof Deno === "object") {
-        await questionInDeno(message + " [Enter] ");
-    }
     else {
-        await questionInNode(message + " [Enter] ");
+        await alertInTerminal(message, options);
     }
 }
 /**
  * Displays a dialog with a message, and to wait until the user either confirms
  * or cancels the dialog.
  */
-async function confirm(message) {
+async function confirm(message, options = {}) {
     if (typeof document === "object") {
         return await confirmInBrowser(message);
     }
     else {
-        let answer;
-        if (typeof Deno === "object") {
-            answer = await questionInDeno(message + " [Y/n] ");
-        }
-        else {
-            answer = await questionInNode(message + " [Y/n] ");
-        }
-        const ok = answer === null || answer === void 0 ? void 0 : answer.toLowerCase().trim();
-        return ok === "" || ok === "y" || ok === "yes";
+        return await confirmInTerminal(message, options);
     }
 }
 async function prompt(message, options = "") {
-    var _a, _b;
+    var _a, _b, _c;
     const defaultValue = typeof options === "string"
         ? options
         : options.defaultValue;
@@ -56,14 +47,12 @@ async function prompt(message, options = "") {
     const mask = type === "password"
         ? typeof options === "object" ? ((_b = options.mask) !== null && _b !== void 0 ? _b : "*") : "*"
         : undefined;
+    const preferGUI = typeof options === "object" ? ((_c = options.preferGUI) !== null && _c !== void 0 ? _c : false) : false;
     if (typeof document === "object") {
         return await promptInBrowser(message, { type, defaultValue });
     }
-    else if (typeof Deno === "object") {
-        return await questionInDeno(message + " ", { defaultValue, mask });
-    }
     else {
-        return await questionInNode(message + " ", { defaultValue, mask });
+        return await promptInTerminal(message, { defaultValue, type, mask, preferGUI });
     }
 }
 

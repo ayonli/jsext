@@ -1,4 +1,4 @@
-import { platform } from './pickFile/util.js';
+import { platform } from './terminal/util.js';
 import { macChooseFolder, macChooseMultipleFiles, macChooseOneFile } from './pickFile/mac.js';
 import { linuxChooseFolder, linuxChooseMultipleFiles, linuxChooseOneFile } from './pickFile/linux.js';
 

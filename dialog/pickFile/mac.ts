@@ -1,7 +1,8 @@
 import { lines } from "../../string.ts";
 import { basename, join } from "../../path.ts";
 import readAll from "../../readAll.ts";
-import { readFile, run } from "./util.ts";
+import { readFile } from "./util.ts";
+import { run } from "../terminal/util.ts";
 import { UTIMap } from "./constants.ts";
 
 function htmlAcceptToAppleType(accept: string): string {

@@ -10,7 +10,9 @@ import progress from "./dialog/progress.ts";
 import type { ProgressState, ProgressFunc, ProgressAbortHandler } from "./dialog/progress.ts";
 import pickFile from "./dialog/pickFile.ts";
 import { alertInBrowser, confirmInBrowser, promptInBrowser } from "./dialog/browser/index.ts";
-import { questionInDeno, questionInNode } from "./dialog/terminal/index.ts";
+import alertInTerminal from "./dialog/terminal/alert.ts";
+import confirmInTerminal from "./dialog/terminal/confirm.ts";
+import promptInTerminal from "./dialog/terminal/prompt.ts";
 
 export { pickFile };
 export { progress, ProgressState, ProgressFunc, ProgressAbortHandler };
@@ -19,13 +21,14 @@ export { progress, ProgressState, ProgressFunc, ProgressAbortHandler };
  * Displays a dialog with a message, and to wait until the user dismisses the
  * dialog.
  */
-export async function alert(message: string): Promise<void> {
+export async function alert(message: string, options: {
+    /** Prefer to show a GUI dialog even in the terminal. */
+    preferGUI?: boolean;
+} = {}): Promise<void> {
     if (typeof document === "object") {
         await alertInBrowser(message);
-    } else if (typeof Deno === "object") {
-        await questionInDeno(message + " [Enter] ");
     } else {
-        await questionInNode(message + " [Enter] ");
+        await alertInTerminal(message, options);
     }
 }
 
@@ -33,20 +36,14 @@ export async function alert(message: string): Promise<void> {
  * Displays a dialog with a message, and to wait until the user either confirms
  * or cancels the dialog.
  */
-export async function confirm(message: string): Promise<boolean> {
+export async function confirm(message: string, options: {
+    /** Prefer to show a GUI dialog even in the terminal. */
+    preferGUI?: boolean;
+} = {}): Promise<boolean> {
     if (typeof document === "object") {
         return await confirmInBrowser(message);
     } else {
-        let answer: string | null;
-
-        if (typeof Deno === "object") {
-            answer = await questionInDeno(message + " [Y/n] ");
-        } else {
-            answer = await questionInNode(message + " [Y/n] ");
-        }
-
-        const ok = answer?.toLowerCase().trim();
-        return ok === "" || ok === "y" || ok === "yes";
+        return await confirmInTerminal(message, options);
     }
 }
 
@@ -66,8 +63,12 @@ export async function prompt(
         /**
          * Terminal only, used when `type` is `password`. The default value is
          * `*`, use an empty string if you don't want to show any character.
+         * 
+         * This option is ignored when `preferGUI` is `true`.
          */
         mask?: string;
+        /** Prefer to show a GUI dialog even in the terminal. */
+        preferGUI?: boolean;
     }
 ): Promise<string | null>;
 export async function prompt(
@@ -76,6 +77,7 @@ export async function prompt(
         defaultValue?: string | undefined;
         type?: "text" | "password";
         mask?: string;
+        preferGUI?: boolean;
     } = ""
 ): Promise<string | null> {
     const defaultValue = typeof options === "string"
@@ -87,12 +89,11 @@ export async function prompt(
     const mask = type === "password"
         ? typeof options === "object" ? (options.mask ?? "*") : "*"
         : undefined;
+    const preferGUI = typeof options === "object" ? (options.preferGUI ?? false) : false;
 
     if (typeof document === "object") {
         return await promptInBrowser(message, { type, defaultValue });
-    } else if (typeof Deno === "object") {
-        return await questionInDeno(message + " ", { defaultValue, mask });
     } else {
-        return await questionInNode(message + " ", { defaultValue, mask });
+        return await promptInTerminal(message, { defaultValue, type, mask, preferGUI });
     }
 }

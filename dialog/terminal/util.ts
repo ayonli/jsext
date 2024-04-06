@@ -1,8 +1,9 @@
 import { isFullWidth, isWide } from "../../external/code-point-utils/index.ts";
-import bytes, { ByteArray, equals } from "../../bytes.ts";
+import bytes, { ByteArray, equals, text } from "../../bytes.ts";
 import { sum } from "../../math.ts";
 import { byteLength, chars } from "../../string.ts";
 import { CANCEL, EMOJI_RE, ESC } from "./constants.ts";
+import { isNode } from "../../parallel/constants.ts";
 
 export type KeypressEventInfo = {
     sequence: string;
@@ -105,5 +106,93 @@ export async function hijackNodeStdin<T>(stdin: NodeStdin, task: () => Promise<T
         } else {
             stdin.pause();
         }
+    }
+}
+
+export type WellKnownPlatforms = "android" | "darwin" | "freebsd" | "linux" | "netbsd" | "solaris" | "windows";
+export const WellKnownPlatforms: WellKnownPlatforms[] = [
+    "android",
+    "darwin",
+    "freebsd",
+    "linux",
+    "netbsd",
+    "solaris",
+    "windows",
+];
+
+export function platform(): WellKnownPlatforms | "others" {
+    if (typeof Deno === "object") {
+        if (WellKnownPlatforms.includes(Deno.build.os as any)) {
+            return Deno.build.os as WellKnownPlatforms;
+        } else {
+            return "others";
+        }
+    } else if (process.platform === "win32") {
+        return "windows";
+    } else if (process.platform === "sunos") {
+        return "solaris";
+    } else if (WellKnownPlatforms.includes(process.platform as any)) {
+        return process.platform as WellKnownPlatforms;
+    } else {
+        return "others";
+    }
+}
+
+export function escape(str: string) {
+    return str.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+export async function run(cmd: string, args: string[]): Promise<{
+    code: number;
+    stdout: string;
+    stderr: string;
+}> {
+    if (typeof Deno === "object") {
+        const _cmd = new Deno.Command(cmd, { args });
+        const { code, stdout, stderr } = await _cmd.output();
+        return {
+            code,
+            stdout: text(stdout),
+            stderr: text(stderr),
+        };
+    } else if (isNode) {
+        const { spawn } = await import("child_process");
+        const child = spawn(cmd, args);
+        const stdout: string[] = [];
+        const stderr: string[] = [];
+
+        child.stdout.on("data", chunk => stdout.push(String(chunk)));
+        child.stderr.on("data", chunk => stderr.push(String(chunk)));
+
+        const code = await new Promise<number>((resolve) => {
+            child.on("exit", (code, signal) => {
+                if (code === null && signal) {
+                    resolve(1);
+                } else {
+                    resolve(code ?? 0);
+                }
+            });
+        });
+
+        return {
+            code,
+            stdout: stdout.join(""),
+            stderr: stderr.join(""),
+        };
+    } else {
+        throw new Error("Unsupported runtime");
+    }
+}
+
+export async function which(cmd: string): Promise<string | null> {
+    if (platform() === "windows") {
+        const { code, stdout } = await run("powershell", [
+            "-Command",
+            `Get-Command -Name ${cmd} | Select-Object -ExpandProperty Source`
+        ]);
+        return code ? null : stdout.trim();
+    } else {
+        const { code, stdout } = await run("which", [cmd]);
+        return code ? null : stdout.trim();
     }
 }

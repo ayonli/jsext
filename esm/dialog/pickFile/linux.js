@@ -1,7 +1,8 @@
 import { lines } from '../../string.js';
 import { join } from '../../path.js';
 import readAll from '../../readAll.js';
-import { run, readFile } from './util.js';
+import { readFile } from './util.js';
+import { run } from '../terminal/util.js';
 import { UTIMap } from './constants.js';
 
 function htmlAcceptToFileFilter(accept) {

@@ -1,77 +1,8 @@
-import { isNode } from '../../parallel/constants.js';
-import { text, concat } from '../../bytes.js';
+import { concat } from '../../bytes.js';
 import { basename, extname, join } from '../../path.js';
 import readAll from '../../readAll.js';
 import { UTIMap } from './constants.js';
 
-const WellKnownPlatforms = [
-    "android",
-    "darwin",
-    "freebsd",
-    "linux",
-    "netbsd",
-    "solaris",
-    "windows",
-];
-function platform() {
-    if (typeof Deno === "object") {
-        if (WellKnownPlatforms.includes(Deno.build.os)) {
-            return Deno.build.os;
-        }
-        else {
-            return "others";
-        }
-    }
-    else if (process.platform === "win32") {
-        return "windows";
-    }
-    else if (process.platform === "sunos") {
-        return "solaris";
-    }
-    else if (WellKnownPlatforms.includes(process.platform)) {
-        return process.platform;
-    }
-    else {
-        return "others";
-    }
-}
-async function run(cmd, args) {
-    if (typeof Deno === "object") {
-        const _cmd = new Deno.Command(cmd, { args });
-        const { code, stdout, stderr } = await _cmd.output();
-        return {
-            code,
-            stdout: text(stdout),
-            stderr: text(stderr),
-        };
-    }
-    else if (isNode) {
-        const { spawn } = await import('child_process');
-        const child = spawn(cmd, args);
-        const stdout = [];
-        const stderr = [];
-        child.stdout.on("data", chunk => stdout.push(String(chunk)));
-        child.stderr.on("data", chunk => stderr.push(String(chunk)));
-        const code = await new Promise((resolve) => {
-            child.on("exit", (code, signal) => {
-                if (code === null && signal) {
-                    resolve(1);
-                }
-                else {
-                    resolve(code !== null && code !== void 0 ? code : 0);
-                }
-            });
-        });
-        return {
-            code,
-            stdout: stdout.join(""),
-            stderr: stderr.join(""),
-        };
-    }
-    else {
-        throw new Error("Unsupported runtime");
-    }
-}
 function createFile(content, path, options) {
     var _a, _b;
     const { lastModified, folder } = options;
@@ -112,5 +43,5 @@ async function readFile(path, folder = "") {
     return createFile(content, path, { folder, lastModified });
 }
 
-export { WellKnownPlatforms, createFile, platform, readFile, run };
+export { createFile, readFile };
 //# sourceMappingURL=util.js.map
