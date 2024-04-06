@@ -8,9 +8,11 @@
 
 import progress from "./dialog/progress.ts";
 import type { ProgressState, ProgressFunc, ProgressAbortHandler } from "./dialog/progress.ts";
+import pickFile from "./dialog/pickFile.ts";
 import { alertInBrowser, confirmInBrowser, promptInBrowser } from "./dialog/browser/index.ts";
 import { questionInDeno, questionInNode } from "./dialog/terminal/index.ts";
 
+export { pickFile };
 export { progress, ProgressState, ProgressFunc, ProgressAbortHandler };
 
 /**

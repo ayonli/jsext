@@ -1,4 +1,5 @@
 export { default as progress } from './dialog/progress.js';
+export { default as pickFile } from './dialog/pickFile.js';
 import { alertInBrowser, confirmInBrowser, promptInBrowser } from './dialog/browser/index.js';
 import { questionInDeno, questionInNode } from './dialog/terminal/index.js';
 
