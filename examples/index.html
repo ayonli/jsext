@@ -22,7 +22,7 @@
         // this will also include the sub-modules and augmentations
     </script>
     <script type="module">
-        import { alert, confirm, prompt, progress, openFile } from "../esm/dialog.js";
+        import { alert, confirm, prompt, progress, openFile, saveFile } from "../esm/dialog.js";
         import { sleep } from "../esm/async.js";
 
         self.onload = () => {
@@ -104,6 +104,12 @@
                 const dir = await openFile({ directory: true });
                 console.log(dir);
             });
+
+            const downloadFileBtn = document.getElementById('download-file');
+            downloadFileBtn.addEventListener('click', async () => {
+                const file = await openFile();
+                await saveFile(file, { defaultName: file.name });
+            });
         }
     </script>
 </head>
@@ -120,6 +126,7 @@
         <button id="open-file">Open File</button>
         <button id="open-files">Open Files</button>
         <button id="open-directory">Open Directory</button>
+        <button id="download-file">Download File</button>
     </div>
 </body>
 

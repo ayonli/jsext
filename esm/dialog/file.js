@@ -3,6 +3,8 @@ import { platform, readFile } from './terminal/util.js';
 import { macPickFile, macPickFiles, macPickFolder } from './terminal/file/mac.js';
 import { linuxPickFile, linuxPickFiles, linuxPickFolder } from './terminal/file/linux.js';
 import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './terminal/file/windows.js';
+import read from '../read.js';
+import readAll from '../readAll.js';
 
 /**
  * Open the file picker dialog and pick a file, this function returns the file's
@@ -10,30 +12,30 @@ import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './terminal
  *
  * NOTE: this function is not available in the browser.
  */
-function pickFile(options) {
+async function pickFile(options = {}) {
     const _platform = platform();
     if (_platform === "darwin") {
-        return macPickFile(options.title, {
+        return await macPickFile(options.title, {
             type: options.type,
             save: options === null || options === void 0 ? void 0 : options.save,
             defaultName: options === null || options === void 0 ? void 0 : options.defaultName,
         });
     }
     else if (_platform === "linux") {
-        return linuxPickFile(options.title, {
+        return await linuxPickFile(options.title, {
             type: options.type,
             save: options === null || options === void 0 ? void 0 : options.save,
             defaultName: options === null || options === void 0 ? void 0 : options.defaultName,
         });
     }
     else if (_platform === "windows") {
-        return windowsPickFile(options.title, {
+        return await windowsPickFile(options.title, {
             type: options.type,
             save: options === null || options === void 0 ? void 0 : options.save,
             defaultName: options === null || options === void 0 ? void 0 : options.defaultName,
         });
     }
-    return Promise.reject(new Error("Unsupported platform or runtime"));
+    throw new Error("Unsupported platform or runtime");
 }
 /**
  * Open the file picker dialog and pick multiple files, this function returns the
@@ -41,18 +43,18 @@ function pickFile(options) {
  *
  * NOTE: this function is not available in the browser.
  */
-function pickFiles(options) {
+async function pickFiles(options = {}) {
     const _platform = platform();
     if (_platform === "darwin") {
-        return macPickFiles(options.title, options.type);
+        return await macPickFiles(options.title, options.type);
     }
     else if (_platform === "linux") {
-        return linuxPickFiles(options.title, options.type);
+        return await linuxPickFiles(options.title, options.type);
     }
     else if (_platform === "windows") {
-        return windowsPickFiles(options.title, options.type);
+        return await windowsPickFiles(options.title, options.type);
     }
-    return Promise.reject(new Error("Unsupported platform or runtime"));
+    throw new Error("Unsupported platform or runtime");
 }
 /**
  * Open the file picker dialog and pick a directory, this function returns the
@@ -60,18 +62,18 @@ function pickFiles(options) {
  *
  * NOTE: this function is not available in the browser.
  */
-function pickDirectory(options) {
+async function pickDirectory(options = {}) {
     const _platform = platform();
     if (_platform === "darwin") {
-        return macPickFolder(options.title);
+        return await macPickFolder(options.title);
     }
     else if (_platform === "linux") {
-        return linuxPickFolder(options.title);
+        return await linuxPickFolder(options.title);
     }
     else if (_platform === "windows") {
-        return windowsPickFolder(options.title);
+        return await windowsPickFolder(options.title);
     }
-    return Promise.reject(new Error("Unsupported platform or runtime"));
+    throw new Error("Unsupported platform or runtime");
 }
 async function openFile(options = {}) {
     const { title = "", type = "", multiple = false, directory = false } = options;
@@ -177,6 +179,89 @@ async function openFile(options = {}) {
         }
     }
 }
+async function saveFile(file, options = {}) {
+    if (typeof document === "object") {
+        const a = document.createElement("a");
+        if (file instanceof ReadableStream) {
+            const type = options.type || "application/octet-stream";
+            const chunks = await readAll(file);
+            const blob = new Blob(chunks, { type });
+            a.href = URL.createObjectURL(blob);
+            a.download = options.name || "Unnamed";
+        }
+        else if (file instanceof File) {
+            a.href = URL.createObjectURL(file);
+            a.download = file.name;
+        }
+        else if (file instanceof Blob) {
+            a.href = URL.createObjectURL(file);
+            a.download = options.name || "Unnamed";
+        }
+        else {
+            const type = options.type || "application/octet-stream";
+            const blob = new Blob([file], { type });
+            a.href = URL.createObjectURL(blob);
+            a.download = options.name || "Unnamed";
+        }
+        a.click();
+    }
+    else {
+        const { title } = options;
+        let stream;
+        let filename;
+        if (file instanceof ReadableStream) {
+            stream = file;
+            filename = await pickFile({
+                title,
+                type: options.type,
+                save: true,
+                defaultName: options.name,
+            });
+        }
+        else if (file instanceof File) {
+            stream = file.stream();
+            filename = await pickFile({
+                title,
+                type: file.type,
+                save: true,
+                defaultName: file.name,
+            });
+        }
+        else if (file instanceof Blob) {
+            stream = file.stream();
+            filename = await pickFile({
+                title,
+                type: options.type || file.type,
+                save: true,
+                defaultName: options.name,
+            });
+        }
+        else {
+            const type = options.type || "application/octet-stream";
+            const blob = new Blob([file], { type });
+            stream = blob.stream();
+            filename = await pickFile({
+                title,
+                type: options.type,
+                save: true,
+                defaultName: options.name,
+            });
+        }
+        if (filename) {
+            if (typeof Deno === "object") {
+                await Deno.writeFile(filename, stream, { create: true });
+            }
+            else {
+                const { createWriteStream } = await import('fs');
+                const out = createWriteStream(filename, { flags: "w" });
+                for await (const chunk of read(stream)) {
+                    out.write(chunk);
+                }
+                out.close();
+            }
+        }
+    }
+}
 
-export { openFile, pickDirectory, pickFile, pickFiles };
+export { openFile, pickDirectory, pickFile, pickFiles, saveFile };
 //# sourceMappingURL=file.js.map
