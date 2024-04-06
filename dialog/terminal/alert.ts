@@ -4,7 +4,7 @@ import { run } from "./util.ts";
 
 function createAppleScript(message: string) {
     return "tell application (path to frontmost application as text)\n" +
-        `  display dialog "${escape(message)}" buttons {"OK"} default button "OK"\n` +
+        `  display dialog "${escape(message)}" with title "Alert" buttons {"OK"} default button "OK"\n` +
         "end";
 }
 

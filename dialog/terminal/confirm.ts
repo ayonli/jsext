@@ -3,7 +3,8 @@ import { escape, platform, run, which } from "./util.ts";
 
 function createAppleScript(message: string) {
     return "tell application (path to frontmost application as text)\n" +
-        `  display dialog "${escape(message)}" buttons {"Cancel", "OK"} default button "OK"\n` +
+        `  display dialog "${escape(message)}" with title "Confirm"`
+        + ` buttons {"Cancel", "OK"} default button "OK"\n` +
         "end";
 }
 

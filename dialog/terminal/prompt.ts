@@ -3,8 +3,9 @@ import { escape, platform, run, which } from "./util.ts";
 
 function createAppleScript(message: string, defaultValue = "", password = false) {
     return "tell application (path to frontmost application as text)\n" +
-        `  set response to display dialog "${escape(message)}" default answer "${escape(defaultValue)}" `
-        + `${password ? "hidden answer true" : ""}\n` +
+        `  set response to display dialog "${escape(message)}" with title "Prompt"`
+        + ` default answer "${escape(defaultValue)}"`
+        + `${password ? " hidden answer true" : ""}\n` +
         "  return text returned of response\n" +
         "end";
 }
