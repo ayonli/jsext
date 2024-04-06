@@ -1,7 +1,7 @@
-import { lines } from "../../string.ts";
-import { run } from "../terminal/util.ts";
-import { UTIMap } from "../terminal/constants.ts";
-import { extname } from "../../path.ts";
+import { lines } from "../../../string.ts";
+import { run } from "../util.ts";
+import { UTIMap } from "../constants.ts";
+import { extname } from "../../../path.ts";
 
 function htmlAcceptToFileFilter(accept: string): string {
     const list = Object.values(UTIMap);

@@ -1,8 +1,8 @@
 import { basename, join } from '../path.js';
 import { platform, readFile } from './terminal/util.js';
-import { macPickFile, macPickFiles, macPickFolder } from './pickFile/mac.js';
-import { linuxPickFile, linuxPickFiles, linuxPickFolder } from './pickFile/linux.js';
-import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './pickFile/windows.js';
+import { macPickFile, macPickFiles, macPickFolder } from './terminal/file/mac.js';
+import { linuxPickFile, linuxPickFiles, linuxPickFolder } from './terminal/file/linux.js';
+import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './terminal/file/windows.js';
 
 /**
  * Open the file picker dialog and pick a file, this function returns the file's
@@ -125,15 +125,15 @@ async function openFile(options = {}) {
                         if (entry.isFile) {
                             files.push({
                                 path: join(dirname, entry.name),
-                                relativePath: join(relativePath, entry.name),
+                                relativePath: relativePath + "/" + entry.name,
                             });
                         }
                         else if (entry.isDirectory) {
-                            await walk(join(dirname, entry.name), join(relativePath, entry.name));
+                            await walk(join(dirname, entry.name), relativePath + "/" + entry.name);
                         }
                         else if (entry.isSymlink) {
                             const symlink = await Deno.readLink(join(dirname, entry.name));
-                            await walk(symlink, join(relativePath, entry.name));
+                            await walk(symlink, relativePath + "/" + entry.name);
                         }
                     }
                 })(dirname, folder);
@@ -146,15 +146,15 @@ async function openFile(options = {}) {
                         if (entry.isFile()) {
                             files.push({
                                 path: join(dirname, entry.name),
-                                relativePath: join(relativePath, entry.name),
+                                relativePath: relativePath + "/" + entry.name,
                             });
                         }
                         else if (entry.isDirectory()) {
-                            await walk(join(dirname, entry.name), join(relativePath, entry.name));
+                            await walk(join(dirname, entry.name), relativePath + "/" + entry.name);
                         }
                         else if (entry.isSymbolicLink()) {
                             const symlink = await readlink(join(dirname, entry.name));
-                            await walk(symlink, join(relativePath, entry.name));
+                            await walk(symlink, relativePath + "/" + entry.name);
                         }
                     }
                 })(dirname, folder);

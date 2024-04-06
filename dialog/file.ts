@@ -4,17 +4,17 @@ import {
     macPickFolder,
     macPickFiles,
     macPickFile,
-} from "./pickFile/mac.ts";
+} from "./terminal/file/mac.ts";
 import {
     linuxPickFolder,
     linuxPickFiles,
     linuxPickFile,
-} from "./pickFile/linux.ts";
+} from "./terminal/file/linux.ts";
 import {
     windowsPickFolder,
     windowsPickFiles,
     windowsPickFile,
-} from "./pickFile/windows.ts";
+} from "./terminal/file/windows.ts";
 
 /**
  * Open the file picker dialog and pick a file, this function returns the file's
