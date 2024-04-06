@@ -1,6 +1,7 @@
 import { lines } from "../../string.ts";
 import { run } from "../terminal/util.ts";
 import { UTIMap } from "../terminal/constants.ts";
+import { extname } from "../../path.ts";
 
 function htmlAcceptToFileFilter(accept: string): string {
     const list = Object.values(UTIMap);
@@ -26,6 +27,13 @@ function createPowerShellScript(mode: "file" | "files" | "folder", title = "", o
 
     if (mode === "file") {
         if (save) {
+            let filter = type ? htmlAcceptToFileFilter(type) : "";
+
+            if (!filter && defaultName) {
+                const ext = extname(defaultName);
+                ext && (filter = htmlAcceptToFileFilter(ext));
+            }
+
             return `Add-Type -AssemblyName System.Windows.Forms` +
                 "\n" +
                 "$saveFileDialog = [System.Windows.Forms.SaveFileDialog]::new()" +
@@ -33,11 +41,10 @@ function createPowerShellScript(mode: "file" | "files" | "folder", title = "", o
                 "$saveFileDialog.Title = '" + title + "'" +
                 "\n" +
                 (defaultName ? "$saveFileDialog.FileName = '" + defaultName + "'\n" : "") +
-                "$saveFileDialog.InitialDirectory = [System.IO.Directory]::GetCurrentDirectory()" +
-                "\n" +
-                "$saveFileDialog.ShowDialog() | Out-Null" +
-                "\n" +
-                "$saveFileDialog.FileName";
+                (filter ? "$saveFileDialog.Filter = '" + filter + "'\n" : "") +
+                "if ($saveFileDialog.ShowDialog() -eq 'OK') {\n" +
+                "  $saveFileDialog.FileName\n" +
+                "}\n";
         } else {
             const filter = type ? htmlAcceptToFileFilter(type) : "";
             return `Add-Type -AssemblyName System.Windows.Forms` +
@@ -48,8 +55,6 @@ function createPowerShellScript(mode: "file" | "files" | "folder", title = "", o
                 "\n" +
                 (filter ? "$openFileDialog.Filter = '" + filter + "'\n" : "") +
                 "$openFileDialog.Multiselect = $false" +
-                "\n" +
-                "$openFileDialog.InitialDirectory = [System.IO.Directory]::GetCurrentDirectory()" +
                 "\n" +
                 "$openFileDialog.ShowDialog() | Out-Null" +
                 "\n" +
@@ -65,8 +70,6 @@ function createPowerShellScript(mode: "file" | "files" | "folder", title = "", o
             "\n" +
             (filter ? "$openFileDialog.Filter = '" + filter + "'\n" : "") +
             "$openFileDialog.Multiselect = $true" +
-            "\n" +
-            "$openFileDialog.InitialDirectory = [System.IO.Directory]::GetCurrentDirectory()" +
             "\n" +
             "$openFileDialog.ShowDialog() | Out-Null" +
             "\n" +

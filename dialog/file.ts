@@ -188,13 +188,13 @@ export async function openFile(options: {
                         if (entry.isFile) {
                             files.push({
                                 path: join(dirname, entry.name),
-                                relativePath: join(relativePath, entry.name),
+                                relativePath: relativePath + "/" + entry.name,
                             });
                         } else if (entry.isDirectory) {
-                            await walk(join(dirname, entry.name), join(relativePath, entry.name));
+                            await walk(join(dirname, entry.name), relativePath + "/" + entry.name);
                         } else if (entry.isSymlink) {
                             const symlink = await Deno.readLink(join(dirname, entry.name));
-                            await walk(symlink, join(relativePath, entry.name));
+                            await walk(symlink, relativePath + "/" + entry.name);
                         }
                     }
                 })(dirname, folder);
@@ -208,13 +208,13 @@ export async function openFile(options: {
                         if (entry.isFile()) {
                             files.push({
                                 path: join(dirname, entry.name),
-                                relativePath: join(relativePath, entry.name),
+                                relativePath: relativePath + "/" + entry.name,
                             });
                         } else if (entry.isDirectory()) {
-                            await walk(join(dirname, entry.name), join(relativePath, entry.name));
+                            await walk(join(dirname, entry.name), relativePath + "/" + entry.name);
                         } else if (entry.isSymbolicLink()) {
                             const symlink = await readlink(join(dirname, entry.name));
-                            await walk(symlink, join(relativePath, entry.name));
+                            await walk(symlink, relativePath + "/" + entry.name);
                         }
                     }
                 })(dirname, folder);
