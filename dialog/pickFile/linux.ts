@@ -1,5 +1,5 @@
 import { lines } from "../../string.ts";
-import { join } from "../../path.ts";
+import { basename, join } from "../../path.ts";
 import readAll from "../../readAll.ts";
 import { readFile } from "./util.ts";
 import { run } from "../terminal/util.ts";
@@ -21,11 +21,16 @@ function htmlAcceptToFileFilter(accept: string): string {
 }
 
 export async function linuxChooseOneFile(title = "", type = ""): Promise<File | null> {
-    const { code, stdout, stderr } = await run("zenity", [
+    const args = [
         "--file-selection",
         "--title", title,
-        "--file-filter", htmlAcceptToFileFilter(type),
-    ]);
+    ];
+
+    if (type) {
+        args.push("--file-filter", htmlAcceptToFileFilter(type));
+    }
+
+    const { code, stdout, stderr } = await run("zenity", args);
 
     if (!code) {
         const path = stdout.trim();
@@ -35,23 +40,32 @@ export async function linuxChooseOneFile(title = "", type = ""): Promise<File | 
         } else {
             return null;
         }
+    } else if (code === 1) {
+        return null;
     } else {
         throw new Error(stderr.trim());
     }
 }
 
 export async function linuxChooseMultipleFiles(title = "", type = ""): Promise<File[]> {
-    const { code, stdout, stderr } = await run("zenity", [
+    const args = [
         "--file-selection",
         "--title", title,
-        "--file-filter", htmlAcceptToFileFilter(type),
         "--multiple",
         "--separator", "\n",
-    ]);
+    ];
+
+    if (type) {
+        args.push("--file-filter", htmlAcceptToFileFilter(type));
+    }
+
+    const { code, stdout, stderr } = await run("zenity", args);
 
     if (!code) {
         const paths = lines(stdout.trim());
         return await Promise.all(paths.map(path => readFile(path)));
+    } else if (code === 1) {
+        return [];
     } else {
         throw new Error(stderr.trim());
     }
@@ -66,12 +80,25 @@ export async function linuxChooseFolder(title = ""): Promise<File[]> {
 
     if (!code) {
         const dir = stdout.trim();
-        const folder = dir.split("/").pop();
-        const paths: string[] = (await readAll(Deno.readDir(dir)))
-            .filter(item => item.isFile)
-            .map(item => join(dir, item.name));
+        const folder = basename(dir);
+        let filenames: string[] = [];
+
+        if (typeof Deno === "object") {
+            filenames = (await readAll(Deno.readDir(dir)))
+                .filter(item => item.isFile)
+                .map(item => item.name);
+        } else {
+            const { readdir } = await import("fs/promises");
+            filenames = (await readdir(dir, { withFileTypes: true }))
+                .filter(item => item.isFile())
+                .map(item => item.name);
+        }
+
+        const paths = filenames.map(name => join(dir, name));
 
         return await Promise.all(paths.map(path => readFile(path, folder)));
+    } else if (code === 1) {
+        return [];
     } else {
         throw new Error(stderr.trim());
     }
