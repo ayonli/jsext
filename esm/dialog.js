@@ -1,5 +1,5 @@
 export { default as progress } from './dialog/progress.js';
-export { default as pickFile } from './dialog/pickFile.js';
+export { openFile, pickDirectory, pickFile, pickFiles } from './dialog/file.js';
 import { alertInBrowser, confirmInBrowser, promptInBrowser } from './dialog/browser/index.js';
 import alertInTerminal from './dialog/terminal/alert.js';
 import confirmInTerminal from './dialog/terminal/confirm.js';

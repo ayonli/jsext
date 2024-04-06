@@ -3,8 +3,9 @@ import { platform, which, run, escape } from './util.js';
 
 function createAppleScript(message, defaultValue = "", password = false) {
     return "tell application (path to frontmost application as text)\n" +
-        `  set response to display dialog "${escape(message)}" default answer "${escape(defaultValue)}" `
-        + `${password ? "hidden answer true" : ""}\n` +
+        `  set response to display dialog "${escape(message)}" with title "Prompt"`
+        + ` default answer "${escape(defaultValue)}"`
+        + `${password ? " hidden answer true" : ""}\n` +
         "  return text returned of response\n" +
         "end";
 }
@@ -34,6 +35,7 @@ async function promptInTerminal(message, options = {}) {
     else if ((options === null || options === void 0 ? void 0 : options.preferGUI) && platform() === "linux" && (await which("zenity"))) {
         const args = [
             "--entry",
+            "--title", "Prompt",
             "--text", message,
             "--entry-text",
             (_a = options.defaultValue) !== null && _a !== void 0 ? _a : ""

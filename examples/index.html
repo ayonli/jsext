@@ -9,16 +9,49 @@
         body {
             background-color: #fff;
         }
+
+        .button-list {
+            display: flex;
+            flex-direction: column;
+            justify-content: start;
+            align-items: baseline;
+            gap: 10px;
+        }
     </style>
-    <script type="module" src="./dialog/main.js"></script>
     <script src="../bundle/jsext.js">
         // this will also include the sub-modules and augmentations
+    </script>
+    <script type="module">
+        import { openFile } from "../esm/dialog.js";
+
+        self.onload = () => {
+            const openFileBtn = document.getElementById('open-one-file');
+            openFileBtn.addEventListener('click', async () => {
+                const file = await openFile();
+                console.log(file);
+            });
+
+            const openFilesBtn = document.getElementById('open-multiple-files');
+            openFilesBtn.addEventListener('click', async () => {
+                const files = await openFile({ multiple: true });
+                console.log(files);
+            });
+
+            const openDirBtn = document.getElementById('open-directory');
+            openDirBtn.addEventListener('click', async () => {
+                const dir = await openFile({ directory: true });
+                console.log(dir);
+            });
+        }
     </script>
 </head>
 
 <body>
-    <h1>This is a title</h1>
-    <p>This is a paragraph.</p>
+    <div class="button-list">
+        <button id="open-one-file">Open One File</button>
+        <button id="open-multiple-files">Open Multiple Files</button>
+        <button id="open-directory">Open Directory</button>
+    </div>
 </body>
 
 </html>

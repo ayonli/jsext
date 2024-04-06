@@ -3,7 +3,8 @@ import { platform, which, run, escape } from './util.js';
 
 function createAppleScript(message) {
     return "tell application (path to frontmost application as text)\n" +
-        `  display dialog "${escape(message)}" buttons {"Cancel", "OK"} default button "OK"\n` +
+        `  display dialog "${escape(message)}" with title "Confirm"`
+        + ` buttons {"Cancel", "OK"} default button "OK"\n` +
         "end";
 }
 function createPowerShellScript(message) {
@@ -31,6 +32,7 @@ async function confirmInTerminal(message, options = {}) {
     else if ((options === null || options === void 0 ? void 0 : options.preferGUI) && platform() === "linux" && (await which("zenity"))) {
         const { code, stderr } = await run("zenity", [
             "--question",
+            "--title", "Confirm",
             "--text", message,
         ]);
         if (!code) {

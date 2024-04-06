@@ -1,29 +1,21 @@
-import { lines } from "../../string.ts";
-import { run } from "../terminal/util.ts";
-import { UTIMap } from "../terminal/constants.ts";
+import { lines } from '../../string.js';
+import { run } from '../terminal/util.js';
+import { UTIMap } from '../terminal/constants.js';
 
-function htmlAcceptToFileFilter(accept: string): string {
+function htmlAcceptToFileFilter(accept) {
     const list = Object.values(UTIMap);
     return accept.split(/\s*,\s*/).map(type => {
         const _type = type.toLowerCase();
-
         for (const types of list) {
             if (types.includes(_type)) {
                 return types.filter(t => t.startsWith(".")).map(t => `*${t}|*${t}`).join("|");
             }
         }
-
         return type;
     }).join("|");
 }
-
-function createPowerShellScript(mode: "file" | "files" | "folder", title = "", options: {
-    type?: string | undefined;
-    save?: boolean | undefined;
-    defaultName?: string | undefined;
-} = {}): string {
+function createPowerShellScript(mode, title = "", options = {}) {
     const { type, save, defaultName } = options;
-
     if (mode === "file") {
         if (save) {
             return `Add-Type -AssemblyName System.Windows.Forms` +
@@ -38,7 +30,8 @@ function createPowerShellScript(mode: "file" | "files" | "folder", title = "", o
                 "$saveFileDialog.ShowDialog() | Out-Null" +
                 "\n" +
                 "$saveFileDialog.FileName";
-        } else {
+        }
+        else {
             const filter = type ? htmlAcceptToFileFilter(type) : "";
             return `Add-Type -AssemblyName System.Windows.Forms` +
                 "\n" +
@@ -55,7 +48,8 @@ function createPowerShellScript(mode: "file" | "files" | "folder", title = "", o
                 "\n" +
                 "$openFileDialog.FileName";
         }
-    } else if (mode === "files") {
+    }
+    else if (mode === "files") {
         const filter = type ? htmlAcceptToFileFilter(type) : "";
         return `Add-Type -AssemblyName System.Windows.Forms` +
             "\n" +
@@ -71,7 +65,8 @@ function createPowerShellScript(mode: "file" | "files" | "folder", title = "", o
             "$openFileDialog.ShowDialog() | Out-Null" +
             "\n" +
             "$openFileDialog.FileNames -join \"`n\"";
-    } else {
+    }
+    else {
         return `Add-Type -AssemblyName System.Windows.Forms` +
             "\n" +
             "$folderBrowserDialog = [System.Windows.Forms.FolderBrowserDialog]::new()" +
@@ -83,49 +78,45 @@ function createPowerShellScript(mode: "file" | "files" | "folder", title = "", o
             "$folderBrowserDialog.SelectedPath";
     }
 }
-
-export async function windowsPickFile(title = "", options: {
-    type?: string | undefined;
-    save?: boolean | undefined;
-    defaultName?: string | undefined;
-} = {}): Promise<string | null> {
+async function windowsPickFile(title = "", options = {}) {
     const { code, stdout, stderr } = await run("powershell", [
         "-c",
         createPowerShellScript("file", title, options)
     ]);
-
     if (!code) {
         const path = stdout.trim();
         return path || null;
-    } else {
+    }
+    else {
         throw new Error(stderr);
     }
 }
-
-export async function windowsPickFiles(title = "", type = ""): Promise<string[]> {
+async function windowsPickFiles(title = "", type = "") {
     const { code, stdout, stderr } = await run("powershell", [
         "-c",
         createPowerShellScript("files", title, { type })
     ]);
-
     if (!code) {
         const output = stdout.trim();
         return output ? lines(stdout.trim()) : [];
-    } else {
+    }
+    else {
         throw new Error(stderr);
     }
 }
-
-export async function windowsPickFolder(title = ""): Promise<string | null> {
+async function windowsPickFolder(title = "") {
     const { code, stdout, stderr } = await run("powershell", [
         "-c",
         createPowerShellScript("folder", title)
     ]);
-
     if (!code) {
         const dir = stdout.trim();
         return dir || null;
-    } else {
+    }
+    else {
         throw new Error(stderr);
     }
 }
+
+export { windowsPickFile, windowsPickFiles, windowsPickFolder };
+//# sourceMappingURL=windows.js.map

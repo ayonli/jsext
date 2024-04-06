@@ -1,9 +1,6 @@
 import { lines } from '../../string.js';
-import { join } from '../../path.js';
-import readAll from '../../readAll.js';
-import { readFile } from './util.js';
 import { run } from '../terminal/util.js';
-import { UTIMap } from './constants.js';
+import { UTIMap } from '../terminal/constants.js';
 
 function htmlAcceptToFileFilter(accept) {
     const list = Object.values(UTIMap);
@@ -17,42 +14,56 @@ function htmlAcceptToFileFilter(accept) {
         return type;
     }).join(" ");
 }
-async function linuxChooseOneFile(title = "", type = "") {
-    const { code, stdout, stderr } = await run("zenity", [
+async function linuxPickFile(title = "", options = {}) {
+    const { type, save, defaultName } = options;
+    const args = [
         "--file-selection",
         "--title", title,
-        "--file-filter", htmlAcceptToFileFilter(type),
-    ]);
+    ];
+    if (type) {
+        args.push("--file-filter", htmlAcceptToFileFilter(type));
+    }
+    if (save) {
+        args.push("--save");
+        if (defaultName) {
+            args.push("--filename", defaultName);
+        }
+    }
+    const { code, stdout, stderr } = await run("zenity", args);
     if (!code) {
         const path = stdout.trim();
-        if (path) {
-            return await readFile(path);
-        }
-        else {
-            return null;
-        }
+        return path || null;
+    }
+    else if (code === 1) {
+        return null;
     }
     else {
         throw new Error(stderr.trim());
     }
 }
-async function linuxChooseMultipleFiles(title = "", type = "") {
-    const { code, stdout, stderr } = await run("zenity", [
+async function linuxPickFiles(title = "", type = "") {
+    const args = [
         "--file-selection",
         "--title", title,
-        "--file-filter", htmlAcceptToFileFilter(type),
         "--multiple",
         "--separator", "\n",
-    ]);
+    ];
+    if (type) {
+        args.push("--file-filter", htmlAcceptToFileFilter(type));
+    }
+    const { code, stdout, stderr } = await run("zenity", args);
     if (!code) {
-        const paths = lines(stdout.trim());
-        return await Promise.all(paths.map(path => readFile(path)));
+        const output = stdout.trim();
+        return output ? lines(stdout.trim()) : [];
+    }
+    else if (code === 1) {
+        return [];
     }
     else {
         throw new Error(stderr.trim());
     }
 }
-async function linuxChooseFolder(title = "") {
+async function linuxPickFolder(title = "") {
     const { code, stdout, stderr } = await run("zenity", [
         "--file-selection",
         "--title", title,
@@ -60,16 +71,15 @@ async function linuxChooseFolder(title = "") {
     ]);
     if (!code) {
         const dir = stdout.trim();
-        const folder = dir.split("/").pop();
-        const paths = (await readAll(Deno.readDir(dir)))
-            .filter(item => item.isFile)
-            .map(item => join(dir, item.name));
-        return await Promise.all(paths.map(path => readFile(path, folder)));
+        return dir || null;
+    }
+    else if (code === 1) {
+        return null;
     }
     else {
         throw new Error(stderr.trim());
     }
 }
 
-export { linuxChooseFolder, linuxChooseMultipleFiles, linuxChooseOneFile };
+export { linuxPickFile, linuxPickFiles, linuxPickFolder };
 //# sourceMappingURL=linux.js.map

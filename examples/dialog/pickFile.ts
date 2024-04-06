@@ -1,14 +1,8 @@
-import pickFile from "../../dialog/pickFile.ts";
+import process from "node:process";
+import { pickFile } from "../../dialog.ts";
 
-const file = await pickFile({ title: "Open File", type: ".png" });
+const filename = await pickFile({
+    save: process.argv.includes("--save"),
+});
 
-console.log(file);
-
-const files = await pickFile({ multiple: true });
-console.log(files);
-
-const dir = await pickFile({ title: "Open Folder", folder: true });
-console.log(dir);
-
-// const files = await pickFile({ multiple: true });
-// console.log(files);
+console.log(filename);

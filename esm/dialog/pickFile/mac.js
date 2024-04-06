@@ -1,9 +1,6 @@
 import { lines } from '../../string.js';
-import { basename, join } from '../../path.js';
-import readAll from '../../readAll.js';
-import { readFile } from './util.js';
 import { run } from '../terminal/util.js';
-import { UTIMap } from './constants.js';
+import { UTIMap } from '../terminal/constants.js';
 
 function htmlAcceptToAppleType(accept) {
     const entries = Object.entries(UTIMap);
@@ -17,15 +14,25 @@ function htmlAcceptToAppleType(accept) {
         return type;
     }).join(",");
 }
-function createAppleScript(mode, title = "", type = "") {
+function createAppleScript(mode, title = "", options = {}) {
+    const { type, save, defaultName } = options;
     if (mode === "file") {
-        const _type = type ? htmlAcceptToAppleType(type) : "";
-        return "tell application (path to frontmost application as text)\n" +
-            "  set myFile to choose file" + (title ? ` with prompt "${title}"` : "") +
-            (_type ? ` of type {${_type.split(/\s*,\s*/).map(s => `"${s}"`)}}` : "") +
-            " invisibles false" +
-            "\n  POSIX path of myFile\n" +
-            "end";
+        if (save) {
+            return "tell application (path to frontmost application as text)\n" +
+                "  set myFile to choose file name" + (title ? ` with prompt "${title}"` : "") +
+                (defaultName ? ` default name "${defaultName}"` : "") +
+                "\n  POSIX path of myFile\n" +
+                "end";
+        }
+        else {
+            const _type = type ? htmlAcceptToAppleType(type) : "";
+            return "tell application (path to frontmost application as text)\n" +
+                "  set myFile to choose file" + (title ? ` with prompt "${title}"` : "") +
+                (_type ? ` of type {${_type.split(/\s*,\s*/).map(s => `"${s}"`)}}` : "") +
+                " invisibles false" +
+                "\n  POSIX path of myFile\n" +
+                "end";
+        }
     }
     else if (mode === "files") {
         const _type = type ? htmlAcceptToAppleType(type) : "";
@@ -51,14 +58,14 @@ function createAppleScript(mode, title = "", type = "") {
             "end";
     }
 }
-async function macChooseOneFile(title = "", type = "") {
+async function macPickFile(title = "", options = {}) {
     const { code, stdout, stderr } = await run("osascript", [
         "-e",
-        createAppleScript("file", title, type)
+        createAppleScript("file", title, options)
     ]);
     if (!code) {
         const path = stdout.trim();
-        return await readFile(path);
+        return path || null;
     }
     else {
         if (stderr.includes("User canceled")) {
@@ -69,14 +76,14 @@ async function macChooseOneFile(title = "", type = "") {
         }
     }
 }
-async function macChooseMultipleFiles(title = "", type = "") {
+async function macPickFiles(title = "", type = "") {
     const { code, stdout, stderr } = await run("osascript", [
         "-e",
-        createAppleScript("files", title, type)
+        createAppleScript("files", title, { type })
     ]);
     if (!code) {
-        const paths = lines(stdout.trim());
-        return await Promise.all(paths.map(path => readFile(path)));
+        const output = stdout.trim();
+        return output ? lines(stdout.trim()) : [];
     }
     else {
         if (stderr.includes("User canceled")) {
@@ -87,22 +94,18 @@ async function macChooseMultipleFiles(title = "", type = "") {
         }
     }
 }
-async function macChooseFolder(title = "") {
+async function macPickFolder(title = "") {
     const { code, stdout, stderr } = await run("osascript", [
         "-e",
         createAppleScript("folder", title)
     ]);
     if (!code) {
         const dir = stdout.trim();
-        const folder = basename(dir);
-        const paths = (await readAll(Deno.readDir(dir)))
-            .filter(item => item.isFile)
-            .map(item => join(dir, item.name));
-        return await Promise.all(paths.map(path => readFile(path, folder)));
+        return dir || null;
     }
     else {
         if (stderr.includes("User canceled")) {
-            return [];
+            return null;
         }
         else {
             throw new Error(stderr.trim());
@@ -110,5 +113,5 @@ async function macChooseFolder(title = "") {
     }
 }
 
-export { macChooseFolder, macChooseMultipleFiles, macChooseOneFile };
+export { macPickFile, macPickFiles, macPickFolder };
 //# sourceMappingURL=mac.js.map

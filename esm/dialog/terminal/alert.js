@@ -3,12 +3,12 @@ import { platform, which, run, escape } from './util.js';
 
 function createAppleScript(message) {
     return "tell application (path to frontmost application as text)\n" +
-        `  display dialog "${escape(message)}" buttons {"OK"} default button "OK"\n` +
+        `  display dialog "${escape(message)}" with title "Alert" buttons {"OK"} default button "OK"\n` +
         "end";
 }
 function createPowerShellScript(message) {
     return "Add-Type -AssemblyName PresentationFramework;"
-        + `[System.Windows.MessageBox]::Show("${escape(message)}");`;
+        + `[System.Windows.MessageBox]::Show("${escape(message)}", "Alert");`;
 }
 async function alertInTerminal(message, options = {}) {
     if ((options === null || options === void 0 ? void 0 : options.preferGUI) && platform() === "darwin" && (await which("osascript"))) {
@@ -23,6 +23,7 @@ async function alertInTerminal(message, options = {}) {
     else if ((options === null || options === void 0 ? void 0 : options.preferGUI) && platform() === "linux" && (await which("zenity"))) {
         const { code, stderr } = await run("zenity", [
             "--info",
+            "--title", "Alert",
             "--text", message,
         ]);
         if (code && code !== 1) {
