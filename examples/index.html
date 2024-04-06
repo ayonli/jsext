@@ -90,7 +90,7 @@
             openFileBtn.addEventListener('click', async () => {
                 const file = await openFile();
                 alert("You selected: " + file?.name);
-                confirm.log(file);
+                console.log(file);
             });
 
             const openFilesBtn = document.getElementById('open-files');
