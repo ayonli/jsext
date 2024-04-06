@@ -22,16 +22,78 @@
         // this will also include the sub-modules and augmentations
     </script>
     <script type="module">
-        import { openFile } from "../esm/dialog.js";
+        import { alert, confirm, prompt, progress, openFile } from "../esm/dialog.js";
+        import { sleep } from "../esm/async.js";
 
         self.onload = () => {
-            const openFileBtn = document.getElementById('open-one-file');
-            openFileBtn.addEventListener('click', async () => {
-                const file = await openFile();
-                console.log(file);
+            const alertBtn = document.getElementById('alert');
+            alertBtn.addEventListener('click', () => {
+                alert('Hello, World!');
             });
 
-            const openFilesBtn = document.getElementById('open-multiple-files');
+            const confirmBtn = document.getElementById('confirm');
+            confirmBtn.addEventListener('click', () => {
+                confirm('Are you sure?').then((result) => {
+                    alert("You clicked " + (result ? "OK" : "Cancel"));
+                });
+            });
+
+            const promptBtn = document.getElementById('prompt');
+            promptBtn.addEventListener('click', () => {
+                prompt('Enter your name:').then((result) => {
+                    alert("You entered: " + result);
+                });
+            });
+
+            const promptPasswordBtn = document.getElementById('prompt-password');
+            promptPasswordBtn.addEventListener('click', () => {
+                prompt('Enter your password:', { type: 'password' }).then((result) => {
+                    alert("You entered: " + result);
+                });
+            });
+
+            const promptDefaultBtn = document.getElementById('prompt-default');
+            promptDefaultBtn.addEventListener('click', () => {
+                prompt('Enter your name:', 'John Doe').then((result) => {
+                    alert("You entered: " + result);
+                });
+            });
+
+            const progressBtn = document.getElementById('progress');
+            progressBtn.addEventListener('click', async () => {
+                const result = await progress('Loading...', async () => {
+                    await sleep(1000);
+                    return "Done!";
+                });
+                await alert("Progress completed: " + result);
+            });
+
+            const progress2Btn = document.getElementById('progress-2');
+            progress2Btn.addEventListener('click', async () => {
+                const result = await progress('Loading...', async (update) => {
+                    for (let i = 0; i <= 100; i += 10) {
+                        await sleep(500);
+
+                        if (i === 50) {
+                            update({ percent: i, message: "Halfway there..." });
+                        } else {
+                            update({ percent: i });
+                        }
+                    }
+
+                    return "Done!";
+                });
+                await alert("Progress completed: " + result);
+            });
+
+            const openFileBtn = document.getElementById('open-file');
+            openFileBtn.addEventListener('click', async () => {
+                const file = await openFile();
+                alert("You selected: " + file?.name);
+                confirm.log(file);
+            });
+
+            const openFilesBtn = document.getElementById('open-files');
             openFilesBtn.addEventListener('click', async () => {
                 const files = await openFile({ multiple: true });
                 console.log(files);
@@ -48,8 +110,15 @@
 
 <body>
     <div class="button-list">
-        <button id="open-one-file">Open One File</button>
-        <button id="open-multiple-files">Open Multiple Files</button>
+        <button id="alert">Alert</button>
+        <button id="confirm">Confirm</button>
+        <button id="prompt">Prompt</button>
+        <button id="prompt-password">Prompt (Password)</button>
+        <button id="prompt-default">Prompt (With defaults)</button>
+        <button id="progress">Progress</button>
+        <button id="progress-2">Progress (With percentage)</button>
+        <button id="open-file">Open File</button>
+        <button id="open-files">Open Files</button>
         <button id="open-directory">Open Directory</button>
     </div>
 </body>
