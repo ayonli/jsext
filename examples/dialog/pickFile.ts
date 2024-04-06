@@ -1,9 +1,14 @@
 import pickFile from "../../dialog/pickFile.ts";
 
-const file = await pickFile({ type: ".pdf" });
+const file = await pickFile({ type: ".png" });
 
 console.log(file);
-console.log(file?.webkitRelativePath);
+
+const files = await pickFile({ multiple: true });
+console.log(files);
+
+const dir = await pickFile({ folder: true });
+console.log(dir);
 
 // const files = await pickFile({ multiple: true });
 // console.log(files);
