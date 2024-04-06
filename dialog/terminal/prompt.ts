@@ -41,8 +41,9 @@ export default async function promptInTerminal(message: string, options: {
         const args = [
             "--entry",
             "--title", "Prompt",
+            "--width", "450",
             "--text", message,
-            "--entry-text", options.defaultValue ?? ""
+            "--entry-text", options.defaultValue ?? "",
         ];
 
         if (options.type === "password") {

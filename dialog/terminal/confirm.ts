@@ -35,6 +35,7 @@ export default async function confirmInTerminal(message: string, options: {
         const { code, stderr } = await run("zenity", [
             "--question",
             "--title", "Confirm",
+            "--width", "365",
             "--text", message,
         ]);
 

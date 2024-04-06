@@ -29,6 +29,7 @@ export default async function alertInTerminal(message: string, options: {
         const { code, stderr } = await run("zenity", [
             "--info",
             "--title", "Alert",
+            "--width", "365",
             "--text", message,
         ]);
 
