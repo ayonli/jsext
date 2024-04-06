@@ -39,6 +39,7 @@ export default async function promptInTerminal(message: string, options: {
     } else if (options?.preferGUI && platform() === "linux" && (await which("zenity"))) {
         const args = [
             "--entry",
+            "--title", "Prompt",
             "--text", message,
             "--entry-text", options.defaultValue ?? ""
         ];

@@ -10,7 +10,7 @@ function createAppleScript(message: string) {
 
 function createPowerShellScript(message: string) {
     return "Add-Type -AssemblyName PresentationFramework;"
-        + `[System.Windows.MessageBox]::Show("${escape(message)}");`;
+        + `[System.Windows.MessageBox]::Show("${escape(message)}", "Alert");`;
 }
 
 export default async function alertInTerminal(message: string, options: {
@@ -28,6 +28,7 @@ export default async function alertInTerminal(message: string, options: {
     } else if (options?.preferGUI && platform() === "linux" && (await which("zenity"))) {
         const { code, stderr } = await run("zenity", [
             "--info",
+            "--title", "Alert",
             "--text", message,
         ]);
 

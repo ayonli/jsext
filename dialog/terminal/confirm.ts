@@ -33,6 +33,7 @@ export default async function confirmInTerminal(message: string, options: {
     } else if (options?.preferGUI && platform() === "linux" && (await which("zenity"))) {
         const { code, stderr } = await run("zenity", [
             "--question",
+            "--title", "Confirm",
             "--text", message,
         ]);
 
