@@ -1,6 +1,7 @@
 import { lines } from "../../string.ts";
 import { run } from "../terminal/util.ts";
 import { UTIMap } from "../terminal/constants.ts";
+import { extname } from "../../path.ts";
 
 function htmlAcceptToFileFilter(accept: string): string {
     const list = Object.values(UTIMap);
@@ -33,9 +34,15 @@ export async function linuxPickFile(title = "", options: {
     }
 
     if (save) {
-        args.push("--save");
+        args.push("--save", "--confirm-overwrite");
+
         if (defaultName) {
             args.push("--filename", defaultName);
+
+            if (!type) {
+                const ext = extname(defaultName);
+                ext && args.push("--file-filter", htmlAcceptToFileFilter(ext));
+            }
         }
     }
 
