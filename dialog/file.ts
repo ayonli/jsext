@@ -128,12 +128,12 @@ export function openFile(options?: {
 export function openFile(options: {
     title?: string;
     type?: string;
-    multiple: boolean;
+    multiple: true;
 }): Promise<File[]>;
 /** Open the file picker dialog and pick a directory to open. */
 export function openFile(options: {
     title?: string;
-    directory: boolean;
+    directory: true;
 }): Promise<File[]>;
 export async function openFile(options: {
     title?: string;
@@ -239,6 +239,13 @@ export async function openFile(options: {
     }
 }
 
+/**
+ * Save a file to the file system.
+ * 
+ * In the terminal, this function will open a dialog to let the user choose the
+ * location where the file will be saved. In the browser, the file will be saved
+ * to the default download location.
+ */
 export async function saveFile(file: File, options?: {
     /** Custom the dialog's title. This option is ignored in the browser. */
     title?: string;
