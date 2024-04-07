@@ -1,5 +1,5 @@
 import { questionInDeno, questionInNode } from "./index.ts";
-import { escape, platform, run, which } from "./util.ts";
+import { escape, platform, run } from "./util.ts";
 
 function createAppleScript(message: string, defaultValue = "", password = false) {
     return "tell application (path to frontmost application as text)\n" +
@@ -20,9 +20,9 @@ export default async function promptInTerminal(message: string, options: {
     defaultValue?: string | undefined;
     type?: "text" | "password";
     mask?: string | undefined;
-    preferGUI?: boolean;
+    gui?: boolean;
 } = {}): Promise<string | null> {
-    if (options?.preferGUI && platform() === "darwin" && (await which("osascript"))) {
+    if (options?.gui && platform() === "darwin") {
         const { code, stdout, stderr } = await run("osascript", [
             "-e",
             createAppleScript(message, options.defaultValue, options.type === "password")
@@ -37,7 +37,7 @@ export default async function promptInTerminal(message: string, options: {
         } else {
             return stdout.trim();
         }
-    } else if (options?.preferGUI && platform() === "linux" && (await which("zenity"))) {
+    } else if (options?.gui && platform() === "linux") {
         const args = [
             "--entry",
             "--title", "Prompt",
@@ -59,7 +59,7 @@ export default async function promptInTerminal(message: string, options: {
         } else {
             throw new Error(stderr);
         }
-    } else if (options?.preferGUI && platform() === "windows") {
+    } else if (options?.gui && platform() === "windows") {
         const { code, stdout, stderr } = await run("powershell", [
             "-Command",
             createPowerShellScript(message, options.defaultValue, options.type === "password")

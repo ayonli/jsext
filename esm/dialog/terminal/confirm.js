@@ -1,5 +1,5 @@
 import { questionInDeno, questionInNode } from './index.js';
-import { platform, which, run, escape } from './util.js';
+import { platform, run, escape } from './util.js';
 
 function createAppleScript(message) {
     return "tell application (path to frontmost application as text)\n" +
@@ -12,7 +12,7 @@ function createPowerShellScript(message) {
         + `[System.Windows.MessageBox]::Show("${escape(message)}", "Confirm", "YesNo");`;
 }
 async function confirmInTerminal(message, options = {}) {
-    if ((options === null || options === void 0 ? void 0 : options.preferGUI) && platform() === "darwin" && (await which("osascript"))) {
+    if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "darwin") {
         const { code, stderr } = await run("osascript", [
             "-e",
             createAppleScript(message)
@@ -29,10 +29,11 @@ async function confirmInTerminal(message, options = {}) {
             return true;
         }
     }
-    else if ((options === null || options === void 0 ? void 0 : options.preferGUI) && platform() === "linux" && (await which("zenity"))) {
+    else if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "linux") {
         const { code, stderr } = await run("zenity", [
             "--question",
             "--title", "Confirm",
+            "--width", "365",
             "--text", message,
         ]);
         if (!code) {
@@ -45,7 +46,7 @@ async function confirmInTerminal(message, options = {}) {
             throw new Error(stderr);
         }
     }
-    else if ((options === null || options === void 0 ? void 0 : options.preferGUI) && platform() === "windows") {
+    else if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "windows") {
         const { code, stdout, stderr } = await run("powershell", [
             "-Command",
             createPowerShellScript(message)

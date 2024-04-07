@@ -1,5 +1,5 @@
 import { questionInDeno, questionInNode } from "./index.ts";
-import { escape, platform, which } from "./util.ts";
+import { escape, platform } from "./util.ts";
 import { run } from "./util.ts";
 
 function createAppleScript(message: string) {
@@ -14,9 +14,9 @@ function createPowerShellScript(message: string) {
 }
 
 export default async function alertInTerminal(message: string, options: {
-    preferGUI?: boolean;
+    gui?: boolean;
 } = {}): Promise<void> {
-    if (options?.preferGUI && platform() === "darwin" && (await which("osascript"))) {
+    if (options?.gui && platform() === "darwin") {
         const { code, stderr } = await run("osascript", [
             "-e",
             createAppleScript(message)
@@ -25,7 +25,7 @@ export default async function alertInTerminal(message: string, options: {
         if (code) {
             throw new Error(stderr);
         }
-    } else if (options?.preferGUI && platform() === "linux" && (await which("zenity"))) {
+    } else if (options?.gui && platform() === "linux") {
         const { code, stderr } = await run("zenity", [
             "--info",
             "--title", "Alert",
@@ -36,7 +36,7 @@ export default async function alertInTerminal(message: string, options: {
         if (code && code !== 1) {
             throw new Error(stderr);
         }
-    } else if (options?.preferGUI && platform() === "windows") {
+    } else if (options?.gui && platform() === "windows") {
         const { code, stderr } = await run("powershell", [
             "-Command",
             createPowerShellScript(message)

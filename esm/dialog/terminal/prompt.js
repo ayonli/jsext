@@ -1,5 +1,5 @@
 import { questionInDeno, questionInNode } from './index.js';
-import { platform, which, run, escape } from './util.js';
+import { platform, run, escape } from './util.js';
 
 function createAppleScript(message, defaultValue = "", password = false) {
     return "tell application (path to frontmost application as text)\n" +
@@ -15,7 +15,7 @@ function createPowerShellScript(message, defaultValue = "", password = false) {
 }
 async function promptInTerminal(message, options = {}) {
     var _a;
-    if ((options === null || options === void 0 ? void 0 : options.preferGUI) && platform() === "darwin" && (await which("osascript"))) {
+    if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "darwin") {
         const { code, stdout, stderr } = await run("osascript", [
             "-e",
             createAppleScript(message, options.defaultValue, options.type === "password")
@@ -32,13 +32,14 @@ async function promptInTerminal(message, options = {}) {
             return stdout.trim();
         }
     }
-    else if ((options === null || options === void 0 ? void 0 : options.preferGUI) && platform() === "linux" && (await which("zenity"))) {
+    else if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "linux") {
         const args = [
             "--entry",
             "--title", "Prompt",
+            "--width", "450",
             "--text", message,
             "--entry-text",
-            (_a = options.defaultValue) !== null && _a !== void 0 ? _a : ""
+            (_a = options.defaultValue) !== null && _a !== void 0 ? _a : "",
         ];
         if (options.type === "password") {
             args.push("--hide-text");
@@ -54,7 +55,7 @@ async function promptInTerminal(message, options = {}) {
             throw new Error(stderr);
         }
     }
-    else if ((options === null || options === void 0 ? void 0 : options.preferGUI) && platform() === "windows") {
+    else if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "windows") {
         const { code, stdout, stderr } = await run("powershell", [
             "-Command",
             createPowerShellScript(message, options.defaultValue, options.type === "password")

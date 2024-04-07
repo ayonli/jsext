@@ -4,6 +4,7 @@ import { alertInBrowser, confirmInBrowser, promptInBrowser } from './dialog/brow
 import alertInTerminal from './dialog/terminal/alert.js';
 import confirmInTerminal from './dialog/terminal/confirm.js';
 import promptInTerminal from './dialog/terminal/prompt.js';
+import { isBrowser } from './util.js';
 
 /**
  * Asynchronous dialog functions for both browsers and terminals.
@@ -17,7 +18,7 @@ import promptInTerminal from './dialog/terminal/prompt.js';
  * dialog.
  */
 async function alert(message, options = {}) {
-    if (typeof document === "object") {
+    if (isBrowser()) {
         await alertInBrowser(message);
     }
     else {
@@ -29,7 +30,7 @@ async function alert(message, options = {}) {
  * or cancels the dialog.
  */
 async function confirm(message, options = {}) {
-    if (typeof document === "object") {
+    if (isBrowser()) {
         return await confirmInBrowser(message);
     }
     else {
@@ -47,12 +48,12 @@ async function prompt(message, options = "") {
     const mask = type === "password"
         ? typeof options === "object" ? ((_b = options.mask) !== null && _b !== void 0 ? _b : "*") : "*"
         : undefined;
-    const preferGUI = typeof options === "object" ? ((_c = options.preferGUI) !== null && _c !== void 0 ? _c : false) : false;
-    if (typeof document === "object") {
+    const gui = typeof options === "object" ? ((_c = options.gui) !== null && _c !== void 0 ? _c : false) : false;
+    if (isBrowser()) {
         return await promptInBrowser(message, { type, defaultValue });
     }
     else {
-        return await promptInTerminal(message, { defaultValue, type, mask, preferGUI });
+        return await promptInTerminal(message, { defaultValue, type, mask, gui });
     }
 }
 

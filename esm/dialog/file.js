@@ -5,6 +5,7 @@ import { linuxPickFile, linuxPickFiles, linuxPickFolder } from './terminal/file/
 import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './terminal/file/windows.js';
 import read from '../read.js';
 import readAll from '../readAll.js';
+import { isBrowser } from '../util.js';
 
 /**
  * Open the file picker dialog and pick a file, this function returns the file's
@@ -77,7 +78,7 @@ async function pickDirectory(options = {}) {
 }
 async function openFile(options = {}) {
     const { title = "", type = "", multiple = false, directory = false } = options;
-    if (typeof document === "object") {
+    if (isBrowser()) {
         const input = document.createElement("input");
         input.type = "file";
         input.accept = type !== null && type !== void 0 ? type : "";
@@ -180,7 +181,7 @@ async function openFile(options = {}) {
     }
 }
 async function saveFile(file, options = {}) {
-    if (typeof document === "object") {
+    if (isBrowser()) {
         const a = document.createElement("a");
         if (file instanceof ReadableStream) {
             const type = options.type || "application/octet-stream";

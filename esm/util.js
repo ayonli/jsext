@@ -1,6 +1,11 @@
 function isFunction(val) {
     return typeof val === "function";
 }
+function isBrowser() {
+    return typeof window === "object"
+        && typeof window.document === "object"
+        && typeof window.matchMedia === "function";
+}
 function unrefTimer(timer) {
     if (typeof timer === "object" && typeof timer.unref === "function") {
         timer.unref();
@@ -44,5 +49,5 @@ function asIterable(source) {
     return null;
 }
 
-export { asIterable, isFunction, unrefTimer };
+export { asIterable, isBrowser, isFunction, unrefTimer };
 //# sourceMappingURL=util.js.map

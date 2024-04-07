@@ -1,5 +1,5 @@
 import { questionInDeno, questionInNode } from "./index.ts";
-import { escape, platform, run, which } from "./util.ts";
+import { escape, platform, run } from "./util.ts";
 
 function createAppleScript(message: string) {
     return "tell application (path to frontmost application as text)\n" +
@@ -14,9 +14,9 @@ function createPowerShellScript(message: string) {
 }
 
 export default async function confirmInTerminal(message: string, options: {
-    preferGUI?: boolean;
+    gui?: boolean;
 } = {}): Promise<boolean> {
-    if (options?.preferGUI && platform() === "darwin" && (await which("osascript"))) {
+    if (options?.gui && platform() === "darwin") {
         const { code, stderr } = await run("osascript", [
             "-e",
             createAppleScript(message)
@@ -31,7 +31,7 @@ export default async function confirmInTerminal(message: string, options: {
         } else {
             return true;
         }
-    } else if (options?.preferGUI && platform() === "linux" && (await which("zenity"))) {
+    } else if (options?.gui && platform() === "linux") {
         const { code, stderr } = await run("zenity", [
             "--question",
             "--title", "Confirm",
@@ -46,7 +46,7 @@ export default async function confirmInTerminal(message: string, options: {
         } else {
             throw new Error(stderr);
         }
-    } else if (options?.preferGUI && platform() === "windows") {
+    } else if (options?.gui && platform() === "windows") {
         const { code, stdout, stderr } = await run("powershell", [
             "-Command",
             createPowerShellScript(message)
