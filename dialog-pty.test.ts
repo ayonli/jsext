@@ -3,6 +3,7 @@ import { spawn, IPty, IPtyForkOptions } from "node-pty";
 import { isNodePrior16 } from "./parallel/constants.ts";
 import { sleep } from "./async.ts";
 import { END, ESC, LEFT, RIGHT, START } from "./dialog/terminal/constants.ts";
+import { isBrowser } from "./util.ts";
 
 const useDeno = process.argv.includes("--deno");
 
@@ -40,7 +41,7 @@ async function runInSimulator(filename: string) {
 }
 
 describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
-    if (typeof document !== "undefined" || isNodePrior16) {
+    if (isBrowser() || isNodePrior16) {
         return;
     }
 

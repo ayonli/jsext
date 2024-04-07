@@ -13,6 +13,7 @@ import { alertInBrowser, confirmInBrowser, promptInBrowser } from "./dialog/brow
 import alertInTerminal from "./dialog/terminal/alert.ts";
 import confirmInTerminal from "./dialog/terminal/confirm.ts";
 import promptInTerminal from "./dialog/terminal/prompt.ts";
+import { isBrowser } from "./util.ts";
 
 export { openFile, pickFile, pickFiles, pickDirectory, saveFile };
 export { progress, ProgressState, ProgressFunc, ProgressAbortHandler };
@@ -25,7 +26,7 @@ export async function alert(message: string, options: {
     /** Prefer to show a GUI dialog even in the terminal. */
     preferGUI?: boolean;
 } = {}): Promise<void> {
-    if (typeof document === "object") {
+    if (isBrowser()) {
         await alertInBrowser(message);
     } else {
         await alertInTerminal(message, options);
@@ -40,7 +41,7 @@ export async function confirm(message: string, options: {
     /** Prefer to show a GUI dialog even in the terminal. */
     preferGUI?: boolean;
 } = {}): Promise<boolean> {
-    if (typeof document === "object") {
+    if (isBrowser()) {
         return await confirmInBrowser(message);
     } else {
         return await confirmInTerminal(message, options);
@@ -91,7 +92,7 @@ export async function prompt(
         : undefined;
     const preferGUI = typeof options === "object" ? (options.preferGUI ?? false) : false;
 
-    if (typeof document === "object") {
+    if (isBrowser()) {
         return await promptInBrowser(message, { type, defaultValue });
     } else {
         return await promptInTerminal(message, { defaultValue, type, mask, preferGUI });

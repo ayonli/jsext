@@ -3,9 +3,24 @@ import { alert, confirm, prompt, progress } from "./dialog/index.ts";
 import { sleep, until } from "./async.ts";
 import { as } from "./object.ts";
 import _try from "./try.ts";
+import { isBrowser } from "./util.ts";
+
+// Mock `window.matchMedia` for JSDOM.
+globalThis.matchMedia = window.matchMedia = (query) => {
+    return {
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => { },
+        addEventListener: () => { },
+        removeListener: () => { },
+        removeEventListener: () => { },
+        dispatchEvent: () => true,
+    };
+};
 
 describe("dialog", () => {
-    if (typeof document === "undefined") {
+    if (!isBrowser()) {
         return;
     }
 

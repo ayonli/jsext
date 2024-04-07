@@ -17,6 +17,7 @@ import {
 } from "./terminal/file/windows.ts";
 import read from "../read.ts";
 import readAll from "../readAll.ts";
+import { isBrowser } from "../util.ts";
 
 /**
  * Open the file picker dialog and pick a file, this function returns the file's
@@ -142,7 +143,7 @@ export async function openFile(options: {
 } = {}): Promise<File | File[] | null> {
     const { title = "", type = "", multiple = false, directory = false } = options;
 
-    if (typeof document === "object") {
+    if (isBrowser()) {
         const input = document.createElement("input");
         input.type = "file";
         input.accept = type ?? "";
@@ -255,7 +256,7 @@ export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | 
     name?: string;
     type?: string;
 } = {}): Promise<void> {
-    if (typeof document === "object") {
+    if (isBrowser()) {
         const a = document.createElement("a");
 
         if (file instanceof ReadableStream) {

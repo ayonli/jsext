@@ -1,3 +1,4 @@
+import { isBrowser } from "../util.ts";
 import { progressInBrowser } from "./browser/index.ts";
 import { progressInDeno, progressInNode } from "./terminal/progress.ts";
 
@@ -110,7 +111,7 @@ export default async function progress<T>(
         });
     });
 
-    if (typeof document === "object") {
+    if (isBrowser()) {
         return await progressInBrowser(message, fn, { signal, abort, listenForAbort });
     } else if (typeof Deno === "object") {
         return await progressInDeno(message, fn, { signal, abort, listenForAbort });
