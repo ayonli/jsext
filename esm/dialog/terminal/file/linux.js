@@ -16,7 +16,7 @@ function htmlAcceptToFileFilter(accept) {
     }).join(" ");
 }
 async function linuxPickFile(title = "", options = {}) {
-    const { type, save, defaultName } = options;
+    const { type, forSave, defaultName } = options;
     const args = [
         "--file-selection",
     ];
@@ -26,7 +26,7 @@ async function linuxPickFile(title = "", options = {}) {
     if (type) {
         args.push("--file-filter", htmlAcceptToFileFilter(type));
     }
-    if (save) {
+    if (forSave) {
         args.push("--save", "--confirm-overwrite");
         if (defaultName) {
             args.push("--filename", defaultName);

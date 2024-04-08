@@ -33,29 +33,34 @@ export async function pickFile(options: {
      * separated via `,`.
      */
     type?: string | undefined;
-    /** Open the dialog in save-file mode. */
-    save?: boolean;
-    /** The default name of the file to save when `save` is set. */
+    /** Open the dialog in save mode. */
+    forSave?: boolean;
+    /** The default name of the file to save when `forSave` is set. */
     defaultName?: string | undefined;
 } = {}): Promise<string | null> {
     const _platform = platform();
 
+    // @ts-ignore for history compatibility
+    if (options["save"]) {
+        options.forSave = true;
+    }
+
     if (_platform === "darwin") {
         return await macPickFile(options.title, {
             type: options.type,
-            save: options?.save,
+            forSave: options?.forSave,
             defaultName: options?.defaultName,
         });
     } else if (_platform === "linux") {
         return await linuxPickFile(options.title, {
             type: options.type,
-            save: options?.save,
+            forSave: options?.forSave,
             defaultName: options?.defaultName,
         });
     } else if (_platform === "windows") {
         return await windowsPickFile(options.title, {
             type: options.type,
-            save: options?.save,
+            forSave: options?.forSave,
             defaultName: options?.defaultName,
         });
     }
@@ -296,7 +301,7 @@ export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | 
             filename = await pickFile({
                 title,
                 type: options.type,
-                save: true,
+                forSave: true,
                 defaultName: options.name,
             });
         } else if (file instanceof File) {
@@ -304,7 +309,7 @@ export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | 
             filename = await pickFile({
                 title,
                 type: file.type,
-                save: true,
+                forSave: true,
                 defaultName: file.name,
             });
         } else if (file instanceof Blob) {
@@ -312,7 +317,7 @@ export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | 
             filename = await pickFile({
                 title,
                 type: options.type || file.type,
-                save: true,
+                forSave: true,
                 defaultName: options.name,
             });
         } else {
@@ -322,7 +327,7 @@ export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | 
             filename = await pickFile({
                 title,
                 type: options.type,
-                save: true,
+                forSave: true,
                 defaultName: options.name,
             });
         }

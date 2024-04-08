@@ -15,24 +15,28 @@ import { isBrowser } from '../util.js';
  */
 async function pickFile(options = {}) {
     const _platform = platform();
+    // @ts-ignore for history compatibility
+    if (options["save"]) {
+        options.forSave = true;
+    }
     if (_platform === "darwin") {
         return await macPickFile(options.title, {
             type: options.type,
-            save: options === null || options === void 0 ? void 0 : options.save,
+            forSave: options === null || options === void 0 ? void 0 : options.forSave,
             defaultName: options === null || options === void 0 ? void 0 : options.defaultName,
         });
     }
     else if (_platform === "linux") {
         return await linuxPickFile(options.title, {
             type: options.type,
-            save: options === null || options === void 0 ? void 0 : options.save,
+            forSave: options === null || options === void 0 ? void 0 : options.forSave,
             defaultName: options === null || options === void 0 ? void 0 : options.defaultName,
         });
     }
     else if (_platform === "windows") {
         return await windowsPickFile(options.title, {
             type: options.type,
-            save: options === null || options === void 0 ? void 0 : options.save,
+            forSave: options === null || options === void 0 ? void 0 : options.forSave,
             defaultName: options === null || options === void 0 ? void 0 : options.defaultName,
         });
     }
@@ -215,7 +219,7 @@ async function saveFile(file, options = {}) {
             filename = await pickFile({
                 title,
                 type: options.type,
-                save: true,
+                forSave: true,
                 defaultName: options.name,
             });
         }
@@ -224,7 +228,7 @@ async function saveFile(file, options = {}) {
             filename = await pickFile({
                 title,
                 type: file.type,
-                save: true,
+                forSave: true,
                 defaultName: file.name,
             });
         }
@@ -233,7 +237,7 @@ async function saveFile(file, options = {}) {
             filename = await pickFile({
                 title,
                 type: options.type || file.type,
-                save: true,
+                forSave: true,
                 defaultName: options.name,
             });
         }
@@ -244,7 +248,7 @@ async function saveFile(file, options = {}) {
             filename = await pickFile({
                 title,
                 type: options.type,
-                save: true,
+                forSave: true,
                 defaultName: options.name,
             });
         }

@@ -16,9 +16,9 @@ function htmlAcceptToFileFilter(accept) {
     }).join("|");
 }
 function createPowerShellScript(mode, title = "", options = {}) {
-    const { type, save, defaultName } = options;
+    const { type, forSave, defaultName } = options;
     if (mode === "file") {
-        if (save) {
+        if (forSave) {
             let filter = type ? htmlAcceptToFileFilter(type) : "";
             if (!filter && defaultName) {
                 const ext = extname(defaultName);

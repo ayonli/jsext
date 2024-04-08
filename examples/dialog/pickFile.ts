@@ -2,7 +2,7 @@ import process from "node:process";
 import { pickFile } from "../../dialog.ts";
 
 const filename = await pickFile({
-    save: process.argv.includes("--save"),
+    forSave: process.argv.includes("--save"),
     defaultName: process.argv[3],
 });
 

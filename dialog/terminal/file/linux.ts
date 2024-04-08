@@ -20,10 +20,10 @@ function htmlAcceptToFileFilter(accept: string): string {
 
 export async function linuxPickFile(title = "", options: {
     type?: string | undefined;
-    save?: boolean | undefined;
+    forSave?: boolean | undefined;
     defaultName?: string | undefined;
 } = {}): Promise<string | null> {
-    const { type, save, defaultName } = options;
+    const { type, forSave, defaultName } = options;
     const args = [
         "--file-selection",
     ];
@@ -36,7 +36,7 @@ export async function linuxPickFile(title = "", options: {
         args.push("--file-filter", htmlAcceptToFileFilter(type));
     }
 
-    if (save) {
+    if (forSave) {
         args.push("--save", "--confirm-overwrite");
 
         if (defaultName) {
