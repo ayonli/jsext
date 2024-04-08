@@ -20,20 +20,23 @@ function htmlAcceptToFileFilter(accept: string): string {
 
 export async function linuxPickFile(title = "", options: {
     type?: string | undefined;
-    save?: boolean | undefined;
+    forSave?: boolean | undefined;
     defaultName?: string | undefined;
 } = {}): Promise<string | null> {
-    const { type, save, defaultName } = options;
+    const { type, forSave, defaultName } = options;
     const args = [
         "--file-selection",
-        "--title", title,
     ];
+
+    if (title) {
+        args.push("--title", title);
+    }
 
     if (type) {
         args.push("--file-filter", htmlAcceptToFileFilter(type));
     }
 
-    if (save) {
+    if (forSave) {
         args.push("--save", "--confirm-overwrite");
 
         if (defaultName) {
@@ -61,10 +64,13 @@ export async function linuxPickFile(title = "", options: {
 export async function linuxPickFiles(title = "", type = ""): Promise<string[]> {
     const args = [
         "--file-selection",
-        "--title", title,
         "--multiple",
         "--separator", "\n",
     ];
+
+    if (title) {
+        args.push("--title", title);
+    }
 
     if (type) {
         args.push("--file-filter", htmlAcceptToFileFilter(type));
@@ -83,11 +89,16 @@ export async function linuxPickFiles(title = "", type = ""): Promise<string[]> {
 }
 
 export async function linuxPickFolder(title = ""): Promise<string | null> {
-    const { code, stdout, stderr } = await run("zenity", [
+    const args = [
         "--file-selection",
-        "--title", title,
         "--directory",
-    ]);
+    ];
+
+    if (title) {
+        args.push("--title", title);
+    }
+
+    const { code, stdout, stderr } = await run("zenity", args);
 
     if (!code) {
         const dir = stdout.trim();

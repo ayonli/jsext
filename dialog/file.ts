@@ -33,29 +33,34 @@ export async function pickFile(options: {
      * separated via `,`.
      */
     type?: string | undefined;
-    /** Open the dialog in save-file mode. */
-    save?: boolean;
-    /** The default name of the file to save when `save` is set. */
+    /** Open the dialog in save mode. */
+    forSave?: boolean;
+    /** The default name of the file to save when `forSave` is set. */
     defaultName?: string | undefined;
 } = {}): Promise<string | null> {
     const _platform = platform();
 
+    // @ts-ignore for history compatibility
+    if (options["save"]) {
+        options.forSave = true;
+    }
+
     if (_platform === "darwin") {
         return await macPickFile(options.title, {
             type: options.type,
-            save: options?.save,
+            forSave: options?.forSave,
             defaultName: options?.defaultName,
         });
     } else if (_platform === "linux") {
         return await linuxPickFile(options.title, {
             type: options.type,
-            save: options?.save,
+            forSave: options?.forSave,
             defaultName: options?.defaultName,
         });
     } else if (_platform === "windows") {
         return await windowsPickFile(options.title, {
             type: options.type,
-            save: options?.save,
+            forSave: options?.forSave,
             defaultName: options?.defaultName,
         });
     }
@@ -128,12 +133,12 @@ export function openFile(options?: {
 export function openFile(options: {
     title?: string;
     type?: string;
-    multiple: boolean;
+    multiple: true;
 }): Promise<File[]>;
 /** Open the file picker dialog and pick a directory to open. */
 export function openFile(options: {
     title?: string;
-    directory: boolean;
+    directory: true;
 }): Promise<File[]>;
 export async function openFile(options: {
     title?: string;
@@ -239,6 +244,13 @@ export async function openFile(options: {
     }
 }
 
+/**
+ * Save a file to the file system.
+ * 
+ * In the terminal, this function will open a dialog to let the user choose the
+ * location where the file will be saved. In the browser, the file will be saved
+ * to the default download location.
+ */
 export async function saveFile(file: File, options?: {
     /** Custom the dialog's title. This option is ignored in the browser. */
     title?: string;
@@ -289,7 +301,7 @@ export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | 
             filename = await pickFile({
                 title,
                 type: options.type,
-                save: true,
+                forSave: true,
                 defaultName: options.name,
             });
         } else if (file instanceof File) {
@@ -297,7 +309,7 @@ export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | 
             filename = await pickFile({
                 title,
                 type: file.type,
-                save: true,
+                forSave: true,
                 defaultName: file.name,
             });
         } else if (file instanceof Blob) {
@@ -305,7 +317,7 @@ export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | 
             filename = await pickFile({
                 title,
                 type: options.type || file.type,
-                save: true,
+                forSave: true,
                 defaultName: options.name,
             });
         } else {
@@ -315,7 +327,7 @@ export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | 
             filename = await pickFile({
                 title,
                 type: options.type,
-                save: true,
+                forSave: true,
                 defaultName: options.name,
             });
         }

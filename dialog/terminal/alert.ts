@@ -26,12 +26,17 @@ export default async function alertInTerminal(message: string, options: {
             throw new Error(stderr);
         }
     } else if (options?.gui && platform() === "linux") {
-        const { code, stderr } = await run("zenity", [
+        const args = [
             "--info",
             "--title", "Alert",
             "--width", "365",
-            "--text", message,
-        ]);
+        ];
+
+        if (message) {
+            args.push("--text", message);
+        }
+
+        const { code, stderr } = await run("zenity", args);
 
         if (code && code !== 1) {
             throw new Error(stderr);

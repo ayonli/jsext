@@ -19,13 +19,13 @@ function htmlAcceptToAppleType(accept: string): string {
 
 function createAppleScript(mode: "file" | "files" | "folder", title = "", options: {
     type?: string | undefined;
-    save?: boolean | undefined;
+    forSave?: boolean | undefined;
     defaultName?: string | undefined;
 } = {}): string {
-    const { type, save, defaultName } = options;
+    const { type, forSave, defaultName } = options;
 
     if (mode === "file") {
-        if (save) {
+        if (forSave) {
             return "tell application (path to frontmost application as text)\n" +
                 "  set myFile to choose file name" + (title ? ` with prompt "${title}"` : "") +
                 (defaultName ? ` default name "${defaultName}"` : "") +
@@ -66,7 +66,7 @@ function createAppleScript(mode: "file" | "files" | "folder", title = "", option
 
 export async function macPickFile(title = "", options: {
     type?: string | undefined;
-    save?: boolean | undefined;
+    forSave?: boolean | undefined;
     defaultName?: string | undefined;
 } = {}): Promise<string | null> {
     const { code, stdout, stderr } = await run("osascript", [

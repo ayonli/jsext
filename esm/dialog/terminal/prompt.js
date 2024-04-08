@@ -14,7 +14,6 @@ function createPowerShellScript(message, defaultValue = "", password = false) {
         + `[Microsoft.VisualBasic.Interaction]::InputBox("${escape(message)}", "Prompt", "${escape(defaultValue)}");`;
 }
 async function promptInTerminal(message, options = {}) {
-    var _a;
     if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "darwin") {
         const { code, stdout, stderr } = await run("osascript", [
             "-e",
@@ -37,10 +36,13 @@ async function promptInTerminal(message, options = {}) {
             "--entry",
             "--title", "Prompt",
             "--width", "450",
-            "--text", message,
-            "--entry-text",
-            (_a = options.defaultValue) !== null && _a !== void 0 ? _a : "",
         ];
+        if (message) {
+            args.push("--text", message);
+        }
+        if (options.defaultValue) {
+            args.push("--entry-text", options.defaultValue);
+        }
         if (options.type === "password") {
             args.push("--hide-text");
         }

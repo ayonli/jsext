@@ -42,9 +42,15 @@ export default async function promptInTerminal(message: string, options: {
             "--entry",
             "--title", "Prompt",
             "--width", "450",
-            "--text", message,
-            "--entry-text", options.defaultValue ?? "",
         ];
+
+        if (message) {
+            args.push("--text", message);
+        }
+
+        if (options.defaultValue) {
+            args.push("--entry-text", options.defaultValue);
+        }
 
         if (options.type === "password") {
             args.push("--hide-text");

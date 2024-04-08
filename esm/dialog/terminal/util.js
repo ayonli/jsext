@@ -3,7 +3,6 @@ import bytes, { equals, text, concat } from '../../bytes.js';
 import { sum } from '../../math.js';
 import { chars, byteLength } from '../../string.js';
 import { ESC, CANCEL, UTIMap, EMOJI_RE } from './constants.js';
-import { isNode } from '../../parallel/constants.js';
 import { basename, extname } from '../../path.js';
 import readAll from '../../readAll.js';
 
@@ -33,9 +32,11 @@ function toRight(str) {
 async function read(stdin) {
     if ("fd" in stdin) {
         return new Promise(resolve => {
-            stdin.once("data", (chunk) => {
+            const listener = (chunk) => {
+                stdin.removeListener("data", listener);
                 resolve(bytes(chunk));
-            });
+            };
+            stdin.on("data", listener);
         });
     }
     else {
@@ -126,6 +127,7 @@ function escape(str) {
     return str.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 async function run(cmd, args) {
+    var _a;
     if (typeof Deno === "object") {
         const _cmd = new Deno.Command(cmd, { args });
         const { code, stdout, stderr } = await _cmd.output();
@@ -135,7 +137,7 @@ async function run(cmd, args) {
             stderr: text(stderr),
         };
     }
-    else if (isNode) {
+    else if (typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node)) {
         const { spawn } = await import('child_process');
         const child = spawn(cmd, args);
         const stdout = [];

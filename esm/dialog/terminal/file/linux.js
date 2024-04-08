@@ -16,15 +16,17 @@ function htmlAcceptToFileFilter(accept) {
     }).join(" ");
 }
 async function linuxPickFile(title = "", options = {}) {
-    const { type, save, defaultName } = options;
+    const { type, forSave, defaultName } = options;
     const args = [
         "--file-selection",
-        "--title", title,
     ];
+    if (title) {
+        args.push("--title", title);
+    }
     if (type) {
         args.push("--file-filter", htmlAcceptToFileFilter(type));
     }
-    if (save) {
+    if (forSave) {
         args.push("--save", "--confirm-overwrite");
         if (defaultName) {
             args.push("--filename", defaultName);
@@ -49,10 +51,12 @@ async function linuxPickFile(title = "", options = {}) {
 async function linuxPickFiles(title = "", type = "") {
     const args = [
         "--file-selection",
-        "--title", title,
         "--multiple",
         "--separator", "\n",
     ];
+    if (title) {
+        args.push("--title", title);
+    }
     if (type) {
         args.push("--file-filter", htmlAcceptToFileFilter(type));
     }
@@ -69,11 +73,14 @@ async function linuxPickFiles(title = "", type = "") {
     }
 }
 async function linuxPickFolder(title = "") {
-    const { code, stdout, stderr } = await run("zenity", [
+    const args = [
         "--file-selection",
-        "--title", title,
         "--directory",
-    ]);
+    ];
+    if (title) {
+        args.push("--title", title);
+    }
+    const { code, stdout, stderr } = await run("zenity", args);
     if (!code) {
         const dir = stdout.trim();
         return dir || null;

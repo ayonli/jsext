@@ -15,9 +15,9 @@ function htmlAcceptToAppleType(accept) {
     }).join(",");
 }
 function createAppleScript(mode, title = "", options = {}) {
-    const { type, save, defaultName } = options;
+    const { type, forSave, defaultName } = options;
     if (mode === "file") {
-        if (save) {
+        if (forSave) {
             return "tell application (path to frontmost application as text)\n" +
                 "  set myFile to choose file name" + (title ? ` with prompt "${title}"` : "") +
                 (defaultName ? ` default name "${defaultName}"` : "") +

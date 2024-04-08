@@ -20,13 +20,13 @@ function htmlAcceptToFileFilter(accept: string): string {
 
 function createPowerShellScript(mode: "file" | "files" | "folder", title = "", options: {
     type?: string | undefined;
-    save?: boolean | undefined;
+    forSave?: boolean | undefined;
     defaultName?: string | undefined;
 } = {}): string {
-    const { type, save, defaultName } = options;
+    const { type, forSave, defaultName } = options;
 
     if (mode === "file") {
-        if (save) {
+        if (forSave) {
             let filter = type ? htmlAcceptToFileFilter(type) : "";
 
             if (!filter && defaultName) {
@@ -89,7 +89,7 @@ function createPowerShellScript(mode: "file" | "files" | "folder", title = "", o
 
 export async function windowsPickFile(title = "", options: {
     type?: string | undefined;
-    save?: boolean | undefined;
+    forSave?: boolean | undefined;
     defaultName?: string | undefined;
 } = {}): Promise<string | null> {
     const { code, stdout, stderr } = await run("powershell", [
