@@ -1,6 +1,6 @@
 import { deepStrictEqual } from "node:assert";
 import { spawn, IPty, IPtyForkOptions } from "node-pty";
-import { isNodePrior16 } from "./parallel/constants.ts";
+import { isNode, isNodePrior16 } from "./parallel/constants.ts";
 import { sleep } from "./async.ts";
 import { END, ESC, LEFT, RIGHT, START } from "./dialog/terminal/constants.ts";
 import { isBrowser } from "./util.ts";
@@ -8,6 +8,7 @@ import stripAnsi from 'strip-ansi';
 
 const useDeno = process.argv.includes("--deno");
 const useBun = process.argv.includes("--bun");
+const isNodePrior20 = isNode && parseInt(process.version.slice(1)) < 20;
 
 async function runInSimulator(filename: string) {
     const options: IPtyForkOptions = {
@@ -45,7 +46,7 @@ async function runInSimulator(filename: string) {
 }
 
 describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
-    if (isBrowser() || isNodePrior16) {
+    if (isBrowser() || isNodePrior16 || ((useDeno || useBun) && isNodePrior20)) {
         return;
     }
 
