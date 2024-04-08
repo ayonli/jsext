@@ -30,12 +30,15 @@ async function confirmInTerminal(message, options = {}) {
         }
     }
     else if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "linux") {
-        const { code, stderr } = await run("zenity", [
+        const args = [
             "--question",
             "--title", "Confirm",
             "--width", "365",
-            "--text", message,
-        ]);
+        ];
+        if (message) {
+            args.push("--text", message);
+        }
+        const { code, stderr } = await run("zenity", args);
         if (!code) {
             return true;
         }

@@ -21,12 +21,15 @@ async function alertInTerminal(message, options = {}) {
         }
     }
     else if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "linux") {
-        const { code, stderr } = await run("zenity", [
+        const args = [
             "--info",
             "--title", "Alert",
             "--width", "365",
-            "--text", message,
-        ]);
+        ];
+        if (message) {
+            args.push("--text", message);
+        }
+        const { code, stderr } = await run("zenity", args);
         if (code && code !== 1) {
             throw new Error(stderr);
         }

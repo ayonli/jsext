@@ -3,7 +3,6 @@ import bytes, { ByteArray, concat, equals, text } from "../../bytes.ts";
 import { sum } from "../../math.ts";
 import { byteLength, chars } from "../../string.ts";
 import { CANCEL, EMOJI_RE, ESC, UTIMap } from "./constants.ts";
-import { isNode } from "../../parallel/constants.ts";
 import { basename, extname } from "../../path.ts";
 import readAll from "../../readAll.ts";
 
@@ -49,9 +48,11 @@ export function toRight(str: string) {
 export async function read(stdin: NodeStdin | DenoStdin): Promise<ByteArray> {
     if ("fd" in stdin) {
         return new Promise<ByteArray>(resolve => {
-            stdin.once("data", (chunk: Buffer) => {
+            const listener = (chunk: Buffer) => {
+                stdin.removeListener("data", listener);
                 resolve(bytes(chunk));
-            });
+            };
+            stdin.on("data", listener);
         });
     } else {
         const reader = stdin.readable.getReader();
@@ -157,7 +158,7 @@ export async function run(cmd: string, args: string[]): Promise<{
             stdout: text(stdout),
             stderr: text(stderr),
         };
-    } else if (isNode) {
+    } else if (typeof process === "object" && !!process.versions?.node) {
         const { spawn } = await import("child_process");
         const child = spawn(cmd, args);
         const stdout: string[] = [];

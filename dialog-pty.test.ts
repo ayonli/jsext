@@ -4,8 +4,10 @@ import { isNodePrior16 } from "./parallel/constants.ts";
 import { sleep } from "./async.ts";
 import { END, ESC, LEFT, RIGHT, START } from "./dialog/terminal/constants.ts";
 import { isBrowser } from "./util.ts";
+import stripAnsi from 'strip-ansi';
 
 const useDeno = process.argv.includes("--deno");
+const useBun = process.argv.includes("--bun");
 
 async function runInSimulator(filename: string) {
     const options: IPtyForkOptions = {
@@ -18,6 +20,8 @@ async function runInSimulator(filename: string) {
 
     if (useDeno) {
         cmd = spawn("deno", ["run", "-A", "-q", filename], options);
+    } else if (useBun) {
+        cmd = spawn("bun", ["run", filename], options);
     } else {
         cmd = spawn("tsx", [filename], options);
     }
@@ -40,7 +44,7 @@ async function runInSimulator(filename: string) {
     };
 }
 
-describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
+describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
     if (isBrowser() || isNodePrior16) {
         return;
     }
@@ -52,9 +56,9 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             cmd.write("\n");
             const outputs = await output;
 
-            deepStrictEqual(outputs, [
+            deepStrictEqual(outputs.map(stripAnsi), [
                 "Hello, World! [Enter] ",
-                "\u001b[90mundefined\u001b[39m",
+                "undefined",
                 ""
             ]);
         });
@@ -65,9 +69,9 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             cmd.write(String(ESC));
             const outputs = await output;
 
-            deepStrictEqual(outputs, [
+            deepStrictEqual(outputs.map(stripAnsi), [
                 "Hello, World! [Enter] ",
-                "\u001b[90mundefined\u001b[39m",
+                "undefined",
                 ""
             ]);
         });
@@ -82,9 +86,9 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             cmd.write("\n");
             const outputs = await output;
 
-            deepStrictEqual(outputs, [
+            deepStrictEqual(outputs.map(stripAnsi), [
                 "Are you sure? [Y/n] y",
-                "\u001b[33mtrue\u001b[39m",
+                "true",
                 ""
             ]);
         });
@@ -101,9 +105,9 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             cmd.write("\n");
             const outputs = await output;
 
-            deepStrictEqual(outputs, [
+            deepStrictEqual(outputs.map(stripAnsi), [
                 "Are you sure? [Y/n] yes",
-                "\u001b[33mtrue\u001b[39m",
+                "true",
                 ""
             ]);
         });
@@ -116,9 +120,9 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             cmd.write("\n");
             const outputs = await output;
 
-            deepStrictEqual(outputs, [
+            deepStrictEqual(outputs.map(stripAnsi), [
                 "Are you sure? [Y/n] n",
-                "\u001b[33mfalse\u001b[39m",
+                "false",
                 ""
             ]);
         });
@@ -133,9 +137,9 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             cmd.write("\n");
             const outputs = await output;
 
-            deepStrictEqual(outputs, [
+            deepStrictEqual(outputs.map(stripAnsi), [
                 "Are you sure? [Y/n] no",
-                "\u001b[33mfalse\u001b[39m",
+                "false",
                 ""
             ]);
         });
@@ -146,9 +150,9 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             cmd.write("\n");
             const outputs = await output;
 
-            deepStrictEqual(outputs, [
+            deepStrictEqual(outputs.map(stripAnsi), [
                 "Are you sure? [Y/n] ",
-                "\u001b[33mtrue\u001b[39m",
+                "true",
                 ""
             ]);
         });
@@ -159,9 +163,9 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
             cmd.write(String(ESC));
             const outputs = await output;
 
-            deepStrictEqual(outputs, [
+            deepStrictEqual(outputs.map(stripAnsi), [
                 "Are you sure? [Y/n] ",
-                "\u001b[33mfalse\u001b[39m",
+                "false",
                 ""
             ]);
         });
@@ -313,9 +317,9 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                 cmd.write(String(ESC));
                 const outputs = await output;
 
-                deepStrictEqual(outputs, [
+                deepStrictEqual(outputs.map(stripAnsi), [
                     "Enter something: ",
-                    "\u001b[1mnull\u001b[22m",
+                    "null",
                     ""
                 ]);
             }
@@ -326,9 +330,9 @@ describe("dialog - " + (useDeno ? "Deno" : "Node.js"), () => {
                 cmd.write(String(ESC));
                 const outputs = await output;
 
-                deepStrictEqual(outputs, [
+                deepStrictEqual(outputs.map(stripAnsi), [
                     "Enter something: Hello, World!",
-                    "\u001b[1mnull\u001b[22m",
+                    "null",
                     ""
                 ]);
             }
