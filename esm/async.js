@@ -54,6 +54,29 @@ async function until(test) {
         }
     }
 }
+/**
+ * Runs multiple tasks concurrently and returns the result of the first task that
+ * completes. The rest of the tasks will be aborted.
+ *
+ * @example
+ * ```ts
+ * import { select } from "@ayonli/jsext/async";
+ *
+ * const result = await select([
+ *     signal => fetch("https://example.com", { signal }),
+ *     signal => fetch("https://example.org", { signal }),
+ * ]);
+ *
+ * console.log(result);
+ * ```
+ */
+async function select(tasks) {
+    const ctrl = new AbortController();
+    const { signal } = ctrl;
+    const result = await Promise.race(tasks.map(fn => fn(signal)));
+    ctrl.abort();
+    return result;
+}
 
-export { after, sleep, timeout, until };
+export { after, select, sleep, timeout, until };
 //# sourceMappingURL=async.js.map

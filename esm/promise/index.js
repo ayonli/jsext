@@ -1,2 +1,2 @@
-export { after, sleep, timeout, until } from '../async.js';
+export { after, select, sleep, timeout, until } from '../async.js';
 //# sourceMappingURL=index.js.map

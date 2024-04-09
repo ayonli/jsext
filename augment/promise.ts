@@ -1,4 +1,4 @@
-import { after, sleep, timeout, until } from "../async.ts";
+import { after, sleep, timeout, until, select } from "../async.ts";
 
 declare global {
     interface PromiseConstructor {
@@ -16,6 +16,11 @@ declare global {
          * This functions returns the same result as the test function when passed.
          */
         until<T>(test: () => T | Promise<T>): Promise<T extends false | null | undefined ? never : T>;
+        /**
+         * Runs multiple tasks concurrently and returns the result of the first task that
+         * completes. The rest of the tasks will be aborted.
+         */
+        select<T>(tasks: ((signal: AbortSignal) => Promise<T>)[]): Promise<T>;
     }
 }
 
@@ -23,3 +28,4 @@ Promise.timeout = timeout;
 Promise.after = after;
 Promise.sleep = sleep;
 Promise.until = until;
+Promise.select = select;

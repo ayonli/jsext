@@ -80,4 +80,29 @@ describe("async", () => {
             strictEqual(result, "ok");
         });
     });
+
+    it("select", async () => {
+        const result = await Promise.select([
+            async signal => {
+                await Promise.sleep(50);
+
+                if (signal.aborted) {
+                    return 0;
+                }
+
+                return 1;
+            },
+            async signal => {
+                await Promise.sleep(100);
+
+                if (signal.aborted) {
+                    return 0;
+                }
+
+                return 2;
+            },
+        ]);
+
+        strictEqual(result, 1);
+    });
 });
