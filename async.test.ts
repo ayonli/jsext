@@ -1,4 +1,3 @@
-import { sleep } from "./async.ts";
 import "./augment.ts";
 import jsext from "./index.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
@@ -86,30 +85,38 @@ describe("async", () => {
         const aborted: number[] = [];
         const result = await Promise.select([
             async signal => {
+                let resolved = false;
+                signal.addEventListener("abort", () => {
+                    resolved || aborted.push(1);
+                });
+
                 await Promise.sleep(50);
 
                 if (signal.aborted) {
-                    aborted.push(1);
                     return 0;
                 }
 
+                resolved = true;
                 return 1;
             },
             async signal => {
+                let resolved = false;
+                signal.addEventListener("abort", () => {
+                    resolved || aborted.push(2);
+                });
+
                 await Promise.sleep(100);
 
                 if (signal.aborted) {
-                    aborted.push(2);
                     return 0;
                 }
 
+                resolved = true;
                 return 2;
             },
         ]);
 
         strictEqual(result, 1);
-
-        await sleep(60);
         deepStrictEqual(aborted, [2]);
     });
 });
