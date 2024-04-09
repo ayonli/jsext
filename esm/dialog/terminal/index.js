@@ -6,8 +6,8 @@ async function questionInDeno(message, options = {}) {
     if (!stdin.isTerminal()) {
         return null;
     }
-    stdin.setRaw(true);
     try {
+        stdin.setRaw(true);
         return await question(message, { stdin, stdout, ...options });
     }
     finally {
@@ -20,13 +20,12 @@ async function questionInNode(message, options = {}) {
         return null;
     }
     return await hijackNodeStdin(stdin, async () => {
-        const rawMode = stdin.isRaw;
-        rawMode || stdin.setRawMode(true);
         try {
+            stdin.setRawMode(true);
             return await question(message, { stdin, stdout, ...options });
         }
         finally {
-            stdin.setRawMode(rawMode);
+            stdin.setRawMode(false);
         }
     });
 }

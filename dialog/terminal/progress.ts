@@ -126,9 +126,8 @@ export async function progressInDeno<T>(message: string, fn: ProgressFunc<T>, op
         return null;
     }
 
-    stdin.setRaw(true);
-
     try {
+        stdin.setRaw(true);
         return await handleTerminalProgress(stdin, stdout, message, fn, options);
     } finally {
         stdin.setRaw(false);
@@ -147,13 +146,11 @@ export async function progressInNode<T>(message: string, fn: ProgressFunc<T>, op
     }
 
     return hijackNodeStdin(stdin, async () => {
-        const rawMode = stdin.isRaw;
-        rawMode || stdin.setRawMode(true);
-
         try {
+            stdin.setRawMode(true);
             return await handleTerminalProgress(stdin, stdout, message, fn, options);
         } finally {
-            stdin.setRawMode(rawMode);
+            stdin.setRawMode(false);
         }
     });
 }
