@@ -223,8 +223,8 @@ function handleWorkerMessage(poolRecord, worker, msg) {
                             + `at ${task.fn} (${task.module})`,
                     });
                 }
-                if (task.resolver) {
-                    task.resolver.reject(err);
+                if (task.promise) {
+                    task.promise.reject(err);
                     if (task.channel) {
                         task.channel.close();
                     }
@@ -238,8 +238,8 @@ function handleWorkerMessage(poolRecord, worker, msg) {
             }
             else {
                 const value = unwrapReturnValue(msg.value);
-                if (task.resolver) {
-                    task.resolver.resolve(value);
+                if (task.promise) {
+                    task.promise.resolve(value);
                 }
                 else {
                     task.result = { value };
@@ -278,8 +278,8 @@ function handleWorkerClose(poolRecord, err) {
         poolRecord.tasks.delete(taskId);
         const task = remoteTasks.get(taskId);
         if (task) {
-            if (task.resolver) {
-                task.resolver.reject(err);
+            if (task.promise) {
+                task.promise.reject(err);
                 if (task.channel) {
                     task.channel.close();
                 }

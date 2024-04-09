@@ -4,6 +4,7 @@ import { serial } from './number.js';
 import { IsPath, isDeno, isNode, isBun, isMainThread } from './parallel/constants.js';
 import { sanitizeModuleId, resolveModule } from './parallel/utils/module.js';
 import { remoteTasks, acquireWorker, wrapArgs } from './parallel/utils/threads.js';
+import { asyncTask } from './async.js';
 
 /**
  * This module provides JavaScript the ability to run functions in parallel
@@ -50,18 +51,11 @@ function createRemoteCall(module, fn, args) {
                 return onfulfilled === null || onfulfilled === void 0 ? void 0 : onfulfilled(task.result.value);
             }
             else {
-                return getWorker.then(() => new Promise((resolve, reject) => {
-                    task.resolver = {
-                        resolve: (value) => {
-                            remoteTasks.delete(taskId);
-                            resolve(value);
-                        },
-                        reject: (err) => {
-                            remoteTasks.delete(taskId);
-                            reject(err);
-                        }
-                    };
-                })).then(onfulfilled, onrejected);
+                return getWorker.then(() => {
+                    return (task.promise = asyncTask()).finally(() => {
+                        remoteTasks.delete(taskId);
+                    });
+                }).then(onfulfilled, onrejected);
             }
         },
         async next(input) {

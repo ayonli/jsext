@@ -1,3 +1,5 @@
+import { asyncTask } from './async.js';
+
 /**
  * Debounces function calls for frequent access.
  * @module
@@ -57,9 +59,9 @@ function debounce(handler, options, reducer = undefined) {
                 reject(err);
             }
         }, delay);
-        return await new Promise((resolve, reject) => {
-            cache.tasks.push({ resolve, reject });
-        });
+        const task = asyncTask();
+        cache.tasks.push(task);
+        return await task;
     };
 }
 

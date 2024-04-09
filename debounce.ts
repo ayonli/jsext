@@ -3,13 +3,11 @@
  * @module
  */
 
-type DebounceTask = {
-    resolve: (result: any) => void;
-    reject: (err: unknown) => void;
-};
+import { AsyncTask, asyncTask } from "./async.ts";
+
 type Debounce = {
     for: any;
-    tasks: DebounceTask[];
+    tasks: AsyncTask<any>[];
     data: any;
     timer: NodeJS.Timeout | number | undefined;
 };
@@ -183,8 +181,8 @@ export default function debounce<I, T = any, R = any>(
             }
         }, delay);
 
-        return await new Promise<any>((resolve, reject) => {
-            cache.tasks.push({ resolve, reject });
-        });
+        const task = asyncTask<R>();
+        cache.tasks.push(task);
+        return await task;
     };
 }

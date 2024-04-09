@@ -11,6 +11,7 @@ import { BunWorker, CallRequest, NodeWorker } from "./parallel/types.ts";
 import { isBun, isDeno, isNode, IsPath, isMainThread } from "./parallel/constants.ts";
 import { resolveModule, sanitizeModuleId } from "./parallel/utils/module.ts";
 import { acquireWorker, remoteTasks, wrapArgs } from "./parallel/utils/threads.ts";
+import { asyncTask } from "./async.ts";
 
 export type FunctionPropertyNames<T> = {
     [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
@@ -74,18 +75,11 @@ function createRemoteCall(module: string, fn: string, args: any[]) {
                 remoteTasks.delete(taskId);
                 return onfulfilled?.(task.result.value);
             } else {
-                return getWorker.then(() => new Promise((resolve, reject) => {
-                    task.resolver = {
-                        resolve: (value) => {
-                            remoteTasks.delete(taskId);
-                            resolve(value);
-                        },
-                        reject: (err) => {
-                            remoteTasks.delete(taskId);
-                            reject(err);
-                        }
-                    };
-                })).then(onfulfilled, onrejected);
+                return getWorker.then(() => {
+                    return (task.promise = asyncTask()).finally(() => {
+                        remoteTasks.delete(taskId);
+                    });
+                }).then(onfulfilled, onrejected);
             }
         },
         async next(input) {

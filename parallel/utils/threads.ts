@@ -1,5 +1,6 @@
 import type { ChildProcess } from "node:child_process";
 import { Channel } from "../../chan.ts";
+import { AsyncTask } from "../../async.ts";
 import { BunWorker, NodeWorker, CallResponse, ChannelMessage } from "../types.ts";
 import { isBun, isDeno, isNode, isNodePrior14 } from "../constants.ts";
 import { handleChannelMessage, isChannelMessage, wrapChannel } from "./channel.ts";
@@ -30,10 +31,7 @@ type RemoteTask = {
     fn: string;
     error?: unknown;
     result?: { value: any; };
-    resolver?: {
-        resolve: (data: any) => void;
-        reject: (err: unknown) => void;
-    };
+    promise?: AsyncTask<any>;
     channel?: Channel<IteratorResult<any>>;
     generate?: () => void;
 };
@@ -261,8 +259,8 @@ function handleWorkerMessage(poolRecord: PoolRecord, worker: NodeWorker | BunWor
                     });
                 }
 
-                if (task.resolver) {
-                    task.resolver.reject(err);
+                if (task.promise) {
+                    task.promise.reject(err);
 
                     if (task.channel) {
                         task.channel.close();
@@ -275,8 +273,8 @@ function handleWorkerMessage(poolRecord: PoolRecord, worker: NodeWorker | BunWor
             } else {
                 const value = unwrapReturnValue(msg.value);
 
-                if (task.resolver) {
-                    task.resolver.resolve(value);
+                if (task.promise) {
+                    task.promise.resolve(value);
                 } else {
                     task.result = { value };
                 }
@@ -318,8 +316,8 @@ function handleWorkerClose(poolRecord: PoolRecord, err: Error): void {
         const task = remoteTasks.get(taskId);
 
         if (task) {
-            if (task.resolver) {
-                task.resolver.reject(err);
+            if (task.promise) {
+                task.promise.reject(err);
 
                 if (task.channel) {
                     task.channel.close();

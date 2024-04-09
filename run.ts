@@ -20,6 +20,7 @@ import {
 } from "./parallel/utils/threads.ts";
 import parallel from "./parallel.ts";
 import { unrefTimer } from "./util.ts";
+import { AsyncTask, asyncTask } from "./async.ts";
 
 type PoolRecord = {
     getWorker: Promise<{
@@ -223,10 +224,7 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
 
     let error: unknown = null;
     let result: { value: any; } | undefined;
-    let resolver: {
-        resolve: (data: any) => void;
-        reject: (err: unknown) => void;
-    } | undefined;
+    let promise: AsyncTask<any> | undefined;
     let channel: Channel<R> | undefined = undefined;
     let workerId: number;
     let release: () => void;
@@ -328,8 +326,8 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
         }
 
         if (error) {
-            if (resolver) {
-                resolver.reject(error);
+            if (promise) {
+                promise.reject(error);
 
                 if (channel) {
                     channel.close();
@@ -347,8 +345,8 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
         } else {
             result ??= { value: void 0 };
 
-            if (resolver) {
-                resolver.resolve(result.value);
+            if (promise) {
+                promise.resolve(result.value);
             }
 
             if (channel) {
@@ -550,18 +548,20 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
             handleClose(null, true);
         },
         async result() {
-            return await new Promise<any>((resolve, reject) => {
-                if (error) {
-                    reject(error);
-                } else if (result) {
-                    resolve(result.value);
-                } else {
-                    resolver = { resolve, reject };
-                }
-            });
+            const task = asyncTask<R>();
+
+            if (error) {
+                task.reject(error);
+            } else if (result) {
+                task.resolve(result.value);
+            } else {
+                promise = task;
+            }
+
+            return await task;
         },
         iterate() {
-            if (resolver) {
+            if (promise) {
                 throw new Error("result() has been called");
             } else if (result) {
                 throw new TypeError("the response is not iterable");

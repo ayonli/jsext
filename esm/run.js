@@ -7,6 +7,7 @@ import { isChannelMessage, handleChannelMessage } from './parallel/utils/channel
 import { getMaxParallelism, createWorker, wrapArgs, isCallResponse, unwrapReturnValue } from './parallel/utils/threads.js';
 import parallel from './parallel.js';
 import { unrefTimer } from './util.js';
+import { asyncTask } from './async.js';
 
 /**
  * Runs a script in another thread and abort at any time.
@@ -163,7 +164,7 @@ async function run(script, args, options) {
     }
     let error = null;
     let result;
-    let resolver;
+    let promise;
     let channel = undefined;
     let workerId;
     let release;
@@ -256,8 +257,8 @@ async function run(script, args, options) {
             error !== null && error !== void 0 ? error : (error = err);
         }
         if (error) {
-            if (resolver) {
-                resolver.reject(error);
+            if (promise) {
+                promise.reject(error);
                 if (channel) {
                     channel.close();
                 }
@@ -277,8 +278,8 @@ async function run(script, args, options) {
         }
         else {
             result !== null && result !== void 0 ? result : (result = { value: void 0 });
-            if (resolver) {
-                resolver.resolve(result.value);
+            if (promise) {
+                promise.resolve(result.value);
             }
             if (channel) {
                 channel.close();
@@ -440,20 +441,20 @@ async function run(script, args, options) {
             handleClose(null, true);
         },
         async result() {
-            return await new Promise((resolve, reject) => {
-                if (error) {
-                    reject(error);
-                }
-                else if (result) {
-                    resolve(result.value);
-                }
-                else {
-                    resolver = { resolve, reject };
-                }
-            });
+            const task = asyncTask();
+            if (error) {
+                task.reject(error);
+            }
+            else if (result) {
+                task.resolve(result.value);
+            }
+            else {
+                promise = task;
+            }
+            return await task;
         },
         iterate() {
-            if (resolver) {
+            if (promise) {
                 throw new Error("result() has been called");
             }
             else if (result) {

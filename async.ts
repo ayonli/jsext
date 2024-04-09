@@ -96,7 +96,7 @@ export type AsyncTask<T> = Promise<T> & {
  * This function is like `Promise.withResolvers` but less verbose.
  */
 export function asyncTask<T>(): AsyncTask<T> {
-    let resolve: (value: T) => void;
+    let resolve: (value: T | PromiseLike<T>) => void;
     let reject: (reason?: any) => void;
     const promise = new Promise<T>((res, rej) => {
         resolve = res;
