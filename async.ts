@@ -83,3 +83,28 @@ export async function select<T>(tasks: ((signal: AbortSignal) => Promise<T>)[]):
     ctrl.abort();
     return result;
 }
+
+/** A promise that can be resolved or rejected manually. */
+export type AsyncTask<T> = Promise<T> & {
+    resolve: (value: T | PromiseLike<T>) => void;
+    reject: (reason?: any) => void;
+};
+
+/**
+ * Creates a promise that can be resolved or rejected manually.
+ * 
+ * This function is like `Promise.withResolvers` but less verbose.
+ */
+export function asyncTask<T>(): AsyncTask<T> {
+    let resolve: (value: T) => void;
+    let reject: (reason?: any) => void;
+    const promise = new Promise<T>((res, rej) => {
+        resolve = res;
+        reject = rej;
+    }) as AsyncTask<T>;
+
+    return Object.assign(promise, {
+        resolve: resolve!,
+        reject: reject!
+    });
+}

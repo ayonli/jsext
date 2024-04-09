@@ -77,6 +77,23 @@ async function select(tasks) {
     ctrl.abort();
     return result;
 }
+/**
+ * Creates a promise that can be resolved or rejected manually.
+ *
+ * This function is like `Promise.withResolvers` but less verbose.
+ */
+function asyncTask() {
+    let resolve;
+    let reject;
+    const promise = new Promise((res, rej) => {
+        resolve = res;
+        reject = rej;
+    });
+    return Object.assign(promise, {
+        resolve: resolve,
+        reject: reject
+    });
+}
 
-export { after, select, sleep, timeout, until };
+export { after, asyncTask, select, sleep, timeout, until };
 //# sourceMappingURL=async.js.map

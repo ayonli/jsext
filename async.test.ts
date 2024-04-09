@@ -1,6 +1,7 @@
 import "./augment.ts";
 import jsext from "./index.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
+import { asyncTask } from "./async.ts";
 
 describe("async", () => {
     it("timeout", async () => {
@@ -118,5 +119,21 @@ describe("async", () => {
 
         strictEqual(result, 1);
         deepStrictEqual(aborted, [2]);
+    });
+
+    describe("asyncTask", () => {
+        it("resolve", async () => {
+            const task = asyncTask<number>();
+            task.resolve(1);
+            strictEqual(await task, 1);
+        });
+
+        it("reject", async () => {
+            const task = asyncTask<number>();
+            task.reject(new Error("error"));
+            const [err, res] = await jsext.try(task);
+            strictEqual(res, undefined);
+            deepStrictEqual(err, new Error("error"));
+        });
     });
 });
