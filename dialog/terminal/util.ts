@@ -150,22 +150,39 @@ export async function run(cmd: string, args: string[]): Promise<{
     stdout: string;
     stderr: string;
 }> {
+    const isWindows = platform() === "windows";
+
     if (typeof Deno === "object") {
+        const { Buffer } = await import("node:buffer");
+        const { decode } = await import("npm:iconv-lite");
         const _cmd = new Deno.Command(cmd, { args });
         const { code, stdout, stderr } = await _cmd.output();
         return {
             code,
-            stdout: text(stdout),
-            stderr: text(stderr),
+            stdout: isWindows ? decode(Buffer.from(stdout), "cp936") : text(stdout),
+            stderr: isWindows ? decode(Buffer.from(stderr), "cp936") : text(stderr),
         };
     } else if (typeof process === "object" && !!process.versions?.node) {
         const { spawn } = await import("child_process");
+        const { decode } = await import("iconv-lite");
         const child = spawn(cmd, args);
         const stdout: string[] = [];
         const stderr: string[] = [];
 
-        child.stdout.on("data", chunk => stdout.push(String(chunk)));
-        child.stderr.on("data", chunk => stderr.push(String(chunk)));
+        child.stdout.on("data", chunk => {
+            if (isWindows) {
+                stdout.push(decode(chunk, "cp936"));
+            } else {
+                stdout.push(String(chunk));
+            }
+        });
+        child.stderr.on("data", chunk => {
+            if (isWindows) {
+                stderr.push(decode(chunk, "cp936"));
+            } else {
+                stderr.push(String(chunk));
+            }
+        });
 
         const code = await new Promise<number>((resolve) => {
             child.on("exit", (code, signal) => {

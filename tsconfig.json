@@ -24,6 +24,9 @@
             "mocha"
         ],
         "paths": {
+            "npm:iconv-lite": [
+                "./node_modules/iconv-lite/lib/index.d.ts"
+            ],
             "@ayonli/jsext": [
                 "."
             ],

@@ -25,7 +25,8 @@ const moduleEntries = Object.fromEntries(
     ])
 );
 
-export default [
+/** @type {import ("rollup").RollupOptions[]} */
+const config = [
     { // CommonJS
         input: moduleEntries,
         output: {
@@ -41,6 +42,7 @@ export default [
             resolve({ preferBuiltins: true }),
             commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
         ],
+        external: (id) => id.includes("node_modules") || builtinModules.includes(id),
     },
     { // ES Module
         input: moduleEntries,
@@ -56,6 +58,7 @@ export default [
             resolve({ preferBuiltins: true }),
             commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
         ],
+        external: (id) => id.includes("node_modules") || builtinModules.includes(id),
     },
     { // Bundle
         input: "bundle.ts",
@@ -74,6 +77,7 @@ export default [
                 keep_fnames: true,
             })
         ],
+        external: (id) => id.includes("node_modules") || builtinModules.includes(id),
     },
     { // Worker for Bun, Deno and the browser
         input: "worker.ts",
@@ -86,6 +90,7 @@ export default [
             resolve({ preferBuiltins: true }),
             commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
         ],
+        external: (id) => id.includes("node_modules") || builtinModules.includes(id),
     },
     { // Worker for Node.js
         input: "worker-node.ts",
@@ -98,5 +103,8 @@ export default [
             resolve({ preferBuiltins: true }),
             commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
         ],
+        external: (id) => id.includes("node_modules") || builtinModules.includes(id),
     }
 ];
+
+export default config;

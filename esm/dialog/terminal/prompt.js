@@ -10,8 +10,63 @@ function createAppleScript(message, defaultValue = "", password = false) {
         "end";
 }
 function createPowerShellScript(message, defaultValue = "", password = false) {
-    return "Add-Type -AssemblyName Microsoft.VisualBasic;"
-        + `[Microsoft.VisualBasic.Interaction]::InputBox("${escape(message)}", "Prompt", "${escape(defaultValue)}");`;
+    return [
+        "Add-Type -AssemblyName System.Windows.Forms",
+        "$form = New-Object System.Windows.Forms.Form",
+        "$form.Text = 'Prompt'",
+        "$form.Size = New-Object System.Drawing.Size(450,175)",
+        "$form.StartPosition = 'CenterScreen'",
+        "$form.FormBorderStyle = 'FixedDialog'",
+        "$form.Font = New-Object System.Drawing.Font('Aria', 10)",
+        "$form.AutoScaleMode = 'Dpi'",
+        "$form.MaximizeBox = $false",
+        "$form.MinimizeBox = $false",
+        "",
+        "$label = New-Object System.Windows.Forms.Label",
+        "$label.Location = New-Object System.Drawing.Point(17,20)",
+        "$label.Size = New-Object System.Drawing.Size(400,30)",
+        `$label.Text = "${escape(message)}"`,
+        "$form.Controls.Add($label)",
+        "",
+        "$textBox = New-Object System.Windows.Forms.TextBox",
+        "$textBox.Location = New-Object System.Drawing.Point(17,50)",
+        "$textBox.Size = New-Object System.Drawing.Size(400,30)",
+        `$textBox.UseSystemPasswordChar = ${password ? "$true" : "$false"}`,
+        `$textBox.Text = "${escape(defaultValue)}"`,
+        "$form.Controls.Add($textBox)",
+        "",
+        "$cancelButton = New-Object System.Windows.Forms.Button",
+        "$cancelButton.Location = New-Object System.Drawing.Point(232,90)",
+        "$cancelButton.Size = New-Object System.Drawing.Size(87,27)",
+        "$cancelButton.Text = 'Cancel'",
+        "$cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel",
+        "$cancelButton.FlatStyle = 'System'",
+        "$form.Controls.Add($cancelButton)",
+        "",
+        "$okButton = New-Object System.Windows.Forms.Button",
+        "$okButton.Location = New-Object System.Drawing.Point(330,90)",
+        "$okButton.Size = New-Object System.Drawing.Size(87,27)",
+        "$okButton.Text = 'OK'",
+        "$okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK",
+        "$okButton.FlatStyle = 'System'",
+        "$form.Controls.Add($okButton)",
+        "",
+        "$form.AcceptButton = $okButton",
+        "$form.CancelButton = $cancelButton",
+        "",
+        "$form.Add_Shown({$textBox.Select()})",
+        "",
+        "$result = $form.ShowDialog()",
+        "",
+        "if ($result -eq [System.Windows.Forms.DialogResult]::OK)",
+        "{",
+        "    $textBox.Text",
+        "}",
+        "elseif ($result -eq [System.Windows.Forms.DialogResult]::Cancel)",
+        "{",
+        "    throw 'User canceled'",
+        "}",
+    ].join("\n");
 }
 async function promptInTerminal(message, options = {}) {
     if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "darwin") {
@@ -63,7 +118,12 @@ async function promptInTerminal(message, options = {}) {
             createPowerShellScript(message, options.defaultValue, options.type === "password")
         ]);
         if (code) {
-            throw new Error(stderr);
+            if (stderr.includes("User canceled")) {
+                return null;
+            }
+            else {
+                throw new Error(stderr);
+            }
         }
         else {
             return stdout.trim();
