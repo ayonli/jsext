@@ -403,6 +403,9 @@
         "BiMap",
         "CiMap"
     ],
+    "dependencies": {
+        "iconv-lite": "^0.6.3"
+    },
     "devDependencies": {
         "@ayonli/sse": "^0.4.0",
         "@rollup/plugin-commonjs": "^25.0.4",
@@ -437,8 +440,5 @@
     "engines": {
         "node": ">=12"
     },
-    "type": "module",
-    "dependencies": {
-        "iconv-lite": "^0.6.3"
-    }
+    "type": "module"
 }
