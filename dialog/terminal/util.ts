@@ -154,7 +154,14 @@ export async function run(cmd: string, args: string[]): Promise<{
 
     if (typeof Deno === "object") {
         const { Buffer } = await import("node:buffer");
-        const { decode } = await import("npm:iconv-lite");
+        let module = await import("npm:iconv-lite");
+
+        if (module.default) {
+            // @ts-ignore fix CommonJS module compatibility
+            module = module.default;
+        }
+
+        const { decode } = module;
         const _cmd = new Deno.Command(cmd, { args });
         const { code, stdout, stderr } = await _cmd.output();
         return {
@@ -164,7 +171,14 @@ export async function run(cmd: string, args: string[]): Promise<{
         };
     } else if (typeof process === "object" && !!process.versions?.node) {
         const { spawn } = await import("child_process");
-        const { decode } = await import("iconv-lite");
+        let module = await import("iconv-lite");
+
+        if (module.default) {
+            // @ts-ignore fix CommonJS module compatibility
+            module = module.default;
+        }
+
+        const { decode } = module;
         const child = spawn(cmd, args);
         const stdout: string[] = [];
         const stderr: string[] = [];
