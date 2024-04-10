@@ -96,6 +96,9 @@ export async function prompt(message: string, options?: {
      * 
      * This option is only functional in `Windows`, `macOS` and `Linux`, it is
      * ignored in other platforms and the browser.
+     * 
+     * NOTE: currently, the Windows support of GUI dialog is very troublesome,
+     * it doesn't support non-latin characters and has fussy font rendering.
      */
     gui?: boolean;
 }): Promise<string | null>;
