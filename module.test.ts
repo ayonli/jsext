@@ -22,7 +22,12 @@ describe("module", () => {
             // @ts-ignore
             let module3 = await import("./examples/module/module3.cjs");
             module3 = interop(module3);
-            deepStrictEqual(Object.keys(module3).sort(), ["default"].sort());
+            deepStrictEqual(Object.keys(module3).sort(), ["default"]);
+
+            // @ts-ignore
+            let module4 = await import("./examples/module/module4.cjs");
+            module4 = interop(module4);
+            deepStrictEqual(Object.keys(module4).sort(), ["default"]);
         });
 
         it("strict", async () => {
