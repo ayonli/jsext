@@ -1,8 +1,6 @@
 import "./augment.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { isNode } from "./parallel/constants.ts";
-
-const isNodePrior16 = isNode && parseInt(process.version.slice(1)) < 16;
+import { isNodeBelow16 } from "./parallel/constants.ts";
 
 describe("String", () => {
     it("String.compare", () => {
@@ -54,7 +52,7 @@ describe("String", () => {
         deepStrictEqual("foo".chars(), ["f", "o", "o"]);
         deepStrictEqual("你好".chars(), ["你", "好"]);
 
-        if (!isNodePrior16) {
+        if (!isNodeBelow16) {
             deepStrictEqual("😴😄⛔🎠🚓🚇👨‍👨‍👧‍👧👦🏾".chars(), ["😴", "😄", "⛔", "🎠", "🚓", "🚇", "👨‍👨‍👧‍👧", "👦🏾"]);
         }
     });

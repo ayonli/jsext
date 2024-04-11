@@ -2,7 +2,7 @@ import type { ChildProcess } from "node:child_process";
 import { Channel } from "../../chan.ts";
 import { AsyncTask } from "../../async.ts";
 import { BunWorker, NodeWorker, CallResponse, ChannelMessage } from "../types.ts";
-import { isBun, isDeno, isNode, isNodePrior14 } from "../constants.ts";
+import { isBun, isDeno, isNode, isNodeBelow14 } from "../constants.ts";
 import { handleChannelMessage, isChannelMessage, wrapChannel } from "./channel.ts";
 import { resolveRemoteModuleUrl } from "./module.ts";
 import { isPlainObject } from "../../object.ts";
@@ -159,7 +159,7 @@ export async function createWorker(options: {
     if (isNode || isBun) {
         if (adapter === "child_process") {
             const { fork } = await import("child_process");
-            const serialization = isNodePrior14 ? "json" : "advanced";
+            const serialization = isNodeBelow14 ? "json" : "advanced";
             const worker = fork(entry, ["--worker-thread"], {
                 stdio: "inherit",
                 serialization,
