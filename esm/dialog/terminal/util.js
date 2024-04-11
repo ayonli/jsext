@@ -1,10 +1,9 @@
 import { isWide, isFullWidth } from '../../external/code-point-utils/index.js';
-import bytes, { equals, text, concat } from '../../bytes.js';
+import bytes, { equals, text } from '../../bytes.js';
 import { sum } from '../../math.js';
 import { chars, byteLength } from '../../string.js';
 import { ESC, CANCEL, UTIMap, EMOJI_RE } from './constants.js';
 import { basename, extname } from '../../path.js';
-import readAll from '../../readAll.js';
 import { interop } from '../../module.js';
 
 function charWidth(char) {
@@ -223,9 +222,8 @@ async function readFile(path, relativePath = "") {
     let content;
     let lastModified;
     if (typeof Deno === "object") {
-        const fsFile = await Deno.open(path);
-        const stats = await fsFile.stat();
-        content = concat(...(await readAll(fsFile.readable)));
+        const stats = await Deno.stat(path);
+        content = await Deno.readFile(path);
         lastModified = stats.mtime ? stats.mtime.valueOf() : 0;
     }
     else {
