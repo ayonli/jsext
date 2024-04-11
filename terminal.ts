@@ -58,6 +58,21 @@ export function platform(): PopularPlatforms | "others" {
 }
 
 /**
+ * Quotes a string to be used as a single argument to a shell command.
+ */
+export function quote(arg: string) {
+    if ((/["\s]/).test(arg) && !(/'/).test(arg)) {
+        return "'" + arg.replace(/(['\\])/g, '\\$1') + "'";
+    }
+
+    if ((/["'\s]/).test(arg)) {
+        return '"' + arg.replace(/(["\\$`!])/g, '\\$1') + '"';
+    }
+
+    return String(arg).replace(/([A-Za-z]:)?([#!"$&'()*,:;<=>?@[\\\]^`{|}])/g, '$1\\$2');
+}
+
+/**
  * Executes a command in the terminal and returns the exit code and outputs.
  */
 export async function run(cmd: string, args: string[]): Promise<{
@@ -72,12 +87,22 @@ export async function run(cmd: string, args: string[]): Promise<{
         // @ts-ignore
         const { decode } = await interop(import("npm:iconv-lite"), false);
         const _cmd = new Deno.Command(cmd, { args });
-        const { code, stdout, stderr } = await _cmd.output();
-        return {
-            code,
-            stdout: isWindows ? decode(Buffer.from(stdout), "cp936") : text(stdout),
-            stderr: isWindows ? decode(Buffer.from(stderr), "cp936") : text(stderr),
-        };
+
+        try {
+            const { code, stdout, stderr } = await _cmd.output();
+            return {
+                code,
+                stdout: isWindows ? decode(Buffer.from(stdout), "cp936") : text(stdout),
+                stderr: isWindows ? decode(Buffer.from(stderr), "cp936") : text(stderr),
+            };
+        } catch (err) {
+            if (err instanceof Deno.errors.NotFound) {
+                // The command may be a PowerShell builtin command.
+                return run("powershell", ["-c", cmd, ...args.map(quote)]);
+            } else {
+                throw err;
+            }
+        }
     } else if (typeof process === "object" && !!process.versions?.node) {
         const { spawn } = await import("child_process");
         const { decode } = await interop(import("iconv-lite"), false);
@@ -100,21 +125,36 @@ export async function run(cmd: string, args: string[]): Promise<{
             }
         });
 
-        const code = await new Promise<number>((resolve) => {
-            child.on("exit", (code, signal) => {
+        return await new Promise<{
+            code: number;
+            stdout: string;
+            stderr: string;
+        }>((resolve, reject) => {
+            child.once("exit", (code, signal) => {
                 if (code === null && signal) {
-                    resolve(1);
+                    resolve({
+                        code: 1,
+                        stdout: stdout.join(""),
+                        stderr: stderr.join(""),
+                    });
                 } else {
-                    resolve(code ?? 0);
+                    resolve({
+                        code: code ?? 0,
+                        stdout: stdout.join(""),
+                        stderr: stderr.join(""),
+                    });
                 }
+            }).once("error", err => {
+                reject(err);
             });
+        }).catch(err => {
+            if (err instanceof Error && (err as any)["code"] === "ENOENT") {
+                // The command may be a PowerShell builtin command.
+                return run("powershell", ["-c", cmd, ...args.map(quote)]);
+            } else {
+                throw err;
+            }
         });
-
-        return {
-            code,
-            stdout: stdout.join(""),
-            stderr: stderr.join(""),
-        };
     } else {
         throw new Error("Unsupported runtime");
     }

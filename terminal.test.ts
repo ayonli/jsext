@@ -1,4 +1,5 @@
-import { strictEqual } from "node:assert";
+import { ok, strictEqual } from "node:assert";
+import { equals } from "./path.ts";
 import { platform, run, which } from "./terminal.ts";
 
 describe("terminal", () => {
@@ -43,19 +44,24 @@ describe("terminal", () => {
         }
     });
 
-    it("run", async () => {
+    it("run", async function () {
+        this.timeout(5000);
+
         const { code, stdout, stderr } = await run("echo", ["Hello, World!"]);
         strictEqual(code, 0);
-        strictEqual(stdout, "Hello, World!\n");
+        strictEqual(stdout.trim(), "Hello, World!");
         strictEqual(stderr, "");
     });
 
-    it("which", async () => {
+    it("which", async function () {
+        this.timeout(5000);
+
         if (platform() === "windows") {
-            strictEqual(
-                await which("powershell"),
-                "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
-            );
+            ok(equals(
+                await which("powershell") ?? "",
+                "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+                { caseInsensitive: true }
+            ));
         } else {
             const ls = await which("ls");
 
