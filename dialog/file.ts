@@ -1,5 +1,9 @@
 import { basename, join } from "../path.ts";
-import { platform, readFile } from "./terminal/util.ts";
+import { platform } from "../terminal.ts";
+import read from "../read.ts";
+import readAll from "../readAll.ts";
+import { isBrowser } from "../util.ts";
+import { readFile } from "./terminal/file/util.ts";
 import {
     macPickFolder,
     macPickFiles,
@@ -15,9 +19,6 @@ import {
     windowsPickFiles,
     windowsPickFile,
 } from "./terminal/file/windows.ts";
-import read from "../read.ts";
-import readAll from "../readAll.ts";
-import { isBrowser } from "../util.ts";
 
 /**
  * Open the file picker dialog and pick a file, this function returns the file's

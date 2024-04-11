@@ -1,6 +1,6 @@
 import { questionInDeno, questionInNode } from "./index.ts";
-import { escape, platform } from "./util.ts";
-import { run } from "./util.ts";
+import { escape } from "./util.ts";
+import { platform, run } from "../../terminal.ts";
 
 function createAppleScript(message: string) {
     return "tell application (path to frontmost application as text)\n" +
