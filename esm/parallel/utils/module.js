@@ -1,5 +1,6 @@
 import { isNode, isBun, IsPath, isDeno } from '../constants.js';
 import { trim } from '../../string.js';
+import { interop } from '../../module.js';
 
 const moduleCache = new Map();
 function sanitizeModuleId(id, strict = false) {
@@ -81,10 +82,7 @@ async function resolveModule(modId, baseUrl = undefined) {
             }
         }
     }
-    if (typeof module["default"] === "object" && typeof module["default"].default !== "undefined") {
-        module = module["default"]; // CommonJS module with exports.default
-    }
-    return module;
+    return interop(module);
 }
 async function resolveRemoteModuleUrl(url) {
     var _a;

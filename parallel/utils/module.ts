@@ -1,5 +1,6 @@
 import { IsPath, isBun, isDeno, isNode } from "../constants.ts";
 import { trim } from "../../string.ts";
+import { interop } from "../../module.ts";
 
 const moduleCache = new Map();
 
@@ -82,11 +83,7 @@ export async function resolveModule(modId: string, baseUrl: string | undefined =
         }
     }
 
-    if (typeof module["default"] === "object" && typeof module["default"].default !== "undefined") {
-        module = module["default"]; // CommonJS module with exports.default
-    }
-
-    return module;
+    return interop(module);
 }
 
 export async function resolveRemoteModuleUrl(url: string): Promise<string> {

@@ -5,6 +5,7 @@ import { chars, byteLength } from '../../string.js';
 import { ESC, CANCEL, UTIMap, EMOJI_RE } from './constants.js';
 import { basename, extname } from '../../path.js';
 import readAll from '../../readAll.js';
+import { interop } from '../../module.js';
 
 function charWidth(char) {
     if (EMOJI_RE.test(char)) {
@@ -131,7 +132,8 @@ async function run(cmd, args) {
     const isWindows = platform() === "windows";
     if (typeof Deno === "object") {
         const { Buffer } = await import('node:buffer');
-        const { decode } = await import('npm:iconv-lite');
+        // @ts-ignore
+        const { decode } = await interop(import('npm:iconv-lite'), false);
         const _cmd = new Deno.Command(cmd, { args });
         const { code, stdout, stderr } = await _cmd.output();
         return {
@@ -142,7 +144,7 @@ async function run(cmd, args) {
     }
     else if (typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node)) {
         const { spawn } = await import('child_process');
-        const { decode } = await import('iconv-lite');
+        const { decode } = await interop(import('iconv-lite'), false);
         const child = spawn(cmd, args);
         const stdout = [];
         const stderr = [];
