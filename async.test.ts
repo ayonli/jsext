@@ -2,6 +2,7 @@ import "./augment.ts";
 import jsext from "./index.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { asyncTask } from "./async.ts";
+import { isNodeBelow16 } from "./parallel/constants.ts";
 
 describe("async", () => {
     it("timeout", async () => {
@@ -82,7 +83,11 @@ describe("async", () => {
         });
     });
 
-    it("select", async () => {
+    it("select", async function () {
+        if (isNodeBelow16) {
+            this.skip();
+        }
+
         const aborted: number[] = [];
         const result = await Promise.select([
             async signal => {

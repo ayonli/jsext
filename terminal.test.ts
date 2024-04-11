@@ -54,7 +54,7 @@ describe("terminal", () => {
         if (platform() === "windows") {
             strictEqual(
                 await which("powershell"),
-                "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+                "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
             );
         } else {
             const ls = await which("ls");

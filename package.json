@@ -338,7 +338,7 @@
         "test:pty:deno": "tsx ./node_modules/mocha/bin/mocha --config mocha.pty.json --deno",
         "test:pty:bun": "tsx ./node_modules/mocha/bin/mocha --config mocha.pty.json --bun",
         "test:pty": "npm run test:pty:node && npm run test:pty:deno && npm run test:pty:bun",
-        "test:deno": "deno run --allow-read --allow-net test-deno.ts",
+        "test:deno": "deno run -A test-deno.ts",
         "build": "rollup -c rollup.config.js && echo '{\"type\":\"module\"}' > ./esm/package.json && echo '{\"type\":\"commonjs\"}' > ./cjs/package.json && tsc -p tsconfig.types.json",
         "typing": "tsc --noEmit --watch",
         "prepublishOnly": "npm run build && node prepublish.mjs",

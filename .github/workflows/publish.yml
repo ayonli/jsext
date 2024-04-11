@@ -83,7 +83,7 @@ jobs:
         with:
           deno-version: v1.x
 
-      - run: deno run --allow-read --allow-net test-deno.ts
+      - run: deno run -A test-deno.ts
 
   test-jsdom:
     runs-on: ubuntu-latest
