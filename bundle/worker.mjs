@@ -6,6 +6,7 @@ const isNode = !isDeno && !isBun
     && typeof process === "object" && !!((_a$1 = process.versions) === null || _a$1 === void 0 ? void 0 : _a$1.node);
 isNode && parseInt(process.version.slice(1)) < 14;
 isNode && parseInt(process.version.slice(1)) < 16;
+isNode && parseInt(process.version.slice(1)) < 20;
 // In Node.js, `process.argv` contains `--worker-thread` when the current thread is used as
 // a worker.
 const isNodeWorkerThread = isNode && process.argv.includes("--worker-thread");
@@ -449,6 +450,10 @@ function isPlainObject(value) {
 new TextEncoder();
 new TextDecoder();
 
+/**
+ * Utility functions for working with ES and CommonJS modules.
+ * @param module
+ */
 function interop(module, strict = undefined) {
     if (typeof module === "function") {
         return module().then(mod => interop(mod, strict));

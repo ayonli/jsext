@@ -1,3 +1,7 @@
+/**
+ * Utility functions for working with ES and CommonJS modules.
+ * @param module
+ */
 function interop(module, strict = undefined) {
     if (typeof module === "function") {
         return module().then(mod => interop(mod, strict));

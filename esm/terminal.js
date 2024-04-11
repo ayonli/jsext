@@ -1,76 +1,74 @@
+import { text } from './bytes.js';
+import { interop } from './module.js';
+
 /**
  * Useful utility functions for interacting with the terminal.
- * 
+ *
  * NOTE: this module is not intended to be used in the browser.
  * @module
  */
-
-import { text } from "./bytes.ts";
-import { interop } from "./module.ts";
-
-export type PopularPlatforms = "android"
-    | "darwin"
-    | "freebsd"
-    | "linux"
-    | "windows";
-export const PopularPlatforms: PopularPlatforms[] = [
+const PopularPlatforms = [
     "android",
     "darwin",
     "freebsd",
     "linux",
     "windows",
 ];
-
 /**
  * Returns a string identifying the operating system platform in which the
- * program is running. 
+ * program is running.
  */
-export function platform(): PopularPlatforms | "others" {
+function platform() {
     if (typeof Deno === "object") {
-        if (PopularPlatforms.includes(Deno.build.os as any)) {
-            return Deno.build.os as PopularPlatforms;
-        } else {
+        if (PopularPlatforms.includes(Deno.build.os)) {
+            return Deno.build.os;
+        }
+        else {
             return "others";
         }
-    } else if (typeof process === "object" && typeof process.platform === "string") {
+    }
+    else if (typeof process === "object" && typeof process.platform === "string") {
         if (process.platform === "win32") {
             return "windows";
-        } else if ((PopularPlatforms as string[]).includes(process.platform)) {
-            return process.platform as PopularPlatforms;
-        } else {
+        }
+        else if (PopularPlatforms.includes(process.platform)) {
+            return process.platform;
+        }
+        else {
             return "others";
         }
-    } else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
+    }
+    else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
         if (navigator.userAgent.includes("Android")) {
             return "android";
-        } else if (navigator.userAgent.includes("Macintosh")) {
+        }
+        else if (navigator.userAgent.includes("Macintosh")) {
             return "darwin";
-        } else if (navigator.userAgent.includes("Windows")) {
+        }
+        else if (navigator.userAgent.includes("Windows")) {
             return "windows";
-        } else if (navigator.userAgent.includes("Linux")) {
+        }
+        else if (navigator.userAgent.includes("Linux")) {
             return "linux";
-        } else {
+        }
+        else {
             return "others";
         }
-    } else {
+    }
+    else {
         return "others";
     }
 }
-
 /**
  * Executes a command in the terminal and returns the exit code and outputs.
  */
-export async function run(cmd: string, args: string[]): Promise<{
-    code: number;
-    stdout: string;
-    stderr: string;
-}> {
+async function run(cmd, args) {
+    var _a;
     const isWindows = platform() === "windows";
-
     if (typeof Deno === "object") {
-        const { Buffer } = await import("node:buffer");
+        const { Buffer } = await import('node:buffer');
         // @ts-ignore
-        const { decode } = await interop(import("npm:iconv-lite"), false);
+        const { decode } = await interop(import('npm:iconv-lite'), false);
         const _cmd = new Deno.Command(cmd, { args });
         const { code, stdout, stderr } = await _cmd.output();
         return {
@@ -78,61 +76,66 @@ export async function run(cmd: string, args: string[]): Promise<{
             stdout: isWindows ? decode(Buffer.from(stdout), "cp936") : text(stdout),
             stderr: isWindows ? decode(Buffer.from(stderr), "cp936") : text(stderr),
         };
-    } else if (typeof process === "object" && !!process.versions?.node) {
-        const { spawn } = await import("child_process");
-        const { decode } = await interop(import("iconv-lite"), false);
+    }
+    else if (typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node)) {
+        const { spawn } = await import('child_process');
+        const { decode } = await interop(import('iconv-lite'), false);
         const child = spawn(cmd, args);
-        const stdout: string[] = [];
-        const stderr: string[] = [];
-
+        const stdout = [];
+        const stderr = [];
         child.stdout.on("data", chunk => {
             if (isWindows) {
                 stdout.push(decode(chunk, "cp936"));
-            } else {
+            }
+            else {
                 stdout.push(String(chunk));
             }
         });
         child.stderr.on("data", chunk => {
             if (isWindows) {
                 stderr.push(decode(chunk, "cp936"));
-            } else {
+            }
+            else {
                 stderr.push(String(chunk));
             }
         });
-
-        const code = await new Promise<number>((resolve) => {
+        const code = await new Promise((resolve) => {
             child.on("exit", (code, signal) => {
                 if (code === null && signal) {
                     resolve(1);
-                } else {
-                    resolve(code ?? 0);
+                }
+                else {
+                    resolve(code !== null && code !== void 0 ? code : 0);
                 }
             });
         });
-
         return {
             code,
             stdout: stdout.join(""),
             stderr: stderr.join(""),
         };
-    } else {
+    }
+    else {
         throw new Error("Unsupported runtime");
     }
 }
-
 /**
  * Returns the path of the given command if it exists in the system,
  * otherwise returns `null`.
  */
-export async function which(cmd: string): Promise<string | null> {
+async function which(cmd) {
     if (platform() === "windows") {
         const { code, stdout } = await run("powershell", [
             "-Command",
             `Get-Command -Name ${cmd} | Select-Object -ExpandProperty Source`
         ]);
         return code ? null : stdout.trim();
-    } else {
+    }
+    else {
         const { code, stdout } = await run("which", [cmd]);
         return code ? null : stdout.trim();
     }
 }
+
+export { PopularPlatforms, platform, run, which };
+//# sourceMappingURL=terminal.js.map

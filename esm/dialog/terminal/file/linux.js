@@ -1,7 +1,7 @@
-import { lines } from '../../../string.js';
-import { run } from '../util.js';
-import { UTIMap } from '../constants.js';
 import { extname } from '../../../path.js';
+import { lines } from '../../../string.js';
+import { run } from '../../../terminal.js';
+import { UTIMap } from './constants.js';
 
 function htmlAcceptToFileFilter(accept) {
     const list = Object.values(UTIMap);

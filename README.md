@@ -82,6 +82,8 @@ categories:
   specific structures.
 - [math](https://jsr.io/@ayonli/jsext/doc/math/~) Functions for mathematical
   calculations.
+- [module](https://jsr.io/@ayonli/jsext/doc/module/~) Utility functions for
+  working with ES and CommonJS modules.
 - [number](https://jsr.io/@ayonli/jsext/doc/number/~) Functions for dealing with
   numbers.
 - [object](https://jsr.io/@ayonli/jsext/doc/object/~) Functions for dealing with
@@ -90,6 +92,8 @@ categories:
   Platform-independent utility functions for dealing with system paths and URLs.
 - [string](https://jsr.io/@ayonli/jsext/doc/string/~) Functions for dealing with
   strings.
+- [terminal](https://jsr.io/@ayonli/jsext/doc/terminal/~) Useful utility
+  functions for interacting with the terminal.
 
 ## Types
 

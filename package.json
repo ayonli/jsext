@@ -181,6 +181,13 @@
             "import": "./esm/mixins.js",
             "default": "./mixins.ts"
         },
+        "./module": {
+            "types": "./types/module.d.ts",
+            "bun": "./module.ts",
+            "require": "./cjs/module.js",
+            "import": "./esm/module.js",
+            "default": "./module.ts"
+        },
         "./number": {
             "types": "./types/number.d.ts",
             "bun": "./number.ts",
@@ -278,6 +285,13 @@
             "require": "./cjs/augment/string.js",
             "import": "./esm/augment/string.js",
             "default": "./augment/string.ts"
+        },
+        "./terminal": {
+            "types": "./types/terminal.d.ts",
+            "bun": "./terminal.ts",
+            "require": "./cjs/terminal.js",
+            "import": "./esm/terminal.js",
+            "default": "./terminal.ts"
         },
         "./throttle": {
             "types": "./types/throttle.d.ts",
@@ -400,6 +414,8 @@
         "confirm",
         "prompt",
         "async",
+        "interop",
+        "which",
         "BiMap",
         "CiMap"
     ],

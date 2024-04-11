@@ -1,10 +1,8 @@
 import { isWide, isFullWidth } from '../../external/code-point-utils/index.js';
-import bytes, { equals, text } from '../../bytes.js';
+import bytes, { equals } from '../../bytes.js';
 import { sum } from '../../math.js';
 import { chars, byteLength } from '../../string.js';
-import { ESC, CANCEL, UTIMap, EMOJI_RE } from './constants.js';
-import { basename, extname } from '../../path.js';
-import { interop } from '../../module.js';
+import { ESC, CANCEL, EMOJI_RE } from './constants.js';
 
 function charWidth(char) {
     if (EMOJI_RE.test(char)) {
@@ -92,148 +90,9 @@ async function hijackNodeStdin(stdin, task) {
         }
     }
 }
-const WellKnownPlatforms = [
-    "android",
-    "darwin",
-    "freebsd",
-    "linux",
-    "netbsd",
-    "solaris",
-    "windows",
-];
-function platform() {
-    if (typeof Deno === "object") {
-        if (WellKnownPlatforms.includes(Deno.build.os)) {
-            return Deno.build.os;
-        }
-        else {
-            return "others";
-        }
-    }
-    else if (process.platform === "win32") {
-        return "windows";
-    }
-    else if (process.platform === "sunos") {
-        return "solaris";
-    }
-    else if (WellKnownPlatforms.includes(process.platform)) {
-        return process.platform;
-    }
-    else {
-        return "others";
-    }
-}
 function escape(str) {
     return str.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
-async function run(cmd, args) {
-    var _a;
-    const isWindows = platform() === "windows";
-    if (typeof Deno === "object") {
-        const { Buffer } = await import('node:buffer');
-        // @ts-ignore
-        const { decode } = await interop(import('npm:iconv-lite'), false);
-        const _cmd = new Deno.Command(cmd, { args });
-        const { code, stdout, stderr } = await _cmd.output();
-        return {
-            code,
-            stdout: isWindows ? decode(Buffer.from(stdout), "cp936") : text(stdout),
-            stderr: isWindows ? decode(Buffer.from(stderr), "cp936") : text(stderr),
-        };
-    }
-    else if (typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node)) {
-        const { spawn } = await import('child_process');
-        const { decode } = await interop(import('iconv-lite'), false);
-        const child = spawn(cmd, args);
-        const stdout = [];
-        const stderr = [];
-        child.stdout.on("data", chunk => {
-            if (isWindows) {
-                stdout.push(decode(chunk, "cp936"));
-            }
-            else {
-                stdout.push(String(chunk));
-            }
-        });
-        child.stderr.on("data", chunk => {
-            if (isWindows) {
-                stderr.push(decode(chunk, "cp936"));
-            }
-            else {
-                stderr.push(String(chunk));
-            }
-        });
-        const code = await new Promise((resolve) => {
-            child.on("exit", (code, signal) => {
-                if (code === null && signal) {
-                    resolve(1);
-                }
-                else {
-                    resolve(code !== null && code !== void 0 ? code : 0);
-                }
-            });
-        });
-        return {
-            code,
-            stdout: stdout.join(""),
-            stderr: stderr.join(""),
-        };
-    }
-    else {
-        throw new Error("Unsupported runtime");
-    }
-}
-async function which(cmd) {
-    if (platform() === "windows") {
-        const { code, stdout } = await run("powershell", [
-            "-Command",
-            `Get-Command -Name ${cmd} | Select-Object -ExpandProperty Source`
-        ]);
-        return code ? null : stdout.trim();
-    }
-    else {
-        const { code, stdout } = await run("which", [cmd]);
-        return code ? null : stdout.trim();
-    }
-}
-function createFile(content, path, options) {
-    var _a, _b;
-    const { lastModified, relativePath } = options;
-    const tagsList = Object.values(UTIMap);
-    const filename = basename(path);
-    const ext = extname(filename).toLowerCase();
-    const type = (_b = (_a = tagsList.find(tags => tags.includes(ext))) === null || _a === void 0 ? void 0 : _a.find(tag => tag.includes("/"))) !== null && _b !== void 0 ? _b : "";
-    let file;
-    if (lastModified) {
-        file = new File([content], filename, { type, lastModified });
-    }
-    else {
-        file = new File([content], path, { type });
-    }
-    Object.defineProperty(file, "webkitRelativePath", {
-        configurable: true,
-        enumerable: true,
-        writable: false,
-        value: relativePath !== null && relativePath !== void 0 ? relativePath : "",
-    });
-    return file;
-}
-async function readFile(path, relativePath = "") {
-    let content;
-    let lastModified;
-    if (typeof Deno === "object") {
-        const stats = await Deno.stat(path);
-        content = await Deno.readFile(path);
-        lastModified = stats.mtime ? stats.mtime.valueOf() : 0;
-    }
-    else {
-        const { readFile, stat } = await import('fs/promises');
-        const stats = await stat(path);
-        content = await readFile(path);
-        lastModified = stats.mtimeMs;
-    }
-    return createFile(content, path, { relativePath, lastModified });
-}
 
-export { WellKnownPlatforms, createFile, escape, hijackNodeStdin, isCancelEvent, platform, read, readFile, run, toLeft, toRight, which, write, writeSync };
+export { escape, hijackNodeStdin, isCancelEvent, read, toLeft, toRight, write, writeSync };
 //# sourceMappingURL=util.js.map

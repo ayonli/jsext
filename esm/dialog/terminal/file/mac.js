@@ -1,6 +1,6 @@
 import { lines } from '../../../string.js';
-import { run } from '../util.js';
-import { UTIMap } from '../constants.js';
+import { run } from '../../../terminal.js';
+import { UTIMap } from './constants.js';
 
 function htmlAcceptToAppleType(accept) {
     const entries = Object.entries(UTIMap);

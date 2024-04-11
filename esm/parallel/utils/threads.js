@@ -1,5 +1,5 @@
 import { Channel } from '../../chan.js';
-import { isNode, isBun, isDeno, isNodePrior14 } from '../constants.js';
+import { isNode, isBun, isDeno, isNodeBelow14 } from '../constants.js';
 import { wrapChannel, isChannelMessage, handleChannelMessage } from './channel.js';
 import { resolveRemoteModuleUrl } from './module.js';
 import { isPlainObject } from '../../object.js';
@@ -131,7 +131,7 @@ async function createWorker(options) {
     if (isNode || isBun) {
         if (adapter === "child_process") {
             const { fork } = await import('child_process');
-            const serialization = isNodePrior14 ? "json" : "advanced";
+            const serialization = isNodeBelow14 ? "json" : "advanced";
             const worker = fork(entry, ["--worker-thread"], {
                 stdio: "inherit",
                 serialization,

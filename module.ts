@@ -1,5 +1,5 @@
 /**
- * Utility functions for working with modules.
+ * Utility functions for working with ES and CommonJS modules.
  * @param module 
  */
 
