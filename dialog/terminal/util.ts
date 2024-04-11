@@ -1,10 +1,9 @@
 import { isFullWidth, isWide } from "../../external/code-point-utils/index.ts";
-import bytes, { ByteArray, concat, equals, text } from "../../bytes.ts";
+import bytes, { ByteArray, equals, text } from "../../bytes.ts";
 import { sum } from "../../math.ts";
 import { byteLength, chars } from "../../string.ts";
 import { CANCEL, EMOJI_RE, ESC, UTIMap } from "./constants.ts";
 import { basename, extname } from "../../path.ts";
-import readAll from "../../readAll.ts";
 
 export type KeypressEventInfo = {
     sequence: string;
@@ -264,9 +263,8 @@ export async function readFile(path: string, relativePath = "") {
     let lastModified: number;
 
     if (typeof Deno === "object") {
-        const fsFile = await Deno.open(path);
-        const stats = await fsFile.stat();
-        content = concat(...(await readAll(fsFile.readable)));
+        const stats = await Deno.stat(path);
+        content = await Deno.readFile(path);
         lastModified = stats.mtime ? stats.mtime.valueOf() : 0;
     } else {
         const { readFile, stat } = await import("fs/promises");

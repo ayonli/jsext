@@ -1,10 +1,9 @@
 import { isWide, isFullWidth } from '../../external/code-point-utils/index.js';
-import bytes, { equals, text, concat } from '../../bytes.js';
+import bytes, { equals, text } from '../../bytes.js';
 import { sum } from '../../math.js';
 import { chars, byteLength } from '../../string.js';
 import { ESC, CANCEL, UTIMap, EMOJI_RE } from './constants.js';
 import { basename, extname } from '../../path.js';
-import readAll from '../../readAll.js';
 
 function charWidth(char) {
     if (EMOJI_RE.test(char)) {
@@ -131,7 +130,12 @@ async function run(cmd, args) {
     const isWindows = platform() === "windows";
     if (typeof Deno === "object") {
         const { Buffer } = await import('node:buffer');
-        const { decode } = await import('npm:iconv-lite');
+        let module = await import('npm:iconv-lite');
+        if (module.default) {
+            // @ts-ignore fix CommonJS module compatibility
+            module = module.default;
+        }
+        const { decode } = module;
         const _cmd = new Deno.Command(cmd, { args });
         const { code, stdout, stderr } = await _cmd.output();
         return {
@@ -142,7 +146,12 @@ async function run(cmd, args) {
     }
     else if (typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node)) {
         const { spawn } = await import('child_process');
-        const { decode } = await import('iconv-lite');
+        let module = await import('iconv-lite');
+        if (module.default) {
+            // @ts-ignore fix CommonJS module compatibility
+            module = module.default;
+        }
+        const { decode } = module;
         const child = spawn(cmd, args);
         const stdout = [];
         const stderr = [];
@@ -221,9 +230,8 @@ async function readFile(path, relativePath = "") {
     let content;
     let lastModified;
     if (typeof Deno === "object") {
-        const fsFile = await Deno.open(path);
-        const stats = await fsFile.stat();
-        content = concat(...(await readAll(fsFile.readable)));
+        const stats = await Deno.stat(path);
+        content = await Deno.readFile(path);
         lastModified = stats.mtime ? stats.mtime.valueOf() : 0;
     }
     else {
