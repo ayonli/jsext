@@ -1,4 +1,9 @@
 /**
+ * Utility functions for working with modules.
+ * @param module 
+ */
+
+/**
  * Performs interop on the given module. This functions is used to fix CommonJS
  * module imports in Node.js ES module files.
  * 
