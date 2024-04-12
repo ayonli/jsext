@@ -1,5 +1,6 @@
 import { text } from './bytes.js';
 import { interop } from './module.js';
+import { PowerShellCommands } from './terminal/constants.js';
 
 /**
  * Useful utility functions for interacting with the terminal.
@@ -60,6 +61,18 @@ function platform() {
     }
 }
 /**
+ * Quotes a string to be used as a single argument to a shell command.
+ */
+function quote(arg) {
+    if ((/["\s]/).test(arg) && !(/'/).test(arg)) {
+        return "'" + arg.replace(/(['\\])/g, '\\$1') + "'";
+    }
+    if ((/["'\s]/).test(arg)) {
+        return '"' + arg.replace(/(["\\$`!])/g, '\\$1') + '"';
+    }
+    return String(arg).replace(/([A-Za-z]:)?([#!"$&'()*,:;<=>?@[\\\]^`{|}])/g, '$1\\$2');
+}
+/**
  * Executes a command in the terminal and returns the exit code and outputs.
  */
 async function run(cmd, args) {
@@ -69,7 +82,9 @@ async function run(cmd, args) {
         const { Buffer } = await import('node:buffer');
         // @ts-ignore
         const { decode } = await interop(import('npm:iconv-lite'), false);
-        const _cmd = new Deno.Command(cmd, { args });
+        const _cmd = isWindows && PowerShellCommands.includes(cmd)
+            ? new Deno.Command("powershell", { args: ["-c", cmd, ...args.map(quote)] })
+            : new Deno.Command(cmd, { args });
         const { code, stdout, stderr } = await _cmd.output();
         return {
             code,
@@ -80,7 +95,9 @@ async function run(cmd, args) {
     else if (typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node)) {
         const { spawn } = await import('child_process');
         const { decode } = await interop(import('iconv-lite'), false);
-        const child = spawn(cmd, args);
+        const child = isWindows && PowerShellCommands.includes(cmd)
+            ? spawn("powershell", ["-c", cmd, ...args.map(quote)])
+            : spawn(cmd, args);
         const stdout = [];
         const stderr = [];
         child.stdout.on("data", chunk => {
@@ -99,15 +116,15 @@ async function run(cmd, args) {
                 stderr.push(String(chunk));
             }
         });
-        const code = await new Promise((resolve) => {
-            child.on("exit", (code, signal) => {
+        const code = await new Promise((resolve, reject) => {
+            child.once("exit", (code, signal) => {
                 if (code === null && signal) {
                     resolve(1);
                 }
                 else {
                     resolve(code !== null && code !== void 0 ? code : 0);
                 }
-            });
+            }).once("error", reject);
         });
         return {
             code,
@@ -137,5 +154,5 @@ async function which(cmd) {
     }
 }
 
-export { PopularPlatforms, platform, run, which };
+export { PopularPlatforms, platform, quote, run, which };
 //# sourceMappingURL=terminal.js.map

@@ -7,6 +7,7 @@
 
 import { text } from "./bytes.ts";
 import { interop } from "./module.ts";
+import { PowerShellCommands } from "./terminal/constants.ts";
 
 export type PopularPlatforms = "android"
     | "darwin"
@@ -23,7 +24,7 @@ export const PopularPlatforms: PopularPlatforms[] = [
 
 /**
  * Returns a string identifying the operating system platform in which the
- * program is running. 
+ * program is running.
  */
 export function platform(): PopularPlatforms | "others" {
     if (typeof Deno === "object") {
@@ -86,27 +87,22 @@ export async function run(cmd: string, args: string[]): Promise<{
         const { Buffer } = await import("node:buffer");
         // @ts-ignore
         const { decode } = await interop(import("npm:iconv-lite"), false);
-        const _cmd = new Deno.Command(cmd, { args });
+        const _cmd = isWindows && PowerShellCommands.includes(cmd)
+            ? new Deno.Command("powershell", { args: ["-c", cmd, ...args.map(quote)] })
+            : new Deno.Command(cmd, { args });
 
-        try {
-            const { code, stdout, stderr } = await _cmd.output();
-            return {
-                code,
-                stdout: isWindows ? decode(Buffer.from(stdout), "cp936") : text(stdout),
-                stderr: isWindows ? decode(Buffer.from(stderr), "cp936") : text(stderr),
-            };
-        } catch (err) {
-            if (err instanceof Deno.errors.NotFound) {
-                // The command may be a PowerShell builtin command.
-                return run("powershell", ["-c", cmd, ...args.map(quote)]);
-            } else {
-                throw err;
-            }
-        }
+        const { code, stdout, stderr } = await _cmd.output();
+        return {
+            code,
+            stdout: isWindows ? decode(Buffer.from(stdout), "cp936") : text(stdout),
+            stderr: isWindows ? decode(Buffer.from(stderr), "cp936") : text(stderr),
+        };
     } else if (typeof process === "object" && !!process.versions?.node) {
         const { spawn } = await import("child_process");
         const { decode } = await interop(import("iconv-lite"), false);
-        const child = spawn(cmd, args);
+        const child = isWindows && PowerShellCommands.includes(cmd)
+            ? spawn("powershell", ["-c", cmd, ...args.map(quote)])
+            : spawn(cmd, args);
         const stdout: string[] = [];
         const stderr: string[] = [];
 
@@ -125,36 +121,21 @@ export async function run(cmd: string, args: string[]): Promise<{
             }
         });
 
-        return await new Promise<{
-            code: number;
-            stdout: string;
-            stderr: string;
-        }>((resolve, reject) => {
+        const code = await new Promise<number>((resolve, reject) => {
             child.once("exit", (code, signal) => {
                 if (code === null && signal) {
-                    resolve({
-                        code: 1,
-                        stdout: stdout.join(""),
-                        stderr: stderr.join(""),
-                    });
+                    resolve(1);
                 } else {
-                    resolve({
-                        code: code ?? 0,
-                        stdout: stdout.join(""),
-                        stderr: stderr.join(""),
-                    });
+                    resolve(code ?? 0);
                 }
-            }).once("error", err => {
-                reject(err);
-            });
-        }).catch(err => {
-            if (err instanceof Error && (err as any)["code"] === "ENOENT") {
-                // The command may be a PowerShell builtin command.
-                return run("powershell", ["-c", cmd, ...args.map(quote)]);
-            } else {
-                throw err;
-            }
+            }).once("error", reject);
         });
+
+        return {
+            code,
+            stdout: stdout.join(""),
+            stderr: stderr.join(""),
+        };
     } else {
         throw new Error("Unsupported runtime");
     }
