@@ -36,6 +36,9 @@
         "./wrap": "./wrap.ts",
         "./worker.ts": "./worker.ts"
     },
+    "imports": {
+        "iconv-lite": "npm:iconv-lite@^0.6.3"
+    },
     "compilerOptions": {
         "experimentalDecorators": true
     },
