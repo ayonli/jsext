@@ -2,7 +2,7 @@ import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { equals } from "./path.ts";
 import { platform, parseArgs, run, which, quote } from "./cli.ts";
 
-describe("terminal", () => {
+describe("cli", () => {
     it("platform", () => {
         const platforms = [
             "android",
