@@ -1,6 +1,7 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { equals } from "./path.ts";
 import { platform, parseArgs, run, which, quote } from "./cli.ts";
+import stripAnsi from "strip-ansi";
 
 describe("cli", () => {
     it("platform", () => {
@@ -160,6 +161,56 @@ describe("cli", () => {
                 strictEqual(ls, "/bin/ls");
             } catch {
                 strictEqual(ls, "/usr/bin/ls");
+            }
+        }
+    });
+
+    it("isTsRuntime", async function () {
+        this.timeout(10_000);
+
+        if (await which("node")) {
+            {
+                const { stdout } = await run("node", ["./examples/cli/is-ts-runtime.js"]);
+                strictEqual(stripAnsi(stdout.trim()), "false");
+            }
+
+            {
+                const { stdout } = await run("npx", ["tsx", "./examples/cli/is-ts-runtime.js"]);
+                strictEqual(stripAnsi(stdout.trim()), "true");
+            }
+
+            {
+                const { stdout } = await run("npx", ["tsx", "./examples/cli/is-ts-runtime.ts"]);
+                strictEqual(stripAnsi(stdout.trim()), "true");
+            }
+
+            {
+                const { stdout } = await run("npx", ["ts-node", "./examples/cli/is-ts-runtime.js"]);
+                strictEqual(stripAnsi(stdout.trim()), "true");
+            }
+        }
+
+        if (await which("deno")) {
+            {
+                const { stdout } = await run("deno", ["run", "./examples/cli/is-ts-runtime.js"]);
+                strictEqual(stripAnsi(stdout.trim()), "true");
+            }
+
+            {
+                const { stdout } = await run("deno", ["run", "./examples/cli/is-ts-runtime.ts"]);
+                strictEqual(stripAnsi(stdout.trim()), "true");
+            }
+        }
+
+        if (await which("bun")) {
+            {
+                const { stdout } = await run("deno", ["run", "./examples/cli/is-ts-runtime.js"]);
+                strictEqual(stripAnsi(stdout.trim()), "true");
+            }
+
+            {
+                const { stdout } = await run("deno", ["run", "./examples/cli/is-ts-runtime.ts"]);
+                strictEqual(stripAnsi(stdout.trim()), "true");
             }
         }
     });
