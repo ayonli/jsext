@@ -1,6 +1,7 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { equals } from "./path.ts";
 import { platform, parseArgs, run, which, quote } from "./cli.ts";
+import { isNode, isNodeBelow16 } from "./parallel/constants.ts";
 import stripAnsi from "strip-ansi";
 
 describe("cli", () => {
@@ -168,18 +169,18 @@ describe("cli", () => {
     it("isTsRuntime", async function () {
         this.timeout(10_000);
 
-        if (await which("node")) {
+        if (await which("node") && isNode) {
             {
                 const { stdout } = await run("node", ["./examples/cli/is-ts-runtime.js"]);
                 strictEqual(stripAnsi(stdout.trim()), "false");
             }
 
-            {
+            if (!isNodeBelow16) {
                 const { stdout } = await run("npx", ["tsx", "./examples/cli/is-ts-runtime.js"]);
                 strictEqual(stripAnsi(stdout.trim()), "true");
             }
 
-            {
+            if (!isNodeBelow16) {
                 const { stdout } = await run("npx", ["tsx", "./examples/cli/is-ts-runtime.ts"]);
                 strictEqual(stripAnsi(stdout.trim()), "true");
             }
@@ -204,12 +205,12 @@ describe("cli", () => {
 
         if (await which("bun")) {
             {
-                const { stdout } = await run("deno", ["run", "./examples/cli/is-ts-runtime.js"]);
+                const { stdout } = await run("bun", ["run", "./examples/cli/is-ts-runtime.js"]);
                 strictEqual(stripAnsi(stdout.trim()), "true");
             }
 
             {
-                const { stdout } = await run("deno", ["run", "./examples/cli/is-ts-runtime.ts"]);
+                const { stdout } = await run("bun", ["run", "./examples/cli/is-ts-runtime.ts"]);
                 strictEqual(stripAnsi(stdout.trim()), "true");
             }
         }
