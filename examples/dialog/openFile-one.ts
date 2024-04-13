@@ -1,6 +1,6 @@
 import { openFile } from "../../dialog.ts";
 
-const file = await openFile({ title: "Open File", type: ".png" });
+const file = await openFile({ title: "Open File", type: "*.png,*.jpg,image/*,*/*" });
 
 if (file) {
     console.log({

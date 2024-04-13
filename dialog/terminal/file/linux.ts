@@ -22,7 +22,8 @@ function htmlAcceptToFileFilters(accept: string): string[] {
 
     return groups.map(group => {
         if (Array.isArray(group)) {
-            return group.map(type => getExtensions(type).map(t => `*${t}`).join(" "))
+            return group.map(type => getExtensions(type).map(t => `*${t}`))
+                .flat()
                 .join(" ");
         } else if (group === "*/*") {
             return "All | *";

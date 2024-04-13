@@ -4,9 +4,48 @@ import { run } from "../../../cli.ts";
 import { getExtensions } from "../../../filetype.ts";
 
 function htmlAcceptToFileFilter(accept: string): string {
-    return accept.split(/\s*,\s*/).map(type => {
-        return getExtensions(type).map(t => `*${t}|*${t}`).join("|");
-    }).join("|");
+    const groups: (string | string[])[] = [];
+
+    for (const type of accept.split(/\s*,\s*/)) {
+        if (type.endsWith("/*")) {
+            groups.push(type);
+        } else {
+            const group = groups[groups.length - 1];
+
+            if (!group || typeof group === "string") {
+                groups.push([type]);
+            } else {
+                group.push(type);
+            }
+        }
+    }
+
+    return groups.map(group => {
+        if (Array.isArray(group)) {
+            const patterns = group.map(type => getExtensions(type).map(t => `*${t}`))
+                .flat()
+                .join(";");
+            return patterns + "|" + patterns;
+        } else if (group === "*/*") {
+            return "All|*";
+        } else {
+            const patterns = getExtensions(group).map(t => `*${t}`).join(";");
+
+            if (!patterns) {
+                return undefined;
+            } else if (group === "video/*") {
+                return "Videos|" + patterns;
+            } else if (group === "audio/*") {
+                return "Audios|" + patterns;
+            } else if (group === "image/*") {
+                return "Images|" + patterns;
+            } else if (group === "text/*") {
+                return "Texts|" + patterns;
+            } else {
+                return patterns;
+            }
+        }
+    }).filter(Boolean).join("|");
 }
 
 function createPowerShellScript(mode: "file" | "files" | "folder", title = "", options: {
