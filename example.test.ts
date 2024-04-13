@@ -1,24 +1,21 @@
 import { strictEqual } from "node:assert";
 import jsext from "./index.ts";
-
-declare var Bun: any;
+import { isNode } from "./parallel/constants.ts";
 
 const isTsx = globalThis["process"]?.env["npm_lifecycle_script"]?.match(/\btsx\b/) ? true : false;
 
 describe("jsext.example", () => {
-    if (typeof Bun === "undefined") {
-        it("should output as expected", jsext.example(console => {
-            console.log("Hello, World!");
-            // output:
-            // Hello, World!
-        }));
+    if (!isNode || isTsx) {
+        return;
     }
 
-    it("regular function", async function (this) {
-        if (typeof Bun === "object" || isTsx) {
-            this.skip();
-        }
+    it("should output as expected", jsext.example(console => {
+        console.log("Hello, World!");
+        // output:
+        // Hello, World!
+    }));
 
+    it("regular function", async function (this) {
         const [err1] = await jsext.try(jsext.example(console => {
             console.log(1);
             // output:
@@ -90,10 +87,6 @@ describe("jsext.example", () => {
     });
 
     it("async function", async function () {
-        if (typeof Bun === "object" || isTsx) {
-            this.skip();
-        }
-
         const [err1] = await jsext.try(jsext.example(async console => {
             await Promise.resolve(null);
             console.log(1);
