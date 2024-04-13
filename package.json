@@ -69,6 +69,13 @@
             "import": "./esm/class.js",
             "default": "./class.ts"
         },
+        "./cli": {
+            "types": "./types/cli.d.ts",
+            "bun": "./cli.ts",
+            "require": "./cjs/cli.js",
+            "import": "./esm/cli.js",
+            "default": "./cli.ts"
+        },
         "./collections": {
             "types": "./types/collections.d.ts",
             "bun": "./collections.ts",
@@ -285,13 +292,6 @@
             "require": "./cjs/augment/string.js",
             "import": "./esm/augment/string.js",
             "default": "./augment/string.ts"
-        },
-        "./terminal": {
-            "types": "./types/terminal.d.ts",
-            "bun": "./terminal.ts",
-            "require": "./cjs/terminal.js",
-            "import": "./esm/terminal.js",
-            "default": "./terminal.ts"
         },
         "./throttle": {
             "types": "./types/throttle.d.ts",

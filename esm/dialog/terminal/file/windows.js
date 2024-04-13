@@ -1,6 +1,6 @@
 import { extname } from '../../../path.js';
 import { lines } from '../../../string.js';
-import { run } from '../../../terminal.js';
+import { run } from '../../../cli.js';
 import { UTIMap } from './constants.js';
 
 function htmlAcceptToFileFilter(accept) {

@@ -1,6 +1,6 @@
-import { ok, strictEqual } from "node:assert";
+import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { equals } from "./path.ts";
-import { platform, run, which } from "./cli.ts";
+import { platform, parseArgs, run, which, quote } from "./cli.ts";
 
 describe("terminal", () => {
     it("platform", () => {
@@ -41,6 +41,97 @@ describe("terminal", () => {
             }
         } else {
             strictEqual(others, platform());
+        }
+    });
+
+    it("parseArgs", () => {
+        deepStrictEqual(parseArgs([
+            "--name", "Alice",
+            "--age", "20",
+            "--married", "true",
+            "Bob", "30",
+            "--friends", "Mia",
+            "--friends", "Ava",
+            "--has-children",
+            "--has-parents",
+        ]), {
+            name: "Alice",
+            age: 20,
+            married: true,
+            _: ["Bob", 30],
+            friends: ["Mia", "Ava"],
+            "has-children": true,
+            "has-parents": true
+        });
+
+        deepStrictEqual(parseArgs([
+            "--name=Alice",
+            "--age=20",
+            "--married=true",
+            "Bob", "30",
+            "--friends=Mia",
+            "--friends=Ava",
+            "--has-children",
+            "--has-parents",
+        ]), {
+            name: "Alice",
+            age: 20,
+            married: true,
+            _: ["Bob", 30],
+            friends: ["Mia", "Ava"],
+            "has-children": true,
+            "has-parents": true
+        });
+
+        deepStrictEqual(parseArgs([
+            "Bob",
+            "--age", "30",
+            "--married",
+            "--wife=Alice",
+            "--children", "Mia",
+            "--children", "Ava",
+            "-p"
+        ], {
+            shorthands: { "p": "has-parents" }
+        }), {
+            _: "Bob",
+            age: 30,
+            married: true,
+            wife: "Alice",
+            children: ["Mia", "Ava"],
+            "has-parents": true
+        });
+
+        deepStrictEqual(parseArgs([
+            "Bob", "30",
+            "-m",
+            "--wife", "Alice",
+        ], {
+            shorthands: { "m": "married" }
+        }), {
+            _: ["Bob", 30],
+            married: true,
+            wife: "Alice",
+        });
+
+        deepStrictEqual(parseArgs(["--gui=true"]), { gui: true });
+        deepStrictEqual(parseArgs(["--save"]), { save: true });
+        deepStrictEqual(parseArgs(["-s"]), { s: true });
+    });
+
+    it("quote", () => {
+        strictEqual(quote("foo"), "foo");
+        strictEqual(quote("foo's"), `"foo's"`);
+        strictEqual(quote("foo$bar"), "foo\\$bar");
+        strictEqual(quote("foo\\bar"), "foo\\\\bar");
+        strictEqual(quote("foo bar"), `"foo bar"`);
+
+        if (platform() === "windows") {
+            strictEqual(quote("Hello, World!"), `"Hello, World!"`);
+            strictEqual(quote("Hello, World`"), `"Hello, World\`"`);
+        } else {
+            strictEqual(quote("Hello, World!"), `"Hello, World\\!"`);
+            strictEqual(quote("Hello, World`"), `"Hello, World\\\`"`);
         }
     });
 

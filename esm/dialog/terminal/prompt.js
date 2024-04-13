@@ -1,6 +1,6 @@
 import { questionInDeno, questionInNode } from './index.js';
 import { escape } from './util.js';
-import { platform, run } from '../../terminal.js';
+import { platform, run } from '../../cli.js';
 
 function createAppleScript(message, defaultValue = "", password = false) {
     return "tell application (path to frontmost application as text)\n" +

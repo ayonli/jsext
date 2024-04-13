@@ -1,7 +1,8 @@
 import { glob } from "glob";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
 import { builtinModules } from "node:module";
 import typescript from "@rollup/plugin-typescript";
 import resolve from "@rollup/plugin-node-resolve";
@@ -36,6 +37,11 @@ function writePackageJson() {
             if (!["cjs", "esm", "es"].includes(options.format)) return;
 
             const pkg = { type: options.format === "cjs" ? "commonjs" : "module" };
+
+            if (!existsSync(options.dir)) {
+                await mkdir(options.dir, { recursive: true });
+            }
+
             await writeFile(join(options.dir, "package.json"), JSON.stringify(pkg));
         },
     };

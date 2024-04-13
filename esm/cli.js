@@ -1,6 +1,6 @@
 import { text } from './bytes.js';
 import { interop } from './module.js';
-import { PowerShellCommands } from './terminal/constants.js';
+import { PowerShellCommands } from './cli/constants.js';
 
 /**
  * Useful utility functions for interacting with the terminal.
@@ -60,15 +60,125 @@ function platform() {
         return "others";
     }
 }
+function parseValue(arg) {
+    let value = arg.trim();
+    if (value === "true") {
+        value = true;
+    }
+    else if (value === "false") {
+        value = false;
+    }
+    else if (/^\d+(\.\d+)?$/.test(value)) {
+        value = Number(value);
+    }
+    return value;
+}
+function parseKeyValue(arg) {
+    let index = arg.indexOf("=");
+    if (index === -1) {
+        return [arg, undefined];
+    }
+    else {
+        const key = arg.slice(0, index);
+        const value = arg.slice(index + 1);
+        return [key, parseValue(value)];
+    }
+}
+/**
+ * Parses the given CLI arguments into an object.
+ *
+ * @example
+ * ```ts
+ * import { parseArgs } from "@ayonli/jsext/cli";
+ *
+ * const args = parseArgs([
+ *     "Bob",
+ *     "--age", "30",
+ *     "--married",
+ *     "--wife=Alice",
+ *     "--children", "Mia",
+ *     "--children", "Ava",
+ *     "-p"
+ * ], {
+ *     shorthands: { "p": "has-parents" }
+ * });
+ *
+ * console.log(args);
+ * // {
+ * //     _: "Bob",
+ * //     age: 30,
+ * //     married: true,
+ * //     wife: "Alice",
+ * //     children: ["Mia", "Ava"],
+ * //     "has-parents": true
+ * // }
+ * ```
+ */
+function parseArgs(args, options = {}) {
+    var _a;
+    const { shorthands = {} } = options;
+    const data = {};
+    let key = null;
+    const set = (key, value) => {
+        if (Array.isArray(data[key])) {
+            data[key].push(value);
+        }
+        else if (key in data) {
+            data[key] = [data[key], value];
+        }
+        else {
+            data[key] = value;
+        }
+    };
+    for (const arg of args) {
+        if (arg.startsWith("--")) {
+            if (key) {
+                set(key, true);
+                key = null;
+            }
+            const [_key, value] = parseKeyValue(arg.slice(2));
+            if (value !== undefined) {
+                set(_key, value);
+            }
+            else {
+                key = arg.slice(2);
+            }
+        }
+        else if (arg.startsWith("-")) {
+            if (key) {
+                set(key, true);
+                key = null;
+            }
+            const char = arg.slice(1);
+            key = (_a = shorthands[char]) !== null && _a !== void 0 ? _a : char;
+        }
+        else {
+            const value = parseValue(arg);
+            if (key) {
+                set(key, value);
+                key = null;
+            }
+            else {
+                set("_", value);
+            }
+        }
+    }
+    if (key) {
+        set(key, true);
+    }
+    return data;
+}
 /**
  * Quotes a string to be used as a single argument to a shell command.
  */
 function quote(arg) {
-    if ((/["\s]/).test(arg) && !(/'/).test(arg)) {
-        return "'" + arg.replace(/(['\\])/g, '\\$1') + "'";
-    }
     if ((/["'\s]/).test(arg)) {
-        return '"' + arg.replace(/(["\\$`!])/g, '\\$1') + '"';
+        if (platform() === "windows") {
+            return `"` + arg.replace(/(["\\$])/g, '\\$1') + `"`;
+        }
+        else {
+            return `"` + arg.replace(/(["\\$`!])/g, '\\$1') + `"`;
+        }
     }
     return String(arg).replace(/([A-Za-z]:)?([#!"$&'()*,:;<=>?@[\\\]^`{|}])/g, '$1\\$2');
 }
@@ -154,5 +264,5 @@ async function which(cmd) {
     }
 }
 
-export { PopularPlatforms, platform, quote, run, which };
-//# sourceMappingURL=terminal.js.map
+export { PopularPlatforms, parseArgs, platform, quote, run, which };
+//# sourceMappingURL=cli.js.map

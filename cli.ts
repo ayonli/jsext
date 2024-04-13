@@ -58,16 +58,133 @@ export function platform(): PopularPlatforms | "others" {
     }
 }
 
+function parseValue(arg: string): string | number | boolean {
+    let value: string | number | boolean = arg.trim();
+
+    if (value === "true") {
+        value = true;
+    } else if (value === "false") {
+        value = false;
+    } else if (/^\d+(\.\d+)?$/.test(value)) {
+        value = Number(value);
+    }
+
+    return value;
+}
+
+function parseKeyValue(arg: string): [key: string, value: string | number | boolean | undefined] {
+    let index = arg.indexOf("=");
+
+    if (index === -1) {
+        return [arg, undefined];
+    } else {
+        const key = arg.slice(0, index);
+        const value = arg.slice(index + 1);
+        return [key, parseValue(value)];
+    }
+}
+
+/**
+ * Parses the given CLI arguments into an object.
+ * 
+ * @example
+ * ```ts
+ * import { parseArgs } from "@ayonli/jsext/cli";
+ * 
+ * const args = parseArgs([
+ *     "Bob",
+ *     "--age", "30",
+ *     "--married",
+ *     "--wife=Alice",
+ *     "--children", "Mia",
+ *     "--children", "Ava",
+ *     "-p"
+ * ], {
+ *     shorthands: { "p": "has-parents" }
+ * });
+ * 
+ * console.log(args);
+ * // {
+ * //     _: "Bob",
+ * //     age: 30,
+ * //     married: true,
+ * //     wife: "Alice",
+ * //     children: ["Mia", "Ava"],
+ * //     "has-parents": true
+ * // }
+ * ```
+ */
+export function parseArgs(args: string[], options: {
+    shorthands?: { [char: string]: string; };
+} = {}): {
+    [key: string]: string | number | boolean | (string | number | boolean)[];
+    _?: string | number | boolean | (string | number | boolean)[];
+} {
+    const { shorthands = {} } = options;
+    const data: { [key: string]: string | number | boolean | (string | number | boolean)[]; } = {};
+    let key: string | null = null;
+
+    const set = (key: string, value: string | number | boolean) => {
+        if (Array.isArray(data[key])) {
+            (data[key] as (string | number | boolean)[]).push(value);
+        } else if (key in data) {
+            data[key] = [data[key] as string | number | boolean, value];
+        } else {
+            data[key] = value;
+        }
+    };
+
+    for (const arg of args) {
+        if (arg.startsWith("--")) {
+            if (key) {
+                set(key, true);
+                key = null;
+            }
+
+            const [_key, value] = parseKeyValue(arg.slice(2));
+
+            if (value !== undefined) {
+                set(_key, value);
+            } else {
+                key = arg.slice(2);
+            }
+        } else if (arg.startsWith("-")) {
+            if (key) {
+                set(key, true);
+                key = null;
+            }
+
+            const char = arg.slice(1);
+            key = shorthands[char] ?? char;
+        } else {
+            const value = parseValue(arg);
+
+            if (key) {
+                set(key, value);
+                key = null;
+            } else {
+                set("_", value);
+            }
+        }
+    }
+
+    if (key) {
+        set(key, true);
+    }
+
+    return data;
+}
+
 /**
  * Quotes a string to be used as a single argument to a shell command.
  */
 export function quote(arg: string) {
-    if ((/["\s]/).test(arg) && !(/'/).test(arg)) {
-        return "'" + arg.replace(/(['\\])/g, '\\$1') + "'";
-    }
-
     if ((/["'\s]/).test(arg)) {
-        return '"' + arg.replace(/(["\\$`!])/g, '\\$1') + '"';
+        if (platform() === "windows") {
+            return `"` + arg.replace(/(["\\$])/g, '\\$1') + `"`;
+        } else {
+            return `"` + arg.replace(/(["\\$`!])/g, '\\$1') + `"`;
+        }
     }
 
     return String(arg).replace(/([A-Za-z]:)?([#!"$&'()*,:;<=>?@[\\\]^`{|}])/g, '$1\\$2');

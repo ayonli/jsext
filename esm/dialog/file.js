@@ -1,5 +1,5 @@
 import { basename, join } from '../path.js';
-import { platform } from '../terminal.js';
+import { platform } from '../cli.js';
 import read from '../read.js';
 import readAll from '../readAll.js';
 import { isBrowser } from '../util.js';
