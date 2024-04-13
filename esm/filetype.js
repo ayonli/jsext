@@ -52,6 +52,9 @@ function getExtensions(type) {
     if (type.startsWith("*.")) {
         type = type.slice(1);
     }
+    if (type[0] === ".") {
+        return [type];
+    }
     if (type[0] !== "." && !type.includes("/")) {
         const values = UTIMap[type] || null;
         return values ? values.filter(v => v[0] === ".") : [];

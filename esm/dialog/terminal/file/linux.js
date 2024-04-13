@@ -3,10 +3,53 @@ import { lines } from '../../../string.js';
 import { run } from '../../../cli.js';
 import { getExtensions } from '../../../filetype.js';
 
-function htmlAcceptToFileFilter(accept) {
-    return accept.split(/\s*,\s*/).map(type => {
-        return getExtensions(type).map(t => `*${t}`).join(" ");
-    }).join(" ");
+function htmlAcceptToFileFilters(accept) {
+    const groups = [];
+    for (const type of accept.split(/\s*,\s*/)) {
+        if (type.endsWith("/*")) {
+            groups.push(type);
+        }
+        else {
+            const group = groups[groups.length - 1];
+            if (!group || typeof group === "string") {
+                groups.push([type]);
+            }
+            else {
+                group.push(type);
+            }
+        }
+    }
+    return groups.map(group => {
+        if (Array.isArray(group)) {
+            return group.map(type => getExtensions(type).map(t => `*${t}`))
+                .flat()
+                .join(" ");
+        }
+        else if (group === "*/*") {
+            return "All | *";
+        }
+        else {
+            const patterns = getExtensions(group).map(t => `*${t}`).join(" ");
+            if (!patterns) {
+                return undefined;
+            }
+            else if (group === "video/*") {
+                return "Videos | " + patterns;
+            }
+            else if (group === "audio/*") {
+                return "Audios | " + patterns;
+            }
+            else if (group === "image/*") {
+                return "Images | " + patterns;
+            }
+            else if (group === "text/*") {
+                return "Texts | " + patterns;
+            }
+            else {
+                return patterns;
+            }
+        }
+    }).filter(Boolean);
 }
 async function linuxPickFile(title = "", options = {}) {
     const { type, forSave, defaultName } = options;
@@ -17,7 +60,9 @@ async function linuxPickFile(title = "", options = {}) {
         args.push("--title", title);
     }
     if (type) {
-        args.push("--file-filter", htmlAcceptToFileFilter(type));
+        htmlAcceptToFileFilters(type).forEach(filter => {
+            args.push("--file-filter", filter);
+        });
     }
     if (forSave) {
         args.push("--save", "--confirm-overwrite");
@@ -25,7 +70,11 @@ async function linuxPickFile(title = "", options = {}) {
             args.push("--filename", defaultName);
             if (!type) {
                 const ext = extname(defaultName);
-                ext && args.push("--file-filter", htmlAcceptToFileFilter(ext));
+                if (ext) {
+                    htmlAcceptToFileFilters(ext).forEach(filter => {
+                        args.push("--file-filter", filter);
+                    });
+                }
             }
         }
     }
@@ -51,7 +100,9 @@ async function linuxPickFiles(title = "", type = "") {
         args.push("--title", title);
     }
     if (type) {
-        args.push("--file-filter", htmlAcceptToFileFilter(type));
+        htmlAcceptToFileFilters(type).forEach(filter => {
+            args.push("--file-filter", filter);
+        });
     }
     const { code, stdout, stderr } = await run("zenity", args);
     if (!code) {

@@ -3,7 +3,7 @@ import { run } from '../../../cli.js';
 import { getUTI } from '../../../filetype.js';
 
 function htmlAcceptToAppleType(accept) {
-    return accept.split(/\s*,\s*/).map(getUTI).filter(Boolean).join(",");
+    return accept.split(/\s*,\s*/).map(getUTI).filter(Boolean).map(t => `"${t}"`).join(", ");
 }
 function createAppleScript(mode, title = "", options = {}) {
     const { type, forSave, defaultName } = options;
@@ -19,7 +19,7 @@ function createAppleScript(mode, title = "", options = {}) {
             const _type = type ? htmlAcceptToAppleType(type) : "";
             return "tell application (path to frontmost application as text)\n" +
                 "  set myFile to choose file" + (title ? ` with prompt "${title}"` : "") +
-                (_type ? ` of type {${_type.split(/\s*,\s*/).map(s => `"${s}"`)}}` : "") +
+                (_type ? ` of type {${_type}}` : "") +
                 " invisibles false" +
                 "\n  POSIX path of myFile\n" +
                 "end";
@@ -29,7 +29,7 @@ function createAppleScript(mode, title = "", options = {}) {
         const _type = type ? htmlAcceptToAppleType(type) : "";
         return "tell application (path to frontmost application as text)\n" +
             "  set myFiles to choose file" + (title ? ` with prompt "${title}"` : "") +
-            (_type ? ` of type {${_type.split(/\s*,\s*/).map(s => `"${s}"`)}}` : "") +
+            (_type ? ` of type {${_type}}` : "") +
             " invisibles false" +
             " multiple selections allowed true" +
             "\n" +

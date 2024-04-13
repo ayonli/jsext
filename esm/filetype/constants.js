@@ -1,9 +1,9 @@
 const UTIMap = {
     "public.item": ["*/*"],
+    "public.movie": ["video/*"],
     "public.audio": ["audio/*"],
     "public.image": ["image/*"],
     "public.text": ["text/*"],
-    "public.movie": ["video/*"],
     "public.plain-text": [".txt", "text/plain"],
     "public.rtf": [".rtf", "text/rtf"],
     "public.html": [".html", ".htm", "text/html"],
