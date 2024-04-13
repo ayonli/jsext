@@ -1,6 +1,6 @@
 import { questionInDeno, questionInNode } from "./index.ts";
 import { escape } from "./util.ts";
-import { platform, run } from "../../cli.ts";
+import { isWSL, platform, powershell, run } from "../../cli.ts";
 
 function createAppleScript(message: string, defaultValue = "", password = false) {
     return "tell application (path to frontmost application as text)\n" +
@@ -92,6 +92,20 @@ export default async function promptInTerminal(message: string, options: {
         } else {
             return stdout.trim();
         }
+    } else if (options?.gui && (platform() === "windows" || isWSL())) {
+        const { code, stdout, stderr } = await powershell(
+            createPowerShellScript(message, options.defaultValue, options.type === "password")
+        );
+
+        if (code) {
+            if (stderr.includes("User canceled")) {
+                return null;
+            } else {
+                throw new Error(stderr);
+            }
+        } else {
+            return stdout.trim();
+        }
     } else if (options?.gui && platform() === "linux") {
         const args = [
             "--entry",
@@ -119,21 +133,6 @@ export default async function promptInTerminal(message: string, options: {
             return null;
         } else {
             throw new Error(stderr);
-        }
-    } else if (options?.gui && platform() === "windows") {
-        const { code, stdout, stderr } = await run("powershell", [
-            "-Command",
-            createPowerShellScript(message, options.defaultValue, options.type === "password")
-        ]);
-
-        if (code) {
-            if (stderr.includes("User canceled")) {
-                return null;
-            } else {
-                throw new Error(stderr);
-            }
-        } else {
-            return stdout.trim();
         }
     } else if (typeof Deno === "object") {
         return await questionInDeno(message + " ", options);

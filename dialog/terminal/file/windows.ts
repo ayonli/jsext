@@ -1,6 +1,6 @@
 import { extname } from "../../../path.ts";
 import { lines } from "../../../string.ts";
-import { run } from "../../../cli.ts";
+import { isWSL, powershell } from "../../../cli.ts";
 import { getExtensions } from "../../../filetype.ts";
 
 function htmlAcceptToFileFilter(accept: string): string {
@@ -117,47 +117,53 @@ function createPowerShellScript(mode: "file" | "files" | "folder", title = "", o
     }
 }
 
+function refinePath(path: string) {
+    if (isWSL()) {
+        return "/mnt/"
+            + path.replace(/\\/g, "/").replace(/^([a-z]):/i, (_, $1: string) => $1.toLowerCase());
+    }
+
+    return path;
+}
+
 export async function windowsPickFile(title = "", options: {
     type?: string | undefined;
     forSave?: boolean | undefined;
     defaultName?: string | undefined;
 } = {}): Promise<string | null> {
-    const { code, stdout, stderr } = await run("powershell", [
-        "-c",
+    const { code, stdout, stderr } = await powershell(
         createPowerShellScript("file", title, options)
-    ]);
+    );
 
     if (!code) {
         const path = stdout.trim();
-        return path || null;
+        return path ? refinePath(path) : null;
     } else {
         throw new Error(stderr);
     }
 }
 
 export async function windowsPickFiles(title = "", type = ""): Promise<string[]> {
-    const { code, stdout, stderr } = await run("powershell", [
-        "-c",
+    const { code, stdout, stderr } = await powershell(
         createPowerShellScript("files", title, { type })
-    ]);
+    );
 
     if (!code) {
         const output = stdout.trim();
-        return output ? lines(stdout.trim()) : [];
+        return output ? lines(stdout.trim()).map(refinePath) : [];
     } else {
         throw new Error(stderr);
     }
 }
 
 export async function windowsPickFolder(title = ""): Promise<string | null> {
-    const { code, stdout, stderr } = await run("powershell", [
-        "-c",
+    const { code, stdout, stderr } = await powershell(
         createPowerShellScript("folder", title)
-    ]);
+    );
 
     if (!code) {
         const dir = stdout.trim();
-        return dir || null;
+        return dir ? refinePath(dir) : null;
     } else {
         throw new Error(stderr);
     }

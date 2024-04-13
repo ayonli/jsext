@@ -1,6 +1,6 @@
 import { questionInDeno, questionInNode } from "./index.ts";
 import { escape } from "./util.ts";
-import { platform, run } from "../../cli.ts";
+import { isWSL, platform, powershell, run } from "../../cli.ts";
 
 function createAppleScript(message: string) {
     return "tell application (path to frontmost application as text)\n" +
@@ -32,6 +32,16 @@ export default async function confirmInTerminal(message: string, options: {
         } else {
             return true;
         }
+    } else if (options?.gui && (platform() === "windows" || isWSL())) {
+        const { code, stdout, stderr } = await powershell(
+            createPowerShellScript(message)
+        );
+
+        if (code) {
+            throw new Error(stderr);
+        } else {
+            return stdout.trim() === "Yes" ? true : false;
+        }
     } else if (options?.gui && platform() === "linux") {
         const args = [
             "--question",
@@ -51,17 +61,6 @@ export default async function confirmInTerminal(message: string, options: {
             return false;
         } else {
             throw new Error(stderr);
-        }
-    } else if (options?.gui && platform() === "windows") {
-        const { code, stdout, stderr } = await run("powershell", [
-            "-Command",
-            createPowerShellScript(message)
-        ]);
-
-        if (code) {
-            throw new Error(stderr);
-        } else {
-            return stdout.trim() === "Yes" ? true : false;
         }
     } else {
         let answer: string | null;

@@ -1,6 +1,6 @@
 import { extname } from '../../../path.js';
 import { lines } from '../../../string.js';
-import { run } from '../../../cli.js';
+import { powershell, isWSL } from '../../../cli.js';
 import { getExtensions } from '../../../filetype.js';
 
 function htmlAcceptToFileFilter(accept) {
@@ -116,40 +116,38 @@ function createPowerShellScript(mode, title = "", options = {}) {
             "$folderBrowserDialog.SelectedPath";
     }
 }
+function refinePath(path) {
+    if (isWSL()) {
+        return "/mnt/"
+            + path.replace(/\\/g, "/").replace(/^([a-z]):/i, (_, $1) => $1.toLowerCase());
+    }
+    return path;
+}
 async function windowsPickFile(title = "", options = {}) {
-    const { code, stdout, stderr } = await run("powershell", [
-        "-c",
-        createPowerShellScript("file", title, options)
-    ]);
+    const { code, stdout, stderr } = await powershell(createPowerShellScript("file", title, options));
     if (!code) {
         const path = stdout.trim();
-        return path || null;
+        return path ? refinePath(path) : null;
     }
     else {
         throw new Error(stderr);
     }
 }
 async function windowsPickFiles(title = "", type = "") {
-    const { code, stdout, stderr } = await run("powershell", [
-        "-c",
-        createPowerShellScript("files", title, { type })
-    ]);
+    const { code, stdout, stderr } = await powershell(createPowerShellScript("files", title, { type }));
     if (!code) {
         const output = stdout.trim();
-        return output ? lines(stdout.trim()) : [];
+        return output ? lines(stdout.trim()).map(refinePath) : [];
     }
     else {
         throw new Error(stderr);
     }
 }
 async function windowsPickFolder(title = "") {
-    const { code, stdout, stderr } = await run("powershell", [
-        "-c",
-        createPowerShellScript("folder", title)
-    ]);
+    const { code, stdout, stderr } = await powershell(createPowerShellScript("folder", title));
     if (!code) {
         const dir = stdout.trim();
-        return dir || null;
+        return dir ? refinePath(dir) : null;
     }
     else {
         throw new Error(stderr);

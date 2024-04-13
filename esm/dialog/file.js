@@ -1,5 +1,5 @@
 import { basename, join } from '../path.js';
-import { platform } from '../cli.js';
+import { platform, isWSL } from '../cli.js';
 import read from '../read.js';
 import readAll from '../readAll.js';
 import { isBrowser } from '../util.js';
@@ -27,15 +27,15 @@ async function pickFile(options = {}) {
             defaultName: options === null || options === void 0 ? void 0 : options.defaultName,
         });
     }
-    else if (_platform === "linux") {
-        return await linuxPickFile(options.title, {
+    else if (_platform === "windows" || isWSL()) {
+        return await windowsPickFile(options.title, {
             type: options.type,
             forSave: options === null || options === void 0 ? void 0 : options.forSave,
             defaultName: options === null || options === void 0 ? void 0 : options.defaultName,
         });
     }
-    else if (_platform === "windows") {
-        return await windowsPickFile(options.title, {
+    else if (_platform === "linux") {
+        return await linuxPickFile(options.title, {
             type: options.type,
             forSave: options === null || options === void 0 ? void 0 : options.forSave,
             defaultName: options === null || options === void 0 ? void 0 : options.defaultName,
@@ -54,11 +54,11 @@ async function pickFiles(options = {}) {
     if (_platform === "darwin") {
         return await macPickFiles(options.title, options.type);
     }
+    else if (_platform === "windows" || isWSL()) {
+        return await windowsPickFiles(options.title, options.type);
+    }
     else if (_platform === "linux") {
         return await linuxPickFiles(options.title, options.type);
-    }
-    else if (_platform === "windows") {
-        return await windowsPickFiles(options.title, options.type);
     }
     throw new Error("Unsupported platform or runtime");
 }
@@ -73,11 +73,11 @@ async function pickDirectory(options = {}) {
     if (_platform === "darwin") {
         return await macPickFolder(options.title);
     }
+    else if (_platform === "windows" || isWSL()) {
+        return await windowsPickFolder(options.title);
+    }
     else if (_platform === "linux") {
         return await linuxPickFolder(options.title);
-    }
-    else if (_platform === "windows") {
-        return await windowsPickFolder(options.title);
     }
     throw new Error("Unsupported platform or runtime");
 }

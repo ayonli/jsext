@@ -60,6 +60,30 @@ function platform() {
         return "others";
     }
 }
+/** Checks if the program is running in Windows Subsystem for Linux. */
+function isWSL() {
+    if (platform() !== "linux")
+        return false;
+    if (typeof Deno === "object") {
+        return Deno.osRelease().includes("microsoft-standard-WSL");
+    }
+    else if (typeof process === "object" && typeof process.env === "object") {
+        return !!process.env["WSL_INTEROP"];
+    }
+    return false;
+}
+/** Checks if the program is running in a TypeScript runtime. */
+function isTsRuntime() {
+    var _a;
+    if (typeof Deno === "object" || typeof Bun === "object") {
+        return true;
+    }
+    else if (typeof process !== "object") {
+        return false;
+    }
+    return process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
+        || /\.tsx?$/.test((_a = process.argv[1]) !== null && _a !== void 0 ? _a : "");
+}
 function parseValue(arg) {
     let value = arg.trim();
     if (value === "true") {
@@ -188,6 +212,7 @@ function quote(arg) {
 async function run(cmd, args) {
     var _a;
     const isWindows = platform() === "windows";
+    const isWslPs = isWSL() && cmd.endsWith("powershell.exe");
     if (typeof Deno === "object") {
         const { Buffer } = await import('node:buffer');
         // @ts-ignore
@@ -198,8 +223,8 @@ async function run(cmd, args) {
         const { code, stdout, stderr } = await _cmd.output();
         return {
             code,
-            stdout: isWindows ? decode(Buffer.from(stdout), "cp936") : text(stdout),
-            stderr: isWindows ? decode(Buffer.from(stderr), "cp936") : text(stderr),
+            stdout: isWindows || isWslPs ? decode(Buffer.from(stdout), "cp936") : text(stdout),
+            stderr: isWindows || isWslPs ? decode(Buffer.from(stderr), "cp936") : text(stderr),
         };
     }
     else if (typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node)) {
@@ -211,7 +236,7 @@ async function run(cmd, args) {
         const stdout = [];
         const stderr = [];
         child.stdout.on("data", chunk => {
-            if (isWindows) {
+            if (isWindows || isWslPs) {
                 stdout.push(decode(chunk, "cp936"));
             }
             else {
@@ -219,7 +244,7 @@ async function run(cmd, args) {
             }
         });
         child.stderr.on("data", chunk => {
-            if (isWindows) {
+            if (isWindows || isWslPs) {
                 stderr.push(decode(chunk, "cp936"));
             }
             else {
@@ -263,6 +288,20 @@ async function which(cmd) {
         return code ? null : stdout.trim();
     }
 }
+/**
+ * Runs PowerShell with the supplied arguments. This function can be called
+ * within Windows Subsystem for Linux to directly interact with PowerShell.
+ */
+async function powershell(...args) {
+    let command = "powershell";
+    if (isWSL()) {
+        command = "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe";
+    }
+    return await run(command, [
+        "-c",
+        ...args
+    ]);
+}
 
-export { PopularPlatforms, parseArgs, platform, quote, run, which };
+export { PopularPlatforms, isTsRuntime, isWSL, parseArgs, platform, powershell, quote, run, which };
 //# sourceMappingURL=cli.js.map

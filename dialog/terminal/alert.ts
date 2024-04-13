@@ -1,6 +1,6 @@
 import { questionInDeno, questionInNode } from "./index.ts";
 import { escape } from "./util.ts";
-import { platform, run } from "../../cli.ts";
+import { isWSL, platform, powershell, run } from "../../cli.ts";
 
 function createAppleScript(message: string) {
     return "tell application (path to frontmost application as text)\n" +
@@ -25,6 +25,14 @@ export default async function alertInTerminal(message: string, options: {
         if (code) {
             throw new Error(stderr);
         }
+    } else if (options?.gui && (platform() === "windows" || isWSL())) {
+        const { code, stderr } = await powershell(
+            createPowerShellScript(message)
+        );
+
+        if (code) {
+            throw new Error(stderr);
+        }
     } else if (options?.gui && platform() === "linux") {
         const args = [
             "--info",
@@ -39,15 +47,6 @@ export default async function alertInTerminal(message: string, options: {
         const { code, stderr } = await run("zenity", args);
 
         if (code && code !== 1) {
-            throw new Error(stderr);
-        }
-    } else if (options?.gui && platform() === "windows") {
-        const { code, stderr } = await run("powershell", [
-            "-Command",
-            createPowerShellScript(message)
-        ]);
-
-        if (code) {
             throw new Error(stderr);
         }
     } else if (typeof Deno === "object") {

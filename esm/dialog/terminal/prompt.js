@@ -1,6 +1,6 @@
 import { questionInDeno, questionInNode } from './index.js';
 import { escape } from './util.js';
-import { platform, run } from '../../cli.js';
+import { platform, run, isWSL, powershell } from '../../cli.js';
 
 function createAppleScript(message, defaultValue = "", password = false) {
     return "tell application (path to frontmost application as text)\n" +
@@ -87,6 +87,20 @@ async function promptInTerminal(message, options = {}) {
             return stdout.trim();
         }
     }
+    else if ((options === null || options === void 0 ? void 0 : options.gui) && (platform() === "windows" || isWSL())) {
+        const { code, stdout, stderr } = await powershell(createPowerShellScript(message, options.defaultValue, options.type === "password"));
+        if (code) {
+            if (stderr.includes("User canceled")) {
+                return null;
+            }
+            else {
+                throw new Error(stderr);
+            }
+        }
+        else {
+            return stdout.trim();
+        }
+    }
     else if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "linux") {
         const args = [
             "--entry",
@@ -111,23 +125,6 @@ async function promptInTerminal(message, options = {}) {
         }
         else {
             throw new Error(stderr);
-        }
-    }
-    else if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "windows") {
-        const { code, stdout, stderr } = await run("powershell", [
-            "-Command",
-            createPowerShellScript(message, options.defaultValue, options.type === "password")
-        ]);
-        if (code) {
-            if (stderr.includes("User canceled")) {
-                return null;
-            }
-            else {
-                throw new Error(stderr);
-            }
-        }
-        else {
-            return stdout.trim();
         }
     }
     else if (typeof Deno === "object") {
