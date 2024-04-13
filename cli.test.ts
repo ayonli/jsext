@@ -128,13 +128,8 @@ describe("cli", () => {
         strictEqual(quote("foo\\bar"), "foo\\\\bar");
         strictEqual(quote("foo bar"), `"foo bar"`);
 
-        if (platform() === "windows") {
-            strictEqual(quote("Hello, World!"), `"Hello, World!"`);
-            strictEqual(quote("Hello, World`"), `"Hello, World\`"`);
-        } else {
-            strictEqual(quote("Hello, World!"), `"Hello, World\\!"`);
-            strictEqual(quote("Hello, World`"), `"Hello, World\\\`"`);
-        }
+        strictEqual(quote("Hello, World!"), `"Hello, World!"`);
+        strictEqual(quote("Hello, World`"), `"Hello, World\`"`);
     });
 
     it("run", async function () {

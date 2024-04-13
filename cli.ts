@@ -3,11 +3,13 @@
  * 
  * NOTE: this module is not intended to be used in the browser.
  * @module
+ * @experimental
  */
 
 import { text } from "./bytes.ts";
 import { interop } from "./module.ts";
 import { PowerShellCommands } from "./cli/constants.ts";
+import { isBun, isDeno } from "./parallel/constants.ts";
 
 declare const Bun: object;
 
@@ -208,11 +210,7 @@ export function parseArgs(args: string[], options: {
  */
 export function quote(arg: string): string {
     if ((/["'\s]/).test(arg)) {
-        if (platform() === "windows") {
-            return `"` + arg.replace(/(["\\$])/g, '\\$1') + `"`;
-        } else {
-            return `"` + arg.replace(/(["\\$`!])/g, '\\$1') + `"`;
-        }
+        return `"` + arg.replace(/(["\\$])/g, '\\$1') + `"`;
     }
 
     return String(arg).replace(/([A-Za-z]:)?([#!"$&'()*,:;<=>?@[\\\]^`{|}])/g, '$1\\$2');
@@ -248,7 +246,6 @@ export async function run(cmd: string, args: string[]): Promise<{
 
     if (typeof Deno === "object") {
         const { Buffer } = await import("node:buffer");
-        // @ts-ignore
         const { decode } = await interop(import("npm:iconv-lite"), false);
         const _cmd = isWindows && PowerShellCommands.includes(cmd)
             ? new Deno.Command("powershell", { args: ["-c", cmd, ...args.map(quote)] })
@@ -326,4 +323,63 @@ export async function powershell(...commands: string[]): Promise<{
         "-c",
         ...commands
     ]);
+}
+
+/**
+ * Executes a command with elevated privileges using `sudo` (or UAC in Windows).
+ */
+export async function sudo(cmd: string, args: string[], options: {
+    /**
+     * By default, this function will use the `sudo` command when available and
+     * running in text mode. Set this option to `true` to force using the GUI
+     * prompt instead.
+     */
+    gui?: boolean;
+    /** Custom the dialog's title when `gui` option is set. */
+    title?: string;
+} = {}): Promise<{
+    code: number;
+    stdout: string;
+    stderr: string;
+}> {
+    const _isWindows = platform() === "windows";
+
+    if (!options?.gui && (!_isWindows || (await which("sudo")))) {
+        return await run("sudo", [cmd, ...args]);
+    }
+
+    const { Buffer } = await import("node:buffer");
+    let exec: (
+        cmd: string,
+        options: { name?: string; },
+        callback: (error?: Error, stdout?: string | Buffer, stderr?: string | Buffer) => void
+    ) => void;
+    let decode: (buffer: Buffer, encoding: string) => string;
+
+    if (isDeno) {
+        ({ exec } = await interop(import("npm:sudo-prompt")));
+        ({ decode } = await interop(import("npm:iconv-lite")), false);
+    } else {
+        ({ exec } = await interop(import("sudo-prompt")));
+        ({ decode } = await interop(import("iconv-lite")), false);
+    }
+
+    return await new Promise((resolve, reject) => {
+        exec(`${cmd}` + (args.length ? ` ${args.map(quote).join(" ")}` : ""), {
+            name: options?.title || (isDeno ? "Deno" : isBun ? "Bun" : "NodeJS"),
+        }, (error, stdout, stderr) => {
+            if (error) {
+                reject(error);
+            } else {
+                const _stdout = Buffer.isBuffer(stdout) ? stdout : Buffer.from(stdout as string);
+                const _stderr = Buffer.isBuffer(stderr) ? stderr : Buffer.from(stderr as string);
+
+                resolve({
+                    code: 0,
+                    stdout: _isWindows ? decode(_stdout, "cp936") : String(_stdout),
+                    stderr: _isWindows ? decode(_stderr, "cp936") : String(_stderr),
+                });
+            }
+        });
+    });
 }

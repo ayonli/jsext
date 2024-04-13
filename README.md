@@ -72,8 +72,8 @@ categories:
     deprecated.
 - [class](https://jsr.io/@ayonli/jsext/doc/class/~) Functions for dealing with
   classes.
-- [cli](https://jsr.io/@ayonli/jsext/doc/cli/~) Useful utility functions for
-  interacting with the terminal.
+- [cli](https://jsr.io/@ayonli/jsext/doc/cli/~) (Experimental) Useful utility
+  functions for interacting with the terminal.
 - [collections](https://jsr.io/@ayonli/jsext/doc/collections/~) Additional
   collection data types.
 - [dialog](https://jsr.io/@ayonli/jsext/doc/dialog/~) (Experimental)

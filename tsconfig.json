@@ -27,6 +27,9 @@
             "npm:iconv-lite": [
                 "./node_modules/iconv-lite/lib/index.d.ts"
             ],
+            "npm:sudo-prompt": [
+                "./node_modules/sudo-prompt/index.d.ts"
+            ],
             "@ayonli/jsext": [
                 "."
             ],

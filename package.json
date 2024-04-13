@@ -427,7 +427,8 @@
         "CiMap"
     ],
     "dependencies": {
-        "iconv-lite": "^0.6.3"
+        "iconv-lite": "^0.6.3",
+        "sudo-prompt": "^9.2.1"
     },
     "devDependencies": {
         "@ayonli/sse": "^0.4.0",

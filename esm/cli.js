@@ -1,12 +1,14 @@
 import { text } from './bytes.js';
 import { interop } from './module.js';
 import { PowerShellCommands } from './cli/constants.js';
+import { isDeno, isBun } from './parallel/constants.js';
 
 /**
  * Useful utility functions for interacting with the terminal.
  *
  * NOTE: this module is not intended to be used in the browser.
  * @module
+ * @experimental
  */
 const PopularPlatforms = [
     "android",
@@ -197,12 +199,7 @@ function parseArgs(args, options = {}) {
  */
 function quote(arg) {
     if ((/["'\s]/).test(arg)) {
-        if (platform() === "windows") {
-            return `"` + arg.replace(/(["\\$])/g, '\\$1') + `"`;
-        }
-        else {
-            return `"` + arg.replace(/(["\\$`!])/g, '\\$1') + `"`;
-        }
+        return `"` + arg.replace(/(["\\$])/g, '\\$1') + `"`;
     }
     return String(arg).replace(/([A-Za-z]:)?([#!"$&'()*,:;<=>?@[\\\]^`{|}])/g, '$1\\$2');
 }
@@ -232,7 +229,6 @@ async function run(cmd, args) {
     const isWslPs = isWSL() && cmd.endsWith("powershell.exe");
     if (typeof Deno === "object") {
         const { Buffer } = await import('node:buffer');
-        // @ts-ignore
         const { decode } = await interop(import('npm:iconv-lite'), false);
         const _cmd = isWindows && PowerShellCommands.includes(cmd)
             ? new Deno.Command("powershell", { args: ["-c", cmd, ...args.map(quote)] })
@@ -305,6 +301,44 @@ async function powershell(...commands) {
         ...commands
     ]);
 }
+/**
+ * Executes a command with elevated privileges using `sudo` (or UAC in Windows).
+ */
+async function sudo(cmd, args, options = {}) {
+    const _isWindows = platform() === "windows";
+    if (!(options === null || options === void 0 ? void 0 : options.gui) && (!_isWindows || (await which("sudo")))) {
+        return await run("sudo", [cmd, ...args]);
+    }
+    const { Buffer } = await import('node:buffer');
+    let exec;
+    let decode;
+    if (isDeno) {
+        ({ exec } = await interop(import('npm:sudo-prompt')));
+        (({ decode } = await interop(import('npm:iconv-lite'))));
+    }
+    else {
+        ({ exec } = await interop(import('sudo-prompt')));
+        (({ decode } = await interop(import('iconv-lite'))));
+    }
+    return await new Promise((resolve, reject) => {
+        exec(`${cmd}` + (args.length ? ` ${args.map(quote).join(" ")}` : ""), {
+            name: (options === null || options === void 0 ? void 0 : options.title) || (isDeno ? "Deno" : isBun ? "Bun" : "NodeJS"),
+        }, (error, stdout, stderr) => {
+            if (error) {
+                reject(error);
+            }
+            else {
+                const _stdout = Buffer.isBuffer(stdout) ? stdout : Buffer.from(stdout);
+                const _stderr = Buffer.isBuffer(stderr) ? stderr : Buffer.from(stderr);
+                resolve({
+                    code: 0,
+                    stdout: _isWindows ? decode(_stdout, "cp936") : String(_stdout),
+                    stderr: _isWindows ? decode(_stderr, "cp936") : String(_stderr),
+                });
+            }
+        });
+    });
+}
 
-export { PopularPlatforms, isTsRuntime, isWSL, parseArgs, platform, powershell, quote, run, which };
+export { PopularPlatforms, isTsRuntime, isWSL, parseArgs, platform, powershell, quote, run, sudo, which };
 //# sourceMappingURL=cli.js.map
