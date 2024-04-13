@@ -1,20 +1,9 @@
 import { lines } from "../../../string.ts";
-import { run } from "../../../terminal.ts";
-import { UTIMap } from "./constants.ts";
+import { run } from "../../../cli.ts";
+import { getUTI } from "../../../filetype.ts";
 
 function htmlAcceptToAppleType(accept: string): string {
-    const entries = Object.entries(UTIMap);
-    return accept.split(/\s*,\s*/).map(type => {
-        const _type = type.toLowerCase();
-
-        for (const [uti, types] of entries) {
-            if (types.includes(_type)) {
-                return uti;
-            }
-        }
-
-        return type;
-    }).join(",");
+    return accept.split(/\s*,\s*/).map(getUTI).filter(Boolean).map(t => `"${t}"`).join(", ");
 }
 
 function createAppleScript(mode: "file" | "files" | "folder", title = "", options: {
@@ -35,7 +24,7 @@ function createAppleScript(mode: "file" | "files" | "folder", title = "", option
             const _type = type ? htmlAcceptToAppleType(type) : "";
             return "tell application (path to frontmost application as text)\n" +
                 "  set myFile to choose file" + (title ? ` with prompt "${title}"` : "") +
-                (_type ? ` of type {${_type.split(/\s*,\s*/).map(s => `"${s}"`)}}` : "") +
+                (_type ? ` of type {${_type}}` : "") +
                 " invisibles false" +
                 "\n  POSIX path of myFile\n" +
                 "end";
@@ -44,7 +33,7 @@ function createAppleScript(mode: "file" | "files" | "folder", title = "", option
         const _type = type ? htmlAcceptToAppleType(type) : "";
         return "tell application (path to frontmost application as text)\n" +
             "  set myFiles to choose file" + (title ? ` with prompt "${title}"` : "") +
-            (_type ? ` of type {${_type.split(/\s*,\s*/).map(s => `"${s}"`)}}` : "") +
+            (_type ? ` of type {${_type}}` : "") +
             " invisibles false" +
             " multiple selections allowed true" +
             "\n" +

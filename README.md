@@ -72,12 +72,16 @@ categories:
     deprecated.
 - [class](https://jsr.io/@ayonli/jsext/doc/class/~) Functions for dealing with
   classes.
+- [cli](https://jsr.io/@ayonli/jsext/doc/cli/~) Useful utility functions for
+  interacting with the terminal.
 - [collections](https://jsr.io/@ayonli/jsext/doc/collections/~) Additional
   collection data types.
 - [dialog](https://jsr.io/@ayonli/jsext/doc/dialog/~) (Experimental)
   Asynchronous dialog functions for both browsers and terminals.
 - [error](https://jsr.io/@ayonli/jsext/doc/error/~) Functions for converting
   errors to/from other types of objects.
+- [filetype](https://jsr.io/@ayonli/jsext/doc/filetype/~) Functions to get file
+  types in different fashions.
 - [json](https://jsr.io/@ayonli/jsext/doc/json/~) Functions for parsing JSONs to
   specific structures.
 - [math](https://jsr.io/@ayonli/jsext/doc/math/~) Functions for mathematical
@@ -92,8 +96,6 @@ categories:
   Platform-independent utility functions for dealing with system paths and URLs.
 - [string](https://jsr.io/@ayonli/jsext/doc/string/~) Functions for dealing with
   strings.
-- [terminal](https://jsr.io/@ayonli/jsext/doc/terminal/~) Useful utility
-  functions for interacting with the terminal.
 
 ## Types
 

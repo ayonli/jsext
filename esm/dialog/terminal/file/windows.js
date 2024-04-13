@@ -1,19 +1,56 @@
 import { extname } from '../../../path.js';
 import { lines } from '../../../string.js';
-import { run } from '../../../terminal.js';
-import { UTIMap } from './constants.js';
+import { powershell, isWSL } from '../../../cli.js';
+import { getExtensions } from '../../../filetype.js';
 
 function htmlAcceptToFileFilter(accept) {
-    const list = Object.values(UTIMap);
-    return accept.split(/\s*,\s*/).map(type => {
-        const _type = type.toLowerCase();
-        for (const types of list) {
-            if (types.includes(_type)) {
-                return types.filter(t => t.startsWith(".")).map(t => `*${t}|*${t}`).join("|");
+    const groups = [];
+    for (const type of accept.split(/\s*,\s*/)) {
+        if (type.endsWith("/*")) {
+            groups.push(type);
+        }
+        else {
+            const group = groups[groups.length - 1];
+            if (!group || typeof group === "string") {
+                groups.push([type]);
+            }
+            else {
+                group.push(type);
             }
         }
-        return type;
-    }).join("|");
+    }
+    return groups.map(group => {
+        if (Array.isArray(group)) {
+            const patterns = group.map(type => getExtensions(type).map(t => `*${t}`))
+                .flat()
+                .join(";");
+            return patterns + "|" + patterns;
+        }
+        else if (group === "*/*") {
+            return "All|*";
+        }
+        else {
+            const patterns = getExtensions(group).map(t => `*${t}`).join(";");
+            if (!patterns) {
+                return undefined;
+            }
+            else if (group === "video/*") {
+                return "Videos|" + patterns;
+            }
+            else if (group === "audio/*") {
+                return "Audios|" + patterns;
+            }
+            else if (group === "image/*") {
+                return "Images|" + patterns;
+            }
+            else if (group === "text/*") {
+                return "Texts|" + patterns;
+            }
+            else {
+                return patterns;
+            }
+        }
+    }).filter(Boolean).join("|");
 }
 function createPowerShellScript(mode, title = "", options = {}) {
     const { type, forSave, defaultName } = options;
@@ -79,40 +116,38 @@ function createPowerShellScript(mode, title = "", options = {}) {
             "$folderBrowserDialog.SelectedPath";
     }
 }
+function refinePath(path) {
+    if (isWSL()) {
+        return "/mnt/"
+            + path.replace(/\\/g, "/").replace(/^([a-z]):/i, (_, $1) => $1.toLowerCase());
+    }
+    return path;
+}
 async function windowsPickFile(title = "", options = {}) {
-    const { code, stdout, stderr } = await run("powershell", [
-        "-c",
-        createPowerShellScript("file", title, options)
-    ]);
+    const { code, stdout, stderr } = await powershell(createPowerShellScript("file", title, options));
     if (!code) {
         const path = stdout.trim();
-        return path || null;
+        return path ? refinePath(path) : null;
     }
     else {
         throw new Error(stderr);
     }
 }
 async function windowsPickFiles(title = "", type = "") {
-    const { code, stdout, stderr } = await run("powershell", [
-        "-c",
-        createPowerShellScript("files", title, { type })
-    ]);
+    const { code, stdout, stderr } = await powershell(createPowerShellScript("files", title, { type }));
     if (!code) {
         const output = stdout.trim();
-        return output ? lines(stdout.trim()) : [];
+        return output ? lines(stdout.trim()).map(refinePath) : [];
     }
     else {
         throw new Error(stderr);
     }
 }
 async function windowsPickFolder(title = "") {
-    const { code, stdout, stderr } = await run("powershell", [
-        "-c",
-        createPowerShellScript("folder", title)
-    ]);
+    const { code, stdout, stderr } = await powershell(createPowerShellScript("folder", title));
     if (!code) {
         const dir = stdout.trim();
-        return dir || null;
+        return dir ? refinePath(dir) : null;
     }
     else {
         throw new Error(stderr);

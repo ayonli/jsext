@@ -1,6 +1,6 @@
 import { questionInDeno, questionInNode } from './index.js';
 import { escape } from './util.js';
-import { platform, run } from '../../terminal.js';
+import { platform, run, isWSL, powershell } from '../../cli.js';
 
 function createAppleScript(message) {
     return "tell application (path to frontmost application as text)\n" +
@@ -21,6 +21,12 @@ async function alertInTerminal(message, options = {}) {
             throw new Error(stderr);
         }
     }
+    else if ((options === null || options === void 0 ? void 0 : options.gui) && (platform() === "windows" || isWSL())) {
+        const { code, stderr } = await powershell(createPowerShellScript(message));
+        if (code) {
+            throw new Error(stderr);
+        }
+    }
     else if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "linux") {
         const args = [
             "--info",
@@ -32,15 +38,6 @@ async function alertInTerminal(message, options = {}) {
         }
         const { code, stderr } = await run("zenity", args);
         if (code && code !== 1) {
-            throw new Error(stderr);
-        }
-    }
-    else if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "windows") {
-        const { code, stderr } = await run("powershell", [
-            "-Command",
-            createPowerShellScript(message)
-        ]);
-        if (code) {
             throw new Error(stderr);
         }
     }

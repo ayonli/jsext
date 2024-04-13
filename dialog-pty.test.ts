@@ -96,12 +96,11 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
         it("input 'yes'", async () => {
             const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
 
-            cmd.write("y");
-            await sleep(10);
-            cmd.write("e");
-            await sleep(10);
-            cmd.write("s");
-            await sleep(10);
+            for (const char of "yes") {
+                cmd.write(char);
+                await sleep(10);
+            }
+
             cmd.write("\n");
             const outputs = await output;
 
@@ -130,9 +129,11 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
         it("input 'no'", async () => {
             const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
 
-            cmd.write("n");
-            await sleep(10);
-            cmd.write("o");
+            for (const char of "no") {
+                cmd.write(char);
+                await sleep(10);
+            }
+
             await sleep(10);
             cmd.write("\n");
             const outputs = await output;

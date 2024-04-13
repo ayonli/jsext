@@ -1,6 +1,8 @@
 import { glob } from "glob";
-import { extname } from "node:path";
+import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { existsSync } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
 import { builtinModules } from "node:module";
 import typescript from "@rollup/plugin-typescript";
 import resolve from "@rollup/plugin-node-resolve";
@@ -25,6 +27,26 @@ const moduleEntries = Object.fromEntries(
     ])
 );
 
+/**
+ * @returns {import("rollup").Plugin}
+ */
+function writePackageJson() {
+    return {
+        name: "write-package-json",
+        generateBundle: async (options) => {
+            if (!["cjs", "esm", "es"].includes(options.format)) return;
+
+            const pkg = { type: options.format === "cjs" ? "commonjs" : "module" };
+
+            if (!existsSync(options.dir)) {
+                await mkdir(options.dir, { recursive: true });
+            }
+
+            await writeFile(join(options.dir, "package.json"), JSON.stringify(pkg));
+        },
+    };
+}
+
 /** @type {import ("rollup").RollupOptions[]} */
 const config = [
     { // CommonJS
@@ -41,6 +63,7 @@ const config = [
             typescript(),
             resolve({ preferBuiltins: true }),
             commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
+            writePackageJson(),
         ],
         external: (id) => id.includes("node_modules") || builtinModules.includes(id),
     },
@@ -57,6 +80,7 @@ const config = [
             typescript(),
             resolve({ preferBuiltins: true }),
             commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
+            writePackageJson(),
         ],
         external: (id) => id.includes("node_modules") || builtinModules.includes(id),
     },

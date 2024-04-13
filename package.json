@@ -69,6 +69,13 @@
             "import": "./esm/class.js",
             "default": "./class.ts"
         },
+        "./cli": {
+            "types": "./types/cli.d.ts",
+            "bun": "./cli.ts",
+            "require": "./cjs/cli.js",
+            "import": "./esm/cli.js",
+            "default": "./cli.ts"
+        },
         "./collections": {
             "types": "./types/collections.d.ts",
             "bun": "./collections.ts",
@@ -124,6 +131,13 @@
             "require": "./cjs/example.js",
             "import": "./esm/example.js",
             "default": "./example.ts"
+        },
+        "./filetype": {
+            "types": "./types/filetype.d.ts",
+            "bun": "./filetype.ts",
+            "require": "./cjs/filetype.js",
+            "import": "./esm/filetype.js",
+            "default": "./filetype.ts"
         },
         "./func": {
             "types": "./types/func.d.ts",
@@ -286,13 +300,6 @@
             "import": "./esm/augment/string.js",
             "default": "./augment/string.ts"
         },
-        "./terminal": {
-            "types": "./types/terminal.d.ts",
-            "bun": "./terminal.ts",
-            "require": "./cjs/terminal.js",
-            "import": "./esm/terminal.js",
-            "default": "./terminal.ts"
-        },
         "./throttle": {
             "types": "./types/throttle.d.ts",
             "bun": "./throttle.ts",
@@ -339,7 +346,7 @@
         "test:pty:bun": "tsx ./node_modules/mocha/bin/mocha --config mocha.pty.json --bun",
         "test:pty": "npm run test:pty:node && npm run test:pty:deno && npm run test:pty:bun",
         "test:deno": "deno run -A test-deno.ts",
-        "build": "rollup -c rollup.config.js && echo '{\"type\":\"module\"}' > ./esm/package.json && echo '{\"type\":\"commonjs\"}' > ./cjs/package.json && tsc -p tsconfig.types.json",
+        "build": "rollup -c rollup.config.js && tsc -p tsconfig.types.json",
         "typing": "tsc --noEmit --watch",
         "prepublishOnly": "npm run build && node prepublish.mjs",
         "postpublish": "node postpublish.mjs"
