@@ -1,20 +1,11 @@
 import { extname } from "../../../path.ts";
 import { lines } from "../../../string.ts";
 import { run } from "../../../cli.ts";
-import { UTIMap } from "./constants.ts";
+import { getExtensions } from "../../../filetype.ts";
 
 function htmlAcceptToFileFilter(accept: string): string {
-    const list = Object.values(UTIMap);
     return accept.split(/\s*,\s*/).map(type => {
-        const _type = type.toLowerCase();
-
-        for (const types of list) {
-            if (types.includes(_type)) {
-                return types.filter(t => t.startsWith(".")).map(t => `*${t}`).join(" ");
-            }
-        }
-
-        return type;
+        return getExtensions(type).map(t => `*${t}`).join(" ");
     }).join(" ");
 }
 

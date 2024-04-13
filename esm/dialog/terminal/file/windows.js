@@ -1,18 +1,11 @@
 import { extname } from '../../../path.js';
 import { lines } from '../../../string.js';
 import { run } from '../../../cli.js';
-import { UTIMap } from './constants.js';
+import { getExtensions } from '../../../filetype.js';
 
 function htmlAcceptToFileFilter(accept) {
-    const list = Object.values(UTIMap);
     return accept.split(/\s*,\s*/).map(type => {
-        const _type = type.toLowerCase();
-        for (const types of list) {
-            if (types.includes(_type)) {
-                return types.filter(t => t.startsWith(".")).map(t => `*${t}|*${t}`).join("|");
-            }
-        }
-        return type;
+        return getExtensions(type).map(t => `*${t}|*${t}`).join("|");
     }).join("|");
 }
 function createPowerShellScript(mode, title = "", options = {}) {

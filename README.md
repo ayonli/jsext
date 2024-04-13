@@ -80,6 +80,8 @@ categories:
   Asynchronous dialog functions for both browsers and terminals.
 - [error](https://jsr.io/@ayonli/jsext/doc/error/~) Functions for converting
   errors to/from other types of objects.
+- [filetype](https://jsr.io/@ayonli/jsext/doc/filetype/~) Functions to get file
+  types in different fashions.
 - [json](https://jsr.io/@ayonli/jsext/doc/json/~) Functions for parsing JSONs to
   specific structures.
 - [math](https://jsr.io/@ayonli/jsext/doc/math/~) Functions for mathematical

@@ -132,6 +132,13 @@
             "import": "./esm/example.js",
             "default": "./example.ts"
         },
+        "./filetype": {
+            "types": "./types/filetype.d.ts",
+            "bun": "./filetype.ts",
+            "require": "./cjs/filetype.js",
+            "import": "./esm/filetype.js",
+            "default": "./filetype.ts"
+        },
         "./func": {
             "types": "./types/func.d.ts",
             "bun": "./func.ts",

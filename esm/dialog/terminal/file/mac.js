@@ -1,18 +1,9 @@
 import { lines } from '../../../string.js';
 import { run } from '../../../cli.js';
-import { UTIMap } from './constants.js';
+import { getUTI } from '../../../filetype.js';
 
 function htmlAcceptToAppleType(accept) {
-    const entries = Object.entries(UTIMap);
-    return accept.split(/\s*,\s*/).map(type => {
-        const _type = type.toLowerCase();
-        for (const [uti, types] of entries) {
-            if (types.includes(_type)) {
-                return uti;
-            }
-        }
-        return type;
-    }).join(",");
+    return accept.split(/\s*,\s*/).map(getUTI).filter(Boolean).join(",");
 }
 function createAppleScript(mode, title = "", options = {}) {
     const { type, forSave, defaultName } = options;

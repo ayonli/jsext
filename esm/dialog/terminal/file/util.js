@@ -1,13 +1,11 @@
 import { basename, extname } from '../../../path.js';
-import { UTIMap } from './constants.js';
+import { getMIME } from '../../../filetype.js';
 
 function createFile(content, path, options) {
-    var _a, _b;
+    var _a;
     const { lastModified, relativePath } = options;
-    const tagsList = Object.values(UTIMap);
     const filename = basename(path);
-    const ext = extname(filename).toLowerCase();
-    const type = (_b = (_a = tagsList.find(tags => tags.includes(ext))) === null || _a === void 0 ? void 0 : _a.find(tag => tag.includes("/"))) !== null && _b !== void 0 ? _b : "";
+    const type = (_a = getMIME(extname(filename))) !== null && _a !== void 0 ? _a : "";
     let file;
     if (lastModified) {
         file = new File([content], filename, { type, lastModified });

@@ -15,6 +15,7 @@
         "./dialog": "./dialog.ts",
         "./error": "./error.ts",
         "./example": "./example.ts",
+        "./filetype": "./filetype.ts",
         "./func": "./func.ts",
         "./json": "./json.ts",
         "./lock": "./lock.ts",
