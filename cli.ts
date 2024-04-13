@@ -7,7 +7,7 @@
 
 import { text } from "./bytes.ts";
 import { interop } from "./module.ts";
-import { PowerShellCommands } from "./terminal/constants.ts";
+import { PowerShellCommands } from "./cli/constants.ts";
 
 export type PopularPlatforms = "android"
     | "darwin"

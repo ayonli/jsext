@@ -1,5 +1,5 @@
 import { basename, join } from "../path.ts";
-import { platform } from "../terminal.ts";
+import { platform } from "../cli.ts";
 import read from "../read.ts";
 import readAll from "../readAll.ts";
 import { isBrowser } from "../util.ts";

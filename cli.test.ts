@@ -1,6 +1,6 @@
 import { ok, strictEqual } from "node:assert";
 import { equals } from "./path.ts";
-import { platform, run, which } from "./terminal.ts";
+import { platform, run, which } from "./cli.ts";
 
 describe("terminal", () => {
     it("platform", () => {

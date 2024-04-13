@@ -1,5 +1,5 @@
 import { lines } from "../../../string.ts";
-import { run } from "../../../terminal.ts";
+import { run } from "../../../cli.ts";
 import { UTIMap } from "./constants.ts";
 
 function htmlAcceptToAppleType(accept: string): string {
