@@ -175,18 +175,18 @@ describe("cli", () => {
                 strictEqual(stripAnsi(stdout.trim()), "false");
             }
 
-            if (!isNodeBelow16) {
+            if (platform() !== "windows") {
+                const { stdout } = await run("npx", ["ts-node", "./examples/cli/is-ts-runtime.js"]);
+                strictEqual(stripAnsi(stdout.trim()), "true");
+            }
+
+            if (platform() !== "windows" && !isNodeBelow16) {
                 const { stdout } = await run("npx", ["tsx", "./examples/cli/is-ts-runtime.js"]);
                 strictEqual(stripAnsi(stdout.trim()), "true");
             }
 
-            if (!isNodeBelow16) {
+            if (platform() !== "windows" && !isNodeBelow16) {
                 const { stdout } = await run("npx", ["tsx", "./examples/cli/is-ts-runtime.ts"]);
-                strictEqual(stripAnsi(stdout.trim()), "true");
-            }
-
-            {
-                const { stdout } = await run("npx", ["ts-node", "./examples/cli/is-ts-runtime.js"]);
                 strictEqual(stripAnsi(stdout.trim()), "true");
             }
         }
