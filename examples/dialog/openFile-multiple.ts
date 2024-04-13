@@ -1,6 +1,6 @@
 import { openFile } from "../../dialog.ts";
 
-const files = await openFile({ multiple: true, type: ".png,.jpg,.mp4" });
+const files = await openFile({ multiple: true, type: "*.png,*.jpg,image/*,*/*" });
 
 console.log(files.map(file => ({
     name: file.name,

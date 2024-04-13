@@ -3,10 +3,47 @@ import { lines } from "../../../string.ts";
 import { run } from "../../../cli.ts";
 import { getExtensions } from "../../../filetype.ts";
 
-function htmlAcceptToFileFilter(accept: string): string {
-    return accept.split(/\s*,\s*/).map(type => {
-        return getExtensions(type).map(t => `*${t}`).join(" ");
-    }).join(" ");
+function htmlAcceptToFileFilters(accept: string): string[] {
+    const groups: (string | string[])[] = [];
+
+    for (const type of accept.split(/\s*,\s*/)) {
+        if (type.endsWith("/*")) {
+            groups.push(type);
+        } else {
+            const group = groups[groups.length - 1];
+
+            if (!group || typeof group === "string") {
+                groups.push([type]);
+            } else {
+                group.push(type);
+            }
+        }
+    }
+
+    return groups.map(group => {
+        if (Array.isArray(group)) {
+            return group.map(type => getExtensions(type).map(t => `*${t}`).join(" "))
+                .join(" ");
+        } else if (group === "*/*") {
+            return "All | *";
+        } else {
+            const patterns = getExtensions(group).map(t => `*${t}`).join(" ");
+
+            if (!patterns) {
+                return undefined;
+            } else if (group === "video/*") {
+                return "Videos | " + patterns;
+            } else if (group === "audio/*") {
+                return "Audios | " + patterns;
+            } else if (group === "image/*") {
+                return "Images | " + patterns;
+            } else if (group === "text/*") {
+                return "Texts | " + patterns;
+            } else {
+                return patterns;
+            }
+        }
+    }).filter(Boolean) as string[];
 }
 
 export async function linuxPickFile(title = "", options: {
@@ -24,7 +61,9 @@ export async function linuxPickFile(title = "", options: {
     }
 
     if (type) {
-        args.push("--file-filter", htmlAcceptToFileFilter(type));
+        htmlAcceptToFileFilters(type).forEach(filter => {
+            args.push("--file-filter", filter);
+        });
     }
 
     if (forSave) {
@@ -35,7 +74,12 @@ export async function linuxPickFile(title = "", options: {
 
             if (!type) {
                 const ext = extname(defaultName);
-                ext && args.push("--file-filter", htmlAcceptToFileFilter(ext));
+
+                if (ext) {
+                    htmlAcceptToFileFilters(ext).forEach(filter => {
+                        args.push("--file-filter", filter);
+                    });
+                }
             }
         }
     }
@@ -64,7 +108,9 @@ export async function linuxPickFiles(title = "", type = ""): Promise<string[]> {
     }
 
     if (type) {
-        args.push("--file-filter", htmlAcceptToFileFilter(type));
+        htmlAcceptToFileFilters(type).forEach(filter => {
+            args.push("--file-filter", filter);
+        });
     }
 
     const { code, stdout, stderr } = await run("zenity", args);
