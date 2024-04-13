@@ -454,7 +454,7 @@ new TextDecoder();
 
 /**
  * Utility functions for working with ES and CommonJS modules.
- * @param module
+ * @module
  */
 function interop(module, strict = undefined) {
     if (typeof module === "function") {
