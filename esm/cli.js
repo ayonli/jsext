@@ -207,6 +207,23 @@ function quote(arg) {
     return String(arg).replace(/([A-Za-z]:)?([#!"$&'()*,:;<=>?@[\\\]^`{|}])/g, '$1\\$2');
 }
 /**
+ * Returns the path of the given command if it exists in the system,
+ * otherwise returns `null`.
+ */
+async function which(cmd) {
+    if (platform() === "windows") {
+        const { code, stdout } = await run("powershell", [
+            "-Command",
+            `Get-Command -Name ${cmd} | Select-Object -ExpandProperty Source`
+        ]);
+        return code ? null : stdout.trim();
+    }
+    else {
+        const { code, stdout } = await run("which", [cmd]);
+        return code ? null : stdout.trim();
+    }
+}
+/**
  * Executes a command in the terminal and returns the exit code and outputs.
  */
 async function run(cmd, args) {
@@ -272,34 +289,20 @@ async function run(cmd, args) {
     }
 }
 /**
- * Returns the path of the given command if it exists in the system,
- * otherwise returns `null`.
+ * Executes the specified commands (and any parameters) as though they were
+ * typed at the PowerShell command prompt, and then exits.
+ *
+ * This function can also be called within Windows Subsystem for Linux to
+ * directly interact with PowerShell.
  */
-async function which(cmd) {
-    if (platform() === "windows") {
-        const { code, stdout } = await run("powershell", [
-            "-Command",
-            `Get-Command -Name ${cmd} | Select-Object -ExpandProperty Source`
-        ]);
-        return code ? null : stdout.trim();
-    }
-    else {
-        const { code, stdout } = await run("which", [cmd]);
-        return code ? null : stdout.trim();
-    }
-}
-/**
- * Runs PowerShell with the supplied arguments. This function can be called
- * within Windows Subsystem for Linux to directly interact with PowerShell.
- */
-async function powershell(...args) {
+async function powershell(...commands) {
     let command = "powershell";
     if (isWSL()) {
         command = "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe";
     }
     return await run(command, [
         "-c",
-        ...args
+        ...commands
     ]);
 }
 

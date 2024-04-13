@@ -206,7 +206,7 @@ export function parseArgs(args: string[], options: {
 /**
  * Quotes a string to be used as a single argument to a shell command.
  */
-export function quote(arg: string) {
+export function quote(arg: string): string {
     if ((/["'\s]/).test(arg)) {
         if (platform() === "windows") {
             return `"` + arg.replace(/(["\\$])/g, '\\$1') + `"`;
@@ -216,6 +216,23 @@ export function quote(arg: string) {
     }
 
     return String(arg).replace(/([A-Za-z]:)?([#!"$&'()*,:;<=>?@[\\\]^`{|}])/g, '$1\\$2');
+}
+
+/**
+ * Returns the path of the given command if it exists in the system,
+ * otherwise returns `null`.
+ */
+export async function which(cmd: string): Promise<string | null> {
+    if (platform() === "windows") {
+        const { code, stdout } = await run("powershell", [
+            "-Command",
+            `Get-Command -Name ${cmd} | Select-Object -ExpandProperty Source`
+        ]);
+        return code ? null : stdout.trim();
+    } else {
+        const { code, stdout } = await run("which", [cmd]);
+        return code ? null : stdout.trim();
+    }
 }
 
 /**
@@ -288,27 +305,17 @@ export async function run(cmd: string, args: string[]): Promise<{
 }
 
 /**
- * Returns the path of the given command if it exists in the system,
- * otherwise returns `null`.
+ * Executes the specified commands (and any parameters) as though they were
+ * typed at the PowerShell command prompt, and then exits.
+ * 
+ * This function can also be called within Windows Subsystem for Linux to
+ * directly interact with PowerShell.
  */
-export async function which(cmd: string): Promise<string | null> {
-    if (platform() === "windows") {
-        const { code, stdout } = await run("powershell", [
-            "-Command",
-            `Get-Command -Name ${cmd} | Select-Object -ExpandProperty Source`
-        ]);
-        return code ? null : stdout.trim();
-    } else {
-        const { code, stdout } = await run("which", [cmd]);
-        return code ? null : stdout.trim();
-    }
-}
-
-/**
- * Runs PowerShell with the supplied arguments. This function can be called
- * within Windows Subsystem for Linux to directly interact with PowerShell.
- */
-export async function powershell(...args: string[]) {
+export async function powershell(...commands: string[]): Promise<{
+    code: number;
+    stdout: string;
+    stderr: string;
+}> {
     let command = "powershell";
 
     if (isWSL()) {
@@ -317,6 +324,6 @@ export async function powershell(...args: string[]) {
 
     return await run(command, [
         "-c",
-        ...args
+        ...commands
     ]);
 }
