@@ -123,4 +123,11 @@ describe("String", () => {
         ok("\u{00}\u{19}".isAscii());
         ok(!"\u{00}\u{19}".isAscii(true));
     });
+
+    it("String.prototype.isEmoji", () => {
+        ok(!"H".isEmoji());
+        ok(!"世".isEmoji());
+        ok(!"😴😄⛔🎠🚓🚇👨‍👨‍👧‍👧👦🏾".isEmoji());
+        ok("😴😄⛔🎠🚓🚇👨‍👨‍👧‍👧👦🏾".chars().every(char => char.isEmoji()));
+    });
 });

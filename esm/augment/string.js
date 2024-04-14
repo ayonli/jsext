@@ -1,4 +1,4 @@
-import { compare, random, count, capitalize, hyphenate, bytes, chars, words, lines, chunk, truncate, trim, trimEnd, trimStart, stripEnd, stripStart, byteLength, isAscii } from '../string.js';
+import { compare, random, count, capitalize, hyphenate, bytes, chars, words, lines, chunk, truncate, trim, trimEnd, trimStart, stripEnd, stripStart, byteLength, isAscii, isEmoji } from '../string.js';
 
 String.compare = compare;
 String.random = random;
@@ -49,5 +49,8 @@ String.prototype.byteLength = function byteLength$1() {
 };
 String.prototype.isAscii = function isAscii$1(printableOnly = false) {
     return isAscii(String(this), printableOnly);
+};
+String.prototype.isEmoji = function isEmoji$1() {
+    return isEmoji(String(this));
 };
 //# sourceMappingURL=string.js.map

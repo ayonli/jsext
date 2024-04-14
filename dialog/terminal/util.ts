@@ -1,8 +1,8 @@
 import { isFullWidth, isWide } from "../../external/code-point-utils/index.ts";
 import bytes, { ByteArray, equals } from "../../bytes.ts";
 import { sum } from "../../math.ts";
-import { byteLength, chars } from "../../string.ts";
-import { CANCEL, EMOJI_RE, ESC } from "./constants.ts";
+import { byteLength, chars, isEmoji } from "../../string.ts";
+import { CANCEL, ESC } from "./constants.ts";
 
 export type KeypressEventInfo = {
     sequence: string;
@@ -18,7 +18,7 @@ export type DenoStdin = typeof Deno.stdin;
 export type DenoStdout = typeof Deno.stdout;
 
 function charWidth(char: string) {
-    if (EMOJI_RE.test(char)) {
+    if (isEmoji(char)) {
         const _bytes = byteLength(char);
 
         // Most emojis are 4 bytes wide, but some are 3 bytes in Windows/Linux,

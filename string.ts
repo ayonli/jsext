@@ -7,6 +7,7 @@ import { chunk as _chunk } from "./array/base.ts";
 import _bytes, { ByteArray } from "./bytes.ts";
 
 const _chars = chars;
+export const EMOJI_RE = /^(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\u200d(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*$/u;
 
 /**
  * Compares two strings, returns `-1` if `a < b`, `0` if `a === b` and `1` if `a > b`.
@@ -175,4 +176,9 @@ export function byteLength(str: string): number {
 /** Checks if all characters in this string are within the ASCII range. */
 export function isAscii(str: string, printableOnly = false): boolean {
     return printableOnly ? /^[-~]+$/.test(str) : /^[\x00-\x7E]+$/.test(str);
+}
+
+/** Checks if the given character is an emoji. */
+export function isEmoji(char: string): boolean {
+    return EMOJI_RE.test(char);
 }

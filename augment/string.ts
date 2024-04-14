@@ -18,6 +18,7 @@ import {
     stripStart as _stripStart,
     byteLength as _byteLength,
     isAscii as _isAscii,
+    isEmoji as _isEmoji,
 } from "../string.ts";
 
 declare global {
@@ -70,6 +71,8 @@ declare global {
         byteLength(): number;
         /** Checks if all characters in this string are within the ASCII range. */
         isAscii(printableOnly?: boolean): boolean;
+        /** Checks if the string is an emoji. */
+        isEmoji(): boolean;
     }
 }
 
@@ -138,4 +141,8 @@ String.prototype.byteLength = function byteLength() {
 
 String.prototype.isAscii = function isAscii(printableOnly = false) {
     return _isAscii(String(this), printableOnly);
+};
+
+String.prototype.isEmoji = function isEmoji() {
+    return _isEmoji(String(this));
 };

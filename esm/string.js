@@ -6,6 +6,7 @@ import bytes$1 from './bytes.js';
  * @module
  */
 const _chars = chars;
+const EMOJI_RE = /^(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\u200d(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*$/u;
 /**
  * Compares two strings, returns `-1` if `a < b`, `0` if `a === b` and `1` if `a > b`.
  */
@@ -157,6 +158,10 @@ function byteLength(str) {
 function isAscii(str, printableOnly = false) {
     return printableOnly ? /^[-~]+$/.test(str) : /^[\x00-\x7E]+$/.test(str);
 }
+/** Checks if the given character is an emoji. */
+function isEmoji(char) {
+    return EMOJI_RE.test(char);
+}
 
-export { byteLength, bytes, capitalize, chars, chunk, compare, count, hyphenate, isAscii, lines, random, stripEnd, stripStart, trim, trimEnd, trimStart, truncate, words };
+export { EMOJI_RE, byteLength, bytes, capitalize, chars, chunk, compare, count, hyphenate, isAscii, isEmoji, lines, random, stripEnd, stripStart, trim, trimEnd, trimStart, truncate, words };
 //# sourceMappingURL=string.js.map
