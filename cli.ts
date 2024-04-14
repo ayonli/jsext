@@ -302,13 +302,13 @@ export async function run(cmd: string, args: string[]): Promise<{
 }
 
 /**
- * Executes the specified commands (and any parameters) as though they were
- * typed at the PowerShell command prompt, and then exits.
+ * Executes the script inside PowerShell as though they were typed at the
+ * PowerShell command prompt.
  * 
  * This function can also be called within Windows Subsystem for Linux to
  * directly interact with PowerShell.
  */
-export async function powershell(...commands: string[]): Promise<{
+export async function powershell(script: string): Promise<{
     code: number;
     stdout: string;
     stderr: string;
@@ -319,10 +319,7 @@ export async function powershell(...commands: string[]): Promise<{
         command = "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe";
     }
 
-    return await run(command, [
-        "-c",
-        ...commands
-    ]);
+    return await run(command, ["-c", script]);
 }
 
 /**

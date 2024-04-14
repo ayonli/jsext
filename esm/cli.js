@@ -285,21 +285,18 @@ async function run(cmd, args) {
     }
 }
 /**
- * Executes the specified commands (and any parameters) as though they were
- * typed at the PowerShell command prompt, and then exits.
+ * Executes the script inside PowerShell as though they were typed at the
+ * PowerShell command prompt.
  *
  * This function can also be called within Windows Subsystem for Linux to
  * directly interact with PowerShell.
  */
-async function powershell(...commands) {
+async function powershell(script) {
     let command = "powershell";
     if (isWSL()) {
         command = "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe";
     }
-    return await run(command, [
-        "-c",
-        ...commands
-    ]);
+    return await run(command, ["-c", script]);
 }
 /**
  * Executes a command with elevated privileges using `sudo` (or UAC in Windows).
