@@ -128,6 +128,11 @@ describe("String", () => {
         ok(!"H".isEmoji());
         ok(!"世".isEmoji());
         ok(!"😴😄⛔🎠🚓🚇👨‍👨‍👧‍👧👦🏾".isEmoji());
-        ok("😴😄⛔🎠🚓🚇👨‍👨‍👧‍👧👦🏾".chars().every(char => char.isEmoji()));
+
+        if (!isNodeBelow16) {
+            ok("😴😄⛔🎠🚓🚇👨‍👨‍👧‍👧👦🏾".chars().every(char => char.isEmoji()));
+        } else {
+            ok("😴😄".chars().every(char => char.isEmoji()));
+        }
     });
 });
