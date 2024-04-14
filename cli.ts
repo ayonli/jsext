@@ -348,20 +348,16 @@ export async function sudo(cmd: string, args: string[], options: {
         return await run("sudo", [cmd, ...args]);
     }
 
-    const { Buffer } = await import("node:buffer");
     let exec: (
         cmd: string,
         options: { name?: string; },
         callback: (error?: Error, stdout?: string | Buffer, stderr?: string | Buffer) => void
     ) => void;
-    let decode: (buffer: Buffer, encoding: string) => string;
 
     if (isDeno) {
         ({ exec } = await interop(import("npm:sudo-prompt")));
-        ({ decode } = await interop(import("npm:iconv-lite")), false);
     } else {
         ({ exec } = await interop(import("sudo-prompt")));
-        ({ decode } = await interop(import("iconv-lite")), false);
     }
 
     return await new Promise((resolve, reject) => {
@@ -371,13 +367,19 @@ export async function sudo(cmd: string, args: string[], options: {
             if (error) {
                 reject(error);
             } else {
-                const _stdout = Buffer.isBuffer(stdout) ? stdout : Buffer.from(stdout as string);
-                const _stderr = Buffer.isBuffer(stderr) ? stderr : Buffer.from(stderr as string);
+                let _stdout = String(stdout);
+
+                if (_isWindows && cmd === "echo" && _stdout.startsWith(`"`)) {
+                    // In Windows CMD, the `echo` command will output the string
+                    // with double quotes. We need to remove them.
+                    let lastIndex = _stdout.lastIndexOf(`"`);
+                    _stdout = _stdout.slice(1, lastIndex) + _stdout.slice(lastIndex + 1);
+                }
 
                 resolve({
                     code: 0,
-                    stdout: _isWindows ? decode(_stdout, "cp936") : String(_stdout),
-                    stderr: _isWindows ? decode(_stderr, "cp936") : String(_stderr),
+                    stdout: _stdout,
+                    stderr: String(stderr),
                 });
             }
         });
