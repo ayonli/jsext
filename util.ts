@@ -1,11 +1,3 @@
-export function isFunction(val: unknown): val is (...args: any[]) => any {
-    return typeof val === "function";
-}
-
-export function isPath(id: string): boolean {
-    return /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/.test(id);
-}
-
 export function unrefTimer(timer: NodeJS.Timeout | number): void {
     if (typeof timer === "object" && typeof timer.unref === "function") {
         timer.unref();
@@ -23,7 +15,7 @@ export function unrefTimer(timer: NodeJS.Timeout | number): void {
  * Otherwise, returns `null`.
  */
 export function asIterable(source: any): AsyncIterable<any> | null {
-    if (isFunction(source[Symbol.asyncIterator])) {
+    if (typeof source[Symbol.asyncIterator] === "function") {
         return source;
     } else if (typeof ReadableStream === "function"
         && source instanceof ReadableStream

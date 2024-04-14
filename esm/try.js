@@ -1,6 +1,5 @@
 import { isAsyncGenerator, isGenerator } from './external/check-iterable/index.js';
 import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
-import { isFunction } from './util.js';
 
 /**
  * Calls a function safely and return errors when captured.
@@ -8,7 +7,7 @@ import { isFunction } from './util.js';
  */
 // @ts-ignore
 function _try(fn, ...args) {
-    if (isFunction(fn)) {
+    if (typeof fn === "function") {
         try {
             return _try(fn.apply(void 0, args));
         }
@@ -80,7 +79,7 @@ function _try(fn, ...args) {
             return [null, result];
         })();
     }
-    else if (isFunction(returns === null || returns === void 0 ? void 0 : returns.then)) {
+    else if (typeof (returns === null || returns === void 0 ? void 0 : returns.then) === "function") {
         returns = returns
             .then((value) => [null, value]);
         return Promise.resolve(returns)

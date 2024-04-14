@@ -1,11 +1,14 @@
 import chan from './chan.js';
-import { asIterable, isFunction } from './util.js';
+import { asIterable } from './util.js';
 import readAll$1 from './readAll.js';
 
 /**
  * This module includes functions for reading data from various kinds of streams.
  * @module
  */
+function isFunction(val) {
+    return typeof val === "function";
+}
 function read(source, eventMap = undefined) {
     var _a;
     const iterable = asIterable(source);

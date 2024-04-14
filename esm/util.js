@@ -1,9 +1,3 @@
-function isFunction(val) {
-    return typeof val === "function";
-}
-function isPath(id) {
-    return /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/.test(id);
-}
 function unrefTimer(timer) {
     if (typeof timer === "object" && typeof timer.unref === "function") {
         timer.unref();
@@ -21,7 +15,7 @@ function unrefTimer(timer) {
  * Otherwise, returns `null`.
  */
 function asIterable(source) {
-    if (isFunction(source[Symbol.asyncIterator])) {
+    if (typeof source[Symbol.asyncIterator] === "function") {
         return source;
     }
     else if (typeof ReadableStream === "function"
@@ -47,5 +41,5 @@ function asIterable(source) {
     return null;
 }
 
-export { asIterable, isFunction, isPath, unrefTimer };
+export { asIterable, unrefTimer };
 //# sourceMappingURL=util.js.map

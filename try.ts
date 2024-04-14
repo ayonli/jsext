@@ -6,7 +6,6 @@
 // @ts-ignore
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
 import { ThenableAsyncGenerator } from "./external/thenable-generator/index.ts";
-import { isFunction } from "./util.ts";
 
 // The following declarations shall be order from complex to simple, otherwise
 // TypeScript won't work well.
@@ -162,9 +161,9 @@ export default function _try<E = unknown, T = any, TReturn = any, TNext = unknow
  */
 export default function _try<E = unknown, R = any>(job: PromiseLike<R>): Promise<[E, R]>;
 export default function _try(fn: any, ...args: any[]) {
-    if (isFunction(fn)) {
+    if (typeof fn === "function") {
         try {
-            return _try(fn.apply(void 0, args));
+            return _try((fn as (...args: any[]) => any).apply(void 0, args));
         } catch (err) {
             return [err, undefined];
         }
@@ -234,7 +233,7 @@ export default function _try(fn: any, ...args: any[]) {
 
             return [null, result];
         })() as Generator<unknown, any, unknown>;
-    } else if (isFunction(returns?.then)) {
+    } else if (typeof returns?.then === "function") {
         returns = (returns as PromiseLike<any>)
             .then((value: any) => [null, value]);
         return Promise.resolve(returns)

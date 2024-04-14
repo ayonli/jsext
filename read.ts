@@ -4,8 +4,12 @@
  */
 
 import chan from "./chan.ts";
-import { asIterable, isFunction } from "./util.ts";
+import { asIterable } from "./util.ts";
 import _readAll from "./readAll.ts";
+
+function isFunction(val: unknown): val is (...args: any[]) => any {
+    return typeof val === "function";
+}
 
 /**
  * Wraps a source as an AsyncIterable object that can be used in the
