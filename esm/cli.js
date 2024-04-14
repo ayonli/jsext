@@ -306,19 +306,15 @@ async function powershell(...commands) {
  */
 async function sudo(cmd, args, options = {}) {
     const _isWindows = platform() === "windows";
-    if (!(options === null || options === void 0 ? void 0 : options.gui) && !_isWindows) {
+    if ((!(options === null || options === void 0 ? void 0 : options.gui) && !_isWindows) || isWSL()) {
         return await run("sudo", [cmd, ...args]);
     }
-    const { Buffer } = await import('node:buffer');
     let exec;
-    let decode;
     if (isDeno) {
         ({ exec } = await interop(import('npm:sudo-prompt')));
-        (({ decode } = await interop(import('npm:iconv-lite'))));
     }
     else {
         ({ exec } = await interop(import('sudo-prompt')));
-        (({ decode } = await interop(import('iconv-lite'))));
     }
     return await new Promise((resolve, reject) => {
         exec(`${cmd}` + (args.length ? ` ${args.map(quote).join(" ")}` : ""), {
@@ -328,12 +324,17 @@ async function sudo(cmd, args, options = {}) {
                 reject(error);
             }
             else {
-                const _stdout = Buffer.isBuffer(stdout) ? stdout : Buffer.from(stdout);
-                const _stderr = Buffer.isBuffer(stderr) ? stderr : Buffer.from(stderr);
+                let _stdout = String(stdout);
+                if (_isWindows && cmd === "echo" && _stdout.startsWith(`"`)) {
+                    // In Windows CMD, the `echo` command will output the string
+                    // with double quotes. We need to remove them.
+                    let lastIndex = _stdout.lastIndexOf(`"`);
+                    _stdout = _stdout.slice(1, lastIndex) + _stdout.slice(lastIndex + 1);
+                }
                 resolve({
                     code: 0,
-                    stdout: _isWindows ? decode(_stdout, "cp936") : String(_stdout),
-                    stderr: _isWindows ? decode(_stderr, "cp936") : String(_stderr),
+                    stdout: _stdout,
+                    stderr: String(stderr),
                 });
             }
         });

@@ -333,6 +333,9 @@ export async function sudo(cmd: string, args: string[], options: {
      * By default, this function will use the `sudo` command when available and
      * running in text mode. Set this option to `true` to force using the GUI
      * prompt instead.
+     * 
+     * NOTE: this option is not available and will be ignored in Windows
+     * Subsystem for Linux.
      */
     gui?: boolean;
     /** Custom the dialog's title when `gui` option is set. */
@@ -344,7 +347,7 @@ export async function sudo(cmd: string, args: string[], options: {
 }> {
     const _isWindows = platform() === "windows";
 
-    if (!options?.gui && !_isWindows) {
+    if ((!options?.gui && !_isWindows) || isWSL()) {
         return await run("sudo", [cmd, ...args]);
     }
 
