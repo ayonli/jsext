@@ -47,6 +47,16 @@ function writePackageJson() {
     };
 }
 
+/**
+ * @param {string} id 
+ */
+function isExternal(id) {
+    return builtinModules.includes(id)
+        || id.includes("node_modules")
+        || id.startsWith("npm:")
+        || id.startsWith("jsr:");
+}
+
 /** @type {import ("rollup").RollupOptions[]} */
 const config = [
     { // CommonJS
@@ -62,10 +72,10 @@ const config = [
         plugins: [
             typescript(),
             resolve({ preferBuiltins: true }),
-            commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
+            commonjs({ ignoreDynamicRequires: true, ignore: isExternal }),
             writePackageJson(),
         ],
-        external: (id) => id.includes("node_modules") || builtinModules.includes(id),
+        external: isExternal,
     },
     { // ES Module
         input: moduleEntries,
@@ -79,10 +89,10 @@ const config = [
         plugins: [
             typescript(),
             resolve({ preferBuiltins: true }),
-            commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
+            commonjs({ ignoreDynamicRequires: true, ignore: isExternal }),
             writePackageJson(),
         ],
-        external: (id) => id.includes("node_modules") || builtinModules.includes(id),
+        external: isExternal,
     },
     { // Bundle
         input: "bundle.ts",
@@ -95,13 +105,13 @@ const config = [
         plugins: [
             typescript(),
             resolve({ preferBuiltins: true }),
-            commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
+            commonjs({ ignoreDynamicRequires: true, ignore: isExternal }),
             terser({
                 keep_classnames: true,
                 keep_fnames: true,
             })
         ],
-        external: (id) => id.includes("node_modules") || builtinModules.includes(id),
+        external: isExternal,
     },
     { // Worker for Bun, Deno and the browser
         input: "worker.ts",
@@ -112,9 +122,9 @@ const config = [
         plugins: [
             typescript(),
             resolve({ preferBuiltins: true }),
-            commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
+            commonjs({ ignoreDynamicRequires: true, ignore: isExternal }),
         ],
-        external: (id) => id.includes("node_modules") || builtinModules.includes(id),
+        external: isExternal,
     },
     { // Worker for Node.js
         input: "worker-node.ts",
@@ -125,9 +135,9 @@ const config = [
         plugins: [
             typescript(),
             resolve({ preferBuiltins: true }),
-            commonjs({ ignoreDynamicRequires: true, ignore: builtinModules }),
+            commonjs({ ignoreDynamicRequires: true, ignore: isExternal }),
         ],
-        external: (id) => id.includes("node_modules") || builtinModules.includes(id),
+        external: isExternal,
     }
 ];
 

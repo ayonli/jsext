@@ -1,6 +1,6 @@
 import { deepStrictEqual } from "node:assert";
 import { interop } from "./module.ts";
-import { isNode } from "./parallel/constants.ts";
+import { isNode } from "./env.ts";
 
 describe("module", () => {
     describe("interop", () => {

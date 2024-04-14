@@ -1,6 +1,6 @@
-import { Channel } from "../../chan.ts";
-import { ChannelMessage } from "../types.ts";
-import { id, isMainThread } from "../constants.ts";
+import { Channel } from "../chan.ts";
+import { ChannelMessage } from "./types.ts";
+import { id, isMainThread } from "../env.ts";
 
 const channelStore = new Map<number, {
     channel: Channel<any>,

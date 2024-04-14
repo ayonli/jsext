@@ -16,6 +16,7 @@ import {
     isAbsolute,
     isFileProtocol,
     isFileUrl,
+    isFsPath,
     isNotQuery,
     isPosixPath,
     isUrl,
@@ -28,6 +29,7 @@ import {
 export {
     isWindowsPath,
     isPosixPath,
+    isFsPath,
     isUrl,
     isFileUrl,
     isAbsolute,

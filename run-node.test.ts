@@ -3,7 +3,7 @@ import jsext from "./index.ts";
 import { range } from "./number.ts";
 import { fromObject } from "./error.ts";
 import { sum } from "./math.ts";
-import { isNode } from "./parallel/constants.ts";
+import { isNode } from "./env.ts";
 import { trim } from "./string.ts";
 import * as path from "node:path";
 

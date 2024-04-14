@@ -1,207 +1,176 @@
-import type { ChildProcess } from "node:child_process";
-import { Channel } from "../../chan.ts";
-import { AsyncTask } from "../../async.ts";
-import { BunWorker, NodeWorker, CallResponse, ChannelMessage } from "../types.ts";
-import { isBun, isDeno, isNode, isNodeBelow14 } from "../constants.ts";
-import { handleChannelMessage, isChannelMessage, wrapChannel } from "./channel.ts";
-import { resolveRemoteModuleUrl } from "./module.ts";
-import { isPlainObject } from "../../object.ts";
-import { serial } from "../../number.ts";
-import {
-    Exception,
-    fromErrorEvent,
-    fromObject,
-    isAggregateError,
-    isDOMException,
-    toObject,
-} from "../../error.ts";
-import * as path from "../../path.ts";
+import { Channel } from '../chan.js';
+import { isNode, isBun, isDeno, isNodeBelow14 } from '../env.js';
+import { wrapChannel, isChannelMessage, handleChannelMessage } from './channel.js';
+import { resolveRemoteModuleUrl } from './module.js';
+import { isPlainObject } from '../object.js';
+import { serial } from '../number.js';
+import { fromErrorEvent, isDOMException, isAggregateError, toObject, fromObject } from '../error.js';
+import { join, cwd, extname, resolve, dirname } from '../path.js';
+import Exception from '../error/Exception.js';
+import { isUrl, endsWith } from '../path/util.js';
 
 const workerIdCounter = serial(true);
-type PoolRecord = {
-    getWorker: Promise<Worker | BunWorker | NodeWorker>;
-    tasks: Set<number>;
-    lastAccess: number;
-};
-let workerPool: PoolRecord[] = [];
-let gcTimer: number | NodeJS.Timeout;
-
-type RemoteTask = {
-    module: string;
-    fn: string;
-    error?: unknown;
-    result?: { value: any; };
-    promise?: AsyncTask<any>;
-    channel?: Channel<IteratorResult<any>>;
-    generate?: () => void;
-};
-export const remoteTasks = new Map<number, RemoteTask>();
-
-export const getMaxParallelism: Promise<number> = (async () => {
+let workerPool = [];
+let gcTimer;
+const remoteTasks = new Map();
+const getMaxParallelism = (async () => {
     if (isNode) {
-        const os = await import("os");
-
+        const os = await import('os');
         if (typeof os.availableParallelism === "function") {
             return os.availableParallelism();
-        } else {
+        }
+        else {
             return os.cpus().length;
         }
-    } else if (typeof navigator === "object" && navigator.hardwareConcurrency) {
+    }
+    else if (typeof navigator === "object" && navigator.hardwareConcurrency) {
         return navigator.hardwareConcurrency;
-    } else {
+    }
+    else {
         return 8;
     }
 })();
-
-export function isCallResponse(msg: any): msg is CallResponse {
+function isCallResponse(msg) {
     return msg
         && typeof msg === "object"
         && ["return", "yield", "error", "gen"].includes(msg.type);
 }
-
-function getModuleDir(importMetaPath: string) {
-    if (path.extname(importMetaPath) === ".ts") {
-        return path.resolve(importMetaPath, "../../..");
+function getModuleDir(importMetaPath) {
+    if (extname(importMetaPath) === ".ts") {
+        return resolve(importMetaPath, "../..");
     }
-
-    let _dirname = path.dirname(importMetaPath);
-
-    if (path.endsWith(_dirname, "jsext/bundle")) {
+    let _dirname = dirname(importMetaPath);
+    if (endsWith(_dirname, "jsext/bundle")) {
         // The application imports the bundled version of this module
-        return path.dirname(_dirname);
-    } else {
+        return dirname(_dirname);
+    }
+    else {
         // The application imports the compiled version of this module
-        return path.resolve(_dirname, "../../..");
+        return resolve(_dirname, "../..");
     }
 }
-
-async function getWorkerEntry(parallel: {
-    workerEntry?: string | undefined;
-} = {}): Promise<string> {
+async function getWorkerEntry(parallel = {}) {
     if (isNode || isBun) {
         if (parallel.workerEntry) {
             return parallel.workerEntry;
         }
-
-        const { fileURLToPath } = await import("url");
+        const { fileURLToPath } = await import('url');
         const _filename = fileURLToPath(import.meta.url);
-
         if (_filename === process.argv[1]) {
             // The code is bundled, try the worker entry in node_modules
             // (hope it exists).
-            const _dirname = path.join(path.cwd(), "node_modules/@ayonli/jsext");
-
+            const _dirname = join(cwd(), "node_modules/@ayonli/jsext");
             if (isBun) {
-                if (path.extname(_filename) === ".ts") {
-                    return path.join(_dirname, "worker.ts");
-                } else {
-                    return path.join(_dirname, "bundle/worker.mjs");
+                if (extname(_filename) === ".ts") {
+                    return join(_dirname, "worker.ts");
                 }
-            } else {
-                return path.join(_dirname, "bundle/worker-node.mjs");
+                else {
+                    return join(_dirname, "bundle/worker.mjs");
+                }
             }
-        } else {
-            const _dirname = getModuleDir(_filename);
-
-            if (isBun) {
-                if (path.extname(_filename) === ".ts") {
-                    return path.join(_dirname, "worker.ts");
-                } else {
-                    return path.join(_dirname, "bundle/worker.mjs");
-                }
-            } else {
-                return path.join(_dirname, "bundle/worker-node.mjs");
+            else {
+                return join(_dirname, "bundle/worker-node.mjs");
             }
         }
-    } else if (isDeno) {
+        else {
+            const _dirname = getModuleDir(_filename);
+            if (isBun) {
+                if (extname(_filename) === ".ts") {
+                    return join(_dirname, "worker.ts");
+                }
+                else {
+                    return join(_dirname, "bundle/worker.mjs");
+                }
+            }
+            else {
+                return join(_dirname, "bundle/worker-node.mjs");
+            }
+        }
+    }
+    else if (isDeno) {
         if (parallel.workerEntry) {
             return parallel.workerEntry;
-        } else if ((import.meta as any)["main"]) {
+        }
+        else if (import.meta["main"]) {
             // The code is bundled, try the remote worker entry.
             if (import.meta.url.includes("jsr.io")) {
                 return "jsr:@ayonli/jsext/worker.ts";
-            } else {
+            }
+            else {
                 return "https://ayonli.github.io/jsext/bundle/worker.mjs";
             }
-        } else {
+        }
+        else {
             if (import.meta.url.includes("jsr.io")) {
                 return "jsr:@ayonli/jsext/worker.ts";
-            } else {
+            }
+            else {
                 const _dirname = getModuleDir(import.meta.url);
-                return path.join(_dirname, "worker.ts");
+                return join(_dirname, "worker.ts");
             }
         }
-    } else {
+    }
+    else {
         if (parallel.workerEntry) {
-            if (path.isUrl(parallel.workerEntry)) {
+            if (isUrl(parallel.workerEntry)) {
                 return await resolveRemoteModuleUrl(parallel.workerEntry);
-            } else {
+            }
+            else {
                 return parallel.workerEntry;
             }
-        } else {
+        }
+        else {
             const url = "https://ayonli.github.io/jsext/bundle/worker.mjs";
             return await resolveRemoteModuleUrl(url);
         }
     }
 }
-
-export async function createWorker(options: {
-    parallel: { workerEntry: string | undefined; };
-    adapter?: "worker_threads" | "child_process";
-}): Promise<{
-    worker: Worker | BunWorker | NodeWorker | ChildProcess;
-    workerId: number;
-    kind: "web_worker" | "bun_worker" | "node_worker" | "node_process";
-}> {
+async function createWorker(options) {
     let { adapter = "worker_threads", parallel } = options;
     const entry = await getWorkerEntry(parallel);
-
     if (isNode || isBun) {
         if (adapter === "child_process") {
-            const { fork } = await import("child_process");
+            const { fork } = await import('child_process');
             const serialization = isNodeBelow14 ? "json" : "advanced";
             const worker = fork(entry, ["--worker-thread"], {
                 stdio: "inherit",
                 serialization,
             });
-            const workerId = worker.pid as number;
-
-            await new Promise<void>((resolve, reject) => {
+            const workerId = worker.pid;
+            await new Promise((resolve, reject) => {
                 worker.once("error", reject);
                 worker.once("message", () => {
                     worker.off("error", reject);
                     resolve();
                 });
             });
-
             return {
                 worker,
                 workerId,
                 kind: "node_process",
             };
-        } else if (isNode) {
-            const { Worker } = await import("worker_threads");
+        }
+        else if (isNode) {
+            const { Worker } = await import('worker_threads');
             const worker = new Worker(entry, { argv: ["--worker-thread"] });
             const workerId = worker.threadId;
-
-            await new Promise<void>((resolve, reject) => {
+            await new Promise((resolve, reject) => {
                 worker.once("error", reject);
                 worker.once("online", () => {
                     worker.off("error", reject);
                     resolve();
                 });
             });
-
             return {
                 worker,
                 workerId,
                 kind: "node_worker",
             };
-        } else { // isBun
+        }
+        else { // isBun
             const worker = new Worker(entry, { type: "module" });
-            const workerId = workerIdCounter.next().value as number;
-
-            await new Promise<void>((resolve, reject) => {
+            const workerId = workerIdCounter.next().value;
+            await new Promise((resolve, reject) => {
                 worker.onerror = (ev) => {
                     reject(new Error(ev.message || "unable to start the worker"));
                 };
@@ -211,17 +180,16 @@ export async function createWorker(options: {
                     resolve();
                 });
             });
-
             return {
                 worker,
                 workerId,
                 kind: "bun_worker",
             };
         }
-    } else { // Deno and browsers
+    }
+    else { // Deno and browsers
         const worker = new Worker(entry, { type: "module" });
-        const workerId = workerIdCounter.next().value as number;
-
+        const workerId = workerIdCounter.next().value;
         return {
             worker,
             workerId,
@@ -229,27 +197,24 @@ export async function createWorker(options: {
         };
     }
 }
-
-function handleWorkerMessage(poolRecord: PoolRecord, worker: NodeWorker | BunWorker, msg: any): void {
+function handleWorkerMessage(poolRecord, worker, msg) {
+    var _a, _b, _c, _d;
     if (isChannelMessage(msg)) {
         handleChannelMessage(msg);
-    } else if (isCallResponse(msg) && msg.taskId) {
+    }
+    else if (isCallResponse(msg) && msg.taskId) {
         const task = remoteTasks.get(msg.taskId);
-
         if (!task)
             return;
-
         if (msg.type === "return" || msg.type === "error") {
             if (msg.type === "error") {
                 const err = isPlainObject(msg.error)
-                    ? (fromObject(msg.error) ?? msg.error)
+                    ? ((_a = fromObject(msg.error)) !== null && _a !== void 0 ? _a : msg.error)
                     : msg.error;
-
                 if (err instanceof Error &&
                     (err.message.includes("not be cloned")
-                        || err.stack?.includes("not be cloned") // Node.js v16-
-                    )
-                ) {
+                        || ((_b = err.stack) === null || _b === void 0 ? void 0 : _b.includes("not be cloned")) // Node.js v16-
+                    )) {
                     Object.defineProperty(err, "stack", {
                         configurable: true,
                         enumerable: false,
@@ -258,43 +223,41 @@ function handleWorkerMessage(poolRecord: PoolRecord, worker: NodeWorker | BunWor
                             + `at ${task.fn} (${task.module})`,
                     });
                 }
-
                 if (task.promise) {
                     task.promise.reject(err);
-
                     if (task.channel) {
                         task.channel.close();
                     }
-                } else if (task.channel) {
-                    task.channel.close(err as Error);
-                } else {
+                }
+                else if (task.channel) {
+                    task.channel.close(err);
+                }
+                else {
                     task.error = err;
                 }
-            } else {
+            }
+            else {
                 const value = unwrapReturnValue(msg.value);
-
                 if (task.promise) {
                     task.promise.resolve(value);
-                } else {
+                }
+                else {
                     task.result = { value };
                 }
-
                 if (task.channel) {
                     task.channel.close();
                 }
             }
-
             poolRecord.tasks.delete(msg.taskId);
-
             if (!poolRecord.tasks.size && (isNode || isBun)) {
                 // Allow the main thread to exit if the event
                 // loop is empty.
                 worker.unref();
             }
-        } else if (msg.type === "yield") {
+        }
+        else if (msg.type === "yield") {
             const value = unwrapReturnValue(msg.value);
-            task.channel?.send({ value, done: msg.done as boolean });
-
+            (_c = task.channel) === null || _c === void 0 ? void 0 : _c.send({ value, done: msg.done });
             if (msg.done) {
                 // The final message of yield event is the
                 // return value.
@@ -302,222 +265,197 @@ function handleWorkerMessage(poolRecord: PoolRecord, worker: NodeWorker | BunWor
                     type: "return",
                     value,
                     taskId: msg.taskId,
-                } satisfies CallResponse);
+                });
             }
-        } else if (msg.type === "gen") {
-            task.generate?.();
+        }
+        else if (msg.type === "gen") {
+            (_d = task.generate) === null || _d === void 0 ? void 0 : _d.call(task);
         }
     }
 }
-
-function handleWorkerClose(poolRecord: PoolRecord, err: Error): void {
+function handleWorkerClose(poolRecord, err) {
     for (const taskId of poolRecord.tasks) {
         poolRecord.tasks.delete(taskId);
         const task = remoteTasks.get(taskId);
-
         if (task) {
             if (task.promise) {
                 task.promise.reject(err);
-
                 if (task.channel) {
                     task.channel.close();
                 }
-            } else if (task.channel) {
+            }
+            else if (task.channel) {
                 task.channel.close(err);
-            } else {
+            }
+            else {
                 task.error = err;
             }
         }
     }
-
     workerPool = workerPool.filter(item => item !== poolRecord);
 }
-
-export async function acquireWorker(taskId: number, parallel: {
-    maxWorkers: number | undefined;
-    workerEntry: string | undefined;
-}) {
+async function acquireWorker(taskId, parallel) {
     const maxWorkers = parallel.maxWorkers || await getMaxParallelism;
-    let poolRecord = workerPool.find(item => !item.tasks.size) as PoolRecord;
-
+    let poolRecord = workerPool.find(item => !item.tasks.size);
     if (poolRecord) {
         poolRecord.lastAccess = Date.now();
-    } else if (workerPool.length < maxWorkers) {
+    }
+    else if (workerPool.length < maxWorkers) {
         workerPool.push(poolRecord = {
             getWorker: (async () => {
                 const worker = (await createWorker({ parallel }))
-                    .worker as Worker | BunWorker | NodeWorker;
-                const handleMessage = handleWorkerMessage.bind(
-                    void 0,
-                    poolRecord,
-                    worker as NodeWorker | BunWorker);
+                    .worker;
+                const handleMessage = handleWorkerMessage.bind(void 0, poolRecord, worker);
                 const handleClose = handleWorkerClose.bind(void 0, poolRecord);
-
                 if (isNode) {
-                    (worker as NodeWorker).on("message", handleMessage)
+                    worker.on("message", handleMessage)
                         .on("error", handleClose); // In Node.js, worker will exit once erred.
-                } else if (isBun) {
-                    const _worker = worker as BunWorker;
-
+                }
+                else if (isBun) {
+                    const _worker = worker;
                     _worker.onmessage = (ev) => handleMessage(ev.data);
                     _worker.onerror = () => _worker.terminate(); // terminate once erred
-                    _worker.addEventListener("close", ((ev: CloseEvent) => {
+                    _worker.addEventListener("close", ((ev) => {
                         handleClose(new Error(ev.reason + " (" + ev.code + ")"));
-                    }) as EventListener);
-                } else {
-                    const _worker = worker as Worker;
-
+                    }));
+                }
+                else {
+                    const _worker = worker;
                     _worker.onmessage = (ev) => handleMessage(ev.data);
                     _worker.onerror = (ev) => {
+                        var _a;
                         _worker.terminate(); // ensure termination
-                        handleClose(fromErrorEvent(ev) ?? new Error("worker exited"));
+                        handleClose((_a = fromErrorEvent(ev)) !== null && _a !== void 0 ? _a : new Error("worker exited"));
                     };
                 }
-
                 return worker;
             })(),
             tasks: new Set(),
             lastAccess: Date.now(),
         });
-
         if (!gcTimer) {
             gcTimer = setInterval(() => {
                 // GC: clean long-time unused workers
                 const now = Date.now();
-                const idealItems: PoolRecord[] = [];
-
+                const idealItems = [];
                 workerPool = workerPool.filter(item => {
                     const ideal = !item.tasks.size
-                        && (now - item.lastAccess) >= 10_000;
-
+                        && (now - item.lastAccess) >= 10000;
                     if (ideal) {
                         idealItems.push(item);
                     }
-
                     return !ideal;
                 });
-
-                idealItems.forEach(async item => {
+                idealItems.forEach(async (item) => {
                     const worker = await item.getWorker;
-                    await (worker as Worker | BunWorker | NodeWorker).terminate();
+                    await worker.terminate();
                 });
-            }, 1_000);
-
+            }, 1000);
             if (isNode || isBun) {
-                (gcTimer as NodeJS.Timeout).unref();
-            } else if (isDeno) {
-                Deno.unrefTimer(gcTimer as unknown as number);
+                gcTimer.unref();
+            }
+            else if (isDeno) {
+                Deno.unrefTimer(gcTimer);
             }
         }
-    } else {
-        poolRecord = workerPool[taskId % workerPool.length] as PoolRecord;
+    }
+    else {
+        poolRecord = workerPool[taskId % workerPool.length];
         poolRecord.lastAccess = Date.now();
     }
-
     poolRecord.tasks.add(taskId);
-
     const worker = await poolRecord.getWorker;
-
     if (isNode || isBun) {
         // Prevent premature exit in the main thread.
-        (worker as NodeWorker | BunWorker).ref();
+        worker.ref();
     }
-
     return worker;
 }
-
-export function wrapArgs<A extends any[]>(
-    args: A,
-    getWorker: Promise<Worker | BunWorker | NodeWorker | ChildProcess>
-): {
-    args: A,
-    transferable: ArrayBuffer[];
-} {
-    const transferable: ArrayBuffer[] = [];
+function wrapArgs(args, getWorker) {
+    const transferable = [];
     args = args.map(arg => {
         if (arg instanceof Channel) {
             return wrapChannel(arg, (type, msg, channelId) => {
                 getWorker.then(worker => {
-                    if (typeof (worker as any)["postMessage"] === "function") {
+                    if (typeof worker["postMessage"] === "function") {
                         try {
-                            (worker as Worker).postMessage({
+                            worker.postMessage({
                                 type,
                                 value: msg,
                                 channelId,
-                            } satisfies ChannelMessage);
-                        } catch (err) {
+                            });
+                        }
+                        catch (err) {
                             // Suppress error when sending `close` command to
                             // the channel in the worker thread when the thread
                             // is terminated. This situation often occurs when
                             // using `run()` to call function and the `result()`
                             // is called before `channel.close()`.
                             if (!(type === "close" &&
-                                String(err).includes("Worker has been terminated"))
-                            ) {
+                                String(err).includes("Worker has been terminated"))) {
                                 throw err;
                             }
                         }
-                    } else {
-                        (worker as ChildProcess).send({
+                    }
+                    else {
+                        worker.send({
                             type,
                             value: msg,
                             channelId,
-                        } satisfies ChannelMessage);
+                        });
                     }
                 });
             });
-        } else if ((arg instanceof Exception)
+        }
+        else if ((arg instanceof Exception)
             || isDOMException(arg)
-            || isAggregateError(arg)
-        ) {
+            || isAggregateError(arg)) {
             return toObject(arg);
         }
-
         if (arg instanceof ArrayBuffer) {
             transferable.push(arg);
-        } else if (isPlainObject(arg)) {
+        }
+        else if (isPlainObject(arg)) {
             for (const key of Object.getOwnPropertyNames(arg)) {
                 const value = arg[key];
-
                 if (value instanceof ArrayBuffer) {
                     transferable.push(value);
-                } else if ((value instanceof Exception)
+                }
+                else if ((value instanceof Exception)
                     || isDOMException(value)
-                    || isAggregateError(value)
-                ) {
+                    || isAggregateError(value)) {
                     arg[key] = toObject(value);
                 }
             }
-        } else if (Array.isArray(arg)) {
+        }
+        else if (Array.isArray(arg)) {
             arg = arg.map(item => {
                 if (item instanceof ArrayBuffer) {
                     transferable.push(item);
                     return item;
-                } else if ((item instanceof Exception)
+                }
+                else if ((item instanceof Exception)
                     || isDOMException(item)
-                    || isAggregateError(item)
-                ) {
+                    || isAggregateError(item)) {
                     return toObject(item);
-                } else {
+                }
+                else {
                     return item;
                 }
             });
         }
-
         return arg;
-    }) as A;
-
+    });
     return { args, transferable };
 }
-
-export function unwrapReturnValue(value: any): any {
-    if (isPlainObject(value) && (
-        value["@@type"] === "Exception" ||
+function unwrapReturnValue(value) {
+    if (isPlainObject(value) && (value["@@type"] === "Exception" ||
         value["@@type"] === "DOMException" ||
-        value["@@type"] === "AggregateError"
-    )) {
+        value["@@type"] === "AggregateError")) {
         return fromObject(value);
     }
-
     return value;
 }
+
+export { acquireWorker, createWorker, getMaxParallelism, isCallResponse, remoteTasks, unwrapReturnValue, wrapArgs };
+//# sourceMappingURL=threads.js.map

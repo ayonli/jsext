@@ -5,7 +5,7 @@
  */
 
 import { serial } from "./number.ts";
-import { id } from "./parallel/constants.ts";
+import { id } from "./env.ts";
 
 if (typeof Symbol.dispose === "undefined") {
     Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });

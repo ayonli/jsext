@@ -1,5 +1,5 @@
 import { serial } from './number.js';
-import { id } from './parallel/constants.js';
+import { id } from './env.js';
 
 /**
  * A channel implementation that transfers data across routines, even across

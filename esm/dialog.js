@@ -4,7 +4,7 @@ import { alertInBrowser, confirmInBrowser, promptInBrowser } from './dialog/brow
 import alertInTerminal from './dialog/terminal/alert.js';
 import confirmInTerminal from './dialog/terminal/confirm.js';
 import promptInTerminal from './dialog/terminal/prompt.js';
-import { isBrowser } from './util.js';
+import { isBrowser } from './env.js';
 
 /**
  * Asynchronous dialog functions for both browsers and terminals.
@@ -18,7 +18,7 @@ import { isBrowser } from './util.js';
  * dialog.
  */
 async function alert(message, options = {}) {
-    if (isBrowser()) {
+    if (isBrowser) {
         await alertInBrowser(message);
     }
     else {
@@ -30,7 +30,7 @@ async function alert(message, options = {}) {
  * or cancels the dialog.
  */
 async function confirm(message, options = {}) {
-    if (isBrowser()) {
+    if (isBrowser) {
         return await confirmInBrowser(message);
     }
     else {
@@ -49,7 +49,7 @@ async function prompt(message, options = "") {
         ? typeof options === "object" ? ((_b = options.mask) !== null && _b !== void 0 ? _b : "*") : "*"
         : undefined;
     const gui = typeof options === "object" ? ((_c = options.gui) !== null && _c !== void 0 ? _c : false) : false;
-    if (isBrowser()) {
+    if (isBrowser) {
         return await promptInBrowser(message, { type, defaultValue });
     }
     else {

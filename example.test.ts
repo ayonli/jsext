@@ -1,6 +1,6 @@
 import { strictEqual } from "node:assert";
 import jsext from "./index.ts";
-import { isNode } from "./parallel/constants.ts";
+import { isNode } from "./env.ts";
 
 const isTsx = globalThis["process"]?.env["npm_lifecycle_script"]?.match(/\btsx\b/) ? true : false;
 

@@ -1,5 +1,5 @@
-import { Channel } from '../../chan.js';
-import { isMainThread, id } from '../constants.js';
+import { Channel } from '../chan.js';
+import { isMainThread, id } from '../env.js';
 
 const channelStore = new Map();
 function isChannelMessage(msg) {

@@ -1,4 +1,4 @@
-import { isBrowser } from '../util.js';
+import { isBrowser } from '../env.js';
 import { progressInBrowser } from './browser/index.js';
 import { progressInDeno, progressInNode } from './terminal/progress.js';
 
@@ -93,7 +93,7 @@ async function progress(message, fn, onAbort = undefined) {
             }
         });
     });
-    if (isBrowser()) {
+    if (isBrowser) {
         return await progressInBrowser(message, fn, { signal, abort, listenForAbort });
     }
     else if (typeof Deno === "object") {

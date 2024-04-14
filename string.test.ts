@@ -1,6 +1,6 @@
 import "./augment.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { isNodeBelow16 } from "./parallel/constants.ts";
+import { isNodeBelow16 } from "./env.ts";
 
 describe("String", () => {
     it("String.compare", () => {

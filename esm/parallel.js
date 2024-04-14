@@ -1,10 +1,12 @@
 import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
 import chan from './chan.js';
 import { serial } from './number.js';
-import { IsPath, isDeno, isNode, isBun, isMainThread } from './parallel/constants.js';
-import { sanitizeModuleId, resolveModule } from './parallel/utils/module.js';
-import { remoteTasks, acquireWorker, wrapArgs } from './parallel/utils/threads.js';
+import './path.js';
 import { asyncTask } from './async.js';
+import { isDeno, isNode, isBun, isMainThread } from './env.js';
+import { sanitizeModuleId, resolveModule } from './parallel/module.js';
+import { remoteTasks, acquireWorker, wrapArgs } from './parallel/threads.js';
+import { isFsPath } from './path/util.js';
 
 /**
  * This module provides JavaScript the ability to run functions in parallel
@@ -167,7 +169,7 @@ function extractBaseUrl(stackTrace) {
         }
         baseUrl = callSite.replace(/:\d+:\d+$/, "");
         if (!/^(https?|file):/.test(baseUrl)) {
-            if (IsPath.test(baseUrl)) {
+            if (isFsPath(baseUrl)) {
                 baseUrl = "file://" + baseUrl;
             }
             else if (isDeno) {
@@ -324,7 +326,7 @@ function extractBaseUrl(stackTrace) {
 function parallel(module) {
     let modId = sanitizeModuleId(module, true);
     let baseUrl;
-    if (IsPath.test(modId)) {
+    if (isFsPath(modId)) {
         if (typeof Error.captureStackTrace === "function") {
             const trace = {};
             Error.captureStackTrace(trace);

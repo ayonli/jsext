@@ -11,6 +11,7 @@ import {
     isAbsolute,
     isFileUrl,
     isPosixPath,
+    isFsPath,
     isUrl,
     isWindowsPath,
     join,
@@ -78,6 +79,23 @@ describe("path", () => {
         ok(!isPosixPath("c:\\"));
         ok(!isPosixPath("http://"));
         ok(!isPosixPath("foo/bar"));
+    });
+
+    it("isFsPath", () => {
+        ok(isFsPath("/"));
+        ok(isFsPath("/foo/bar"));
+        ok(isFsPath("c:"));
+        ok(isFsPath("c:/"));
+        ok(isFsPath("c:\\"));
+        ok(isFsPath("c:/foo/bar"));
+        ok(isFsPath("c:\\foo\\bar"));
+        ok(isFsPath("./foo/bar/"));
+        ok(isFsPath("../foo/bar/"));
+        ok(isFsPath(".\\foo\\bar"));
+        ok(isFsPath("..\\foo\\bar"));
+        ok(!isFsPath("http://example.com/foo/bar"));
+        ok(!isFsPath("file:///foo/bar"));
+        ok(!isFsPath("foo/bar"));
     });
 
     it("isUrl", () => {

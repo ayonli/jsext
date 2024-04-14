@@ -1,8 +1,8 @@
 import { basename, join } from '../path.js';
+import { isBrowser } from '../env.js';
 import { platform, isWSL } from '../cli.js';
 import read from '../read.js';
 import readAll from '../readAll.js';
-import { isBrowser } from '../util.js';
 import { readFile } from './terminal/file/util.js';
 import { macPickFile, macPickFiles, macPickFolder } from './terminal/file/mac.js';
 import { linuxPickFile, linuxPickFiles, linuxPickFolder } from './terminal/file/linux.js';
@@ -83,7 +83,7 @@ async function pickDirectory(options = {}) {
 }
 async function openFile(options = {}) {
     const { title = "", type = "", multiple = false, directory = false } = options;
-    if (isBrowser()) {
+    if (isBrowser) {
         const input = document.createElement("input");
         input.type = "file";
         input.accept = type !== null && type !== void 0 ? type : "";
@@ -186,7 +186,7 @@ async function openFile(options = {}) {
     }
 }
 async function saveFile(file, options = {}) {
-    if (isBrowser()) {
+    if (isBrowser) {
         const a = document.createElement("a");
         if (file instanceof ReadableStream) {
             const type = options.type || "application/octet-stream";

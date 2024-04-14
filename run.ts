@@ -7,17 +7,18 @@ import type { ChildProcess } from "node:child_process";
 import chan, { Channel } from "./chan.ts";
 import { isPlainObject } from "./object.ts";
 import { fromErrorEvent, fromObject } from "./error.ts";
+import { isFsPath } from "./path.ts";
+import { isNode, isBun, isDeno } from "./env.ts";
 import { BunWorker, NodeWorker, CallRequest, CallResponse } from "./parallel/types.ts";
-import { isNode, isBun, isDeno, IsPath } from "./parallel/constants.ts";
-import { sanitizeModuleId } from "./parallel/utils/module.ts";
-import { handleChannelMessage, isChannelMessage } from "./parallel/utils/channel.ts";
+import { sanitizeModuleId } from "./parallel/module.ts";
+import { handleChannelMessage, isChannelMessage } from "./parallel/channel.ts";
 import {
     getMaxParallelism,
     createWorker,
     isCallResponse,
     wrapArgs,
     unwrapReturnValue,
-} from "./parallel/utils/threads.ts";
+} from "./parallel/threads.ts";
 import parallel from "./parallel.ts";
 import { unrefTimer } from "./util.ts";
 import { AsyncTask, asyncTask } from "./async.ts";
@@ -138,7 +139,7 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
     if (isDeno) {
         baseUrl = "file://" + Deno.cwd() + "/";
     } else if (isNode || isBun) {
-        if (IsPath.test(modId)) {
+        if (isFsPath(modId)) {
             // Only set baseUrl for relative modules, don't set it for node modules.
             baseUrl = "file://" + process.cwd() + "/";
         }

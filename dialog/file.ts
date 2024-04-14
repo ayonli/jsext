@@ -1,8 +1,8 @@
 import { basename, join } from "../path.ts";
+import { isBrowser } from "../env.ts";
 import { isWSL, platform } from "../cli.ts";
 import read from "../read.ts";
 import readAll from "../readAll.ts";
-import { isBrowser } from "../util.ts";
 import { readFile } from "./terminal/file/util.ts";
 import {
     macPickFolder,
@@ -149,7 +149,7 @@ export async function openFile(options: {
 } = {}): Promise<File | File[] | null> {
     const { title = "", type = "", multiple = false, directory = false } = options;
 
-    if (isBrowser()) {
+    if (isBrowser) {
         const input = document.createElement("input");
         input.type = "file";
         input.accept = type ?? "";
@@ -269,7 +269,7 @@ export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | 
     name?: string;
     type?: string;
 } = {}): Promise<void> {
-    if (isBrowser()) {
+    if (isBrowser) {
         const a = document.createElement("a");
 
         if (file instanceof ReadableStream) {

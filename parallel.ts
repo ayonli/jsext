@@ -7,11 +7,12 @@
 import { ThenableAsyncGenerator, ThenableAsyncGeneratorLike } from "./external/thenable-generator/index.ts";
 import chan, { Channel } from "./chan.ts";
 import { serial } from "./number.ts";
-import { BunWorker, CallRequest, NodeWorker } from "./parallel/types.ts";
-import { isBun, isDeno, isNode, IsPath, isMainThread } from "./parallel/constants.ts";
-import { resolveModule, sanitizeModuleId } from "./parallel/utils/module.ts";
-import { acquireWorker, remoteTasks, wrapArgs } from "./parallel/utils/threads.ts";
+import { isFsPath } from "./path.ts";
 import { asyncTask } from "./async.ts";
+import { isBun, isDeno, isNode, isMainThread } from "./env.ts";
+import { BunWorker, CallRequest, NodeWorker } from "./parallel/types.ts";
+import { resolveModule, sanitizeModuleId } from "./parallel/module.ts";
+import { acquireWorker, remoteTasks, wrapArgs } from "./parallel/threads.ts";
 
 export type FunctionPropertyNames<T> = {
     [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
@@ -205,7 +206,7 @@ function extractBaseUrl(stackTrace: string): string | undefined {
         baseUrl = callSite.replace(/:\d+:\d+$/, "");
 
         if (!/^(https?|file):/.test(baseUrl)) {
-            if (IsPath.test(baseUrl)) {
+            if (isFsPath(baseUrl)) {
                 baseUrl = "file://" + baseUrl;
             } else if (isDeno) {
                 baseUrl = "file://" + Deno.cwd() + "/";
@@ -363,7 +364,7 @@ function parallel<M extends { [x: string]: any; }>(
     let modId = sanitizeModuleId(module, true);
     let baseUrl: string | undefined;
 
-    if (IsPath.test(modId)) {
+    if (isFsPath(modId)) {
         if (typeof Error.captureStackTrace === "function") {
             const trace: { stack?: string; } = {};
             Error.captureStackTrace(trace);

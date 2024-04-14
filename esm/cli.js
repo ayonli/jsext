@@ -1,7 +1,7 @@
 import { text } from './bytes.js';
 import { interop } from './module.js';
 import { PowerShellCommands } from './cli/constants.js';
-import { isDeno, isBun } from './parallel/constants.js';
+import { isDeno, isBun } from './env.js';
 
 /**
  * Useful utility functions for interacting with the terminal.
@@ -77,7 +77,7 @@ function isWSL() {
 /** Checks if the program is running in a TypeScript runtime. */
 function isTsRuntime() {
     var _a;
-    if (typeof Deno === "object" || typeof Bun === "object") {
+    if (isDeno || isBun) {
         return true;
     }
     else if (typeof process !== "object") {

@@ -1,10 +1,8 @@
 function isFunction(val) {
     return typeof val === "function";
 }
-function isBrowser() {
-    return typeof window === "object"
-        && typeof window.document === "object"
-        && typeof window.matchMedia === "function";
+function isPath(id) {
+    return /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/.test(id);
 }
 function unrefTimer(timer) {
     if (typeof timer === "object" && typeof timer.unref === "function") {
@@ -49,5 +47,5 @@ function asIterable(source) {
     return null;
 }
 
-export { asIterable, isBrowser, isFunction, unrefTimer };
+export { asIterable, isFunction, isPath, unrefTimer };
 //# sourceMappingURL=util.js.map

@@ -2,10 +2,8 @@ export function isFunction(val: unknown): val is (...args: any[]) => any {
     return typeof val === "function";
 }
 
-export function isBrowser(): boolean {
-    return typeof window === "object"
-        && typeof window.document === "object"
-        && typeof window.matchMedia === "function";
+export function isPath(id: string): boolean {
+    return /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/.test(id);
 }
 
 export function unrefTimer(timer: NodeJS.Timeout | number): void {

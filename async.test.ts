@@ -2,7 +2,7 @@ import "./augment.ts";
 import jsext from "./index.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { asyncTask } from "./async.ts";
-import { isNodeBelow16 } from "./parallel/constants.ts";
+import { isNodeBelow16 } from "./env.ts";
 
 describe("async", () => {
     it("timeout", async () => {

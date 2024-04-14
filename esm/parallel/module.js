@@ -1,6 +1,8 @@
-import { isNode, isBun, IsPath, isDeno } from '../constants.js';
-import { trim } from '../../string.js';
-import { interop } from '../../module.js';
+import { isNode, isBun, isDeno } from '../env.js';
+import '../path.js';
+import { trim } from '../string.js';
+import { interop } from '../module.js';
+import { isFsPath } from '../path/util.js';
 
 const moduleCache = new Map();
 function sanitizeModuleId(id, strict = false) {
@@ -25,7 +27,7 @@ function sanitizeModuleId(id, strict = false) {
     else {
         _id = id;
     }
-    if ((isNode || isBun) && IsPath.test(_id)) {
+    if ((isNode || isBun) && isFsPath(_id)) {
         if (!/\.[cm]?(js|ts|)x?$/.test(_id)) { // if omitted suffix, add suffix
             _id += isBun ? ".ts" : ".js";
         }
@@ -44,7 +46,7 @@ function sanitizeModuleId(id, strict = false) {
             }
         }
     }
-    if (!IsPath.test(_id) && !strict) {
+    if (!isFsPath(_id) && !strict) {
         _id = "./" + _id;
     }
     return _id;

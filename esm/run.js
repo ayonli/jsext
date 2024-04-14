@@ -1,13 +1,15 @@
 import chan from './chan.js';
 import { isPlainObject } from './object.js';
 import { fromErrorEvent, fromObject } from './error.js';
-import { isDeno, isNode, isBun, IsPath } from './parallel/constants.js';
-import { sanitizeModuleId } from './parallel/utils/module.js';
-import { isChannelMessage, handleChannelMessage } from './parallel/utils/channel.js';
-import { getMaxParallelism, createWorker, wrapArgs, isCallResponse, unwrapReturnValue } from './parallel/utils/threads.js';
+import './path.js';
+import { isDeno, isNode, isBun } from './env.js';
+import { sanitizeModuleId } from './parallel/module.js';
+import { isChannelMessage, handleChannelMessage } from './parallel/channel.js';
+import { getMaxParallelism, createWorker, wrapArgs, isCallResponse, unwrapReturnValue } from './parallel/threads.js';
 import parallel from './parallel.js';
 import { unrefTimer } from './util.js';
 import { asyncTask } from './async.js';
+import { isFsPath } from './path/util.js';
 
 /**
  * Runs a script in another thread and abort at any time.
@@ -85,7 +87,7 @@ async function run(script, args, options) {
         baseUrl = "file://" + Deno.cwd() + "/";
     }
     else if (isNode || isBun) {
-        if (IsPath.test(modId)) {
+        if (isFsPath(modId)) {
             // Only set baseUrl for relative modules, don't set it for node modules.
             baseUrl = "file://" + process.cwd() + "/";
         }

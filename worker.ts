@@ -5,9 +5,9 @@
  * @module
  */
 
-import { isNode, isBun } from "./parallel/constants.ts";
-import { handleChannelMessage, isChannelMessage } from "./parallel/utils/channel.ts";
-import { handleCallRequest, isCallRequest } from "./parallel/utils/worker.ts";
+import { isNode, isBun } from "./env.ts";
+import { handleChannelMessage, isChannelMessage } from "./parallel/channel.ts";
+import { handleCallRequest, isCallRequest } from "./parallel/worker.ts";
 
 declare var Bun: any;
 

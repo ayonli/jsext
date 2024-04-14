@@ -4,7 +4,7 @@ function isNotQuery(str) {
     return str[0] !== "?" && str[0] !== "#";
 }
 function isVolume(path, strict = false) {
-    return strict ? /^[a-z]:$/i.test(path) : /^[a-z]:(\\)?$/i.test(path);
+    return strict ? /^[a-zA-Z]:$/.test(path) : /^[a-zA-Z]:(\\)?$/.test(path);
 }
 /**
  * Checks if the given `path` is a Windows specific path.
@@ -21,7 +21,7 @@ function isVolume(path, strict = false) {
  * ```
  */
 function isWindowsPath(path) {
-    return /^[a-z]:/i.test(path) && path.slice(1, 4) !== "://";
+    return /^[a-zA-Z]:/.test(path) && path.slice(1, 4) !== "://";
 }
 /**
  * Checks if the given `path` is a Posix specific path.
@@ -36,6 +36,23 @@ function isWindowsPath(path) {
  */
 function isPosixPath(path) {
     return /^\//.test(path);
+}
+/**
+ * Checks if the given `path` is a file system path.
+ * @experimental
+ *
+ * @example
+ * ```ts
+ * import { isFsPath } from "@ayonli/jsext/path";
+ *
+ * console.assert(isFsPath("/usr/bin"));
+ * console.assert(isFsPath("C:\\Windows\\System32"));
+ * console.assert(isFsPath("./foo/bar"));
+ * console.assert(isFsPath("../foo/bar"));
+ * ```
+ */
+function isFsPath(path) {
+    return /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/.test(path);
 }
 /**
  * Checks if the given string is a URL, whether standard or non-standard.
@@ -390,5 +407,5 @@ function equals(path1, path2, options = {}) {
     return true;
 }
 
-export { contains, endsWith, equals, isAbsolute, isFileProtocol, isFileUrl, isNotQuery, isPosixPath, isUrl, isVolume, isWindowsPath, split, startsWith };
+export { contains, endsWith, equals, isAbsolute, isFileProtocol, isFileUrl, isFsPath, isNotQuery, isPosixPath, isUrl, isVolume, isWindowsPath, split, startsWith };
 //# sourceMappingURL=util.js.map

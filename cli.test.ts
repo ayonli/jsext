@@ -1,7 +1,7 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { equals } from "./path.ts";
 import { platform, parseArgs, run, which, quote } from "./cli.ts";
-import { isNode, isNodeBelow16 } from "./parallel/constants.ts";
+import { isNode, isNodeBelow16 } from "./env.ts";
 import stripAnsi from "strip-ansi";
 
 describe("cli", () => {

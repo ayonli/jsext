@@ -1,6 +1,6 @@
 import { stripEnd, trim } from './string.js';
 import { isAbsolute, split, isUrl, isPosixPath, isWindowsPath, isNotQuery, isFileProtocol, isVolume } from './path/util.js';
-export { contains, endsWith, equals, isFileUrl, startsWith } from './path/util.js';
+export { contains, endsWith, equals, isFileUrl, isFsPath, startsWith } from './path/util.js';
 
 /**
  * Platform-independent utility functions for dealing with system paths and URLs.

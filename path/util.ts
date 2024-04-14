@@ -5,7 +5,7 @@ export function isNotQuery(str: string): boolean {
 }
 
 export function isVolume(path: string, strict = false): boolean {
-    return strict ? /^[a-z]:$/i.test(path) : /^[a-z]:(\\)?$/i.test(path);
+    return strict ? /^[a-zA-Z]:$/.test(path) : /^[a-zA-Z]:(\\)?$/.test(path);
 }
 
 /**
@@ -23,7 +23,7 @@ export function isVolume(path: string, strict = false): boolean {
  * ```
  */
 export function isWindowsPath(path: string): boolean {
-    return /^[a-z]:/i.test(path) && path.slice(1, 4) !== "://";
+    return /^[a-zA-Z]:/.test(path) && path.slice(1, 4) !== "://";
 }
 
 /**
@@ -39,6 +39,24 @@ export function isWindowsPath(path: string): boolean {
  */
 export function isPosixPath(path: string): boolean {
     return /^\//.test(path);
+}
+
+/**
+ * Checks if the given `path` is a file system path.
+ * @experimental
+ * 
+ * @example
+ * ```ts
+ * import { isFsPath } from "@ayonli/jsext/path";
+ * 
+ * console.assert(isFsPath("/usr/bin"));
+ * console.assert(isFsPath("C:\\Windows\\System32"));
+ * console.assert(isFsPath("./foo/bar"));
+ * console.assert(isFsPath("../foo/bar"));
+ * ```
+ */
+export function isFsPath(path: string): boolean {
+    return /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/.test(path);
 }
 
 /**

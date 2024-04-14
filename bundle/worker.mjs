@@ -451,6 +451,35 @@ new TextEncoder();
 new TextDecoder();
 
 /**
+ * Platform-independent utility functions for dealing with system paths and URLs.
+ *
+ * The functions in this module are designed to be generic and work in any
+ * runtime, whether server-side or browsers. They can be used for both system
+ * paths and URLs.
+ * @experimental
+ * @module
+ */
+/**
+ * Platform-specific path segment separator. The value is `\` on Windows
+ * server-side runtime, and `/` otherwise.
+ * @experimental
+ */
+(() => {
+    var _a, _b;
+    if (typeof Deno === "object" && typeof ((_a = Deno.build) === null || _a === void 0 ? void 0 : _a.os) === "string") { // Deno
+        if (Deno.build.os === "windows") {
+            return "\\";
+        }
+    }
+    else if (typeof process === "object" && !!((_b = process.versions) === null || _b === void 0 ? void 0 : _b.node)) { // Node.js
+        if (process.platform === "win32") {
+            return "\\";
+        }
+    }
+    return "/";
+})();
+
+/**
  * Utility functions for working with ES and CommonJS modules.
  * @module
  */

@@ -1,9 +1,9 @@
 import { deepStrictEqual } from "node:assert";
 import { spawn, IPty, IPtyForkOptions } from "node-pty";
-import { isNodeBelow16, isNodeBelow20 } from "./parallel/constants.ts";
+import { isNodeBelow16, isNodeBelow20 } from "./env.ts";
 import { sleep } from "./async.ts";
 import { END, ESC, LEFT, RIGHT, START } from "./dialog/terminal/constants.ts";
-import { isBrowser } from "./util.ts";
+import { isBrowser } from "./env.ts";
 import stripAnsi from 'strip-ansi';
 
 const useDeno = process.argv.includes("--deno");
@@ -45,7 +45,7 @@ async function runInSimulator(filename: string) {
 }
 
 describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
-    if (isBrowser() || isNodeBelow16 || ((useDeno || useBun) && isNodeBelow20)) {
+    if (isBrowser || isNodeBelow16 || ((useDeno || useBun) && isNodeBelow20)) {
         return;
     }
 

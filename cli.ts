@@ -9,9 +9,7 @@
 import { text } from "./bytes.ts";
 import { interop } from "./module.ts";
 import { PowerShellCommands } from "./cli/constants.ts";
-import { isBun, isDeno } from "./parallel/constants.ts";
-
-declare const Bun: object;
+import { isBun, isDeno } from "./env.ts";
 
 export type PopularPlatforms = "android"
     | "darwin"
@@ -78,7 +76,7 @@ export function isWSL(): boolean {
 
 /** Checks if the program is running in a TypeScript runtime. */
 export function isTsRuntime(): boolean {
-    if (typeof Deno === "object" || typeof Bun === "object") {
+    if (isDeno || isBun) {
         return true;
     } else if (typeof process !== "object") {
         return false;
