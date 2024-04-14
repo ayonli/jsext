@@ -306,7 +306,7 @@ async function powershell(...commands) {
  */
 async function sudo(cmd, args, options = {}) {
     const _isWindows = platform() === "windows";
-    if (!(options === null || options === void 0 ? void 0 : options.gui) && (!_isWindows || (await which("sudo")))) {
+    if (!(options === null || options === void 0 ? void 0 : options.gui) && !_isWindows) {
         return await run("sudo", [cmd, ...args]);
     }
     const { Buffer } = await import('node:buffer');

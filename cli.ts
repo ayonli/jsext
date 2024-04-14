@@ -344,7 +344,7 @@ export async function sudo(cmd: string, args: string[], options: {
 }> {
     const _isWindows = platform() === "windows";
 
-    if (!options?.gui && (!_isWindows || (await which("sudo")))) {
+    if (!options?.gui && !_isWindows) {
         return await run("sudo", [cmd, ...args]);
     }
 
