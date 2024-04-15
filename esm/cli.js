@@ -99,7 +99,7 @@ function parseValue(arg) {
     }
     return value;
 }
-function parseKeyValue(arg) {
+function parseKeyValue(arg, noCoercion = false) {
     let index = arg.indexOf("=");
     if (index === -1) {
         return [arg, undefined];
@@ -107,7 +107,12 @@ function parseKeyValue(arg) {
     else {
         const key = arg.slice(0, index);
         const value = arg.slice(index + 1);
-        return [key, parseValue(value)];
+        if (noCoercion === true || (Array.isArray(noCoercion) && noCoercion.includes(key))) {
+            return [key, value];
+        }
+        else {
+            return [key, parseValue(value)];
+        }
     }
 }
 /**
@@ -126,12 +131,13 @@ function parseKeyValue(arg) {
  *     "--children", "Ava",
  *     "-p"
  * ], {
- *     shorthands: { "p": "has-parents" }
+ *     alias: { "p": "has-parents" },
+ *     lists: ["children"],
  * });
  *
  * console.log(args);
  * // {
- * //     _: "Bob",
+ * //     "0": "Bob",
  * //     age: 30,
  * //     married: true,
  * //     wife: "Alice",
@@ -142,27 +148,31 @@ function parseKeyValue(arg) {
  */
 function parseArgs(args, options = {}) {
     var _a;
-    const { shorthands = {} } = options;
-    const data = {};
+    const { alias: alias = {}, lists = [], noCoercion = false } = options;
+    const result = {};
     let key = null;
+    let index = 0;
     const set = (key, value) => {
-        if (Array.isArray(data[key])) {
-            data[key].push(value);
-        }
-        else if (key in data) {
-            data[key] = [data[key], value];
+        var _a;
+        if (lists.includes(key)) {
+            ((_a = result[key]) !== null && _a !== void 0 ? _a : (result[key] = [])).push(value);
         }
         else {
-            data[key] = value;
+            result[key] = value;
         }
     };
-    for (const arg of args) {
-        if (arg.startsWith("--")) {
+    for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === "--") {
+            result["--"] = args.slice(i + 1);
+            break;
+        }
+        else if (arg.startsWith("--")) {
             if (key) {
                 set(key, true);
                 key = null;
             }
-            const [_key, value] = parseKeyValue(arg.slice(2));
+            const [_key, value] = parseKeyValue(arg.slice(2), noCoercion);
             if (value !== undefined) {
                 set(_key, value);
             }
@@ -176,23 +186,31 @@ function parseArgs(args, options = {}) {
                 key = null;
             }
             const char = arg.slice(1);
-            key = (_a = shorthands[char]) !== null && _a !== void 0 ? _a : char;
+            key = (_a = alias[char]) !== null && _a !== void 0 ? _a : char;
         }
-        else {
-            const value = parseValue(arg);
-            if (key) {
-                set(key, value);
-                key = null;
+        else if (key) {
+            if (noCoercion === true || (Array.isArray(noCoercion) && noCoercion.includes(key))) {
+                set(key, arg);
             }
             else {
-                set("_", value);
+                set(key, parseValue(arg));
+            }
+            key = null;
+        }
+        else {
+            const _key = String(index++);
+            if (noCoercion === true || (Array.isArray(noCoercion) && noCoercion.includes(_key))) {
+                set(_key, arg);
+            }
+            else {
+                set(_key, parseValue(arg));
             }
         }
     }
     if (key) {
         set(key, true);
     }
-    return data;
+    return result;
 }
 /**
  * Quotes a string to be used as a single argument to a shell command.

@@ -48,74 +48,159 @@ describe("cli", () => {
 
     it("parseArgs", () => {
         deepStrictEqual(parseArgs([
-            "--name", "Alice",
-            "--age", "20",
-            "--married", "true",
             "Bob", "30",
-            "--friends", "Mia",
-            "--friends", "Ava",
-            "--has-children",
-            "--has-parents",
-        ]), {
-            name: "Alice",
-            age: 20,
-            married: true,
-            _: ["Bob", 30],
-            friends: ["Mia", "Ava"],
-            "has-children": true,
-            "has-parents": true
-        });
-
-        deepStrictEqual(parseArgs([
-            "--name=Alice",
-            "--age=20",
-            "--married=true",
-            "Bob", "30",
-            "--friends=Mia",
-            "--friends=Ava",
-            "--has-children",
-            "--has-parents",
-        ]), {
-            name: "Alice",
-            age: 20,
-            married: true,
-            _: ["Bob", 30],
-            friends: ["Mia", "Ava"],
-            "has-children": true,
-            "has-parents": true
-        });
-
-        deepStrictEqual(parseArgs([
-            "Bob",
-            "--age", "30",
             "--married",
-            "--wife=Alice",
+            "--wife", "Alice",
+            "--age", "20",
             "--children", "Mia",
             "--children", "Ava",
-            "-p"
-        ], {
-            shorthands: { "p": "has-parents" }
-        }), {
-            _: "Bob",
-            age: 30,
+            "--has-children=true",
+            "--has-parents=false",
+            "--has-pets", "true",
+        ]), {
+            0: "Bob",
+            1: 30,
             married: true,
             wife: "Alice",
-            children: ["Mia", "Ava"],
-            "has-parents": true
+            age: 20,
+            children: "Ava",
+            "has-children": true,
+            "has-parents": false,
+            "has-pets": true,
         });
 
+        // test lists option
         deepStrictEqual(parseArgs([
             "Bob", "30",
-            "-m",
+            "--married",
             "--wife", "Alice",
+            "--age", "20",
+            "--children", "Mia",
+            "--children", "Ava",
+            "--has-children=true",
+            "--has-parents=false",
+            "--has-pets", "true",
         ], {
-            shorthands: { "m": "married" }
+            lists: ["children"],
         }), {
-            _: ["Bob", 30],
+            0: "Bob",
+            1: 30,
             married: true,
             wife: "Alice",
+            age: 20,
+            children: ["Mia", "Ava"],
+            "has-children": true,
+            "has-parents": false,
+            "has-pets": true,
         });
 
+        // test alias option
+        deepStrictEqual(parseArgs([
+            "Bob", "30",
+            "--married",
+            "--wife", "Alice",
+            "--age", "20",
+            "--children", "Mia",
+            "--children", "Ava",
+            "--has-children=true",
+            "--has-parents=false",
+            "-p"
+        ], {
+            lists: ["children"],
+            alias: { "p": "has-pets" }
+        }), {
+            0: "Bob",
+            1: 30,
+            married: true,
+            wife: "Alice",
+            age: 20,
+            children: ["Mia", "Ava"],
+            "has-children": true,
+            "has-parents": false,
+            "has-pets": true,
+        });
+
+        // test noCoercion option
+        deepStrictEqual(parseArgs([
+            "Bob", "30",
+            "--married",
+            "--wife", "Alice",
+            "--age", "20",
+            "--children", "Mia",
+            "--children", "Ava",
+            "--has-children=true",
+            "--has-parents=false",
+            "--has-pets", "true",
+        ], {
+            noCoercion: true,
+        }), {
+            0: "Bob",
+            1: "30",
+            married: true,
+            wife: "Alice",
+            age: "20",
+            children: "Ava",
+            "has-children": "true",
+            "has-parents": "false",
+            "has-pets": "true",
+        });
+
+        // test noCoercion option with specific keys
+        deepStrictEqual(parseArgs([
+            "Bob", "30",
+            "--married",
+            "--wife", "Alice",
+            "--age", "20",
+            "--children", "Mia",
+            "--children", "Ava",
+            "--has-children=true",
+            "--has-parents=false",
+            "--has-pets", "true",
+        ], {
+            noCoercion: ["1", "age"],
+        }), {
+            0: "Bob",
+            1: "30",
+            married: true,
+            wife: "Alice",
+            age: "20",
+            children: "Ava",
+            "has-children": true,
+            "has-parents": false,
+            "has-pets": true,
+        });
+
+        // test "--"
+        deepStrictEqual(parseArgs([
+            "Bob", "30",
+            "--married",
+            "--wife", "Alice",
+            "--age", "20",
+            "--",
+            "--children", "Mia",
+            "--children", "Ava",
+            "--has-children=true",
+            "--has-parents=false",
+            "-p"
+        ], {
+            lists: ["children"],
+            alias: { "p": "has-pets" }
+        }), {
+            0: "Bob",
+            1: 30,
+            married: true,
+            wife: "Alice",
+            age: 20,
+            "--": [
+                "--children", "Mia",
+                "--children", "Ava",
+                "--has-children=true",
+                "--has-parents=false",
+                "-p"
+            ],
+        });
+
+        // test others
         deepStrictEqual(parseArgs(["--gui=true"]), { gui: true });
         deepStrictEqual(parseArgs(["--save"]), { save: true });
         deepStrictEqual(parseArgs(["-s"]), { s: true });

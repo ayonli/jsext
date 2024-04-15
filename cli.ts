@@ -100,7 +100,10 @@ function parseValue(arg: string): string | number | boolean {
     return value;
 }
 
-function parseKeyValue(arg: string): [key: string, value: string | number | boolean | undefined] {
+function parseKeyValue(
+    arg: string,
+    noCoercion: boolean | string[] = false
+): [key: string, value: string | number | boolean | undefined] {
     let index = arg.indexOf("=");
 
     if (index === -1) {
@@ -108,7 +111,12 @@ function parseKeyValue(arg: string): [key: string, value: string | number | bool
     } else {
         const key = arg.slice(0, index);
         const value = arg.slice(index + 1);
-        return [key, parseValue(value)];
+
+        if (noCoercion === true || (Array.isArray(noCoercion) && noCoercion.includes(key))) {
+            return [key, value];
+        } else {
+            return [key, parseValue(value)];
+        }
     }
 }
 
@@ -128,12 +136,13 @@ function parseKeyValue(arg: string): [key: string, value: string | number | bool
  *     "--children", "Ava",
  *     "-p"
  * ], {
- *     shorthands: { "p": "has-parents" }
+ *     alias: { "p": "has-parents" },
+ *     lists: ["children"],
  * });
  * 
  * console.log(args);
  * // {
- * //     _: "Bob",
+ * //     "0": "Bob",
  * //     age: 30,
  * //     married: true,
  * //     wife: "Alice",
@@ -143,33 +152,44 @@ function parseKeyValue(arg: string): [key: string, value: string | number | bool
  * ```
  */
 export function parseArgs(args: string[], options: {
-    shorthands?: { [char: string]: string; };
+    alias?: { [char: string]: string; };
+    lists?: string[];
+    noCoercion?: boolean | string[];
 } = {}): {
     [key: string]: string | number | boolean | (string | number | boolean)[];
-    _?: string | number | boolean | (string | number | boolean)[];
+    [x: number]: string | number | boolean;
+    "--"?: string[];
 } {
-    const { shorthands = {} } = options;
-    const data: { [key: string]: string | number | boolean | (string | number | boolean)[]; } = {};
+    const { alias: alias = {}, lists = [], noCoercion = false } = options;
+    const result: {
+        [key: string]: string | number | boolean | (string | number | boolean)[];
+        [x: number]: string | number | boolean;
+        "--"?: string[];
+    } = {};
     let key: string | null = null;
+    let index: number = 0;
 
     const set = (key: string, value: string | number | boolean) => {
-        if (Array.isArray(data[key])) {
-            (data[key] as (string | number | boolean)[]).push(value);
-        } else if (key in data) {
-            data[key] = [data[key] as string | number | boolean, value];
+        if (lists.includes(key)) {
+            ((result[key] ??= []) as (string | number | boolean)[]).push(value);
         } else {
-            data[key] = value;
+            result[key] = value;
         }
     };
 
-    for (const arg of args) {
-        if (arg.startsWith("--")) {
+    for (let i = 0; i < args.length; i++) {
+        const arg = args[i]!;
+
+        if (arg === "--") {
+            result["--"] = args.slice(i + 1);
+            break;
+        } else if (arg.startsWith("--")) {
             if (key) {
                 set(key, true);
                 key = null;
             }
 
-            const [_key, value] = parseKeyValue(arg.slice(2));
+            const [_key, value] = parseKeyValue(arg.slice(2), noCoercion);
 
             if (value !== undefined) {
                 set(_key, value);
@@ -183,15 +203,22 @@ export function parseArgs(args: string[], options: {
             }
 
             const char = arg.slice(1);
-            key = shorthands[char] ?? char;
-        } else {
-            const value = parseValue(arg);
-
-            if (key) {
-                set(key, value);
-                key = null;
+            key = alias[char] ?? char;
+        } else if (key) {
+            if (noCoercion === true || (Array.isArray(noCoercion) && noCoercion.includes(key))) {
+                set(key, arg);
             } else {
-                set("_", value);
+                set(key, parseValue(arg));
+            }
+
+            key = null;
+        } else {
+            const _key = String(index++);
+
+            if (noCoercion === true || (Array.isArray(noCoercion) && noCoercion.includes(_key))) {
+                set(_key, arg);
+            } else {
+                set(_key, parseValue(arg));
             }
         }
     }
@@ -200,7 +227,7 @@ export function parseArgs(args: string[], options: {
         set(key, true);
     }
 
-    return data;
+    return result;
 }
 
 /**
