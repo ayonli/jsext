@@ -271,7 +271,11 @@ export async function run(cmd: string, args: string[]): Promise<{
 
     if (typeof Deno === "object") {
         const { Buffer } = await import("node:buffer");
-        const { decode } = await interop(import("npm:iconv-lite"), false);
+        // Must store the module ID in a variable to prevent bundlers from
+        // resolving it, otherwise, the bundler may throw an error saying
+        // the module cannot be resolved.
+        const iconvModuleId: string = "npm:iconv-lite";
+        const { decode } = interop(await import(iconvModuleId), false);
         const _cmd = isWindows && PowerShellCommands.includes(cmd)
             ? new Deno.Command("powershell", { args: ["-c", cmd, ...args.map(quote)] })
             : new Deno.Command(cmd, { args });
@@ -378,13 +382,18 @@ export async function sudo(cmd: string, args: string[], options: {
         options: { name?: string; },
         callback: (error?: Error, stdout?: string | Buffer, stderr?: string | Buffer) => void
     ) => void;
+    // Must store the module ID in a variable to prevent bundlers from
+    // resolving it, otherwise, the bundler may throw an error saying
+    // the module cannot be resolved.
+    let sudoModuleId: string;
 
     if (isDeno) {
-        ({ exec } = await interop(import("npm:sudo-prompt")));
+        sudoModuleId = "npm:sudo-prompt";
     } else {
-        ({ exec } = await interop(import("sudo-prompt")));
+        sudoModuleId = "sudo-prompt";
     }
 
+    ({ exec } = await interop(import(sudoModuleId)));
     return await new Promise((resolve, reject) => {
         exec(`${cmd}` + (args.length ? ` ${args.map(quote).join(" ")}` : ""), {
             name: options?.title || (isDeno ? "Deno" : isBun ? "Bun" : "NodeJS"),

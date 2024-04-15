@@ -36,10 +36,6 @@
         "./wrap": "./wrap.ts",
         "./worker.ts": "./worker.ts"
     },
-    "imports": {
-        "npm:iconv-lite": "npm:iconv-lite@^0.6.3",
-        "npm:sudo-prompt": "npm:sudo-prompt@^9.2.1"
-    },
     "compilerOptions": {
         "experimentalDecorators": true
     },

@@ -25,6 +25,7 @@
       "npm:rollup@^3.29.2": "npm:rollup@3.29.4",
       "npm:string-hash@^1.1.3": "npm:string-hash@1.1.3",
       "npm:strip-ansi@^7.1.0": "npm:strip-ansi@7.1.0",
+      "npm:sudo-prompt": "npm:sudo-prompt@9.2.1",
       "npm:sudo-prompt@^9.2.1": "npm:sudo-prompt@9.2.1",
       "npm:ts-node@^10.9.1": "npm:ts-node@10.9.2_@types+node@18.16.19_typescript@5.4.3",
       "npm:tslib@^2.6.2": "npm:tslib@2.6.2",
@@ -1417,10 +1418,6 @@
     "https://unpkg.com/mocha@10.2.0/mocha.js": "8771afc47860afa738f1f386c43b614f3d072215ffa33926fcbc85610f0fc31e"
   },
   "workspace": {
-    "dependencies": [
-      "npm:iconv-lite@^0.6.3",
-      "npm:sudo-prompt@^9.2.1"
-    ],
     "packageJson": {
       "dependencies": [
         "npm:@ayonli/sse@^0.4.0",
