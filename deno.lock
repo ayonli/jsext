@@ -1418,6 +1418,10 @@
     "https://unpkg.com/mocha@10.2.0/mocha.js": "8771afc47860afa738f1f386c43b614f3d072215ffa33926fcbc85610f0fc31e"
   },
   "workspace": {
+    "dependencies": [
+      "npm:iconv-lite@^0.6.3",
+      "npm:sudo-prompt@^9.2.1"
+    ],
     "packageJson": {
       "dependencies": [
         "npm:@ayonli/sse@^0.4.0",

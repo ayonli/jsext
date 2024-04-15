@@ -1,7 +1,7 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { equals } from "./path.ts";
 import { platform, parseArgs, run, which, quote } from "./cli.ts";
-import { isDeno, isNode, isNodeBelow16 } from "./env.ts";
+import { isNode, isNodeBelow16 } from "./env.ts";
 import stripAnsi from "strip-ansi";
 
 describe("cli", () => {
@@ -220,12 +220,6 @@ describe("cli", () => {
     it("run", async function () {
         this.timeout(5000);
 
-        if (isDeno) {
-            // This is a problem in Deno with the browser version of Mocha to
-            // import dynamic module 'npm:iconv-lite'.
-            this.skip();
-        }
-
         const { code, stdout, stderr } = await run("echo", ["Hello, World!"]);
         strictEqual(code, 0);
         strictEqual(stdout.trim(), "Hello, World!");
@@ -234,12 +228,6 @@ describe("cli", () => {
 
     it("which", async function () {
         this.timeout(5000);
-
-        if (isDeno) {
-            // This is a problem in Deno with the browser version of Mocha to
-            // import dynamic module 'npm:iconv-lite'.
-            this.skip();
-        }
 
         if (platform() === "windows") {
             ok(equals(
@@ -260,12 +248,6 @@ describe("cli", () => {
 
     it("isTsRuntime", async function () {
         this.timeout(10_000);
-
-        if (isDeno) {
-            // This is a problem in Deno with the browser version of Mocha to
-            // import dynamic module 'npm:iconv-lite'.
-            this.skip();
-        }
 
         if (await which("node") && isNode) {
             {
