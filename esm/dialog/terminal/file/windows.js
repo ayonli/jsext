@@ -27,7 +27,7 @@ function htmlAcceptToFileFilter(accept) {
             return patterns + "|" + patterns;
         }
         else if (group === "*/*") {
-            return "All|*";
+            return "All Files|*";
         }
         else {
             const patterns = getExtensions(group).map(t => `*${t}`).join(";");
@@ -35,16 +35,16 @@ function htmlAcceptToFileFilter(accept) {
                 return undefined;
             }
             else if (group === "video/*") {
-                return "Videos|" + patterns;
+                return "Video Files|" + patterns;
             }
             else if (group === "audio/*") {
-                return "Audios|" + patterns;
+                return "Audio Files|" + patterns;
             }
             else if (group === "image/*") {
-                return "Images|" + patterns;
+                return "Image Files|" + patterns;
             }
             else if (group === "text/*") {
-                return "Texts|" + patterns;
+                return "Text Files|" + patterns;
             }
             else {
                 return patterns;

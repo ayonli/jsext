@@ -247,7 +247,7 @@ async function run(cmd, args) {
     const isWslPs = isWSL() && cmd.endsWith("powershell.exe");
     if (typeof Deno === "object") {
         const { Buffer } = await import('node:buffer');
-        const { decode } = await interop(import('npm:iconv-lite'), false);
+        const { decode } = interop(await import('iconv-lite'), false);
         const _cmd = isWindows && PowerShellCommands.includes(cmd)
             ? new Deno.Command("powershell", { args: ["-c", cmd, ...args.map(quote)] })
             : new Deno.Command(cmd, { args });
@@ -324,13 +324,7 @@ async function sudo(cmd, args, options = {}) {
     if ((!(options === null || options === void 0 ? void 0 : options.gui) && !_isWindows) || isWSL()) {
         return await run("sudo", [cmd, ...args]);
     }
-    let exec;
-    if (isDeno) {
-        ({ exec } = await interop(import('npm:sudo-prompt')));
-    }
-    else {
-        ({ exec } = await interop(import('sudo-prompt')));
-    }
+    const { exec } = await interop(import('sudo-prompt'));
     return await new Promise((resolve, reject) => {
         exec(`${cmd}` + (args.length ? ` ${args.map(quote).join(" ")}` : ""), {
             name: (options === null || options === void 0 ? void 0 : options.title) || (isDeno ? "Deno" : isBun ? "Bun" : "NodeJS"),
