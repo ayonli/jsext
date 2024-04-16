@@ -83,7 +83,7 @@ export function isTsRuntime(): boolean {
     }
 
     return process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
-        || /\.tsx?$/.test(process.argv[1] ?? "");
+        || /\.tsx?$|\bvite\b/.test(process.argv[1] ?? "");
 }
 
 function parseValue(arg: string): string | number | boolean {
