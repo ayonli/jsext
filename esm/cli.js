@@ -84,7 +84,7 @@ function isTsRuntime() {
         return false;
     }
     return process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
-        || /\.tsx?$/.test((_a = process.argv[1]) !== null && _a !== void 0 ? _a : "");
+        || /\.tsx?$|\bvite\b/.test((_a = process.argv[1]) !== null && _a !== void 0 ? _a : "");
 }
 function parseValue(arg) {
     let value = arg.trim();
