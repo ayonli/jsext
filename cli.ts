@@ -93,7 +93,7 @@ function parseValue(arg: string): string | number | boolean {
         value = true;
     } else if (value === "false") {
         value = false;
-    } else if (/^\d+(\.\d+)?$/.test(value)) {
+    } else if (/^-?\d+(\.\d+)?$/.test(value)) {
         value = Number(value);
     }
 
