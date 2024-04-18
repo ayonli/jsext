@@ -94,7 +94,7 @@ function parseValue(arg) {
     else if (value === "false") {
         value = false;
     }
-    else if (/^\d+(\.\d+)?$/.test(value)) {
+    else if (/^[-+]?\d+(\.\d+)?$/.test(value)) {
         value = Number(value);
     }
     return value;
