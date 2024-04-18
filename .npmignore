@@ -34,3 +34,4 @@ lib.deno.d.ts
 types/external/*
 types/worker-node.d.ts
 types/worker.d.ts
+jsdom-setup.js
