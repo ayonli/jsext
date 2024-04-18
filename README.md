@@ -87,7 +87,7 @@ categories:
 - [math](https://jsr.io/@ayonli/jsext/doc/math/~) Functions for mathematical
   calculations.
 - [module](https://jsr.io/@ayonli/jsext/doc/module/~) Utility functions for
-  working with ES and CommonJS modules.
+  working with JavaScript modules.
 - [number](https://jsr.io/@ayonli/jsext/doc/number/~) Functions for dealing with
   numbers.
 - [object](https://jsr.io/@ayonli/jsext/doc/object/~) Functions for dealing with

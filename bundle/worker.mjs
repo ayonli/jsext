@@ -480,7 +480,7 @@ new TextDecoder();
 })();
 
 /**
- * Utility functions for working with ES and CommonJS modules.
+ * Utility functions for working with JavaScript modules.
  * @module
  */
 function interop(module, strict = undefined) {

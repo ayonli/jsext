@@ -1,7 +1,9 @@
 /**
- * Utility functions for working with ES and CommonJS modules.
+ * Utility functions for working with JavaScript modules.
  * @module 
  */
+
+import { isBrowser } from "./env.ts";
 
 /**
  * Performs interop on the given module. This functions is used to fix CommonJS
@@ -70,4 +72,72 @@ export function interop<T extends { [x: string]: any; }>(
     }
 
     return module;
+}
+
+const importCache = new Map<string, Promise<void>>();
+
+/**
+ * Imports a script from the given URL to the current document, useful when
+ * loading 3rd-party libraries dynamically in the browser.
+ * 
+ * NOTE: this function will throw an error if called outside the browser.
+ */
+export function importScript(url: string, options: {
+    type?: "classic" | "module";
+} = {}): Promise<void> {
+    if (!isBrowser) {
+        return Promise.reject(new Error("This function is only available in the browser."));
+    }
+
+    url = new URL(url, location.href).href;
+    let cache = importCache.get(url);
+
+    if (cache) {
+        return cache;
+    }
+
+    cache = new Promise<void>((resolve, reject) => {
+        const script = document.createElement("script");
+
+        script.src = url;
+        script.type = options.type === "module" ? "module" : "text/javascript";
+        script.onload = () => setTimeout(resolve, 0);
+        script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
+        document.head.appendChild(script);
+    });
+
+    importCache.set(url, cache);
+    return cache;
+}
+
+/**
+ * Imports a stylesheet from the given URL to the current document, useful when
+ * loading 3rd-party libraries dynamically in the browser.
+ * 
+ * NOTE: this function will throw an error if called outside the browser.
+ */
+export function importStylesheet(url: string): Promise<void> {
+    if (!isBrowser) {
+        return Promise.reject(new Error("This function is only available in the browser."));
+    }
+
+    url = new URL(url, location.href).href;
+    let cache = importCache.get(url);
+
+    if (cache) {
+        return cache;
+    }
+
+    cache = new Promise<void>((resolve, reject) => {
+        const link = document.createElement("link");
+
+        link.href = url;
+        link.rel = "stylesheet";
+        link.onload = () => setTimeout(resolve, 0);
+        link.onerror = () => reject(new Error(`Failed to load stylesheet: ${url}`));
+        document.head.appendChild(link);
+    });
+
+    importCache.set(url, cache);
+    return cache;
 }
