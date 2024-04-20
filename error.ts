@@ -3,7 +3,7 @@
  * @module
  */
 
-import { Constructor } from "./index.ts";
+import { Constructor } from "./types.ts";
 import { isPlainObject, omit } from "./object.ts";
 import Exception from "./error/Exception.ts";
 

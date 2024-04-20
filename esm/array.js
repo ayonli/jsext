@@ -55,14 +55,18 @@ function chunk(arr, length) {
     return chunk$1(arr, length);
 }
 /** Returns a subset of the array that contains only unique items. */
-function uniq(arr) {
+function unique(arr) {
     return [...new Set(arr)];
 }
+/**
+ * @deprecated use `unique` instead.
+ */
+const uniq = unique;
 /**
  * Returns a subset of the array that contains only unique items filtered by the
  * given callback function.
  */
-function uniqBy(arr, fn) {
+function uniqueBy(arr, fn) {
     const map = new Map();
     for (let i = 0; i < arr.length; i++) {
         const item = arr[i];
@@ -71,6 +75,10 @@ function uniqBy(arr, fn) {
     }
     return [...map.values()];
 }
+/**
+ * @deprecated use `uniqueBy` instead.
+ */
+const uniqBy = uniqueBy;
 /**
  * Reorganizes the elements in the array in random order.
  *
@@ -179,5 +187,5 @@ function keyBy(arr, fn, type = Object) {
     }
 }
 
-export { chunk, count, equals, first, groupBy, keyBy, last, orderBy, random, shuffle, split, uniq, uniqBy };
+export { chunk, count, equals, first, groupBy, keyBy, last, orderBy, random, shuffle, split, uniq, uniqBy, unique, uniqueBy };
 //# sourceMappingURL=array.js.map

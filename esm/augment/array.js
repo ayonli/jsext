@@ -1,4 +1,4 @@
-import { first, last, random, count, equals, split, chunk, uniq, uniqBy, shuffle, orderBy, groupBy, keyBy } from '../array.js';
+import { first, last, random, count, equals, split, chunk, unique, uniqueBy, shuffle, orderBy, groupBy, keyBy } from '../array.js';
 
 Array.prototype.first = function first$1() {
     return first(this);
@@ -21,11 +21,11 @@ Array.prototype.split = function split$1(delimiter) {
 Array.prototype.chunk = function chunk$1(length) {
     return chunk(this, length);
 };
-Array.prototype.uniq = function uniq$1() {
-    return uniq(this);
+Array.prototype.unique = Array.prototype.uniq = function unique$1() {
+    return unique(this);
 };
-Array.prototype.uniqBy = function uniqBy$1(fn) {
-    return uniqBy(this, fn);
+Array.prototype.uniqueBy = Array.prototype.uniqBy = function uniqueBy$1(fn) {
+    return uniqueBy(this, fn);
 };
 Array.prototype.shuffle = function shuffle$1() {
     return shuffle(this);

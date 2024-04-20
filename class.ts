@@ -3,7 +3,7 @@
  * @module
  */
 
-import type { Constructor } from "./index.ts";
+import { Constructor } from "./types.ts";
 import _mixin from "./mixin.ts";
 
 /** @deprecated import `mixin` from `@ayonli/jsext/mixin` instead. */

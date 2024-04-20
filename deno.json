@@ -33,6 +33,7 @@
         "./string": "./string.ts",
         "./throttle": "./throttle.ts",
         "./try": "./try.ts",
+        "./types": "./types.ts",
         "./wrap": "./wrap.ts",
         "./worker.ts": "./worker.ts"
     },

@@ -1,4 +1,4 @@
-import type { RealArrayLike } from "../index.ts";
+import { RealArrayLike } from "../types.ts";
 
 /** Counts the occurrence of the element in the array-like object. */
 export function count<T>(arr: RealArrayLike<T>, item: T): number {

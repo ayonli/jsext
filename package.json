@@ -314,6 +314,13 @@
             "import": "./esm/try.js",
             "default": "./try.ts"
         },
+        "./types": {
+            "types": "./types/types.d.ts",
+            "bun": "./types.ts",
+            "require": "./cjs/types.js",
+            "import": "./esm/types.js",
+            "default": "./types.ts"
+        },
         "./uint8array": {
             "types": "./types/bytes.d.ts",
             "bun": "./bytes.ts",

@@ -3,7 +3,7 @@
  * @module
  */
 
-import type { Constructor } from "./index.ts";
+import { Constructor } from "./types.ts";
 import { hasOwn } from "./object.ts";
 
 export type UnionToIntersection<U> = (

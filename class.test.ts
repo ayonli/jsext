@@ -1,6 +1,6 @@
 import { ok } from "node:assert";
 import { isClass, isSubclassOf } from "./class.ts";
-import { AsyncFunction, AsyncGeneratorFunction } from "./index.ts";
+import { AsyncFunction, AsyncGeneratorFunction } from "./types.ts";
 
 describe("class", () => {
     it("isClass", () => {

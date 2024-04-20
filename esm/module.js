@@ -39,7 +39,7 @@ function interop(module, strict = undefined) {
 }
 const importCache = new Map();
 /**
- * Imports a script from the given URL to the current document, useful when
+ * Imports a script from the given URL to the current document, useful for
  * loading 3rd-party libraries dynamically in the browser.
  *
  * NOTE: this function will throw an error if called outside the browser.
@@ -65,7 +65,7 @@ function importScript(url, options = {}) {
     return cache;
 }
 /**
- * Imports a stylesheet from the given URL to the current document, useful when
+ * Imports a stylesheet from the given URL to the current document, useful for
  * loading 3rd-party libraries dynamically in the browser.
  *
  * NOTE: this function will throw an error if called outside the browser.

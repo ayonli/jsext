@@ -8,7 +8,7 @@ import './augment/promise.js';
 import './augment/collections.js';
 import './augment/error.js';
 import './augment/json.js';
-import { AsyncFunction, AsyncGeneratorFunction } from './index.js';
+import { AsyncFunction, AsyncGeneratorFunction } from './types.js';
 
 /// <reference types="./lib.deno.d.ts" />
 // @ts-ignore

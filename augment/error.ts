@@ -1,5 +1,5 @@
 import { Exception, toErrorEvent, fromObject, toObject, fromErrorEvent } from "../error.ts";
-import { Constructor } from "../index.ts";
+import { Constructor } from "../types.ts";
 
 declare global {
     interface Error {

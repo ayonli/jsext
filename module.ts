@@ -77,7 +77,7 @@ export function interop<T extends { [x: string]: any; }>(
 const importCache = new Map<string, Promise<void>>();
 
 /**
- * Imports a script from the given URL to the current document, useful when
+ * Imports a script from the given URL to the current document, useful for
  * loading 3rd-party libraries dynamically in the browser.
  * 
  * NOTE: this function will throw an error if called outside the browser.
@@ -111,7 +111,7 @@ export function importScript(url: string, options: {
 }
 
 /**
- * Imports a stylesheet from the given URL to the current document, useful when
+ * Imports a stylesheet from the given URL to the current document, useful for
  * loading 3rd-party libraries dynamically in the browser.
  * 
  * NOTE: this function will throw an error if called outside the browser.

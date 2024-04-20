@@ -6,7 +6,7 @@
 import { equals as _equals, split as _split, chunk as _chunk } from "./array/base.ts";
 import { as } from "./object.ts";
 import { sum } from "./math.ts";
-import type { Constructor } from "./index.ts";
+import { Constructor } from "./types.ts";
 
 const defaultEncoder = new TextEncoder();
 const defaultDecoder = new TextDecoder();

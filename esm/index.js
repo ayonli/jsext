@@ -14,6 +14,7 @@ import run from './run.js';
 import example from './example.js';
 import deprecate from './deprecate.js';
 import { isClass as isClass$1, isSubclassOf as isSubclassOf$1 } from './class.js';
+export { AsyncFunction, AsyncGeneratorFunction } from './types.js';
 
 /** @deprecated import `Queue` from `@ayonli/jsext/queue` instead. */
 const Queue = Queue$1;
@@ -21,10 +22,6 @@ const Queue = Queue$1;
 const Mutex = Mutex$1;
 /** @deprecated import `Channel` from `@ayonli/jsext/chan` instead. */
 const Channel = Channel$1;
-/** This is the very constructor/class of all async functions. */
-const AsyncFunction = (async function () { }).constructor;
-/** This is the very constructor/class of all async generator functions. */
-const AsyncGeneratorFunction = (async function* () { }).constructor;
 /**
  * The entry of jsext major functions.
  */
@@ -60,5 +57,5 @@ const isSubclassOf = isSubclassOf$1;
 /** @deprecated use `mixin` instead */
 const mixins = mixin;
 
-export { AsyncFunction, AsyncGeneratorFunction, Channel, Mutex, Queue, _try, chan, debounce, jsext as default, deprecate, example, func, isClass, isSubclassOf, lock, mixin, mixins, parallel, queue, read, readAll, run, throttle, wrap };
+export { Channel, Mutex, Queue, _try, chan, debounce, jsext as default, deprecate, example, func, isClass, isSubclassOf, lock, mixin, mixins, parallel, queue, read, readAll, run, throttle, wrap };
 //# sourceMappingURL=index.js.map
