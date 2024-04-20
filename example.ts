@@ -152,7 +152,7 @@ export default function example<T, A extends any[] = any[]>(
         };
 
         if (typeof returns?.then === "function") {
-            await returns;
+            await Promise.resolve(returns);
         }
 
         await new Promise<void>(resolve => stdout.end(() => resolve()));

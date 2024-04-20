@@ -133,7 +133,7 @@ function example(fn, options = undefined) {
             }
         };
         if (typeof (returns === null || returns === void 0 ? void 0 : returns.then) === "function") {
-            await returns;
+            await Promise.resolve(returns);
         }
         await new Promise(resolve => stdout.end(() => resolve()));
         await handleResult();

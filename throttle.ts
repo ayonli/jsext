@@ -111,7 +111,7 @@ export default function throttle(handler: (this: any, ...args: any[]) => any, op
             const returns = handler.call(this, ...args);
 
             if (typeof returns?.then === "function") {
-                cache.pending = Promise.resolve(returns as Promise<any>).finally(() => {
+                cache.pending = Promise.resolve(returns).finally(() => {
                     cache.result = { value: cache.pending };
                     cache.pending = undefined;
                     cache.expires = Date.now() + duration;

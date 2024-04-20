@@ -49,7 +49,7 @@ function debounce(handler, options, reducer = undefined) {
             try {
                 const res = handler.call(this, _data);
                 if (typeof (res === null || res === void 0 ? void 0 : res.then) === "function") {
-                    res.then(resolve, reject);
+                    Promise.resolve(res).then(resolve, reject);
                 }
                 else {
                     resolve(res);

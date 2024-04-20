@@ -172,7 +172,7 @@ export default function debounce<I, T = any, R = any>(
                 const res = handler.call(this as any, _data) as any;
 
                 if (typeof res?.then === "function") {
-                    (res as Promise<any>).then(resolve, reject);
+                    Promise.resolve(res).then(resolve, reject);
                 } else {
                     resolve(res);
                 }
