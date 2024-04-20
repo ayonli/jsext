@@ -67,15 +67,20 @@ export function chunk<T>(arr: T[], length: number): T[][] {
 }
 
 /** Returns a subset of the array that contains only unique items. */
-export function uniq<T>(arr: T[]): T[] {
+export function unique<T>(arr: T[]): T[] {
     return [...new Set(arr)];
 }
+
+/**
+ * @deprecated use `unique` instead.
+ */
+export const uniq = unique;
 
 /**
  * Returns a subset of the array that contains only unique items filtered by the
  * given callback function.
  */
-export function uniqBy<T, K extends string | number | symbol>(
+export function uniqueBy<T, K extends string | number | symbol>(
     arr: T[],
     fn: (item: T, i: number) => K
 ): T[] {
@@ -89,6 +94,11 @@ export function uniqBy<T, K extends string | number | symbol>(
 
     return [...map.values()];
 }
+
+/**
+ * @deprecated use `uniqueBy` instead.
+ */
+export const uniqBy = uniqueBy;
 
 /**
  * Reorganizes the elements in the array in random order.

@@ -92,8 +92,9 @@ describe("Array", () => {
     });
 
     it("Array.prototype.uniq", () => {
-        const list = [1, 2, 3, 4, 2, 3, 1].uniq();
+        const list = [1, 2, 3, 4, 2, 3, 1].unique();
         deepStrictEqual(list, [1, 2, 3, 4]);
+        strictEqual(list.uniq, list.unique);
     });
 
     it("Array.prototype.uniqBy", () => {
@@ -113,7 +114,7 @@ describe("Array", () => {
             }
         ];
 
-        const list = arr.uniqBy(item => item.group);
+        const list = arr.uniqueBy(item => item.group);
         deepStrictEqual(list, [
             {
                 group: "world",
@@ -124,6 +125,8 @@ describe("Array", () => {
                 tag: "B",
             }
         ]);
+
+        strictEqual(arr.uniqBy, arr.uniqueBy);
     });
 
     it("Array.prototype.orderBy", () => {

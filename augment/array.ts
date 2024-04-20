@@ -10,8 +10,8 @@ import {
     random as _random,
     shuffle as _shuffle,
     split as _split,
-    uniq as _uniq,
-    uniqBy as _uniqBy,
+    unique as _unique,
+    uniqueBy as _uniqueBy,
 } from "../array.ts";
 
 declare global {
@@ -34,10 +34,18 @@ declare global {
         /** Breaks the array into smaller chunks according to the given length. */
         chunk(length: number): T[][];
         /** Returns a subset of the array that contains only unique items. */
+        unique(): T[];
+        /**
+         * @deprecated use `unique` instead.
+         */
         uniq(): T[];
         /**
          * Returns a subset of the array that contains only unique items filtered by the
          * given callback function.
+         */
+        uniqueBy<K extends string | number | symbol>(fn: (item: T, i: number) => K): T[];
+        /**
+         * @deprecated use `uniqueBy` instead.
          */
         uniqBy<K extends string | number | symbol>(fn: (item: T, i: number) => K): T[];
         /**
@@ -105,12 +113,12 @@ Array.prototype.chunk = function chunk(length) {
     return _chunk(this, length);
 };
 
-Array.prototype.uniq = function uniq() {
-    return _uniq(this);
+Array.prototype.unique = Array.prototype.uniq = function unique() {
+    return _unique(this);
 };
 
-Array.prototype.uniqBy = function uniqBy(fn) {
-    return _uniqBy(this, fn);
+Array.prototype.uniqueBy = Array.prototype.uniqBy = function uniqueBy(fn) {
+    return _uniqueBy(this, fn);
 };
 
 Array.prototype.shuffle = function shuffle() {
