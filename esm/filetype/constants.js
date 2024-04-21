@@ -24,7 +24,7 @@ const UTIMap = {
     "com.apple.rez-source": [".r", "text/x-rez"],
     "public.mig-source": [".defs", "text/x-mig"],
     "com.apple.symbol-export": [".exp", "text/x-export"],
-    "com.netscape.javascript-source": [".js", ".mjs", ".cjs", "application/javascript", "text/javascript"],
+    "com.netscape.javascript-source": [".js", ".mjs", ".cjs", "text/javascript", "application/javascript"],
     "public.shell-script": [".sh", ".command", ".bat", ".cmd", ".ps1", "text/x-shellscript"],
     "public.csh-script": [".csh", "text/x-csh"],
     "public.perl-script": [".pl", ".pm", "application/perl", "text/x-perl", "text/x-perl-script"],

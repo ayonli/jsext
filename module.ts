@@ -4,6 +4,7 @@
  */
 
 import { isBrowser } from "./env.ts";
+import { isUrl } from "./path/util.ts";
 
 /**
  * Performs interop on the given module. This functions is used to fix CommonJS
@@ -74,6 +75,53 @@ export function interop<T extends { [x: string]: any; }>(
     return module;
 }
 
+const urlCache = new Map<string, string>();
+
+/**
+ * This function downloads the resource from the original URL and convert it to
+ * an object URL which can bypass the CORS policy in the browser, and convert
+ * the response to a new Blob with the correct MIME type if the original one is
+ * not matched. It ensures the resource can be loaded correctly in the browser.
+ */
+export async function getObjectURL(
+    src: string,
+    mimeType: string = "text/javascript"
+): Promise<string> {
+    const isAbsolute = isUrl(src);
+    let cache = isAbsolute ? urlCache.get(src) : undefined;
+
+    if (cache) {
+        return cache;
+    }
+
+    // Use fetch to download the script and compose an object URL which can
+    // bypass CORS security constraint in the browser.
+    const res = await fetch(src);
+    let blob: Blob;
+
+    if (!res.ok) {
+        throw new Error(`Failed to fetch resource: ${src}`);
+    }
+
+    // JavaScript has more than one MIME types, so we just check it loosely.
+    const type = mimeType.includes("javascript") ? "javascript" : mimeType;
+
+    if (res.headers.get("content-type")?.includes(type)) {
+        blob = await res.blob();
+    } else {
+        // If the MIME type is not matched, we need to convert the response to
+        // a new Blob with the correct MIME type.
+        const buf = await res.arrayBuffer();
+        blob = new Blob([new Uint8Array(buf)], {
+            type: mimeType,
+        });
+    }
+
+    cache = URL.createObjectURL(blob);
+    isAbsolute && urlCache.set(src, cache);
+    return cache;
+}
+
 const importCache = new Map<string, Promise<void>>();
 
 /**
@@ -97,13 +145,16 @@ export function importScript(url: string, options: {
     }
 
     cache = new Promise<void>((resolve, reject) => {
-        const script = document.createElement("script");
+        getObjectURL(url).then(_url => {
+            const script = document.createElement("script");
 
-        script.src = url;
-        script.type = options.type === "module" ? "module" : "text/javascript";
-        script.onload = () => setTimeout(resolve, 0);
-        script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
-        document.head.appendChild(script);
+            script.src = _url;
+            script.type = options.type === "module" ? "module" : "text/javascript";
+            script.setAttribute("data-src", url);
+            script.onload = () => setTimeout(resolve, 0);
+            script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
+            document.head.appendChild(script);
+        }).catch(reject);
     });
 
     importCache.set(url, cache);
@@ -129,13 +180,16 @@ export function importStylesheet(url: string): Promise<void> {
     }
 
     cache = new Promise<void>((resolve, reject) => {
-        const link = document.createElement("link");
+        getObjectURL(url, "text/css").then(_url => {
+            const link = document.createElement("link");
 
-        link.href = url;
-        link.rel = "stylesheet";
-        link.onload = () => setTimeout(resolve, 0);
-        link.onerror = () => reject(new Error(`Failed to load stylesheet: ${url}`));
-        document.head.appendChild(link);
+            link.href = _url;
+            link.rel = "stylesheet";
+            link.setAttribute("data-src", url);
+            link.onload = () => setTimeout(resolve, 0);
+            link.onerror = () => reject(new Error(`Failed to load stylesheet: ${url}`));
+            document.head.appendChild(link);
+        }).catch(reject);
     });
 
     importCache.set(url, cache);

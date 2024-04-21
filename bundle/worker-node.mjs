@@ -453,6 +453,44 @@ new TextEncoder();
 new TextDecoder();
 
 /**
+ * Checks if the given string is a URL, whether standard or non-standard.
+ * @experimental
+ *
+ * @example
+ * ```ts
+ * import { isUrl } from "@ayonli/jsext/path";
+ *
+ * console.assert(isUrl("http://example.com"));
+ * console.assert(isUrl("https://example.com?foo=bar#baz"));
+ * console.assert(isUrl("ftp://example.com")); // ftp url
+ * console.assert(isUrl("file:///C:/Windows/System32")); // file url
+ * console.assert(isUrl("file://localhost/C:/Windows/System32")); // file url with hostname
+ * console.assert(isUrl("file:///usr/bin"));
+ * ```
+ */
+function isUrl(str) {
+    return /^[a-z](([a-z\-]+)?:\/\/\S+|[a-z\-]+:\/\/$)/i.test(str) || isFileUrl(str);
+}
+/**
+ * Checks if the given string is a file URL, whether with or without `//`.
+ * @experimental
+ *
+ * @example
+ * ```ts
+ * import { isFileUrl } from "@ayonli/jsext/path";
+ *
+ * console.assert(isFileUrl("file:///C:/Windows/System32"));
+ * console.assert(isFileUrl("file://localhost/C:/Windows/System32"));
+ * console.assert(isFileUrl("file:///usr/bin"));
+ * console.assert(isFileUrl("file:/usr/bin"));
+ * console.assert(isFileUrl("file:///usr/bin?foo=bar"));
+ * ```
+ */
+function isFileUrl(str) {
+    return /^file:((\/\/|\/)\S+|\/?$)/i.test(str);
+}
+
+/**
  * Platform-independent utility functions for dealing with system paths and URLs.
  *
  * The functions in this module are designed to be generic and work in any
@@ -518,6 +556,44 @@ function interop(module, strict = undefined) {
     }
     return module;
 }
+const urlCache = new Map();
+/**
+ * This function downloads the resource from the original URL and convert it to
+ * an object URL which can bypass the CORS policy in the browser, and convert
+ * the response to a new Blob with the correct MIME type if the original one is
+ * not matched. It ensures the resource can be loaded correctly in the browser.
+ */
+async function getObjectURL(src, mimeType = "text/javascript") {
+    var _a;
+    const isAbsolute = isUrl(src);
+    let cache = isAbsolute ? urlCache.get(src) : undefined;
+    if (cache) {
+        return cache;
+    }
+    // Use fetch to download the script and compose an object URL which can
+    // bypass CORS security constraint in the browser.
+    const res = await fetch(src);
+    let blob;
+    if (!res.ok) {
+        throw new Error(`Failed to fetch resource: ${src}`);
+    }
+    // JavaScript has more than one MIME types, so we just check it loosely.
+    const type = mimeType.includes("javascript") ? "javascript" : mimeType;
+    if ((_a = res.headers.get("content-type")) === null || _a === void 0 ? void 0 : _a.includes(type)) {
+        blob = await res.blob();
+    }
+    else {
+        // If the MIME type is not matched, we need to convert the response to
+        // a new Blob with the correct MIME type.
+        const buf = await res.arrayBuffer();
+        blob = new Blob([new Uint8Array(buf)], {
+            type: mimeType,
+        });
+    }
+    cache = URL.createObjectURL(blob);
+    isAbsolute && urlCache.set(src, cache);
+    return cache;
+}
 
 const moduleCache = new Map();
 async function resolveModule(modId, baseUrl = undefined) {
@@ -542,7 +618,7 @@ async function resolveModule(modId, baseUrl = undefined) {
                 }
                 catch (err) {
                     if (String(err).includes("Failed")) {
-                        const _url = await resolveRemoteModuleUrl(url);
+                        const _url = await getObjectURL(url);
                         module = await import(_url);
                         moduleCache.set(url, module);
                     }
@@ -554,23 +630,6 @@ async function resolveModule(modId, baseUrl = undefined) {
         }
     }
     return interop(module);
-}
-async function resolveRemoteModuleUrl(url) {
-    var _a;
-    // Use fetch to download the script and compose an object URL which can
-    // bypass CORS security constraint in the browser.
-    const res = await fetch(url);
-    let blob;
-    if ((_a = res.headers.get("content-type")) === null || _a === void 0 ? void 0 : _a.includes("/javascript")) {
-        blob = await res.blob();
-    }
-    else {
-        const buf = await res.arrayBuffer();
-        blob = new Blob([new Uint8Array(buf)], {
-            type: "application/javascript",
-        });
-    }
-    return URL.createObjectURL(blob);
 }
 
 class Exception extends Error {

@@ -1,0 +1,11 @@
+body {
+    background-color: #fff;
+}
+
+.button-list {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-items: baseline;
+    gap: 10px;
+}

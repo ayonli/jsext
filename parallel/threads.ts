@@ -4,7 +4,7 @@ import { AsyncTask } from "../async.ts";
 import { isBun, isDeno, isNode, isNodeBelow14 } from "../env.ts";
 import { BunWorker, NodeWorker, CallResponse, ChannelMessage } from "./types.ts";
 import { handleChannelMessage, isChannelMessage, wrapChannel } from "./channel.ts";
-import { resolveRemoteModuleUrl } from "./module.ts";
+import { getObjectURL } from "../module.ts";
 import { isPlainObject } from "../object.ts";
 import { serial } from "../number.ts";
 import {
@@ -134,13 +134,13 @@ async function getWorkerEntry(parallel: {
     } else {
         if (parallel.workerEntry) {
             if (path.isUrl(parallel.workerEntry)) {
-                return await resolveRemoteModuleUrl(parallel.workerEntry);
+                return await getObjectURL(parallel.workerEntry);
             } else {
                 return parallel.workerEntry;
             }
         } else {
             const url = "https://ayonli.github.io/jsext/bundle/worker.mjs";
-            return await resolveRemoteModuleUrl(url);
+            return await getObjectURL(url);
         }
     }
 }

@@ -1,7 +1,7 @@
 import { Channel } from '../chan.js';
 import { isNode, isBun, isDeno, isNodeBelow14 } from '../env.js';
 import { wrapChannel, isChannelMessage, handleChannelMessage } from './channel.js';
-import { resolveRemoteModuleUrl } from './module.js';
+import { getObjectURL } from '../module.js';
 import { isPlainObject } from '../object.js';
 import { serial } from '../number.js';
 import { fromErrorEvent, isDOMException, isAggregateError, toObject, fromObject } from '../error.js';
@@ -113,7 +113,7 @@ async function getWorkerEntry(parallel = {}) {
     else {
         if (parallel.workerEntry) {
             if (isUrl(parallel.workerEntry)) {
-                return await resolveRemoteModuleUrl(parallel.workerEntry);
+                return await getObjectURL(parallel.workerEntry);
             }
             else {
                 return parallel.workerEntry;
@@ -121,7 +121,7 @@ async function getWorkerEntry(parallel = {}) {
         }
         else {
             const url = "https://ayonli.github.io/jsext/bundle/worker.mjs";
-            return await resolveRemoteModuleUrl(url);
+            return await getObjectURL(url);
         }
     }
 }

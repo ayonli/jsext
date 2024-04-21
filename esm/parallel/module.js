@@ -1,7 +1,7 @@
 import { isNode, isBun, isDeno } from '../env.js';
 import '../path.js';
 import { trim } from '../string.js';
-import { interop } from '../module.js';
+import { getObjectURL, interop } from '../module.js';
 import { isFsPath } from '../path/util.js';
 
 const moduleCache = new Map();
@@ -73,7 +73,7 @@ async function resolveModule(modId, baseUrl = undefined) {
                 }
                 catch (err) {
                     if (String(err).includes("Failed")) {
-                        const _url = await resolveRemoteModuleUrl(url);
+                        const _url = await getObjectURL(url);
                         module = await import(_url);
                         moduleCache.set(url, module);
                     }
@@ -86,23 +86,6 @@ async function resolveModule(modId, baseUrl = undefined) {
     }
     return interop(module);
 }
-async function resolveRemoteModuleUrl(url) {
-    var _a;
-    // Use fetch to download the script and compose an object URL which can
-    // bypass CORS security constraint in the browser.
-    const res = await fetch(url);
-    let blob;
-    if ((_a = res.headers.get("content-type")) === null || _a === void 0 ? void 0 : _a.includes("/javascript")) {
-        blob = await res.blob();
-    }
-    else {
-        const buf = await res.arrayBuffer();
-        blob = new Blob([new Uint8Array(buf)], {
-            type: "application/javascript",
-        });
-    }
-    return URL.createObjectURL(blob);
-}
 
-export { resolveModule, resolveRemoteModuleUrl, sanitizeModuleId };
+export { resolveModule, sanitizeModuleId };
 //# sourceMappingURL=module.js.map

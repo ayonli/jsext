@@ -1,6 +1,11 @@
 import { ok, strictEqual } from "node:assert";
+import { Server, createServer } from "node:http";
+import { createReadStream, existsSync } from "node:fs";
 import { isBrowser } from "./env.ts";
-import { importScript, importStylesheet } from "./module.ts";
+import { getObjectURL, importScript, importStylesheet } from "./module.ts";
+import { extname, resolve as resolvePath } from "./path.ts";
+import { getMIME } from "./filetype.ts";
+import { until } from "./async.ts";
 
 // Mock `window.matchMedia` for JSDOM.
 globalThis.matchMedia = window.matchMedia = (query) => {
@@ -21,33 +26,79 @@ describe("module", () => {
         return;
     }
 
-    it("importScript", async () => {
-        // Don't wait here because JSDOM doesn't actually load the script.
-        importScript("https://code.jquery.com/jquery-3.6.0.min.js");
+    let server: Server;
+    let port = 12345;
 
-        const script = document.querySelector<HTMLScriptElement>(
-            "script[src='https://code.jquery.com/jquery-3.6.0.min.js']");
+    before(async () => {
+        await new Promise<void>(resolve => {
+            server = createServer((req, res) => {
+                const pathname = req.url!;
+                const filename = resolvePath(pathname.slice(1));
+
+                if (existsSync(filename)) {
+                    res.writeHead(200, { "Content-Type": getMIME(extname(filename)) });
+                    createReadStream(filename).pipe(res);
+                } else {
+                    res.writeHead(404);
+                    res.end();
+                }
+            }).listen(port, () => {
+                resolve();
+            });
+        });
+    });
+
+    after(() => {
+        server.close();
+    });
+
+    it("getObjectURL", async () => {
+        const url = `http://localhost:${port}/examples/worker.mjs`;
+        const _url = await getObjectURL(url);
+
+        ok(_url.startsWith("blob:"));
+        strictEqual(_url, await getObjectURL(url));
+    });
+
+    it("importScript", async () => {
+        const url = `http://localhost:${port}/bundle/jsext.js`;
+
+        // Don't wait here because JSDOM doesn't actually load the script.
+        importScript(url);
+
+        const script = await until(
+            () => document.querySelector<HTMLScriptElement>(`script[data-src='${url}']`)
+        );
         ok(script !== null);
+        ok(script.src.startsWith("blob:"));
         strictEqual(script.type, "text/javascript");
     });
 
     it("importScript (module)", async () => {
-        // Don't wait here because JSDOM doesn't actually load the script.
-        importScript("https://code.jquery.com/jquery-3.5.0.min.js", { type: "module" });
+        const url = `http://localhost:${port}/examples/worker.mjs`;
 
-        const script = document.querySelector<HTMLScriptElement>(
-            "script[src='https://code.jquery.com/jquery-3.5.0.min.js']");
+        // Don't wait here because JSDOM doesn't actually load the script.
+        importScript(url, { type: "module" });
+
+        const script = await until(
+            () => document.querySelector<HTMLScriptElement>(`script[data-src='${url}']`)
+        );
         ok(script !== null);
+        ok(script.src.startsWith("blob:"));
         strictEqual(script.type, "module");
     });
 
     it("importStylesheet", async () => {
-        // Don't wait here because JSDOM doesn't actually load the stylesheet.
-        importStylesheet("https://code.jquery.com/jquery-3.6.0.min.css");
+        const url = `http://localhost:${port}/examples/styles.css`;
 
-        const link = document.querySelector<HTMLLinkElement>(
-            "link[href='https://code.jquery.com/jquery-3.6.0.min.css']");
+        // Don't wait here because JSDOM doesn't actually load the stylesheet.
+        importStylesheet(url);
+
+        const link = await until(
+            () => document.querySelector<HTMLLinkElement>(`link[data-src='${url}']`)
+        );
         ok(link !== null);
+        ok(link.href.startsWith("blob:"));
         strictEqual(link.rel, "stylesheet");
     });
 });

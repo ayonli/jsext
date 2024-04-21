@@ -2,6 +2,7 @@ import { isBun, isDeno, isNode } from "../env.ts";
 import { isFsPath } from "../path.ts";
 import { trim } from "../string.ts";
 import { interop } from "../module.ts";
+import { getObjectURL } from "../module.ts";
 
 const moduleCache = new Map();
 
@@ -73,7 +74,7 @@ export async function resolveModule(modId: string, baseUrl: string | undefined =
                     moduleCache.set(url, module);
                 } catch (err) {
                     if (String(err).includes("Failed")) {
-                        const _url = await resolveRemoteModuleUrl(url);
+                        const _url = await getObjectURL(url);
                         module = await import(_url);
                         moduleCache.set(url, module);
                     } else {
@@ -85,22 +86,4 @@ export async function resolveModule(modId: string, baseUrl: string | undefined =
     }
 
     return interop(module);
-}
-
-export async function resolveRemoteModuleUrl(url: string): Promise<string> {
-    // Use fetch to download the script and compose an object URL which can
-    // bypass CORS security constraint in the browser.
-    const res = await fetch(url);
-    let blob: Blob;
-
-    if (res.headers.get("content-type")?.includes("/javascript")) {
-        blob = await res.blob();
-    } else {
-        const buf = await res.arrayBuffer();
-        blob = new Blob([new Uint8Array(buf)], {
-            type: "application/javascript",
-        });
-    }
-
-    return URL.createObjectURL(blob);
 }
