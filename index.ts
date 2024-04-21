@@ -13,6 +13,7 @@ import parallel from "./parallel.ts";
 import run from "./run.ts";
 import example from "./example.ts";
 import deprecate from "./deprecate.ts";
+import pipe from "./pipe.ts";
 import { isClass as _isClass, isSubclassOf as _isSubclassOf } from "./class.ts";
 export * from "./types.ts";
 
@@ -46,6 +47,7 @@ const jsext = {
     run,
     example,
     deprecate,
+    pipe,
     /** @deprecated import `isClass` from `@ayonli/jsext/class` instead. */
     isClass: _isClass,
     /** @deprecated import `isSubclassOf` from `@ayonli/jsext/class` instead. */
@@ -71,6 +73,7 @@ export {
     run,
     example,
     deprecate,
+    pipe,
 };
 
 /** @deprecated import `isClass` from `@ayonli/jsext/class` instead. */

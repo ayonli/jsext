@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.8.30",
+    "version": "0.8.40",
     "description": "Additional functions for JavaScript to build strong applications.",
     "main": "./cjs/index.js",
     "module": "./esm/index.js",
@@ -243,6 +243,13 @@
             "require": "./cjs/path.js",
             "import": "./esm/path.js",
             "default": "./path.ts"
+        },
+        "./pipe": {
+            "types": "./types/pipe.d.ts",
+            "bun": "./pipe.ts",
+            "require": "./cjs/pipe.js",
+            "import": "./esm/pipe.js",
+            "default": "./pipe.ts"
         },
         "./promise": {
             "types": "./types/async.d.ts",

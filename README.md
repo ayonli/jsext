@@ -54,6 +54,8 @@ browser.
 - [run](#run) Runs a script in another thread and abort at any time.
 - [deprecate](#deprecate) Marks a function as deprecated and emit warnings when
   it is called.
+- [pipe](#pipe) Performs pipe operations through a series of functions upon a
+  value.
 
 ## Categories
 
@@ -1283,4 +1285,31 @@ console.log(pow(2, 3));
 // output:
 // DeprecationWarning: pow() is deprecated, use `a ** b` instead (at <anonymous>:5:13)
 // 8
+```
+
+---
+
+### pipe
+
+```ts
+import { Pipe } from "@ayonli/jsext/pipe";
+
+declare function pipe<T>(value: T): Pipe<T>;
+```
+
+Constructs a `Pipe` instance with the given value and performs pipe operations
+upon it.
+
+**Example**
+
+```ts
+import pipe from "@ayonli/jsext/pipe";
+
+const value = pipe("10")
+  .thru(parseInt)
+  .thru(Math.pow, 2)
+  .thru((v) => v.toFixed(2))
+  .valueOf();
+
+console.log(`the value is ${value}`); // the value is 100.00
 ```

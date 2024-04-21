@@ -13,6 +13,7 @@ import parallel from './parallel.js';
 import run from './run.js';
 import example from './example.js';
 import deprecate from './deprecate.js';
+import pipe from './pipe.js';
 import { isClass as isClass$1, isSubclassOf as isSubclassOf$1 } from './class.js';
 export { AsyncFunction, AsyncGeneratorFunction } from './types.js';
 
@@ -43,6 +44,7 @@ const jsext = {
     run,
     example,
     deprecate,
+    pipe,
     /** @deprecated import `isClass` from `@ayonli/jsext/class` instead. */
     isClass: isClass$1,
     /** @deprecated import `isSubclassOf` from `@ayonli/jsext/class` instead. */
@@ -57,5 +59,5 @@ const isSubclassOf = isSubclassOf$1;
 /** @deprecated use `mixin` instead */
 const mixins = mixin;
 
-export { Channel, Mutex, Queue, _try, chan, debounce, jsext as default, deprecate, example, func, isClass, isSubclassOf, lock, mixin, mixins, parallel, queue, read, readAll, run, throttle, wrap };
+export { Channel, Mutex, Queue, _try, chan, debounce, jsext as default, deprecate, example, func, isClass, isSubclassOf, lock, mixin, mixins, parallel, pipe, queue, read, readAll, run, throttle, wrap };
 //# sourceMappingURL=index.js.map

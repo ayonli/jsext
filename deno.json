@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.8.30",
+    "version": "0.8.40",
     "exports": {
         ".": "./index.ts",
         "./array": "./array.ts",
@@ -26,6 +26,7 @@
         "./object": "./object.ts",
         "./parallel": "./parallel.ts",
         "./path": "./path.ts",
+        "./pipe": "./pipe.ts",
         "./queue": "./queue.ts",
         "./read": "./read.ts",
         "./readAll": "./readAll.ts",
