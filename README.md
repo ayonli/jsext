@@ -1305,11 +1305,10 @@ operations upon it.
 ```ts
 import pipe from "@ayonli/jsext/pipe";
 
-const value = pipe("10")
+const { value } = pipe("10")
   .pipe(parseInt)
   .pipe(Math.pow, 2)
-  .pipe((v) => v.toFixed(2))
-  .valueOf();
+  .pipe((v) => v.toFixed(2));
 
 console.log(`the value is ${value}`); // the value is 100.00
 ```

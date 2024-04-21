@@ -17,6 +17,14 @@ export class Pipeline<T> {
         this[_value] = value;
     }
 
+    get [Symbol.toStringTag]() {
+        return "Pipeline";
+    }
+
+    get value(): T {
+        return this[_value];
+    }
+
     /**
      * Calls a function using the current value as its argument and returns a
      * new {@link Pipeline} instance that holds the result.
@@ -25,18 +33,8 @@ export class Pipeline<T> {
         return new Pipeline(fn(this[_value], ...args));
     }
 
-    /**
-     * Returns the current value.
-     */
     valueOf(): T {
         return this[_value];
-    }
-
-    /**
-     * Returns the string representation of the current value.
-     */
-    toString(): string {
-        return String(this[_value]);
     }
 }
 
@@ -48,11 +46,10 @@ export class Pipeline<T> {
  * ```ts
  * import pipe from "@ayonli/jsext/pipe";
  * 
- * const value = pipe("10")
+ * const { value } = pipe("10")
  *     .pipe(parseInt)
  *     .pipe(Math.pow, 2)
- *     .pipe(v => v.toFixed(2))
- *     .valueOf();
+ *     .pipe(v => v.toFixed(2));
  * 
  * console.log(`the value is ${value}`) // the value is 100.00
  * ```
