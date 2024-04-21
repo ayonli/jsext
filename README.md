@@ -1292,13 +1292,13 @@ console.log(pow(2, 3));
 ### pipe
 
 ```ts
-import { Pipe } from "@ayonli/jsext/pipe";
+import { Pipeline } from "@ayonli/jsext/pipe";
 
-declare function pipe<T>(value: T): Pipe<T>;
+declare function pipe<T>(value: T): Pipeline<T>;
 ```
 
-Constructs a `Pipe` instance with the given value and performs pipe operations
-upon it.
+Constructs a `Pipeline` instance with the given value and performs pipe
+operations upon it.
 
 **Example**
 
@@ -1306,9 +1306,9 @@ upon it.
 import pipe from "@ayonli/jsext/pipe";
 
 const value = pipe("10")
-  .thru(parseInt)
-  .thru(Math.pow, 2)
-  .thru((v) => v.toFixed(2))
+  .pipe(parseInt)
+  .pipe(Math.pow, 2)
+  .pipe((v) => v.toFixed(2))
   .valueOf();
 
 console.log(`the value is ${value}`); // the value is 100.00

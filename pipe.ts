@@ -6,11 +6,11 @@
 const _value = Symbol.for("value");
 
 /**
- * Pipe holds a value and allows you chain operations upon it (and the result of
- * the previous operation) to get the final result, similar to the Unix pipe
+ * Pipeline holds a value and allows you chain operations upon it (and the result
+ * of the previous operation) to get the final result, similar to the Unix pipe
  * operator `|` in shell scripting.
  */
-export class Pipe<T> {
+export class Pipeline<T> {
     private [_value]: T;
 
     constructor(value: T) {
@@ -18,11 +18,11 @@ export class Pipe<T> {
     }
 
     /**
-     * Calls a function upon the current value and returns a new {@link Pipe}
-     * instance that holds the result.
+     * Calls a function using the current value as its argument and returns a
+     * new {@link Pipeline} instance that holds the result.
      */
-    thru<R, A extends any[] = any[]>(fn: (value: T, ...args: A) => R, ...args: A): Pipe<R> {
-        return new Pipe(fn(this[_value], ...args));
+    pipe<R, A extends any[] = any[]>(fn: (value: T, ...args: A) => R, ...args: A): Pipeline<R> {
+        return new Pipeline(fn(this[_value], ...args));
     }
 
     /**
@@ -41,7 +41,7 @@ export class Pipe<T> {
 }
 
 /**
- * Constructs a {@link Pipe} instance with the given value and performs pipe
+ * Constructs a {@link Pipeline} instance with the given value and performs pipe
  * operations upon it.
  * 
  * @example
@@ -49,14 +49,14 @@ export class Pipe<T> {
  * import pipe from "@ayonli/jsext/pipe";
  * 
  * const value = pipe("10")
- *     .thru(parseInt)
- *     .thru(Math.pow, 2)
- *     .thru(v => v.toFixed(2))
+ *     .pipe(parseInt)
+ *     .pipe(Math.pow, 2)
+ *     .pipe(v => v.toFixed(2))
  *     .valueOf();
  * 
  * console.log(`the value is ${value}`) // the value is 100.00
  * ```
  */
-export default function pipe<T>(value: T): Pipe<T> {
-    return new Pipe(value);
+export default function pipe<T>(value: T): Pipeline<T> {
+    return new Pipeline(value);
 }
