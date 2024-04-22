@@ -9,6 +9,7 @@ import "./augment/promise.ts";
 import "./augment/collections.ts";
 import "./augment/error.ts";
 import "./augment/json.ts";
+import "./augment/pipe.ts";
 import { AsyncFunction, AsyncGeneratorFunction } from "./types.ts";
 
 declare global {
@@ -45,10 +46,46 @@ declare global {
     /**
      * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray
      */
-    interface TypedArray extends Array<number> {
+    interface TypedArray {
+        readonly BYTES_PER_ELEMENT: number;
         readonly buffer: ArrayBufferLike;
         readonly byteLength: number;
-        subarray(begin?: number, end?: number): TypedArray;
+        readonly byteOffset: number;
+        readonly length: number;
+
+        copyWithin(target: number, start?: number, end?: number): this;
+        every(predicate: (value: number, index: number, array: this) => unknown, thisArg?: any): boolean;
+        fill(value: number, start?: number, end?: number): this;
+        filter(predicate: (value: number, index: number, array: this) => any, thisArg?: any): this;
+        find(predicate: (value: number, index: number, obj: this) => boolean, thisArg?: any): number | undefined;
+        findIndex(predicate: (value: number, index: number, obj: this) => boolean, thisArg?: any): number;
+        forEach(callbackfn: (value: number, index: number, array: this) => void, thisArg?: any): void;
+        indexOf(searchElement: number, fromIndex?: number): number;
+        includes(searchElement: number, fromIndex?: number): boolean;
+        join(separator?: string): string;
+        lastIndexOf(searchElement: number, fromIndex?: number): number;
+        map(callbackfn: (value: number, index: number, array: this) => number, thisArg?: any): this;
+        reduce(callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: this) => number): number;
+        reduce(callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: this) => number, initialValue: number): number;
+        reduce<U>(callbackfn: (previousValue: U, currentValue: number, currentIndex: number, array: this) => U, initialValue: U): U;
+        reduceRight(callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: this) => number): number;
+        reduceRight(callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: this) => number, initialValue: number): number;
+        reduceRight<U>(callbackfn: (previousValue: U, currentValue: number, currentIndex: number, array: this) => U, initialValue: U): U;
+        reverse(): this;
+        set(array: ArrayLike<number>, offset?: number): void;
+        slice(start?: number, end?: number): this;
+        some(predicate: (value: number, index: number, array: this) => unknown, thisArg?: any): boolean;
+        sort(compareFn?: (a: number, b: number) => number): this;
+        subarray(begin?: number, end?: number): this;
+        toLocaleString(): string;
+        toString(): string;
+        valueOf(): this;
+        entries(): IterableIterator<[number, number]>;
+        keys(): IterableIterator<number>;
+        values(): IterableIterator<number>;
+
+        [index: number]: number;
+        [Symbol.iterator](): IterableIterator<number>;
     }
 
     /**

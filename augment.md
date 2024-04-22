@@ -22,6 +22,7 @@ import "@ayonli/jsext/augment/object";
 import "@ayonli/jsext/augment/promise";
 import "@ayonli/jsext/augment/string";
 import "@ayonli/jsext/augment/uint8array";
+import "@ayonli/jsext/augment/pipe";
 ```
 
 ### Augment global types
@@ -185,3 +186,16 @@ _These types are augmented to the global scope._
     - `equals(another: Uint8Array): boolean`
     - `split(delimiter: number): this[]`
     - `chunk(length: number): this[]`
+
+### Augment Pipe
+
+- `String.prototype.pipe`
+- `Number.prototype.pipe`
+- `BigInt.prototype.pipe`
+- `Boolean.prototype.pipe`
+- `Array.prototype.pipe`
+- `Map.prototype.pipe`
+- `Set.prototype.pipe`
+- `Error.prototype.pipe`
+- `Date.prototype.pipe`
+- `RegExp.prototype.pipe`
