@@ -163,5 +163,5 @@ function isEmoji(char) {
     return EMOJI_RE.test(char);
 }
 
-export { EMOJI_RE, byteLength, bytes, capitalize, chars, chunk, compare, count, hyphenate, isAscii, isEmoji, lines, random, stripEnd, stripStart, trim, trimEnd, trimStart, truncate, words };
+export { byteLength, bytes, capitalize, chars, chunk, compare, count, hyphenate, isAscii, isEmoji, lines, random, stripEnd, stripStart, trim, trimEnd, trimStart, truncate, words };
 //# sourceMappingURL=string.js.map

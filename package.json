@@ -2,9 +2,6 @@
     "name": "@ayonli/jsext",
     "version": "0.8.40",
     "description": "Additional functions for JavaScript to build strong applications.",
-    "main": "./cjs/index.js",
-    "module": "./esm/index.js",
-    "types": "./types/index.d.ts",
     "exports": {
         ".": {
             "types": "./types/index.d.ts",
@@ -476,7 +473,7 @@
         "node-pty": "^1.0.0"
     },
     "engines": {
-        "node": ">=12"
+        "node": ">=12.20"
     },
     "type": "module"
 }
