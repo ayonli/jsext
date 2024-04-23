@@ -107,7 +107,9 @@ export function isMain(importMeta: ImportMeta | NodeJS.Module): boolean {
 
     if (typeof process === "object" && Array.isArray(process.argv)) {
         if (!process.argv[1]) {
-            return true; // Node.js REPL
+            // Node.js REPL or the program is executed by `node -e "code"`,
+            // or the program is executed by itself.
+            return ["<repl>", "[eval]"].includes((importMeta as NodeJS.Module)["id"]);
         }
 
         const filename = "filename" in importMeta ? importMeta["filename"] : importMeta.url;
