@@ -3,7 +3,7 @@ import chan from './chan.js';
 import { serial } from './number.js';
 import './path.js';
 import { asyncTask } from './async.js';
-import { isDeno, isNode, isBun, isMainThread } from './env.js';
+import { isMainThread, isDeno, isNode, isBun } from './env.js';
 import { sanitizeModuleId, resolveModule } from './parallel/module.js';
 import { remoteTasks, acquireWorker, wrapArgs } from './parallel/threads.js';
 import { isFsPath } from './path/util.js';
@@ -382,7 +382,15 @@ function parallel(module) {
      * this option instead.
      */
     parallel.workerEntry = undefined;
+    /**
+     * Indicates whether the current thread is the main thread.
+     */
+    parallel.isMainThread = false;
 })(parallel || (parallel = {}));
+Object.defineProperty(parallel, "isMainThread", {
+    value: isMainThread,
+    writable: false,
+});
 var parallel$1 = parallel;
 
 export { parallel$1 as default };

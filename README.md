@@ -1113,6 +1113,11 @@ namespace parallel {
    * this option instead.
    */
   export var workerEntry: string | undefined;
+
+  /**
+   * Indicates whether the current thread is the main thread.
+   */
+  export const isMainThread: boolean;
 }
 ```
 

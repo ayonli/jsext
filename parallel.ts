@@ -423,6 +423,16 @@ namespace parallel {
      * this option instead.
      */
     export var workerEntry: string | undefined = undefined;
+
+    /**
+     * Indicates whether the current thread is the main thread.
+     */
+    export const isMainThread: boolean = false;
 }
+
+Object.defineProperty(parallel, "isMainThread", {
+    value: isMainThread,
+    writable: false,
+});
 
 export default parallel;
