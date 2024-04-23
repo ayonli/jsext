@@ -105,7 +105,11 @@ export function isMain(importMeta: ImportMeta | NodeJS.Module): boolean {
         return importMeta["main"] as boolean;
     }
 
-    if (typeof process === "object" && Array.isArray(process.argv) && process.argv[1]) {
+    if (typeof process === "object" && Array.isArray(process.argv)) {
+        if (!process.argv[1]) {
+            return true; // Node.js REPL
+        }
+
         const filename = "filename" in importMeta ? importMeta["filename"] : importMeta.url;
         const urlExt = extname(filename);
         let entry = process.argv[1]!;
