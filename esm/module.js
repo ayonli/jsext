@@ -1,5 +1,6 @@
 import { isBrowser } from './env.js';
-import { isUrl } from './path/util.js';
+import { extname } from './path.js';
+import { equals, isUrl } from './path/util.js';
 
 /**
  * Utility functions for working with JavaScript modules.
@@ -37,6 +38,22 @@ function interop(module, strict = undefined) {
         }
     }
     return module;
+}
+function isMain(importMeta) {
+    if ("main" in importMeta && typeof importMeta["main"] === "boolean") {
+        return importMeta["main"];
+    }
+    if (typeof process === "object" && Array.isArray(process.argv) && process.argv[1]) {
+        const filename = "filename" in importMeta ? importMeta["filename"] : importMeta.url;
+        const urlExt = extname(filename);
+        let entry = process.argv[1];
+        if (!extname(entry) && urlExt) {
+            // In Node.js, the extension name may be omitted when starting the script.
+            entry += urlExt;
+        }
+        return equals(filename, entry, { ignoreFileProtocol: true });
+    }
+    return false;
 }
 const urlCache = new Map();
 /**
@@ -136,5 +153,5 @@ function importStylesheet(url) {
     return cache;
 }
 
-export { getObjectURL, importScript, importStylesheet, interop };
+export { getObjectURL, importScript, importStylesheet, interop, isMain };
 //# sourceMappingURL=module.js.map

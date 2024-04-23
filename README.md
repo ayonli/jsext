@@ -32,6 +32,10 @@ browser.
 </script>
 ```
 
+<script src="./bundle/jsext.js">
+    // this will also include the sub-modules and augmentations
+</script>
+
 ## Major Functions
 
 - [_try](#_try) Calls a function safely and return errors when captured.

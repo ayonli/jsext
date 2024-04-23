@@ -4,7 +4,7 @@
  */
 
 import { isBrowser } from "./env.ts";
-import { isUrl } from "./path/util.ts";
+import { equals, extname, isUrl } from "./path.ts";
 
 /**
  * Performs interop on the given module. This functions is used to fix CommonJS
@@ -73,6 +73,52 @@ export function interop<T extends { [x: string]: any; }>(
     }
 
     return module;
+}
+
+/**
+ * Checks if the current file is the entry of the program.
+ * 
+ * @example
+ * ```ts
+ * import { isMain } from "@ayonli/jsext/module";
+ * 
+ * if (isMain(import.meta)) {
+ *     console.log("This is the main module.");
+ * }
+ * ```
+ */
+export function isMain(importMeta: ImportMeta): boolean;
+/**
+ * @example
+ * ```ts
+ * // CommonJS
+ * const { isMain } = require("@ayonli/jsext/module");
+ * 
+ * if (isMain(module)) {
+ *     console.log("This is the main module.");
+ * }
+ * ```
+ */
+export function isMain(module: NodeJS.Module): boolean;
+export function isMain(importMeta: ImportMeta | NodeJS.Module): boolean {
+    if ("main" in importMeta && typeof importMeta["main"] === "boolean") {
+        return importMeta["main"] as boolean;
+    }
+
+    if (typeof process === "object" && Array.isArray(process.argv) && process.argv[1]) {
+        const filename = "filename" in importMeta ? importMeta["filename"] : importMeta.url;
+        const urlExt = extname(filename);
+        let entry = process.argv[1]!;
+
+        if (!extname(entry) && urlExt) {
+            // In Node.js, the extension name may be omitted when starting the script.
+            entry += urlExt;
+        }
+
+        return equals(filename, entry, { ignoreFileProtocol: true });
+    }
+
+    return false;
 }
 
 const urlCache = new Map<string, string>();

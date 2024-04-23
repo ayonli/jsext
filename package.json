@@ -348,15 +348,15 @@
         }
     },
     "scripts": {
-        "test": "node --no-warnings=ExperimentalWarning --loader=ts-node/esm ./node_modules/mocha/bin/mocha --config mocha.json",
-        "test:bun": "bun run ./node_modules/mocha/bin/mocha --config mocha.json",
+        "test": "node --no-warnings=ExperimentalWarning --experimental-loader=ts-node/esm ./node_modules/mocha/bin/mocha --config mocha.json",
         "test:tsx": "tsc --noEmit && tsx ./node_modules/mocha/bin/mocha --config mocha.json",
+        "test:deno": "deno run -A test-deno.ts",
+        "test:bun": "bun run ./node_modules/mocha/bin/mocha --config mocha.json",
         "test:jsdom": "tsx ./node_modules/mocha/bin/mocha --config mocha.jsdom.json -r global-jsdom/register -r jsdom-setup.js",
         "test:pty:node": "tsx ./node_modules/mocha/bin/mocha --config mocha.pty.json",
         "test:pty:deno": "tsx ./node_modules/mocha/bin/mocha --config mocha.pty.json --deno",
         "test:pty:bun": "tsx ./node_modules/mocha/bin/mocha --config mocha.pty.json --bun",
         "test:pty": "npm run test:pty:node && npm run test:pty:deno && npm run test:pty:bun",
-        "test:deno": "deno run -A test-deno.ts",
         "build": "rollup -c rollup.config.js && tsc -p tsconfig.types.json",
         "typing": "tsc --noEmit --watch",
         "prepublishOnly": "npm run build && node prepublish.mjs",

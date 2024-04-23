@@ -1,6 +1,7 @@
-import { deepStrictEqual } from "node:assert";
+import { deepStrictEqual, strictEqual } from "node:assert";
 import { interop } from "./module.ts";
-import { isNode } from "./env.ts";
+import { isBun, isDeno, isNode } from "./env.ts";
+import { run } from "./cli.ts";
 
 describe("module", () => {
     describe("interop", () => {
@@ -74,6 +75,50 @@ describe("module", () => {
             // @ts-ignore
             const module = await interop(() => import("./examples/module/module1.cjs"));
             deepStrictEqual(Object.keys(module).sort(), ["foo", "bar"].sort());
+        });
+    });
+
+    describe("isMain", () => {
+        it("ES Module", async () => {
+            if (isNode) {
+                const { stdout } = await run("node", ["./examples/module/foo.mjs"]);
+                strictEqual(stdout.trim(), "foo.mjs is the main module");
+            } else if (isDeno) {
+                const { stdout } = await run("deno", ["run", "./examples/module/foo.mjs"]);
+                strictEqual(stdout.trim(), "foo.mjs is the main module");
+            } else if (isBun) {
+                const { stdout } = await run("bun", ["run", "./examples/module/foo.mjs"]);
+                strictEqual(stdout.trim(), "foo.mjs is the main module");
+            }
+
+            if (isNode) {
+                const { stdout } = await run("node", ["./examples/module/bar.mjs"]);
+                strictEqual(stdout.trim(), "bar.mjs is the main module");
+            } else if (isDeno) {
+                const { stdout } = await run("deno", ["run", "./examples/module/bar.mjs"]);
+                strictEqual(stdout.trim(), "bar.mjs is the main module");
+            } else if (isBun) {
+                const { stdout } = await run("bun", ["run", "./examples/module/bar.mjs"]);
+                strictEqual(stdout.trim(), "bar.mjs is the main module");
+            }
+        });
+
+        it("CommonJS", async function () {
+            if (isNode) {
+                const { stdout } = await run("node", ["./examples/module/foo.cjs"]);
+                strictEqual(stdout.trim(), "foo.cjs is the main module");
+            } else if (isBun) {
+                const { stdout } = await run("bun", ["run", "./examples/module/foo.cjs"]);
+                strictEqual(stdout.trim(), "foo.cjs is the main module");
+            }
+
+            if (isNode) {
+                const { stdout } = await run("node", ["./examples/module/bar.cjs"]);
+                strictEqual(stdout.trim(), "bar.cjs is the main module");
+            } else if (isBun) {
+                const { stdout } = await run("bun", ["run", "./examples/module/bar.cjs"]);
+                strictEqual(stdout.trim(), "bar.cjs is the main module");
+            }
         });
     });
 });
