@@ -10,7 +10,6 @@ describe("runtime", () => {
             deepStrictEqual(runtime(), {
                 identity: "node",
                 version: process.version.slice(1),
-                engine: "V8",
                 tsSupport: process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
                     || /\.tsx?$|\bvite\b/.test(process.argv[1] ?? "")
             });
@@ -18,14 +17,12 @@ describe("runtime", () => {
             deepStrictEqual(runtime(), {
                 identity: "deno",
                 version: Deno.version.deno,
-                engine: "V8",
                 tsSupport: true
             });
         } else if (isBun) {
             deepStrictEqual(runtime(), {
                 identity: "bun",
                 version: Bun.version,
-                engine: "JavaScriptCore",
                 tsSupport: true
             });
         }
