@@ -2,6 +2,7 @@ import { text } from './bytes.js';
 import { interop } from './module.js';
 import { PowerShellCommands } from './cli/constants.js';
 import { isDeno, isBun } from './env.js';
+import runtime, { platform as platform$1 } from './runtime.js';
 
 /**
  * Useful utility functions for interacting with the terminal.
@@ -10,58 +11,14 @@ import { isDeno, isBun } from './env.js';
  * @module
  * @experimental
  */
-const PopularPlatforms = [
-    "android",
-    "darwin",
-    "freebsd",
-    "linux",
-    "windows",
-];
 /**
- * Returns a string identifying the operating system platform in which the
- * program is running.
+ * @deprecated import `platform` from `@ayonli/jsext/runtime` module instead.
  */
-function platform() {
-    if (typeof Deno === "object") {
-        if (PopularPlatforms.includes(Deno.build.os)) {
-            return Deno.build.os;
-        }
-        else {
-            return "others";
-        }
-    }
-    else if (typeof process === "object" && typeof process.platform === "string") {
-        if (process.platform === "win32") {
-            return "windows";
-        }
-        else if (PopularPlatforms.includes(process.platform)) {
-            return process.platform;
-        }
-        else {
-            return "others";
-        }
-    }
-    else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
-        if (navigator.userAgent.includes("Android")) {
-            return "android";
-        }
-        else if (navigator.userAgent.includes("Macintosh")) {
-            return "darwin";
-        }
-        else if (navigator.userAgent.includes("Windows")) {
-            return "windows";
-        }
-        else if (navigator.userAgent.includes("Linux")) {
-            return "linux";
-        }
-        else {
-            return "others";
-        }
-    }
-    else {
-        return "others";
-    }
-}
+const platform = platform$1;
+/**
+ * @deprecated use `runtime().tsSupport` from `@ayonli/jsext/runtime` module instead.
+ */
+const isTsRuntime = () => runtime().tsSupport;
 /** Checks if the program is running in Windows Subsystem for Linux. */
 function isWSL() {
     if (platform() !== "linux")
@@ -73,18 +30,6 @@ function isWSL() {
         return !!process.env["WSL_INTEROP"];
     }
     return false;
-}
-/** Checks if the program is running in a TypeScript runtime. */
-function isTsRuntime() {
-    var _a;
-    if (isDeno || isBun) {
-        return true;
-    }
-    else if (typeof process !== "object") {
-        return false;
-    }
-    return process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
-        || /\.tsx?$|\bvite\b/.test((_a = process.argv[1]) !== null && _a !== void 0 ? _a : "");
 }
 function parseValue(arg) {
     let value = arg.trim();
@@ -350,5 +295,5 @@ async function sudo(cmd, args, options = {}) {
     });
 }
 
-export { PopularPlatforms, isTsRuntime, isWSL, parseArgs, platform, powershell, quote, run, sudo, which };
+export { isTsRuntime, isWSL, parseArgs, platform, powershell, quote, run, sudo, which };
 //# sourceMappingURL=cli.js.map

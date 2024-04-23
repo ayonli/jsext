@@ -10,55 +10,17 @@ import { text } from "./bytes.ts";
 import { interop } from "./module.ts";
 import { PowerShellCommands } from "./cli/constants.ts";
 import { isBun, isDeno } from "./env.ts";
-
-export type PopularPlatforms = "android"
-    | "darwin"
-    | "freebsd"
-    | "linux"
-    | "windows";
-export const PopularPlatforms: PopularPlatforms[] = [
-    "android",
-    "darwin",
-    "freebsd",
-    "linux",
-    "windows",
-];
+import runtime, { platform as _platform } from "./runtime.ts";
 
 /**
- * Returns a string identifying the operating system platform in which the
- * program is running.
+ * @deprecated import `platform` from `@ayonli/jsext/runtime` module instead.
  */
-export function platform(): PopularPlatforms | "others" {
-    if (typeof Deno === "object") {
-        if (PopularPlatforms.includes(Deno.build.os as any)) {
-            return Deno.build.os as PopularPlatforms;
-        } else {
-            return "others";
-        }
-    } else if (typeof process === "object" && typeof process.platform === "string") {
-        if (process.platform === "win32") {
-            return "windows";
-        } else if ((PopularPlatforms as string[]).includes(process.platform)) {
-            return process.platform as PopularPlatforms;
-        } else {
-            return "others";
-        }
-    } else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
-        if (navigator.userAgent.includes("Android")) {
-            return "android";
-        } else if (navigator.userAgent.includes("Macintosh")) {
-            return "darwin";
-        } else if (navigator.userAgent.includes("Windows")) {
-            return "windows";
-        } else if (navigator.userAgent.includes("Linux")) {
-            return "linux";
-        } else {
-            return "others";
-        }
-    } else {
-        return "others";
-    }
-}
+export const platform = _platform;
+
+/**
+ * @deprecated use `runtime().tsSupport` from `@ayonli/jsext/runtime` module instead.
+ */
+export const isTsRuntime = () => runtime().tsSupport;
 
 /** Checks if the program is running in Windows Subsystem for Linux. */
 export function isWSL(): boolean {
@@ -72,18 +34,6 @@ export function isWSL(): boolean {
     }
 
     return false;
-}
-
-/** Checks if the program is running in a TypeScript runtime. */
-export function isTsRuntime(): boolean {
-    if (isDeno || isBun) {
-        return true;
-    } else if (typeof process !== "object") {
-        return false;
-    }
-
-    return process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
-        || /\.tsx?$|\bvite\b/.test(process.argv[1] ?? "");
 }
 
 function parseValue(arg: string): string | number | boolean {

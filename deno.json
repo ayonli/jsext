@@ -31,6 +31,7 @@
         "./read": "./read.ts",
         "./readAll": "./readAll.ts",
         "./run": "./run.ts",
+        "./runtime": "./runtime.ts",
         "./string": "./string.ts",
         "./throttle": "./throttle.ts",
         "./try": "./try.ts",

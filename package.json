@@ -290,6 +290,13 @@
             "import": "./esm/run.js",
             "default": "./run.ts"
         },
+        "./runtime": {
+            "types": "./types/runtime.d.ts",
+            "bun": "./runtime.ts",
+            "require": "./cjs/runtime.js",
+            "import": "./esm/runtime.js",
+            "default": "./runtime.ts"
+        },
         "./string": {
             "types": "./types/string.d.ts",
             "bun": "./string.ts",

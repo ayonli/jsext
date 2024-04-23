@@ -1,51 +1,9 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { equals } from "./path.ts";
-import { platform, parseArgs, run, which, quote } from "./cli.ts";
-import { isNode, isNodeBelow16 } from "./env.ts";
-import stripAnsi from "strip-ansi";
+import { parseArgs, run, which, quote } from "./cli.ts";
+import { platform } from "./runtime.ts";
 
 describe("cli", () => {
-    it("platform", () => {
-        const platforms = [
-            "android",
-            "darwin",
-            "freebsd",
-            "linux",
-            "windows",
-        ];
-        const others = "others";
-
-        if (typeof Deno === "object") {
-            if (platforms.includes(Deno.build.os as any)) {
-                strictEqual(Deno.build.os, platform());
-            } else {
-                strictEqual(others, platform());
-            }
-        } else if (typeof process === "object" && typeof process.platform === "string") {
-            if (process.platform === "win32") {
-                strictEqual("windows", platform());
-            } else if (platforms.includes(process.platform)) {
-                strictEqual(process.platform, platform());
-            } else {
-                strictEqual(others, platform());
-            }
-        } else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
-            if (navigator.userAgent.includes("Android")) {
-                strictEqual("android", platform());
-            } else if (navigator.userAgent.includes("Macintosh")) {
-                strictEqual("darwin", platform());
-            } else if (navigator.userAgent.includes("Windows")) {
-                strictEqual("windows", platform());
-            } else if (navigator.userAgent.includes("Linux")) {
-                strictEqual("linux", platform());
-            } else {
-                strictEqual(others, platform());
-            }
-        } else {
-            strictEqual(others, platform());
-        }
-    });
-
     it("parseArgs", () => {
         deepStrictEqual(parseArgs([
             "Bob", "30",
@@ -242,56 +200,6 @@ describe("cli", () => {
                 strictEqual(ls, "/bin/ls");
             } catch {
                 strictEqual(ls, "/usr/bin/ls");
-            }
-        }
-    });
-
-    it("isTsRuntime", async function () {
-        this.timeout(10_000);
-
-        if (await which("node") && isNode) {
-            {
-                const { stdout } = await run("node", ["./examples/cli/is-ts-runtime.js"]);
-                strictEqual(stripAnsi(stdout.trim()), "false");
-            }
-
-            if (platform() !== "windows") {
-                const { stdout } = await run("npx", ["ts-node", "./examples/cli/is-ts-runtime.js"]);
-                strictEqual(stripAnsi(stdout.trim()), "true");
-            }
-
-            if (platform() !== "windows" && !isNodeBelow16) {
-                const { stdout } = await run("npx", ["tsx", "./examples/cli/is-ts-runtime.js"]);
-                strictEqual(stripAnsi(stdout.trim()), "true");
-            }
-
-            if (platform() !== "windows" && !isNodeBelow16) {
-                const { stdout } = await run("npx", ["tsx", "./examples/cli/is-ts-runtime.ts"]);
-                strictEqual(stripAnsi(stdout.trim()), "true");
-            }
-        }
-
-        if (await which("deno")) {
-            {
-                const { stdout } = await run("deno", ["run", "./examples/cli/is-ts-runtime.js"]);
-                strictEqual(stripAnsi(stdout.trim()), "true");
-            }
-
-            {
-                const { stdout } = await run("deno", ["run", "./examples/cli/is-ts-runtime.ts"]);
-                strictEqual(stripAnsi(stdout.trim()), "true");
-            }
-        }
-
-        if (await which("bun")) {
-            {
-                const { stdout } = await run("bun", ["run", "./examples/cli/is-ts-runtime.js"]);
-                strictEqual(stripAnsi(stdout.trim()), "true");
-            }
-
-            {
-                const { stdout } = await run("bun", ["run", "./examples/cli/is-ts-runtime.ts"]);
-                strictEqual(stripAnsi(stdout.trim()), "true");
             }
         }
     });

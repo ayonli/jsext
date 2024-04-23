@@ -15,6 +15,7 @@ import * as module from "./module.ts";
 import * as number from "./number.ts";
 import * as object from "./object.ts";
 import * as path from "./path.ts";
+import * as runtime from "./runtime.ts";
 import * as string from "./string.ts";
 
 export default {
@@ -37,5 +38,9 @@ export default {
     number,
     object,
     path,
+    runtime: {
+        ...object.omit(runtime, ["default"]),
+        runtime: runtime.default,
+    },
     string,
 };
