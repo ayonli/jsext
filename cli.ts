@@ -410,6 +410,10 @@ export function env(name: string | undefined = undefined, value: string | undefi
  * This function will try to open VS Code if available, otherwise it will try to
  * open the default editor or a preferred one, such as `vim` or `nano` when available.
  * 
+ * Some editor may hold the terminal until the editor is closed, while others may
+ * return immediately. Anyway, the operation is asynchronous and the function will
+ * not block the thread.
+ * 
  * In the browser, this function will always try to open the file in VS Code,
  * regardless of whether it's available or not.
  */
@@ -455,7 +459,6 @@ export async function edit(filename: string): Promise<void> {
 
     let editor = env("EDITOR")
         || env("VISUAL")
-        || (await which("edit"))
         || (await which("gedit"))
         || (await which("vim"))
         || (await which("vi"))
@@ -468,17 +471,19 @@ export async function edit(filename: string): Promise<void> {
         editor = basename(editor);
     }
 
-    if (["vim", "vi", "nano"].includes(editor)) {
+    if (editor === "gedit") {
+        args = line ? [`+${line}`, filename] : [filename];
+    } else if (["vim", "vi", "nano"].includes(editor)) {
         args = line ? [`+${line}`, filename] : [filename];
 
         if (await which("gnome-terminal")) {
-            editor = "gnome-terminal";
             args = ["--", editor, ...args];
+            editor = "gnome-terminal";
         } else {
+            args = ["-e", `'${editor} ${args.map(quote).join(" ")}'`];
             editor = (await which("konsole"))
                 || (await which("xfce4-terminal"))
                 || (await which("xterm"));
-            args = ["-e", `'${editor} ${args.map(quote).join(" ")}'`];
         }
 
         if (!editor) {
