@@ -464,6 +464,7 @@ export async function edit(filename: string): Promise<void> {
     let editor = env("EDITOR")
         || env("VISUAL")
         || (await which("gedit"))
+        || (await which("kate"))
         || (await which("vim"))
         || (await which("vi"))
         || (await which("nano"));
@@ -475,18 +476,19 @@ export async function edit(filename: string): Promise<void> {
         editor = basename(editor);
     }
 
-    if (editor === "gedit") {
+    if (["gedit", "kate", "vim", "vi", "nano"].includes(editor)) {
         args = line ? [`+${line}`, filename] : [filename];
-    } else if (["vim", "vi", "nano"].includes(editor)) {
-        args = line ? [`+${line}`, filename] : [filename];
+    }
 
+    if (["vim", "vi", "nano"].includes(editor)) {
         if (await which("gnome-terminal")) {
-            args = ["--", editor, ...args];
+            args = ["--", editor, ...args!];
             editor = "gnome-terminal";
         } else {
-            args = ["-e", `'${editor} ${args.map(quote).join(" ")}'`];
+            args = ["-e", `'${editor} ${args!.map(quote).join(" ")}'`];
             editor = (await which("konsole"))
                 || (await which("xfce4-terminal"))
+                || (await which("deepin-terminal"))
                 || (await which("xterm"));
         }
 

@@ -395,6 +395,7 @@ async function edit(filename) {
     let editor = env("EDITOR")
         || env("VISUAL")
         || (await which("gedit"))
+        || (await which("kate"))
         || (await which("vim"))
         || (await which("vi"))
         || (await which("nano"));
@@ -405,11 +406,10 @@ async function edit(filename) {
     else {
         editor = basename(editor);
     }
-    if (editor === "gedit") {
+    if (["gedit", "kate", "vim", "vi", "nano"].includes(editor)) {
         args = line ? [`+${line}`, filename] : [filename];
     }
-    else if (["vim", "vi", "nano"].includes(editor)) {
-        args = line ? [`+${line}`, filename] : [filename];
+    if (["vim", "vi", "nano"].includes(editor)) {
         if (await which("gnome-terminal")) {
             args = ["--", editor, ...args];
             editor = "gnome-terminal";
@@ -418,6 +418,7 @@ async function edit(filename) {
             args = ["-e", `'${editor} ${args.map(quote).join(" ")}'`];
             editor = (await which("konsole"))
                 || (await which("xfce4-terminal"))
+                || (await which("deepin-terminal"))
                 || (await which("xterm"));
         }
         if (!editor) {
