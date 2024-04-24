@@ -1,7 +1,8 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { equals } from "./path.ts";
-import { parseArgs, run, which, quote } from "./cli.ts";
+import { parseArgs, run, which, quote, env } from "./cli.ts";
 import { platform } from "./runtime.ts";
+import { isDeno } from "./env.ts";
 
 describe("cli", () => {
     it("parseArgs", () => {
@@ -202,5 +203,33 @@ describe("cli", () => {
                 strictEqual(ls, "/usr/bin/ls");
             }
         }
+    });
+
+    describe("env", () => {
+        it("get all", () => {
+            if (isDeno) {
+                deepStrictEqual(env(), Deno.env.toObject());
+            } else {
+                deepStrictEqual(env(), process.env);
+            }
+        });
+
+        it("get one", () => {
+            if (isDeno) {
+                strictEqual(env("HOME"), Deno.env.get("HOME"));
+            } else {
+                strictEqual(env("HOME"), process.env["HOME"]);
+            }
+        });
+
+        it("set one", () => {
+            env("FOO", "BAR");
+
+            if (isDeno) {
+                strictEqual(env("FOO"), "BAR");
+            } else {
+                strictEqual(env("FOO"), "BAR");
+            }
+        });
     });
 });
