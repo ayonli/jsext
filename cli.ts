@@ -16,6 +16,22 @@ import { basename } from "./path.ts";
 import { trimStart } from "./string.ts";
 
 /**
+ * The command-line arguments passed to the program.
+ * 
+ * This variable is the same as `Deno.args` in Deno and `process.argv.slice(2)`
+ * in Node.js or Bun.
+ */
+export const args: string[] = (() => {
+    if (typeof Deno === "object") {
+        return Deno.args;
+    } else if (typeof process === "object" && Array.isArray(process.argv)) {
+        return process.argv.slice(2);
+    } else {
+        return [];
+    }
+})();
+
+/**
  * @deprecated import `platform` from `@ayonli/jsext/runtime` module instead.
  */
 export const platform = _platform;
