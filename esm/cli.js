@@ -342,11 +342,15 @@ function env(name = undefined, value = undefined) {
     }
 }
 /**
- * Opens the given file in the default text editor.
+ * Opens the given file in a text editor.
  *
- * The `filename` can include a line number by appending `:<number>` or `#L<number>`.
+ * The `filename` can include a line number by appending `:<number>` or `#L<number>`,
+ * however, this feature is not supported by all editors.
  *
- * NOTE: in the browser, this function will always try to open the file in VS Code,
+ * This function will try to open VS Code if available, otherwise it will try to
+ * open the default editor or a preferred one, such as `vim` or `nano` when available.
+ *
+ * In the browser, this function will always try to open the file in VS Code,
  * regardless of whether it's available or not.
  */
 async function edit(filename) {
@@ -360,40 +364,62 @@ async function edit(filename) {
         window.open("vscode://file/" + trimStart(filename, "/") + (line ? `:${line}` : ""));
         return;
     }
+    const vscode = await which("code");
+    if (vscode) {
+        const args = line ? ["--goto", `${filename}:${line}`] : [filename];
+        const { code, stderr } = await run(vscode, args);
+        if (code)
+            throw new Error(stderr || `Failed to open ${filename} in the editor.`);
+        return;
+    }
+    else if (platform() === "darwin") {
+        const { code, stderr } = await run("open", ["-t", filename]);
+        if (code)
+            throw new Error(stderr || `Failed to open ${filename} in the editor.`);
+        return;
+    }
+    else if (platform() === "windows") {
+        const { code, stderr } = await run("notepad.exe", [filename]);
+        if (code)
+            throw new Error(stderr || `Failed to open ${filename} in the editor.`);
+        return;
+    }
     let editor = env("EDITOR")
         || env("VISUAL")
-        || (await which("code"))
-        || undefined;
+        || (await which("edit"))
+        || (await which("gedit"))
+        || (await which("vim"))
+        || (await which("vi"))
+        || (await which("nano"));
+    let args;
     if (!editor) {
-        if (platform() === "windows") {
-            editor = "notepad.exe";
+        throw new Error("Cannot determine the editor to open.");
+    }
+    else {
+        editor = basename(editor);
+    }
+    if (["vim", "vi", "nano"].includes(editor)) {
+        args = line ? [`+${line}`, filename] : [filename];
+        if (await which("gnome-terminal")) {
+            editor = "gnome-terminal";
+            args = ["--", editor, ...args];
         }
         else {
-            editor = (await which("nano"))
-                || (await which("vim"))
-                || (await which("vi"))
-                || (await which("edit"))
-                || undefined;
+            editor = (await which("konsole"))
+                || (await which("xfce4-terminal"))
+                || (await which("xterm"));
+            args = ["-e", `'${editor} ${args.map(quote).join(" ")}'`];
         }
-    }
-    if (!editor) {
-        throw new Error("No editor was found.");
-    }
-    const editorName = basename(editor, ".exe");
-    let args;
-    if (editorName === "code") {
-        args = line ? ["--goto", `${filename}:${line}`] : [filename];
-    }
-    else if (editorName === "nano" || editorName === "vim" || editorName === "vi") {
-        args = line ? [`+${line}`, filename] : [filename];
+        if (!editor) {
+            throw new Error("Cannot determine the terminal to open.");
+        }
     }
     else {
         args = [filename];
     }
     const { code, stderr } = await run(editor, args);
-    if (code) {
+    if (code)
         throw new Error(stderr || `Failed to open ${filename} in the editor.`);
-    }
 }
 
 export { edit, env, isTsRuntime, isWSL, parseArgs, platform, powershell, quote, run, sudo, which };
