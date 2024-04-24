@@ -1,8 +1,10 @@
 import { text } from './bytes.js';
 import { interop } from './module.js';
 import { PowerShellCommands } from './cli/constants.js';
-import { isDeno, isBun } from './env.js';
+import { isDeno, isBun, isBrowser } from './env.js';
 import runtime, { platform as platform$1 } from './runtime.js';
+import { basename } from './path.js';
+import { trimStart } from './string.js';
 
 /**
  * Useful utility functions for interacting with the terminal.
@@ -294,6 +296,100 @@ async function sudo(cmd, args, options = {}) {
         });
     });
 }
+function env(name = undefined, value = undefined) {
+    var _a, _b;
+    if (typeof Deno === "object") {
+        if (name === undefined) {
+            return Deno.env.toObject();
+        }
+        else if (value === undefined) {
+            return Deno.env.get(name);
+        }
+        Deno.env.set(name, value);
+        return;
+    }
+    else if (typeof process === "object" && typeof process.env === "object") {
+        if (name === undefined) {
+            return process.env;
+        }
+        else if (value === undefined) {
+            return process.env[name];
+        }
+        process.env[name] = value;
+        return;
+    }
+    else if (isBrowser) {
+        // @ts-ignore
+        const env = globalThis["__env__"];
+        // @ts-ignore
+        if (env === undefined || env === null || typeof env === "object") {
+            if (name === undefined) {
+                return env !== null && env !== void 0 ? env : {};
+            }
+            else if (value === undefined) {
+                return (_a = env === null || env === void 0 ? void 0 : env[name]) !== null && _a !== void 0 ? _a : undefined;
+            }
+            // @ts-ignore
+            ((_b = globalThis["__env__"]) !== null && _b !== void 0 ? _b : (globalThis["__env__"] = {}))[name] = value;
+            return;
+        }
+    }
+    throw new Error("Unsupported runtime");
+}
+/**
+ * Opens the given file in the default text editor.
+ *
+ * The `filename` can include a line number by appending `:<number>` or `#L<number>`.
+ *
+ * NOTE: in the browser, this function will always try to open the file in VS Code,
+ * regardless of whether it's available or not.
+ */
+async function edit(filename) {
+    const match = filename.match(/(:|#L)(\d+)/);
+    let line;
+    if (match) {
+        line = Number(match[2]);
+        filename = filename.slice(0, match.index);
+    }
+    if (isBrowser) {
+        window.open("vscode://file/" + trimStart(filename, "/") + (line ? `:${line}` : ""));
+        return;
+    }
+    let editor = env("EDITOR")
+        || env("VISUAL")
+        || (await which("code"))
+        || undefined;
+    if (!editor) {
+        if (platform() === "windows") {
+            editor = "notepad.exe";
+        }
+        else {
+            editor = (await which("nano"))
+                || (await which("vim"))
+                || (await which("vi"))
+                || (await which("edit"))
+                || undefined;
+        }
+    }
+    if (!editor) {
+        throw new Error("No editor was found.");
+    }
+    const editorName = basename(editor, ".exe");
+    let args;
+    if (editorName === "code") {
+        args = line ? ["--goto", `${filename}:${line}`] : [filename];
+    }
+    else if (editorName === "nano" || editorName === "vim" || editorName === "vi") {
+        args = line ? [`+${line}`, filename] : [filename];
+    }
+    else {
+        args = [filename];
+    }
+    const { code, stderr } = await run(editor, args);
+    if (code) {
+        throw new Error(stderr || `Failed to open ${filename} in the editor.`);
+    }
+}
 
-export { isTsRuntime, isWSL, parseArgs, platform, powershell, quote, run, sudo, which };
+export { edit, env, isTsRuntime, isWSL, parseArgs, platform, powershell, quote, run, sudo, which };
 //# sourceMappingURL=cli.js.map

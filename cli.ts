@@ -9,8 +9,10 @@
 import { text } from "./bytes.ts";
 import { interop } from "./module.ts";
 import { PowerShellCommands } from "./cli/constants.ts";
-import { isBun, isDeno } from "./env.ts";
+import { isBrowser, isBun, isDeno } from "./env.ts";
 import runtime, { platform as _platform } from "./runtime.ts";
+import { basename } from "./path.ts";
+import { trimStart } from "./string.ts";
 
 /**
  * @deprecated import `platform` from `@ayonli/jsext/runtime` module instead.
@@ -348,4 +350,115 @@ export async function sudo(cmd: string, args: string[], options: {
             }
         });
     });
+}
+
+/** Returns all environment variables in an object. */
+export function env(): { [name: string]: string; };
+/** Returns a specific environment variable. */
+export function env(name: string): string | undefined;
+/**
+ * Sets the value of a specific environment variable.
+ * 
+ * NOTE: this is a temporary change and will not persist when the program exits.
+ */
+export function env(name: string, value: string): undefined;
+export function env(name: string | undefined = undefined, value: string | undefined = undefined): any {
+    if (typeof Deno === "object") {
+        if (name === undefined) {
+            return Deno.env.toObject();
+        } else if (value === undefined) {
+            return Deno.env.get(name);
+        }
+
+        Deno.env.set(name, value);
+        return;
+    } else if (typeof process === "object" && typeof process.env === "object") {
+        if (name === undefined) {
+            return process.env;
+        } else if (value === undefined) {
+            return process.env[name];
+        }
+
+        process.env[name] = value;
+        return;
+    } else if (isBrowser) {
+        // @ts-ignore
+        const env = globalThis["__env__"] as any;
+
+        // @ts-ignore
+        if (env === undefined || env === null || typeof env === "object") {
+            if (name === undefined) {
+                return env ?? {};
+            } else if (value === undefined) {
+                return env?.[name] ?? undefined;
+            }
+
+            // @ts-ignore
+            (globalThis["__env__"] ??= {})[name] = value;
+            return;
+        }
+    }
+
+    throw new Error("Unsupported runtime");
+}
+
+/**
+ * Opens the given file in the default text editor.
+ * 
+ * The `filename` can include a line number by appending `:<number>` or `#L<number>`.
+ * 
+ * NOTE: in the browser, this function will always try to open the file in VS Code,
+ * regardless of whether it's available or not.
+ */
+export async function edit(filename: string): Promise<void> {
+    const match = filename.match(/(:|#L)(\d+)/);
+    let line: number | undefined;
+
+    if (match) {
+        line = Number(match[2]);
+        filename = filename.slice(0, match.index);
+    }
+
+    if (isBrowser) {
+        window.open("vscode://file/" + trimStart(filename, "/") + (line ? `:${line}` : ""));
+        return;
+    }
+
+    let editor = env("EDITOR")
+        || env("VISUAL")
+        || (await which("code"))
+        || undefined;
+
+    if (!editor) {
+        if (platform() === "windows") {
+            editor = "notepad.exe";
+        } else {
+            editor = (await which("nano"))
+                || (await which("vim"))
+                || (await which("vi"))
+                || (await which("edit"))
+                || undefined;
+        }
+    }
+
+    if (!editor) {
+        throw new Error("No editor was found.");
+    }
+
+    const editorName = basename(editor, ".exe");
+    let args: string[];
+
+    if (editorName === "code") {
+        args = line ? ["--goto", `${filename}:${line}`] : [filename];
+    } else if (editorName === "nano" || editorName === "vim" || editorName === "vi") {
+        args = line ? [`+${line}`, filename] : [filename];
+    } else {
+        args = [filename];
+    }
+
+    const { code, stderr } = await run(editor, args);
+
+    if (code) {
+        throw new Error(stderr || `Failed to open ${filename} in the editor.`);
+    }
 }
