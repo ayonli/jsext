@@ -12,6 +12,7 @@
     <script type="module">
         import { alert, confirm, prompt, progress, openFile, saveFile } from "../esm/dialog.js";
         import { sleep } from "../esm/async.js";
+        import { isREPL } from "../esm/runtime.js";
 
         self.onload = () => {
             const alertBtn = document.getElementById('alert');
@@ -98,6 +99,17 @@
                 const file = await openFile();
                 await saveFile(file, { defaultName: file.name });
             });
+
+            const isReplBtn = document.getElementById('is-repl');
+            isReplBtn.addEventListener('click', async () => {
+                const yes = isREPL();
+
+                if (yes) {
+                    await alert("当前程序在 REPL 中");
+                } else {
+                    await alert("当前程序不在 REPL 中");
+                }
+            });
         }
     </script>
 </head>
@@ -115,6 +127,7 @@
         <button id="open-files">Open Files</button>
         <button id="open-directory">Open Directory</button>
         <button id="download-file">Download File</button>
+        <button id="is-repl">Is REPL</button>
     </div>
 </body>
 

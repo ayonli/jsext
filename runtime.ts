@@ -132,3 +132,21 @@ export function platform(): CommonPlatforms | "others" {
 
     return "others";
 }
+
+declare let $0: unknown;
+declare let $1: unknown;
+
+/**
+ * Detects if the program is running in a REPL environment.
+ *
+ * NOTE: This function currently returns `true` when in:
+ * - Node.js REPL
+ * - Deno REPL
+ * - Bun REPL
+ * - Google Chrome Console
+ */
+export function isREPL() {
+    return ("_" in globalThis && "_error" in globalThis)
+        || ("$0" in globalThis && "$1" in globalThis)
+        || (typeof $0 === "object" || typeof $1 === "object");
+}
