@@ -294,7 +294,7 @@ export async function powershell(script: string): Promise<{
     let command = "powershell";
 
     if (isWSL()) {
-        command = "/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe";
+        command = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe";
     }
 
     return await run(command, ["-c", script]);
@@ -431,6 +431,7 @@ export async function edit(filename: string): Promise<void> {
         return;
     }
 
+    const _platform = platform();
     const vscode = await which("code");
 
     if (vscode) {
@@ -441,15 +442,18 @@ export async function edit(filename: string): Promise<void> {
             throw new Error(stderr || `Failed to open ${filename} in the editor.`);
 
         return;
-    } else if (platform() === "darwin") {
+    } else if (_platform === "darwin") {
         const { code, stderr } = await run("open", ["-t", filename]);
 
         if (code)
             throw new Error(stderr || `Failed to open ${filename} in the editor.`);
 
         return;
-    } else if (platform() === "windows") {
-        const { code, stderr } = await run("notepad.exe", [filename]);
+    } else if (_platform === "windows" || isWSL()) {
+        const notepad = _platform === "windows"
+            ? "notepad.exe"
+            : "/mnt/c/Windows/System32/notepad.exe";
+        const { code, stderr } = await run(notepad, [filename]);
 
         if (code)
             throw new Error(stderr || `Failed to open ${filename} in the editor.`);
