@@ -49,7 +49,7 @@ function isMain(importMeta) {
             // or the program is executed by itself.
             return ["<repl>", "[eval]"].includes(importMeta["id"]);
         }
-        const filename = "filename" in importMeta ? importMeta["filename"] : importMeta.url;
+        const filename = "url" in importMeta ? importMeta.url : importMeta["filename"];
         const urlExt = extname(filename);
         let entry = process.argv[1];
         if (!extname(entry) && urlExt) {

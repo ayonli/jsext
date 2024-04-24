@@ -121,11 +121,3 @@ export type ValueOf<T> = T extends String ? string
     : T extends BigInt ? bigint
     : T extends Symbol ? symbol
     : T;
-
-declare global {
-    interface ImportMeta {
-        url: string;
-        resolve(specified: string): string;
-        main?: boolean;
-    }
-}
