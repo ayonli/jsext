@@ -1,7 +1,8 @@
 /**
  * Useful utility functions for interacting with the terminal.
  * 
- * NOTE: this module is not intended to be used in the browser.
+ * NOTE: despite the name of this module, many of its functions can also be used
+ * in the browser environment.
  * @module
  * @experimental
  */
@@ -368,20 +369,18 @@ export function env(name: string | undefined = undefined, value: string | undefi
             return Deno.env.toObject();
         } else if (value === undefined) {
             return Deno.env.get(name);
+        } else {
+            Deno.env.set(name, value);
         }
-
-        Deno.env.set(name, value);
-        return;
     } else if (typeof process === "object" && typeof process.env === "object") {
         if (name === undefined) {
             return process.env;
         } else if (value === undefined) {
             return process.env[name];
+        } else {
+            process.env[name] = value;
         }
-
-        process.env[name] = value;
-        return;
-    } else if (isBrowser) {
+    } else {
         // @ts-ignore
         const env = globalThis["__env__"] as any;
 
@@ -396,10 +395,10 @@ export function env(name: string | undefined = undefined, value: string | undefi
             // @ts-ignore
             (globalThis["__env__"] ??= {})[name] = value;
             return;
+        } else {
+            throw new Error("Unsupported runtime");
         }
     }
-
-    throw new Error("Unsupported runtime");
 }
 
 /**

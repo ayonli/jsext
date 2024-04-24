@@ -9,7 +9,8 @@ import { trimStart } from './string.js';
 /**
  * Useful utility functions for interacting with the terminal.
  *
- * NOTE: this module is not intended to be used in the browser.
+ * NOTE: despite the name of this module, many of its functions can also be used
+ * in the browser environment.
  * @module
  * @experimental
  */
@@ -305,8 +306,9 @@ function env(name = undefined, value = undefined) {
         else if (value === undefined) {
             return Deno.env.get(name);
         }
-        Deno.env.set(name, value);
-        return;
+        else {
+            Deno.env.set(name, value);
+        }
     }
     else if (typeof process === "object" && typeof process.env === "object") {
         if (name === undefined) {
@@ -315,10 +317,11 @@ function env(name = undefined, value = undefined) {
         else if (value === undefined) {
             return process.env[name];
         }
-        process.env[name] = value;
-        return;
+        else {
+            process.env[name] = value;
+        }
     }
-    else if (isBrowser) {
+    else {
         // @ts-ignore
         const env = globalThis["__env__"];
         // @ts-ignore
@@ -333,8 +336,10 @@ function env(name = undefined, value = undefined) {
             ((_b = globalThis["__env__"]) !== null && _b !== void 0 ? _b : (globalThis["__env__"] = {}))[name] = value;
             return;
         }
+        else {
+            throw new Error("Unsupported runtime");
+        }
     }
-    throw new Error("Unsupported runtime");
 }
 /**
  * Opens the given file in the default text editor.
