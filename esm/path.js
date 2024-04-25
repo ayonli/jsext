@@ -1,9 +1,10 @@
-import { stripEnd, trim } from './string.js';
-import { isAbsolute, split, isUrl, isPosixPath, isWindowsPath, isNotQuery, isFileProtocol, isVolume } from './path/util.js';
-export { contains, endsWith, equals, isFileUrl, isFsPath, startsWith } from './path/util.js';
+import { stripEnd, stripStart, trim } from './string.js';
+import { isAbsolute, split, isUrl, isPosixPath, isWindowsPath, isNotQuery, isFileProtocol, isVolume, isFileUrl, isFsPath } from './path/util.js';
+export { contains, endsWith, equals, startsWith } from './path/util.js';
 
 /**
- * Platform-independent utility functions for dealing with system paths and URLs.
+ * Platform-independent utility functions for dealing with file system paths and
+ * URLs.
  *
  * The functions in this module are designed to be generic and work in any
  * runtime, whether server-side or browsers. They can be used for both system
@@ -14,7 +15,6 @@ export { contains, endsWith, equals, isFileUrl, isFsPath, startsWith } from './p
 /**
  * Platform-specific path segment separator. The value is `\` on Windows
  * server-side runtime, and `/` otherwise.
- * @experimental
  */
 const sep = (() => {
     var _a, _b;
@@ -34,7 +34,6 @@ const sep = (() => {
  * Returns the current working directory.
  *
  * **NOTE**: In the browser, this function returns the current origin and pathname.
- * @experimental
  */
 function cwd() {
     if (typeof Deno === "object" && typeof Deno.cwd === "function") {
@@ -285,6 +284,40 @@ function extname(path) {
         return base.slice(index);
     }
 }
+/**
+ * Converts the given path to a file URL if it's not one.
+ * @experimental
+ */
+function toFileUrl(path) {
+    if (isFileUrl(path)) {
+        return path;
+    }
+    else if (!isUrl(path)) {
+        return new URL("file:///" + stripStart(resolve(path), "/")).href;
+    }
+    else {
+        throw new Error("Cannot convert a URL to a file URL.");
+    }
+}
+/**
+ * Converts the given URL to a file system path if it's not one.
+ * @experimental
+ */
+function toFsPath(url) {
+    if (isFsPath(url)) {
+        return url;
+    }
+    else if (isFileUrl(url)) {
+        url = url.replace(/^file:(\/\/)?/i, "").replace(/^\/([a-z]):/i, "$1:");
+        return join(url);
+    }
+    else if (!isUrl(url)) {
+        return resolve(url);
+    }
+    else {
+        throw new Error("Cannot convert a URL to a file system path.");
+    }
+}
 
-export { basename, cwd, dirname, extname, isAbsolute, isPosixPath, isUrl, isWindowsPath, join, normalize, resolve, sanitize, sep, split };
+export { basename, cwd, dirname, extname, isAbsolute, isFileUrl, isFsPath, isPosixPath, isUrl, isWindowsPath, join, normalize, resolve, sanitize, sep, split, toFileUrl, toFsPath };
 //# sourceMappingURL=path.js.map

@@ -99,7 +99,8 @@ categories:
 - [object](https://jsr.io/@ayonli/jsext/doc/object/~) Functions for dealing with
   objects.
 - [path](https://jsr.io/@ayonli/jsext/doc/path/~) (Experimental)
-  Platform-independent utility functions for dealing with system paths and URLs.
+  Platform-independent utility functions for dealing with file system paths and
+  URLs.
 - [runtime](https://jsr.io/@ayonli/jsext/doc/runtime/~) Utility functions to
   retrieve runtime information of the current program.
 - [string](https://jsr.io/@ayonli/jsext/doc/string/~) Functions for dealing with

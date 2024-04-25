@@ -1,5 +1,6 @@
 /**
- * Platform-independent utility functions for dealing with system paths and URLs.
+ * Platform-independent utility functions for dealing with file system paths and
+ * URLs.
  * 
  * The functions in this module are designed to be generic and work in any
  * runtime, whether server-side or browsers. They can be used for both system
@@ -8,7 +9,7 @@
  * @module
  */
 
-import { stripEnd, trim } from "./string.ts";
+import { stripEnd, stripStart, trim } from "./string.ts";
 import {
     contains,
     endsWith,
@@ -43,7 +44,6 @@ export {
 /**
  * Platform-specific path segment separator. The value is `\` on Windows
  * server-side runtime, and `/` otherwise.
- * @experimental
  */
 export const sep: "/" | "\\" = (() => {
     if (typeof Deno === "object" && typeof Deno.build?.os === "string") { // Deno
@@ -63,7 +63,6 @@ export const sep: "/" | "\\" = (() => {
  * Returns the current working directory.
  * 
  * **NOTE**: In the browser, this function returns the current origin and pathname.
- * @experimental
  */
 export function cwd(): string {
     if (typeof Deno === "object" && typeof Deno.cwd === "function") {
@@ -318,5 +317,36 @@ export function extname(path: string): string {
         return "";
     } else {
         return base.slice(index);
+    }
+}
+
+/**
+ * Converts the given path to a file URL if it's not one.
+ * @experimental
+ */
+export function toFileUrl(path: string): string {
+    if (isFileUrl(path)) {
+        return path;
+    } else if (!isUrl(path)) {
+        return new URL("file:///" + stripStart(resolve(path), "/")).href;
+    } else {
+        throw new Error("Cannot convert a URL to a file URL.");
+    }
+}
+
+/**
+ * Converts the given URL to a file system path if it's not one.
+ * @experimental
+ */
+export function toFsPath(url: string): string {
+    if (isFsPath(url)) {
+        return url;
+    } else if (isFileUrl(url)) {
+        url = url.replace(/^file:(\/\/)?/i, "").replace(/^\/([a-z]):/i, "$1:");
+        return join(url);
+    } else if (!isUrl(url)) {
+        return resolve(url);
+    } else {
+        throw new Error("Cannot convert a URL to a file system path.");
     }
 }

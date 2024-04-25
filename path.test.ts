@@ -19,7 +19,11 @@ import {
     resolve,
     sanitize,
     startsWith,
+    toFileUrl,
+    toFsPath,
 } from "./path.ts";
+import jsext from "./index.ts";
+import { as } from "./object.ts";
 
 describe("path", () => {
     it("sep", () => {
@@ -1446,6 +1450,72 @@ describe("path", () => {
             strictEqual(extname("foo.txt?foo=bar"), ".txt");
             strictEqual(extname("foo.txt#baz"), ".txt");
             strictEqual(extname("foo.txt?foo=bar#baz"), ".txt");
+        });
+    });
+
+    describe("toFileUrl", () => {
+        it("windows path", () => {
+            strictEqual(toFileUrl("c:\\foo\\bar"), "file:///c:/foo/bar");
+            strictEqual(toFileUrl("c:/foo/bar"), "file:///c:/foo/bar");
+            strictEqual(toFileUrl("c:/foo/../bar"), "file:///c:/bar");
+            strictEqual(toFileUrl("c:/foo"), "file:///c:/foo");
+            strictEqual(toFileUrl("c:/foo.txt"), "file:///c:/foo.txt");
+            strictEqual(toFileUrl("c:/foo.txt?foo=bar"), "file:///c:/foo.txt?foo=bar");
+            strictEqual(toFileUrl("c:/foo.txt#baz"), "file:///c:/foo.txt#baz");
+            strictEqual(toFileUrl("c:/foo.txt?foo=bar#baz"), "file:///c:/foo.txt?foo=bar#baz");
+        });
+
+        it("posix path", () => {
+            strictEqual(toFileUrl("/foo/bar"), "file:///foo/bar");
+            strictEqual(toFileUrl("/foo/../bar"), "file:///bar");
+            strictEqual(toFileUrl("/foo"), "file:///foo");
+            strictEqual(toFileUrl("/foo.txt"), "file:///foo.txt");
+            strictEqual(toFileUrl("/foo.txt?foo=bar"), "file:///foo.txt?foo=bar");
+            strictEqual(toFileUrl("/foo.txt#baz"), "file:///foo.txt#baz");
+            strictEqual(toFileUrl("/foo.txt?foo=bar#baz"), "file:///foo.txt?foo=bar#baz");
+        });
+
+        it("relative path", () => {
+            strictEqual(toFileUrl("foo/bar"), "file://" + resolve("foo/bar"));
+            strictEqual(toFileUrl("foo/../bar"), "file://" + resolve("bar"));
+            strictEqual(toFileUrl("./foo"), "file://" + resolve("foo"));
+            strictEqual(toFileUrl("foo"), "file://" + resolve("foo"));
+            strictEqual(toFileUrl("foo.txt"), "file://" + resolve("foo.txt"));
+            strictEqual(toFileUrl("foo.txt?foo=bar"), "file://" + resolve("foo.txt?foo=bar"));
+            strictEqual(toFileUrl("foo.txt#baz"), "file://" + resolve("foo.txt#baz"));
+            strictEqual(toFileUrl("foo.txt?foo=bar#baz"), "file://" + resolve("foo.txt?foo=bar#baz"));
+        });
+
+        it("url", () => {
+            const [err] = jsext._try(() => toFileUrl("http://example.com/foo/bar"));
+            strictEqual(as(err, Error)?.message, "Cannot convert a URL to a file URL.");
+        });
+    });
+
+    describe("toFsPath", () => {
+        it("windows path", () => {
+            strictEqual(toFsPath("file:///c:/foo/bar"), "c:\\foo\\bar");
+            strictEqual(toFsPath("file:///c:/foo/../bar"), "c:\\bar");
+            strictEqual(toFsPath("file:///c:/foo"), "c:\\foo");
+            strictEqual(toFsPath("file:///c:/foo.txt"), "c:\\foo.txt");
+            strictEqual(toFsPath("file:///c:/foo.txt?foo=bar"), "c:\\foo.txt?foo=bar");
+            strictEqual(toFsPath("file:///c:/foo.txt#baz"), "c:\\foo.txt#baz");
+            strictEqual(toFsPath("file:///c:/foo.txt?foo=bar#baz"), "c:\\foo.txt?foo=bar#baz");
+        });
+
+        it("posix path", () => {
+            strictEqual(toFsPath("file:///foo/bar"), "/foo/bar");
+            strictEqual(toFsPath("file:///foo/../bar"), "/bar");
+            strictEqual(toFsPath("file:///foo"), "/foo");
+            strictEqual(toFsPath("file:///foo.txt"), "/foo.txt");
+            strictEqual(toFsPath("file:///foo.txt?foo=bar"), "/foo.txt?foo=bar");
+            strictEqual(toFsPath("file:///foo.txt#baz"), "/foo.txt#baz");
+            strictEqual(toFsPath("file:///foo.txt?foo=bar#baz"), "/foo.txt?foo=bar#baz");
+        });
+
+        it("url", () => {
+            const [err] = jsext._try(() => toFsPath("http://example.com/foo/bar"));
+            strictEqual(as(err, Error)?.message, "Cannot convert a URL to a file system path.");
         });
     });
 });

@@ -489,7 +489,8 @@ function isFileUrl(str) {
 }
 
 /**
- * Platform-independent utility functions for dealing with system paths and URLs.
+ * Platform-independent utility functions for dealing with file system paths and
+ * URLs.
  *
  * The functions in this module are designed to be generic and work in any
  * runtime, whether server-side or browsers. They can be used for both system
@@ -500,7 +501,6 @@ function isFileUrl(str) {
 /**
  * Platform-specific path segment separator. The value is `\` on Windows
  * server-side runtime, and `/` otherwise.
- * @experimental
  */
 (() => {
     var _a, _b;
