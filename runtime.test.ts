@@ -1,10 +1,33 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
-import runtime, { platform } from "./runtime.ts";
+import * as util from "node:util";
+import runtime, { platform, customInspect } from "./runtime.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 
 declare const Bun: any;
 
 describe("runtime", () => {
+    it("customInspect", () => {
+        class Tuple {
+            private _values: any[];
+
+            constructor(...values: any[]) {
+                this._values = values;
+            }
+
+            [customInspect]() {
+                return "(" + this._values.join(", ") + ")";
+            }
+        }
+
+        if (isNode) {
+            strictEqual(util.inspect(new Tuple(1, 2, 3)), "(1, 2, 3)");
+        } else if (isDeno) {
+            strictEqual(Deno.inspect(new Tuple(1, 2, 3)), "(1, 2, 3)");
+        } else if (isBun) {
+            strictEqual(Bun.inspect(new Tuple(1, 2, 3)), "(1, 2, 3)");
+        }
+    });
+
     it("runtime", () => {
         if (isNode) {
             deepStrictEqual(runtime(), {

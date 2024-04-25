@@ -11,6 +11,7 @@ import "./augment/error.ts";
 import "./augment/json.ts";
 import "./augment/pipe.ts";
 import { AsyncFunction, AsyncGeneratorFunction } from "./types.ts";
+import { customInspect } from "./runtime.ts";
 
 declare global {
     /** This is the very constructor/class of all async functions. */
@@ -31,6 +32,10 @@ declare global {
 
     /** This is the very constructor/class of all async generator functions. */
     const AsyncGeneratorFunction: AsyncGeneratorFunctionConstructor;
+
+    interface SymbolConstructor {
+        readonly customInspec: unique symbol;
+    }
 
     /** This interface represents the constructor/class of the given `T` type. */
     interface Constructor<T = object> extends Function {
@@ -123,3 +128,5 @@ declare global {
 globalThis["AsyncFunction"] = AsyncFunction;
 // @ts-ignore
 globalThis["AsyncGeneratorFunction"] = AsyncGeneratorFunction;
+
+Object.defineProperty(Symbol, "customInspec", { value: customInspect });

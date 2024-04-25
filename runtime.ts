@@ -8,6 +8,21 @@ import { isBrowser, isBun, isDeno, isNode } from "./env.ts";
 declare const Bun: any;
 
 /**
+ * A universal symbol that can be used to customize the inspection behavior of
+ * an object, supports Node.js, Bun, Deno and any runtime that has
+ * Node.js-compatible `util.inspect` function.
+ */
+export const customInspect: unique symbol = (() => {
+    if (isBrowser) {
+        return Symbol.for("Symbol.customInspect");
+    } else if (isDeno) {
+        return Symbol.for("Deno.customInspect");
+    } else {
+        return Symbol.for("nodejs.util.inspect.custom");
+    }
+})() as any;
+
+/**
  * Special runtimes:
  * 
  * - `chromium` - Google Chrome and other Chromium-based browsers, this includes the

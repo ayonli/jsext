@@ -4,6 +4,22 @@ import { isDeno, isBun, isNode, isBrowser } from './env.js';
  * Utility functions to retrieve runtime information of the current program.
  * @module
  */
+/**
+ * A universal symbol that can be used to customize the inspection behavior of
+ * an object, supports Node.js, Bun, Deno and any runtime that has
+ * Node.js-compatible `util.inspect` function.
+ */
+const customInspect = (() => {
+    if (isBrowser) {
+        return Symbol.for("Symbol.customInspect");
+    }
+    else if (isDeno) {
+        return Symbol.for("Deno.customInspect");
+    }
+    else {
+        return Symbol.for("nodejs.util.inspect.custom");
+    }
+})();
 const CommonRuntimes = [
     "node",
     "deno",
@@ -126,5 +142,5 @@ function isREPL() {
         || (typeof $0 === "object" || typeof $1 === "object");
 }
 
-export { CommonPlatforms, CommonRuntimes, runtime as default, isREPL, platform };
+export { CommonPlatforms, CommonRuntimes, customInspect, runtime as default, isREPL, platform };
 //# sourceMappingURL=runtime.js.map
