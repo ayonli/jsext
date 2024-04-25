@@ -1,6 +1,7 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import jsext from "./index.ts";
 import "./augment.ts";
+import bytes from "./bytes.ts";
 
 describe("jsext.pipe", () => {
     it("pipe", () => {
@@ -84,7 +85,7 @@ describe("jsext.pipe", () => {
             deepStrictEqual([1, 2, 3].pipe(times, 2).value, [2, 4, 6]);
         });
 
-        it("TypedArray.prototype", () => {
+        it("TypedArray.prototype.pipe", () => {
             const sum = (arr: TypedArray) => arr.reduce((a, b) => a + b, 0);
             const times = (arr: TypedArray, times: number) => {
                 return new (arr.constructor as Constructor<TypedArray>)(Array.from(arr).map(n => n * times));
@@ -113,6 +114,37 @@ describe("jsext.pipe", () => {
 
             strictEqual(new Float64Array([1, 2, 3]).pipe(sum).value, 6);
             deepStrictEqual(new Float64Array([1, 2, 3]).pipe(times, 2).value, new Float64Array([2, 4, 6]));
+        });
+
+        it("ArrayBuffer.prototype.pipe", () => {
+            const sum = (arr: ArrayBuffer) => new Uint8Array(arr).reduce((a, b) => a + b, 0);
+            const times = (arr: ArrayBuffer, times: number) => {
+                return new Uint8Array(arr).map(n => n * times).buffer;
+            };
+
+            strictEqual(new Uint8Array([1, 2, 3]).buffer.pipe(sum).value, 6);
+            deepStrictEqual(new Uint8Array([1, 2, 3]).buffer.pipe(times, 2).value,
+                new Uint8Array([2, 4, 6]).buffer);
+        });
+
+        it("Blob.prototype.pipe", async function () {
+            if (typeof Blob !== "function") {
+                this.skip();
+            }
+
+            strictEqual(
+                await new Blob([bytes("hello, world")]).pipe(b => b.text()).value,
+                "hello, world"
+            );
+        });
+
+        it("Event.prototype.pipe", function () {
+            if (typeof Event !== "function") {
+                this.skip();
+            }
+
+            const getEventName = (e: Event) => e.type;
+            strictEqual(new Event("click").pipe(getEventName).value, "click");
         });
     });
 });

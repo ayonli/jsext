@@ -30,4 +30,12 @@ Float32Array.prototype.pipe = pipe;
 Float64Array.prototype.pipe = pipe;
 BigInt64Array.prototype.pipe = pipe;
 BigUint64Array.prototype.pipe = pipe;
+ArrayBuffer.prototype.pipe = pipe;
+SharedArrayBuffer.prototype.pipe = pipe;
+if (typeof Blob === "function") {
+    Blob.prototype.pipe = pipe;
+}
+if (typeof Event === "function") {
+    Event.prototype.pipe = pipe;
+}
 //# sourceMappingURL=pipe.js.map
