@@ -31,7 +31,9 @@ Float64Array.prototype.pipe = pipe;
 BigInt64Array.prototype.pipe = pipe;
 BigUint64Array.prototype.pipe = pipe;
 ArrayBuffer.prototype.pipe = pipe;
-SharedArrayBuffer.prototype.pipe = pipe;
+if (typeof SharedArrayBuffer === "function") {
+    SharedArrayBuffer.prototype.pipe = pipe;
+}
 if (typeof Blob === "function") {
     Blob.prototype.pipe = pipe;
 }
