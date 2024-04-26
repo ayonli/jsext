@@ -1476,14 +1476,15 @@ describe("path", () => {
         });
 
         it("relative path", () => {
-            strictEqual(toFileUrl("foo/bar"), "file://" + resolve("foo/bar"));
-            strictEqual(toFileUrl("foo/../bar"), "file://" + resolve("bar"));
-            strictEqual(toFileUrl("./foo"), "file://" + resolve("foo"));
-            strictEqual(toFileUrl("foo"), "file://" + resolve("foo"));
-            strictEqual(toFileUrl("foo.txt"), "file://" + resolve("foo.txt"));
-            strictEqual(toFileUrl("foo.txt?foo=bar"), "file://" + resolve("foo.txt?foo=bar"));
-            strictEqual(toFileUrl("foo.txt#baz"), "file://" + resolve("foo.txt#baz"));
-            strictEqual(toFileUrl("foo.txt?foo=bar#baz"), "file://" + resolve("foo.txt?foo=bar#baz"));
+            const _resolve = (path: string) => resolve(path).replace(/\\/g, "/");
+            strictEqual(toFileUrl("foo/bar"), "file://" + _resolve("foo/bar"));
+            strictEqual(toFileUrl("foo/../bar"), "file://" + _resolve("bar"));
+            strictEqual(toFileUrl("./foo"), "file://" + _resolve("foo"));
+            strictEqual(toFileUrl("foo"), "file://" + _resolve("foo"));
+            strictEqual(toFileUrl("foo.txt"), "file://" + _resolve("foo.txt"));
+            strictEqual(toFileUrl("foo.txt?foo=bar"), "file://" + _resolve("foo.txt?foo=bar"));
+            strictEqual(toFileUrl("foo.txt#baz"), "file://" + _resolve("foo.txt#baz"));
+            strictEqual(toFileUrl("foo.txt?foo=bar#baz"), "file://" + _resolve("foo.txt?foo=bar#baz"));
         });
 
         it("url", () => {
