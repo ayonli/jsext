@@ -7,7 +7,7 @@ import { sanitizeModuleId } from './parallel/module.js';
 import { isChannelMessage, handleChannelMessage } from './parallel/channel.js';
 import { getMaxParallelism, createWorker, wrapArgs, isCallResponse, unwrapReturnValue } from './parallel/threads.js';
 import parallel from './parallel.js';
-import { unrefTimer } from './util.js';
+import { unrefTimer } from './runtime.js';
 import { asyncTask } from './async.js';
 import { isFsPath } from './path/util.js';
 
@@ -148,12 +148,7 @@ async function run(script, args, options) {
                     });
                 });
             }, 1000);
-            if (isNode || isBun) {
-                gcTimer.unref();
-            }
-            else if (isDeno) {
-                Deno.unrefTimer(gcTimer);
-            }
+            unrefTimer(gcTimer);
         }
     }
     else {

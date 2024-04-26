@@ -16,6 +16,7 @@ import {
     toObject,
 } from "../error.ts";
 import * as path from "../path.ts";
+import { unrefTimer } from "../runtime.ts";
 
 const workerIdCounter = serial(true);
 type PoolRecord = {
@@ -403,11 +404,7 @@ export async function acquireWorker(taskId: number, parallel: {
                 });
             }, 1_000);
 
-            if (isNode || isBun) {
-                (gcTimer as NodeJS.Timeout).unref();
-            } else if (isDeno) {
-                Deno.unrefTimer(gcTimer as unknown as number);
-            }
+            unrefTimer(gcTimer);
         }
     } else {
         poolRecord = workerPool[taskId % workerPool.length] as PoolRecord;

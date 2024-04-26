@@ -20,7 +20,7 @@ import {
     unwrapReturnValue,
 } from "./parallel/threads.ts";
 import parallel from "./parallel.ts";
-import { unrefTimer } from "./util.ts";
+import { unrefTimer } from "./runtime.ts";
 import { AsyncTask, asyncTask } from "./async.ts";
 
 type PoolRecord = {
@@ -208,11 +208,7 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
                 });
             }, 1_000);
 
-            if (isNode || isBun) {
-                (gcTimer as NodeJS.Timeout).unref();
-            } else if (isDeno) {
-                Deno.unrefTimer(gcTimer as unknown as number);
-            }
+            unrefTimer(gcTimer);
         }
     } else {
         // Put the current call in the consumer queue if there are no workers

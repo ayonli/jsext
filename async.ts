@@ -3,7 +3,7 @@
  * @module
  */
 
-import { unrefTimer } from "./util.ts";
+import { unrefTimer } from "./runtime.ts";
 
 /** Try to resolve a promise with a timeout limit. */
 export async function timeout<T>(value: T | PromiseLike<T>, ms: number): Promise<T> {

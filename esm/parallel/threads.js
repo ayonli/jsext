@@ -6,6 +6,7 @@ import { isPlainObject } from '../object.js';
 import { serial } from '../number.js';
 import { fromErrorEvent, isDOMException, isAggregateError, toObject, fromObject } from '../error.js';
 import { join, cwd, extname, resolve, dirname } from '../path.js';
+import { unrefTimer } from '../runtime.js';
 import Exception from '../error/Exception.js';
 import { isUrl, endsWith } from '../path/util.js';
 
@@ -351,12 +352,7 @@ async function acquireWorker(taskId, parallel) {
                     await worker.terminate();
                 });
             }, 1000);
-            if (isNode || isBun) {
-                gcTimer.unref();
-            }
-            else if (isDeno) {
-                Deno.unrefTimer(gcTimer);
-            }
+            unrefTimer(gcTimer);
         }
     }
     else {

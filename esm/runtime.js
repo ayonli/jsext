@@ -1,7 +1,7 @@
 import { isDeno, isBun, isNode, isBrowser } from './env.js';
 
 /**
- * Utility functions to retrieve runtime information of the current program.
+ * Utility functions to retrieve runtime information or modify runtime behaviors.
  * @module
  */
 /**
@@ -141,6 +141,39 @@ function isREPL() {
         || ("$0" in globalThis && "$1" in globalThis)
         || (typeof $0 === "object" || typeof $1 === "object");
 }
+/**
+ * Make the timer block the event loop from finishing again after it has been
+ * unrefed.
+ *
+ * Only available in Node.js/Bun and Deno, in the browser, this function is a
+ * no-op.
+ */
+function refTimer(timer) {
+    if (typeof timer === "object" && typeof timer.ref === "function") {
+        timer.ref();
+    }
+    else if (typeof timer === "number"
+        && typeof Deno === "object"
+        && typeof Deno.refTimer === "function") {
+        Deno.refTimer(timer);
+    }
+}
+/**
+ * Make the timer not block the event loop from finishing.
+ *
+ * Only available in Node.js/Bun and Deno, in the browser, this function is a
+ * no-op.
+ */
+function unrefTimer(timer) {
+    if (typeof timer === "object" && typeof timer.unref === "function") {
+        timer.unref();
+    }
+    else if (typeof timer === "number"
+        && typeof Deno === "object"
+        && typeof Deno.unrefTimer === "function") {
+        Deno.unrefTimer(timer);
+    }
+}
 
-export { CommonPlatforms, CommonRuntimes, customInspect, runtime as default, isREPL, platform };
+export { CommonPlatforms, CommonRuntimes, customInspect, runtime as default, isREPL, platform, refTimer, unrefTimer };
 //# sourceMappingURL=runtime.js.map

@@ -1,4 +1,4 @@
-import { unrefTimer } from './util.js';
+import { unrefTimer } from './runtime.js';
 
 /**
  * Functions for async/promise context handling.

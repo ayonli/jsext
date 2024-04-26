@@ -2,6 +2,10 @@
 
 Additional functions for JavaScript to build strong applications.
 
+This package provides universal high-level APIs that can work across different
+runtime environments and operating systems, whether it's Node.js, Deno, Bun, the
+browser, Windows, macOS or Linux.
+
 ## Import
 
 The recommended way is to only import the ones that are needed:
@@ -102,7 +106,7 @@ categories:
   Platform-independent utility functions for dealing with file system paths and
   URLs.
 - [runtime](https://jsr.io/@ayonli/jsext/doc/runtime/~) Utility functions to
-  retrieve runtime information of the current program.
+  retrieve runtime information or modify runtime behaviors.
 - [string](https://jsr.io/@ayonli/jsext/doc/string/~) Functions for dealing with
   strings.
 - [types](https://jsr.io/@ayonli/jsext/doc/types/~) The missing utility types
