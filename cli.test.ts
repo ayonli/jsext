@@ -16,7 +16,7 @@ import {
 } from "./cli.ts";
 import { chars } from "./string.ts";
 import bytes from "./bytes.ts";
-import { isDeno } from "./env.ts";
+import { isDeno, isNodeBelow16 } from "./env.ts";
 
 const str1 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const str2 = "你好，世界！";
@@ -48,7 +48,10 @@ describe("cli", () => {
     it("stringWidth", () => {
         strictEqual(stringWidth(str1), 62);
         strictEqual(stringWidth(str2), 12);
-        strictEqual(stringWidth(str3), 8);
+
+        if (!isNodeBelow16) {
+            strictEqual(stringWidth(str3), 8);
+        }
     });
 
     it("isTypingInput", () => {
