@@ -1476,7 +1476,10 @@ describe("path", () => {
         });
 
         it("relative path", () => {
-            const _resolve = (path: string) => resolve(path).replace(/\\/g, "/");
+            const _resolve = (path: string) => {
+                const _path = resolve(path).replace(/\\/g, "/");
+                return _path[0] === "/" ? _path : "/" + _path;
+            };
             strictEqual(toFileUrl("foo/bar"), "file://" + _resolve("foo/bar"));
             strictEqual(toFileUrl("foo/../bar"), "file://" + _resolve("bar"));
             strictEqual(toFileUrl("./foo"), "file://" + _resolve("foo"));

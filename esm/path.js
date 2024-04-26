@@ -1,4 +1,4 @@
-import { stripEnd, stripStart, trim } from './string.js';
+import { stripEnd, trim } from './string.js';
 import { isAbsolute, split, isUrl, isPosixPath, isWindowsPath, isNotQuery, isFileProtocol, isVolume, isFileUrl, isFsPath } from './path/util.js';
 export { contains, endsWith, equals, startsWith } from './path/util.js';
 
@@ -293,7 +293,9 @@ function toFileUrl(path) {
         return path;
     }
     else if (!isUrl(path)) {
-        return new URL("file:///" + stripStart(resolve(path), "/")).href;
+        let _path = resolve(path).replace(/\\/g, "/");
+        _path = _path[0] === "/" ? _path : "/" + _path;
+        return new URL("file://" + _path).href;
     }
     else {
         throw new Error("Cannot convert a URL to a file URL.");

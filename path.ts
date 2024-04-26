@@ -9,7 +9,7 @@
  * @module
  */
 
-import { stripEnd, stripStart, trim } from "./string.ts";
+import { stripEnd, trim } from "./string.ts";
 import {
     contains,
     endsWith,
@@ -328,7 +328,9 @@ export function toFileUrl(path: string): string {
     if (isFileUrl(path)) {
         return path;
     } else if (!isUrl(path)) {
-        return new URL("file:///" + stripStart(resolve(path), "/")).href;
+        let _path = resolve(path).replace(/\\/g, "/");
+        _path = _path[0] === "/" ? _path : "/" + _path;
+        return new URL("file://" + _path).href;
     } else {
         throw new Error("Cannot convert a URL to a file URL.");
     }
