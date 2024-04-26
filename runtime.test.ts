@@ -1,6 +1,6 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import * as util from "node:util";
-import runtime, { platform, customInspect } from "./runtime.ts";
+import runtime, { env, customInspect } from "./runtime.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 
 declare const Bun: any;
@@ -28,6 +28,34 @@ describe("runtime", () => {
         }
     });
 
+    describe("env", () => {
+        it("get all", () => {
+            if (isDeno) {
+                deepStrictEqual(env(), Deno.env.toObject());
+            } else {
+                deepStrictEqual(env(), process.env);
+            }
+        });
+
+        it("get one", () => {
+            if (isDeno) {
+                strictEqual(env("HOME"), Deno.env.get("HOME"));
+            } else {
+                strictEqual(env("HOME"), process.env["HOME"]);
+            }
+        });
+
+        it("set one", () => {
+            env("FOO", "BAR");
+
+            if (isDeno) {
+                strictEqual(env("FOO"), "BAR");
+            } else {
+                strictEqual(env("FOO"), "BAR");
+            }
+        });
+    });
+
     it("runtime", () => {
         if (isNode) {
             deepStrictEqual(runtime(), {
@@ -48,47 +76,6 @@ describe("runtime", () => {
                 version: Bun.version,
                 tsSupport: true
             });
-        }
-    });
-
-    it("platform", () => {
-        const platforms = [
-            "android",
-            "darwin",
-            "freebsd",
-            "linux",
-            "windows",
-        ];
-        const others = "others";
-
-        if (typeof Deno === "object") {
-            if (platforms.includes(Deno.build.os as any)) {
-                strictEqual(Deno.build.os, platform());
-            } else {
-                strictEqual(others, platform());
-            }
-        } else if (typeof process === "object" && typeof process.platform === "string") {
-            if (process.platform === "win32") {
-                strictEqual("windows", platform());
-            } else if (platforms.includes(process.platform)) {
-                strictEqual(process.platform, platform());
-            } else {
-                strictEqual(others, platform());
-            }
-        } else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
-            if (navigator.userAgent.includes("Android")) {
-                strictEqual("android", platform());
-            } else if (navigator.userAgent.includes("Macintosh")) {
-                strictEqual("darwin", platform());
-            } else if (navigator.userAgent.includes("Windows")) {
-                strictEqual("windows", platform());
-            } else if (navigator.userAgent.includes("Linux")) {
-                strictEqual("linux", platform());
-            } else {
-                strictEqual(others, platform());
-            }
-        } else {
-            strictEqual(others, platform());
         }
     });
 });

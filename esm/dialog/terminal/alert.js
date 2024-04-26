@@ -1,6 +1,6 @@
-import { questionInDeno, questionInNode } from './index.js';
 import { escape } from './util.js';
-import { platform, run, isWSL, powershell } from '../../cli.js';
+import { platform, run, isWSL, powershell, lockStdin } from '../../cli.js';
+import question from './question.js';
 
 function createAppleScript(message) {
     return "tell application (path to frontmost application as text)\n" +
@@ -41,11 +41,8 @@ async function alertInTerminal(message, options = {}) {
             throw new Error(stderr);
         }
     }
-    else if (typeof Deno === "object") {
-        await questionInDeno(message + " [Enter] ");
-    }
     else {
-        await questionInNode(message + " [Enter] ");
+        await lockStdin(() => question(message + " [Enter] "));
     }
 }
 

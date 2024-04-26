@@ -1,6 +1,7 @@
 import { isBrowser } from '../env.js';
 import { progressInBrowser } from './browser/index.js';
-import { progressInDeno, progressInNode } from './terminal/progress.js';
+import { handleTerminalProgress } from './terminal/progress.js';
+import { lockStdin } from '../cli.js';
 
 /**
  * Displays a dialog with a progress bar indicating the ongoing state of the
@@ -96,11 +97,12 @@ async function progress(message, fn, onAbort = undefined) {
     if (isBrowser) {
         return await progressInBrowser(message, fn, { signal, abort, listenForAbort });
     }
-    else if (typeof Deno === "object") {
-        return await progressInDeno(message, fn, { signal, abort, listenForAbort });
-    }
     else {
-        return await progressInNode(message, fn, { signal, abort, listenForAbort });
+        return await lockStdin(() => handleTerminalProgress(message, fn, {
+            signal,
+            abort,
+            listenForAbort,
+        }));
     }
 }
 

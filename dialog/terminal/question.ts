@@ -1,45 +1,33 @@
 import bytes, { concat, equals } from "../../bytes.ts";
 import { chars } from "../../string.ts";
 import {
-    BS,
-    CLR_RIGHT,
-    CR,
-    DEL,
-    DOWN,
-    END,
-    LEFT,
-    LF,
-    RIGHT,
-    START,
-    UP,
-} from "./constants.ts";
-import {
-    DenoStdin,
-    DenoStdout,
-    NodeStdin,
-    NodeStdout,
-    isCancelEvent,
-    read,
-    toLeft,
-    toRight,
-    write,
-} from "./util.ts";
+    ControlKeys,
+    ControlSequences,
+    NavigationKeys,
+    isTypingInput,
+    moveLeftOn,
+    moveRightOn,
+    readStdin,
+    writeStdout,
+} from "../../cli.ts";
+
+const { BS, CTRL_A, CTRL_C, CTRL_E, CR, DEL, ESC, LF } = ControlKeys;
+const { UP, DOWN, LEFT, RIGHT } = NavigationKeys;
+const { CLR_RIGHT } = ControlSequences;
 
 function getMasks(mask: string, length: number): string {
     return new Array<string>(length).fill(mask).join("");
 }
 
 export default async function question(message: string, options: {
-    stdin: NodeStdin | DenoStdin;
-    stdout: NodeStdout | DenoStdout;
     defaultValue?: string | undefined;
     mask?: string | undefined;
-}) {
-    const { stdin, stdout, defaultValue = "", mask } = options;
+} = {}): Promise<string | null> {
+    const { defaultValue = "", mask } = options;
     const buf: string[] = [];
     let cursor = 0;
 
-    await write(stdout, bytes(message));
+    await writeStdout(bytes(message));
 
     if (defaultValue) {
         const _chars = chars(defaultValue);
@@ -47,14 +35,14 @@ export default async function question(message: string, options: {
         cursor += _chars.length;
 
         if (mask === undefined) {
-            await write(stdout, bytes(defaultValue));
+            await writeStdout(bytes(defaultValue));
         } else if (mask) {
-            await write(stdout, bytes(getMasks(mask, _chars.length)));
+            await writeStdout(bytes(getMasks(mask, _chars.length)));
         }
     }
 
     while (true) {
-        const input = await read(stdin);
+        const input = await readStdin();
 
         if (!input.length || equals(input, UP) || equals(input, DOWN)) {
             continue;
@@ -63,9 +51,9 @@ export default async function question(message: string, options: {
                 const char = buf[--cursor]!;
 
                 if (mask === undefined) {
-                    await write(stdout, toLeft(char));
+                    await moveLeftOn(char);
                 } else if (mask) {
-                    await write(stdout, toLeft(mask));
+                    await moveLeftOn(mask);
                 }
             }
         } else if (equals(input, RIGHT)) {
@@ -73,40 +61,40 @@ export default async function question(message: string, options: {
                 const char = buf[cursor++]!;
 
                 if (mask === undefined) {
-                    await write(stdout, toRight(char));
+                    await moveRightOn(char);
                 } else if (mask) {
-                    await write(stdout, toRight(mask));
+                    await moveRightOn(mask);
                 }
             }
-        } else if (equals(input, START)) {
+        } else if (equals(input, CTRL_A)) {
             const left = buf.slice(0, cursor);
 
             if (left.length) {
                 cursor = 0;
 
                 if (mask === undefined) {
-                    await write(stdout, toLeft(left.join("")));
+                    await moveLeftOn(left.join(""));
                 } else if (mask) {
-                    await write(stdout, toLeft(getMasks(mask, left.length)));
+                    await moveLeftOn(getMasks(mask, left.length));
                 }
             }
-        } else if (equals(input, END)) {
+        } else if (equals(input, CTRL_E)) {
             const right = buf.slice(cursor);
 
             if (right.length) {
                 cursor = buf.length;
 
                 if (mask === undefined) {
-                    await write(stdout, toRight(right.join("")));
+                    await moveRightOn(right.join(""));
                 } else if (mask) {
-                    await write(stdout, toRight(getMasks(mask, right.length)));
+                    await moveRightOn(getMasks(mask, right.length));
                 }
             }
-        } else if (isCancelEvent(input)) {
-            await write(stdout, LF);
+        } else if (equals(input, ESC) || equals(input, CTRL_C)) {
+            await writeStdout(LF);
             return null;
         } else if (equals(input, CR) || equals(input, LF)) {
-            await write(stdout, LF);
+            await writeStdout(LF);
             return buf.join("");
         } else if (equals(input, BS) || equals(input, DEL)) {
             if (cursor > 0) {
@@ -115,26 +103,26 @@ export default async function question(message: string, options: {
                 const rest = buf.slice(cursor);
 
                 if (mask === undefined) {
-                    await write(stdout, toLeft(char!));
-                    await write(stdout, CLR_RIGHT);
+                    await moveLeftOn(char!);
+                    await writeStdout(CLR_RIGHT);
 
                     if (rest.length) {
                         const output = rest.join("");
-                        await write(stdout, bytes(output));
-                        await write(stdout, toLeft(output));
+                        await writeStdout(bytes(output));
+                        await moveLeftOn(output);
                     }
                 } else if (mask) {
-                    await write(stdout, toLeft(mask));
-                    await write(stdout, CLR_RIGHT);
+                    await moveLeftOn(mask);
+                    await writeStdout(CLR_RIGHT);
 
                     if (rest.length) {
                         const output = getMasks(mask, rest.length);
-                        await write(stdout, bytes(output));
-                        await write(stdout, toLeft(output));
+                        await writeStdout(bytes(output));
+                        await moveLeftOn(output);
                     }
                 }
             }
-        } else {
+        } else if (isTypingInput(input)) {
             const _chars = chars(String(input));
 
             if (cursor === buf.length) {
@@ -142,9 +130,9 @@ export default async function question(message: string, options: {
                 cursor += _chars.length;
 
                 if (mask === undefined) {
-                    await write(stdout, input);
+                    await writeStdout(input);
                 } else if (mask) {
-                    await write(stdout, bytes(getMasks(mask, _chars.length)));
+                    await writeStdout(bytes(getMasks(mask, _chars.length)));
                 }
             } else {
                 buf.splice(cursor, 0, ..._chars);
@@ -153,14 +141,14 @@ export default async function question(message: string, options: {
                 if (mask === undefined) {
                     const rest = buf.slice(cursor).join("");
 
-                    await write(stdout, concat(input, bytes(rest)));
-                    await write(stdout, toLeft(rest));
+                    await writeStdout(concat(input, bytes(rest)));
+                    await moveLeftOn(rest);
                 } else if (mask) {
                     const output = getMasks(mask, _chars.length);
                     const rest = getMasks(mask, buf.slice(cursor).length);
 
-                    await write(stdout, bytes(output + rest));
-                    await write(stdout, toLeft(rest));
+                    await writeStdout(bytes(output + rest));
+                    await moveLeftOn(rest);
                 }
             }
         }

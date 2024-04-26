@@ -2,6 +2,7 @@ import { extname } from "../../../path.ts";
 import { lines } from "../../../string.ts";
 import { isWSL, powershell } from "../../../cli.ts";
 import { getExtensions } from "../../../filetype.ts";
+import { escape } from "../util.ts";
 
 function htmlAcceptToFileFilter(accept: string): string {
     const groups: (string | string[])[] = [];
@@ -68,9 +69,9 @@ function createPowerShellScript(mode: "file" | "files" | "folder", title = "", o
                 "\n" +
                 "$saveFileDialog = [System.Windows.Forms.SaveFileDialog]::new()" +
                 "\n" +
-                "$saveFileDialog.Title = '" + title + "'" +
+                "$saveFileDialog.Title = '" + escape(title) + "'" +
                 "\n" +
-                (defaultName ? "$saveFileDialog.FileName = '" + defaultName + "'\n" : "") +
+                (defaultName ? "$saveFileDialog.FileName = '" + escape(defaultName) + "'\n" : "") +
                 (filter ? "$saveFileDialog.Filter = '" + filter + "'\n" : "") +
                 "if ($saveFileDialog.ShowDialog() -eq 'OK') {\n" +
                 "  $saveFileDialog.FileName\n" +
@@ -81,7 +82,7 @@ function createPowerShellScript(mode: "file" | "files" | "folder", title = "", o
                 "\n" +
                 "$openFileDialog = [System.Windows.Forms.OpenFileDialog]::new()" +
                 "\n" +
-                "$openFileDialog.Title = '" + title + "'" +
+                "$openFileDialog.Title = '" + escape(title) + "'" +
                 "\n" +
                 (filter ? "$openFileDialog.Filter = '" + filter + "'\n" : "") +
                 "$openFileDialog.Multiselect = $false" +
@@ -96,7 +97,7 @@ function createPowerShellScript(mode: "file" | "files" | "folder", title = "", o
             "\n" +
             "$openFileDialog = [System.Windows.Forms.OpenFileDialog]::new()" +
             "\n" +
-            "$openFileDialog.Title = '" + title + "'" +
+            "$openFileDialog.Title = '" + escape(title) + "'" +
             "\n" +
             (filter ? "$openFileDialog.Filter = '" + filter + "'\n" : "") +
             "$openFileDialog.Multiselect = $true" +
@@ -109,7 +110,7 @@ function createPowerShellScript(mode: "file" | "files" | "folder", title = "", o
             "\n" +
             "$folderBrowserDialog = [System.Windows.Forms.FolderBrowserDialog]::new()" +
             "\n" +
-            "$folderBrowserDialog.Description = '" + title + "'" +
+            "$folderBrowserDialog.Description = '" + escape(title) + "'" +
             "\n" +
             "$folderBrowserDialog.ShowDialog() | Out-Null" +
             "\n" +

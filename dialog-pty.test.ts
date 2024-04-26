@@ -2,9 +2,12 @@ import { deepStrictEqual } from "node:assert";
 import { spawn, IPty, IPtyForkOptions } from "node-pty";
 import { isNodeBelow16, isNodeBelow20 } from "./env.ts";
 import { sleep } from "./async.ts";
-import { END, ESC, LEFT, RIGHT, START } from "./dialog/terminal/constants.ts";
+import { ControlKeys, NavigationKeys } from "./cli/constants.ts";
 import { isBrowser } from "./env.ts";
 import stripAnsi from 'strip-ansi';
+
+const { CTRL_E, ESC, CTRL_A } = ControlKeys;
+const { LEFT, RIGHT } = NavigationKeys;
 
 const useDeno = process.argv.includes("--deno");
 const useBun = process.argv.includes("--bun");
@@ -644,7 +647,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
                     await sleep(10);
                 }
 
-                cmd.write(String(START));
+                cmd.write(String(CTRL_A));
                 await sleep(10);
                 cmd.write("\n");
                 const outputs = await output;
@@ -664,7 +667,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
                     await sleep(10);
                 }
 
-                cmd.write(String(START));
+                cmd.write(String(CTRL_A));
                 await sleep(10);
                 cmd.write("\n");
                 const outputs = await output;
@@ -684,7 +687,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
                     await sleep(10);
                 }
 
-                cmd.write(String(START));
+                cmd.write(String(CTRL_A));
                 await sleep(10);
                 cmd.write("\n");
                 const outputs = await output;
@@ -714,7 +717,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
                 await sleep(10);
                 cmd.write(String(LEFT));
                 await sleep(10);
-                cmd.write(String(END));
+                cmd.write(String(CTRL_E));
                 await sleep(10);
                 cmd.write("\n");
                 const outputs = await output;
@@ -740,7 +743,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
                 await sleep(10);
                 cmd.write(String(LEFT));
                 await sleep(10);
-                cmd.write(String(END));
+                cmd.write(String(CTRL_E));
                 await sleep(10);
                 cmd.write("\n");
                 const outputs = await output;
@@ -766,7 +769,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
                 await sleep(10);
                 cmd.write(String(LEFT));
                 await sleep(10);
-                cmd.write(String(END));
+                cmd.write(String(CTRL_E));
                 await sleep(10);
                 cmd.write("\n");
                 const outputs = await output;

@@ -1,6 +1,6 @@
-import { questionInDeno, questionInNode } from "./index.ts";
 import { escape } from "./util.ts";
-import { isWSL, platform, powershell, run } from "../../cli.ts";
+import { isWSL, lockStdin, platform, powershell, run } from "../../cli.ts";
+import question from "./question.ts";
 
 function createAppleScript(message: string) {
     return "tell application (path to frontmost application as text)\n" +
@@ -63,14 +63,7 @@ export default async function confirmInTerminal(message: string, options: {
             throw new Error(stderr);
         }
     } else {
-        let answer: string | null;
-
-        if (typeof Deno === "object") {
-            answer = await questionInDeno(message + " [Y/n] ");
-        } else {
-            answer = await questionInNode(message + " [Y/n] ");
-        }
-
+        const answer = await lockStdin(() => question(message + " [Y/n] "));
         const ok = answer?.toLowerCase().trim();
         return ok === "" || ok === "y" || ok === "yes";
     }

@@ -1,7 +1,7 @@
 import { basename, extname } from "../../../path.ts";
 import { getMIME } from "../../../filetype.ts";
 
-export function createFile(content: Uint8Array, path: string, options: {
+export function createFileObject(content: Uint8Array, path: string, options: {
     lastModified?: number;
     relativePath?: string;
 }): File {
@@ -41,5 +41,5 @@ export async function readFile(path: string, relativePath = "") {
         lastModified = stats.mtimeMs;
     }
 
-    return createFile(content, path, { relativePath, lastModified });
+    return createFileObject(content, path, { relativePath, lastModified });
 }

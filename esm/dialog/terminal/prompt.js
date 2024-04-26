@@ -1,6 +1,6 @@
-import { questionInDeno, questionInNode } from './index.js';
 import { escape } from './util.js';
-import { platform, run, isWSL, powershell } from '../../cli.js';
+import { platform, run, isWSL, powershell, lockStdin } from '../../cli.js';
+import question from './question.js';
 
 function createAppleScript(message, defaultValue = "", password = false) {
     return "tell application (path to frontmost application as text)\n" +
@@ -127,11 +127,8 @@ async function promptInTerminal(message, options = {}) {
             throw new Error(stderr);
         }
     }
-    else if (typeof Deno === "object") {
-        return await questionInDeno(message + " ", options);
-    }
     else {
-        return await questionInNode(message + " ", options);
+        return await lockStdin(() => question(message + " ", options));
     }
 }
 

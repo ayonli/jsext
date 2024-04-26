@@ -1,20 +1,12 @@
-import bytes from "../../bytes.ts";
+import bytes, { equals } from "../../bytes.ts";
 import { stripEnd } from "../../string.ts";
 import type { ProgressFunc, ProgressState } from "../../dialog.ts";
-import { CLR, LF } from "./constants.ts";
-import {
-    DenoStdin,
-    DenoStdout,
-    NodeStdin,
-    NodeStdout,
-    hijackNodeStdin,
-    isCancelEvent,
-    writeSync,
-} from "./util.ts";
+import { ControlKeys, ControlSequences, writeStdoutSync } from "../../cli.ts";
 
-async function handleTerminalProgress(
-    stdin: NodeStdin | DenoStdin,
-    stdout: NodeStdout | DenoStdout,
+const { CTRL_C, ESC, LF } = ControlKeys;
+const { CLR } = ControlSequences;
+
+export async function handleTerminalProgress(
     message: string,
     fn: ProgressFunc<any>,
     options: {
@@ -25,7 +17,7 @@ async function handleTerminalProgress(
 ) {
     const { signal, abort, listenForAbort } = options;
 
-    writeSync(stdout, bytes(message));
+    writeStdoutSync(bytes(message));
 
     let lastMessage = stripEnd(message, "...");
     let lastPercent: number | undefined = undefined;
@@ -38,8 +30,8 @@ async function handleTerminalProgress(
             waitingIndicator += ".";
         }
 
-        writeSync(stdout, CLR);
-        writeSync(stdout, bytes(lastMessage + waitingIndicator));
+        writeStdoutSync(CLR);
+        writeStdoutSync(bytes(lastMessage + waitingIndicator));
     }, 1000);
 
     const set = (state: ProgressState) => {
@@ -47,7 +39,7 @@ async function handleTerminalProgress(
             return;
         }
 
-        writeSync(stdout, CLR);
+        writeStdoutSync(CLR);
 
         if (state.message) {
             lastMessage = state.message;
@@ -57,32 +49,32 @@ async function handleTerminalProgress(
             lastPercent = state.percent;
         }
 
-        writeSync(stdout, bytes(lastMessage));
+        writeStdoutSync(bytes(lastMessage));
 
         if (lastPercent !== undefined) {
             const percentage = " ... " + lastPercent + "%";
 
-            writeSync(stdout, bytes(percentage));
+            writeStdoutSync(bytes(percentage));
             clearInterval(waitingTimer as any);
         }
     };
-    const nodeReader = (buf: Uint8Array) => {
-        if (isCancelEvent(buf)) {
+    const nodeReader = typeof Deno === "object" ? null : (buf: Uint8Array) => {
+        if (equals(buf, ESC) || equals(buf, CTRL_C)) {
             abort?.();
         }
     };
-    const denoReader = "fd" in stdin ? null : stdin.readable.getReader();
+    const denoReader = typeof Deno === "object" ? Deno.stdin.readable.getReader() : null;
 
     if (abort) {
-        if ("fd" in stdin) {
-            stdin.on("data", nodeReader);
-        } else {
+        if (nodeReader) {
+            process.stdin.on("data", nodeReader);
+        } else if (denoReader) {
             (async () => {
                 while (true) {
                     try {
-                        const { done, value } = await denoReader!.read();
+                        const { done, value } = await denoReader.read();
 
-                        if (done || isCancelEvent(value)) {
+                        if (done || equals(value, ESC) || equals(value, CTRL_C)) {
                             signal.aborted || abort();
                             break;
                         }
@@ -104,53 +96,13 @@ async function handleTerminalProgress(
     try {
         return await job;
     } finally {
-        writeSync(stdout, LF);
+        writeStdoutSync(LF);
         clearInterval(waitingTimer as any);
 
-        if ("fd" in stdin) {
-            stdin.off("data", nodeReader);
-        } else {
-            denoReader?.releaseLock();
+        if (nodeReader) {
+            process.stdin.off("data", nodeReader);
+        } else if (denoReader) {
+            denoReader.releaseLock();
         }
     }
-}
-
-export async function progressInDeno<T>(message: string, fn: ProgressFunc<T>, options: {
-    signal: AbortSignal;
-    abort?: (() => void) | undefined;
-    listenForAbort?: (() => Promise<T>) | undefined;
-}): Promise<T | null> {
-    const { stdin, stdout } = Deno;
-
-    if (!stdin.isTerminal) {
-        return null;
-    }
-
-    try {
-        stdin.setRaw(true);
-        return await handleTerminalProgress(stdin, stdout, message, fn, options);
-    } finally {
-        stdin.setRaw(false);
-    }
-}
-
-export async function progressInNode<T>(message: string, fn: ProgressFunc<T>, options: {
-    signal: AbortSignal;
-    abort?: (() => void) | undefined;
-    listenForAbort?: (() => Promise<T>) | undefined;
-}): Promise<T | null> {
-    const { stdin, stdout } = process;
-
-    if (!stdout.isTTY) {
-        return null;
-    }
-
-    return hijackNodeStdin(stdin, async () => {
-        try {
-            stdin.setRawMode(true);
-            return await handleTerminalProgress(stdin, stdout, message, fn, options);
-        } finally {
-            stdin.setRawMode(false);
-        }
-    });
 }

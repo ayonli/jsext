@@ -20,6 +20,50 @@ const customInspect = (() => {
         return Symbol.for("nodejs.util.inspect.custom");
     }
 })();
+function env(name = undefined, value = undefined) {
+    var _a, _b;
+    if (typeof Deno === "object") {
+        if (name === undefined) {
+            return Deno.env.toObject();
+        }
+        else if (value === undefined) {
+            return Deno.env.get(name);
+        }
+        else {
+            Deno.env.set(name, value);
+        }
+    }
+    else if (typeof process === "object" && typeof process.env === "object") {
+        if (name === undefined) {
+            return process.env;
+        }
+        else if (value === undefined) {
+            return process.env[name];
+        }
+        else {
+            process.env[name] = value;
+        }
+    }
+    else {
+        // @ts-ignore
+        const env = globalThis["__env__"];
+        // @ts-ignore
+        if (env === undefined || env === null || typeof env === "object") {
+            if (name === undefined) {
+                return env !== null && env !== void 0 ? env : {};
+            }
+            else if (value === undefined) {
+                return (_a = env === null || env === void 0 ? void 0 : env[name]) !== null && _a !== void 0 ? _a : undefined;
+            }
+            // @ts-ignore
+            ((_b = globalThis["__env__"]) !== null && _b !== void 0 ? _b : (globalThis["__env__"] = {}))[name] = value;
+            return;
+        }
+        else {
+            throw new Error("Unsupported runtime");
+        }
+    }
+}
 const CommonRuntimes = [
     "node",
     "deno",
@@ -91,42 +135,6 @@ function runtime() {
     }
     return { identity: "others", version: undefined, tsSupport: false };
 }
-const CommonPlatforms = [
-    "darwin",
-    "windows",
-    "linux",
-];
-/**
- * Returns a string identifying the operating system platform in which the
- * program is running.
- */
-function platform() {
-    if (typeof Deno === "object") {
-        if (CommonPlatforms.includes(Deno.build.os)) {
-            return Deno.build.os;
-        }
-    }
-    else if (typeof process === "object" && typeof process.platform === "string") {
-        if (process.platform === "win32") {
-            return "windows";
-        }
-        else if (CommonPlatforms.includes(process.platform)) {
-            return process.platform;
-        }
-    }
-    else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
-        if (navigator.userAgent.includes("Macintosh")) {
-            return "darwin";
-        }
-        else if (navigator.userAgent.includes("Windows")) {
-            return "windows";
-        }
-        else if (navigator.userAgent.includes("Linux")) {
-            return "linux";
-        }
-    }
-    return "others";
-}
 /**
  * Detects if the program is running in a REPL environment.
  *
@@ -175,5 +183,5 @@ function unrefTimer(timer) {
     }
 }
 
-export { CommonPlatforms, CommonRuntimes, customInspect, runtime as default, isREPL, platform, refTimer, unrefTimer };
+export { CommonRuntimes, customInspect, runtime as default, env, isREPL, refTimer, unrefTimer };
 //# sourceMappingURL=runtime.js.map

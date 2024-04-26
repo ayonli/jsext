@@ -1,10 +1,124 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { equals } from "./path.ts";
-import { parseArgs, run, which, quote, env } from "./cli.ts";
-import { platform } from "./runtime.ts";
+import {
+    ControlKeys,
+    FunctionKeys,
+    NavigationKeys,
+    charWidth,
+    isTTY,
+    isTypingInput,
+    parseArgs,
+    platform,
+    quote,
+    run,
+    stringWidth,
+    which,
+} from "./cli.ts";
+import { chars } from "./string.ts";
+import bytes from "./bytes.ts";
 import { isDeno } from "./env.ts";
 
+const str1 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const str2 = "你好，世界！";
+const str3 = "👋🌍🚀♥️♣";
+
+const NonTypingKeys = [
+    ...Object.values(ControlKeys),
+    ...Object.values(NavigationKeys),
+    ...Object.values(FunctionKeys),
+];
+
 describe("cli", () => {
+    it("charWidth", () => {
+        chars("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ").forEach(char => {
+            strictEqual(charWidth(char), 1);
+        });
+
+        chars("你好，世界！").forEach(char => {
+            strictEqual(charWidth(char), 2);
+        });
+
+        strictEqual(charWidth("👋"), 2);
+        strictEqual(charWidth("🌍"), 2);
+        strictEqual(charWidth("🚀"), 2);
+        strictEqual(charWidth("♥️"), 1);
+        strictEqual(charWidth("♣"), 1);
+    });
+
+    it("stringWidth", () => {
+        strictEqual(stringWidth(str1), 62);
+        strictEqual(stringWidth(str2), 12);
+        strictEqual(stringWidth(str3), 8);
+    });
+
+    it("isTypingInput", () => {
+        strictEqual(isTypingInput(bytes(str1)), true);
+        Array.from(str1).forEach(char => {
+            strictEqual(isTypingInput(bytes(char)), true);
+        });
+
+        strictEqual(isTypingInput(bytes(str2)), true);
+        Array.from(str2).forEach(char => {
+            strictEqual(isTypingInput(bytes(char)), true);
+        });
+
+        strictEqual(isTypingInput(bytes(str3)), true);
+        Array.from(str3).forEach(char => {
+            strictEqual(isTypingInput(bytes(char)), true);
+        });
+
+        NonTypingKeys.forEach(key => {
+            strictEqual(isTypingInput(bytes(key)), false);
+        });
+    });
+
+    it("isTTY", () => {
+        if (isDeno) {
+            strictEqual(isTTY(), Deno.stdin.isTerminal());
+        } else {
+            strictEqual(isTTY(), process.stdin.isTTY);
+        }
+    });
+
+    it("platform", () => {
+        const platforms = [
+            "darwin",
+            "linux",
+            "windows",
+        ];
+        const others = "others";
+
+        if (typeof Deno === "object") {
+            if (platforms.includes(Deno.build.os as any)) {
+                strictEqual(Deno.build.os, platform());
+            } else {
+                strictEqual(others, platform());
+            }
+        } else if (typeof process === "object" && typeof process.platform === "string") {
+            if (process.platform === "win32") {
+                strictEqual("windows", platform());
+            } else if (platforms.includes(process.platform)) {
+                strictEqual(process.platform, platform());
+            } else {
+                strictEqual(others, platform());
+            }
+        } else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
+            if (navigator.userAgent.includes("Android")) {
+                strictEqual("android", platform());
+            } else if (navigator.userAgent.includes("Macintosh")) {
+                strictEqual("darwin", platform());
+            } else if (navigator.userAgent.includes("Windows")) {
+                strictEqual("windows", platform());
+            } else if (navigator.userAgent.includes("Linux")) {
+                strictEqual("linux", platform());
+            } else {
+                strictEqual(others, platform());
+            }
+        } else {
+            strictEqual(others, platform());
+        }
+    });
+
     it("parseArgs", () => {
         deepStrictEqual(parseArgs([
             "Bob", "30",
@@ -203,33 +317,5 @@ describe("cli", () => {
                 strictEqual(ls, "/usr/bin/ls");
             }
         }
-    });
-
-    describe("env", () => {
-        it("get all", () => {
-            if (isDeno) {
-                deepStrictEqual(env(), Deno.env.toObject());
-            } else {
-                deepStrictEqual(env(), process.env);
-            }
-        });
-
-        it("get one", () => {
-            if (isDeno) {
-                strictEqual(env("HOME"), Deno.env.get("HOME"));
-            } else {
-                strictEqual(env("HOME"), process.env["HOME"]);
-            }
-        });
-
-        it("set one", () => {
-            env("FOO", "BAR");
-
-            if (isDeno) {
-                strictEqual(env("FOO"), "BAR");
-            } else {
-                strictEqual(env("FOO"), "BAR");
-            }
-        });
     });
 });

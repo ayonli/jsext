@@ -1,6 +1,6 @@
-import { questionInDeno, questionInNode } from "./index.ts";
 import { escape } from "./util.ts";
-import { isWSL, platform, powershell, run } from "../../cli.ts";
+import { isWSL, lockStdin, platform, powershell, run } from "../../cli.ts";
+import question from "./question.ts";
 
 function createAppleScript(message: string) {
     return "tell application (path to frontmost application as text)\n" +
@@ -49,9 +49,7 @@ export default async function alertInTerminal(message: string, options: {
         if (code && code !== 1) {
             throw new Error(stderr);
         }
-    } else if (typeof Deno === "object") {
-        await questionInDeno(message + " [Enter] ");
     } else {
-        await questionInNode(message + " [Enter] ");
+        await lockStdin(() => question(message + " [Enter] "));
     }
 }

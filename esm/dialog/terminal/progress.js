@@ -1,11 +1,13 @@
-import bytes from '../../bytes.js';
+import bytes, { equals } from '../../bytes.js';
 import { stripEnd } from '../../string.js';
-import { CLR, LF } from './constants.js';
-import { hijackNodeStdin, writeSync, isCancelEvent } from './util.js';
+import { writeStdoutSync } from '../../cli.js';
+import { ControlKeys, ControlSequences } from '../../cli/constants.js';
 
-async function handleTerminalProgress(stdin, stdout, message, fn, options) {
+const { CTRL_C, ESC, LF } = ControlKeys;
+const { CLR } = ControlSequences;
+async function handleTerminalProgress(message, fn, options) {
     const { signal, abort, listenForAbort } = options;
-    writeSync(stdout, bytes(message));
+    writeStdoutSync(bytes(message));
     let lastMessage = stripEnd(message, "...");
     let lastPercent = undefined;
     let waitingIndicator = message.endsWith("...") ? "..." : "";
@@ -16,43 +18,43 @@ async function handleTerminalProgress(stdin, stdout, message, fn, options) {
         else {
             waitingIndicator += ".";
         }
-        writeSync(stdout, CLR);
-        writeSync(stdout, bytes(lastMessage + waitingIndicator));
+        writeStdoutSync(CLR);
+        writeStdoutSync(bytes(lastMessage + waitingIndicator));
     }, 1000);
     const set = (state) => {
         if (signal.aborted) {
             return;
         }
-        writeSync(stdout, CLR);
+        writeStdoutSync(CLR);
         if (state.message) {
             lastMessage = state.message;
         }
         if (state.percent !== undefined) {
             lastPercent = state.percent;
         }
-        writeSync(stdout, bytes(lastMessage));
+        writeStdoutSync(bytes(lastMessage));
         if (lastPercent !== undefined) {
             const percentage = " ... " + lastPercent + "%";
-            writeSync(stdout, bytes(percentage));
+            writeStdoutSync(bytes(percentage));
             clearInterval(waitingTimer);
         }
     };
-    const nodeReader = (buf) => {
-        if (isCancelEvent(buf)) {
+    const nodeReader = typeof Deno === "object" ? null : (buf) => {
+        if (equals(buf, ESC) || equals(buf, CTRL_C)) {
             abort === null || abort === void 0 ? void 0 : abort();
         }
     };
-    const denoReader = "fd" in stdin ? null : stdin.readable.getReader();
+    const denoReader = typeof Deno === "object" ? Deno.stdin.readable.getReader() : null;
     if (abort) {
-        if ("fd" in stdin) {
-            stdin.on("data", nodeReader);
+        if (nodeReader) {
+            process.stdin.on("data", nodeReader);
         }
-        else {
+        else if (denoReader) {
             (async () => {
                 while (true) {
                     try {
                         const { done, value } = await denoReader.read();
-                        if (done || isCancelEvent(value)) {
+                        if (done || equals(value, ESC) || equals(value, CTRL_C)) {
                             signal.aborted || abort();
                             break;
                         }
@@ -73,44 +75,16 @@ async function handleTerminalProgress(stdin, stdout, message, fn, options) {
         return await job;
     }
     finally {
-        writeSync(stdout, LF);
+        writeStdoutSync(LF);
         clearInterval(waitingTimer);
-        if ("fd" in stdin) {
-            stdin.off("data", nodeReader);
+        if (nodeReader) {
+            process.stdin.off("data", nodeReader);
         }
-        else {
-            denoReader === null || denoReader === void 0 ? void 0 : denoReader.releaseLock();
+        else if (denoReader) {
+            denoReader.releaseLock();
         }
     }
-}
-async function progressInDeno(message, fn, options) {
-    const { stdin, stdout } = Deno;
-    if (!stdin.isTerminal) {
-        return null;
-    }
-    try {
-        stdin.setRaw(true);
-        return await handleTerminalProgress(stdin, stdout, message, fn, options);
-    }
-    finally {
-        stdin.setRaw(false);
-    }
-}
-async function progressInNode(message, fn, options) {
-    const { stdin, stdout } = process;
-    if (!stdout.isTTY) {
-        return null;
-    }
-    return hijackNodeStdin(stdin, async () => {
-        try {
-            stdin.setRawMode(true);
-            return await handleTerminalProgress(stdin, stdout, message, fn, options);
-        }
-        finally {
-            stdin.setRawMode(false);
-        }
-    });
 }
 
-export { progressInDeno, progressInNode };
+export { handleTerminalProgress };
 //# sourceMappingURL=progress.js.map

@@ -6,14 +6,35 @@
  * @module
  * @experimental
  */
-
-import { text } from "./bytes.ts";
-import { interop } from "./module.ts";
-import { PowerShellCommands } from "./cli/constants.ts";
+import { isFullWidth, isWide } from "./external/code-point-utils/index.ts";
+import { byteLength, chars, isEmoji, trimStart } from "./string.ts";
+import bytes, { ByteArray, equals, text } from "./bytes.ts";
 import { isBrowser, isBun, isDeno } from "./env.ts";
-import runtime, { platform as _platform } from "./runtime.ts";
+import runtime, { env } from "./runtime.ts";
+import { interop } from "./module.ts";
 import { basename } from "./path.ts";
-import { trimStart } from "./string.ts";
+import { sum } from "./math.ts";
+import {
+    ControlKeys,
+    ControlSequences,
+    FunctionKeys,
+    NavigationKeys,
+    PowerShellCommands,
+} from "./cli/constants.ts";
+
+export {
+    ControlKeys,
+    ControlSequences,
+    FunctionKeys,
+    NavigationKeys,
+    PowerShellCommands,
+};
+
+const NonTypingKeys = [
+    ...Object.values(ControlKeys),
+    ...Object.values(NavigationKeys),
+    ...Object.values(FunctionKeys),
+];
 
 /**
  * The command-line arguments passed to the program.
@@ -32,14 +53,250 @@ export const args: string[] = (() => {
 })();
 
 /**
- * @deprecated import `platform` from `@ayonli/jsext/runtime` module instead.
- */
-export const platform = _platform;
-
-/**
  * @deprecated use `runtime().tsSupport` from `@ayonli/jsext/runtime` module instead.
  */
 export const isTsRuntime = () => runtime().tsSupport;
+
+/**
+ * Returns the width of a single character.
+ */
+export function charWidth(char: string): 1 | 2 {
+    if (isEmoji(char)) {
+        const _bytes = byteLength(char);
+
+        // Most emojis are 4 bytes wide, but some are 3 bytes in Windows/Linux,
+        // and 6 bytes in macOS.
+        return _bytes === 3 || _bytes === 6 ? 1 : 2;
+    } else if (isWide(char.codePointAt(0)!) || isFullWidth(char.codePointAt(0)!)) {
+        return 2;
+    } else {
+        return 1;
+    }
+}
+
+/**
+ * Returns the width of a string.
+ */
+export function stringWidth(str: string): number {
+    return sum(...chars(str).map(charWidth));
+}
+
+/**
+ * Reads a chunk of data from the standard input. This could be a single key
+ * stroke, or a multi-byte sequence for input from an IME.
+ * 
+ * @example
+ * ```ts
+ * import process from "node:process";
+ * import { equals } from "@ayonli/jsext/bytes";
+ * import {
+ *     ControlKeys,
+ *     readStdin,
+ *     writeStdout,
+ *     isTypingInput,
+ * } from "@ayonli/jsext/cli";
+ * 
+ * while (true) {
+ *     const input = await readStdin();
+ * 
+ *     if (equals(input, ControlKeys.CTRL_C) || equals(input, ControlKeys.ESC)) {
+ *         console.log("User cancelled");
+ *         process.exit(1);
+ *     } else if (equals(input, ControlKeys.CR) || equals(input, ControlKeys.LF)) {
+ *         break;
+ *     } else if (isTypingInput(input)) {
+ *         writeStdout(input);
+ *     }
+ * }
+ * ```
+ */
+export async function readStdin(): Promise<ByteArray> {
+    if (typeof Deno !== "undefined") {
+        const reader = Deno.stdin.readable.getReader();
+        const { done, value } = await reader.read();
+
+        // Must release the lock immediately, otherwise the program won't work
+        // properly in the REPL.
+        reader.releaseLock();
+
+        if (done) {
+            return bytes([]);
+        } else {
+            return bytes(value);
+        }
+    } else if (typeof process !== "undefined" && typeof process.stdin === "object") {
+        const stdin = process.stdin;
+        return new Promise<ByteArray>(resolve => {
+            const listener = (chunk: Buffer) => {
+                stdin.removeListener("data", listener);
+                resolve(bytes(chunk));
+            };
+
+            // Don't use `once`, it may not keep the program running in some runtimes,
+            // for example, Bun.
+            stdin.on("data", listener);
+        });
+    } else {
+        throw new Error("No stdin available");
+    }
+}
+
+/**
+ * Writes a chunk of data to the standard output.
+ */
+export async function writeStdout(data: ByteArray): Promise<void> {
+    if (typeof Deno === "object") {
+        await Deno.stdout.write(data);
+    } else if (typeof process === "object" && typeof process.stdout === "object") {
+        await new Promise<void>(resolve => {
+            process.stdout.write(data, () => resolve());
+        });
+    } else {
+        throw new Error("No stdout available");
+    }
+}
+
+/**
+ * Writes a chunk of data to the standard output synchronously.
+ * 
+ * NOTE: despite the function name, the synchronous behavior is only guaranteed
+ * in Deno, in Node.js, it may still be asynchronous.
+ * 
+ * Since the behavior is not guaranteed, it is recommended to use the asynchronous
+ * `writeStdout` function instead. This synchronous function is only provided for
+ * special cases where the asynchronous behavior is not acceptable.
+ */
+export function writeStdoutSync(data: ByteArray): void {
+    if (typeof Deno === "object") {
+        Deno.stdout.writeSync(data);
+    } else if (typeof process === "object" && typeof process.stdout === "object") {
+        process.stdout.write(data);
+    } else {
+        throw new Error("No stdout available");
+    }
+}
+
+/**
+ * Requests the standard input to be used only by the given task until it is
+ * completed.
+ * 
+ * This function sets the `stdin` in raw mode, and exclude other parts of the
+ * program from reading from it at the same time . This is important so that our
+ * program won't be affected by other tasks, especially in a REPL environment.
+ */
+export async function lockStdin<T>(task: () => Promise<T>): Promise<T | null> {
+    if (!isTTY()) {
+        return null;
+    }
+
+    if (typeof Deno === "object") {
+        try {
+            Deno.stdin.setRaw(true);
+            return await task();
+        } finally {
+            Deno.stdin.setRaw(false);
+        }
+    } else if (typeof process === "object" && typeof process.stdin === "object") {
+        const { stdin } = process;
+
+        if (stdin.isPaused()) {
+            stdin.resume();
+        }
+
+        const listeners = [...stdin.listeners("data")]; // copy listeners in cased being modified
+
+        if (listeners?.length) {
+            stdin.removeAllListeners("data");
+        }
+
+        try {
+            stdin.setRawMode(true);
+            return await task();
+        } finally {
+            stdin.setRawMode(false);
+
+            if (listeners?.length) {
+                listeners.forEach(listener => stdin.addListener("data", listener as any));
+            } else {
+                stdin.pause();
+            }
+        }
+    } else {
+        throw new Error("No stdin available");
+    }
+}
+
+/**
+ * Moves the cursor to the left base on the width of the given string.
+ */
+export async function moveLeftOn(str: string): Promise<void> {
+    await writeStdout(bytes(`\u001b[${stringWidth(str)}D`));
+}
+
+/**
+ * Moves the cursor to the right base on the width of the given string.
+ */
+export async function moveRightOn(str: string): Promise<void> {
+    await writeStdout(bytes(`\u001b[${stringWidth(str)}C`));
+}
+
+/**
+ * Returns `true` if the given data is a typing input. That is, it is not a
+ * control key, navigation key, or function key.
+ */
+export function isTypingInput(data: ByteArray) {
+    return data.length > 0 && !NonTypingKeys.some(key => equals(data, key));
+}
+
+/**
+ * Returns `true` if the standard io is a text terminal.
+ */
+export function isTTY() {
+    if (typeof Deno === "object") {
+        return Deno.stdin.isTerminal();
+    } else if (typeof process === "object" && typeof process.stdin === "object") {
+        return process.stdin.isTTY;
+    } else {
+        throw new Error("No stdin available");
+    }
+}
+
+export type CommonPlatforms = "darwin"
+    | "windows"
+    | "linux";
+export const CommonPlatforms: CommonPlatforms[] = [
+    "darwin",
+    "windows",
+    "linux",
+];
+
+/**
+ * Returns a string identifying the operating system platform in which the
+ * program is running.
+ */
+export function platform(): CommonPlatforms | "others" {
+    if (typeof Deno === "object") {
+        if (CommonPlatforms.includes(Deno.build.os as any)) {
+            return Deno.build.os as CommonPlatforms;
+        }
+    } else if (typeof process === "object" && typeof process.platform === "string") {
+        if (process.platform === "win32") {
+            return "windows";
+        } else if ((CommonPlatforms as string[]).includes(process.platform)) {
+            return process.platform as CommonPlatforms;
+        }
+    } else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
+        if (navigator.userAgent.includes("Macintosh")) {
+            return "darwin";
+        } else if (navigator.userAgent.includes("Windows")) {
+            return "windows";
+        } else if (navigator.userAgent.includes("Linux")) {
+            return "linux";
+        }
+    }
+
+    return "others";
+}
 
 /** Checks if the program is running in Windows Subsystem for Linux. */
 export function isWSL(): boolean {
@@ -211,23 +468,6 @@ export function quote(arg: string): string {
 }
 
 /**
- * Returns the path of the given command if it exists in the system,
- * otherwise returns `null`.
- */
-export async function which(cmd: string): Promise<string | null> {
-    if (platform() === "windows") {
-        const { code, stdout } = await run("powershell", [
-            "-Command",
-            `Get-Command -Name ${cmd} | Select-Object -ExpandProperty Source`
-        ]);
-        return code ? null : stdout.trim();
-    } else {
-        const { code, stdout } = await run("which", [cmd]);
-        return code ? null : stdout.trim();
-    }
-}
-
-/**
  * Executes a command in the terminal and returns the exit code and outputs.
  */
 export async function run(cmd: string, args: string[]): Promise<{
@@ -369,51 +609,20 @@ export async function sudo(cmd: string, args: string[], options: {
     });
 }
 
-/** Returns all environment variables in an object. */
-export function env(): { [name: string]: string; };
-/** Returns a specific environment variable. */
-export function env(name: string): string | undefined;
 /**
- * Sets the value of a specific environment variable.
- * 
- * NOTE: this is a temporary change and will not persist when the program exits.
+ * Returns the path of the given command if it exists in the system,
+ * otherwise returns `null`.
  */
-export function env(name: string, value: string): undefined;
-export function env(name: string | undefined = undefined, value: string | undefined = undefined): any {
-    if (typeof Deno === "object") {
-        if (name === undefined) {
-            return Deno.env.toObject();
-        } else if (value === undefined) {
-            return Deno.env.get(name);
-        } else {
-            Deno.env.set(name, value);
-        }
-    } else if (typeof process === "object" && typeof process.env === "object") {
-        if (name === undefined) {
-            return process.env;
-        } else if (value === undefined) {
-            return process.env[name];
-        } else {
-            process.env[name] = value;
-        }
+export async function which(cmd: string): Promise<string | null> {
+    if (platform() === "windows") {
+        const { code, stdout } = await run("powershell", [
+            "-Command",
+            `Get-Command -Name ${cmd} | Select-Object -ExpandProperty Source`
+        ]);
+        return code ? null : stdout.trim();
     } else {
-        // @ts-ignore
-        const env = globalThis["__env__"] as any;
-
-        // @ts-ignore
-        if (env === undefined || env === null || typeof env === "object") {
-            if (name === undefined) {
-                return env ?? {};
-            } else if (value === undefined) {
-                return env?.[name] ?? undefined;
-            }
-
-            // @ts-ignore
-            (globalThis["__env__"] ??= {})[name] = value;
-            return;
-        } else {
-            throw new Error("Unsupported runtime");
-        }
+        const { code, stdout } = await run("which", [cmd]);
+        return code ? null : stdout.trim();
     }
 }
 

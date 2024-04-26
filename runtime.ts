@@ -22,13 +22,54 @@ export const customInspect: unique symbol = (() => {
     }
 })() as any;
 
+/** Returns all environment variables in an object. */
+export function env(): { [name: string]: string; };
+/** Returns a specific environment variable. */
+export function env(name: string): string | undefined;
 /**
- * Special runtimes:
+ * Sets the value of a specific environment variable.
  * 
- * - `chromium` - Google Chrome and other Chromium-based browsers, this includes the
- *  new Microsoft Edge.
- * - `edge` - Legacy Microsoft Edge.
+ * NOTE: this is a temporary change and will not persist when the program exits.
  */
+export function env(name: string, value: string): undefined;
+export function env(name: string | undefined = undefined, value: string | undefined = undefined): any {
+    if (typeof Deno === "object") {
+        if (name === undefined) {
+            return Deno.env.toObject();
+        } else if (value === undefined) {
+            return Deno.env.get(name);
+        } else {
+            Deno.env.set(name, value);
+        }
+    } else if (typeof process === "object" && typeof process.env === "object") {
+        if (name === undefined) {
+            return process.env;
+        } else if (value === undefined) {
+            return process.env[name];
+        } else {
+            process.env[name] = value;
+        }
+    } else {
+        // @ts-ignore
+        const env = globalThis["__env__"] as any;
+
+        // @ts-ignore
+        if (env === undefined || env === null || typeof env === "object") {
+            if (name === undefined) {
+                return env ?? {};
+            } else if (value === undefined) {
+                return env?.[name] ?? undefined;
+            }
+
+            // @ts-ignore
+            (globalThis["__env__"] ??= {})[name] = value;
+            return;
+        } else {
+            throw new Error("Unsupported runtime");
+        }
+    }
+}
+
 export type CommonRuntimes = "node" | "deno" | "bun" | "chromium" | "firefox" | "safari";
 export const CommonRuntimes: CommonRuntimes[] = [
     "node",
@@ -109,43 +150,6 @@ export default function runtime(): RuntimeInfo {
     }
 
     return { identity: "others", version: undefined, tsSupport: false };
-}
-
-export type CommonPlatforms = "darwin"
-    | "windows"
-    | "linux";
-export const CommonPlatforms: CommonPlatforms[] = [
-    "darwin",
-    "windows",
-    "linux",
-];
-
-/**
- * Returns a string identifying the operating system platform in which the
- * program is running.
- */
-export function platform(): CommonPlatforms | "others" {
-    if (typeof Deno === "object") {
-        if (CommonPlatforms.includes(Deno.build.os as any)) {
-            return Deno.build.os as CommonPlatforms;
-        }
-    } else if (typeof process === "object" && typeof process.platform === "string") {
-        if (process.platform === "win32") {
-            return "windows";
-        } else if ((CommonPlatforms as string[]).includes(process.platform)) {
-            return process.platform as CommonPlatforms;
-        }
-    } else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
-        if (navigator.userAgent.includes("Macintosh")) {
-            return "darwin";
-        } else if (navigator.userAgent.includes("Windows")) {
-            return "windows";
-        } else if (navigator.userAgent.includes("Linux")) {
-            return "linux";
-        }
-    }
-
-    return "others";
 }
 
 declare let $0: unknown;

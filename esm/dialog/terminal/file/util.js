@@ -1,7 +1,7 @@
 import { basename, extname } from '../../../path.js';
 import { getMIME } from '../../../filetype.js';
 
-function createFile(content, path, options) {
+function createFileObject(content, path, options) {
     var _a;
     const { lastModified, relativePath } = options;
     const filename = basename(path);
@@ -35,8 +35,8 @@ async function readFile(path, relativePath = "") {
         content = await readFile(path);
         lastModified = stats.mtimeMs;
     }
-    return createFile(content, path, { relativePath, lastModified });
+    return createFileObject(content, path, { relativePath, lastModified });
 }
 
-export { createFile, readFile };
+export { createFileObject, readFile };
 //# sourceMappingURL=util.js.map

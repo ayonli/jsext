@@ -1,6 +1,7 @@
 import { lines } from "../../../string.ts";
 import { run } from "../../../cli.ts";
 import { getUTI } from "../../../filetype.ts";
+import { escape } from "../util.ts";
 
 function htmlAcceptToAppleType(accept: string): string {
     return accept.split(/\s*,\s*/).map(getUTI).filter(Boolean).map(t => `"${t}"`).join(", ");
@@ -16,14 +17,14 @@ function createAppleScript(mode: "file" | "files" | "folder", title = "", option
     if (mode === "file") {
         if (forSave) {
             return "tell application (path to frontmost application as text)\n" +
-                "  set myFile to choose file name" + (title ? ` with prompt "${title}"` : "") +
-                (defaultName ? ` default name "${defaultName}"` : "") +
+                "  set myFile to choose file name" + (title ? ` with prompt "${escape(title)}"` : "") +
+                (defaultName ? ` default name "${escape(defaultName)}"` : "") +
                 "\n  POSIX path of myFile\n" +
                 "end";
         } else {
             const _type = type ? htmlAcceptToAppleType(type) : "";
             return "tell application (path to frontmost application as text)\n" +
-                "  set myFile to choose file" + (title ? ` with prompt "${title}"` : "") +
+                "  set myFile to choose file" + (title ? ` with prompt "${escape(title)}"` : "") +
                 (_type ? ` of type {${_type}}` : "") +
                 " invisibles false" +
                 "\n  POSIX path of myFile\n" +
@@ -32,7 +33,7 @@ function createAppleScript(mode: "file" | "files" | "folder", title = "", option
     } else if (mode === "files") {
         const _type = type ? htmlAcceptToAppleType(type) : "";
         return "tell application (path to frontmost application as text)\n" +
-            "  set myFiles to choose file" + (title ? ` with prompt "${title}"` : "") +
+            "  set myFiles to choose file" + (title ? ` with prompt "${escape(title)}"` : "") +
             (_type ? ` of type {${_type}}` : "") +
             " invisibles false" +
             " multiple selections allowed true" +
@@ -46,7 +47,7 @@ function createAppleScript(mode: "file" | "files" | "folder", title = "", option
             "end";
     } else {
         return "tell application (path to frontmost application as text)\n" +
-            "  set myFolder to choose folder" + (title ? ` with prompt "${title}"` : "") +
+            "  set myFolder to choose folder" + (title ? ` with prompt "${escape(title)}"` : "") +
             " invisibles false" +
             "\n  POSIX path of myFolder\n" +
             "end";
