@@ -1,5 +1,5 @@
 import chan from './chan.js';
-import { asIterable } from './util.js';
+import { asAsyncIterable } from './util.js';
 import readAll$1 from './readAll.js';
 
 /**
@@ -11,7 +11,7 @@ function isFunction(val) {
 }
 function read(source, eventMap = undefined) {
     var _a;
-    const iterable = asIterable(source);
+    const iterable = asAsyncIterable(source);
     if (iterable) {
         return iterable;
     }

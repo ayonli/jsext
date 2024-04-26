@@ -1,4 +1,4 @@
-import { asIterable } from './util.js';
+import { asAsyncIterable } from './util.js';
 
 /**
  * Reads all streaming data at once.
@@ -19,7 +19,7 @@ import { asIterable } from './util.js';
  * ```
  */
 async function readAll(source) {
-    const iterable = asIterable(source);
+    const iterable = asAsyncIterable(source);
     const list = [];
     for await (const chunk of iterable) {
         list.push(chunk);

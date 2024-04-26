@@ -4,7 +4,7 @@
  */
 
 import chan from "./chan.ts";
-import { asIterable } from "./util.ts";
+import { asAsyncIterable } from "./util.ts";
 import _readAll from "./readAll.ts";
 
 function isFunction(val: unknown): val is (...args: any[]) => any {
@@ -104,7 +104,7 @@ export default function read<T>(source: any, eventMap: {
     error?: string;
     close?: string;
 } | undefined = undefined): AsyncIterable<T> {
-    const iterable = asIterable(source);
+    const iterable = asAsyncIterable(source);
 
     if (iterable) {
         return iterable;

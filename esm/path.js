@@ -285,7 +285,7 @@ function extname(path) {
     }
 }
 /**
- * Converts the given path to a file URL if it's not one.
+ * Converts the given path to a file URL if it's not one already.
  * @experimental
  */
 function toFileUrl(path) {
@@ -300,7 +300,7 @@ function toFileUrl(path) {
     }
 }
 /**
- * Converts the given URL to a file system path if it's not one.
+ * Converts the given URL to a file system path if it's not one already.
  * @experimental
  */
 function toFsPath(url) {

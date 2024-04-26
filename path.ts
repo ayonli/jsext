@@ -321,7 +321,7 @@ export function extname(path: string): string {
 }
 
 /**
- * Converts the given path to a file URL if it's not one.
+ * Converts the given path to a file URL if it's not one already.
  * @experimental
  */
 export function toFileUrl(path: string): string {
@@ -335,7 +335,7 @@ export function toFileUrl(path: string): string {
 }
 
 /**
- * Converts the given URL to a file system path if it's not one.
+ * Converts the given URL to a file system path if it's not one already.
  * @experimental
  */
 export function toFsPath(url: string): string {

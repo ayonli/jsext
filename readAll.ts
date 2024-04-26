@@ -3,7 +3,7 @@
  * @module
  */
 
-import { asIterable } from "./util.ts";
+import { asAsyncIterable } from "./util.ts";
 
 /**
  * Reads all values from the iterable object at once.
@@ -20,7 +20,7 @@ import { asIterable } from "./util.ts";
  * ```
  */
 export default async function readAll<T>(source: AsyncIterable<T> | ReadableStream<T>): Promise<T[]> {
-    const iterable = asIterable(source)!;
+    const iterable = asAsyncIterable(source)!;
 
     const list: T[] = [];
 
