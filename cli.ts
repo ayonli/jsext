@@ -14,6 +14,7 @@ import runtime, { env } from "./runtime.ts";
 import { interop } from "./module.ts";
 import { basename } from "./path.ts";
 import { sum } from "./math.ts";
+import { Mutex } from "./lock.ts";
 import {
     ControlKeys,
     ControlSequences,
@@ -81,34 +82,118 @@ export function stringWidth(str: string): number {
     return sum(...chars(str).map(charWidth));
 }
 
+const stdinMutex = new Mutex(1);
+
+/**
+ * Requests the standard input to be used only by the given task until it is
+ * completed.
+ * 
+ * This function sets the `stdin` in raw mode, and exclude other parts of the
+ * program from reading from it at the same time . This is important so that our
+ * program won't be affected by other tasks, especially in a REPL environment.
+ * 
+ * @example
+ * ```ts
+ * // A simple program that reads a line of text from user input.
+ * import process from "node:process";
+ * import bytes, { equals } from "@ayonli/jsext/bytes";
+ * import { chars } from "@ayonli/jsext/string";
+ * import {
+ *     ControlKeys,
+ *     ControlSequences,
+ *     lockStdin,
+ *     readStdin,
+ *     writeStdout,
+ *     isTypingInput,
+ *     moveLeftOn,
+ * } from "@ayonli/jsext/cli";
+ * 
+ * const input = await lockStdin(async () => {
+ *     await writeStdout(bytes("Type something: "));
+ * 
+ *     const buf: string[] = []
+ * 
+ *     while (true) {
+ *         const input = await readStdin();
+ * 
+ *         if (equals(input, ControlKeys.CTRL_C) || equals(input, ControlKeys.ESC)) {
+ *             console.error("\nUser cancelled");
+ *             process.exit(1);
+ *         } else if (equals(input, ControlKeys.CR) || equals(input, ControlKeys.LF)) {
+ *             await writeStdout(ControlKeys.LF);
+ *             break;
+ *         } else if (equals(input, ControlKeys.BS) || equals(input, ControlKeys.DEL)) {
+ *             if (buf.length > 0) {
+ *                 const char = buf.pop()!;
+ *                 await moveLeftOn(char);
+ *                 await writeStdout(ControlSequences.CLR_RIGHT);
+ *             }
+ *         } else if (isTypingInput(input)) {
+ *             buf.push(...chars(String(input)));
+ *             await writeStdout(input);
+ *         }
+ *     }
+ * 
+ *     return buf.join("")
+ * });
+ * 
+ * console.log(`You typed: ${input}`);
+ * ```
+ */
+export async function lockStdin<T>(task: () => Promise<T>): Promise<T | null> {
+    if (!isTTY()) {
+        return null;
+    }
+
+    const lock = await stdinMutex.lock();
+
+    try {
+        if (typeof Deno === "object") {
+            try {
+                Deno.stdin.setRaw(true);
+                return await task();
+            } finally {
+                Deno.stdin.setRaw(false);
+            }
+        } else if (typeof process === "object" && typeof process.stdin === "object") {
+            const { stdin } = process;
+
+            if (stdin.isPaused()) {
+                stdin.resume();
+            }
+
+            // copy listeners in cased being modified
+            const listeners = [...stdin.listeners("data")];
+
+            if (listeners?.length) {
+                stdin.removeAllListeners("data");
+            }
+
+            try {
+                stdin.setRawMode(true);
+                return await task();
+            } finally {
+                stdin.setRawMode(false);
+
+                if (listeners?.length) {
+                    listeners.forEach(listener => stdin.addListener("data", listener as any));
+                } else {
+                    stdin.pause();
+                }
+            }
+        } else {
+            throw new Error("No stdin available");
+        }
+    } finally {
+        lock.unlock();
+    }
+}
+
 /**
  * Reads a chunk of data from the standard input. This could be a single key
  * stroke, or a multi-byte sequence for input from an IME.
  * 
- * @example
- * ```ts
- * import process from "node:process";
- * import { equals } from "@ayonli/jsext/bytes";
- * import {
- *     ControlKeys,
- *     readStdin,
- *     writeStdout,
- *     isTypingInput,
- * } from "@ayonli/jsext/cli";
- * 
- * while (true) {
- *     const input = await readStdin();
- * 
- *     if (equals(input, ControlKeys.CTRL_C) || equals(input, ControlKeys.ESC)) {
- *         console.log("User cancelled");
- *         process.exit(1);
- *     } else if (equals(input, ControlKeys.CR) || equals(input, ControlKeys.LF)) {
- *         break;
- *     } else if (isTypingInput(input)) {
- *         writeStdout(input);
- *     }
- * }
- * ```
+ * NOTE: this function should be used within the task function of {@link lockStdin}.
  */
 export async function readStdin(): Promise<ByteArray> {
     if (typeof Deno !== "undefined") {
@@ -173,56 +258,6 @@ export function writeStdoutSync(data: ByteArray): void {
         process.stdout.write(data);
     } else {
         throw new Error("No stdout available");
-    }
-}
-
-/**
- * Requests the standard input to be used only by the given task until it is
- * completed.
- * 
- * This function sets the `stdin` in raw mode, and exclude other parts of the
- * program from reading from it at the same time . This is important so that our
- * program won't be affected by other tasks, especially in a REPL environment.
- */
-export async function lockStdin<T>(task: () => Promise<T>): Promise<T | null> {
-    if (!isTTY()) {
-        return null;
-    }
-
-    if (typeof Deno === "object") {
-        try {
-            Deno.stdin.setRaw(true);
-            return await task();
-        } finally {
-            Deno.stdin.setRaw(false);
-        }
-    } else if (typeof process === "object" && typeof process.stdin === "object") {
-        const { stdin } = process;
-
-        if (stdin.isPaused()) {
-            stdin.resume();
-        }
-
-        const listeners = [...stdin.listeners("data")]; // copy listeners in cased being modified
-
-        if (listeners?.length) {
-            stdin.removeAllListeners("data");
-        }
-
-        try {
-            stdin.setRawMode(true);
-            return await task();
-        } finally {
-            stdin.setRawMode(false);
-
-            if (listeners?.length) {
-                listeners.forEach(listener => stdin.addListener("data", listener as any));
-            } else {
-                stdin.pause();
-            }
-        }
-    } else {
-        throw new Error("No stdin available");
     }
 }
 
