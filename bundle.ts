@@ -17,8 +17,16 @@ import * as object from "./object.ts";
 import * as path from "./path.ts";
 import * as runtime from "./runtime.ts";
 import * as string from "./string.ts";
+import * as types from "./types.ts";
+import { Queue } from "./queue.ts";
+import { Mutex } from "./lock.ts";
+import { Channel } from "./chan.ts";
 
 export default {
+    Queue,
+    Mutex,
+    Channel,
+    ...types,
     ...jsext,
     array,
     async: _async,
