@@ -107,7 +107,16 @@
 
             const runtimeInfoBtn = document.getElementById('runtime-info');
             runtimeInfoBtn.addEventListener('click', async () => {
-                const info = { ...runtime(), isREPL: isREPL() };
+                const info = {
+                    ...runtime(),
+                    isREPL: isREPL(),
+                    ua: navigator.userAgent,
+                    stack: (() => {
+                        const obj = {};
+                        Error.captureStackTrace?.(obj);
+                        return obj.stack ?? null;
+                    })(),
+                };
                 console.log(info);
                 await alert(JSON.stringify(info, null, 2));
             });
