@@ -610,9 +610,12 @@ export async function sudo(cmd: string, args: string[], options: {
     stdout: string;
     stderr: string;
 }> {
-    const _isWindows = platform() === "windows";
+    const _platform = platform();
 
-    if ((!options?.gui && !_isWindows) || isWSL()) {
+    if ((_platform !== "windows" && !options?.gui) ||
+        (_platform === "linux" && !env("DISPLAY")) ||
+        isWSL()
+    ) {
         return await run("sudo", [cmd, ...args]);
     }
 
@@ -626,7 +629,7 @@ export async function sudo(cmd: string, args: string[], options: {
             } else {
                 let _stdout = String(stdout);
 
-                if (_isWindows && cmd === "echo" && _stdout.startsWith(`"`)) {
+                if (_platform === "windows" && cmd === "echo" && _stdout.startsWith(`"`)) {
                     // In Windows CMD, the `echo` command will output the string
                     // with double quotes. We need to remove them.
                     let lastIndex = _stdout.lastIndexOf(`"`);

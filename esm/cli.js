@@ -542,8 +542,10 @@ async function powershell(script) {
  * Executes a command with elevated privileges using `sudo` (or UAC in Windows).
  */
 async function sudo(cmd, args, options = {}) {
-    const _isWindows = platform() === "windows";
-    if ((!(options === null || options === void 0 ? void 0 : options.gui) && !_isWindows) || isWSL()) {
+    const _platform = platform();
+    if ((_platform !== "windows" && !(options === null || options === void 0 ? void 0 : options.gui)) ||
+        (_platform === "linux" && !env("DISPLAY")) ||
+        isWSL()) {
         return await run("sudo", [cmd, ...args]);
     }
     const { exec } = await interop(import('sudo-prompt'));
@@ -556,7 +558,7 @@ async function sudo(cmd, args, options = {}) {
             }
             else {
                 let _stdout = String(stdout);
-                if (_isWindows && cmd === "echo" && _stdout.startsWith(`"`)) {
+                if (_platform === "windows" && cmd === "echo" && _stdout.startsWith(`"`)) {
                     // In Windows CMD, the `echo` command will output the string
                     // with double quotes. We need to remove them.
                     let lastIndex = _stdout.lastIndexOf(`"`);
