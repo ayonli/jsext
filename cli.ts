@@ -28,7 +28,6 @@ export {
     ControlSequences,
     FunctionKeys,
     NavigationKeys,
-    PowerShellCommands,
 };
 
 const NonTypingKeys = [

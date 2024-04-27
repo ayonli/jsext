@@ -680,5 +680,5 @@ async function edit(filename) {
         throw new Error(stderr || `Failed to open ${filename} in the editor.`);
 }
 
-export { CommonPlatforms, ControlKeys, FunctionKeys, NavigationKeys, PowerShellCommands, args, charWidth, edit, isTTY, isTsRuntime, isTypingInput, isWSL, lockStdin, moveLeftBy, moveRightBy, parseArgs, platform, powershell, quote, readStdin, run, stringWidth, sudo, which, writeStdout, writeStdoutSync };
+export { CommonPlatforms, ControlKeys, FunctionKeys, NavigationKeys, args, charWidth, edit, isTTY, isTsRuntime, isTypingInput, isWSL, lockStdin, moveLeftBy, moveRightBy, parseArgs, platform, powershell, quote, readStdin, run, stringWidth, sudo, which, writeStdout, writeStdoutSync };
 //# sourceMappingURL=cli.js.map

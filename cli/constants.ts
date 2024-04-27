@@ -56,6 +56,40 @@ export namespace ControlSequences {
     export const CLR_RIGHT = bytes("\u001b[0K");
     /** Clear the left side of the cursor */
     export const CLR_LEFT = bytes("\u001b[1K");
+    /** Clear the screen from the cursor down */
+    export const CLR_DOWN = bytes("\u001b[0J");
+    /** Clear the screen from the cursor up */
+    export const CLR_UP = bytes("\u001b[1J");
+    /** Clear the entire screen */
+    export const CLR_SCREEN = bytes("\u001b[2J");
+    /** Save the cursor position */
+    export const SAVE_CURSOR = bytes("\u001b[s");
+    /** Restore the cursor position */
+    export const RESTORE_CURSOR = bytes("\u001b[u");
+    /** Hide the cursor */
+    export const HIDE_CURSOR = bytes("\u001b[?25l");
+    /** Show the cursor */
+    export const SHOW_CURSOR = bytes("\u001b[?25h");
+    /** Enable mouse tracking */
+    export const MOUSE_ON = bytes("\u001b[?1000h");
+    /** Disable mouse tracking */
+    export const MOUSE_OFF = bytes("\u001b[?1000l");
+    /** Enable mouse wheel scrolling */
+    export const MOUSE_WHEEL_ON = bytes("\u001b[?1015h");
+    /** Disable mouse wheel scrolling */
+    export const MOUSE_WHEEL_OFF = bytes("\u001b[?1015l");
+    /** Enable bracketed paste mode */
+    export const PASTE_ON = bytes("\u001b[?2004h");
+    /** Disable bracketed paste mode */
+    export const PASTE_OFF = bytes("\u001b[?2004l");
+    /** Enable line wrapping */
+    export const WRAP_ON = bytes("\u001b[?7h");
+    /** Disable line wrapping */
+    export const WRAP_OFF = bytes("\u001b[?7l");
+    /** Enable alternate screen buffer */
+    export const ALT_BUFFER_ON = bytes("\u001b[?1049h");
+    /** Disable alternate screen buffer */
+    export const ALT_BUFFER_OFF = bytes("\u001b[?1049l");
 }
 
 export const PowerShellCommands = [
