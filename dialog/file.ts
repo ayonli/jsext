@@ -3,7 +3,7 @@ import { isBrowser } from "../env.ts";
 import { isWSL, platform } from "../cli.ts";
 import read from "../read.ts";
 import readAll from "../readAll.ts";
-import { readFile } from "./terminal/file/util.ts";
+import { readFile } from "./terminal/util.ts";
 import {
     macPickFolder,
     macPickFiles,

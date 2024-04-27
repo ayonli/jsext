@@ -3,7 +3,7 @@ import { isBrowser } from '../env.js';
 import { platform, isWSL } from '../cli.js';
 import read from '../read.js';
 import readAll from '../readAll.js';
-import { readFile } from './terminal/file/util.js';
+import { readFile } from './terminal/util.js';
 import { macPickFile, macPickFiles, macPickFolder } from './terminal/file/mac.js';
 import { linuxPickFile, linuxPickFiles, linuxPickFolder } from './terminal/file/linux.js';
 import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './terminal/file/windows.js';
