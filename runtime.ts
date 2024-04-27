@@ -39,7 +39,7 @@ export function env(name: string | undefined = undefined, value: string | undefi
         } else if (value === undefined) {
             return Deno.env.get(name);
         } else {
-            Deno.env.set(name, value);
+            Deno.env.set(name, String(value));
         }
     } else if (typeof process === "object" && typeof process.env === "object") {
         if (name === undefined) {
@@ -47,7 +47,7 @@ export function env(name: string | undefined = undefined, value: string | undefi
         } else if (value === undefined) {
             return process.env[name];
         } else {
-            process.env[name] = value;
+            process.env[name] = String(value);
         }
     } else {
         // @ts-ignore
@@ -58,12 +58,11 @@ export function env(name: string | undefined = undefined, value: string | undefi
             if (name === undefined) {
                 return env ?? {};
             } else if (value === undefined) {
-                return env?.[name] ?? undefined;
+                return env?.[name] ? String(env[name]) : undefined;
+            } else {
+                // @ts-ignore
+                (globalThis["__env__"] ??= {})[name] = String(value);
             }
-
-            // @ts-ignore
-            (globalThis["__env__"] ??= {})[name] = value;
-            return;
         } else {
             throw new Error("Unsupported runtime");
         }

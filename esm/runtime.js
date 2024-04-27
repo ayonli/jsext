@@ -21,7 +21,7 @@ const customInspect = (() => {
     }
 })();
 function env(name = undefined, value = undefined) {
-    var _a, _b;
+    var _a;
     if (typeof Deno === "object") {
         if (name === undefined) {
             return Deno.env.toObject();
@@ -30,7 +30,7 @@ function env(name = undefined, value = undefined) {
             return Deno.env.get(name);
         }
         else {
-            Deno.env.set(name, value);
+            Deno.env.set(name, String(value));
         }
     }
     else if (typeof process === "object" && typeof process.env === "object") {
@@ -41,7 +41,7 @@ function env(name = undefined, value = undefined) {
             return process.env[name];
         }
         else {
-            process.env[name] = value;
+            process.env[name] = String(value);
         }
     }
     else {
@@ -53,11 +53,12 @@ function env(name = undefined, value = undefined) {
                 return env !== null && env !== void 0 ? env : {};
             }
             else if (value === undefined) {
-                return (_a = env === null || env === void 0 ? void 0 : env[name]) !== null && _a !== void 0 ? _a : undefined;
+                return (env === null || env === void 0 ? void 0 : env[name]) ? String(env[name]) : undefined;
             }
-            // @ts-ignore
-            ((_b = globalThis["__env__"]) !== null && _b !== void 0 ? _b : (globalThis["__env__"] = {}))[name] = value;
-            return;
+            else {
+                // @ts-ignore
+                ((_a = globalThis["__env__"]) !== null && _a !== void 0 ? _a : (globalThis["__env__"] = {}))[name] = String(value);
+            }
         }
         else {
             throw new Error("Unsupported runtime");
