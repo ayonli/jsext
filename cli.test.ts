@@ -4,6 +4,7 @@ import {
     ControlKeys,
     FunctionKeys,
     NavigationKeys,
+    args,
     charWidth,
     isTTY,
     isTypingInput,
@@ -29,6 +30,22 @@ const NonTypingKeys = [
 ];
 
 describe("cli", () => {
+    it("args", () => {
+        if (isDeno) {
+            deepStrictEqual(args, Deno.args);
+        } else {
+            deepStrictEqual(args, process.argv.slice(2));
+        }
+    });
+
+    it("isTTY", () => {
+        if (isDeno) {
+            strictEqual(isTTY, Deno.stdin.isTerminal());
+        } else {
+            strictEqual(isTTY, process.stdin.isTTY);
+        }
+    });
+
     it("charWidth", () => {
         chars("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ").forEach(char => {
             strictEqual(charWidth(char), 1);
@@ -73,14 +90,6 @@ describe("cli", () => {
         NonTypingKeys.forEach(key => {
             strictEqual(isTypingInput(bytes(key)), false);
         });
-    });
-
-    it("isTTY", () => {
-        if (isDeno) {
-            strictEqual(isTTY(), Deno.stdin.isTerminal());
-        } else {
-            strictEqual(isTTY(), process.stdin.isTTY);
-        }
     });
 
     it("platform", () => {

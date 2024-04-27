@@ -53,6 +53,19 @@ export const args: string[] = (() => {
 })();
 
 /**
+ * Whether the standard IO is a text terminal.
+ */
+export const isTTY = (() => {
+    if (typeof Deno === "object") {
+        return Deno.stdin.isTerminal();
+    } else if (typeof process === "object" && typeof process.stdin === "object") {
+        return process.stdin.isTTY;
+    } else {
+        return false;
+    }
+})();
+
+/**
  * @deprecated use `runtime().tsSupport` from `@ayonli/jsext/runtime` module instead.
  */
 export const isTsRuntime = () => runtime().tsSupport;
@@ -140,8 +153,8 @@ const stdinMutex = new Mutex(1);
  * ```
  */
 export async function lockStdin<T>(task: () => Promise<T>): Promise<T | null> {
-    if (!isTTY()) {
-        return null;
+    if (!isTTY) {
+        throw new Error("Not a terminal");
     }
 
     const lock = await stdinMutex.lock();
@@ -280,19 +293,6 @@ export async function moveRightBy(str: string): Promise<void> {
  */
 export function isTypingInput(data: ByteArray) {
     return data.length > 0 && !NonTypingKeys.some(key => equals(data, key));
-}
-
-/**
- * Returns `true` if the standard io is a text terminal.
- */
-export function isTTY() {
-    if (typeof Deno === "object") {
-        return Deno.stdin.isTerminal();
-    } else if (typeof process === "object" && typeof process.stdin === "object") {
-        return process.stdin.isTTY;
-    } else {
-        throw new Error("No stdin available");
-    }
 }
 
 export type CommonPlatforms = "darwin"
