@@ -12,7 +12,7 @@
     <script type="module">
         import { alert, confirm, prompt, progress, openFile, saveFile } from "../esm/dialog.js";
         import { sleep } from "../esm/async.js";
-        import { isREPL } from "../esm/runtime.js";
+        import runtime, { isREPL } from "../esm/runtime.js";
 
         self.onload = () => {
             const alertBtn = document.getElementById('alert');
@@ -86,29 +86,30 @@
             openFilesBtn.addEventListener('click', async () => {
                 const files = await openFile({ multiple: true });
                 console.log(files);
+                await alert("You selected: " + files.map((file) => file.name).join(', '));
             });
 
             const openDirBtn = document.getElementById('open-directory');
             openDirBtn.addEventListener('click', async () => {
-                const dir = await openFile({ directory: true });
-                console.log(dir);
+                const files = await openFile({ directory: true });
+                console.log(files);
+                await alert("You selected: " + files.map((file) => file.name).join(', '));
             });
 
             const downloadFileBtn = document.getElementById('download-file');
             downloadFileBtn.addEventListener('click', async () => {
                 const file = await openFile();
-                await saveFile(file, { defaultName: file.name });
+
+                if (file) {
+                    await saveFile(file, { defaultName: file.name });
+                }
             });
 
-            const isReplBtn = document.getElementById('is-repl');
-            isReplBtn.addEventListener('click', async () => {
-                const yes = isREPL();
-
-                if (yes) {
-                    await alert("当前程序在 REPL 中");
-                } else {
-                    await alert("当前程序不在 REPL 中");
-                }
+            const runtimeInfoBtn = document.getElementById('runtime-info');
+            runtimeInfoBtn.addEventListener('click', async () => {
+                const info = { ...runtime(), isREPL: isREPL() };
+                console.log(info);
+                await alert(JSON.stringify(info, null, 2));
             });
         }
     </script>
@@ -127,7 +128,7 @@
         <button id="open-files">Open Files</button>
         <button id="open-directory">Open Directory</button>
         <button id="download-file">Download File</button>
-        <button id="is-repl">Is REPL</button>
+        <button id="runtime-info">Runtime Info</button>
     </div>
 </body>
 
