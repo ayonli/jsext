@@ -1,6 +1,6 @@
 import bytes, { equals, concat } from '../../bytes.js';
 import { chars } from '../../string.js';
-import { writeStdout, readStdin, moveLeftOn, moveRightOn, isTypingInput } from '../../cli.js';
+import { writeStdout, readStdin, moveLeftBy, moveRightBy, isTypingInput } from '../../cli.js';
 import { ControlKeys, NavigationKeys, ControlSequences } from '../../cli/constants.js';
 
 const { BS, CTRL_A, CTRL_C, CTRL_E, CR, DEL, ESC, LF } = ControlKeys;
@@ -34,10 +34,10 @@ async function question(message, options = {}) {
             if (cursor > 0) {
                 const char = buf[--cursor];
                 if (mask === undefined) {
-                    await moveLeftOn(char);
+                    await moveLeftBy(char);
                 }
                 else if (mask) {
-                    await moveLeftOn(mask);
+                    await moveLeftBy(mask);
                 }
             }
         }
@@ -45,10 +45,10 @@ async function question(message, options = {}) {
             if (cursor < buf.length) {
                 const char = buf[cursor++];
                 if (mask === undefined) {
-                    await moveRightOn(char);
+                    await moveRightBy(char);
                 }
                 else if (mask) {
-                    await moveRightOn(mask);
+                    await moveRightBy(mask);
                 }
             }
         }
@@ -57,10 +57,10 @@ async function question(message, options = {}) {
             if (left.length) {
                 cursor = 0;
                 if (mask === undefined) {
-                    await moveLeftOn(left.join(""));
+                    await moveLeftBy(left.join(""));
                 }
                 else if (mask) {
-                    await moveLeftOn(getMasks(mask, left.length));
+                    await moveLeftBy(getMasks(mask, left.length));
                 }
             }
         }
@@ -69,10 +69,10 @@ async function question(message, options = {}) {
             if (right.length) {
                 cursor = buf.length;
                 if (mask === undefined) {
-                    await moveRightOn(right.join(""));
+                    await moveRightBy(right.join(""));
                 }
                 else if (mask) {
-                    await moveRightOn(getMasks(mask, right.length));
+                    await moveRightBy(getMasks(mask, right.length));
                 }
             }
         }
@@ -90,21 +90,21 @@ async function question(message, options = {}) {
                 const [char] = buf.splice(cursor, 1);
                 const rest = buf.slice(cursor);
                 if (mask === undefined) {
-                    await moveLeftOn(char);
+                    await moveLeftBy(char);
                     await writeStdout(CLR_RIGHT);
                     if (rest.length) {
                         const output = rest.join("");
                         await writeStdout(bytes(output));
-                        await moveLeftOn(output);
+                        await moveLeftBy(output);
                     }
                 }
                 else if (mask) {
-                    await moveLeftOn(mask);
+                    await moveLeftBy(mask);
                     await writeStdout(CLR_RIGHT);
                     if (rest.length) {
                         const output = getMasks(mask, rest.length);
                         await writeStdout(bytes(output));
-                        await moveLeftOn(output);
+                        await moveLeftBy(output);
                     }
                 }
             }
@@ -127,13 +127,13 @@ async function question(message, options = {}) {
                 if (mask === undefined) {
                     const rest = buf.slice(cursor).join("");
                     await writeStdout(concat(input, bytes(rest)));
-                    await moveLeftOn(rest);
+                    await moveLeftBy(rest);
                 }
                 else if (mask) {
                     const output = getMasks(mask, _chars.length);
                     const rest = getMasks(mask, buf.slice(cursor).length);
                     await writeStdout(bytes(output + rest));
-                    await moveLeftOn(rest);
+                    await moveLeftBy(rest);
                 }
             }
         }

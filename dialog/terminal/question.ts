@@ -5,8 +5,8 @@ import {
     ControlSequences,
     NavigationKeys,
     isTypingInput,
-    moveLeftOn,
-    moveRightOn,
+    moveLeftBy,
+    moveRightBy,
     readStdin,
     writeStdout,
 } from "../../cli.ts";
@@ -51,9 +51,9 @@ export default async function question(message: string, options: {
                 const char = buf[--cursor]!;
 
                 if (mask === undefined) {
-                    await moveLeftOn(char);
+                    await moveLeftBy(char);
                 } else if (mask) {
-                    await moveLeftOn(mask);
+                    await moveLeftBy(mask);
                 }
             }
         } else if (equals(input, RIGHT)) {
@@ -61,9 +61,9 @@ export default async function question(message: string, options: {
                 const char = buf[cursor++]!;
 
                 if (mask === undefined) {
-                    await moveRightOn(char);
+                    await moveRightBy(char);
                 } else if (mask) {
-                    await moveRightOn(mask);
+                    await moveRightBy(mask);
                 }
             }
         } else if (equals(input, CTRL_A)) {
@@ -73,9 +73,9 @@ export default async function question(message: string, options: {
                 cursor = 0;
 
                 if (mask === undefined) {
-                    await moveLeftOn(left.join(""));
+                    await moveLeftBy(left.join(""));
                 } else if (mask) {
-                    await moveLeftOn(getMasks(mask, left.length));
+                    await moveLeftBy(getMasks(mask, left.length));
                 }
             }
         } else if (equals(input, CTRL_E)) {
@@ -85,9 +85,9 @@ export default async function question(message: string, options: {
                 cursor = buf.length;
 
                 if (mask === undefined) {
-                    await moveRightOn(right.join(""));
+                    await moveRightBy(right.join(""));
                 } else if (mask) {
-                    await moveRightOn(getMasks(mask, right.length));
+                    await moveRightBy(getMasks(mask, right.length));
                 }
             }
         } else if (equals(input, ESC) || equals(input, CTRL_C)) {
@@ -103,22 +103,22 @@ export default async function question(message: string, options: {
                 const rest = buf.slice(cursor);
 
                 if (mask === undefined) {
-                    await moveLeftOn(char!);
+                    await moveLeftBy(char!);
                     await writeStdout(CLR_RIGHT);
 
                     if (rest.length) {
                         const output = rest.join("");
                         await writeStdout(bytes(output));
-                        await moveLeftOn(output);
+                        await moveLeftBy(output);
                     }
                 } else if (mask) {
-                    await moveLeftOn(mask);
+                    await moveLeftBy(mask);
                     await writeStdout(CLR_RIGHT);
 
                     if (rest.length) {
                         const output = getMasks(mask, rest.length);
                         await writeStdout(bytes(output));
-                        await moveLeftOn(output);
+                        await moveLeftBy(output);
                     }
                 }
             }
@@ -142,13 +142,13 @@ export default async function question(message: string, options: {
                     const rest = buf.slice(cursor).join("");
 
                     await writeStdout(concat(input, bytes(rest)));
-                    await moveLeftOn(rest);
+                    await moveLeftBy(rest);
                 } else if (mask) {
                     const output = getMasks(mask, _chars.length);
                     const rest = getMasks(mask, buf.slice(cursor).length);
 
                     await writeStdout(bytes(output + rest));
-                    await moveLeftOn(rest);
+                    await moveLeftBy(rest);
                 }
             }
         }

@@ -89,7 +89,7 @@ const stdinMutex = new Mutex(1);
  *     readStdin,
  *     writeStdout,
  *     isTypingInput,
- *     moveLeftOn,
+ *     moveLeftBy,
  * } from "@ayonli/jsext/cli";
  *
  * const input = await lockStdin(async () => {
@@ -109,7 +109,7 @@ const stdinMutex = new Mutex(1);
  *         } else if (equals(input, ControlKeys.BS) || equals(input, ControlKeys.DEL)) {
  *             if (buf.length > 0) {
  *                 const char = buf.pop()!;
- *                 await moveLeftOn(char);
+ *                 await moveLeftBy(char);
  *                 await writeStdout(ControlSequences.CLR_RIGHT);
  *             }
  *         } else if (isTypingInput(input)) {
@@ -247,13 +247,13 @@ function writeStdoutSync(data) {
 /**
  * Moves the cursor to the left base on the width of the given string.
  */
-async function moveLeftOn(str) {
+async function moveLeftBy(str) {
     await writeStdout(bytes(`\u001b[${stringWidth(str)}D`));
 }
 /**
  * Moves the cursor to the right base on the width of the given string.
  */
-async function moveRightOn(str) {
+async function moveRightBy(str) {
     await writeStdout(bytes(`\u001b[${stringWidth(str)}C`));
 }
 /**
@@ -680,5 +680,5 @@ async function edit(filename) {
         throw new Error(stderr || `Failed to open ${filename} in the editor.`);
 }
 
-export { CommonPlatforms, ControlKeys, FunctionKeys, NavigationKeys, PowerShellCommands, args, charWidth, edit, isTTY, isTsRuntime, isTypingInput, isWSL, lockStdin, moveLeftOn, moveRightOn, parseArgs, platform, powershell, quote, readStdin, run, stringWidth, sudo, which, writeStdout, writeStdoutSync };
+export { CommonPlatforms, ControlKeys, FunctionKeys, NavigationKeys, PowerShellCommands, args, charWidth, edit, isTTY, isTsRuntime, isTypingInput, isWSL, lockStdin, moveLeftBy, moveRightBy, parseArgs, platform, powershell, quote, readStdin, run, stringWidth, sudo, which, writeStdout, writeStdoutSync };
 //# sourceMappingURL=cli.js.map

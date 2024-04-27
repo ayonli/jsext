@@ -105,7 +105,7 @@ const stdinMutex = new Mutex(1);
  *     readStdin,
  *     writeStdout,
  *     isTypingInput,
- *     moveLeftOn,
+ *     moveLeftBy,
  * } from "@ayonli/jsext/cli";
  * 
  * const input = await lockStdin(async () => {
@@ -125,7 +125,7 @@ const stdinMutex = new Mutex(1);
  *         } else if (equals(input, ControlKeys.BS) || equals(input, ControlKeys.DEL)) {
  *             if (buf.length > 0) {
  *                 const char = buf.pop()!;
- *                 await moveLeftOn(char);
+ *                 await moveLeftBy(char);
  *                 await writeStdout(ControlSequences.CLR_RIGHT);
  *             }
  *         } else if (isTypingInput(input)) {
@@ -264,14 +264,14 @@ export function writeStdoutSync(data: ByteArray): void {
 /**
  * Moves the cursor to the left base on the width of the given string.
  */
-export async function moveLeftOn(str: string): Promise<void> {
+export async function moveLeftBy(str: string): Promise<void> {
     await writeStdout(bytes(`\u001b[${stringWidth(str)}D`));
 }
 
 /**
  * Moves the cursor to the right base on the width of the given string.
  */
-export async function moveRightOn(str: string): Promise<void> {
+export async function moveRightBy(str: string): Promise<void> {
     await writeStdout(bytes(`\u001b[${stringWidth(str)}C`));
 }
 
