@@ -100,7 +100,7 @@ const stdinMutex = new Mutex(1);
  * Requests the standard input to be used only by the given task until it is
  * completed.
  * 
- * This function sets the `stdin` in raw mode, and exclude other parts of the
+ * This function sets the `stdin` in raw mode, and excludes other parts of the
  * program from reading from it at the same time . This is important so that our
  * program won't be affected by other tasks, especially in a REPL environment.
  * 
@@ -570,8 +570,8 @@ export async function run(cmd: string, args: string[]): Promise<{
 }
 
 /**
- * Executes the script inside PowerShell as though they were typed at the
- * PowerShell command prompt.
+ * Executes the script inside PowerShell as if they were typed at the PowerShell
+ * command prompt.
  * 
  * This function can also be called within Windows Subsystem for Linux to
  * directly interact with PowerShell.

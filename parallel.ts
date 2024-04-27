@@ -293,19 +293,18 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * ```ts
  * // regular or async function
  * import parallel from "@ayonli/jsext/parallel";
+ * const { greet } = parallel(() => import("./examples/worker.mjs"));
  * 
- * const mod = parallel(() => import("./examples/worker.mjs"));
- * console.log(await mod.greet("World")); // Hi, World
+ * console.log(await greet("World")); // Hi, World
  * ```
  * 
  * @example
  * ```ts
  * // generator or async generator function
  * import parallel from "@ayonli/jsext/parallel";
+ * const { sequence } = parallel(() => import("./examples/worker.mjs"));
  * 
- * const mod = parallel(() => import("./examples/worker.mjs"));
- * 
- * for await (const word of mod.sequence(["foo", "bar"])) {
+ * for await (const word of sequence(["foo", "bar"])) {
  *     console.log(word);
  * }
  * // output:
@@ -316,15 +315,14 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * @example
  * ```ts
  * // use channel
- * import parallel from "@ayonli/jsext/parallel";
  * import chan from "@ayonli/jsext/chan";
  * import { range } from "@ayonli/jsext/number";
  * import readAll from "@ayonli/jsext/readAll";
- * 
- * const mod = parallel(() => import("./examples/worker.mjs"));
+ * import parallel from "@ayonli/jsext/parallel";
+ * const { twoTimesValues } = parallel(() => import("./examples/worker.mjs"));
  * 
  * const channel = chan<{ value: number; done: boolean; }>();
- * const length = mod.twoTimesValues(channel);
+ * const length = twoTimesValues(channel);
  * 
  * for (const value of range(0, 9)) {
  *     await channel.push({ value, done: value === 9 });
@@ -337,13 +335,12 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * 
  * @example
  * ```ts
- * import parallel from "@ayonli/jsext/parallel";
- * 
  * // use transferrable
- * const mod = parallel(() => import("./examples/worker.mjs"));
+ * import parallel from "@ayonli/jsext/parallel";
+ * const { transfer } = parallel(() => import("./examples/worker.mjs"));
  * 
  * const arr = Uint8Array.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
- * const length = await mod.transfer(arr.buffer);
+ * const length = await transfer(arr.buffer);
  * 
  * console.log(length);     // 10
  * console.log(arr.length); // 0
