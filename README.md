@@ -835,7 +835,9 @@ for await (const msg of read(process)) {
 ### readAll
 
 ```ts
-declare function readAll<T>(iterable: AsyncIterable<T>): Promise<T[]>;
+declare function readAll<T>(
+  iterable: AsyncIterable<T> | ReadableStream<T>,
+): Promise<T[]>;
 ```
 
 Reads all values from the iterable object at once.
@@ -1162,7 +1164,11 @@ declare function run<R, A extends any[] = any[]>(
   result(): Promise<R>;
   /** Iterates the yield value if the function being called returns a generator. */
   iterate(): AsyncIterable<R>;
-  /** Terminates the worker thread and aborts the task. */
+  /**
+   * Terminates the worker thread and aborts the task. If `reason` is provided,
+   * `result()` or `iterate()` will throw the error. Otherwise, the task will
+   * be aborted silently.
+   */
   abort(reason?: Error | null): Promise<void>;
 }>;
 ```
@@ -1177,7 +1183,7 @@ This function is similar to `parallel()`, many features applicable to
 2. Only one task is allow to run at a time for one worker thread, set
    `run.maxWorkers` to allow more tasks to be run at the same time if needed.
 3. By default, the worker thread is dropped after the task settles, set
-   `keepAlive` option in order to reused it.
+   `keepAlive` option in order to reuse it.
 
 **Example (result)**
 

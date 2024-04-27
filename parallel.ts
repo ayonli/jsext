@@ -7,9 +7,9 @@
 import { ThenableAsyncGenerator, ThenableAsyncGeneratorLike } from "./external/thenable-generator/index.ts";
 import chan, { Channel } from "./chan.ts";
 import { serial } from "./number.ts";
-import { isFsPath } from "./path.ts";
+import { cwd, isFsPath, toFileUrl } from "./path.ts";
 import { asyncTask } from "./async.ts";
-import { isBun, isDeno, isNode, isMainThread } from "./env.ts";
+import { isMainThread } from "./env.ts";
 import { BunWorker, CallRequest, NodeWorker } from "./parallel/types.ts";
 import { resolveModule, sanitizeModuleId } from "./parallel/module.ts";
 import { acquireWorker, remoteTasks, wrapArgs } from "./parallel/threads.ts";
@@ -207,15 +207,9 @@ function extractBaseUrl(stackTrace: string): string | undefined {
 
         if (!/^(https?|file):/.test(baseUrl)) {
             if (isFsPath(baseUrl)) {
-                baseUrl = "file://" + baseUrl;
-            } else if (isDeno) {
-                baseUrl = "file://" + Deno.cwd() + "/";
-            } else if (isNode || isBun) {
-                baseUrl = "file://" + process.cwd() + "/";
-            } else if (typeof location === "object") {
-                baseUrl = location.href;
+                baseUrl = toFileUrl(baseUrl);
             } else {
-                baseUrl = "";
+                baseUrl = toFileUrl(cwd()) + "/"; // must ends with `/`
             }
         }
     }

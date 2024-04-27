@@ -1,15 +1,14 @@
 import chan from './chan.js';
 import { isPlainObject } from './object.js';
 import { fromErrorEvent, fromObject } from './error.js';
-import './path.js';
-import { isDeno, isNode, isBun } from './env.js';
+import { toFileUrl, cwd } from './path.js';
+import { isBrowser, isNode, isBun } from './env.js';
 import { sanitizeModuleId } from './parallel/module.js';
 import { isChannelMessage, handleChannelMessage } from './parallel/channel.js';
 import { getMaxParallelism, createWorker, wrapArgs, isCallResponse, unwrapReturnValue } from './parallel/threads.js';
 import parallel from './parallel.js';
 import { unrefTimer } from './runtime.js';
 import { asyncTask } from './async.js';
-import { isFsPath } from './path/util.js';
 
 /**
  * Runs a script in another thread and abort at any time.
@@ -33,7 +32,7 @@ const workerConsumerQueue = [];
  *   {@link run.maxWorkers} to allow more tasks to be run at the same time if
  *   needed.
  * 3. By default, the worker thread is dropped after the task settles, set
- *   `keepAlive` option in order to reused it.
+ *   `keepAlive` option in order to reuse it.
  *
  * @example
  * ```ts
@@ -83,17 +82,11 @@ async function run(script, args, options) {
     const fn = (options === null || options === void 0 ? void 0 : options.fn) || "default";
     let modId = sanitizeModuleId(script);
     let baseUrl = undefined;
-    if (isDeno) {
-        baseUrl = "file://" + Deno.cwd() + "/";
-    }
-    else if (isNode || isBun) {
-        if (isFsPath(modId)) {
-            // Only set baseUrl for relative modules, don't set it for node modules.
-            baseUrl = "file://" + process.cwd() + "/";
-        }
-    }
-    else if (typeof location === "object") {
+    if (isBrowser) {
         baseUrl = location.href;
+    }
+    else {
+        baseUrl = toFileUrl(cwd()) + "/"; // must ends with `/`
     }
     if (baseUrl) {
         modId = new URL(modId, baseUrl).href;

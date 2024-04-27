@@ -7,8 +7,8 @@ import type { ChildProcess } from "node:child_process";
 import chan, { Channel } from "./chan.ts";
 import { isPlainObject } from "./object.ts";
 import { fromErrorEvent, fromObject } from "./error.ts";
-import { isFsPath } from "./path.ts";
-import { isNode, isBun, isDeno } from "./env.ts";
+import { cwd, toFileUrl } from "./path.ts";
+import { isNode, isBun, isBrowser } from "./env.ts";
 import { BunWorker, NodeWorker, CallRequest, CallResponse } from "./parallel/types.ts";
 import { sanitizeModuleId } from "./parallel/module.ts";
 import { handleChannelMessage, isChannelMessage } from "./parallel/channel.ts";
@@ -52,7 +52,7 @@ const workerConsumerQueue: (() => void)[] = [];
  *   {@link run.maxWorkers} to allow more tasks to be run at the same time if
  *   needed.
  * 3. By default, the worker thread is dropped after the task settles, set
- *   `keepAlive` option in order to reused it.
+ *   `keepAlive` option in order to reuse it.
  * 
  * @example
  * ```ts
@@ -128,7 +128,11 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
     result(): Promise<R>;
     /** Iterates the yield value if the function being called returns a generator. */
     iterate(): AsyncIterable<R>;
-    /** Terminates the worker thread and aborts the task. */
+    /**
+     * Terminates the worker thread and aborts the task. If `reason` is provided,
+     * `result()` or `iterate()` will throw the error. Otherwise, the task will
+     * be aborted silently.
+     */
     abort(reason?: Error | null): Promise<void>;
 }> {
     const maxWorkers = run.maxWorkers || parallel.maxWorkers || await getMaxParallelism;
@@ -136,15 +140,10 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
     let modId = sanitizeModuleId(script);
     let baseUrl: string | undefined = undefined;
 
-    if (isDeno) {
-        baseUrl = "file://" + Deno.cwd() + "/";
-    } else if (isNode || isBun) {
-        if (isFsPath(modId)) {
-            // Only set baseUrl for relative modules, don't set it for node modules.
-            baseUrl = "file://" + process.cwd() + "/";
-        }
-    } else if (typeof location === "object") {
+    if (isBrowser) {
         baseUrl = location.href;
+    } else {
+        baseUrl = toFileUrl(cwd()) + "/"; // must ends with `/`
     }
 
     if (baseUrl) {
