@@ -55,7 +55,7 @@ export const args: string[] = (() => {
 /**
  * Whether the standard IO is a text terminal.
  */
-export const isTTY = (() => {
+export const isTTY: boolean = (() => {
     if (typeof Deno === "object") {
         return Deno.stdin.isTerminal();
     } else if (typeof process === "object" && typeof process.stdin === "object") {
@@ -68,7 +68,7 @@ export const isTTY = (() => {
 /**
  * @deprecated use `runtime().tsSupport` from `@ayonli/jsext/runtime` module instead.
  */
-export const isTsRuntime = () => runtime().tsSupport;
+export const isTsRuntime: () => boolean = () => runtime().tsSupport;
 
 /**
  * Returns the width of a single character.
@@ -291,7 +291,7 @@ export async function moveRightBy(str: string): Promise<void> {
  * Returns `true` if the given data is a typing input. That is, it is not a
  * control key, navigation key, or function key.
  */
-export function isTypingInput(data: ByteArray) {
+export function isTypingInput(data: ByteArray): boolean {
     return data.length > 0 && !NonTypingKeys.some(key => equals(data, key));
 }
 

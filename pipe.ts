@@ -17,7 +17,7 @@ export class Pipeline<T> {
         this[_value] = value;
     }
 
-    get [Symbol.toStringTag]() {
+    get [Symbol.toStringTag](): "Pipeline" {
         return "Pipeline";
     }
 

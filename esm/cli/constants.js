@@ -63,10 +63,6 @@ var ControlSequences;
     ControlSequences.CLR_UP = bytes("\u001b[1J");
     /** Clear the entire screen */
     ControlSequences.CLR_SCREEN = bytes("\u001b[2J");
-    /** Save the cursor position */
-    ControlSequences.SAVE_CURSOR = bytes("\u001b[s");
-    /** Restore the cursor position */
-    ControlSequences.RESTORE_CURSOR = bytes("\u001b[u");
     /** Hide the cursor */
     ControlSequences.HIDE_CURSOR = bytes("\u001b[?25l");
     /** Show the cursor */

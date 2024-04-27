@@ -163,7 +163,7 @@ declare let $1: unknown;
  * - Bun REPL
  * - Google Chrome Console
  */
-export function isREPL() {
+export function isREPL(): boolean {
     return ("_" in globalThis && "_error" in globalThis)
         || ("$0" in globalThis && "$1" in globalThis)
         || (typeof $0 === "object" || typeof $1 === "object");
