@@ -6,6 +6,7 @@ import {
     NavigationKeys,
     args,
     charWidth,
+    getWindowSize,
     isTTY,
     isTypingInput,
     parseArgs,
@@ -90,6 +91,17 @@ describe("cli", () => {
         NonTypingKeys.forEach(key => {
             strictEqual(isTypingInput(bytes(key)), false);
         });
+    });
+
+    it("getWindowSize", () => {
+        if (isDeno) {
+            const { columns, rows } = Deno.consoleSize();
+            deepStrictEqual(getWindowSize(), { width: columns, height: rows });
+        } else {
+            const columns = process.stdout.columns;
+            const rows = process.stdout.rows;
+            deepStrictEqual(getWindowSize(), { width: columns, height: rows });
+        }
     });
 
     it("platform", () => {

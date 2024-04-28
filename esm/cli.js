@@ -1,7 +1,7 @@
 import { isWide, isFullWidth } from './external/code-point-utils/index.js';
 import { isEmoji, byteLength, chars, trimStart } from './string.js';
 import bytes, { equals, text } from './bytes.js';
-import { isDeno, isBun, isBrowser } from './env.js';
+import { isDeno, isBrowser, isBun } from './env.js';
 import runtime, { env } from './runtime.js';
 import { interop } from './module.js';
 import { basename } from './path.js';
@@ -276,6 +276,36 @@ async function moveRightBy(str) {
  */
 function isTypingInput(data) {
     return data.length > 0 && !NonTypingKeys.some(key => equals(data, key));
+}
+/**
+ * Returns the current size of the application window.
+ *
+ * In the terminal, this is the size of the terminal window, where `width` and
+ * `height` are the corresponding columns and rows.
+ *
+ * In the browser, this is the size of the viewport, where `width` and `height`
+ * are measured in pixels.
+ */
+function getWindowSize() {
+    if (isDeno) {
+        const { columns, rows } = Deno.consoleSize();
+        return { width: columns, height: rows };
+    }
+    else if (typeof process === "object" && typeof process.stdout === "object") {
+        return {
+            width: process.stdout.columns,
+            height: process.stdout.rows,
+        };
+    }
+    else if (isBrowser) {
+        return {
+            width: window.innerWidth,
+            height: window.innerHeight,
+        };
+    }
+    else {
+        return { width: 0, height: 0 };
+    }
 }
 const CommonPlatforms = [
     "darwin",
@@ -682,5 +712,5 @@ async function edit(filename) {
         throw new Error(stderr || `Failed to open ${filename} in the editor.`);
 }
 
-export { CommonPlatforms, ControlKeys, FunctionKeys, NavigationKeys, args, charWidth, edit, isTTY, isTsRuntime, isTypingInput, isWSL, lockStdin, moveLeftBy, moveRightBy, parseArgs, platform, powershell, quote, readStdin, run, stringWidth, sudo, which, writeStdout, writeStdoutSync };
+export { CommonPlatforms, ControlKeys, FunctionKeys, NavigationKeys, args, charWidth, edit, getWindowSize, isTTY, isTsRuntime, isTypingInput, isWSL, lockStdin, moveLeftBy, moveRightBy, parseArgs, platform, powershell, quote, readStdin, run, stringWidth, sudo, which, writeStdout, writeStdoutSync };
 //# sourceMappingURL=cli.js.map

@@ -295,6 +295,34 @@ export function isTypingInput(data: ByteArray): boolean {
     return data.length > 0 && !NonTypingKeys.some(key => equals(data, key));
 }
 
+/**
+ * Returns the current size of the application window.
+ * 
+ * In the terminal, this is the size of the terminal window, where `width` and
+ * `height` are the corresponding columns and rows.
+ * 
+ * In the browser, this is the size of the viewport, where `width` and `height`
+ * are measured in pixels.
+ */
+export function getWindowSize(): { width: number; height: number; } {
+    if (isDeno) {
+        const { columns, rows } = Deno.consoleSize();
+        return { width: columns, height: rows };
+    } else if (typeof process === "object" && typeof process.stdout === "object") {
+        return {
+            width: process.stdout.columns,
+            height: process.stdout.rows,
+        };
+    } else if (isBrowser) {
+        return {
+            width: window.innerWidth,
+            height: window.innerHeight,
+        };
+    } else {
+        return { width: 0, height: 0 };
+    }
+}
+
 export type CommonPlatforms = "darwin"
     | "windows"
     | "linux";
