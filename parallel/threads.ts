@@ -84,8 +84,7 @@ async function getWorkerEntry(parallel: {
             return parallel.workerEntry;
         }
 
-        const { fileURLToPath } = await import("url");
-        const _filename = fileURLToPath(import.meta.url);
+        const _filename = path.toFsPath(import.meta.url);
 
         if (_filename === process.argv[1]) {
             // The code is bundled, try the worker entry in node_modules

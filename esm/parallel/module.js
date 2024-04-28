@@ -1,5 +1,5 @@
 import { isNode, isBun, isDeno } from '../env.js';
-import '../path.js';
+import { toFsPath } from '../path.js';
 import { trim } from '../string.js';
 import { getObjectURL, interop } from '../module.js';
 import { isFsPath } from '../path/util.js';
@@ -54,8 +54,7 @@ function sanitizeModuleId(id, strict = false) {
 async function resolveModule(modId, baseUrl = undefined) {
     let module;
     if (isNode || isBun) {
-        const { fileURLToPath } = await import('url');
-        const path = baseUrl ? fileURLToPath(new URL(modId, baseUrl).href) : modId;
+        const path = baseUrl ? toFsPath(new URL(modId, baseUrl).href) : modId;
         module = await import(path);
     }
     else {

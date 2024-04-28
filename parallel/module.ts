@@ -1,5 +1,5 @@
 import { isBun, isDeno, isNode } from "../env.ts";
-import { isFsPath } from "../path.ts";
+import { isFsPath, toFsPath } from "../path.ts";
 import { trim } from "../string.ts";
 import { interop } from "../module.ts";
 import { getObjectURL } from "../module.ts";
@@ -57,8 +57,7 @@ export async function resolveModule(modId: string, baseUrl: string | undefined =
     let module: { [x: string]: any; };
 
     if (isNode || isBun) {
-        const { fileURLToPath } = await import("url");
-        const path = baseUrl ? fileURLToPath(new URL(modId, baseUrl).href) : modId;
+        const path = baseUrl ? toFsPath(new URL(modId, baseUrl).href) : modId;
         module = await import(path);
     } else {
         const url = new URL(modId, baseUrl).href;

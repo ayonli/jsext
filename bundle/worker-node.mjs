@@ -453,6 +453,96 @@ new TextEncoder();
 new TextDecoder();
 
 /**
+ * Functions for dealing with strings.
+ * @module
+ */
+const _trim = String.prototype.trim;
+const _trimEnd = String.prototype.trimEnd;
+const _trimStart = String.prototype.trimStart;
+/** Removes leading and trailing spaces or custom characters of the string. */
+function trim(str, chars = "") {
+    if (!chars) {
+        return _trim.call(str);
+    }
+    else {
+        return trimEnd(trimStart(str, chars), chars);
+    }
+}
+/** Removes trailing spaces or custom characters of the string. */
+function trimEnd(str, chars = "") {
+    if (!chars) {
+        return _trimEnd.call(str);
+    }
+    else {
+        let i = str.length;
+        while (i-- && chars.indexOf(str[i]) !== -1) { }
+        return str.substring(0, i + 1);
+    }
+}
+/** Removes leading spaces or custom characters of the string. */
+function trimStart(str, chars = "") {
+    if (!chars) {
+        return _trimStart.call(str);
+    }
+    else {
+        let i = 0;
+        do { } while (chars.indexOf(str[i]) !== -1 && ++i);
+        return str.substring(i);
+    }
+}
+
+function isVolume(path, strict = false) {
+    return strict ? /^[a-zA-Z]:$/.test(path) : /^[a-zA-Z]:(\\)?$/.test(path);
+}
+/**
+ * Checks if the given `path` is a Windows specific path.
+ * @experimental
+ *
+ * @example
+ * ```ts
+ * import { isWindowsPath } from "@ayonli/jsext/path";
+ *
+ * console.assert(isWindowsPath("C:\\Windows\\System32"));
+ * console.assert(isWindowsPath("c:\\Windows\\System32")); // case-insensitive on volume
+ * console.assert(isWindowsPath("D:/Program Files")); // forward slash is also valid
+ * console.assert(isWindowsPath("E:")); // volume without path is also valid
+ * ```
+ */
+function isWindowsPath(path) {
+    return /^[a-zA-Z]:/.test(path) && path.slice(1, 4) !== "://";
+}
+/**
+ * Checks if the given `path` is a Posix specific path.
+ * @experimental
+ *
+ * @example
+ * ```ts
+ * import { isPosixPath } from "@ayonli/jsext/path";
+ *
+ * console.assert(isPosixPath("/usr/bin"));
+ * ```
+ */
+function isPosixPath(path) {
+    return /^\//.test(path);
+}
+/**
+ * Checks if the given `path` is a file system path.
+ * @experimental
+ *
+ * @example
+ * ```ts
+ * import { isFsPath } from "@ayonli/jsext/path";
+ *
+ * console.assert(isFsPath("/usr/bin"));
+ * console.assert(isFsPath("C:\\Windows\\System32"));
+ * console.assert(isFsPath("./foo/bar"));
+ * console.assert(isFsPath("../foo/bar"));
+ * ```
+ */
+function isFsPath(path) {
+    return /^(\.[\/\\]|\.\.[\/\\]|[a-zA-Z]:|\/)/.test(path);
+}
+/**
  * Checks if the given string is a URL, whether standard or non-standard.
  * @experimental
  *
@@ -489,6 +579,116 @@ function isUrl(str) {
 function isFileUrl(str) {
     return /^file:((\/\/|\/)\S+|\/?$)/i.test(str);
 }
+function isFileProtocol(path) {
+    return /^file:(\/\/)?$/i.test(path);
+}
+/**
+ * Checks if the given `path` is an absolute path.
+ * @experimental
+ *
+ * @example
+ * ```ts
+ * import { isAbsolute } from "@ayonli/jsext/path";
+ *
+ * console.assert(isAbsolute("/usr/bin"));
+ * console.assert(isAbsolute("C:\\Windows\\System32"));
+ * console.assert(isAbsolute("http://example.com"));
+ * console.assert(isAbsolute("file:///C:/Windows/System32"));
+ * console.assert(isAbsolute("file://localhost/C:/Windows/System32?foo=bar#baz"));
+ * ```
+ */
+function isAbsolute(path) {
+    return isPosixPath(path) || isWindowsPath(path) || isUrl(path);
+}
+/**
+ * Splits the `path` into well-formed segments.
+ * @experimental
+ *
+ * @example
+ * ```ts
+ * import { split } from "@ayonli/jsext/path";
+ *
+ * console.log(split("/usr/bin")); // ["/", "usr", "bin"]
+ * console.log(split("C:\\Windows\\System32")); // ["C:\\", "Windows", "System32"]
+ * console.log(split("file:///user/bin")); // ["file:///", "usr", "bin"]
+ *
+ * console.log(split("http://example.com/foo/bar?foo=bar#baz"));
+ * // ["http://example.com", "foo", "bar", "?foo=bar", "#baz"]
+ * ```
+ */
+function split(path) {
+    if (!path) {
+        return [];
+    }
+    else if (isUrl(path)) {
+        const { protocol, host, pathname, search, hash } = new URL(path);
+        let origin = protocol + "//" + host;
+        if (isFileProtocol(origin)) {
+            origin += "/";
+        }
+        if (pathname === "/") {
+            if (search && hash) {
+                return [origin, search, hash];
+            }
+            else if (search) {
+                return [origin, search];
+            }
+            else if (hash) {
+                return [origin, hash];
+            }
+            else {
+                return [origin];
+            }
+        }
+        else {
+            const segments = trim(decodeURI(pathname), "/").split(/[/\\]+/);
+            if (search && hash) {
+                return [origin, ...segments, search, hash];
+            }
+            else if (search) {
+                return [origin, ...segments, search];
+            }
+            else if (hash) {
+                return [origin, ...segments, hash];
+            }
+            else {
+                return [origin, ...segments];
+            }
+        }
+    }
+    else if (isWindowsPath(path)) {
+        const [_, volume, ...segments] = split("file:///" + path.replace(/[/\\]+/g, "/"));
+        return [volume + "\\", ...segments];
+    }
+    else if (isPosixPath(path)) {
+        const [_, ...segments] = split("file://" + path.replace(/[/\\]+/g, "/"));
+        return ["/", ...segments];
+    }
+    else { // relative path
+        path = path.replace(/[/\\]+/g, "/");
+        const [_path, query] = path.split("?");
+        if (query) {
+            const segments = _path ? trimEnd(_path, "/").split("/") : [];
+            const [search, hash] = query.split("#");
+            if (hash) {
+                return [...segments, "?" + search, "#" + hash];
+            }
+            else {
+                return [...segments, "?" + search];
+            }
+        }
+        else {
+            const [pathname, hash] = path.split("#");
+            const segments = pathname ? trimEnd(pathname, "/").split("/") : [];
+            if (hash) {
+                return [...segments, "#" + hash];
+            }
+            else {
+                return segments;
+            }
+        }
+    }
+}
 
 /**
  * Platform-independent utility functions for dealing with file system paths and
@@ -504,7 +704,7 @@ function isFileUrl(str) {
  * Platform-specific path segment separator. The value is `\` on Windows
  * server-side runtime, and `/` otherwise.
  */
-(() => {
+const sep = (() => {
     var _a, _b;
     if (typeof Deno === "object" && typeof ((_a = Deno.build) === null || _a === void 0 ? void 0 : _a.os) === "string") { // Deno
         if (Deno.build.os === "windows") {
@@ -518,6 +718,138 @@ function isFileUrl(str) {
     }
     return "/";
 })();
+/**
+ * Returns the current working directory.
+ *
+ * **NOTE**: In the browser, this function returns the current origin and pathname.
+ */
+function cwd() {
+    if (typeof Deno === "object" && typeof Deno.cwd === "function") {
+        return Deno.cwd();
+    }
+    else if (typeof process === "object" && typeof process.cwd === "function") {
+        return process.cwd();
+    }
+    else if (typeof location === "object" && location.origin) {
+        return location.origin + (location.pathname === "/" ? "" : location.pathname);
+    }
+    else {
+        throw new Error("Unable to determine the current working directory.");
+    }
+}
+/**
+ * Concatenates all given `segments` into a well-formed path.
+ * @experimental
+ *
+ * @example
+ * ```ts
+ * import { join } from "@ayonli/jsext/path";
+ *
+ * console.log(join("foo", "bar")); // "foo/bar" or "foo\\bar" on Windows
+ * console.log(join("/", "foo", "bar")); // "/foo/bar"
+ * console.log(join("C:\\", "foo", "bar")); // "C:\\foo\\bar"
+ * console.log(join("file:///foo", "bar", "..")) // "file:///foo"
+ *
+ * console.log(join("http://example.com", "foo", "bar", "?query"));
+ * // "http://example.com/foo/bar?query"
+ * ```
+ */
+function join(...segments) {
+    let _paths = [];
+    for (let i = 0; i < segments.length; i++) {
+        const path = segments[i];
+        if (path) {
+            if (isAbsolute(path)) {
+                _paths = [];
+            }
+            _paths.push(path);
+        }
+    }
+    const paths = [];
+    for (let i = 0; i < _paths.length; i++) {
+        let segment = _paths[i];
+        for (const _segment of split(segment)) {
+            if (_segment === "..") {
+                if (!paths.length || paths.every(p => p === "..")) {
+                    paths.push("..");
+                }
+                else if (paths.length > 2
+                    || (paths.length === 2 && !isAbsolute(paths[1]))
+                    || (paths.length === 1 && !isAbsolute(paths[0]))) {
+                    paths.pop();
+                }
+            }
+            else if (_segment && _segment !== ".") {
+                paths.push(_segment);
+            }
+        }
+    }
+    if (!paths.length) {
+        return ".";
+    }
+    const start = paths[0];
+    const _sep = isUrl(start) || isPosixPath(start) ? "/" : isWindowsPath(start) ? "\\" : sep;
+    let path = "";
+    for (let i = 0; i < paths.length; i++) {
+        const segment = paths[i];
+        if (!path || segment[0] === "?" || segment[0] === "#") {
+            path += segment;
+        }
+        else if (isVolume(segment)) {
+            if (path) {
+                path += segment + "/";
+            }
+            else {
+                path = segment;
+            }
+        }
+        else {
+            path += (path.endsWith(_sep) ? "" : _sep) + trim(segment, "/\\");
+        }
+    }
+    if (/^file:\/\/\/[a-z]:$/i.test(path)) {
+        return path + "/";
+    }
+    else {
+        return path;
+    }
+}
+/**
+ * Resolves path `segments` into a well-formed path.
+ *
+ * This function is similar to {@link join}, except it always returns an
+ * absolute path based on current working directory if the input segments are not
+ * absolute by themselves.
+ * @experimental
+ */
+function resolve(...segments) {
+    segments = segments.filter(s => s !== "");
+    const _cwd = cwd();
+    if (!segments.length) {
+        return _cwd;
+    }
+    segments = isAbsolute(segments[0]) ? segments : [_cwd, ...segments];
+    return join(...segments);
+}
+/**
+ * Converts the given URL to a file system path if it's not one already.
+ * @experimental
+ */
+function toFsPath(url) {
+    if (isFsPath(url)) {
+        return url;
+    }
+    else if (isFileUrl(url)) {
+        url = url.replace(/^file:(\/\/)?/i, "").replace(/^\/([a-z]):/i, "$1:");
+        return join(url);
+    }
+    else if (!isUrl(url)) {
+        return resolve(url);
+    }
+    else {
+        throw new Error("Cannot convert a URL to a file system path.");
+    }
+}
 
 /**
  * Utility functions for working with JavaScript modules.
@@ -599,8 +931,7 @@ const moduleCache = new Map();
 async function resolveModule(modId, baseUrl = undefined) {
     let module;
     if (isNode || isBun) {
-        const { fileURLToPath } = await import('url');
-        const path = baseUrl ? fileURLToPath(new URL(modId, baseUrl).href) : modId;
+        const path = baseUrl ? toFsPath(new URL(modId, baseUrl).href) : modId;
         module = await import(path);
     }
     else {

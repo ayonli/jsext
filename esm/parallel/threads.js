@@ -5,7 +5,7 @@ import { getObjectURL } from '../module.js';
 import { isPlainObject } from '../object.js';
 import { serial } from '../number.js';
 import { fromErrorEvent, isDOMException, isAggregateError, toObject, fromObject } from '../error.js';
-import { join, cwd, extname, resolve, dirname } from '../path.js';
+import { toFsPath, join, cwd, extname, resolve, dirname } from '../path.js';
 import { unrefTimer } from '../runtime.js';
 import Exception from '../error/Exception.js';
 import { isUrl, endsWith } from '../path/util.js';
@@ -55,8 +55,7 @@ async function getWorkerEntry(parallel = {}) {
         if (parallel.workerEntry) {
             return parallel.workerEntry;
         }
-        const { fileURLToPath } = await import('url');
-        const _filename = fileURLToPath(import.meta.url);
+        const _filename = toFsPath(import.meta.url);
         if (_filename === process.argv[1]) {
             // The code is bundled, try the worker entry in node_modules
             // (hope it exists).

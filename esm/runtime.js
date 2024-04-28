@@ -11,6 +11,7 @@ const CommonRuntimes = [
     "chromium",
     "firefox",
     "safari",
+    "cloudflare_workers",
 ];
 /**
  * Returns the information of the runtime environment in which the program is
@@ -40,7 +41,7 @@ function runtime() {
                 || /\.tsx?$|\bvite\b/.test((_a = process.argv[1]) !== null && _a !== void 0 ? _a : "")
         };
     }
-    else if (isBrowser) {
+    else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
         const ua = navigator.userAgent.match(/(Firefox|Edg?e|Safari|Chrom(e|ium))\/(\d+(\.\d+)+)/g);
         if (ua) {
             const list = ua.map(part => {
@@ -71,6 +72,13 @@ function runtime() {
                     tsSupport: false,
                 };
             }
+        }
+        else if (/Cloudflare[-\s]Workers/i.test(navigator.userAgent)) {
+            return {
+                identity: "cloudflare_workers",
+                version: undefined,
+                tsSupport: false,
+            };
         }
     }
     return { identity: "others", version: undefined, tsSupport: false };

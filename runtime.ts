@@ -7,7 +7,13 @@ import { isBrowser, isBun, isDeno, isNode } from "./env.ts";
 
 declare const Bun: any;
 
-export type CommonRuntimes = "node" | "deno" | "bun" | "chromium" | "firefox" | "safari";
+export type CommonRuntimes = "node"
+    | "deno"
+    | "bun"
+    | "chromium"
+    | "firefox"
+    | "safari"
+    | "cloudflare_workers";
 export const CommonRuntimes: CommonRuntimes[] = [
     "node",
     "deno",
@@ -15,6 +21,7 @@ export const CommonRuntimes: CommonRuntimes[] = [
     "chromium",
     "firefox",
     "safari",
+    "cloudflare_workers",
 ];
 
 export type RuntimeInfo = {
@@ -52,7 +59,7 @@ export default function runtime(): RuntimeInfo {
             tsSupport: process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
                 || /\.tsx?$|\bvite\b/.test(process.argv[1] ?? "")
         };
-    } else if (isBrowser) {
+    } else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
         const ua = navigator.userAgent.match(/(Firefox|Edg?e|Safari|Chrom(e|ium))\/(\d+(\.\d+)+)/g);
 
         if (ua) {
@@ -83,6 +90,12 @@ export default function runtime(): RuntimeInfo {
                     tsSupport: false,
                 };
             }
+        } else if (/Cloudflare[-\s]Workers/i.test(navigator.userAgent)) {
+            return {
+                identity: "cloudflare_workers",
+                version: undefined,
+                tsSupport: false,
+            };
         }
     }
 
