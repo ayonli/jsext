@@ -16,9 +16,8 @@ const isNode = !isDeno && !isBun
 const isNodeBelow14 = isNode && parseInt(process.version.slice(1)) < 14;
 const isNodeBelow16 = isNode && parseInt(process.version.slice(1)) < 16;
 const isNodeBelow20 = isNode && parseInt(process.version.slice(1)) < 20;
-// In Node.js, `process.argv` contains `--worker-thread` when the current thread is used as
-// a worker.
-const isNodeWorkerThread = isNode && process.argv.includes("--worker-thread");
+const isNodeWorkerThread = isNode
+    && (process.abort.disabled === true || process.argv.includes("--worker-thread"));
 const isMainThread = !isNodeWorkerThread
     && (isBun ? Bun.isMainThread : typeof WorkerGlobalScope === "undefined");
 

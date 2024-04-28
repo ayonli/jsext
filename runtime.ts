@@ -8,6 +8,7 @@ import {
     isBun,
     isDeno,
     isNode,
+    isMainThread,
     isServiceWorker,
     isSharedWorker,
     isWebWorker,
@@ -43,7 +44,7 @@ export type RuntimeInfo = {
     tsSupport: boolean;
     /**
      * If the program is running in a worker thread, this property indicates the
-     * type of worker the script is running in, presents only in the browser.
+     * type of worker the script is running in.
      */
     worker?: "dedicated" | "shared" | "service" | undefined;
 };
@@ -58,19 +59,22 @@ export default function runtime(): RuntimeInfo {
             identity: "deno",
             version: Deno.version.deno,
             tsSupport: true,
+            worker: isMainThread ? undefined : "dedicated",
         };
     } else if (isBun) {
         return {
             identity: "bun",
             version: Bun.version,
             tsSupport: true,
+            worker: isMainThread ? undefined : "dedicated",
         };
     } else if (isNode) {
         return {
             identity: "node",
             version: process.version.slice(1),
             tsSupport: process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
-                || /\.tsx?$|\bvite\b/.test(process.argv[1] ?? "")
+                || /\.tsx?$|\bvite\b/.test(process.argv[1] ?? ""),
+            worker: isMainThread ? undefined : "dedicated",
         };
     } else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
         const ua = navigator.userAgent.match(/(Firefox|Edg?e|Safari|Chrom(e|ium))\/(\d+(\.\d+)+)/g);

@@ -12,19 +12,22 @@ describe("runtime", () => {
                 identity: "node",
                 version: process.version.slice(1),
                 tsSupport: process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
-                    || /\.tsx?$|\bvite\b/.test(process.argv[1] ?? "")
+                    || /\.tsx?$|\bvite\b/.test(process.argv[1] ?? ""),
+                worker: undefined,
             });
         } else if (isDeno) {
             deepStrictEqual(runtime(), {
                 identity: "deno",
                 version: Deno.version.deno,
-                tsSupport: true
+                tsSupport: true,
+                worker: undefined,
             });
         } else if (isBun) {
             deepStrictEqual(runtime(), {
                 identity: "bun",
                 version: Bun.version,
-                tsSupport: true
+                tsSupport: true,
+                worker: undefined,
             });
         }
     });

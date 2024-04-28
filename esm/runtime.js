@@ -1,4 +1,4 @@
-import { isBrowser, isServiceWorker, isSharedWorker, isWebWorker, isDeno, isBun, isNode } from './env.js';
+import { isBrowser, isServiceWorker, isSharedWorker, isWebWorker, isDeno, isMainThread, isBun, isNode } from './env.js';
 
 /**
  * Utility functions to retrieve runtime information or modify runtime behaviors.
@@ -24,6 +24,7 @@ function runtime() {
             identity: "deno",
             version: Deno.version.deno,
             tsSupport: true,
+            worker: isMainThread ? undefined : "dedicated",
         };
     }
     else if (isBun) {
@@ -31,6 +32,7 @@ function runtime() {
             identity: "bun",
             version: Bun.version,
             tsSupport: true,
+            worker: isMainThread ? undefined : "dedicated",
         };
     }
     else if (isNode) {
@@ -38,7 +40,8 @@ function runtime() {
             identity: "node",
             version: process.version.slice(1),
             tsSupport: process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
-                || /\.tsx?$|\bvite\b/.test((_a = process.argv[1]) !== null && _a !== void 0 ? _a : "")
+                || /\.tsx?$|\bvite\b/.test((_a = process.argv[1]) !== null && _a !== void 0 ? _a : ""),
+            worker: isMainThread ? undefined : "dedicated",
         };
     }
     else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
