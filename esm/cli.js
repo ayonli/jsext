@@ -2,7 +2,7 @@ import { isWide, isFullWidth } from './external/code-point-utils/index.js';
 import { isEmoji, byteLength, chars, trimStart } from './string.js';
 import bytes, { equals, text } from './bytes.js';
 import { isDeno, isBrowser, isBun } from './env.js';
-import runtime, { env } from './runtime.js';
+import runtime, { platform as platform$1, env } from './runtime.js';
 import { interop } from './module.js';
 import { basename } from './path.js';
 import { sum } from './math.js';
@@ -58,6 +58,10 @@ const isTTY = (() => {
  * @deprecated use `runtime().tsSupport` from `@ayonli/jsext/runtime` module instead.
  */
 const isTsRuntime = () => runtime().tsSupport;
+/**
+ * @deprecated import `platform` from `@ayonli/jsext/runtime` module instead.
+ */
+const platform = platform$1;
 /**
  * Returns the width of a single character.
  */
@@ -312,37 +316,6 @@ const CommonPlatforms = [
     "windows",
     "linux",
 ];
-/**
- * Returns a string identifying the operating system platform in which the
- * program is running.
- */
-function platform() {
-    if (typeof Deno === "object") {
-        if (CommonPlatforms.includes(Deno.build.os)) {
-            return Deno.build.os;
-        }
-    }
-    else if (typeof process === "object" && typeof process.platform === "string") {
-        if (process.platform === "win32") {
-            return "windows";
-        }
-        else if (CommonPlatforms.includes(process.platform)) {
-            return process.platform;
-        }
-    }
-    else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
-        if (navigator.userAgent.includes("Macintosh")) {
-            return "darwin";
-        }
-        else if (navigator.userAgent.includes("Windows")) {
-            return "windows";
-        }
-        else if (navigator.userAgent.includes("Linux")) {
-            return "linux";
-        }
-    }
-    return "others";
-}
 /** Checks if the program is running in Windows Subsystem for Linux. */
 function isWSL() {
     if (platform() !== "linux")
@@ -711,69 +684,6 @@ async function edit(filename) {
     if (code)
         throw new Error(stderr || `Failed to open ${filename} in the editor.`);
 }
-const shutdownListeners = [];
-let shutdownListenerRegistered = false;
-/**
- * Adds a listener function to be called when the program receives a `SIGINT`
- * (`Ctrl+C`) signal, or a `shutdown` message sent by the parent process (a
- * **PM2** pattern for Windows), so that the program can perform a graceful
- * shutdown.
- *
- * This function can be called multiple times to register multiple listeners,
- * they will be executed in the order they were added, and any asynchronous
- * listener will be awaited before the next listener is executed.
- *
- * Inside the listener, there is no need to call `process.exit` or `Deno.exit`,
- * the program will exit automatically after all listeners are executed in order.
- * In fact, calling the `exit` method in a listener is problematic and will
- * cause any subsequent listeners not to be executed.
- *
- * In the browser or unsupported environments, this function is a no-op.
- */
-function addShutdownListener(fn) {
-    if (!isDeno && (typeof process !== "object" || typeof (process === null || process === void 0 ? void 0 : process.on) !== "function")) {
-        return;
-    }
-    shutdownListeners.push(fn);
-    if (!shutdownListenerRegistered) {
-        shutdownListenerRegistered = true;
-        const shutdownListener = async () => {
-            try {
-                for (const listener of shutdownListeners) {
-                    await listener();
-                }
-                if (isDeno) {
-                    Deno.exit(0);
-                }
-                else if (typeof process === "object") {
-                    process.exit(0);
-                }
-            }
-            catch (err) {
-                console.error(err);
-                if (isDeno) {
-                    Deno.exit(1);
-                }
-                else if (typeof process === "object") {
-                    process.exit(1);
-                }
-            }
-        };
-        if (isDeno) {
-            Deno.addSignalListener("SIGINT", shutdownListener);
-        }
-        else {
-            process.on("SIGINT", shutdownListener);
-            if (platform() === "windows") {
-                process.on("message", message => {
-                    if (message === "shutdown") {
-                        shutdownListener();
-                    }
-                });
-            }
-        }
-    }
-}
 
-export { CommonPlatforms, ControlKeys, FunctionKeys, NavigationKeys, addShutdownListener, args, charWidth, edit, getWindowSize, isTTY, isTsRuntime, isTypingInput, isWSL, lockStdin, moveLeftBy, moveRightBy, parseArgs, platform, powershell, quote, readStdin, run, stringWidth, sudo, which, writeStdout, writeStdoutSync };
+export { CommonPlatforms, ControlKeys, FunctionKeys, NavigationKeys, args, charWidth, edit, getWindowSize, isTTY, isTsRuntime, isTypingInput, isWSL, lockStdin, moveLeftBy, moveRightBy, parseArgs, platform, powershell, quote, readStdin, run, stringWidth, sudo, which, writeStdout, writeStdoutSync };
 //# sourceMappingURL=cli.js.map

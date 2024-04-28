@@ -1,6 +1,7 @@
 import { basename, join } from '../path.js';
 import { isBrowser } from '../env.js';
-import { platform, isWSL } from '../cli.js';
+import { platform } from '../runtime.js';
+import { isWSL } from '../cli.js';
 import read from '../read.js';
 import readAll from '../readAll.js';
 import { readFile } from './terminal/util.js';

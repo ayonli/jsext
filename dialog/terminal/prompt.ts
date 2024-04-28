@@ -1,5 +1,6 @@
 import { escape } from "./util.ts";
-import { isWSL, lockStdin, platform, powershell, run } from "../../cli.ts";
+import { platform } from "../../runtime.ts";
+import { isWSL, lockStdin, powershell, run } from "../../cli.ts";
 import question from "./question.ts";
 
 function createAppleScript(message: string, defaultValue = "", password = false) {

@@ -7,68 +7,6 @@ import { isBrowser, isBun, isDeno, isNode } from "./env.ts";
 
 declare const Bun: any;
 
-/**
- * A universal symbol that can be used to customize the inspection behavior of
- * an object, supports Node.js, Bun, Deno and any runtime that has
- * Node.js-compatible `util.inspect` function.
- */
-export const customInspect: unique symbol = (() => {
-    if (isBrowser) {
-        return Symbol.for("Symbol.customInspect");
-    } else if (isDeno) {
-        return Symbol.for("Deno.customInspect");
-    } else {
-        return Symbol.for("nodejs.util.inspect.custom");
-    }
-})() as any;
-
-/** Returns all environment variables in an object. */
-export function env(): { [name: string]: string; };
-/** Returns a specific environment variable. */
-export function env(name: string): string | undefined;
-/**
- * Sets the value of a specific environment variable.
- * 
- * NOTE: this is a temporary change and will not persist when the program exits.
- */
-export function env(name: string, value: string): undefined;
-export function env(name: string | undefined = undefined, value: string | undefined = undefined): any {
-    if (typeof Deno === "object") {
-        if (name === undefined) {
-            return Deno.env.toObject();
-        } else if (value === undefined) {
-            return Deno.env.get(name);
-        } else {
-            Deno.env.set(name, String(value));
-        }
-    } else if (typeof process === "object" && typeof process.env === "object") {
-        if (name === undefined) {
-            return process.env;
-        } else if (value === undefined) {
-            return process.env[name];
-        } else {
-            process.env[name] = String(value);
-        }
-    } else {
-        // @ts-ignore
-        const env = globalThis["__env__"] as any;
-
-        // @ts-ignore
-        if (env === undefined || env === null || typeof env === "object") {
-            if (name === undefined) {
-                return env ?? {};
-            } else if (value === undefined) {
-                return env?.[name] ? String(env[name]) : undefined;
-            } else {
-                // @ts-ignore
-                (globalThis["__env__"] ??= {})[name] = String(value);
-            }
-        } else {
-            throw new Error("Unsupported runtime");
-        }
-    }
-}
-
 export type CommonRuntimes = "node" | "deno" | "bun" | "chromium" | "firefox" | "safari";
 export const CommonRuntimes: CommonRuntimes[] = [
     "node",
@@ -151,6 +89,90 @@ export default function runtime(): RuntimeInfo {
     return { identity: "others", version: undefined, tsSupport: false };
 }
 
+export type CommonPlatforms = "darwin"
+    | "windows"
+    | "linux";
+export const CommonPlatforms: CommonPlatforms[] = [
+    "darwin",
+    "windows",
+    "linux",
+];
+
+/**
+ * Returns a string identifying the operating system platform in which the
+ * program is running.
+ */
+export function platform(): CommonPlatforms | "others" {
+    if (typeof Deno === "object") {
+        if (CommonPlatforms.includes(Deno.build.os as any)) {
+            return Deno.build.os as CommonPlatforms;
+        }
+    } else if (typeof process === "object" && typeof process.platform === "string") {
+        if (process.platform === "win32") {
+            return "windows";
+        } else if ((CommonPlatforms as string[]).includes(process.platform)) {
+            return process.platform as CommonPlatforms;
+        }
+    } else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
+        if (navigator.userAgent.includes("Macintosh")) {
+            return "darwin";
+        } else if (navigator.userAgent.includes("Windows")) {
+            return "windows";
+        } else if (navigator.userAgent.includes("Linux")) {
+            return "linux";
+        }
+    }
+
+    return "others";
+}
+
+/** Returns all environment variables in an object. */
+export function env(): { [name: string]: string; };
+/** Returns a specific environment variable. */
+export function env(name: string): string | undefined;
+/**
+ * Sets the value of a specific environment variable.
+ * 
+ * NOTE: this is a temporary change and will not persist when the program exits.
+ */
+export function env(name: string, value: string): undefined;
+export function env(name: string | undefined = undefined, value: string | undefined = undefined): any {
+    if (typeof Deno === "object") {
+        if (name === undefined) {
+            return Deno.env.toObject();
+        } else if (value === undefined) {
+            return Deno.env.get(name);
+        } else {
+            Deno.env.set(name, String(value));
+        }
+    } else if (typeof process === "object" && typeof process.env === "object") {
+        if (name === undefined) {
+            return process.env;
+        } else if (value === undefined) {
+            return process.env[name];
+        } else {
+            process.env[name] = String(value);
+        }
+    } else {
+        // @ts-ignore
+        const env = globalThis["__env__"] as any;
+
+        // @ts-ignore
+        if (env === undefined || env === null || typeof env === "object") {
+            if (name === undefined) {
+                return env ?? {};
+            } else if (value === undefined) {
+                return env?.[name] ? String(env[name]) : undefined;
+            } else {
+                // @ts-ignore
+                (globalThis["__env__"] ??= {})[name] = String(value);
+            }
+        } else {
+            throw new Error("Unsupported runtime");
+        }
+    }
+}
+
 declare let $0: unknown;
 declare let $1: unknown;
 
@@ -203,3 +225,86 @@ export function unrefTimer(timer: NodeJS.Timeout | number): void {
         Deno.unrefTimer(timer);
     }
 }
+
+const shutdownListeners: (() => (void | Promise<void>))[] = [];
+let shutdownListenerRegistered = false;
+
+/**
+ * Adds a listener function to be called when the program receives a `SIGINT`
+ * (`Ctrl+C`) signal, or a `shutdown` message sent by the parent process (a
+ * **PM2** pattern for Windows), so that the program can perform a graceful
+ * shutdown.
+ * 
+ * This function can be called multiple times to register multiple listeners,
+ * they will be executed in the order they were added, and any asynchronous
+ * listener will be awaited before the next listener is executed.
+ * 
+ * Inside the listener, there is no need to call `process.exit` or `Deno.exit`,
+ * the program will exit automatically after all listeners are executed in order.
+ * In fact, calling the `exit` method in a listener is problematic and will
+ * cause any subsequent listeners not to be executed.
+ * 
+ * In the browser or unsupported environments, this function is a no-op.
+ */
+export function addShutdownListener(fn: () => (void | Promise<void>)): void {
+    if (!isDeno && (typeof process !== "object" || typeof process?.on !== "function")) {
+        return;
+    }
+
+    shutdownListeners.push(fn);
+
+    if (!shutdownListenerRegistered) {
+        shutdownListenerRegistered = true;
+
+        const shutdownListener = async () => {
+            try {
+                for (const listener of shutdownListeners) {
+                    await listener();
+                }
+
+                if (isDeno) {
+                    Deno.exit(0);
+                } else if (typeof process === "object") {
+                    process.exit(0);
+                }
+            } catch (err) {
+                console.error(err);
+
+                if (isDeno) {
+                    Deno.exit(1);
+                } else if (typeof process === "object") {
+                    process.exit(1);
+                }
+            }
+        };
+
+        if (isDeno) {
+            Deno.addSignalListener("SIGINT", shutdownListener);
+        } else {
+            process.on("SIGINT", shutdownListener);
+
+            if (platform() === "windows") {
+                process.on("message", message => {
+                    if (message === "shutdown") {
+                        shutdownListener();
+                    }
+                });
+            }
+        }
+    }
+}
+
+/**
+ * A universal symbol that can be used to customize the inspection behavior of
+ * an object, supports Node.js, Bun, Deno and any runtime that has
+ * Node.js-compatible `util.inspect` function.
+ */
+export const customInspect: unique symbol = (() => {
+    if (isBrowser) {
+        return Symbol.for("Symbol.customInspect");
+    } else if (isDeno) {
+        return Symbol.for("Deno.customInspect");
+    } else {
+        return Symbol.for("nodejs.util.inspect.custom");
+    }
+})() as any;

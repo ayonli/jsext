@@ -10,12 +10,12 @@ import {
     isTTY,
     isTypingInput,
     parseArgs,
-    platform,
     quote,
     run,
     stringWidth,
     which,
 } from "./cli.ts";
+import { platform } from "./runtime.ts";
 import { chars } from "./string.ts";
 import bytes from "./bytes.ts";
 import { isDeno, isNodeBelow16 } from "./env.ts";
@@ -101,45 +101,6 @@ describe("cli", () => {
             const columns = process.stdout.columns;
             const rows = process.stdout.rows;
             deepStrictEqual(getWindowSize(), { width: columns, height: rows });
-        }
-    });
-
-    it("platform", () => {
-        const platforms = [
-            "darwin",
-            "linux",
-            "windows",
-        ];
-        const others = "others";
-
-        if (typeof Deno === "object") {
-            if (platforms.includes(Deno.build.os as any)) {
-                strictEqual(Deno.build.os, platform());
-            } else {
-                strictEqual(others, platform());
-            }
-        } else if (typeof process === "object" && typeof process.platform === "string") {
-            if (process.platform === "win32") {
-                strictEqual("windows", platform());
-            } else if (platforms.includes(process.platform)) {
-                strictEqual(process.platform, platform());
-            } else {
-                strictEqual(others, platform());
-            }
-        } else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
-            if (navigator.userAgent.includes("Android")) {
-                strictEqual("android", platform());
-            } else if (navigator.userAgent.includes("Macintosh")) {
-                strictEqual("darwin", platform());
-            } else if (navigator.userAgent.includes("Windows")) {
-                strictEqual("windows", platform());
-            } else if (navigator.userAgent.includes("Linux")) {
-                strictEqual("linux", platform());
-            } else {
-                strictEqual(others, platform());
-            }
-        } else {
-            strictEqual(others, platform());
         }
     });
 

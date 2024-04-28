@@ -1,5 +1,6 @@
 import { escape } from './util.js';
-import { platform, run, isWSL, powershell, lockStdin } from '../../cli.js';
+import { platform } from '../../runtime.js';
+import { run, isWSL, powershell, lockStdin } from '../../cli.js';
 import question from './question.js';
 
 function createAppleScript(message) {

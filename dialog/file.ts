@@ -1,6 +1,7 @@
 import { basename, join } from "../path.ts";
 import { isBrowser } from "../env.ts";
-import { isWSL, platform } from "../cli.ts";
+import { platform } from "../runtime.ts";
+import { isWSL } from "../cli.ts";
 import read from "../read.ts";
 import readAll from "../readAll.ts";
 import { readFile } from "./terminal/util.ts";
