@@ -110,7 +110,19 @@ categories:
 
 ## Augmentation
 
-Check [augment.md](./augment.md).
+This package supports augmenting some functions to the corresponding built-in
+types/namespaces, but they should only be used for application development,
+don't use them when developing libraries.
+
+_NOTE: this feature is only available by the NPM package, they don't work by_
+_the JSR package._
+
+For more details, please [check here](./augment/README.md).
+
+## Note for Cloudflare Workers
+
+For applications run in Cloudflare Workers, install the NPM version of this
+package instead of the JSR version.
 
 ## API References
 
