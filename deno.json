@@ -62,6 +62,7 @@
             "*/index.ts",
             "augment.ts",
             "augment/*",
+            "workerd/*",
             "worker-node.ts",
             "test-deno.ts",
             "lib.deno.d.ts",

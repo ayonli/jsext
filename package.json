@@ -6,6 +6,7 @@
         ".": {
             "types": "./types/index.d.ts",
             "bun": "./index.ts",
+            "workerd": "./esm/workerd/index.js",
             "require": "./cjs/index.js",
             "import": "./esm/index.js",
             "default": "./index.ts"
@@ -127,6 +128,7 @@
         "./example": {
             "types": "./types/example.d.ts",
             "bun": "./example.ts",
+            "workerd": "./esm/workerd/example.js",
             "require": "./cjs/example.js",
             "import": "./esm/example.js",
             "default": "./example.ts"

@@ -10,4 +10,4 @@ to import these modules, the stub version will be returned.
 
 This strategy makes all modules, especially the main entry of this package
 applicable in Cloudflare Workers, for the functions that are not supported by
-the runtime, a `Runtime unsupported` error will be thrown instead.
+the runtime, an `Unsupported runtime` error will be thrown instead.
