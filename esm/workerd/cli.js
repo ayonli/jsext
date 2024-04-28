@@ -1,5 +1,5 @@
-export { CommonPlatforms, args, charWidth, getWindowSize, isTTY, isTypingInput, isWSL, lockStdin, moveLeftBy, moveRightBy, parseArgs, quote, readStdin, stringWidth, writeStdout, writeStdoutSync } from './common.js';
-export { ControlKeys, ControlSequences, FunctionKeys, NavigationKeys } from './constants.js';
+export { CommonPlatforms, args, charWidth, getWindowSize, isTTY, isTypingInput, isWSL, lockStdin, moveLeftBy, moveRightBy, parseArgs, quote, readStdin, stringWidth, writeStdout, writeStdoutSync } from '../cli/common.js';
+export { ControlKeys, ControlSequences, FunctionKeys, NavigationKeys } from '../cli/constants.js';
 
 /**
  * Function stubs for Cloudflare Workers.
@@ -22,4 +22,4 @@ async function edit(filename) {
 }
 
 export { edit, powershell, run, sudo, which };
-//# sourceMappingURL=workerd.js.map
+//# sourceMappingURL=cli.js.map

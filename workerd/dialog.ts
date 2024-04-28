@@ -3,7 +3,7 @@
  * @module
  */
 
-import type { ProgressState, ProgressFunc, ProgressAbortHandler } from "./progress.ts";
+import type { ProgressState, ProgressFunc, ProgressAbortHandler } from "../dialog/progress.ts";
 
 export { ProgressState, ProgressFunc, ProgressAbortHandler };
 

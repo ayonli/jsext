@@ -69,7 +69,7 @@
         "./cli": {
             "types": "./types/cli.d.ts",
             "bun": "./cli.ts",
-            "workerd": "./esm/cli/workerd.js",
+            "workerd": "./esm/workerd/cli.js",
             "require": "./cjs/cli.js",
             "import": "./esm/cli.js",
             "default": "./cli.ts"
@@ -105,7 +105,7 @@
         "./dialog": {
             "types": "./types/dialog.d.ts",
             "bun": "./dialog.ts",
-            "workerd": "./esm/dialog/workerd.js",
+            "workerd": "./esm/workerd/dialog.js",
             "require": "./cjs/dialog.js",
             "import": "./esm/dialog.js",
             "default": "./dialog.ts"

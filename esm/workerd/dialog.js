@@ -31,4 +31,4 @@ async function saveFile(file, options = {}) {
 }
 
 export { alert, confirm, openFile, pickDirectory, pickFile, pickFiles, progress, prompt, saveFile };
-//# sourceMappingURL=workerd.js.map
+//# sourceMappingURL=dialog.js.map

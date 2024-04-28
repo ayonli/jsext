@@ -17,6 +17,7 @@ augment.md
 !esm/index.*
 !types/augment.*
 !types/index.*
+cjs/workerd/*
 cjs/*/augment.*
 cjs/*/index.*
 esm/*/augment.*

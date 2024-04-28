@@ -3,7 +3,7 @@
  * @module
  */
 
-export * from "./common.ts";
+export * from "../cli/common.ts";
 
 export async function run(cmd: string, args: string[]): Promise<{
     code: number;
