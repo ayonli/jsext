@@ -105,6 +105,7 @@
         "./dialog": {
             "types": "./types/dialog.d.ts",
             "bun": "./dialog.ts",
+            "workerd": "./esm/dialog/workerd.js",
             "require": "./cjs/dialog.js",
             "import": "./esm/dialog.js",
             "default": "./dialog.ts"
