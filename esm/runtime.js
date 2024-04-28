@@ -1,4 +1,4 @@
-import { isDeno, isBun, isNode, isBrowser } from './env.js';
+import { isBrowser, isServiceWorker, isSharedWorker, isWebWorker, isDeno, isBun, isNode } from './env.js';
 
 /**
  * Utility functions to retrieve runtime information or modify runtime behaviors.
@@ -51,11 +51,16 @@ function runtime() {
             const safari = list.find(({ name }) => name === "Safari");
             const firefox = list.find(({ name }) => name === "Firefox");
             const chrome = list.find(({ name }) => name === "Chrome" || name === "Chromium");
+            const worker = isSharedWorker ? "shared"
+                : isServiceWorker ? "service"
+                    : isWebWorker ? "dedicated"
+                        : undefined;
             if (safari && !chrome && !firefox) {
                 return {
                     identity: "safari",
                     version: safari.version,
                     tsSupport: false,
+                    worker,
                 };
             }
             else if (firefox && !chrome && !safari) {
@@ -63,6 +68,7 @@ function runtime() {
                     identity: "firefox",
                     version: firefox.version,
                     tsSupport: false,
+                    worker,
                 };
             }
             else if (chrome) {
@@ -70,6 +76,15 @@ function runtime() {
                     identity: "chromium",
                     version: chrome.version,
                     tsSupport: false,
+                    worker,
+                };
+            }
+            else {
+                return {
+                    identity: "others",
+                    version: undefined,
+                    tsSupport: false,
+                    worker,
                 };
             }
         }
@@ -78,6 +93,7 @@ function runtime() {
                 identity: "cloudflare_workers",
                 version: undefined,
                 tsSupport: false,
+                worker: "service",
             };
         }
     }
@@ -296,7 +312,10 @@ function addShutdownListener(fn) {
  * Node.js-compatible `util.inspect` function.
  */
 const customInspect = (() => {
-    if (isBrowser) {
+    if (isBrowser ||
+        isServiceWorker ||
+        isSharedWorker ||
+        (isWebWorker && ["chromium", "firefox", "safari"].includes(runtime().identity))) {
         return Symbol.for("Symbol.customInspect");
     }
     else if (isDeno) {

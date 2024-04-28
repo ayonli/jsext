@@ -2,6 +2,12 @@ import { isMainThread as isMainThread$1, parentPort } from 'worker_threads';
 
 var _a$1;
 const id = Symbol.for("id");
+typeof ServiceWorkerGlobalScope === "function"
+    && globalThis instanceof ServiceWorkerGlobalScope;
+typeof SharedWorkerGlobalScope === "function"
+    && globalThis instanceof SharedWorkerGlobalScope;
+typeof DedicatedWorkerGlobalScope === "function"
+    && globalThis instanceof DedicatedWorkerGlobalScope;
 const isDeno = typeof Deno === "object";
 const isBun = typeof Bun === "object";
 const isNode = !isDeno && !isBun

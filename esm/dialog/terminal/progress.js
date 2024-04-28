@@ -1,6 +1,7 @@
 import bytes, { equals } from '../../bytes.js';
 import { stripEnd } from '../../string.js';
 import '../../env.js';
+import '../../runtime.js';
 import '../../path.js';
 import { ControlKeys, ControlSequences } from '../../cli/constants.js';
 import { writeStdoutSync } from '../../cli/common.js';

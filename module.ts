@@ -3,7 +3,7 @@
  * @module 
  */
 
-import { isBrowser } from "./env.ts";
+import { isBrowser, isWebWorker } from "./env.ts";
 import { equals, extname, isUrl } from "./path.ts";
 
 /**
@@ -103,6 +103,13 @@ export function isMain(module: NodeJS.Module): boolean;
 export function isMain(importMeta: ImportMeta | NodeJS.Module): boolean {
     if ("main" in importMeta && typeof importMeta["main"] === "boolean") {
         return importMeta["main"] as boolean;
+    }
+
+    if ("serviceWorker" in globalThis && "url" in importMeta) {
+        // @ts-ignore
+        return globalThis["serviceWorker"]["scriptURL"] === importMeta.url;
+    } else if (isWebWorker && "url" in importMeta && typeof location === "object" && location) {
+        return importMeta.url === location.href;
     }
 
     if (typeof process === "object" && Array.isArray(process.argv)) {

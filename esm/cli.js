@@ -1,6 +1,6 @@
 import { trimStart } from './string.js';
 import { text } from './bytes.js';
-import { isDeno, isBun, isBrowser } from './env.js';
+import { isDeno, isBun, isBrowser, isSharedWorker, isServiceWorker, isWebWorker } from './env.js';
 import runtime, { platform as platform$1, env } from './runtime.js';
 import { interop } from './module.js';
 import { basename } from './path.js';
@@ -178,9 +178,24 @@ async function edit(filename) {
         line = Number(match[2]);
         filename = filename.slice(0, match.index);
     }
+    const vscodeUrl = "vscode://file/" + trimStart(filename, "/") + (line ? `:${line}` : "");
     if (isBrowser) {
-        window.open("vscode://file/" + trimStart(filename, "/") + (line ? `:${line}` : ""));
+        window.open(vscodeUrl);
         return;
+    }
+    else if (isSharedWorker) {
+        throw new Error("Unsupported runtime");
+    }
+    else if (isServiceWorker) {
+        if (runtime().identity === "cloudflare_workers") {
+            throw new Error("Unsupported runtime");
+        }
+        // @ts-ignore
+        await self.clients.openWindow(vscodeUrl);
+        return;
+    }
+    else if (isWebWorker && (["chromium", "firefox", "safari"]).includes(runtime().identity)) {
+        throw new Error(`Unable to open ${filename} in the editor.`);
     }
     const _platform = platform();
     const vscode = await which("code");
@@ -188,13 +203,13 @@ async function edit(filename) {
         const args = line ? ["--goto", `${filename}:${line}`] : [filename];
         const { code, stderr } = await run(vscode, args);
         if (code)
-            throw new Error(stderr || `Failed to open ${filename} in the editor.`);
+            throw new Error(stderr || `Unable to open ${filename} in the editor.`);
         return;
     }
     else if (_platform === "darwin") {
         const { code, stderr } = await run("open", ["-t", filename]);
         if (code)
-            throw new Error(stderr || `Failed to open ${filename} in the editor.`);
+            throw new Error(stderr || `Unable to open ${filename} in the editor.`);
         return;
     }
     else if (_platform === "windows" || isWSL()) {
@@ -203,7 +218,7 @@ async function edit(filename) {
             : "/mnt/c/Windows/System32/notepad.exe";
         const { code, stderr } = await run(notepad, [filename]);
         if (code)
-            throw new Error(stderr || `Failed to open ${filename} in the editor.`);
+            throw new Error(stderr || `Unable to open ${filename} in the editor.`);
         return;
     }
     let editor = env("EDITOR")
@@ -244,7 +259,7 @@ async function edit(filename) {
     }
     const { code, stderr } = await run(editor, args);
     if (code)
-        throw new Error(stderr || `Failed to open ${filename} in the editor.`);
+        throw new Error(stderr || `Unable to open ${filename} in the editor.`);
 }
 
 export { edit, isTsRuntime, isWSL, platform, powershell, quote, run, sudo, which };

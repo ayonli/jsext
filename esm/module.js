@@ -1,4 +1,4 @@
-import { isBrowser } from './env.js';
+import { isWebWorker, isBrowser } from './env.js';
 import { extname } from './path.js';
 import { equals, isUrl } from './path/util.js';
 
@@ -42,6 +42,13 @@ function interop(module, strict = undefined) {
 function isMain(importMeta) {
     if ("main" in importMeta && typeof importMeta["main"] === "boolean") {
         return importMeta["main"];
+    }
+    if ("serviceWorker" in globalThis && "url" in importMeta) {
+        // @ts-ignore
+        return globalThis["serviceWorker"]["scriptURL"] === importMeta.url;
+    }
+    else if (isWebWorker && "url" in importMeta && typeof location === "object" && location) {
+        return importMeta.url === location.href;
     }
     if (typeof process === "object" && Array.isArray(process.argv)) {
         if (!process.argv[1]) {

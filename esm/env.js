@@ -3,6 +3,12 @@ const id = Symbol.for("id");
 const isBrowser = typeof window === "object"
     && typeof window.document === "object"
     && typeof window.matchMedia === "function";
+const isServiceWorker = typeof ServiceWorkerGlobalScope === "function"
+    && globalThis instanceof ServiceWorkerGlobalScope;
+const isSharedWorker = typeof SharedWorkerGlobalScope === "function"
+    && globalThis instanceof SharedWorkerGlobalScope;
+const isWebWorker = typeof DedicatedWorkerGlobalScope === "function"
+    && globalThis instanceof DedicatedWorkerGlobalScope;
 const isDeno = typeof Deno === "object";
 const isBun = typeof Bun === "object";
 const isNode = !isDeno && !isBun
@@ -16,5 +22,5 @@ const isNodeWorkerThread = isNode && process.argv.includes("--worker-thread");
 const isMainThread = !isNodeWorkerThread
     && (isBun ? Bun.isMainThread : typeof WorkerGlobalScope === "undefined");
 
-export { id, isBrowser, isBun, isDeno, isMainThread, isNode, isNodeBelow14, isNodeBelow16, isNodeBelow20 };
+export { id, isBrowser, isBun, isDeno, isMainThread, isNode, isNodeBelow14, isNodeBelow16, isNodeBelow20, isServiceWorker, isSharedWorker, isWebWorker };
 //# sourceMappingURL=env.js.map

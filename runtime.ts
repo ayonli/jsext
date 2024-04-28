@@ -3,7 +3,15 @@
  * @module
  */
 
-import { isBrowser, isBun, isDeno, isNode } from "./env.ts";
+import {
+    isBrowser,
+    isBun,
+    isDeno,
+    isNode,
+    isServiceWorker,
+    isSharedWorker,
+    isWebWorker,
+} from "./env.ts";
 
 declare const Bun: any;
 
@@ -30,9 +38,14 @@ export type RuntimeInfo = {
     /**
      * The version of the runtime. This property is `undefined` when `identity` is `others`.
      */
-    version: string | undefined;
+    version?: string | undefined;
     /** Whether the runtime supports TypeScript. */
     tsSupport: boolean;
+    /**
+     * If the program is running in a worker thread, this property indicates the
+     * type of worker the script is running in, presents only in the browser.
+     */
+    worker?: "dedicated" | "shared" | "service" | undefined;
 };
 
 /**
@@ -70,24 +83,38 @@ export default function runtime(): RuntimeInfo {
             const safari = list.find(({ name }) => name === "Safari");
             const firefox = list.find(({ name }) => name === "Firefox");
             const chrome = list.find(({ name }) => name === "Chrome" || name === "Chromium");
+            const worker = isSharedWorker ? "shared"
+                : isServiceWorker ? "service"
+                    : isWebWorker ? "dedicated"
+                        : undefined;
 
             if (safari && !chrome && !firefox) {
                 return {
                     identity: "safari",
                     version: safari!.version,
                     tsSupport: false,
+                    worker,
                 };
             } else if (firefox && !chrome && !safari) {
                 return {
                     identity: "firefox",
                     version: firefox!.version,
                     tsSupport: false,
+                    worker,
                 };
             } else if (chrome) {
                 return {
                     identity: "chromium",
                     version: chrome!.version,
                     tsSupport: false,
+                    worker,
+                };
+            } else {
+                return {
+                    identity: "others",
+                    version: undefined,
+                    tsSupport: false,
+                    worker,
                 };
             }
         } else if (/Cloudflare[-\s]Workers/i.test(navigator.userAgent)) {
@@ -95,6 +122,7 @@ export default function runtime(): RuntimeInfo {
                 identity: "cloudflare_workers",
                 version: undefined,
                 tsSupport: false,
+                worker: "service",
             };
         }
     }
@@ -335,7 +363,11 @@ export function addShutdownListener(fn: () => (void | Promise<void>)): void {
  * Node.js-compatible `util.inspect` function.
  */
 export const customInspect: unique symbol = (() => {
-    if (isBrowser) {
+    if (isBrowser ||
+        isServiceWorker ||
+        isSharedWorker ||
+        (isWebWorker && ["chromium", "firefox", "safari"].includes(runtime().identity))
+    ) {
         return Symbol.for("Symbol.customInspect");
     } else if (isDeno) {
         return Symbol.for("Deno.customInspect");
