@@ -232,6 +232,7 @@
         "./parallel": {
             "types": "./types/parallel.d.ts",
             "bun": "./parallel.ts",
+            "workerd": "./esm/workerd/parallel.js",
             "require": "./cjs/parallel.js",
             "import": "./esm/parallel.js",
             "default": "./parallel.ts"
@@ -288,6 +289,7 @@
         "./run": {
             "types": "./types/run.d.ts",
             "bun": "./run.ts",
+            "workerd": "./esm/workerd/run.js",
             "require": "./cjs/run.js",
             "import": "./esm/run.js",
             "default": "./run.ts"

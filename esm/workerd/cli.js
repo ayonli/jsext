@@ -1,10 +1,6 @@
 export { CommonPlatforms, args, charWidth, getWindowSize, isTTY, isTypingInput, isWSL, lockStdin, moveLeftBy, moveRightBy, parseArgs, quote, readStdin, stringWidth, writeStdout, writeStdoutSync } from '../cli/common.js';
 export { ControlKeys, ControlSequences, FunctionKeys, NavigationKeys } from '../cli/constants.js';
 
-/**
- * Function stubs for Cloudflare Workers.
- * @module
- */
 async function run(cmd, args) {
     throw new Error("Unsupported runtime");
 }

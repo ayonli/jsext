@@ -1,7 +1,3 @@
-/**
- * Function stubs for Cloudflare Workers.
- * @module
- */
 async function alert(message, options = {}) {
     throw new Error("Unsupported runtime");
 }

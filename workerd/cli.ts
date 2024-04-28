@@ -1,8 +1,3 @@
-/**
- * Function stubs for Cloudflare Workers.
- * @module
- */
-
 export * from "../cli/common.ts";
 
 export async function run(cmd: string, args: string[]): Promise<{
