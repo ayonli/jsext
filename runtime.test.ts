@@ -87,12 +87,17 @@ describe("runtime", () => {
 
         it("set one", () => {
             env("FOO", "BAR");
+            strictEqual(env("FOO"), "BAR");
+        });
 
-            if (isDeno) {
-                strictEqual(env("FOO"), "BAR");
-            } else {
-                strictEqual(env("FOO"), "BAR");
-            }
+        it("set many", () => {
+            env({
+                FOO: "BAR",
+                BAR: "BAZ",
+            });
+
+            strictEqual(env("FOO"), "BAR");
+            strictEqual(env("BAR"), "BAZ");
         });
     });
 

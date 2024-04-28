@@ -120,9 +120,14 @@ function platform() {
     return "others";
 }
 function env(name = undefined, value = undefined) {
-    var _a;
+    var _a, _b;
     if (typeof Deno === "object") {
-        if (name === undefined) {
+        if (typeof name === "object" && name !== null) {
+            for (const [key, val] of Object.entries(name)) {
+                Deno.env.set(key, String(val));
+            }
+        }
+        else if (name === undefined) {
             return Deno.env.toObject();
         }
         else if (value === undefined) {
@@ -133,7 +138,12 @@ function env(name = undefined, value = undefined) {
         }
     }
     else if (typeof process === "object" && typeof process.env === "object") {
-        if (name === undefined) {
+        if (typeof name === "object" && name !== null) {
+            for (const [key, val] of Object.entries(name)) {
+                process.env[key] = String(val);
+            }
+        }
+        else if (name === undefined) {
             return process.env;
         }
         else if (value === undefined) {
@@ -148,7 +158,13 @@ function env(name = undefined, value = undefined) {
         const env = globalThis["__env__"];
         // @ts-ignore
         if (env === undefined || env === null || typeof env === "object") {
-            if (name === undefined) {
+            if (typeof name === "object" && name !== null) {
+                for (const [key, val] of Object.entries(name)) {
+                    // @ts-ignore
+                    ((_a = globalThis["__env__"]) !== null && _a !== void 0 ? _a : (globalThis["__env__"] = {}))[key] = String(val);
+                }
+            }
+            else if (name === undefined) {
                 return env !== null && env !== void 0 ? env : {};
             }
             else if (value === undefined) {
@@ -156,7 +172,7 @@ function env(name = undefined, value = undefined) {
             }
             else {
                 // @ts-ignore
-                ((_a = globalThis["__env__"]) !== null && _a !== void 0 ? _a : (globalThis["__env__"] = {}))[name] = String(value);
+                ((_b = globalThis["__env__"]) !== null && _b !== void 0 ? _b : (globalThis["__env__"] = {}))[name] = String(value);
             }
         }
         else {

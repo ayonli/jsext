@@ -149,9 +149,22 @@ export function env(name: string): string | undefined;
  * NOTE: this is a temporary change and will not persist when the program exits.
  */
 export function env(name: string, value: string): undefined;
-export function env(name: string | undefined = undefined, value: string | undefined = undefined): any {
+/**
+ * Sets the values of multiple environment variables, could be used to load
+ * environment variables where there is no native support, e.g the browser or
+ * Cloudflare Workers.
+ */
+export function env(obj: object): void;
+export function env(
+    name: string | undefined | object = undefined,
+    value: string | undefined = undefined
+): any {
     if (typeof Deno === "object") {
-        if (name === undefined) {
+        if (typeof name === "object" && name !== null) {
+            for (const [key, val] of Object.entries(name)) {
+                Deno.env.set(key, String(val));
+            }
+        } else if (name === undefined) {
             return Deno.env.toObject();
         } else if (value === undefined) {
             return Deno.env.get(name);
@@ -159,7 +172,11 @@ export function env(name: string | undefined = undefined, value: string | undefi
             Deno.env.set(name, String(value));
         }
     } else if (typeof process === "object" && typeof process.env === "object") {
-        if (name === undefined) {
+        if (typeof name === "object" && name !== null) {
+            for (const [key, val] of Object.entries(name)) {
+                process.env[key] = String(val);
+            }
+        } else if (name === undefined) {
             return process.env;
         } else if (value === undefined) {
             return process.env[name];
@@ -172,7 +189,12 @@ export function env(name: string | undefined = undefined, value: string | undefi
 
         // @ts-ignore
         if (env === undefined || env === null || typeof env === "object") {
-            if (name === undefined) {
+            if (typeof name === "object" && name !== null) {
+                for (const [key, val] of Object.entries(name)) {
+                    // @ts-ignore
+                    (globalThis["__env__"] ??= {})[key] = String(val);
+                }
+            } else if (name === undefined) {
                 return env ?? {};
             } else if (value === undefined) {
                 return env?.[name] ? String(env[name]) : undefined;
