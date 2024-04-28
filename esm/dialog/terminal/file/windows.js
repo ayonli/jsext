@@ -1,8 +1,9 @@
 import { extname } from '../../../path.js';
 import { lines } from '../../../string.js';
-import { powershell, isWSL } from '../../../cli.js';
+import { powershell } from '../../../cli.js';
 import { getExtensions } from '../../../filetype.js';
 import { escape } from '../util.js';
+import { isWSL } from '../../../cli/common.js';
 
 function htmlAcceptToFileFilter(accept) {
     const groups = [];

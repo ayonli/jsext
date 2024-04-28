@@ -69,6 +69,7 @@
         "./cli": {
             "types": "./types/cli.d.ts",
             "bun": "./cli.ts",
+            "workerd": "./esm/cli/workerd.js",
             "require": "./cjs/cli.js",
             "import": "./esm/cli.js",
             "default": "./cli.ts"

@@ -1,7 +1,10 @@
 import { isBrowser } from '../env.js';
 import { progressInBrowser } from './browser/index.js';
 import { handleTerminalProgress } from './terminal/progress.js';
-import { lockStdin } from '../cli.js';
+import '../bytes.js';
+import '../path.js';
+import '../cli/constants.js';
+import { lockStdin } from '../cli/common.js';
 
 /**
  * Displays a dialog with a progress bar indicating the ongoing state of the

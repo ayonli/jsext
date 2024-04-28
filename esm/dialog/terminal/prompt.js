@@ -1,7 +1,8 @@
 import { escape } from './util.js';
 import { platform } from '../../runtime.js';
-import { run, isWSL, powershell, lockStdin } from '../../cli.js';
+import { run, powershell } from '../../cli.js';
 import question from './question.js';
+import { isWSL, lockStdin } from '../../cli/common.js';
 
 function createAppleScript(message, defaultValue = "", password = false) {
     return "tell application (path to frontmost application as text)\n" +
