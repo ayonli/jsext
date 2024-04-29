@@ -1,4 +1,4 @@
-import { isBrowser } from '../env.js';
+import { isBrowserWindow, isDeno, isNodeLike } from '../env.js';
 import { progressInBrowser } from './browser/index.js';
 import { handleTerminalProgress } from './terminal/progress.js';
 import '../bytes.js';
@@ -98,15 +98,18 @@ async function progress(message, fn, onAbort = undefined) {
             }
         });
     });
-    if (isBrowser) {
+    if (isBrowserWindow) {
         return await progressInBrowser(message, fn, { signal, abort, listenForAbort });
     }
-    else {
+    else if (isDeno || isNodeLike) {
         return await lockStdin(() => handleTerminalProgress(message, fn, {
             signal,
             abort,
             listenForAbort,
         }));
+    }
+    else {
+        throw new Error("Unsupported runtime");
     }
 }
 

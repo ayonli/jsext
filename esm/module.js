@@ -1,4 +1,4 @@
-import { isWebWorker, isBrowser } from './env.js';
+import { isDedicatedWorker, isBrowserWindow } from './env.js';
 import { extname } from './path.js';
 import { equals, isUrl } from './path/util.js';
 
@@ -47,10 +47,10 @@ function isMain(importMeta) {
         // @ts-ignore
         return globalThis["serviceWorker"]["scriptURL"] === importMeta.url;
     }
-    else if (isWebWorker && "url" in importMeta && typeof location === "object" && location) {
+    else if (isDedicatedWorker && "url" in importMeta && typeof location === "object" && location) {
         return importMeta.url === location.href;
     }
-    if (typeof process === "object" && Array.isArray(process.argv)) {
+    if (typeof process === "object" && Array.isArray(process.argv) && process.argv.length) {
         if (!process.argv[1]) {
             // Node.js REPL or the program is executed by `node -e "code"`,
             // or the program is executed by itself.
@@ -113,7 +113,7 @@ const importCache = new Map();
  * NOTE: this function will throw an error if called outside the browser.
  */
 function importScript(url, options = {}) {
-    if (!isBrowser) {
+    if (!isBrowserWindow) {
         return Promise.reject(new Error("This function is only available in the browser."));
     }
     url = new URL(url, location.href).href;
@@ -142,7 +142,7 @@ function importScript(url, options = {}) {
  * NOTE: this function will throw an error if called outside the browser.
  */
 function importStylesheet(url) {
-    if (!isBrowser) {
+    if (!isBrowserWindow) {
         return Promise.reject(new Error("This function is only available in the browser."));
     }
     url = new URL(url, location.href).href;

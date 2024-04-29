@@ -1,4 +1,4 @@
-import { isBrowser, isServiceWorker, isSharedWorker, isWebWorker, isDeno, isMainThread, isBun, isNode } from './env.js';
+import { isBrowserWindow, isServiceWorker, isSharedWorker, isDedicatedWorker, isDeno, isMainThread, isBun, isNode, isNodeLike } from './env.js';
 
 /**
  * Utility functions to retrieve runtime information or modify runtime behaviors.
@@ -56,7 +56,7 @@ function runtime() {
             const chrome = list.find(({ name }) => name === "Chrome" || name === "Chromium");
             const worker = isSharedWorker ? "shared"
                 : isServiceWorker ? "service"
-                    : isWebWorker ? "dedicated"
+                    : isDedicatedWorker ? "dedicated"
                         : undefined;
             if (safari && !chrome && !firefox) {
                 return {
@@ -112,12 +112,12 @@ const CommonPlatforms = [
  * program is running.
  */
 function platform() {
-    if (typeof Deno === "object") {
+    if (isDeno) {
         if (CommonPlatforms.includes(Deno.build.os)) {
             return Deno.build.os;
         }
     }
-    else if (typeof process === "object" && typeof process.platform === "string") {
+    else if (isNodeLike) {
         if (process.platform === "win32") {
             return "windows";
         }
@@ -140,7 +140,7 @@ function platform() {
 }
 function env(name = undefined, value = undefined) {
     var _a, _b;
-    if (typeof Deno === "object") {
+    if (isDeno) {
         if (typeof name === "object" && name !== null) {
             for (const [key, val] of Object.entries(name)) {
                 Deno.env.set(key, String(val));
@@ -156,7 +156,7 @@ function env(name = undefined, value = undefined) {
             Deno.env.set(name, String(value));
         }
     }
-    else if (typeof process === "object" && typeof process.env === "object") {
+    else if (isNodeLike) {
         if (typeof name === "object" && name !== null) {
             for (const [key, val] of Object.entries(name)) {
                 process.env[key] = String(val);
@@ -266,7 +266,7 @@ let shutdownListenerRegistered = false;
  * In the browser or unsupported environments, this function is a no-op.
  */
 function addShutdownListener(fn) {
-    if (!isDeno && (typeof process !== "object" || typeof (process === null || process === void 0 ? void 0 : process.on) !== "function")) {
+    if (!isDeno && !isNodeLike) {
         return;
     }
     shutdownListeners.push(fn);
@@ -280,7 +280,7 @@ function addShutdownListener(fn) {
                 if (isDeno) {
                     Deno.exit(0);
                 }
-                else if (typeof process === "object") {
+                else {
                     process.exit(0);
                 }
             }
@@ -289,7 +289,7 @@ function addShutdownListener(fn) {
                 if (isDeno) {
                     Deno.exit(1);
                 }
-                else if (typeof process === "object") {
+                else {
                     process.exit(1);
                 }
             }
@@ -315,10 +315,10 @@ function addShutdownListener(fn) {
  * Node.js-compatible `util.inspect` function.
  */
 const customInspect = (() => {
-    if (isBrowser ||
+    if (isBrowserWindow ||
         isServiceWorker ||
         isSharedWorker ||
-        (isWebWorker && ["chromium", "firefox", "safari"].includes(runtime().identity))) {
+        (isDedicatedWorker && ["chromium", "firefox", "safari"].includes(runtime().identity))) {
         return Symbol.for("Symbol.customInspect");
     }
     else if (isDeno) {

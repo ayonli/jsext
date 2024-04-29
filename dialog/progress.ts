@@ -1,4 +1,4 @@
-import { isBrowser } from "../env.ts";
+import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
 import { progressInBrowser } from "./browser/index.ts";
 import { handleTerminalProgress } from "./terminal/progress.ts";
 import { lockStdin } from "../cli.ts";
@@ -112,13 +112,15 @@ export default async function progress<T>(
         });
     });
 
-    if (isBrowser) {
+    if (isBrowserWindow) {
         return await progressInBrowser(message, fn, { signal, abort, listenForAbort });
-    } else {
+    } else if (isDeno || isNodeLike) {
         return await lockStdin(() => handleTerminalProgress(message, fn, {
             signal,
             abort,
             listenForAbort,
         }));
+    } else {
+        throw new Error("Unsupported runtime");
     }
 }

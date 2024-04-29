@@ -6,15 +6,16 @@ declare const DedicatedWorkerGlobalScope: Function | undefined;
 declare const ServiceWorkerGlobalScope: Function | undefined;
 declare const SharedWorkerGlobalScope: Function | undefined;
 
-export const isBrowser = typeof window === "object"
+export const isBrowserWindow = typeof window === "object"
     && typeof window.document === "object"
     && typeof window.matchMedia === "function";
 export const isServiceWorker = typeof ServiceWorkerGlobalScope === "function"
     && globalThis instanceof ServiceWorkerGlobalScope;
 export const isSharedWorker = typeof SharedWorkerGlobalScope === "function"
     && globalThis instanceof SharedWorkerGlobalScope;
-export const isWebWorker = typeof DedicatedWorkerGlobalScope === "function"
+export const isDedicatedWorker = typeof DedicatedWorkerGlobalScope === "function"
     && globalThis instanceof DedicatedWorkerGlobalScope;
+export const isWorker = isServiceWorker || isSharedWorker || isDedicatedWorker;
 
 export const isDeno = typeof Deno === "object" && !!Deno.version?.deno;
 export const isBun = typeof Bun === "object" && !!Bun.version;

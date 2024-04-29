@@ -3,7 +3,7 @@ import { spawn, IPty, IPtyForkOptions } from "node-pty";
 import { isNodeBelow16, isNodeBelow20 } from "./env.ts";
 import { sleep } from "./async.ts";
 import { ControlKeys, NavigationKeys } from "./cli/constants.ts";
-import { isBrowser } from "./env.ts";
+import { isBrowserWindow } from "./env.ts";
 import stripAnsi from 'strip-ansi';
 
 const { CTRL_E, ESC, CTRL_A } = ControlKeys;
@@ -48,7 +48,7 @@ async function runInSimulator(filename: string) {
 }
 
 describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
-    if (isBrowser || isNodeBelow16 || ((useDeno || useBun) && isNodeBelow20)) {
+    if (isBrowserWindow || isNodeBelow16 || ((useDeno || useBun) && isNodeBelow20)) {
         return;
     }
 

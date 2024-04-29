@@ -4,14 +4,14 @@
  */
 
 import {
-    isBrowser,
+    isBrowserWindow,
     isBun,
     isDeno,
     isNode,
     isMainThread,
     isServiceWorker,
     isSharedWorker,
-    isWebWorker,
+    isDedicatedWorker,
     isNodeLike,
 } from "./env.ts";
 
@@ -90,7 +90,7 @@ export default function runtime(): RuntimeInfo {
             const chrome = list.find(({ name }) => name === "Chrome" || name === "Chromium");
             const worker = isSharedWorker ? "shared"
                 : isServiceWorker ? "service"
-                    : isWebWorker ? "dedicated"
+                    : isDedicatedWorker ? "dedicated"
                         : undefined;
 
             if (safari && !chrome && !firefox) {
@@ -368,10 +368,10 @@ export function addShutdownListener(fn: () => (void | Promise<void>)): void {
  * Node.js-compatible `util.inspect` function.
  */
 export const customInspect: unique symbol = (() => {
-    if (isBrowser ||
+    if (isBrowserWindow ||
         isServiceWorker ||
         isSharedWorker ||
-        (isWebWorker && ["chromium", "firefox", "safari"].includes(runtime().identity))
+        (isDedicatedWorker && ["chromium", "firefox", "safari"].includes(runtime().identity))
     ) {
         return Symbol.for("Symbol.customInspect");
     } else if (isDeno) {

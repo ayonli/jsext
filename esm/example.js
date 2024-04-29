@@ -1,3 +1,5 @@
+import { isDeno, isNodeLike } from './env.js';
+
 /**
  * Writes unit tests as if writing examples, inspired by Golang.
  * @module
@@ -110,10 +112,10 @@ function example(fn, options = undefined) {
                 assert.ok(actual === _expected, `\nexpected:\n${_expected}\n\ngot:\n${actual}`);
                 if (!(options === null || options === void 0 ? void 0 : options.suppress)) {
                     for (const chunk of logs) {
-                        if (typeof Deno === "object") {
+                        if (isDeno) {
                             await Deno.stdout.write(chunk);
                         }
-                        else if (typeof process === "object") {
+                        else if (isNodeLike) {
                             await new Promise(resolve => {
                                 process.stdout.write(chunk, () => resolve());
                             });

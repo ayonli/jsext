@@ -3,7 +3,7 @@ import { alert, confirm, prompt, progress } from "./dialog/index.ts";
 import { sleep, until } from "./async.ts";
 import { as } from "./object.ts";
 import _try from "./try.ts";
-import { isBrowser } from "./env.ts";
+import { isBrowserWindow } from "./env.ts";
 
 // Mock `window.matchMedia` for JSDOM.
 globalThis.matchMedia = window.matchMedia = (query) => {
@@ -20,7 +20,7 @@ globalThis.matchMedia = window.matchMedia = (query) => {
 };
 
 describe("dialog", () => {
-    if (!isBrowser) {
+    if (!isBrowserWindow) {
         return;
     }
 

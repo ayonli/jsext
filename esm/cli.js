@@ -1,6 +1,6 @@
 import { trimStart } from './string.js';
 import { text } from './bytes.js';
-import { isDeno, isBun, isBrowser, isSharedWorker, isServiceWorker, isWebWorker } from './env.js';
+import { isDeno, isNodeLike, isBun, isBrowserWindow, isSharedWorker, isDedicatedWorker, isServiceWorker } from './env.js';
 import runtime, { platform as platform$1, env } from './runtime.js';
 import { interop } from './module.js';
 import { basename } from './path.js';
@@ -29,10 +29,9 @@ const platform = platform$1;
  * Executes a command in the terminal and returns the exit code and outputs.
  */
 async function run(cmd, args) {
-    var _a;
     const isWindows = platform() === "windows";
     const isWslPs = isWSL() && cmd.endsWith("powershell.exe");
-    if (typeof Deno === "object") {
+    if (isDeno) {
         const { Buffer } = await import('node:buffer');
         const { decode } = interop(await import('iconv-lite'), false);
         const _cmd = isWindows && PowerShellCommands.includes(cmd)
@@ -45,7 +44,7 @@ async function run(cmd, args) {
             stderr: isWindows || isWslPs ? decode(Buffer.from(stderr), "cp936") : text(stderr),
         };
     }
-    else if (typeof process === "object" && !!((_a = process.versions) === null || _a === void 0 ? void 0 : _a.node)) {
+    else if (isNodeLike) {
         const { spawn } = await import('child_process');
         const { decode } = await interop(import('iconv-lite'), false);
         const child = isWindows && PowerShellCommands.includes(cmd)
@@ -179,11 +178,12 @@ async function edit(filename) {
         filename = filename.slice(0, match.index);
     }
     const vscodeUrl = "vscode://file/" + trimStart(filename, "/") + (line ? `:${line}` : "");
-    if (isBrowser) {
+    if (isBrowserWindow) {
         window.open(vscodeUrl);
         return;
     }
-    else if (isSharedWorker) {
+    else if (isSharedWorker
+        || (isDedicatedWorker && (["chromium", "firefox", "safari"]).includes(runtime().identity))) {
         throw new Error("Unsupported runtime");
     }
     else if (isServiceWorker) {
@@ -193,9 +193,6 @@ async function edit(filename) {
         // @ts-ignore
         await self.clients.openWindow(vscodeUrl);
         return;
-    }
-    else if (isWebWorker && (["chromium", "firefox", "safari"]).includes(runtime().identity)) {
-        throw new Error(`Unable to open ${filename} in the editor.`);
     }
     const _platform = platform();
     const vscode = await which("code");

@@ -13,7 +13,7 @@ import { alertInBrowser, confirmInBrowser, promptInBrowser } from "./dialog/brow
 import alertInTerminal from "./dialog/terminal/alert.ts";
 import confirmInTerminal from "./dialog/terminal/confirm.ts";
 import promptInTerminal from "./dialog/terminal/prompt.ts";
-import { isBrowser } from "./env.ts";
+import { isBrowserWindow, isDeno, isNodeLike } from "./env.ts";
 
 export { openFile, pickFile, pickFiles, pickDirectory, saveFile };
 export { progress, ProgressState, ProgressFunc, ProgressAbortHandler };
@@ -36,10 +36,12 @@ export async function alert(message: string, options: {
      */
     gui?: boolean;
 } = {}): Promise<void> {
-    if (isBrowser) {
+    if (isBrowserWindow) {
         await alertInBrowser(message);
-    } else {
+    } else if (isDeno || isNodeLike) {
         await alertInTerminal(message, options);
+    } else {
+        throw new Error("Unsupported runtime");
     }
 }
 
@@ -61,10 +63,12 @@ export async function confirm(message: string, options: {
      */
     gui?: boolean;
 } = {}): Promise<boolean> {
-    if (isBrowser) {
+    if (isBrowserWindow) {
         return await confirmInBrowser(message);
-    } else {
+    } else if (isDeno || isNodeLike) {
         return await confirmInTerminal(message, options);
+    } else {
+        throw new Error("Unsupported runtime");
     }
 }
 
@@ -119,9 +123,11 @@ export async function prompt(message: string, options: string | {
         : undefined;
     const gui = typeof options === "object" ? (options.gui ?? false) : false;
 
-    if (isBrowser) {
+    if (isBrowserWindow) {
         return await promptInBrowser(message, { type, defaultValue });
-    } else {
+    } else if (isDeno || isNodeLike) {
         return await promptInTerminal(message, { defaultValue, type, mask, gui });
+    } else {
+        throw new Error("Unsupported runtime");
     }
 }

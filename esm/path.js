@@ -1,3 +1,4 @@
+import { isDeno, isNodeLike } from './env.js';
 import { stripEnd, trim } from './string.js';
 import { isAbsolute, split, isUrl, isPosixPath, isWindowsPath, isNotQuery, isFileProtocol, isVolume, isFileUrl, isFsPath } from './path/util.js';
 export { contains, endsWith, equals, startsWith } from './path/util.js';
@@ -17,13 +18,12 @@ export { contains, endsWith, equals, startsWith } from './path/util.js';
  * server-side runtime, and `/` otherwise.
  */
 const sep = (() => {
-    var _a, _b;
-    if (typeof Deno === "object" && typeof ((_a = Deno.build) === null || _a === void 0 ? void 0 : _a.os) === "string") { // Deno
+    if (isDeno) {
         if (Deno.build.os === "windows") {
             return "\\";
         }
     }
-    else if (typeof process === "object" && !!((_b = process.versions) === null || _b === void 0 ? void 0 : _b.node)) { // Node.js
+    else if (isNodeLike) {
         if (process.platform === "win32") {
             return "\\";
         }
@@ -36,10 +36,10 @@ const sep = (() => {
  * **NOTE**: In the browser, this function returns the current origin and pathname.
  */
 function cwd() {
-    if (typeof Deno === "object" && typeof Deno.cwd === "function") {
+    if (isDeno) {
         return Deno.cwd();
     }
-    else if (typeof process === "object" && typeof process.cwd === "function") {
+    else if (isNodeLike) {
         return process.cwd();
     }
     else if (typeof location === "object" && location.origin) {

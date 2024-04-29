@@ -8,7 +8,7 @@
  */
 import { trimStart } from "./string.ts";
 import { text } from "./bytes.ts";
-import { isBrowser, isBun, isDeno, isNodeLike, isServiceWorker, isSharedWorker, isWebWorker } from "./env.ts";
+import { isBrowserWindow, isBun, isDeno, isNodeLike, isServiceWorker, isSharedWorker, isDedicatedWorker } from "./env.ts";
 import runtime, { env, platform as runtimePlatform } from "./runtime.ts";
 import { interop } from "./module.ts";
 import { basename } from "./path.ts";
@@ -216,10 +216,12 @@ export async function edit(filename: string): Promise<void> {
 
     const vscodeUrl = "vscode://file/" + trimStart(filename, "/") + (line ? `:${line}` : "");
 
-    if (isBrowser) {
+    if (isBrowserWindow) {
         window.open(vscodeUrl);
         return;
-    } else if (isSharedWorker) {
+    } else if (isSharedWorker
+        || (isDedicatedWorker && (["chromium", "firefox", "safari"]).includes(runtime().identity))
+    ) {
         throw new Error("Unsupported runtime");
     } else if (isServiceWorker) {
         if (runtime().identity === "cloudflare_workers") {
@@ -229,8 +231,6 @@ export async function edit(filename: string): Promise<void> {
         // @ts-ignore
         await self.clients.openWindow(vscodeUrl);
         return;
-    } else if (isWebWorker && (["chromium", "firefox", "safari"]).includes(runtime().identity)) {
-        throw new Error(`Unable to open ${filename} in the editor.`);
     }
 
     const _platform = platform();

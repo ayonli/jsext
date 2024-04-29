@@ -1,5 +1,5 @@
 import { basename, join } from '../path.js';
-import { isBrowser } from '../env.js';
+import { isBrowserWindow, isDeno, isNodeLike } from '../env.js';
 import { platform } from '../runtime.js';
 import '../bytes.js';
 import '../cli/constants.js';
@@ -44,7 +44,7 @@ async function pickFile(options = {}) {
             defaultName: options === null || options === void 0 ? void 0 : options.defaultName,
         });
     }
-    throw new Error("Unsupported platform or runtime");
+    throw new Error("Unsupported platform");
 }
 /**
  * Open the file picker dialog and pick multiple files, this function returns the
@@ -63,7 +63,7 @@ async function pickFiles(options = {}) {
     else if (_platform === "linux") {
         return await linuxPickFiles(options.title, options.type);
     }
-    throw new Error("Unsupported platform or runtime");
+    throw new Error("Unsupported platform");
 }
 /**
  * Open the file picker dialog and pick a directory, this function returns the
@@ -82,11 +82,11 @@ async function pickDirectory(options = {}) {
     else if (_platform === "linux") {
         return await linuxPickFolder(options.title);
     }
-    throw new Error("Unsupported platform or runtime");
+    throw new Error("Unsupported platform");
 }
 async function openFile(options = {}) {
     const { title = "", type = "", multiple = false, directory = false } = options;
-    if (isBrowser) {
+    if (isBrowserWindow) {
         const input = document.createElement("input");
         input.type = "file";
         input.accept = type !== null && type !== void 0 ? type : "";
@@ -114,7 +114,7 @@ async function openFile(options = {}) {
             input.click();
         });
     }
-    else {
+    else if (isDeno || isNodeLike) {
         let filename;
         let filenames;
         let dirname;
@@ -187,9 +187,12 @@ async function openFile(options = {}) {
             return null;
         }
     }
+    else {
+        throw new Error("Unsupported runtime");
+    }
 }
 async function saveFile(file, options = {}) {
-    if (isBrowser) {
+    if (isBrowserWindow) {
         const a = document.createElement("a");
         if (file instanceof ReadableStream) {
             const type = options.type || "application/octet-stream";
@@ -214,7 +217,7 @@ async function saveFile(file, options = {}) {
         }
         a.click();
     }
-    else {
+    else if (isDeno || isNodeLike) {
         const { title } = options;
         let stream;
         let filename;
@@ -269,6 +272,9 @@ async function saveFile(file, options = {}) {
                 out.close();
             }
         }
+    }
+    else {
+        throw new Error("Unsupported runtime");
     }
 }
 

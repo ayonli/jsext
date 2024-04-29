@@ -3,7 +3,7 @@
  * @module 
  */
 
-import { isBrowser, isWebWorker } from "./env.ts";
+import { isBrowserWindow, isDedicatedWorker } from "./env.ts";
 import { equals, extname, isUrl } from "./path.ts";
 
 /**
@@ -108,7 +108,7 @@ export function isMain(importMeta: ImportMeta | NodeJS.Module): boolean {
     if ("serviceWorker" in globalThis && "url" in importMeta) {
         // @ts-ignore
         return globalThis["serviceWorker"]["scriptURL"] === importMeta.url;
-    } else if (isWebWorker && "url" in importMeta && typeof location === "object" && location) {
+    } else if (isDedicatedWorker && "url" in importMeta && typeof location === "object" && location) {
         return importMeta.url === location.href;
     }
 
@@ -192,7 +192,7 @@ const importCache = new Map<string, Promise<void>>();
 export function importScript(url: string, options: {
     type?: "classic" | "module";
 } = {}): Promise<void> {
-    if (!isBrowser) {
+    if (!isBrowserWindow) {
         return Promise.reject(new Error("This function is only available in the browser."));
     }
 
@@ -227,7 +227,7 @@ export function importScript(url: string, options: {
  * NOTE: this function will throw an error if called outside the browser.
  */
 export function importStylesheet(url: string): Promise<void> {
-    if (!isBrowser) {
+    if (!isBrowserWindow) {
         return Promise.reject(new Error("This function is only available in the browser."));
     }
 

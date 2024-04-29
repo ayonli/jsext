@@ -1,5 +1,5 @@
 import { basename, join } from "../path.ts";
-import { isBrowser } from "../env.ts";
+import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
 import { platform } from "../runtime.ts";
 import { isWSL } from "../cli.ts";
 import read from "../read.ts";
@@ -67,7 +67,7 @@ export async function pickFile(options: {
         });
     }
 
-    throw new Error("Unsupported platform or runtime");
+    throw new Error("Unsupported platform");
 }
 
 /**
@@ -95,7 +95,7 @@ export async function pickFiles(options: {
         return await linuxPickFiles(options.title, options.type);
     }
 
-    throw new Error("Unsupported platform or runtime");
+    throw new Error("Unsupported platform");
 }
 
 /**
@@ -118,7 +118,7 @@ export async function pickDirectory(options: {
         return await linuxPickFolder(options.title);
     }
 
-    throw new Error("Unsupported platform or runtime");
+    throw new Error("Unsupported platform");
 }
 
 /** Open the file picker dialog and pick a file to open. */
@@ -150,7 +150,7 @@ export async function openFile(options: {
 } = {}): Promise<File | File[] | null> {
     const { title = "", type = "", multiple = false, directory = false } = options;
 
-    if (isBrowser) {
+    if (isBrowserWindow) {
         const input = document.createElement("input");
         input.type = "file";
         input.accept = type ?? "";
@@ -176,7 +176,7 @@ export async function openFile(options: {
             };
             input.click();
         });
-    } else {
+    } else if (isDeno || isNodeLike) {
         let filename: string | null | undefined;
         let filenames: string[] | null | undefined;
         let dirname: string | null | undefined;
@@ -243,6 +243,8 @@ export async function openFile(options: {
         } else {
             return null;
         }
+    } else {
+        throw new Error("Unsupported runtime");
     }
 }
 
@@ -270,7 +272,7 @@ export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | 
     name?: string;
     type?: string;
 } = {}): Promise<void> {
-    if (isBrowser) {
+    if (isBrowserWindow) {
         const a = document.createElement("a");
 
         if (file instanceof ReadableStream) {
@@ -293,7 +295,7 @@ export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | 
         }
 
         a.click();
-    } else {
+    } else if (isDeno || isNodeLike) {
         const { title } = options;
         let stream: ReadableStream<Uint8Array> | undefined;
         let filename: string | null | undefined;
@@ -348,5 +350,7 @@ export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | 
                 out.close();
             }
         }
+    } else {
+        throw new Error("Unsupported runtime");
     }
 }

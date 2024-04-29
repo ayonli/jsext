@@ -1,7 +1,7 @@
 import { isWide, isFullWidth } from '../external/code-point-utils/index.js';
 import { isEmoji, byteLength, chars } from '../string.js';
 import bytes, { equals } from '../bytes.js';
-import { isDeno, isBrowser } from '../env.js';
+import { isDeno, isNodeLike, isBrowserWindow } from '../env.js';
 import { platform } from '../runtime.js';
 import { sum } from '../math.js';
 import { Mutex } from '../lock.js';
@@ -28,10 +28,10 @@ const NonTypingKeys = [
  * in Node.js or Bun.
  */
 const args = (() => {
-    if (typeof Deno === "object") {
+    if (isDeno) {
         return Deno.args;
     }
-    else if (typeof process === "object" && Array.isArray(process.argv)) {
+    else if (isNodeLike) {
         return process.argv.slice(2);
     }
     else {
@@ -42,10 +42,10 @@ const args = (() => {
  * Whether the standard IO is a text terminal.
  */
 const isTTY = (() => {
-    if (typeof Deno === "object") {
+    if (isDeno) {
         return Deno.stdin.isTerminal();
     }
-    else if (typeof process === "object" && typeof process.stdin === "object") {
+    else if (isNodeLike) {
         return process.stdin.isTTY;
     }
     else {
@@ -138,7 +138,7 @@ async function lockStdin(task) {
     }
     const lock = await stdinMutex.lock();
     try {
-        if (typeof Deno === "object") {
+        if (isDeno) {
             try {
                 Deno.stdin.setRaw(true);
                 return await task();
@@ -147,7 +147,7 @@ async function lockStdin(task) {
                 Deno.stdin.setRaw(false);
             }
         }
-        else if (typeof process === "object" && typeof process.stdin === "object") {
+        else if (isNodeLike) {
             const { stdin } = process;
             if (stdin.isPaused()) {
                 stdin.resume();
@@ -186,7 +186,7 @@ async function lockStdin(task) {
  * NOTE: this function should be used within the task function of {@link lockStdin}.
  */
 async function readStdin() {
-    if (typeof Deno !== "undefined") {
+    if (isDeno) {
         const reader = Deno.stdin.readable.getReader();
         const { done, value } = await reader.read();
         // Must release the lock immediately, otherwise the program won't work
@@ -199,7 +199,7 @@ async function readStdin() {
             return bytes(value);
         }
     }
-    else if (typeof process !== "undefined" && typeof process.stdin === "object") {
+    else if (isNodeLike) {
         const stdin = process.stdin;
         return new Promise(resolve => {
             const listener = (chunk) => {
@@ -219,10 +219,10 @@ async function readStdin() {
  * Writes a chunk of data to the standard output.
  */
 async function writeStdout(data) {
-    if (typeof Deno === "object") {
+    if (isDeno) {
         await Deno.stdout.write(data);
     }
-    else if (typeof process === "object" && typeof process.stdout === "object") {
+    else if (isNodeLike) {
         await new Promise(resolve => {
             process.stdout.write(data, () => resolve());
         });
@@ -242,10 +242,10 @@ async function writeStdout(data) {
  * special cases where the asynchronous behavior is not acceptable.
  */
 function writeStdoutSync(data) {
-    if (typeof Deno === "object") {
+    if (isDeno) {
         Deno.stdout.writeSync(data);
     }
-    else if (typeof process === "object" && typeof process.stdout === "object") {
+    else if (isNodeLike) {
         process.stdout.write(data);
     }
     else {
@@ -285,13 +285,13 @@ function getWindowSize() {
         const { columns, rows } = Deno.consoleSize();
         return { width: columns, height: rows };
     }
-    else if (typeof process === "object" && typeof process.stdout === "object") {
+    else if (isNodeLike) {
         return {
             width: process.stdout.columns,
             height: process.stdout.rows,
         };
     }
-    else if (isBrowser) {
+    else if (isBrowserWindow) {
         return {
             width: window.innerWidth,
             height: window.innerHeight,
@@ -310,10 +310,10 @@ const CommonPlatforms = [
 function isWSL() {
     if (platform() !== "linux")
         return false;
-    if (typeof Deno === "object") {
+    if (isDeno) {
         return Deno.osRelease().includes("microsoft-standard-WSL");
     }
-    else if (typeof process === "object" && typeof process.env === "object") {
+    else if (isNodeLike) {
         return !!process.env["WSL_INTEROP"];
     }
     return false;

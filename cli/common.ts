@@ -9,7 +9,7 @@
 import { isFullWidth, isWide } from "../external/code-point-utils/index.ts";
 import { byteLength, chars, isEmoji } from "../string.ts";
 import bytes, { ByteArray, equals } from "../bytes.ts";
-import { isBrowser, isDeno, isNodeLike } from "../env.ts";
+import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
 import { platform } from "../runtime.ts";
 import { sum } from "../math.ts";
 import { Mutex } from "../lock.ts";
@@ -305,7 +305,7 @@ export function getWindowSize(): { width: number; height: number; } {
             width: process.stdout.columns,
             height: process.stdout.rows,
         };
-    } else if (isBrowser) {
+    } else if (isBrowserWindow) {
         return {
             width: window.innerWidth,
             height: window.innerHeight,

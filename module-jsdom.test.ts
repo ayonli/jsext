@@ -1,7 +1,7 @@
 import { ok, strictEqual } from "node:assert";
 import { Server, createServer } from "node:http";
 import { createReadStream, existsSync } from "node:fs";
-import { isBrowser } from "./env.ts";
+import { isBrowserWindow } from "./env.ts";
 import { getObjectURL, importScript, importStylesheet } from "./module.ts";
 import { extname, resolve as resolvePath } from "./path.ts";
 import { getMIME } from "./filetype.ts";
@@ -22,7 +22,7 @@ globalThis.matchMedia = window.matchMedia = (query) => {
 };
 
 describe("module", () => {
-    if (!isBrowser) {
+    if (!isBrowserWindow) {
         return;
     }
 

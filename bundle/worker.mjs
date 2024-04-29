@@ -1,4 +1,4 @@
-var _a$1;
+var _a$1, _b;
 const id = Symbol.for("id");
 typeof ServiceWorkerGlobalScope === "function"
     && globalThis instanceof ServiceWorkerGlobalScope;
@@ -6,10 +6,10 @@ typeof SharedWorkerGlobalScope === "function"
     && globalThis instanceof SharedWorkerGlobalScope;
 typeof DedicatedWorkerGlobalScope === "function"
     && globalThis instanceof DedicatedWorkerGlobalScope;
-const isDeno = typeof Deno === "object";
-const isBun = typeof Bun === "object";
-const isNode = !isDeno && !isBun
-    && typeof process === "object" && !!((_a$1 = process.versions) === null || _a$1 === void 0 ? void 0 : _a$1.node);
+const isDeno = typeof Deno === "object" && !!((_a$1 = Deno.version) === null || _a$1 === void 0 ? void 0 : _a$1.deno);
+const isBun = typeof Bun === "object" && !!Bun.version;
+const isNodeLike = typeof process === "object" && !!((_b = process.versions) === null || _b === void 0 ? void 0 : _b.node);
+const isNode = isNodeLike && !isDeno && !isBun;
 isNode && parseInt(process.version.slice(1)) < 14;
 isNode && parseInt(process.version.slice(1)) < 16;
 isNode && parseInt(process.version.slice(1)) < 20;
@@ -708,13 +708,12 @@ function split(path) {
  * server-side runtime, and `/` otherwise.
  */
 const sep = (() => {
-    var _a, _b;
-    if (typeof Deno === "object" && typeof ((_a = Deno.build) === null || _a === void 0 ? void 0 : _a.os) === "string") { // Deno
+    if (isDeno) {
         if (Deno.build.os === "windows") {
             return "\\";
         }
     }
-    else if (typeof process === "object" && !!((_b = process.versions) === null || _b === void 0 ? void 0 : _b.node)) { // Node.js
+    else if (isNodeLike) {
         if (process.platform === "win32") {
             return "\\";
         }
@@ -727,10 +726,10 @@ const sep = (() => {
  * **NOTE**: In the browser, this function returns the current origin and pathname.
  */
 function cwd() {
-    if (typeof Deno === "object" && typeof Deno.cwd === "function") {
+    if (isDeno) {
         return Deno.cwd();
     }
-    else if (typeof process === "object" && typeof process.cwd === "function") {
+    else if (isNodeLike) {
         return process.cwd();
     }
     else if (typeof location === "object" && location.origin) {

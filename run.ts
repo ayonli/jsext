@@ -8,7 +8,7 @@ import chan, { Channel } from "./chan.ts";
 import { isPlainObject } from "./object.ts";
 import { fromErrorEvent, fromObject } from "./error.ts";
 import { cwd, toFileUrl } from "./path.ts";
-import { isNode, isBun, isBrowser } from "./env.ts";
+import { isNode, isBun, isBrowserWindow } from "./env.ts";
 import { BunWorker, NodeWorker, CallRequest, CallResponse } from "./parallel/types.ts";
 import { sanitizeModuleId } from "./parallel/module.ts";
 import { handleChannelMessage, isChannelMessage } from "./parallel/channel.ts";
@@ -140,7 +140,7 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
     let modId = sanitizeModuleId(script);
     let baseUrl: string | undefined = undefined;
 
-    if (isBrowser) {
+    if (isBrowserWindow) {
         baseUrl = location.href;
     } else {
         baseUrl = toFileUrl(cwd()) + "/"; // must ends with `/`

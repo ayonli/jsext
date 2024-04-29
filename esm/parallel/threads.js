@@ -1,11 +1,11 @@
 import { Channel } from '../chan.js';
-import { isNode, isBun, isDeno, isNodeBelow14 } from '../env.js';
+import { isNode, isBun, isDeno, isNodeLike, isNodeBelow14 } from '../env.js';
 import { wrapChannel, isChannelMessage, handleChannelMessage } from './channel.js';
 import { getObjectURL } from '../module.js';
 import { isPlainObject } from '../object.js';
 import { serial } from '../number.js';
 import { fromErrorEvent, isDOMException, isAggregateError, toObject, fromObject } from '../error.js';
-import { toFsPath, join, cwd, extname, resolve, dirname } from '../path.js';
+import { join, toFsPath, cwd, extname, resolve, dirname } from '../path.js';
 import { unrefTimer } from '../runtime.js';
 import Exception from '../error/Exception.js';
 import { isUrl, endsWith } from '../path/util.js';
@@ -15,7 +15,10 @@ let workerPool = [];
 let gcTimer;
 const remoteTasks = new Map();
 const getMaxParallelism = (async () => {
-    if (isNode) {
+    if (typeof navigator === "object" && navigator.hardwareConcurrency) {
+        return navigator.hardwareConcurrency;
+    }
+    else if (isNode) {
         const os = await import('os');
         if (typeof os.availableParallelism === "function") {
             return os.availableParallelism();
@@ -23,9 +26,6 @@ const getMaxParallelism = (async () => {
         else {
             return os.cpus().length;
         }
-    }
-    else if (typeof navigator === "object" && navigator.hardwareConcurrency) {
-        return navigator.hardwareConcurrency;
     }
     else {
         return 8;
@@ -51,7 +51,30 @@ function getModuleDir(importMetaPath) {
     }
 }
 async function getWorkerEntry(parallel = {}) {
-    if (isNode || isBun) {
+    if (isDeno) {
+        if (parallel.workerEntry) {
+            return parallel.workerEntry;
+        }
+        else if (import.meta["main"]) {
+            // The code is bundled, try the remote worker entry.
+            if (import.meta.url.includes("jsr.io")) {
+                return "jsr:@ayonli/jsext/worker.ts";
+            }
+            else {
+                return "https://ayonli.github.io/jsext/bundle/worker.mjs";
+            }
+        }
+        else {
+            if (import.meta.url.includes("jsr.io")) {
+                return "jsr:@ayonli/jsext/worker.ts";
+            }
+            else {
+                const _dirname = getModuleDir(import.meta.url);
+                return join(_dirname, "worker.ts");
+            }
+        }
+    }
+    else if (isNodeLike) {
         if (parallel.workerEntry) {
             return parallel.workerEntry;
         }
@@ -84,29 +107,6 @@ async function getWorkerEntry(parallel = {}) {
             }
             else {
                 return join(_dirname, "bundle/worker-node.mjs");
-            }
-        }
-    }
-    else if (isDeno) {
-        if (parallel.workerEntry) {
-            return parallel.workerEntry;
-        }
-        else if (import.meta["main"]) {
-            // The code is bundled, try the remote worker entry.
-            if (import.meta.url.includes("jsr.io")) {
-                return "jsr:@ayonli/jsext/worker.ts";
-            }
-            else {
-                return "https://ayonli.github.io/jsext/bundle/worker.mjs";
-            }
-        }
-        else {
-            if (import.meta.url.includes("jsr.io")) {
-                return "jsr:@ayonli/jsext/worker.ts";
-            }
-            else {
-                const _dirname = getModuleDir(import.meta.url);
-                return join(_dirname, "worker.ts");
             }
         }
     }
@@ -249,7 +249,7 @@ function handleWorkerMessage(poolRecord, worker, msg) {
                 }
             }
             poolRecord.tasks.delete(msg.taskId);
-            if (!poolRecord.tasks.size && (isNode || isBun)) {
+            if (!poolRecord.tasks.size && typeof worker.unref === "function") {
                 // Allow the main thread to exit if the event
                 // loop is empty.
                 worker.unref();
@@ -360,7 +360,7 @@ async function acquireWorker(taskId, parallel) {
     }
     poolRecord.tasks.add(taskId);
     const worker = await poolRecord.getWorker;
-    if (isNode || isBun) {
+    if ("ref" in worker && typeof worker.ref === "function") {
         // Prevent premature exit in the main thread.
         worker.ref();
     }
