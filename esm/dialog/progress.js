@@ -2,7 +2,6 @@ import { isBrowserWindow, isDeno, isNodeLike } from '../env.js';
 import { progressInBrowser } from './browser/index.js';
 import { handleTerminalProgress } from './terminal/progress.js';
 import '../bytes.js';
-import '../runtime.js';
 import '../path.js';
 import '../cli/constants.js';
 import { lockStdin } from '../cli/common.js';

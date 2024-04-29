@@ -1,4 +1,4 @@
-import { isDedicatedWorker, isBrowserWindow } from './env.js';
+import { isDedicatedWorker, isSharedWorker, isBrowserWindow } from './env.js';
 import { extname } from './path.js';
 import { equals, isUrl } from './path/util.js';
 
@@ -47,7 +47,8 @@ function isMain(importMeta) {
         // @ts-ignore
         return globalThis["serviceWorker"]["scriptURL"] === importMeta.url;
     }
-    else if (isDedicatedWorker && "url" in importMeta && typeof location === "object" && location) {
+    else if ((isDedicatedWorker || isSharedWorker)
+        && "url" in importMeta && typeof location === "object" && location) {
         return importMeta.url === location.href;
     }
     if (typeof process === "object" && Array.isArray(process.argv) && process.argv.length) {

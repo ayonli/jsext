@@ -8,7 +8,7 @@
  */
 import { trimStart } from "./string.ts";
 import { text } from "./bytes.ts";
-import { isBrowserWindow, isBun, isDeno, isNodeLike, isServiceWorker, isSharedWorker, isDedicatedWorker } from "./env.ts";
+import { isBrowserWindow, isBun, isDeno, isNodeLike, isSharedWorker, isDedicatedWorker } from "./env.ts";
 import runtime, { env, platform as runtimePlatform } from "./runtime.ts";
 import { interop } from "./module.ts";
 import { basename } from "./path.ts";
@@ -214,23 +214,14 @@ export async function edit(filename: string): Promise<void> {
         filename = filename.slice(0, match.index);
     }
 
-    const vscodeUrl = "vscode://file/" + trimStart(filename, "/") + (line ? `:${line}` : "");
-
     if (isBrowserWindow) {
-        window.open(vscodeUrl);
+        window.open("vscode://file/" + trimStart(filename, "/") + (line ? `:${line}` : ""));
         return;
     } else if (isSharedWorker
+        || isSharedWorker
         || (isDedicatedWorker && (["chromium", "firefox", "safari"]).includes(runtime().identity))
     ) {
         throw new Error("Unsupported runtime");
-    } else if (isServiceWorker) {
-        if (runtime().identity === "cloudflare_workers") {
-            throw new Error("Unsupported runtime");
-        }
-
-        // @ts-ignore
-        await self.clients.openWindow(vscodeUrl);
-        return;
     }
 
     const _platform = platform();

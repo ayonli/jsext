@@ -4,7 +4,6 @@
  */
 
 import {
-    isBrowserWindow,
     isBun,
     isDeno,
     isNode,
@@ -23,7 +22,7 @@ export type CommonRuntimes = "node"
     | "chromium"
     | "firefox"
     | "safari"
-    | "cloudflare_workers";
+    | "cloudflare-worker";
 export const CommonRuntimes: CommonRuntimes[] = [
     "node",
     "deno",
@@ -31,7 +30,7 @@ export const CommonRuntimes: CommonRuntimes[] = [
     "chromium",
     "firefox",
     "safari",
-    "cloudflare_workers",
+    "cloudflare-worker",
 ];
 
 export type RuntimeInfo = {
@@ -45,7 +44,7 @@ export type RuntimeInfo = {
     tsSupport: boolean;
     /**
      * If the program is running in a worker thread, this property indicates the
-     * type of worker the script is running in.
+     * type of the worker.
      */
     worker?: "dedicated" | "shared" | "service" | undefined;
 };
@@ -122,9 +121,9 @@ export default function runtime(): RuntimeInfo {
                     worker,
                 };
             }
-        } else if (/Cloudflare[-\s]Workers/i.test(navigator.userAgent)) {
+        } else if (/Cloudflare[-\s]Workers?/i.test(navigator.userAgent)) {
             return {
-                identity: "cloudflare_workers",
+                identity: "cloudflare-worker",
                 version: undefined,
                 tsSupport: false,
                 worker: "service",
@@ -364,19 +363,14 @@ export function addShutdownListener(fn: () => (void | Promise<void>)): void {
 
 /**
  * A universal symbol that can be used to customize the inspection behavior of
- * an object, supports Node.js, Bun, Deno and any runtime that has
- * Node.js-compatible `util.inspect` function.
+ * an object, currently supports Node.js, Bun and Deno.
  */
 export const customInspect: unique symbol = (() => {
-    if (isBrowserWindow ||
-        isServiceWorker ||
-        isSharedWorker ||
-        (isDedicatedWorker && ["chromium", "firefox", "safari"].includes(runtime().identity))
-    ) {
-        return Symbol.for("Symbol.customInspect");
-    } else if (isDeno) {
+    if (isDeno) {
         return Symbol.for("Deno.customInspect");
-    } else {
+    } else if (isNodeLike) {
         return Symbol.for("nodejs.util.inspect.custom");
+    } else {
+        return Symbol.for("Symbol.customInspect");
     }
 })() as any;

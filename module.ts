@@ -3,7 +3,7 @@
  * @module 
  */
 
-import { isBrowserWindow, isDedicatedWorker } from "./env.ts";
+import { isBrowserWindow, isDedicatedWorker, isSharedWorker } from "./env.ts";
 import { equals, extname, isUrl } from "./path.ts";
 
 /**
@@ -108,7 +108,9 @@ export function isMain(importMeta: ImportMeta | NodeJS.Module): boolean {
     if ("serviceWorker" in globalThis && "url" in importMeta) {
         // @ts-ignore
         return globalThis["serviceWorker"]["scriptURL"] === importMeta.url;
-    } else if (isDedicatedWorker && "url" in importMeta && typeof location === "object" && location) {
+    } else if ((isDedicatedWorker || isSharedWorker)
+        && "url" in importMeta && typeof location === "object" && location
+    ) {
         return importMeta.url === location.href;
     }
 

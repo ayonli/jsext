@@ -1,7 +1,6 @@
 import bytes, { equals, concat } from '../../bytes.js';
 import { chars } from '../../string.js';
 import '../../env.js';
-import '../../runtime.js';
 import '../../path.js';
 import { ControlKeys, NavigationKeys, ControlSequences } from '../../cli/constants.js';
 import { writeStdout, readStdin, moveLeftBy, moveRightBy, isTypingInput } from '../../cli/common.js';

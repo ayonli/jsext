@@ -1,4 +1,4 @@
-import { isBrowserWindow, isServiceWorker, isSharedWorker, isDedicatedWorker, isDeno, isMainThread, isBun, isNode, isNodeLike } from './env.js';
+import { isDeno, isMainThread, isBun, isNode, isSharedWorker, isServiceWorker, isDedicatedWorker, isNodeLike } from './env.js';
 
 /**
  * Utility functions to retrieve runtime information or modify runtime behaviors.
@@ -11,7 +11,7 @@ const CommonRuntimes = [
     "chromium",
     "firefox",
     "safari",
-    "cloudflare_workers",
+    "cloudflare-worker",
 ];
 /**
  * Returns the information of the runtime environment in which the program is
@@ -91,9 +91,9 @@ function runtime() {
                 };
             }
         }
-        else if (/Cloudflare[-\s]Workers/i.test(navigator.userAgent)) {
+        else if (/Cloudflare[-\s]Workers?/i.test(navigator.userAgent)) {
             return {
-                identity: "cloudflare_workers",
+                identity: "cloudflare-worker",
                 version: undefined,
                 tsSupport: false,
                 worker: "service",
@@ -311,21 +311,17 @@ function addShutdownListener(fn) {
 }
 /**
  * A universal symbol that can be used to customize the inspection behavior of
- * an object, supports Node.js, Bun, Deno and any runtime that has
- * Node.js-compatible `util.inspect` function.
+ * an object, currently supports Node.js, Bun and Deno.
  */
 const customInspect = (() => {
-    if (isBrowserWindow ||
-        isServiceWorker ||
-        isSharedWorker ||
-        (isDedicatedWorker && ["chromium", "firefox", "safari"].includes(runtime().identity))) {
-        return Symbol.for("Symbol.customInspect");
-    }
-    else if (isDeno) {
+    if (isDeno) {
         return Symbol.for("Deno.customInspect");
     }
-    else {
+    else if (isNodeLike) {
         return Symbol.for("nodejs.util.inspect.custom");
+    }
+    else {
+        return Symbol.for("Symbol.customInspect");
     }
 })();
 

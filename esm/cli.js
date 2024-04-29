@@ -1,6 +1,6 @@
 import { trimStart } from './string.js';
 import { text } from './bytes.js';
-import { isDeno, isNodeLike, isBun, isBrowserWindow, isSharedWorker, isDedicatedWorker, isServiceWorker } from './env.js';
+import { isDeno, isNodeLike, isBun, isBrowserWindow, isSharedWorker, isDedicatedWorker } from './env.js';
 import runtime, { platform as platform$1, env } from './runtime.js';
 import { interop } from './module.js';
 import { basename } from './path.js';
@@ -177,22 +177,14 @@ async function edit(filename) {
         line = Number(match[2]);
         filename = filename.slice(0, match.index);
     }
-    const vscodeUrl = "vscode://file/" + trimStart(filename, "/") + (line ? `:${line}` : "");
     if (isBrowserWindow) {
-        window.open(vscodeUrl);
+        window.open("vscode://file/" + trimStart(filename, "/") + (line ? `:${line}` : ""));
         return;
     }
     else if (isSharedWorker
+        || isSharedWorker
         || (isDedicatedWorker && (["chromium", "firefox", "safari"]).includes(runtime().identity))) {
         throw new Error("Unsupported runtime");
-    }
-    else if (isServiceWorker) {
-        if (runtime().identity === "cloudflare_workers") {
-            throw new Error("Unsupported runtime");
-        }
-        // @ts-ignore
-        await self.clients.openWindow(vscodeUrl);
-        return;
     }
     const _platform = platform();
     const vscode = await which("code");
