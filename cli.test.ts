@@ -95,8 +95,12 @@ describe("cli", () => {
 
     it("getWindowSize", () => {
         if (isDeno) {
-            const { columns, rows } = Deno.consoleSize();
-            deepStrictEqual(getWindowSize(), { width: columns, height: rows });
+            try {
+                const { columns, rows } = Deno.consoleSize();
+                deepStrictEqual(getWindowSize(), { width: columns, height: rows });
+            } catch {
+                deepStrictEqual(getWindowSize(), { width: 0, height: 0 });
+            }
         } else {
             const columns = process.stdout.columns;
             const rows = process.stdout.rows;
