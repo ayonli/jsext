@@ -69,9 +69,9 @@ declare global {
         stripEnd(suffix: string): string;
         /** Returns the byte length of the string. */
         byteLength(): number;
-        /** Checks if all characters in this string are within the ASCII range. */
+        /** Checks if all characters in the string are within the ASCII range. */
         isAscii(printableOnly?: boolean): boolean;
-        /** Checks if the string is an emoji. */
+        /** Checks if all characters in the string are emojis. */
         isEmoji(): boolean;
     }
 }

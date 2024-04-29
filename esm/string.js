@@ -154,13 +154,13 @@ function stripStart(str, prefix) {
 function byteLength(str) {
     return bytes$1(str).byteLength;
 }
-/** Checks if all characters in this string are within the ASCII range. */
+/** Checks if all characters in the string are within the ASCII range. */
 function isAscii(str, printableOnly = false) {
     return printableOnly ? /^[-~]+$/.test(str) : /^[\x00-\x7E]+$/.test(str);
 }
-/** Checks if the given character is an emoji. */
-function isEmoji(char) {
-    return EMOJI_RE.test(char);
+/** Checks if all characters in the string are emojis. */
+function isEmoji(str) {
+    return chars(str).every((char) => EMOJI_RE.test(char));
 }
 
 export { byteLength, bytes, capitalize, chars, chunk, compare, count, hyphenate, isAscii, isEmoji, lines, random, stripEnd, stripStart, trim, trimEnd, trimStart, truncate, words };

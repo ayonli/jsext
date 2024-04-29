@@ -127,12 +127,11 @@ describe("String", () => {
     it("String.prototype.isEmoji", () => {
         ok(!"H".isEmoji());
         ok(!"世".isEmoji());
-        ok(!"😴😄⛔🎠🚓🚇👨‍👨‍👧‍👧👦🏾".isEmoji());
 
         if (!isNodeBelow16) {
-            ok("😴😄⛔🎠🚓🚇👨‍👨‍👧‍👧👦🏾".chars().every(char => char.isEmoji()));
+            ok("😴😄⛔🎠🚓🚇👨‍👨‍👧‍👧👦🏾".isEmoji());
         } else {
-            ok("😴😄".chars().every(char => char.isEmoji()));
+            ok("😴😄".isEmoji());
         }
     });
 });

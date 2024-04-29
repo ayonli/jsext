@@ -173,12 +173,12 @@ export function byteLength(str: string): number {
     return _bytes(str).byteLength;
 }
 
-/** Checks if all characters in this string are within the ASCII range. */
+/** Checks if all characters in the string are within the ASCII range. */
 export function isAscii(str: string, printableOnly = false): boolean {
     return printableOnly ? /^[-~]+$/.test(str) : /^[\x00-\x7E]+$/.test(str);
 }
 
-/** Checks if the given character is an emoji. */
-export function isEmoji(char: string): boolean {
-    return EMOJI_RE.test(char);
+/** Checks if all characters in the string are emojis. */
+export function isEmoji(str: string): boolean {
+    return chars(str).every((char) => EMOJI_RE.test(char));
 }
