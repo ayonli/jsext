@@ -299,8 +299,12 @@ export function isTypingInput(data: ByteArray): boolean {
  */
 export function getWindowSize(): { width: number; height: number; } {
     if (isDeno) {
-        const { columns, rows } = Deno.consoleSize();
-        return { width: columns, height: rows };
+        try {
+            const { columns, rows } = Deno.consoleSize(); // this could fail in some environments
+            return { width: columns, height: rows };
+        } catch {
+            return { width: 0, height: 0 };
+        }
     } else if (isNodeLike) {
         return {
             width: process.stdout.columns,

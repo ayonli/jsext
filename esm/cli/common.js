@@ -283,8 +283,13 @@ function isTypingInput(data) {
  */
 function getWindowSize() {
     if (isDeno) {
-        const { columns, rows } = Deno.consoleSize();
-        return { width: columns, height: rows };
+        try {
+            const { columns, rows } = Deno.consoleSize(); // this could fail in some environments
+            return { width: columns, height: rows };
+        }
+        catch (_a) {
+            return { width: 0, height: 0 };
+        }
     }
     else if (isNodeLike) {
         return {
