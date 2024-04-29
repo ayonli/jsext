@@ -203,7 +203,9 @@ export function env(
         } else {
             Deno.env.set(name, String(value));
         }
-    } else if (isNodeLike) {
+    } else if (typeof process === "object"  // Check process.env instead of isNodeLike for
+        && typeof process?.env === "object" // broader adoption.
+    ) {
         if (typeof name === "object" && name !== null) {
             for (const [key, val] of Object.entries(name)) {
                 process.env[key] = String(val);

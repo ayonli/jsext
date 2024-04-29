@@ -156,7 +156,9 @@ function env(name = undefined, value = undefined) {
             Deno.env.set(name, String(value));
         }
     }
-    else if (isNodeLike) {
+    else if (typeof process === "object" // Check process.env instead of isNodeLike for
+        && typeof (process === null || process === void 0 ? void 0 : process.env) === "object" // broader adoption.
+    ) {
         if (typeof name === "object" && name !== null) {
             for (const [key, val] of Object.entries(name)) {
                 process.env[key] = String(val);
