@@ -7,7 +7,8 @@
  * @experimental
  */
 import { isFullWidth, isWide } from "../external/code-point-utils/index.ts";
-import { byteLength, chars, isEmoji } from "../string.ts";
+import { byteLength, chars } from "../string.ts";
+import { EMOJI_CHAR } from "../string/constants.ts";
 import bytes, { ByteArray, equals } from "../bytes.ts";
 import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
 import { platform } from "../runtime.ts";
@@ -66,7 +67,7 @@ export const isTTY: boolean = (() => {
  * Returns the width of a single character.
  */
 export function charWidth(char: string): 1 | 2 {
-    if (isEmoji(char)) {
+    if (EMOJI_CHAR.test(char)) {
         const _bytes = byteLength(char);
 
         // Most emojis are 4 bytes wide, but some are 3 bytes in Windows/Linux,

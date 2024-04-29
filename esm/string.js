@@ -1,12 +1,12 @@
 import { chunk as chunk$1 } from './array/base.js';
 import bytes$1 from './bytes.js';
+import { EMOJI_CHAR } from './string/constants.js';
 
 /**
  * Functions for dealing with strings.
  * @module
  */
 const _chars = chars;
-const EMOJI_RE = /^(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\u200d(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*$/u;
 /**
  * Compares two strings, returns `-1` if `a < b`, `0` if `a === b` and `1` if `a > b`.
  */
@@ -68,7 +68,7 @@ function bytes(str) {
 }
 /** Returns the characters of the string (emojis are supported). */
 function chars(str) {
-    if (typeof (Intl === null || Intl === void 0 ? void 0 : Intl.Segmenter) === "function") {
+    if (typeof Intl === "object" && typeof Intl.Segmenter === "function") {
         return Array.from(new Intl.Segmenter().segment(str))
             .map((x) => x.segment);
     }
@@ -160,7 +160,7 @@ function isAscii(str, printableOnly = false) {
 }
 /** Checks if all characters in the string are emojis. */
 function isEmoji(str) {
-    return chars(str).every((char) => EMOJI_RE.test(char));
+    return chars(str).every((char) => EMOJI_CHAR.test(char));
 }
 
 export { byteLength, bytes, capitalize, chars, chunk, compare, count, hyphenate, isAscii, isEmoji, lines, random, stripEnd, stripStart, trim, trimEnd, trimStart, truncate, words };

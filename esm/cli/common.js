@@ -1,5 +1,6 @@
 import { isWide, isFullWidth } from '../external/code-point-utils/index.js';
-import { isEmoji, byteLength, chars } from '../string.js';
+import { byteLength, chars } from '../string.js';
+import { EMOJI_CHAR } from '../string/constants.js';
 import bytes, { equals } from '../bytes.js';
 import { isDeno, isNodeLike, isBrowserWindow } from '../env.js';
 import { platform } from '../runtime.js';
@@ -56,7 +57,7 @@ const isTTY = (() => {
  * Returns the width of a single character.
  */
 function charWidth(char) {
-    if (isEmoji(char)) {
+    if (EMOJI_CHAR.test(char)) {
         const _bytes = byteLength(char);
         // Most emojis are 4 bytes wide, but some are 3 bytes in Windows/Linux,
         // and 6 bytes in macOS.

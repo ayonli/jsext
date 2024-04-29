@@ -5,9 +5,9 @@
 
 import { chunk as _chunk } from "./array/base.ts";
 import _bytes, { ByteArray } from "./bytes.ts";
+import { EMOJI_CHAR } from "./string/constants.ts";
 
 const _chars = chars;
-const EMOJI_RE = /^(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\u200d(?:\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*$/u;
 
 /**
  * Compares two strings, returns `-1` if `a < b`, `0` if `a === b` and `1` if `a > b`.
@@ -79,7 +79,7 @@ export function bytes(str: string): ByteArray {
 
 /** Returns the characters of the string (emojis are supported). */
 export function chars(str: string): string[] {
-    if (typeof (Intl as any)?.Segmenter === "function") {
+    if (typeof Intl === "object" && typeof (Intl as any).Segmenter === "function") {
         return Array.from(new (Intl as any).Segmenter().segment(str))
             .map((x: any) => x.segment);
     } else {
@@ -180,5 +180,5 @@ export function isAscii(str: string, printableOnly = false): boolean {
 
 /** Checks if all characters in the string are emojis. */
 export function isEmoji(str: string): boolean {
-    return chars(str).every((char) => EMOJI_RE.test(char));
+    return chars(str).every((char) => EMOJI_CHAR!.test(char));
 }

@@ -2,6 +2,7 @@ import { basename, join } from '../path.js';
 import { isBrowserWindow, isDeno, isNodeLike } from '../env.js';
 import { platform } from '../runtime.js';
 import '../bytes.js';
+import '../string/constants.js';
 import '../cli/constants.js';
 import { isWSL } from '../cli/common.js';
 import read from '../read.js';
