@@ -16,10 +16,10 @@ export const isSharedWorker = typeof SharedWorkerGlobalScope === "function"
 export const isWebWorker = typeof DedicatedWorkerGlobalScope === "function"
     && globalThis instanceof DedicatedWorkerGlobalScope;
 
-export const isDeno = typeof Deno === "object";
-export const isBun = typeof Bun === "object";
-export const isNode: boolean = !isDeno && !isBun
-    && typeof process === "object" && !!process.versions?.node;
+export const isDeno = typeof Deno === "object" && !!Deno.version?.deno;
+export const isBun = typeof Bun === "object" && !!Bun.version;
+export const isNodeLike = typeof process === "object" && !!process.versions?.node;
+export const isNode: boolean = isNodeLike && !isDeno && !isBun;
 
 export const isNodeBelow14 = isNode && parseInt(process.version.slice(1)) < 14;
 export const isNodeBelow16 = isNode && parseInt(process.version.slice(1)) < 16;

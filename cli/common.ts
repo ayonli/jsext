@@ -9,7 +9,7 @@
 import { isFullWidth, isWide } from "../external/code-point-utils/index.ts";
 import { byteLength, chars, isEmoji } from "../string.ts";
 import bytes, { ByteArray, equals } from "../bytes.ts";
-import { isBrowser, isDeno } from "../env.ts";
+import { isBrowser, isDeno, isNodeLike } from "../env.ts";
 import { platform } from "../runtime.ts";
 import { sum } from "../math.ts";
 import { Mutex } from "../lock.ts";
@@ -40,9 +40,9 @@ const NonTypingKeys = [
  * in Node.js or Bun.
  */
 export const args: string[] = (() => {
-    if (typeof Deno === "object") {
+    if (isDeno) {
         return Deno.args;
-    } else if (typeof process === "object" && Array.isArray(process.argv)) {
+    } else if (isNodeLike) {
         return process.argv.slice(2);
     } else {
         return [];
@@ -53,9 +53,9 @@ export const args: string[] = (() => {
  * Whether the standard IO is a text terminal.
  */
 export const isTTY: boolean = (() => {
-    if (typeof Deno === "object") {
+    if (isDeno) {
         return Deno.stdin.isTerminal();
-    } else if (typeof process === "object" && typeof process.stdin === "object") {
+    } else if (isNodeLike) {
         return process.stdin.isTTY;
     } else {
         return false;
@@ -152,14 +152,14 @@ export async function lockStdin<T>(task: () => Promise<T>): Promise<T | null> {
     const lock = await stdinMutex.lock();
 
     try {
-        if (typeof Deno === "object") {
+        if (isDeno) {
             try {
                 Deno.stdin.setRaw(true);
                 return await task();
             } finally {
                 Deno.stdin.setRaw(false);
             }
-        } else if (typeof process === "object" && typeof process.stdin === "object") {
+        } else if (isNodeLike) {
             const { stdin } = process;
 
             if (stdin.isPaused()) {
@@ -200,7 +200,7 @@ export async function lockStdin<T>(task: () => Promise<T>): Promise<T | null> {
  * NOTE: this function should be used within the task function of {@link lockStdin}.
  */
 export async function readStdin(): Promise<ByteArray> {
-    if (typeof Deno !== "undefined") {
+    if (isDeno) {
         const reader = Deno.stdin.readable.getReader();
         const { done, value } = await reader.read();
 
@@ -213,7 +213,7 @@ export async function readStdin(): Promise<ByteArray> {
         } else {
             return bytes(value);
         }
-    } else if (typeof process !== "undefined" && typeof process.stdin === "object") {
+    } else if (isNodeLike) {
         const stdin = process.stdin;
         return new Promise<ByteArray>(resolve => {
             const listener = (chunk: Buffer) => {
@@ -234,9 +234,9 @@ export async function readStdin(): Promise<ByteArray> {
  * Writes a chunk of data to the standard output.
  */
 export async function writeStdout(data: ByteArray): Promise<void> {
-    if (typeof Deno === "object") {
+    if (isDeno) {
         await Deno.stdout.write(data);
-    } else if (typeof process === "object" && typeof process.stdout === "object") {
+    } else if (isNodeLike) {
         await new Promise<void>(resolve => {
             process.stdout.write(data, () => resolve());
         });
@@ -256,9 +256,9 @@ export async function writeStdout(data: ByteArray): Promise<void> {
  * special cases where the asynchronous behavior is not acceptable.
  */
 export function writeStdoutSync(data: ByteArray): void {
-    if (typeof Deno === "object") {
+    if (isDeno) {
         Deno.stdout.writeSync(data);
-    } else if (typeof process === "object" && typeof process.stdout === "object") {
+    } else if (isNodeLike) {
         process.stdout.write(data);
     } else {
         throw new Error("No stdout available");
@@ -300,7 +300,7 @@ export function getWindowSize(): { width: number; height: number; } {
     if (isDeno) {
         const { columns, rows } = Deno.consoleSize();
         return { width: columns, height: rows };
-    } else if (typeof process === "object" && typeof process.stdout === "object") {
+    } else if (isNodeLike) {
         return {
             width: process.stdout.columns,
             height: process.stdout.rows,
@@ -329,9 +329,9 @@ export function isWSL(): boolean {
     if (platform() !== "linux")
         return false;
 
-    if (typeof Deno === "object") {
+    if (isDeno) {
         return Deno.osRelease().includes("microsoft-standard-WSL");
-    } else if (typeof process === "object" && typeof process.env === "object") {
+    } else if (isNodeLike) {
         return !!process.env["WSL_INTEROP"];
     }
 

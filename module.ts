@@ -112,7 +112,7 @@ export function isMain(importMeta: ImportMeta | NodeJS.Module): boolean {
         return importMeta.url === location.href;
     }
 
-    if (typeof process === "object" && Array.isArray(process.argv)) {
+    if (typeof process === "object" && Array.isArray(process.argv) && process.argv.length) {
         if (!process.argv[1]) {
             // Node.js REPL or the program is executed by `node -e "code"`,
             // or the program is executed by itself.

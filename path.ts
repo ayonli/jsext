@@ -9,6 +9,7 @@
  * @module
  */
 
+import { isDeno, isNodeLike } from "./env.ts";
 import { stripEnd, trim } from "./string.ts";
 import {
     contains,
@@ -46,11 +47,11 @@ export {
  * server-side runtime, and `/` otherwise.
  */
 export const sep: "/" | "\\" = (() => {
-    if (typeof Deno === "object" && typeof Deno.build?.os === "string") { // Deno
+    if (isDeno) {
         if (Deno.build.os === "windows") {
             return "\\";
         }
-    } else if (typeof process === "object" && !!process.versions?.node) { // Node.js
+    } else if (isNodeLike) {
         if (process.platform === "win32") {
             return "\\";
         }
@@ -65,9 +66,9 @@ export const sep: "/" | "\\" = (() => {
  * **NOTE**: In the browser, this function returns the current origin and pathname.
  */
 export function cwd(): string {
-    if (typeof Deno === "object" && typeof Deno.cwd === "function") {
+    if (isDeno) {
         return Deno.cwd();
-    } else if (typeof process === "object" && typeof process.cwd === "function") {
+    } else if (isNodeLike) {
         return process.cwd();
     } else if (typeof location === "object" && location.origin) {
         return location.origin + (location.pathname === "/" ? "" : location.pathname);

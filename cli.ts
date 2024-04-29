@@ -8,7 +8,7 @@
  */
 import { trimStart } from "./string.ts";
 import { text } from "./bytes.ts";
-import { isBrowser, isBun, isDeno, isServiceWorker, isSharedWorker, isWebWorker } from "./env.ts";
+import { isBrowser, isBun, isDeno, isNodeLike, isServiceWorker, isSharedWorker, isWebWorker } from "./env.ts";
 import runtime, { env, platform as runtimePlatform } from "./runtime.ts";
 import { interop } from "./module.ts";
 import { basename } from "./path.ts";
@@ -38,7 +38,7 @@ export async function run(cmd: string, args: string[]): Promise<{
     const isWindows = platform() === "windows";
     const isWslPs = isWSL() && cmd.endsWith("powershell.exe");
 
-    if (typeof Deno === "object") {
+    if (isDeno) {
         const { Buffer } = await import("node:buffer");
         const { decode } = interop(await import("iconv-lite"), false);
         const _cmd = isWindows && PowerShellCommands.includes(cmd)
@@ -51,7 +51,7 @@ export async function run(cmd: string, args: string[]): Promise<{
             stdout: isWindows || isWslPs ? decode(Buffer.from(stdout), "cp936") : text(stdout),
             stderr: isWindows || isWslPs ? decode(Buffer.from(stderr), "cp936") : text(stderr),
         };
-    } else if (typeof process === "object" && !!process.versions?.node) {
+    } else if (isNodeLike) {
         const { spawn } = await import("child_process");
         const { decode } = await interop(import("iconv-lite"), false);
         const child = isWindows && PowerShellCommands.includes(cmd)

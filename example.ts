@@ -6,6 +6,8 @@
  * the future.
  */
 
+import { isDeno, isNodeLike } from "./env.ts";
+
 /**
  * Inspired by Golang's **Example as Test** design, creates a function that
  * carries example code with `// output:` comments, when the returned function
@@ -129,9 +131,9 @@ export default function example<T, A extends any[] = any[]>(
 
                 if (!options?.suppress) {
                     for (const chunk of logs) {
-                        if (typeof Deno === "object") {
+                        if (isDeno) {
                             await Deno.stdout.write(chunk);
-                        } else if (typeof process === "object") {
+                        } else if (isNodeLike) {
                             await new Promise<void>(resolve => {
                                 process.stdout.write(chunk, () => resolve());
                             });

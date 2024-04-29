@@ -1,7 +1,7 @@
 import type { ChildProcess } from "node:child_process";
 import { Channel } from "../chan.ts";
 import { AsyncTask } from "../async.ts";
-import { isBun, isDeno, isNode, isNodeBelow14 } from "../env.ts";
+import { isBun, isDeno, isNode, isNodeBelow14, isNodeLike } from "../env.ts";
 import { BunWorker, NodeWorker, CallResponse, ChannelMessage } from "./types.ts";
 import { handleChannelMessage, isChannelMessage, wrapChannel } from "./channel.ts";
 import { getObjectURL } from "../module.ts";
@@ -39,7 +39,9 @@ type RemoteTask = {
 export const remoteTasks = new Map<number, RemoteTask>();
 
 export const getMaxParallelism: Promise<number> = (async () => {
-    if (isNode) {
+    if (typeof navigator === "object" && navigator.hardwareConcurrency) {
+        return navigator.hardwareConcurrency;
+    } else if (isNode) {
         const os = await import("os");
 
         if (typeof os.availableParallelism === "function") {
@@ -47,8 +49,6 @@ export const getMaxParallelism: Promise<number> = (async () => {
         } else {
             return os.cpus().length;
         }
-    } else if (typeof navigator === "object" && navigator.hardwareConcurrency) {
-        return navigator.hardwareConcurrency;
     } else {
         return 8;
     }
@@ -79,7 +79,25 @@ function getModuleDir(importMetaPath: string) {
 async function getWorkerEntry(parallel: {
     workerEntry?: string | undefined;
 } = {}): Promise<string> {
-    if (isNode || isBun) {
+    if (isDeno) {
+        if (parallel.workerEntry) {
+            return parallel.workerEntry;
+        } else if ((import.meta as any)["main"]) {
+            // The code is bundled, try the remote worker entry.
+            if (import.meta.url.includes("jsr.io")) {
+                return "jsr:@ayonli/jsext/worker.ts";
+            } else {
+                return "https://ayonli.github.io/jsext/bundle/worker.mjs";
+            }
+        } else {
+            if (import.meta.url.includes("jsr.io")) {
+                return "jsr:@ayonli/jsext/worker.ts";
+            } else {
+                const _dirname = getModuleDir(import.meta.url);
+                return path.join(_dirname, "worker.ts");
+            }
+        }
+    } else if (isNodeLike) {
         if (parallel.workerEntry) {
             return parallel.workerEntry;
         }
@@ -111,24 +129,6 @@ async function getWorkerEntry(parallel: {
                 }
             } else {
                 return path.join(_dirname, "bundle/worker-node.mjs");
-            }
-        }
-    } else if (isDeno) {
-        if (parallel.workerEntry) {
-            return parallel.workerEntry;
-        } else if ((import.meta as any)["main"]) {
-            // The code is bundled, try the remote worker entry.
-            if (import.meta.url.includes("jsr.io")) {
-                return "jsr:@ayonli/jsext/worker.ts";
-            } else {
-                return "https://ayonli.github.io/jsext/bundle/worker.mjs";
-            }
-        } else {
-            if (import.meta.url.includes("jsr.io")) {
-                return "jsr:@ayonli/jsext/worker.ts";
-            } else {
-                const _dirname = getModuleDir(import.meta.url);
-                return path.join(_dirname, "worker.ts");
             }
         }
     } else {
@@ -286,7 +286,7 @@ function handleWorkerMessage(poolRecord: PoolRecord, worker: NodeWorker | BunWor
 
             poolRecord.tasks.delete(msg.taskId);
 
-            if (!poolRecord.tasks.size && (isNode || isBun)) {
+            if (!poolRecord.tasks.size && typeof worker.unref === "function") {
                 // Allow the main thread to exit if the event
                 // loop is empty.
                 worker.unref();
@@ -414,9 +414,9 @@ export async function acquireWorker(taskId: number, parallel: {
 
     const worker = await poolRecord.getWorker;
 
-    if (isNode || isBun) {
+    if ("ref" in worker && typeof worker.ref === "function") {
         // Prevent premature exit in the main thread.
-        (worker as NodeWorker | BunWorker).ref();
+        worker.ref();
     }
 
     return worker;

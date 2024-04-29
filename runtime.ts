@@ -12,6 +12,7 @@ import {
     isServiceWorker,
     isSharedWorker,
     isWebWorker,
+    isNodeLike,
 } from "./env.ts";
 
 declare const Bun: any;
@@ -148,11 +149,11 @@ export const CommonPlatforms: CommonPlatforms[] = [
  * program is running.
  */
 export function platform(): CommonPlatforms | "others" {
-    if (typeof Deno === "object") {
+    if (isDeno) {
         if (CommonPlatforms.includes(Deno.build.os as any)) {
             return Deno.build.os as CommonPlatforms;
         }
-    } else if (typeof process === "object" && typeof process.platform === "string") {
+    } else if (isNodeLike) {
         if (process.platform === "win32") {
             return "windows";
         } else if ((CommonPlatforms as string[]).includes(process.platform)) {
@@ -191,7 +192,7 @@ export function env(
     name: string | undefined | object = undefined,
     value: string | undefined = undefined
 ): any {
-    if (typeof Deno === "object") {
+    if (isDeno) {
         if (typeof name === "object" && name !== null) {
             for (const [key, val] of Object.entries(name)) {
                 Deno.env.set(key, String(val));
@@ -203,7 +204,7 @@ export function env(
         } else {
             Deno.env.set(name, String(value));
         }
-    } else if (typeof process === "object" && typeof process.env === "object") {
+    } else if (isNodeLike) {
         if (typeof name === "object" && name !== null) {
             for (const [key, val] of Object.entries(name)) {
                 process.env[key] = String(val);
@@ -314,7 +315,7 @@ let shutdownListenerRegistered = false;
  * In the browser or unsupported environments, this function is a no-op.
  */
 export function addShutdownListener(fn: () => (void | Promise<void>)): void {
-    if (!isDeno && (typeof process !== "object" || typeof process?.on !== "function")) {
+    if (!isDeno && !isNodeLike) {
         return;
     }
 
@@ -331,7 +332,7 @@ export function addShutdownListener(fn: () => (void | Promise<void>)): void {
 
                 if (isDeno) {
                     Deno.exit(0);
-                } else if (typeof process === "object") {
+                } else {
                     process.exit(0);
                 }
             } catch (err) {
@@ -339,7 +340,7 @@ export function addShutdownListener(fn: () => (void | Promise<void>)): void {
 
                 if (isDeno) {
                     Deno.exit(1);
-                } else if (typeof process === "object") {
+                } else {
                     process.exit(1);
                 }
             }
