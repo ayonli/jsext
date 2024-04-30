@@ -3,7 +3,7 @@ import chan from './chan.js';
 import { serial } from './number.js';
 import { toFileUrl, cwd } from './path.js';
 import { asyncTask } from './async.js';
-import { isMainThread } from './env.js';
+import { isMainThread, isNode } from './env.js';
 import { sanitizeModuleId, resolveModule } from './parallel/module.js';
 import { remoteTasks, acquireWorker, wrapArgs } from './parallel/threads.js';
 import { isFsPath } from './path/util.js';
@@ -330,6 +330,9 @@ function extractBaseUrl(stackTrace) {
  * - [ ] Any other runtime that doesn't support the `Worker` constructor
  */
 function parallel(module) {
+    if (!isNode && typeof Worker !== "function") {
+        throw new Error("Unsupported runtime");
+    }
     let modId = sanitizeModuleId(module, true);
     let baseUrl;
     if (isFsPath(modId)) {

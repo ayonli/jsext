@@ -139,6 +139,10 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
      */
     abort(reason?: Error | null): Promise<void>;
 }> {
+    if (!isNode && typeof Worker !== "function") {
+        throw new Error("Unsupported runtime");
+    }
+
     const maxWorkers = run.maxWorkers || parallel.maxWorkers || await getMaxParallelism;
     const fn = options?.fn || "default";
     let modId = sanitizeModuleId(script);

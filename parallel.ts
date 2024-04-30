@@ -9,7 +9,7 @@ import chan, { Channel } from "./chan.ts";
 import { serial } from "./number.ts";
 import { cwd, isFsPath, toFileUrl } from "./path.ts";
 import { asyncTask } from "./async.ts";
-import { isMainThread } from "./env.ts";
+import { isMainThread, isNode } from "./env.ts";
 import { BunWorker, CallRequest, NodeWorker } from "./parallel/types.ts";
 import { resolveModule, sanitizeModuleId } from "./parallel/module.ts";
 import { acquireWorker, remoteTasks, wrapArgs } from "./parallel/threads.ts";
@@ -368,6 +368,10 @@ function extractBaseUrl(stackTrace: string): string | undefined {
 function parallel<M extends { [x: string]: any; }>(
     module: string | (() => Promise<M>)
 ): ThreadedFunctions<M> {
+    if (!isNode && typeof Worker !== "function") {
+        throw new Error("Unsupported runtime");
+    }
+
     let modId = sanitizeModuleId(module, true);
     let baseUrl: string | undefined;
 
