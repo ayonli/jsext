@@ -3,53 +3,10 @@ import cluster from "node:cluster";
 import { isMainThread, Worker, workerData } from "node:worker_threads";
 import { fileURLToPath } from "node:url";
 import { parallel, chan } from "../../esm/index.js";
-import { readChannel, wireChannel } from "./util.js";
+import { readChannel, wireChannel, incomingMessageToRequest, pipeResponse } from "./util.js";
 import { default as handle } from "./handler.js";
 import { availableParallelism } from "node:os";
 const { parallelHandle } = parallel(() => import("./worker.js"));
-
-/**
- * @param {http.IncomingMessage} nReq
- * @returns {Request}
- */
-function incomingMessageToRequest(nReq) {
-    return new Request(new URL(nReq.url, "http://" + (nReq.headers["host"] || "localhost:8000")), {
-        method: nReq.method,
-        headers: nReq.headers,
-        body: ["GET", "HEAD", "OPTIONS"].includes(nReq.method) ? null : new ReadableStream({
-            async start(controller) {
-                for await (const chunk of nReq) {
-                    controller.enqueue(chunk);
-                }
-
-                controller.close();
-            },
-        }),
-        cache: nReq.headers["cache-control"],
-        credentials: "include",
-        keepalive: false,
-        mode: nReq.headers["sec-fetch-mode"],
-        redirect: "follow",
-        referrer: nReq.headers["referer"],
-        duplex: "half",
-    });
-}
-
-/**
- * @param {Response} res 
- * @param {http.ServerResponse} nRes 
- */
-function pipeResponse(res, nRes) {
-    nRes.writeHead(res.status, res.statusText, Object.fromEntries(res.headers.entries()));
-    res.body?.pipeTo(new WritableStream({
-        write(chunk) {
-            nRes.write(chunk);
-        },
-        close() {
-            nRes.end();
-        }
-    }));
-}
 
 if (cluster.isPrimary && isMainThread) {
     if (process.argv.includes("--cluster=builtin-cluster")) {

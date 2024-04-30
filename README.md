@@ -1209,9 +1209,9 @@ applicable to `parallel()` are also applicable to `run()`, except the following:
    `run.maxWorkers` to allow more tasks to be run at the same time if needed.
 3. By default, the worker thread is dropped after the task settles, set
    `keepAlive` option in order to reuse it.
-4. This function is not intended to be used in the browser, because it takes
-  a bare filename as argument, which will not be transformed to a proper URL
-  if the program is to be bundled.
+4. This function is not intended to be used in the browser, because it takes a
+   bare filename as argument, which will not be transformed to a proper URL if
+   the program is to be bundled.
 
 **Example (result)**
 

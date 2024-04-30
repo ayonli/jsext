@@ -14,8 +14,8 @@ import parallel from "@ayonli/jsext/parallel";
 const { default: didYouMean } = parallel(() => import("didyoumean"));
 
 (async () => {
-    const word = await didYouMean("helo", ["hello", "hola"]);
-    console.log(word);
+  const word = await didYouMean("helo", ["hello", "hola"]);
+  console.log(word);
 })();
 ```
 
@@ -28,9 +28,9 @@ no longer run and will likely to throw some error saying that
 `window is not defined` or `document is not defined`.
 
 This is because, when bundling, even though Vite will bundle the `didyoumean`
-module as a separate file, the file will import the entry file `index-<hash>.js`,
-either for the use of some common functions, or for side effects. Something like
-this:
+module as a separate file, the file will import the entry file
+`index-<hash>.js`, either for the use of some common functions, or for side
+effects. Something like this:
 
 ```js
 // didyoumean--h96y-lc7.js
@@ -63,26 +63,28 @@ export const didYouMean = _didYouMean;
 
 ```ts
 // vite.config.ts
-import { defineConfig } from "vite"
+import { defineConfig } from "vite";
 
 export default defineConfig({
-    build: {
-        rollupOptions: {
-            output: {
-                manualChunks(id) {
-                    if (id.includes("tslib") // This is usually required in TypeScript projects
-                        || id.includes("didyoumean")
-                    ) {
-                        return "vendor"
-                    }
-                }
-            }
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (
+            id.includes("tslib") || // This is usually required in TypeScript projects
+            id.includes("didyoumean")
+          ) {
+            return "vendor";
+          }
         },
+      },
     },
-})
+  },
+});
 ```
 
-_NOTE: this separate chunk is used for the main entry `index-<hash>.js` as well._
+_NOTE: this separate chunk is used for the main entry `index-<hash>.js` as
+well._
 
 #### 3. Update the program to link the worker module
 
@@ -94,8 +96,8 @@ import parallel from "@ayonli/jsext/parallel";
 const { didYouMean } = parallel(() => import("./utils/worker"));
 
 (async () => {
-    const word = await didYouMean("helo", ["hello", "hola"]);
-    console.log(word);
+  const word = await didYouMean("helo", ["hello", "hola"]);
+  console.log(word);
 })();
 ```
 

@@ -53,3 +53,46 @@ export function readChannel(channel, closeAfterRead = false) {
         }
     });
 }
+
+/**
+ * @param {http.IncomingMessage} nReq
+ * @returns {Request}
+ */
+export function incomingMessageToRequest(nReq) {
+    return new Request(new URL(nReq.url, "http://" + (nReq.headers["host"] || "localhost:8000")), {
+        method: nReq.method,
+        headers: nReq.headers,
+        body: ["GET", "HEAD", "OPTIONS"].includes(nReq.method) ? null : new ReadableStream({
+            async start(controller) {
+                for await (const chunk of nReq) {
+                    controller.enqueue(chunk);
+                }
+
+                controller.close();
+            },
+        }),
+        cache: "no-cache",
+        credentials: "include",
+        keepalive: false,
+        mode: "same-origin",
+        redirect: "follow",
+        referrer: nReq.headers["referer"],
+        duplex: "half",
+    });
+}
+
+/**
+ * @param {Response} res 
+ * @param {http.ServerResponse} nRes 
+ */
+export function pipeResponse(res, nRes) {
+    nRes.writeHead(res.status, res.statusText, Object.fromEntries(res.headers.entries()));
+    res.body?.pipeTo(new WritableStream({
+        write(chunk) {
+            nRes.write(chunk);
+        },
+        close() {
+            nRes.end();
+        }
+    }));
+}

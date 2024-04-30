@@ -1,8 +1,8 @@
 # Function Stubs for Cloudflare Workers
 
-Some of the modules in this packages use dynamic imports for Node.js built-in
-and third-party libraries, which cannot be resolved by Wrangler, causing it to
-fail to build or start the dev server.
+Some of the modules in this package use dynamic imports for Node.js built-in and
+third-party libraries, which cannot be resolved by Wrangler, causing it to fail
+to build or start the dev server.
 
 Since the functions used these libraries are not for Cloudflare Workers anyway,
 we provide stubs for them instead. When Cloudflare Workers (Wrangler) tries to
