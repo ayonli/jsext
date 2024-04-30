@@ -302,14 +302,26 @@ function extractBaseUrl(stackTrace) {
  * console.log(arr.length); // 0
  * ```
  *
- * **NOTE:**
- * If the application is to be bundled, use the following syntax to link the
- * module instead, it will prevent the bundler from including the file and
- * rewriting the path.
+ * **Use with Vite:**
  *
- * ```ts
- * const mod = parallel<typeof import("./examples/worker.mjs")>("./examples/worker.mjs");
- * ```
+ * In order to use parallel threads with Vite, we need to adjust a little bit,
+ * please check [this document](https://github.com/ayonli/jsext/blob/main/parallel/README.md#use-with-vite).
+ *
+ * **Compatibility List:**
+ *
+ * The following environments are guaranteed to work:
+ *
+ * - [x] Node.js v12+
+ * - [x] Deno v1.0+
+ * - [x] Bun v1.0+
+ * - [x] Modern browsers
+ *
+ * The following environments are not supported:
+ *
+ * - [ ] Cloudflare Workers
+ * - [ ] Fastly Compute
+ * - [ ] WinterJS
+ * - [ ] Any other runtime that doesn't support the `Worker` constructor
  */
 function parallel(module) {
     let modId = sanitizeModuleId(module, true);

@@ -23,8 +23,9 @@ const workerConsumerQueue = [];
 /**
  * Runs the given `script` in a worker thread and abort the task at any time.
  *
- * This function is similar to {@link parallel}(), many features applicable to
- * `parallel()` are also applicable to `run()`, except the following:
+ * This function is similar to {@link parallel}(), many features and
+ * restrictions applicable to `parallel()` are also applicable to `run()`,
+ * except the following:
  *
  * 1. The `script` can only be a filename, and is relative to the current
  *   working directory (or the current URL) if not absolute.
@@ -33,6 +34,9 @@ const workerConsumerQueue = [];
  *   needed.
  * 3. By default, the worker thread is dropped after the task settles, set
  *   `keepAlive` option in order to reuse it.
+ * 4. This function is not intended to be used in the browser, because it takes
+ *   a bare filename as argument, which will not be transformed to a proper URL
+ *   if the program is to be bundled.
  *
  * @example
  * ```ts

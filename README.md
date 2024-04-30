@@ -117,7 +117,8 @@ don't use them when developing libraries.
 _NOTE: this feature is only available by the NPM package, they don't work by_
 _the JSR package._
 
-For more details, please [check here](./augment/README.md).
+For more details, please check
+[this document](https://github.com/ayonli/jsext/blob/main/augment/README.md).
 
 ## Note for Cloudflare Workers
 
@@ -1094,15 +1095,27 @@ console.log(length); // 10
 console.log(arr.length); // 0
 ```
 
-**NOTE:** If the application is to be bundled, use the following syntax to link
-the module instead, it will prevent the bundler from including the file and
-rewriting the path.
+**Use with Vite:**
 
-```ts
-const mod = parallel<typeof import("./examples/worker.mjs")>(
-  "./examples/worker.mjs",
-);
-```
+In order to use parallel threads with Vite, we need to adjust a little bit,
+please check
+[this document](https://github.com/ayonli/jsext/blob/main/parallel/README.md#use-with-vite).
+
+**Compatibility List:**
+
+The following environments are guaranteed to work:
+
+- [x] Node.js v12+
+- [x] Deno v1.0+
+- [x] Bun v1.0+
+- [x] Modern browsers
+
+The following environments are not supported:
+
+- [ ] Cloudflare Workers
+- [ ] Fastly Compute
+- [ ] WinterJS
+- [ ] Any other runtime that doesn't support the `Worker` constructor
 
 ---
 
@@ -1187,8 +1200,8 @@ declare function run<R, A extends any[] = any[]>(
 
 Runs the given `script` in a worker thread and abort the task at any time.
 
-This function is similar to `parallel()`, many features applicable to
-`parallel()` are also applicable to `run()`, except the following:
+This function is similar to `parallel()`, many features and restrictions
+applicable to `parallel()` are also applicable to `run()`, except the following:
 
 1. The `script` can only be a filename, and is relative to the current working
    directory (or the current URL) if not absolute.
@@ -1196,6 +1209,9 @@ This function is similar to `parallel()`, many features applicable to
    `run.maxWorkers` to allow more tasks to be run at the same time if needed.
 3. By default, the worker thread is dropped after the task settles, set
    `keepAlive` option in order to reuse it.
+4. This function is not intended to be used in the browser, because it takes
+  a bare filename as argument, which will not be transformed to a proper URL
+  if the program is to be bundled.
 
 **Example (result)**
 
