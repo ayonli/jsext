@@ -126,7 +126,7 @@ export default function runtime(): RuntimeInfo {
             return {
                 identity: "cloudflare-worker",
                 version: undefined,
-                tsSupport: false,
+                tsSupport: true,
                 worker: "service",
             };
         }

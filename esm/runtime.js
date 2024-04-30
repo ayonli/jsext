@@ -96,7 +96,7 @@ function runtime() {
             return {
                 identity: "cloudflare-worker",
                 version: undefined,
-                tsSupport: false,
+                tsSupport: true,
                 worker: "service",
             };
         }
