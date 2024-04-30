@@ -144,29 +144,43 @@ export default function runtime(): RuntimeInfo {
     return { identity: "unknown", version: undefined, tsSupport: false, worker };
 }
 
-export type CommonPlatforms = "darwin"
+export type WellknownPlatforms = "darwin"
     | "windows"
-    | "linux";
-export const CommonPlatforms: CommonPlatforms[] = [
+    | "linux"
+    | "android"
+    | "freebsd"
+    | "openbsd"
+    | "netbsd"
+    | "aix"
+    | "solaris";
+export const WellknownPlatforms: WellknownPlatforms[] = [
     "darwin",
     "windows",
     "linux",
+    "android",
+    "freebsd",
+    "openbsd",
+    "netbsd",
+    "aix",
+    "solaris",
 ];
 
 /**
  * Returns a string identifying the operating system platform in which the
  * program is running.
  */
-export function platform(): CommonPlatforms | "others" {
+export function platform(): WellknownPlatforms | "unknown" {
     if (isDeno) {
-        if (CommonPlatforms.includes(Deno.build.os as any)) {
-            return Deno.build.os as CommonPlatforms;
+        if (WellknownPlatforms.includes(Deno.build.os as any)) {
+            return Deno.build.os as WellknownPlatforms;
         }
     } else if (isNodeLike) {
         if (process.platform === "win32") {
             return "windows";
-        } else if ((CommonPlatforms as string[]).includes(process.platform)) {
-            return process.platform as CommonPlatforms;
+        } else if (process.platform === "sunos") {
+            return "solaris";
+        } else if ((WellknownPlatforms as string[]).includes(process.platform)) {
+            return process.platform as WellknownPlatforms;
         }
     } else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
         if (navigator.userAgent.includes("Macintosh")) {
@@ -175,10 +189,22 @@ export function platform(): CommonPlatforms | "others" {
             return "windows";
         } else if (navigator.userAgent.includes("Linux")) {
             return "linux";
+        } else if (navigator.userAgent.includes("Android")) {
+            return "android";
+        } else if (navigator.userAgent.includes("FreeBSD")) {
+            return "freebsd";
+        } else if (navigator.userAgent.includes("OpenBSD")) {
+            return "openbsd";
+        } else if (navigator.userAgent.includes("NetBSD")) {
+            return "netbsd";
+        } else if (navigator.userAgent.includes("AIX")) {
+            return "aix";
+        } else if (navigator.userAgent.match(/SunOS|Solaris/)) {
+            return "solaris";
         }
     }
 
-    return "others";
+    return "unknown";
 }
 
 /** Returns all environment variables in an object. */

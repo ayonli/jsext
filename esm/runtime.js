@@ -110,10 +110,16 @@ function runtime() {
     }
     return { identity: "unknown", version: undefined, tsSupport: false, worker };
 }
-const CommonPlatforms = [
+const WellknownPlatforms = [
     "darwin",
     "windows",
     "linux",
+    "android",
+    "freebsd",
+    "openbsd",
+    "netbsd",
+    "aix",
+    "solaris",
 ];
 /**
  * Returns a string identifying the operating system platform in which the
@@ -121,7 +127,7 @@ const CommonPlatforms = [
  */
 function platform() {
     if (isDeno) {
-        if (CommonPlatforms.includes(Deno.build.os)) {
+        if (WellknownPlatforms.includes(Deno.build.os)) {
             return Deno.build.os;
         }
     }
@@ -129,7 +135,10 @@ function platform() {
         if (process.platform === "win32") {
             return "windows";
         }
-        else if (CommonPlatforms.includes(process.platform)) {
+        else if (process.platform === "sunos") {
+            return "solaris";
+        }
+        else if (WellknownPlatforms.includes(process.platform)) {
             return process.platform;
         }
     }
@@ -143,8 +152,26 @@ function platform() {
         else if (navigator.userAgent.includes("Linux")) {
             return "linux";
         }
+        else if (navigator.userAgent.includes("Android")) {
+            return "android";
+        }
+        else if (navigator.userAgent.includes("FreeBSD")) {
+            return "freebsd";
+        }
+        else if (navigator.userAgent.includes("OpenBSD")) {
+            return "openbsd";
+        }
+        else if (navigator.userAgent.includes("NetBSD")) {
+            return "netbsd";
+        }
+        else if (navigator.userAgent.includes("AIX")) {
+            return "aix";
+        }
+        else if (navigator.userAgent.match(/SunOS|Solaris/)) {
+            return "solaris";
+        }
     }
-    return "others";
+    return "unknown";
 }
 function env(name = undefined, value = undefined) {
     var _a, _b;
@@ -335,5 +362,5 @@ const customInspect = (() => {
     }
 })();
 
-export { CommonPlatforms, WellknownRuntimes, addShutdownListener, customInspect, runtime as default, env, isREPL, platform, refTimer, unrefTimer };
+export { WellknownPlatforms, WellknownRuntimes, addShutdownListener, customInspect, runtime as default, env, isREPL, platform, refTimer, unrefTimer };
 //# sourceMappingURL=runtime.js.map

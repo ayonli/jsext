@@ -1,7 +1,7 @@
 import { basename, join } from "../path.ts";
 import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
 import { platform } from "../runtime.ts";
-import { isWSL } from "../cli.ts";
+import { isWSL, which } from "../cli.ts";
 import read from "../read.ts";
 import readAll from "../readAll.ts";
 import { readFile } from "./terminal/util.ts";
@@ -59,7 +59,7 @@ export async function pickFile(options: {
             forSave: options?.forSave,
             defaultName: options?.defaultName,
         });
-    } else if (_platform === "linux") {
+    } else if (_platform === "linux" || await which("zenity")) {
         return await linuxPickFile(options.title, {
             type: options.type,
             forSave: options?.forSave,
@@ -91,7 +91,7 @@ export async function pickFiles(options: {
         return await macPickFiles(options.title, options.type);
     } else if (_platform === "windows" || isWSL()) {
         return await windowsPickFiles(options.title, options.type);
-    } else if (_platform === "linux") {
+    } else if (_platform === "linux" || await which("zenity")) {
         return await linuxPickFiles(options.title, options.type);
     }
 
@@ -114,7 +114,7 @@ export async function pickDirectory(options: {
         return await macPickFolder(options.title);
     } else if (_platform === "windows" || isWSL()) {
         return await windowsPickFolder(options.title);
-    } else if (_platform === "linux") {
+    } else if (_platform === "linux" || await which("zenity")) {
         return await linuxPickFolder(options.title);
     }
 

@@ -1,16 +1,14 @@
 import { basename, join } from '../path.js';
 import { isBrowserWindow, isDeno, isNodeLike } from '../env.js';
 import { platform } from '../runtime.js';
-import '../bytes.js';
-import '../string/constants.js';
-import '../cli/constants.js';
-import { isWSL } from '../cli/common.js';
+import { which } from '../cli.js';
 import read from '../read.js';
 import readAll from '../readAll.js';
 import { readFile } from './terminal/util.js';
 import { macPickFile, macPickFiles, macPickFolder } from './terminal/file/mac.js';
 import { linuxPickFile, linuxPickFiles, linuxPickFolder } from './terminal/file/linux.js';
 import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './terminal/file/windows.js';
+import { isWSL } from '../cli/common.js';
 
 /**
  * Open the file picker dialog and pick a file, this function returns the file's
@@ -38,7 +36,7 @@ async function pickFile(options = {}) {
             defaultName: options === null || options === void 0 ? void 0 : options.defaultName,
         });
     }
-    else if (_platform === "linux") {
+    else if (_platform === "linux" || await which("zenity")) {
         return await linuxPickFile(options.title, {
             type: options.type,
             forSave: options === null || options === void 0 ? void 0 : options.forSave,
@@ -61,7 +59,7 @@ async function pickFiles(options = {}) {
     else if (_platform === "windows" || isWSL()) {
         return await windowsPickFiles(options.title, options.type);
     }
-    else if (_platform === "linux") {
+    else if (_platform === "linux" || await which("zenity")) {
         return await linuxPickFiles(options.title, options.type);
     }
     throw new Error("Unsupported platform");
@@ -80,7 +78,7 @@ async function pickDirectory(options = {}) {
     else if (_platform === "windows" || isWSL()) {
         return await windowsPickFolder(options.title);
     }
-    else if (_platform === "linux") {
+    else if (_platform === "linux" || await which("zenity")) {
         return await linuxPickFolder(options.title);
     }
     throw new Error("Unsupported platform");

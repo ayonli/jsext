@@ -1,6 +1,6 @@
 import { escape } from "./util.ts";
 import { platform } from "../../runtime.ts";
-import { isWSL, lockStdin, powershell, run } from "../../cli.ts";
+import { isWSL, lockStdin, powershell, run, which } from "../../cli.ts";
 import question from "./question.ts";
 
 function createAppleScript(message: string, defaultValue = "", password = false) {
@@ -107,7 +107,7 @@ export default async function promptInTerminal(message: string, options: {
         } else {
             return stdout.trim();
         }
-    } else if (options?.gui && platform() === "linux") {
+    } else if (options?.gui && (platform() === "linux" || await which("zenity"))) {
         const args = [
             "--entry",
             "--title", "Prompt",

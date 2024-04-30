@@ -1,6 +1,6 @@
 import { escape } from './util.js';
 import { platform } from '../../runtime.js';
-import { run, powershell } from '../../cli.js';
+import { run, powershell, which } from '../../cli.js';
 import question from './question.js';
 import { isWSL, lockStdin } from '../../cli/common.js';
 
@@ -29,7 +29,7 @@ async function alertInTerminal(message, options = {}) {
             throw new Error(stderr);
         }
     }
-    else if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "linux") {
+    else if ((options === null || options === void 0 ? void 0 : options.gui) && (platform() === "linux" || await which("zenity"))) {
         const args = [
             "--info",
             "--title", "Alert",

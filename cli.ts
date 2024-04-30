@@ -145,6 +145,10 @@ export async function sudo(cmd: string, args: string[], options: {
         return await run("sudo", [cmd, ...args]);
     }
 
+    if (!["darwin", "windows", "linux"].includes(_platform)) {
+        throw new Error("Unsupported platform");
+    }
+
     const { exec } = await interop(import("sudo-prompt"));
     return await new Promise((resolve, reject) => {
         exec(`${cmd}` + (args.length ? ` ${args.map(quote).join(" ")}` : ""), {

@@ -1,6 +1,6 @@
 import { escape } from "./util.ts";
 import { platform } from "../../runtime.ts";
-import { isWSL, lockStdin, powershell, run } from "../../cli.ts";
+import { isWSL, lockStdin, powershell, run, which } from "../../cli.ts";
 import question from "./question.ts";
 
 function createAppleScript(message: string) {
@@ -34,7 +34,7 @@ export default async function alertInTerminal(message: string, options: {
         if (code) {
             throw new Error(stderr);
         }
-    } else if (options?.gui && platform() === "linux") {
+    } else if (options?.gui && (platform() === "linux" || await which("zenity"))) {
         const args = [
             "--info",
             "--title", "Alert",
