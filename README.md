@@ -3,15 +3,15 @@
 Additional functions for JavaScript to build strong applications.
 
 This package provides universal high-level APIs that can work across different
-runtime environments and operating systems, whether it's Node.js, Deno, Bun, the
-browser, Windows, macOS or Linux.
+runtime environments and operating systems, whether it's Node.js, Deno, Bun,
+Cloudflare Workers, browsers, Windows, macOS or Linux.
 
 ## Import
 
 The recommended way is to only import the ones that are needed:
 
 ```js
-// Node.js, Bun, Deno (JSR) and Cloudflare Workers
+// Universal
 import _try from "@ayonli/jsext/try";
 import func from "@ayonli/jsext/func";
 // ...
@@ -21,7 +21,7 @@ import _try from "https://lib.deno.dev/x/ayonli_jsext@latest/try.ts";
 import func from "https://lib.deno.dev/x/ayonli_jsext@latest/func.ts";
 // ...
 
-// Browsers (ESM)
+// Browsers (URL)
 import _try from "https://ayonli.github.io/jsext/esm/try.js";
 import func from "https://ayonli.github.io/jsext/esm/func.js";
 // ...
