@@ -3,6 +3,7 @@ import { isDeno, isMainThread, isBun, isNode, isSharedWorker, isServiceWorker, i
 /**
  * Utility functions to retrieve runtime information or modify runtime behaviors.
  * @module
+ * @experimental
  */
 const CommonRuntimes = [
     "node",

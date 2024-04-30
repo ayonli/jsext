@@ -101,8 +101,8 @@ categories:
 - [path](https://jsr.io/@ayonli/jsext/doc/path/~) (Experimental)
   Platform-independent utility functions for dealing with file system paths and
   URLs.
-- [runtime](https://jsr.io/@ayonli/jsext/doc/runtime/~) Utility functions to
-  retrieve runtime information or modify runtime behaviors.
+- [runtime](https://jsr.io/@ayonli/jsext/doc/runtime/~) (Experimental) Utility
+  functions to retrieve runtime information or modify runtime behaviors.
 - [string](https://jsr.io/@ayonli/jsext/doc/string/~) Functions for dealing with
   strings.
 - [types](https://jsr.io/@ayonli/jsext/doc/types/~) The missing utility types

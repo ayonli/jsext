@@ -1,6 +1,7 @@
 /**
  * Utility functions to retrieve runtime information or modify runtime behaviors.
  * @module
+ * @experimental
  */
 
 import {
