@@ -4,3 +4,4 @@ cjs/
 types/
 *.tgz
 .python-version
+.wrangler
