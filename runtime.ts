@@ -17,18 +17,18 @@ import {
 
 declare const Bun: any;
 
-export type CommonRuntimes = "node"
+export type WellknownRuntimes = "node"
     | "deno"
     | "bun"
-    | "chromium"
+    | "chrome"
     | "firefox"
     | "safari"
     | "cloudflare-worker";
-export const CommonRuntimes: CommonRuntimes[] = [
+export const WellknownRuntimes: WellknownRuntimes[] = [
     "node",
     "deno",
     "bun",
-    "chromium",
+    "chrome",
     "firefox",
     "safari",
     "cloudflare-worker",
@@ -36,7 +36,7 @@ export const CommonRuntimes: CommonRuntimes[] = [
 
 export type RuntimeInfo = {
     /** The representation term of the runtime. */
-    identity: CommonRuntimes | "others";
+    identity: WellknownRuntimes | "unknown";
     /**
      * The version of the runtime. This property is `undefined` when `identity` is `others`.
      */
@@ -77,7 +77,14 @@ export default function runtime(): RuntimeInfo {
                 || /\.tsx?$|\bvite\b/.test(process.argv[1] ?? ""),
             worker: isMainThread ? undefined : "dedicated",
         };
-    } else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
+    }
+
+    const worker = isSharedWorker ? "shared"
+        : isServiceWorker ? "service"
+            : isDedicatedWorker ? "dedicated"
+                : undefined;
+
+    if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
         const ua = navigator.userAgent.match(/(Firefox|Edg?e|Safari|Chrom(e|ium))\/(\d+(\.\d+)+)/g);
 
         if (ua) {
@@ -88,10 +95,6 @@ export default function runtime(): RuntimeInfo {
             const safari = list.find(({ name }) => name === "Safari");
             const firefox = list.find(({ name }) => name === "Firefox");
             const chrome = list.find(({ name }) => name === "Chrome" || name === "Chromium");
-            const worker = isSharedWorker ? "shared"
-                : isServiceWorker ? "service"
-                    : isDedicatedWorker ? "dedicated"
-                        : undefined;
 
             if (safari && !chrome && !firefox) {
                 return {
@@ -109,14 +112,14 @@ export default function runtime(): RuntimeInfo {
                 };
             } else if (chrome) {
                 return {
-                    identity: "chromium",
+                    identity: "chrome",
                     version: chrome!.version,
                     tsSupport: false,
                     worker,
                 };
             } else {
                 return {
-                    identity: "others",
+                    identity: "unknown",
                     version: undefined,
                     tsSupport: false,
                     worker,
@@ -133,12 +136,12 @@ export default function runtime(): RuntimeInfo {
                         return /[\\/]\.?wrangler[\\/]/.test(err.stack!);
                     }
                 })(),
-                worker: "service",
+                worker,
             };
         }
     }
 
-    return { identity: "others", version: undefined, tsSupport: false };
+    return { identity: "unknown", version: undefined, tsSupport: false, worker };
 }
 
 export type CommonPlatforms = "darwin"

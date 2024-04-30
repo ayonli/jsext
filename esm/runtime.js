@@ -5,11 +5,11 @@ import { isDeno, isMainThread, isBun, isNode, isSharedWorker, isServiceWorker, i
  * @module
  * @experimental
  */
-const CommonRuntimes = [
+const WellknownRuntimes = [
     "node",
     "deno",
     "bun",
-    "chromium",
+    "chrome",
     "firefox",
     "safari",
     "cloudflare-worker",
@@ -45,7 +45,11 @@ function runtime() {
             worker: isMainThread ? undefined : "dedicated",
         };
     }
-    else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
+    const worker = isSharedWorker ? "shared"
+        : isServiceWorker ? "service"
+            : isDedicatedWorker ? "dedicated"
+                : undefined;
+    if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
         const ua = navigator.userAgent.match(/(Firefox|Edg?e|Safari|Chrom(e|ium))\/(\d+(\.\d+)+)/g);
         if (ua) {
             const list = ua.map(part => {
@@ -55,10 +59,6 @@ function runtime() {
             const safari = list.find(({ name }) => name === "Safari");
             const firefox = list.find(({ name }) => name === "Firefox");
             const chrome = list.find(({ name }) => name === "Chrome" || name === "Chromium");
-            const worker = isSharedWorker ? "shared"
-                : isServiceWorker ? "service"
-                    : isDedicatedWorker ? "dedicated"
-                        : undefined;
             if (safari && !chrome && !firefox) {
                 return {
                     identity: "safari",
@@ -77,7 +77,7 @@ function runtime() {
             }
             else if (chrome) {
                 return {
-                    identity: "chromium",
+                    identity: "chrome",
                     version: chrome.version,
                     tsSupport: false,
                     worker,
@@ -85,7 +85,7 @@ function runtime() {
             }
             else {
                 return {
-                    identity: "others",
+                    identity: "unknown",
                     version: undefined,
                     tsSupport: false,
                     worker,
@@ -104,11 +104,11 @@ function runtime() {
                         return /[\\/]\.?wrangler[\\/]/.test(err.stack);
                     }
                 })(),
-                worker: "service",
+                worker,
             };
         }
     }
-    return { identity: "others", version: undefined, tsSupport: false };
+    return { identity: "unknown", version: undefined, tsSupport: false, worker };
 }
 const CommonPlatforms = [
     "darwin",
@@ -335,5 +335,5 @@ const customInspect = (() => {
     }
 })();
 
-export { CommonPlatforms, CommonRuntimes, addShutdownListener, customInspect, runtime as default, env, isREPL, platform, refTimer, unrefTimer };
+export { CommonPlatforms, WellknownRuntimes, addShutdownListener, customInspect, runtime as default, env, isREPL, platform, refTimer, unrefTimer };
 //# sourceMappingURL=runtime.js.map

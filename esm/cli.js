@@ -183,7 +183,7 @@ async function edit(filename) {
     }
     else if (isSharedWorker
         || isSharedWorker
-        || (isDedicatedWorker && (["chromium", "firefox", "safari"]).includes(runtime().identity))) {
+        || (isDedicatedWorker && (["chrome", "firefox", "safari"]).includes(runtime().identity))) {
         throw new Error("Unsupported runtime");
     }
     const _platform = platform();

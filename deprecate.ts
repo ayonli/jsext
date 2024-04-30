@@ -81,12 +81,12 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
             const lineOffset = ({
                 "node": 2,
                 "deno": 2,
-                "chromium": 2,
+                "chrome": 2,
                 "cloudflare-worker": 2,
                 "bun": 1,
                 "safari": 1,
                 "firefox": 3,
-                "others": 3,
+                "unknown": 3,
             })[identity]!;
 
             emitWarning(fn.name + "()", wrapped, tip, once, lineOffset, true);
@@ -100,12 +100,12 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
     const lineOffset = ({
         "node": 1,
         "deno": 1,
-        "chromium": 1,
+        "chrome": 1,
         "cloudflare-worker": 1,
         "bun": 1,
         "safari": 1,
         "firefox": 3,
-        "others": 3,
+        "unknown": 3,
     })[identity]!;
 
     return emitWarning(target, forFn, tip, once, lineOffset);
