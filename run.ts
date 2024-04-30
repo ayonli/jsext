@@ -147,7 +147,11 @@ async function run<R, A extends any[] = any[]>(script: string, args?: A, options
     if (isBrowserWindow) {
         baseUrl = location.href;
     } else {
-        baseUrl = toFileUrl(cwd()) + "/"; // must ends with `/`
+        try {
+            baseUrl = toFileUrl(cwd()) + "/"; // must ends with `/`
+        } catch { // `cwd()` may fail in unsupported environments or being rejected
+            baseUrl = "";
+        }
     }
 
     if (baseUrl) {

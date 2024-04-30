@@ -139,7 +139,7 @@ function extractBaseUrl(stackTrace) {
     var _a, _b, _c;
     let lines = stackTrace.split("\n");
     const offset = lines.findIndex(line => line === "Error");
-    if (offset !== -1) {
+    if (offset !== -1 && offset !== 0) {
         lines = lines.slice(offset); // fix for tsx in Node.js v16
     }
     let callSite;
@@ -173,7 +173,13 @@ function extractBaseUrl(stackTrace) {
                 baseUrl = toFileUrl(baseUrl);
             }
             else {
-                baseUrl = toFileUrl(cwd()) + "/"; // must ends with `/`
+                try {
+                    baseUrl = toFileUrl(cwd()) + "/"; // must ends with `/`
+                }
+                catch ( // `cwd()` may fail in unsupported environments or being rejected
+                _d) { // `cwd()` may fail in unsupported environments or being rejected
+                    baseUrl = "";
+                }
             }
         }
     }

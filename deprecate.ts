@@ -1,8 +1,10 @@
 /**
  * Marks a function as deprecated and emit warnings when it is called.
  * @module
+ * @experimental
  */
 
+import runtime from "./runtime.ts";
 import wrap from "./wrap.ts";
 
 declare var Bun: any;
@@ -16,6 +18,9 @@ const warnedRecord = new Map<Function, boolean>();
  * to the stdout.
  * 
  * **NOTE:** The original function must have a name.
+ * 
+ * **NOTE:** This function is **experimental** and the warning may point to the
+ * wrong file source in some environments.
  * 
  * @param tip Extra tip for the user to migrate.
  * @param once If set, the warning will only be emitted once.
@@ -66,12 +71,25 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
     target: Fn | string,
     ...args: any[]
 ): Fn | void {
+    const { identity } = runtime();
+
     if (typeof target === "function") {
         const tip = (args[0] as string) ?? "";
         const once = (args[1] as boolean) ?? false;
 
         return wrap<T, Fn>(target, function wrapped(fn, ...args) {
-            emitWarning(fn.name + "()", wrapped, tip, once, isBun ? 1 : 2);
+            const lineOffset = ({
+                "node": 2,
+                "deno": 2,
+                "chromium": 2,
+                "cloudflare-worker": 2,
+                "bun": 1,
+                "safari": 1,
+                "firefox": 3,
+                "others": 3,
+            })[identity]!;
+
+            emitWarning(fn.name + "()", wrapped, tip, once, lineOffset, true);
             return fn.apply(this, args);
         });
     }
@@ -79,11 +97,28 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
     const forFn = args[0] as Function;
     const tip = (args[1] as string) ?? "";
     const once = (args[2] as boolean) ?? false;
+    const lineOffset = ({
+        "node": 1,
+        "deno": 1,
+        "chromium": 1,
+        "cloudflare-worker": 1,
+        "bun": 1,
+        "safari": 1,
+        "firefox": 3,
+        "others": 3,
+    })[identity]!;
 
-    return emitWarning(target, forFn, tip, once, 1);
+    return emitWarning(target, forFn, tip, once, lineOffset);
 }
 
-function emitWarning(target: string, forFn: Function, tip: string, once: boolean, lineNum: number) {
+function emitWarning(
+    target: string,
+    forFn: Function,
+    tip: string,
+    once: boolean,
+    lineNum: number,
+    wrapped = false
+) {
     if (!once || !warnedRecord.has(forFn)) {
         let trace: { stack?: string; } = {};
 
@@ -96,11 +131,19 @@ function emitWarning(target: string, forFn: Function, tip: string, once: boolean
         let lines = (trace.stack as string).split("\n");
         const offset = lines.findIndex(line => line === "Error");
 
-        if (offset !== -1) {
+        if (offset !== -1 && offset !== 0) {
             lines = lines.slice(offset); // fix for tsx in Node.js v16
         }
 
-        let line = lines[lineNum]?.trim();
+        let line: string | undefined;
+
+        if (isBun && !wrapped) {
+            line = lines.find(line => line.trim().startsWith("at module code"))
+                || lines[lineNum];
+        } else {
+            line = lines[lineNum];
+        }
+
         let warning = `${target} is deprecated`;
 
         if (tip) {
@@ -108,6 +151,7 @@ function emitWarning(target: string, forFn: Function, tip: string, once: boolean
         }
 
         if (line) {
+            line = line.trim();
             let start = line.indexOf("(");
 
             if (start !== -1) {

@@ -90,7 +90,13 @@ async function run(script, args, options) {
         baseUrl = location.href;
     }
     else {
-        baseUrl = toFileUrl(cwd()) + "/"; // must ends with `/`
+        try {
+            baseUrl = toFileUrl(cwd()) + "/"; // must ends with `/`
+        }
+        catch ( // `cwd()` may fail in unsupported environments or being rejected
+        _b) { // `cwd()` may fail in unsupported environments or being rejected
+            baseUrl = "";
+        }
     }
     if (baseUrl) {
         modId = new URL(modId, baseUrl).href;
