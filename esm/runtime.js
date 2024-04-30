@@ -96,7 +96,14 @@ function runtime() {
             return {
                 identity: "cloudflare-worker",
                 version: undefined,
-                tsSupport: true,
+                tsSupport: (() => {
+                    try {
+                        throw new Error("Test error");
+                    }
+                    catch (err) {
+                        return /[\\/]\.?wrangler[\\/]/.test(err.stack);
+                    }
+                })(),
                 worker: "service",
             };
         }

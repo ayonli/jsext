@@ -126,7 +126,13 @@ export default function runtime(): RuntimeInfo {
             return {
                 identity: "cloudflare-worker",
                 version: undefined,
-                tsSupport: true,
+                tsSupport: (() => {
+                    try {
+                        throw new Error("Test error");
+                    } catch (err: any) {
+                        return /[\\/]\.?wrangler[\\/]/.test(err.stack!);
+                    }
+                })(),
                 worker: "service",
             };
         }
