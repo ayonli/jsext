@@ -19,6 +19,19 @@ import { getMIME } from "../esm/filetype.js";
 import { isBun, isDeno, isNode } from "../esm/env.js";
 import { incomingMessageToRequest, pipeResponse } from "./node/util.js";
 import { byteLength } from "../esm/string.js";
+import deprecate from "../esm/deprecate.js";
+
+const sum = deprecate(function sum(a, b) {
+    return a + b;
+}, "use `a + b` instead");
+console.assert(sum(1, 2) === 3);
+
+function pow(a, b) {
+    deprecate("pow()", pow, "use `a ** b` instead");
+    return a ** b;
+}
+
+console.assert(pow(2, 3) === 8);
 
 if (typeof navigator !== "undefined") {
     console.log("navigator.userAgent:", navigator.userAgent);

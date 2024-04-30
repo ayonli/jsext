@@ -6,7 +6,6 @@ import wrap from './wrap.js';
  * @module
  * @experimental
  */
-const isBun = typeof Bun === "object";
 const warnedRecord = new Map();
 function deprecate(target, ...args) {
     var _a, _b, _c, _d;
@@ -25,7 +24,7 @@ function deprecate(target, ...args) {
                 "firefox": 3,
                 "unknown": 3,
             })[identity];
-            emitWarning(fn.name + "()", wrapped, tip, once, lineOffset, true);
+            emitWarning(fn.name + "()", wrapped, tip, once, lineOffset, identity, true);
             return fn.apply(this, args);
         });
     }
@@ -42,9 +41,9 @@ function deprecate(target, ...args) {
         "firefox": 3,
         "unknown": 3,
     })[identity];
-    return emitWarning(target, forFn, tip, once, lineOffset);
+    return emitWarning(target, forFn, tip, once, lineOffset, identity, false);
 }
-function emitWarning(target, forFn, tip, once, lineNum, wrapped = false) {
+function emitWarning(target, forFn, tip, once, lineNum, identity, wrapped = false) {
     if (!once || !warnedRecord.has(forFn)) {
         let trace = {};
         if (typeof Error.captureStackTrace === "function") {
@@ -59,7 +58,11 @@ function emitWarning(target, forFn, tip, once, lineNum, wrapped = false) {
             lines = lines.slice(offset); // fix for tsx in Node.js v16
         }
         let line;
-        if (isBun && !wrapped) {
+        if (identity === "safari") {
+            line = lines.find(line => line.trim().startsWith("module code@"))
+                || lines[lineNum];
+        }
+        else if (identity === "bun" && !wrapped) {
             line = lines.find(line => line.trim().startsWith("at module code"))
                 || lines[lineNum];
         }

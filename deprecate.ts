@@ -4,11 +4,9 @@
  * @experimental
  */
 
-import runtime from "./runtime.ts";
+import runtime, { RuntimeInfo } from "./runtime.ts";
 import wrap from "./wrap.ts";
 
-declare var Bun: any;
-const isBun = typeof Bun === "object";
 const warnedRecord = new Map<Function, boolean>();
 
 /**
@@ -89,7 +87,7 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
                 "unknown": 3,
             })[identity]!;
 
-            emitWarning(fn.name + "()", wrapped, tip, once, lineOffset, true);
+            emitWarning(fn.name + "()", wrapped, tip, once, lineOffset, identity, true);
             return fn.apply(this, args);
         });
     }
@@ -108,7 +106,7 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
         "unknown": 3,
     })[identity]!;
 
-    return emitWarning(target, forFn, tip, once, lineOffset);
+    return emitWarning(target, forFn, tip, once, lineOffset, identity, false);
 }
 
 function emitWarning(
@@ -117,6 +115,7 @@ function emitWarning(
     tip: string,
     once: boolean,
     lineNum: number,
+    identity: RuntimeInfo["identity"],
     wrapped = false
 ) {
     if (!once || !warnedRecord.has(forFn)) {
@@ -137,7 +136,10 @@ function emitWarning(
 
         let line: string | undefined;
 
-        if (isBun && !wrapped) {
+        if (identity === "safari") {
+            line = lines.find(line => line.trim().startsWith("module code@"))
+                || lines[lineNum];
+        } else if (identity === "bun" && !wrapped) {
             line = lines.find(line => line.trim().startsWith("at module code"))
                 || lines[lineNum];
         } else {
