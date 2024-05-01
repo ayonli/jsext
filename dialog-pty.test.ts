@@ -948,7 +948,33 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             const outputs = await output;
 
             deepStrictEqual(outputs, [
-                "Processing...\r\x1B[KProcessing.\r\x1B[KProcessing..\r\x1B[KProcessing...\r\x1B[KProcessing.",
+                [
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [=     ]",
+                    "\r\u001b[KProcessing... [==    ]",
+                    "\r\u001b[KProcessing... [===   ]",
+                    "\r\u001b[KProcessing... [ ===  ]",
+                    "\r\u001b[KProcessing... [  === ]",
+                    "\r\u001b[KProcessing... [   ===]",
+                    "\r\u001b[KProcessing... [    ==]",
+                    "\r\u001b[KProcessing... [     =]",
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [=     ]",
+                    "\r\u001b[KProcessing... [==    ]",
+                    "\r\u001b[KProcessing... [===   ]",
+                    "\r\u001b[KProcessing... [ ===  ]",
+                    "\r\u001b[KProcessing... [  === ]",
+                    "\r\u001b[KProcessing... [   ===]",
+                    "\r\u001b[KProcessing... [    ==]",
+                    "\r\u001b[KProcessing... [     =]",
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [=     ]",
+                    "\r\u001b[KProcessing... [==    ]",
+                    "\r\u001b[KProcessing... [===   ]",
+                    "\r\u001b[KProcessing... [ ===  ]",
+                ].join(""),
                 "Success!",
                 ""
             ]);
@@ -960,7 +986,14 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             const outputs = await output;
 
             deepStrictEqual(outputs, [
-                "Processing...\r\x1B[KProcessing ... 0%\r\x1B[KProcessing ... 20%\r\x1B[KHalfway there! ... 50%\r\x1B[KHalfway there! ... 80%\r\x1B[KHalfway there! ... 100%",
+                [
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [------------------------------------------------------------] 0%",
+                    "\r\u001b[KProcessing... [###########------------------------------------------------] 20%",
+                    "\r\u001b[KHalfway there! [#############################-----------------------------] 50%",
+                    "\r\u001b[KHalfway there! [##############################################------------] 80%",
+                    "\r\u001b[KHalfway there! [#########################################################] 100%",
+                ].join(""),
                 "Success!",
                 ""
             ]);
@@ -975,7 +1008,21 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
 
             const outputs = await output;
             deepStrictEqual(outputs, [
-                "Processing...\r\x1B[KProcessing.\r\x1B[KProcessing..",
+                [
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [=     ]",
+                    "\r\u001b[KProcessing... [==    ]",
+                    "\r\u001b[KProcessing... [===   ]",
+                    "\r\u001b[KProcessing... [ ===  ]",
+                    "\r\u001b[KProcessing... [  === ]",
+                    "\r\u001b[KProcessing... [   ===]",
+                    "\r\u001b[KProcessing... [    ==]",
+                    "\r\u001b[KProcessing... [     =]",
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [=     ]",
+                    "\r\u001b[KProcessing... [==    ]",
+                ].join(""),
                 "Failed!",
                 ""
             ]);
@@ -990,7 +1037,21 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
 
             const outputs = await output;
             deepStrictEqual(outputs, [
-                "Processing...\r\x1B[KProcessing.\r\x1B[KProcessing..",
+                [
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [=     ]",
+                    "\r\u001b[KProcessing... [==    ]",
+                    "\r\u001b[KProcessing... [===   ]",
+                    "\r\u001b[KProcessing... [ ===  ]",
+                    "\r\u001b[KProcessing... [  === ]",
+                    "\r\u001b[KProcessing... [   ===]",
+                    "\r\u001b[KProcessing... [    ==]",
+                    "\r\u001b[KProcessing... [     =]",
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [=     ]",
+                    "\r\u001b[KProcessing... [==    ]",
+                ].join(""),
                 "Error: Failed!",
                 ""
             ]);

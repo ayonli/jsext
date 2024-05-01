@@ -1,10 +1,27 @@
 import bytes, { equals } from "../../bytes.ts";
-import { stripEnd } from "../../string.ts";
 import type { ProgressFunc, ProgressState } from "../../dialog.ts";
-import { ControlKeys, ControlSequences, writeStdoutSync } from "../../cli.ts";
+import {
+    ControlKeys,
+    ControlSequences,
+    getWindowSize,
+    stringWidth,
+    writeStdoutSync,
+} from "../../cli.ts";
 
 const { CTRL_C, ESC, LF } = ControlKeys;
 const { CLR } = ControlSequences;
+const ongoingIndicators = [
+    "      ",
+    "=     ",
+    "==    ",
+    "===   ",
+    " ===  ",
+    "  === ",
+    "   ===",
+    "    ==",
+    "     =",
+    "      ",
+];
 
 export async function handleTerminalProgress(
     message: string,
@@ -16,30 +33,38 @@ export async function handleTerminalProgress(
     }
 ) {
     const { signal, abort, listenForAbort } = options;
-
-    writeStdoutSync(bytes(message));
-
-    let lastMessage = stripEnd(message, "...");
+    let lastMessage = message;
+    let lastPosition = 0;
     let lastPercent: number | undefined = undefined;
 
-    let waitingIndicator = message.endsWith("...") ? "..." : "";
-    const waitingTimer = setInterval(() => {
-        if (waitingIndicator === "...") {
-            waitingIndicator = ".";
-        } else {
-            waitingIndicator += ".";
-        }
+    const renderSimpleBar = (position: number | undefined = undefined) => {
+        position ??= lastPosition++;
+        const ongoingIndicator = ongoingIndicators[position];
 
         writeStdoutSync(CLR);
-        writeStdoutSync(bytes(lastMessage + waitingIndicator));
-    }, 1000);
+        writeStdoutSync(bytes(`${lastMessage} [${ongoingIndicator}]`));
 
+        if (lastPosition === ongoingIndicators.length) {
+            lastPosition = 0;
+        }
+    };
+    const renderPercentageBar = (percent: number) => {
+        const { width } = getWindowSize();
+        const percentage = percent + "%";
+        const barWidth = width - stringWidth(lastMessage) - percentage.length - 5;
+        const filled = "".padStart(Math.floor(barWidth * percent / 100), "#");
+        const empty = "".padStart(barWidth - filled.length, "-");
+
+        writeStdoutSync(CLR);
+        writeStdoutSync(bytes(`${lastMessage} [${filled}${empty}] ${percentage}`));
+    };
+
+    renderSimpleBar();
+    const waitingTimer = setInterval(renderSimpleBar, 200);
     const set = (state: ProgressState) => {
         if (signal.aborted) {
             return;
         }
-
-        writeStdoutSync(CLR);
 
         if (state.message) {
             lastMessage = state.message;
@@ -49,13 +74,11 @@ export async function handleTerminalProgress(
             lastPercent = state.percent;
         }
 
-        writeStdoutSync(bytes(lastMessage));
-
         if (lastPercent !== undefined) {
-            const percentage = " ... " + lastPercent + "%";
-
-            writeStdoutSync(bytes(percentage));
-            clearInterval(waitingTimer as any);
+            renderPercentageBar(lastPercent);
+            clearInterval(waitingTimer);
+        } else if (state.message) {
+            renderSimpleBar(lastPosition);
         }
     };
     const nodeReader = typeof Deno === "object" ? null : (buf: Uint8Array) => {
@@ -97,7 +120,7 @@ export async function handleTerminalProgress(
         return await job;
     } finally {
         writeStdoutSync(LF);
-        clearInterval(waitingTimer as any);
+        clearInterval(waitingTimer);
 
         if (nodeReader) {
             process.stdin.off("data", nodeReader);
