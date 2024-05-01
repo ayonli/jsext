@@ -28,7 +28,7 @@ describe("jsext.read", () => {
             });
             return response;
         });
-        defer(() => server.unref());
+        defer(() => server.shutdown());
 
         const ws = new WebSocket("ws://localhost:12345", "echo-protocol");
         const messages: string[] = [];

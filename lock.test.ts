@@ -1,6 +1,7 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { sleep } from "./async.ts";
-import jsext, { Mutex, _try } from "./index.ts";
+import { Mutex } from "./lock.ts";
+import jsext, { _try } from "./index.ts";
 
 describe("jsext.lock", () => {
     it("lock", async () => {
@@ -32,23 +33,23 @@ describe("jsext.lock", () => {
         let value = 1;
 
         await Promise.all([
-            jsext.func(async (defer) => {
-                const lock = await mutex.lock();
-                defer(() => lock.unlock());
+            (async () => {
+                using lock = await mutex.lock();
+                // defer(() => lock.unlock());
 
                 await sleep(50);
                 lock.value = 2;
             })(),
-            jsext.func(async (defer) => {
-                const lock = await mutex.lock();
-                defer(() => lock.unlock());
+            (async () => {
+                using lock = await mutex.lock();
+                // defer(() => lock.unlock());
 
                 await sleep(40);
                 lock.value = 3;
             })(),
-            jsext.func(async (defer) => {
-                const lock = await mutex.lock();
-                defer(() => lock.unlock());
+            (async () => {
+                using lock = await mutex.lock();
+                // defer(() => lock.unlock());
 
                 await sleep(30);
                 value = lock.value;

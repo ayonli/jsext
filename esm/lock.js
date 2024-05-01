@@ -24,16 +24,13 @@ const _unlocked = Symbol.for("unlocked");
  * @example
  * ```ts
  * import { Mutex } from "@ayonli/jsext/lock";
- * import func from "@ayonli/jsext/func";
  * import { random } from "@ayonli/jsext/number";
  * import { sleep } from "@ayonli/jsext/async";
  *
  * const mutex = new Mutex(1);
  *
- * const concurrentOperation = func(async (defer) => {
- *     const shared = await mutex.lock();
- *     defer(() => shared.unlock()); // don't forget to unlock
- *
+ * async function concurrentOperation() {
+ *     using shared = await mutex.lock();
  *     const value1 = shared.value;
  *
  *     await otherAsyncOperations();
@@ -45,7 +42,7 @@ const _unlocked = Symbol.for("unlocked");
  *     // calls during `await otherAsyncOperation()`, and the following
  *     // assertion will fail.
  *     console.assert(value1 + 1 === value2);
- * });
+ * }
  *
  * async function otherAsyncOperations() {
  *     await sleep(100 * random(1, 10));
@@ -137,20 +134,19 @@ const registry = new BiMap();
  * @example
  * ```ts
  * import lock from "@ayonli/jsext/lock";
- * import func from "@ayonli/jsext/func";
  *
  * const key = "lock_key";
  *
- * export const concurrentOperation = func(async (defer) => {
- *     const ctx = await lock(key);
- *     defer(() => ctx.unlock()); // don't forget to unlock
+ * export async function concurrentOperation() {
+ *     using ctx = await lock(key);
+ *     void ctx;
  *
  *     // This block will never be run if there are other coroutines holding
  *     // the lock.
  *     //
  *     // Other coroutines trying to lock the same key will also never be run
- *     // before `unlock()`.
- * });
+ *     // before this function completes.
+ * }
  * ```
  */
 async function lock(key) {

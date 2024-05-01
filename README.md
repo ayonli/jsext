@@ -687,20 +687,19 @@ block until the lock becomes available again.
 
 ```ts
 import lock from "@ayonli/jsext/lock";
-import func from "@ayonli/jsext/func";
 
 const key = "unique_key";
 
-export const concurrentOperation = func(async (defer) => {
+export function concurrentOperation() {
   const ctx = await lock(key);
-  defer(() => ctx.unlock()); // don't forget to unlock
+  void ctx;
 
   // This block will never be run if there are other coroutines holding
   // the lock.
   //
   // Other coroutines trying to lock the same key will also never be run
-  // before `unlock()`.
-});
+  // before this function completes.
+}
 ```
 
 Other than using the `lock()` function, we can also use `new Mutex()` to create
@@ -711,16 +710,13 @@ one coroutine at a time.
 
 ```ts
 import { Mutex } from "@ayonli/jsext/lock";
-import func from "@ayonli/jsext/func";
 import { random } from "@ayonli/jsext/number";
 import { sleep } from "@ayonli/jsext/async";
 
 const mutex = new Mutex(1);
 
-const concurrentOperation = func(async (defer) => {
-  const shared = await mutex.lock();
-  defer(() => shared.unlock()); // don't forget to unlock
-
+async function concurrentOperation() {
+  using shared = await mutex.lock();
   const value1 = shared.value;
 
   await otherAsyncOperations();
@@ -732,7 +728,7 @@ const concurrentOperation = func(async (defer) => {
   // calls during `await otherAsyncOperation()`, and the following
   // assertion will fail.
   console.assert(value1 + 1 === value2);
-});
+}
 
 async function otherAsyncOperations() {
   await sleep(100 * random(1, 10));
