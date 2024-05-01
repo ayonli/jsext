@@ -691,7 +691,7 @@ import lock from "@ayonli/jsext/lock";
 const key = "unique_key";
 
 export function concurrentOperation() {
-  const ctx = await lock(key);
+  using ctx = await lock(key);
   void ctx;
 
   // This block will never be run if there are other coroutines holding
