@@ -307,11 +307,6 @@ function getWindowSize() {
         return { width: 0, height: 0 };
     }
 }
-const CommonPlatforms = [
-    "darwin",
-    "windows",
-    "linux",
-];
 /** Checks if the program is running in Windows Subsystem for Linux. */
 function isWSL() {
     if (platform() !== "linux")
@@ -460,5 +455,5 @@ function quote(arg) {
     return String(arg).replace(/([A-Za-z]:)?([#!"$&'()*,:;<=>?@[\\\]^`{|}])/g, '$1\\$2');
 }
 
-export { CommonPlatforms, ControlKeys, FunctionKeys, NavigationKeys, args, charWidth, getWindowSize, isTTY, isTypingInput, isWSL, lockStdin, moveLeftBy, moveRightBy, parseArgs, quote, readStdin, stringWidth, writeStdout, writeStdoutSync };
+export { ControlKeys, FunctionKeys, NavigationKeys, args, charWidth, getWindowSize, isTTY, isTypingInput, isWSL, lockStdin, moveLeftBy, moveRightBy, parseArgs, quote, readStdin, stringWidth, writeStdout, writeStdoutSync };
 //# sourceMappingURL=common.js.map

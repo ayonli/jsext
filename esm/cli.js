@@ -7,7 +7,7 @@ import { basename } from './path.js';
 import { PowerShellCommands } from './cli/constants.js';
 export { ControlKeys, ControlSequences, FunctionKeys, NavigationKeys } from './cli/constants.js';
 import { isWSL, quote } from './cli/common.js';
-export { CommonPlatforms, args, charWidth, getWindowSize, isTTY, isTypingInput, lockStdin, moveLeftBy, moveRightBy, parseArgs, readStdin, stringWidth, writeStdout, writeStdoutSync } from './cli/common.js';
+export { args, charWidth, getWindowSize, isTTY, isTypingInput, lockStdin, moveLeftBy, moveRightBy, parseArgs, readStdin, stringWidth, writeStdout, writeStdoutSync } from './cli/common.js';
 
 /**
  * Useful utility functions for interacting with the terminal.

@@ -320,15 +320,6 @@ export function getWindowSize(): { width: number; height: number; } {
     }
 }
 
-export type CommonPlatforms = "darwin"
-    | "windows"
-    | "linux";
-export const CommonPlatforms: CommonPlatforms[] = [
-    "darwin",
-    "windows",
-    "linux",
-];
-
 /** Checks if the program is running in Windows Subsystem for Linux. */
 export function isWSL(): boolean {
     if (platform() !== "linux")
