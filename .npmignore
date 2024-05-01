@@ -11,6 +11,7 @@ types/bundle.d.ts
 augment.md
 */augment.*
 */index.*
+!workerd/index.ts
 !cjs/augment.*
 !cjs/index.*
 !esm/augment.*
@@ -22,8 +23,10 @@ cjs/*/augment.*
 cjs/*/index.*
 esm/*/augment.*
 esm/*/index.*
+!esm/workerd/index.js*
 types/*/augment.*
 types/*/index.*
+!types/workerd/index.d.ts
 tsconfig*
 mocha*
 prepublish.mjs
