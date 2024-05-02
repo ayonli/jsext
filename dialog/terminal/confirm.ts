@@ -1,18 +1,23 @@
 import { escape } from "./util.ts";
+import { dedent } from "../../string.ts";
 import { platform } from "../../runtime.ts";
 import { isWSL, lockStdin, powershell, run, which } from "../../cli.ts";
 import question from "./question.ts";
 
 function createAppleScript(message: string) {
-    return "tell application (path to frontmost application as text)\n" +
-        `  display dialog "${escape(message)}" with title "Confirm"`
-        + ` buttons {"Cancel", "OK"} default button "OK"\n` +
-        "end";
+    return dedent`
+        tell application (path to frontmost application as text)
+            display dialog "${escape(message)}" with title "Confirm"\
+                buttons {"Cancel", "OK"} default button "OK"
+        end
+        `;
 }
 
 function createPowerShellScript(message: string) {
-    return "Add-Type -AssemblyName PresentationFramework;"
-        + `[System.Windows.MessageBox]::Show("${escape(message)}", "Confirm", "YesNo");`;
+    return dedent`
+        Add-Type -AssemblyName PresentationFramework
+        [System.Windows.MessageBox]::Show("${escape(message)}", "Confirm", "YesNo")
+        `;
 }
 
 export default async function confirmInTerminal(message: string, options: {

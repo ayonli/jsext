@@ -1,4 +1,4 @@
-import { lines } from "../../../string.ts";
+import { dedent, lines } from "../../../string.ts";
 import { run } from "../../../cli.ts";
 import { getUTI } from "../../../filetype.ts";
 import { escape } from "../util.ts";
@@ -16,41 +16,46 @@ function createAppleScript(mode: "file" | "files" | "folder", title = "", option
 
     if (mode === "file") {
         if (forSave) {
-            return "tell application (path to frontmost application as text)\n" +
-                "  set myFile to choose file name" + (title ? ` with prompt "${escape(title)}"` : "") +
-                (defaultName ? ` default name "${escape(defaultName)}"` : "") +
-                "\n  POSIX path of myFile\n" +
-                "end";
+            return dedent`
+                tell application (path to frontmost application as text)
+                    set myFile to choose file name${title ? ` with prompt "${escape(title)}"` : ""}\
+                        ${defaultName ? ` default name "${escape(defaultName)}"` : ""}
+                    POSIX path of myFile
+                end
+                `;
         } else {
             const _type = type ? htmlAcceptToAppleType(type) : "";
-            return "tell application (path to frontmost application as text)\n" +
-                "  set myFile to choose file" + (title ? ` with prompt "${escape(title)}"` : "") +
-                (_type ? ` of type {${_type}}` : "") +
-                " invisibles false" +
-                "\n  POSIX path of myFile\n" +
-                "end";
+            return dedent`
+                tell application (path to frontmost application as text)
+                    set myFile to choose file${title ? ` with prompt "${escape(title)}"` : ""}\
+                        ${_type ? ` of type {${_type}}` : ""} invisibles false
+                    POSIX path of myFile
+                end
+                `;
         }
     } else if (mode === "files") {
         const _type = type ? htmlAcceptToAppleType(type) : "";
-        return "tell application (path to frontmost application as text)\n" +
-            "  set myFiles to choose file" + (title ? ` with prompt "${escape(title)}"` : "") +
-            (_type ? ` of type {${_type}}` : "") +
-            " invisibles false" +
-            " multiple selections allowed true" +
-            "\n" +
-            "  set theList to {}\n" +
-            "  repeat with aItem in myFiles\n" +
-            "    set end of theList to POSIX path of aItem\n" +
-            "  end repeat\n" +
-            `  set my text item delimiters to "\\n"\n` +
-            `  return theList as text\n` +
-            "end";
+        return dedent`
+            tell application (path to frontmost application as text)
+                set myFiles to choose file${title ? ` with prompt "${escape(title)}"` : ""}\
+                    ${_type ? ` of type {${_type}}` : ""} invisibles false\
+                    multiple selections allowed true
+                set theList to {}
+                repeat with aItem in myFiles
+                    set end of theList to POSIX path of aItem
+                end repeat
+                set my text item delimiters to "\\n"
+                return theList as text
+            end
+            `;
     } else {
-        return "tell application (path to frontmost application as text)\n" +
-            "  set myFolder to choose folder" + (title ? ` with prompt "${escape(title)}"` : "") +
-            " invisibles false" +
-            "\n  POSIX path of myFolder\n" +
-            "end";
+        return dedent`
+            tell application (path to frontmost application as text)
+                set myFolder to choose folder${title ? ` with prompt "${escape(title)}"` : ""}\
+                    invisibles false
+                POSIX path of myFolder
+            end
+            `;
     }
 }
 

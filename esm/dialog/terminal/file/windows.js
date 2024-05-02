@@ -1,5 +1,5 @@
 import { extname } from '../../../path.js';
-import { lines } from '../../../string.js';
+import { lines, dedent } from '../../../string.js';
 import { powershell } from '../../../cli.js';
 import { getExtensions } from '../../../filetype.js';
 import { escape } from '../util.js';
@@ -63,59 +63,50 @@ function createPowerShellScript(mode, title = "", options = {}) {
                 const ext = extname(defaultName);
                 ext && (filter = htmlAcceptToFileFilter(ext));
             }
-            return `Add-Type -AssemblyName System.Windows.Forms` +
-                "\n" +
-                "$saveFileDialog = [System.Windows.Forms.SaveFileDialog]::new()" +
-                "\n" +
-                "$saveFileDialog.Title = '" + escape(title) + "'" +
-                "\n" +
-                (defaultName ? "$saveFileDialog.FileName = '" + escape(defaultName) + "'\n" : "") +
-                (filter ? "$saveFileDialog.Filter = '" + filter + "'\n" : "") +
-                "if ($saveFileDialog.ShowDialog() -eq 'OK') {\n" +
-                "  $saveFileDialog.FileName\n" +
-                "}\n";
+            return dedent `
+                Add-Type -AssemblyName System.Windows.Forms
+                $saveFileDialog = [System.Windows.Forms.SaveFileDialog]::new()
+                $saveFileDialog.Title = "${escape(title)}"
+                $saveFileDialog.FileName = "${defaultName ? escape(defaultName) : ""}"
+                $saveFileDialog.Filter = "${filter}"
+                if ($saveFileDialog.ShowDialog() -eq 'OK') {
+                    $saveFileDialog.FileName
+                }
+                `;
         }
         else {
             const filter = type ? htmlAcceptToFileFilter(type) : "";
-            return `Add-Type -AssemblyName System.Windows.Forms` +
-                "\n" +
-                "$openFileDialog = [System.Windows.Forms.OpenFileDialog]::new()" +
-                "\n" +
-                "$openFileDialog.Title = '" + escape(title) + "'" +
-                "\n" +
-                (filter ? "$openFileDialog.Filter = '" + filter + "'\n" : "") +
-                "$openFileDialog.Multiselect = $false" +
-                "\n" +
-                "$openFileDialog.ShowDialog() | Out-Null" +
-                "\n" +
-                "$openFileDialog.FileName";
+            return dedent `
+                Add-Type -AssemblyName System.Windows.Forms
+                $openFileDialog = [System.Windows.Forms.OpenFileDialog]::new()
+                $openFileDialog.Title = "${escape(title)}"
+                $openFileDialog.Filter = "${filter}"
+                $openFileDialog.Multiselect = $false
+                $openFileDialog.ShowDialog() | Out-Null
+                $openFileDialog.FileName
+                `;
         }
     }
     else if (mode === "files") {
         const filter = type ? htmlAcceptToFileFilter(type) : "";
-        return `Add-Type -AssemblyName System.Windows.Forms` +
-            "\n" +
-            "$openFileDialog = [System.Windows.Forms.OpenFileDialog]::new()" +
-            "\n" +
-            "$openFileDialog.Title = '" + escape(title) + "'" +
-            "\n" +
-            (filter ? "$openFileDialog.Filter = '" + filter + "'\n" : "") +
-            "$openFileDialog.Multiselect = $true" +
-            "\n" +
-            "$openFileDialog.ShowDialog() | Out-Null" +
-            "\n" +
-            "$openFileDialog.FileNames -join \"`n\"";
+        return dedent `
+            Add-Type -AssemblyName System.Windows.Forms
+            $openFileDialog = [System.Windows.Forms.OpenFileDialog]::new()
+            $openFileDialog.Title = "${escape(title)}"
+            $openFileDialog.Filter = "${filter}"
+            $openFileDialog.Multiselect = $true
+            $openFileDialog.ShowDialog() | Out-Null
+            $openFileDialog.FileNames -join "\n"
+            `;
     }
     else {
-        return `Add-Type -AssemblyName System.Windows.Forms` +
-            "\n" +
-            "$folderBrowserDialog = [System.Windows.Forms.FolderBrowserDialog]::new()" +
-            "\n" +
-            "$folderBrowserDialog.Description = '" + escape(title) + "'" +
-            "\n" +
-            "$folderBrowserDialog.ShowDialog() | Out-Null" +
-            "\n" +
-            "$folderBrowserDialog.SelectedPath";
+        return dedent `
+            Add-Type -AssemblyName System.Windows.Forms
+            $folderBrowserDialog = [System.Windows.Forms.FolderBrowserDialog]::new()
+            $folderBrowserDialog.Description = "${escape(title)}"
+            $folderBrowserDialog.ShowDialog() | Out-Null
+            $folderBrowserDialog.SelectedPath
+            `;
     }
 }
 function refinePath(path) {
