@@ -19,6 +19,68 @@ describe("String", () => {
         ok(randStr.chars().every(char => chars.includes(char)));
     });
 
+    it("String.dedent", () => {
+        const int = "int";
+        const text = "text";
+
+        function example1() {
+            return String.dedent`
+                    create table student(
+                        id ${int} primary key,
+                        name ${text}
+                    );
+                `;
+        }
+
+        function example2() {
+            return String.dedent`create table student(
+                        id ${int} primary key,
+                        name ${text}
+                    );`;
+        }
+
+        function example3() {
+            const first = String.dedent`A string that gets so long you need to break it over
+                           multiple lines. Luckily dedent is here to keep it
+                           readable without lots of spaces ending up in the string
+                           itself.`;
+            const second = String.dedent`
+                    Leading and trailing lines will be trimmed, so you can write something like
+                    this and have it work as you expect:
+
+                    * how convenient it is
+                    * that I can use an indented list
+                        - and still have it do the right thing
+
+                    That's all.
+                `;
+
+            return first + "\n\n" + second;
+        }
+
+        const expected = "create table student(\n    id int primary key,\n    name text\n);";
+
+        strictEqual(example1(), expected);
+        strictEqual(example2(), expected);
+
+        const expected2 = [
+            "A string that gets so long you need to break it over",
+            "multiple lines. Luckily dedent is here to keep it",
+            "readable without lots of spaces ending up in the string",
+            "itself.",
+            "",
+            "Leading and trailing lines will be trimmed, so you can write something like",
+            "this and have it work as you expect:",
+            "",
+            "* how convenient it is",
+            "* that I can use an indented list",
+            "    - and still have it do the right thing",
+            "",
+            "That's all.",
+        ].join("\n");
+        strictEqual(example3(), expected2);
+    });
+
     it("String.prototype.count", () => {
         const str = "Hello, World";
         strictEqual(str.count("H"), 1);
@@ -109,6 +171,65 @@ describe("String", () => {
     it("String.prototype.stripStart", () => {
         strictEqual("foo:bar".stripStart("foo:"), "bar");
         strictEqual("bar".stripStart("foo"), "bar");
+    });
+
+    it("String.prototype.dedent", () => {
+        function example1() {
+            return `
+                    create table student(
+                        id int primary key,
+                        name text
+                    );
+                `.dedent();
+        }
+
+        function example2() {
+            return `create table student(
+                        id int primary key,
+                        name text
+                    );`.dedent();
+        }
+
+        function example3() {
+            const first = `A string that gets so long you need to break it over
+                           multiple lines. Luckily dedent is here to keep it
+                           readable without lots of spaces ending up in the string
+                           itself.`.dedent();
+            const second = `
+                    Leading and trailing lines will be trimmed, so you can write something like
+                    this and have it work as you expect:
+
+                    * how convenient it is
+                    * that I can use an indented list
+                        - and still have it do the right thing
+
+                    That's all.
+                `.dedent();
+
+            return first + "\n\n" + second;
+        }
+
+        const expected = "create table student(\n    id int primary key,\n    name text\n);";
+
+        strictEqual(example1(), expected);
+        strictEqual(example2(), expected);
+
+        const expected2 = [
+            "A string that gets so long you need to break it over",
+            "multiple lines. Luckily dedent is here to keep it",
+            "readable without lots of spaces ending up in the string",
+            "itself.",
+            "",
+            "Leading and trailing lines will be trimmed, so you can write something like",
+            "this and have it work as you expect:",
+            "",
+            "* how convenient it is",
+            "* that I can use an indented list",
+            "    - and still have it do the right thing",
+            "",
+            "That's all."
+        ].join("\n");
+        strictEqual(example3(), expected2);
     });
 
     it("String.prototype.byteLength", () => {

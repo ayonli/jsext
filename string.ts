@@ -168,6 +168,71 @@ export function stripStart(str: string, prefix: string): string {
     return str;
 }
 
+/**
+ * Removes extra indentation from the string.
+ * 
+ * **NOTE:** This function also removes leading and trailing newlines.
+ * 
+ * @example
+ * ```ts
+ * import { dedent } from "@ayonli/jsext/string";
+ * 
+ * class MyClass {
+ *     print() {
+ *         console.log(dedent(`
+ *             create table student(
+ *                 id int primary key,
+ *                 name text
+ *             )
+ *        `));
+ *     }
+ * }
+ * 
+ * new MyClass().print();
+ * // Output:
+ * // create table student(
+ * //     id int primary key,
+ * //     name text
+ * // )
+ * ```
+ */
+export function dedent(str: string): string;
+/**
+ * This function can also be used as a template literal tag.
+ * 
+ * @see https://github.com/tc39/proposal-string-dedent
+ */
+export function dedent(str: TemplateStringsArray, ...values: any[]): string;
+export function dedent(str: string | TemplateStringsArray, ...values: any[]): string {
+    if (Array.isArray(str)) {
+        str = (str as TemplateStringsArray)
+            .reduce((acc, cur, i) => acc + cur + (values[i] || ""), "");
+    }
+
+    const oldLines = lines(str as string);
+    const newLines: string[] = [];
+    let indent = "";
+
+    for (const line of oldLines) {
+        const match = line.match(/^(\s+)\S+/);
+        if (match) {
+            if (!indent || match[1]!.length < indent.length) {
+                indent = match[1]!;
+            }
+        }
+    }
+
+    for (const line of oldLines) {
+        if (line.startsWith(indent)) {
+            newLines.push(line.slice(indent.length));
+        } else {
+            newLines.push(line);
+        }
+    }
+
+    return newLines.join("\n").trim();
+}
+
 /** Returns the byte length of the string. */
 export function byteLength(str: string): number {
     return _bytes(str).byteLength;

@@ -150,6 +150,32 @@ function stripStart(str, prefix) {
     }
     return str;
 }
+function dedent(str, ...values) {
+    if (Array.isArray(str)) {
+        str = str
+            .reduce((acc, cur, i) => acc + cur + (values[i] || ""), "");
+    }
+    const oldLines = lines(str);
+    const newLines = [];
+    let indent = "";
+    for (const line of oldLines) {
+        const match = line.match(/^(\s+)\S+/);
+        if (match) {
+            if (!indent || match[1].length < indent.length) {
+                indent = match[1];
+            }
+        }
+    }
+    for (const line of oldLines) {
+        if (line.startsWith(indent)) {
+            newLines.push(line.slice(indent.length));
+        }
+        else {
+            newLines.push(line);
+        }
+    }
+    return newLines.join("\n").trim();
+}
 /** Returns the byte length of the string. */
 function byteLength(str) {
     return bytes$1(str).byteLength;
@@ -163,5 +189,5 @@ function isEmoji(str) {
     return chars(str).every((char) => EMOJI_CHAR.test(char));
 }
 
-export { byteLength, bytes, capitalize, chars, chunk, compare, count, hyphenate, isAscii, isEmoji, lines, random, stripEnd, stripStart, trim, trimEnd, trimStart, truncate, words };
+export { byteLength, bytes, capitalize, chars, chunk, compare, count, dedent, hyphenate, isAscii, isEmoji, lines, random, stripEnd, stripStart, trim, trimEnd, trimStart, truncate, words };
 //# sourceMappingURL=string.js.map

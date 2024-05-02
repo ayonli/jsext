@@ -16,6 +16,7 @@ import {
     trimStart as _trimStart,
     stripEnd as _stripEnd,
     stripStart as _stripStart,
+    dedent as _dedent,
     byteLength as _byteLength,
     isAscii as _isAscii,
     isEmoji as _isEmoji,
@@ -33,6 +34,12 @@ declare global {
          * @param chars Default value: `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`.
          */
         random(length: number, chars?: string): string;
+        /**
+         * A template literal tag tag that removes extra indentation from the string.
+         * 
+         * @see https://github.com/tc39/proposal-string-dedent
+         */
+        dedent(strings: TemplateStringsArray, ...values: unknown[]): string;
     }
 
     interface String {
@@ -67,6 +74,12 @@ declare global {
         stripStart(prefix: string): string;
         /** Removes the given suffix of the string if present. */
         stripEnd(suffix: string): string;
+        /**
+         * Removes extra indentation from the string.
+         * 
+         * **NOTE:** This function also removes leading and trailing newlines.
+         */
+        dedent(): string;
         /** Returns the byte length of the string. */
         byteLength(): number;
         /** Checks if all characters in the string are within the ASCII range. */
@@ -78,6 +91,10 @@ declare global {
 
 String.compare = compare;
 String.random = random;
+
+if (typeof String.dedent === "undefined") {
+    String.dedent = _dedent;
+}
 
 String.prototype.count = function count(sub) {
     return _count(String(this), sub);
@@ -134,6 +151,12 @@ String.prototype.stripEnd = function stripEnd(suffix: string) {
 String.prototype.stripStart = function stripStart(prefix: string) {
     return _stripStart(String(this), prefix);
 };
+
+if (typeof String.prototype.dedent === "undefined") {
+    String.prototype.dedent = function dedent() {
+        return _dedent(String(this));
+    };
+}
 
 String.prototype.byteLength = function byteLength() {
     return _byteLength(String(this));

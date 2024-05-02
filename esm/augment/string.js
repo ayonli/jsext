@@ -1,7 +1,10 @@
-import { compare, random, count, capitalize, hyphenate, bytes, chars, words, lines, chunk, truncate, trim, trimEnd, trimStart, stripEnd, stripStart, byteLength, isAscii, isEmoji } from '../string.js';
+import { compare, random, dedent, count, capitalize, hyphenate, bytes, chars, words, lines, chunk, truncate, trim, trimEnd, trimStart, stripEnd, stripStart, byteLength, isAscii, isEmoji } from '../string.js';
 
 String.compare = compare;
 String.random = random;
+if (typeof String.dedent === "undefined") {
+    String.dedent = dedent;
+}
 String.prototype.count = function count$1(sub) {
     return count(String(this), sub);
 };
@@ -44,6 +47,11 @@ String.prototype.stripEnd = function stripEnd$1(suffix) {
 String.prototype.stripStart = function stripStart$1(prefix) {
     return stripStart(String(this), prefix);
 };
+if (typeof String.prototype.dedent === "undefined") {
+    String.prototype.dedent = function dedent$1() {
+        return dedent(String(this));
+    };
+}
 String.prototype.byteLength = function byteLength$1() {
     return byteLength(String(this));
 };
