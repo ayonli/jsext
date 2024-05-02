@@ -49,13 +49,12 @@ _When import `@ayonli/jsext/augment`_
     - `equals(another: T[]): boolean`
     - `split(delimiter: T): T[][]`
     - `chunk(length: number): T[][]`
-    - `uniq(): T[]`
-    - `uniqBy<K extends string | number | symbol>(fn: (item: T, i: number) => K): T[]`
+    - `unique(): T[]`
+    - `uniqueBy<K extends string | number | symbol>(fn: (item: T, i: number) => K): T[]`
     - `shuffle(): T[]`
     - `toShuffled(): T[]`
     - `toReversed(): T[]`
     - `toSorted(fn?: ((a: T, b: T) => number) | undefined): T[]`
-    - `orderBy(key: keyof T, order?: "asc" | "desc"): T[]`
     - `orderBy(fn: (item: T, i: number) => string | number | bigint, order?: "asc" | "desc"): T[]`
     - `groupBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T[]>`
     - `groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
@@ -158,6 +157,7 @@ _These types are augmented to the global scope._
 - `String`
   - `compare(str1: string, str2: string): -1 | 0 | 1`
   - `random(length: number, chars?: string): string`
+  - `dedent(strings: TemplateStringsArray, ...values: any[]): string`
   - `prototype`
     - `count(sub: string): number`
     - `capitalize(all?: boolean): string`
@@ -173,8 +173,10 @@ _These types are augmented to the global scope._
     - `trimStart(chars?: string): string`
     - `stripEnd(suffix: string): string`
     - `stripStart(prefix: string): string`
+    - `dedent(): string`
     - `byteLength(): number`
     - `isAscii(printableOnly?: boolean): boolean`
+    - `isEmoji(): boolean`
 
 ### Augment Uint8Array
 

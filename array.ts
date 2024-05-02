@@ -117,6 +117,9 @@ export function shuffle<T>(arr: T[]): T[] {
 /**
  * Orders the items of the array according to the specified comparable `key` (whose value
  * must either be a numeric or string).
+ * 
+ * @deprecated This signature is not in line with other functions, such as
+ * {@link groupBy} and {@link keyBy}, use the callback form instead.
  */
 export function orderBy<T>(arr: T[], key: keyof T, order?: "asc" | "desc"): T[];
 /** Orders the items of the array according to the given callback function. */

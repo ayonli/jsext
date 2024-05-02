@@ -39,7 +39,7 @@ declare global {
          * 
          * @see https://github.com/tc39/proposal-string-dedent
          */
-        dedent(strings: TemplateStringsArray, ...values: unknown[]): string;
+        dedent(strings: TemplateStringsArray, ...values: any[]): string;
     }
 
     interface String {
