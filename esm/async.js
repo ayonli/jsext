@@ -39,20 +39,27 @@ async function sleep(ms) {
  * This functions returns the same result as the test function when passed.
  */
 async function until(test) {
-    while (true) {
-        try {
-            const result = await test();
-            if (result !== false && result !== null && result !== undefined) {
-                return result;
+    return new Promise((resolve) => {
+        let ongoing = false;
+        const timer = setInterval(async () => {
+            if (ongoing)
+                return;
+            try {
+                ongoing = true;
+                const result = await test();
+                if (result !== false && result !== null && result !== undefined) {
+                    clearInterval(timer);
+                    resolve(result);
+                }
             }
-            else {
-                await sleep(0);
+            catch (_a) {
+                // ignore
             }
-        }
-        catch (_a) {
-            await sleep(0);
-        }
-    }
+            finally {
+                ongoing = false;
+            }
+        }, 1);
+    });
 }
 /**
  * Runs multiple tasks concurrently and returns the result of the first task that

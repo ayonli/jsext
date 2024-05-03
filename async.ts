@@ -45,19 +45,26 @@ export async function sleep(ms: number): Promise<void> {
 export async function until<T>(
     test: () => T | Promise<T>
 ): Promise<T extends false | null | undefined ? never : T> {
-    while (true) {
-        try {
-            const result = await test();
+    return new Promise((resolve) => {
+        let ongoing = false;
+        const timer = setInterval(async () => {
+            if (ongoing) return;
 
-            if (result !== false && result !== null && result !== undefined) {
-                return result as any;
-            } else {
-                await sleep(0);
+            try {
+                ongoing = true;
+                const result = await test();
+
+                if (result !== false && result !== null && result !== undefined) {
+                    clearInterval(timer);
+                    resolve(result as any);
+                }
+            } catch {
+                // ignore
+            } finally {
+                ongoing = false;
             }
-        } catch {
-            await sleep(0);
-        }
-    }
+        }, 1);
+    });
 }
 
 /**
