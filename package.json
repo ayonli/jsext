@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.8.43",
+    "version": "0.8.50",
     "description": "Additional functions for JavaScript to build strong applications.",
     "exports": {
         ".": {
@@ -287,6 +287,13 @@
             "require": "./cjs/readAll.js",
             "import": "./esm/readAll.js",
             "default": "./readAll.ts"
+        },
+        "./reader": {
+            "types": "./types/reader.d.ts",
+            "bun": "./reader.ts",
+            "require": "./cjs/reader.js",
+            "import": "./esm/reader.js",
+            "default": "./reader.ts"
         },
         "./run": {
             "types": "./types/run.d.ts",

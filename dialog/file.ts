@@ -2,8 +2,7 @@ import { basename, join } from "../path.ts";
 import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
 import { platform } from "../runtime.ts";
 import { isWSL, which } from "../cli.ts";
-import read from "../read.ts";
-import readAll from "../readAll.ts";
+import { readAsObjectURL, toAsyncIterable } from "../reader.ts";
 import { readFile } from "./terminal/util.ts";
 import {
     macPickFolder,
@@ -259,7 +258,7 @@ export async function saveFile(file: File, options?: {
     /** Custom the dialog's title. This option is ignored in the browser. */
     title?: string;
 }): Promise<void>;
-export async function saveFile(file: Blob | ReadableStream<Uint8Array> | Uint8Array, options: {
+export async function saveFile(file: Blob | ArrayBuffer | ReadableStream<Uint8Array> | Uint8Array, options: {
     /** The name of the */
     name: string;
     /** The MIME type of the file. */
@@ -267,7 +266,7 @@ export async function saveFile(file: Blob | ReadableStream<Uint8Array> | Uint8Ar
     /** Custom the dialog's title. This option is ignored in the browser. */
     title?: string;
 }): Promise<void>;
-export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | Uint8Array, options: {
+export async function saveFile(file: File | Blob | ArrayBuffer | ReadableStream<Uint8Array> | Uint8Array, options: {
     title?: string;
     name?: string;
     type?: string;
@@ -277,9 +276,7 @@ export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | 
 
         if (file instanceof ReadableStream) {
             const type = options.type || "application/octet-stream";
-            const chunks = await readAll(file);
-            const blob = new Blob(chunks, { type });
-            a.href = URL.createObjectURL(blob);
+            a.href = await readAsObjectURL(file, type);
             a.download = options.name || "Unnamed";
         } else if (file instanceof File) {
             a.href = URL.createObjectURL(file);
@@ -343,7 +340,7 @@ export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | 
                 const { createWriteStream } = await import("fs");
                 const out = createWriteStream(filename, { flags: "w" });
 
-                for await (const chunk of read(stream)) {
+                for await (const chunk of toAsyncIterable(stream)) {
                     out.write(chunk);
                 }
 

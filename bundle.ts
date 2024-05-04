@@ -15,6 +15,7 @@ import * as module from "./module.ts";
 import * as number from "./number.ts";
 import * as object from "./object.ts";
 import * as path from "./path.ts";
+import * as reader from "./reader.ts";
 import * as runtime from "./runtime.ts";
 import * as string from "./string.ts";
 import * as types from "./types.ts";
@@ -46,6 +47,7 @@ export default {
     number,
     object,
     path,
+    reader,
     runtime: {
         ...object.omit(runtime, ["default"]),
         runtime: runtime.default,

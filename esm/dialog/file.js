@@ -2,12 +2,12 @@ import { basename, join } from '../path.js';
 import { isBrowserWindow, isDeno, isNodeLike } from '../env.js';
 import { platform } from '../runtime.js';
 import { which } from '../cli.js';
-import read from '../read.js';
-import readAll from '../readAll.js';
+import { readAsObjectURL } from '../reader.js';
 import { readFile } from './terminal/util.js';
 import { macPickFile, macPickFiles, macPickFolder } from './terminal/file/mac.js';
 import { linuxPickFile, linuxPickFiles, linuxPickFolder } from './terminal/file/linux.js';
 import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './terminal/file/windows.js';
+import { toAsyncIterable } from '../reader/util.js';
 import { isWSL } from '../cli/common.js';
 
 /**
@@ -195,9 +195,7 @@ async function saveFile(file, options = {}) {
         const a = document.createElement("a");
         if (file instanceof ReadableStream) {
             const type = options.type || "application/octet-stream";
-            const chunks = await readAll(file);
-            const blob = new Blob(chunks, { type });
-            a.href = URL.createObjectURL(blob);
+            a.href = await readAsObjectURL(file, type);
             a.download = options.name || "Unnamed";
         }
         else if (file instanceof File) {
@@ -265,7 +263,7 @@ async function saveFile(file, options = {}) {
             else {
                 const { createWriteStream } = await import('fs');
                 const out = createWriteStream(filename, { flags: "w" });
-                for await (const chunk of read(stream)) {
+                for await (const chunk of toAsyncIterable(stream)) {
                     out.write(chunk);
                 }
                 out.close();

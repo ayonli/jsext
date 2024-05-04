@@ -48,9 +48,6 @@ browser.
 - [debounce](#debounce) Debounces function calls for frequent access.
 - [queue](#queue) Handles tasks sequentially and prevent concurrency conflicts.
 - [lock](#lock) Provides mutual exclusion for concurrent operations.
-- [read](#read) Makes any streaming source readable via `for await ... of ...`
-  syntax.
-- [readAll](#readall) Reads all streaming data at once.
 - [chan](#chan) Creates a channel that transfers data across routines, even
   across multiple threads, inspired by Golang.
 - [parallel](#parallel) Runs functions in parallel threads and take advantage of
@@ -101,6 +98,11 @@ categories:
 - [path](https://jsr.io/@ayonli/jsext/doc/path/~) (Experimental)
   Platform-independent utility functions for dealing with file system paths and
   URLs.
+- [reader](https://jsr.io/@ayonli/jsext/doc/reader/~) Utility functions for
+  reading data from various types of source into various forms.
+  - Historically, there was a `read` module and a `realAll` module, but they
+    have been merged into this module as the `toAsyncIterable` function and the
+    `readAsArray` function.
 - [runtime](https://jsr.io/@ayonli/jsext/doc/runtime/~) (Experimental) Utility
   functions to retrieve runtime information or modify runtime behaviors.
 - [string](https://jsr.io/@ayonli/jsext/doc/string/~) Functions for dealing with
@@ -740,127 +742,6 @@ await Promise.all([
   concurrentOperation(),
   concurrentOperation(),
 ]);
-```
-
----
-
-### read
-
-```ts
-declare function read<I extends AsyncIterable<any>>(iterable: I): I;
-declare function read<T>(stream: ReadableStream<T>): AsyncIterable<T>;
-declare function read(
-  es: EventSource,
-  options?: { event?: string },
-): AsyncIterable<string>;
-declare function read<T extends Uint8Array | string>(
-  ws: WebSocket,
-): AsyncIterable<T>;
-declare function read<T>(target: EventTarget, eventMap?: {
-  message?: string;
-  error?: string;
-  close?: string;
-}): AsyncIterable<T>;
-declare function read<T>(target: NodeJS.EventEmitter, eventMap?: {
-  data?: string;
-  error?: string;
-  close?: string;
-}): AsyncIterable<T>;
-```
-
-Wraps a source as an AsyncIterable object that can be used in the
-`for await...of...` loop for reading streaming data.
-
-**Example (ReadableStream)**
-
-```ts
-import read from "@ayonli/jsext/read";
-
-const res = new Response("Hello, World!");
-
-for await (const chunk of read(res.body!)) {
-  console.log("receive chunk:", chunk);
-}
-```
-
-**Example (EventSource)**
-
-```ts
-import read from "@ayonli/jsext/read";
-
-// listen to the `onmessage`
-const sse = new EventSource("/sse/message");
-
-for await (const msg of read(sse)) {
-  console.log("receive message:", msg);
-}
-
-// listen to a specific event
-const channel = new EventSource("/sse/broadcast");
-
-for await (const msg of read(channel, { event: "broadcast" })) {
-  console.log("receive message:", msg);
-}
-```
-
-**Example (WebSocket)**
-
-```ts
-import read from "@ayonli/jsext/read";
-
-const ws = new WebSocket("/ws");
-
-for await (const data of read(ws)) {
-  if (typeof data === "string") {
-    console.log("receive text message:", data);
-  } else {
-    console.log("receive binary data:", data);
-  }
-}
-```
-
-**Example (EventTarget)**
-
-```ts
-import read from "@ayonli/jsext/read";
-
-for await (const msg of read(self)) {
-  console.log("receive message from the parent window:", msg);
-}
-```
-
-**Example (EventEmitter)**
-
-```ts
-import read from "@ayonli/jsext/read";
-
-for await (const msg of read(process)) {
-  console.log("receive message from the parent process:", msg);
-}
-```
-
----
-
-### readAll
-
-```ts
-declare function readAll<T>(
-  iterable: AsyncIterable<T> | ReadableStream<T>,
-): Promise<T[]>;
-```
-
-Reads all values from the iterable object at once.
-
-**Example**
-
-```ts
-import readAll from "@ayonli/jsext/readAll";
-import * as fs from "node:fs";
-
-const file = fs.createReadStream("./package.json");
-const chunks = await readAll(file);
-
-console.log(chunks);
 ```
 
 ---

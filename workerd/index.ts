@@ -6,12 +6,11 @@ import throttle from "../throttle.ts";
 import debounce from "../debounce.ts";
 import queue, { Queue as _Queue } from "../queue.ts";
 import lock, { Mutex as _Mutex } from "../lock.ts";
-import read from "../read.ts";
-import readAll from "../readAll.ts";
+import { toAsyncIterable, readAsArray } from "../reader.ts";
 import chan, { Channel as _Channel } from "../chan.ts";
 import parallel from "./parallel.ts";
 import run from "./run.ts";
-import example from "./example.ts";
+import _example from "./example.ts";
 import deprecate from "../deprecate.ts";
 import pipe from "../pipe.ts";
 import { isClass as _isClass, isSubclassOf as _isSubclassOf } from "../class.ts";
@@ -40,12 +39,15 @@ const jsext = {
     debounce,
     queue,
     lock,
-    read,
-    readAll,
+    /** @deprecated Use {@link toAsyncIterable} from `@ayonli/jsext/reader` instead. */
+    read: toAsyncIterable,
+    /** @deprecated Use {@link readAsArray} from `@ayonli/jsext/reader` instead. */
+    readAll: readAsArray,
     chan,
     parallel,
     run,
-    example,
+    /** @deprecated */
+    example: _example,
     deprecate,
     pipe,
     /** @deprecated import `isClass` from `@ayonli/jsext/class` instead. */
@@ -66,15 +68,21 @@ export {
     debounce,
     queue,
     lock,
-    read,
-    readAll,
     chan,
     parallel,
     run,
-    example,
     deprecate,
     pipe,
 };
+
+/** @deprecated Use {@link toAsyncIterable} from `@ayonli/jsext/reader` instead. */
+export const read = toAsyncIterable;
+
+/** @deprecated Use {@link readAsArray} from `@ayonli/jsext/reader` instead. */
+export const readAll = readAsArray;
+
+/** @deprecated */
+export const example = _example;
 
 /** @deprecated import `isClass` from `@ayonli/jsext/class` instead. */
 export const isClass = _isClass;
