@@ -140,6 +140,14 @@
             "import": "./esm/filetype.js",
             "default": "./filetype.ts"
         },
+        "./fs": {
+            "types": "./types/fs.d.ts",
+            "bun": "./fs.ts",
+            "workerd": "./esm/workerd/fs.js",
+            "require": "./cjs/fs.js",
+            "import": "./esm/fs.js",
+            "default": "./fs.ts"
+        },
         "./func": {
             "types": "./types/func.d.ts",
             "bun": "./func.ts",
