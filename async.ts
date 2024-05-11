@@ -5,10 +5,57 @@
 
 import { unrefTimer } from "./runtime.ts";
 
+/** A promise that can be resolved or rejected manually. */
+export type AsyncTask<T> = Promise<T> & {
+    resolve: (value: T | PromiseLike<T>) => void;
+    reject: (reason?: any) => void;
+};
+
+/**
+ * Creates a promise that can be resolved or rejected manually.
+ * 
+ * This function is like `Promise.withResolvers` but less verbose.
+ */
+export function asyncTask<T>(): AsyncTask<T> {
+    let resolve: (value: T | PromiseLike<T>) => void;
+    let reject: (reason?: any) => void;
+    const promise = new Promise<T>((res, rej) => {
+        resolve = res;
+        reject = rej;
+    }) as AsyncTask<T>;
+
+    return Object.assign(promise, {
+        resolve: resolve!,
+        reject: reject!
+    });
+}
+
+/**
+ * Try to resolve a promise with an abort signal.
+ * 
+ * **NOTE:** This function does not cancel the task itself, it only prematurely
+ * breaks the current routine when the signal is aborted. In order to support
+ * cancellation, the task must be designed to handle the abort signal itself.
+ */
+export async function abortable<T>(task: T | PromiseLike<T>, signal: AbortSignal): Promise<T> {
+    if (signal.aborted) {
+        throw signal.reason;
+    }
+
+    const aTask = asyncTask<never>();
+    const handleAbort = () => aTask.reject(signal.reason);
+
+    signal.addEventListener("abort", handleAbort, { once: true });
+    const result = await Promise.race([task, aTask]) as T;
+    signal.removeEventListener("abort", handleAbort);
+
+    return result;
+}
+
 /** Try to resolve a promise with a timeout limit. */
-export async function timeout<T>(value: T | PromiseLike<T>, ms: number): Promise<T> {
+export async function timeout<T>(task: T | PromiseLike<T>, ms: number): Promise<T> {
     const result = await Promise.race([
-        value,
+        task,
         new Promise<T>((_, reject) => unrefTimer(setTimeout(() => {
             reject(new Error(`operation timeout after ${ms}ms`));
         }, ms)))
@@ -17,9 +64,9 @@ export async function timeout<T>(value: T | PromiseLike<T>, ms: number): Promise
 }
 
 /** Resolves a promise only after the given duration. */
-export async function after<T>(value: T | PromiseLike<T>, ms: number): Promise<T> {
+export async function after<T>(task: T | PromiseLike<T>, ms: number): Promise<T> {
     const [result] = await Promise.allSettled([
-        value,
+        task,
         new Promise<void>(resolve => setTimeout(resolve, ms))
     ]);
 
@@ -36,9 +83,9 @@ export async function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Blocks the context until the test returns a truthy value, which is not `false`,
- * `null` or `undefined`. If the test throws an error, it will be treated as a
- * falsy value and the loop continues.
+ * Blocks the current routine until the test returns a truthy value, which is
+ * not `false`, `null` or `undefined`. If the test throws an error, it will be
+ * treated as a falsy value and the loop continues.
  * 
  * This functions returns the same result as the test function when passed.
  */
@@ -89,29 +136,4 @@ export async function select<T>(tasks: ((signal: AbortSignal) => Promise<T>)[]):
     const result = await Promise.race(tasks.map(fn => fn(signal)));
     ctrl.abort();
     return result;
-}
-
-/** A promise that can be resolved or rejected manually. */
-export type AsyncTask<T> = Promise<T> & {
-    resolve: (value: T | PromiseLike<T>) => void;
-    reject: (reason?: any) => void;
-};
-
-/**
- * Creates a promise that can be resolved or rejected manually.
- * 
- * This function is like `Promise.withResolvers` but less verbose.
- */
-export function asyncTask<T>(): AsyncTask<T> {
-    let resolve: (value: T | PromiseLike<T>) => void;
-    let reject: (reason?: any) => void;
-    const promise = new Promise<T>((res, rej) => {
-        resolve = res;
-        reject = rej;
-    }) as AsyncTask<T>;
-
-    return Object.assign(promise, {
-        resolve: resolve!,
-        reject: reject!
-    });
 }

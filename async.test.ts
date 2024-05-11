@@ -5,6 +5,73 @@ import { asyncTask } from "./async.ts";
 import { isNodeBelow16 } from "./env.ts";
 
 describe("async", () => {
+    describe("asyncTask", () => {
+        it("resolve", async () => {
+            const task = asyncTask<number>();
+            task.resolve(1);
+            strictEqual(await task, 1);
+        });
+
+        it("reject", async () => {
+            const task = asyncTask<number>();
+            task.reject(new Error("error"));
+            const [err, res] = await jsext.try(task);
+            strictEqual(res, undefined);
+            deepStrictEqual(err, new Error("error"));
+        });
+    });
+
+    describe("abortable", () => {
+        it("already aborted", async () => {
+            const controller = new AbortController();
+            controller.abort();
+
+            const job = new Promise<number>((resolve) => {
+                setTimeout(() => {
+                    resolve(1);
+                }, 100);
+            });
+
+            const [err, res] = await jsext.try(Promise.abortable(job, controller.signal));
+            strictEqual(res, undefined);
+            deepStrictEqual(err, controller.signal.reason);
+        });
+
+        it("abort before resolve", async () => {
+            const controller = new AbortController();
+            const job = new Promise<number>((resolve) => {
+                setTimeout(() => {
+                    resolve(1);
+                }, 100);
+            });
+
+            setTimeout(() => {
+                controller.abort();
+            }, 50);
+
+            const [err, res] = await jsext.try(Promise.abortable(job, controller.signal));
+            strictEqual(res, undefined);
+            deepStrictEqual(err, controller.signal.reason);
+        });
+
+        it("abort after resolve", async () => {
+            const controller = new AbortController();
+            const job = new Promise<number>((resolve) => {
+                setTimeout(() => {
+                    resolve(1);
+                }, 50);
+            });
+
+            setTimeout(() => {
+                controller.abort();
+            }, 100);
+
+            const [err, res] = await jsext.try(Promise.abortable(job, controller.signal));
+            strictEqual(res, 1);
+            strictEqual(err, null);
+        });
+    });
+
     it("timeout", async () => {
         const res1 = await Promise.timeout(Promise.resolve(1), 50);
 
@@ -124,21 +191,5 @@ describe("async", () => {
 
         strictEqual(result, 1);
         deepStrictEqual(aborted, [2]);
-    });
-
-    describe("asyncTask", () => {
-        it("resolve", async () => {
-            const task = asyncTask<number>();
-            task.resolve(1);
-            strictEqual(await task, 1);
-        });
-
-        it("reject", async () => {
-            const task = asyncTask<number>();
-            task.reject(new Error("error"));
-            const [err, res] = await jsext.try(task);
-            strictEqual(res, undefined);
-            deepStrictEqual(err, new Error("error"));
-        });
     });
 });
