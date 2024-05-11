@@ -37,23 +37,68 @@ export function asyncTask<T>(): AsyncTask<T> {
  * breaks the current routine when the signal is aborted. In order to support
  * cancellation, the task must be designed to handle the abort signal itself.
  */
-export async function abortable<T>(task: T | PromiseLike<T>, signal: AbortSignal): Promise<T> {
+export function abortable<T>(task: PromiseLike<T>, signal: AbortSignal): Promise<T>;
+/**
+ * Wraps an async iterable object with an abort signal.
+ */
+export function abortable<T>(task: AsyncIterable<T>, signal: AbortSignal): AsyncIterable<T>;
+export function abortable<T>(
+    task: PromiseLike<T> | AsyncIterable<T>,
+    signal: AbortSignal
+): Promise<T> | AsyncIterable<T> {
+    if (typeof (task as any)[Symbol.asyncIterator] === "function" &&
+        typeof (task as any).then !== "function" // this skips ThenableAsyncGenerator
+    ) {
+        return abortableAsyncIterable(task as AsyncIterable<T>, signal);
+    } else {
+        if (signal.aborted) {
+            return Promise.reject(signal.reason);
+        }
+
+        const aTask = asyncTask<never>();
+        const handleAbort = () => aTask.reject(signal.reason);
+        signal.addEventListener("abort", handleAbort, { once: true });
+
+        return Promise.race([task as PromiseLike<T>, aTask]).finally(() => {
+            signal.removeEventListener("abort", handleAbort);
+        });
+    }
+}
+
+async function* abortableAsyncIterable<T>(
+    task: AsyncIterable<T>,
+    signal: AbortSignal
+): AsyncIterable<T> {
     if (signal.aborted) {
         throw signal.reason;
     }
 
     const aTask = asyncTask<never>();
     const handleAbort = () => aTask.reject(signal.reason);
-
     signal.addEventListener("abort", handleAbort, { once: true });
-    const result = await Promise.race([task, aTask]) as T;
-    signal.removeEventListener("abort", handleAbort);
 
-    return result;
+    const it = task[Symbol.asyncIterator]();
+
+    while (true) {
+        const race = Promise.race([it.next(), aTask]);
+
+        race.catch(() => {
+            signal.removeEventListener("abort", handleAbort);
+        });
+
+        const { done, value } = await race;
+
+        if (done) {
+            signal.removeEventListener("abort", handleAbort);
+            return value; // async iterator may return a value
+        } else {
+            yield value;
+        }
+    }
 }
 
 /** Try to resolve a promise with a timeout limit. */
-export async function timeout<T>(task: T | PromiseLike<T>, ms: number): Promise<T> {
+export async function timeout<T>(task: PromiseLike<T>, ms: number): Promise<T> {
     const result = await Promise.race([
         task,
         new Promise<T>((_, reject) => unrefTimer(setTimeout(() => {
@@ -64,7 +109,7 @@ export async function timeout<T>(task: T | PromiseLike<T>, ms: number): Promise<
 }
 
 /** Resolves a promise only after the given duration. */
-export async function after<T>(task: T | PromiseLike<T>, ms: number): Promise<T> {
+export async function after<T>(task: PromiseLike<T>, ms: number): Promise<T> {
     const [result] = await Promise.allSettled([
         task,
         new Promise<void>(resolve => setTimeout(resolve, ms))

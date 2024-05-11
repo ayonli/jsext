@@ -1,7 +1,7 @@
 import "./augment.ts";
 import jsext from "./index.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { asyncTask } from "./async.ts";
+import { asyncTask, abortable, sleep } from "./async.ts";
 import { isNodeBelow16 } from "./env.ts";
 
 describe("async", () => {
@@ -22,53 +22,136 @@ describe("async", () => {
     });
 
     describe("abortable", () => {
-        it("already aborted", async () => {
-            const controller = new AbortController();
-            controller.abort();
-
-            const job = new Promise<number>((resolve) => {
-                setTimeout(() => {
-                    resolve(1);
-                }, 100);
-            });
-
-            const [err, res] = await jsext.try(Promise.abortable(job, controller.signal));
-            strictEqual(res, undefined);
-            deepStrictEqual(err, controller.signal.reason);
-        });
-
-        it("abort before resolve", async () => {
-            const controller = new AbortController();
-            const job = new Promise<number>((resolve) => {
-                setTimeout(() => {
-                    resolve(1);
-                }, 100);
-            });
-
-            setTimeout(() => {
+        describe("Promise", () => {
+            it("already aborted", async () => {
+                const controller = new AbortController();
                 controller.abort();
-            }, 50);
 
-            const [err, res] = await jsext.try(Promise.abortable(job, controller.signal));
-            strictEqual(res, undefined);
-            deepStrictEqual(err, controller.signal.reason);
-        });
+                let timer: NodeJS.Timeout | number | undefined;
+                const job = new Promise<number>((resolve) => {
+                    timer = setTimeout(() => {
+                        resolve(1);
+                    }, 100);
+                });
 
-        it("abort after resolve", async () => {
-            const controller = new AbortController();
-            const job = new Promise<number>((resolve) => {
+                const [err, res] = await jsext.try(abortable(job, controller.signal));
+
+                timer && clearTimeout(timer);
+                strictEqual(res, undefined);
+                deepStrictEqual(err, controller.signal.reason);
+            });
+
+            it("abort before resolve", async () => {
+                const controller = new AbortController();
+
+                let timer: NodeJS.Timeout | number | undefined;
+                const job = new Promise<number>((resolve) => {
+                    timer = setTimeout(() => {
+                        resolve(1);
+                    }, 100);
+                });
+
                 setTimeout(() => {
-                    resolve(1);
+                    controller.abort();
                 }, 50);
+
+                const [err, res] = await jsext.try(abortable(job, controller.signal));
+
+                timer && clearTimeout(timer);
+                strictEqual(res, undefined);
+                deepStrictEqual(err, controller.signal.reason);
             });
 
-            setTimeout(() => {
-                controller.abort();
-            }, 100);
+            it("abort after resolve", async () => {
+                const controller = new AbortController();
+                const job = new Promise<number>((resolve) => {
+                    setTimeout(() => {
+                        resolve(1);
+                    }, 50);
+                });
 
-            const [err, res] = await jsext.try(Promise.abortable(job, controller.signal));
-            strictEqual(res, 1);
-            strictEqual(err, null);
+                const timer = setTimeout(() => {
+                    controller.abort();
+                }, 100);
+
+                const [err, res] = await jsext.try(abortable(job, controller.signal));
+
+                clearTimeout(timer);
+                strictEqual(res, 1);
+                strictEqual(err, null);
+            });
+        });
+
+        describe("AsyncIterable", () => {
+            it("already aborted", async () => {
+                const controller = new AbortController();
+                controller.abort();
+
+                const job = async function* () {
+                    for (const value of [1, 2, 3]) {
+                        yield value;
+                        await sleep(50);
+                    }
+                };
+
+                const result: number[] = [];
+                const [err] = await jsext.try(async () => {
+                    for await (const value of abortable(job(), controller.signal)) {
+                        result.push(value);
+                    }
+                });
+
+                deepStrictEqual(result, []);
+                deepStrictEqual(err, controller.signal.reason);
+            });
+
+            it("abort before finish", async () => {
+                const controller = new AbortController();
+                const job = async function* () {
+                    for (const value of [1, 2, 3]) {
+                        yield value;
+                        await sleep(50);
+                    }
+                };
+
+                setTimeout(() => {
+                    controller.abort();
+                }, 80);
+
+                const result: number[] = [];
+                const [err] = await jsext.try(async () => {
+                    for await (const value of abortable(job(), controller.signal)) {
+                        result.push(value);
+                    }
+                });
+
+                deepStrictEqual(result, [1, 2]);
+                deepStrictEqual(err, controller.signal.reason);
+            });
+
+            it("abort after finish", async () => {
+                const controller = new AbortController();
+                const job = async function* () {
+                    for (const value of [1, 2, 3]) {
+                        yield value;
+                    }
+                };
+
+                const timer = setTimeout(() => {
+                    controller.abort();
+                }, 100);
+
+                const result: number[] = [];
+                const [err] = await jsext.try(async () => {
+                    for await (const value of abortable(job(), controller.signal)) {
+                        result.push(value);
+                    }
+                });
+
+                clearTimeout(timer);
+                deepStrictEqual(result, [1, 2, 3]);
+                strictEqual(err, null);
+            });
         });
     });
 

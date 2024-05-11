@@ -2,11 +2,18 @@ import { abortable, after, sleep, timeout, until, select } from "../async.ts";
 
 declare global {
     interface PromiseConstructor {
-        abortable<T>(value: T | PromiseLike<T>, signal: AbortSignal): Promise<T>;
+        /**
+         * Try to resolve a promise with an abort signal.
+         * 
+         * **NOTE:** This function does not cancel the task itself, it only prematurely
+         * breaks the current routine when the signal is aborted. In order to support
+         * cancellation, the task must be designed to handle the abort signal itself.
+         */
+        abortable<T>(value: PromiseLike<T>, signal: AbortSignal): Promise<T>;
         /** Try to resolve a promise with a timeout limit. */
-        timeout<T>(value: T | Promise<T>, ms: number): Promise<T>;
+        timeout<T>(value: PromiseLike<T>, ms: number): Promise<T>;
         /** Resolves a promise only after the given duration. */
-        after<T>(value: T | PromiseLike<T>, ms: number): Promise<T>;
+        after<T>(value: PromiseLike<T>, ms: number): Promise<T>;
         /** Blocks the context for a given duration. */
         sleep(ms: number): Promise<void>;
         /**
