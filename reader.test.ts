@@ -317,24 +317,26 @@ describe("reader", () => {
         });
 
         it("EventSource", jsext.func(async (defer) => {
-            const server = http.createServer((req, res) => {
-                if (!SSE.isEventSource(req)) {
-                    res.end();
-                    return;
-                }
+            const server = await new Promise<http.Server>((resolve) => {
+                const server = http.createServer((req, res) => {
+                    if (!SSE.isEventSource(req)) {
+                        res.end();
+                        return;
+                    }
 
-                const sse = new SSE(req, res);
+                    const sse = new SSE(req, res);
 
-                if (req.url === "/message") {
-                    sse.send("hello");
-                    sse.send("world");
-                } else if (req.url === "/event") {
-                    sse.emit("reply", "foo");
-                    sse.emit("reply", "bar");
-                } else {
-                    res.end();
-                }
-            }).listen(12345);
+                    if (req.url === "/message") {
+                        sse.send("hello");
+                        sse.send("world");
+                    } else if (req.url === "/event") {
+                        sse.emit("reply", "foo");
+                        sse.emit("reply", "bar");
+                    } else {
+                        res.end();
+                    }
+                }).listen(12345, () => resolve(server));
+            });
             defer(() => new Promise(resolve => {
                 server.closeAllConnections?.();
                 server.close(resolve);
@@ -529,24 +531,26 @@ describe("reader", () => {
         });
 
         it("EventSource", jsext.func(async (defer) => {
-            const server = http.createServer((req, res) => {
-                if (!SSE.isEventSource(req)) {
-                    res.end();
-                    return;
-                }
+            const server = await new Promise<http.Server>((resolve) => {
+                const server = http.createServer((req, res) => {
+                    if (!SSE.isEventSource(req)) {
+                        res.end();
+                        return;
+                    }
 
-                const sse = new SSE(req, res);
+                    const sse = new SSE(req, res);
 
-                if (req.url === "/message") {
-                    sse.send("hello");
-                    sse.send("world");
-                } else if (req.url === "/event") {
-                    sse.emit("reply", "foo");
-                    sse.emit("reply", "bar");
-                } else {
-                    res.end();
-                }
-            }).listen(12345);
+                    if (req.url === "/message") {
+                        sse.send("hello");
+                        sse.send("world");
+                    } else if (req.url === "/event") {
+                        sse.emit("reply", "foo");
+                        sse.emit("reply", "bar");
+                    } else {
+                        res.end();
+                    }
+                }).listen(12345, () => resolve(server));
+            });
             defer(() => new Promise(resolve => {
                 server.closeAllConnections?.();
                 server.close(resolve);
