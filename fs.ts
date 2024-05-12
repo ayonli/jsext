@@ -20,7 +20,9 @@ export { FileInfo, DirEntry };
 
 async function getDirHandle(path: string, options: {
     create?: boolean;
+    /** Used when `create` is `true`. */
     recursive?: boolean;
+    root?: FileSystemDirectoryHandle | undefined;
 } = {}): Promise<FileSystemDirectoryHandle> {
     if (typeof location === "object" && typeof location.origin === "string") {
         path = path.stripStart(location.origin);
@@ -28,7 +30,7 @@ async function getDirHandle(path: string, options: {
 
     const { create = false, recursive = false } = options;
     const paths = split(path.stripStart("/")).filter(p => p !== ".");
-    const root = await navigator.storage.getDirectory();
+    const root = options.root ?? await navigator.storage.getDirectory();
     let dir = root;
 
     for (let i = 0; i < paths.length; i++) {
@@ -44,8 +46,47 @@ async function getDirHandle(path: string, options: {
 /**
  * Returns the information of the given file or directory.
  */
-export async function stat(path: string): Promise<FileInfo> {
-    path = sanitize(path);
+export async function stat(target: string | FileSystemFileHandle | FileSystemDirectoryHandle, options: {
+    /**
+     * The root directory handle to operate in. This option is only available in
+     * the browser.
+     */
+    root?: FileSystemDirectoryHandle | undefined;
+} = {}): Promise<FileInfo> {
+    if (typeof target === "object") {
+        if (typeof (target as any).getFile === "function") {
+            const info = await (target as FileSystemFileHandle).getFile();
+            return {
+                name: target.name,
+                kind: "file",
+                size: info.size,
+                type: info.type ?? getMIME(extname(target.name)) ?? "",
+                mtime: new Date(info.lastModified),
+                atime: null,
+                birthtime: null,
+                isBlockDevice: false,
+                isCharDevice: false,
+                isFIFO: false,
+                isSocket: false,
+            };
+        } else {
+            return {
+                name: target.name,
+                kind: "directory",
+                size: 0,
+                type: "",
+                mtime: null,
+                atime: null,
+                birthtime: null,
+                isBlockDevice: false,
+                isCharDevice: false,
+                isFIFO: false,
+                isSocket: false,
+            };
+        }
+    }
+
+    const path = sanitize(target);
 
     if (isDeno) {
         const stat = await Deno.stat(path);
@@ -89,7 +130,7 @@ export async function stat(path: string): Promise<FileInfo> {
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         const parent = dirname(path);
         const name = basename(path);
-        const dir = await getDirHandle(parent);
+        const dir = await getDirHandle(parent, options);
         const [err, file] = await _try(dir.getFileHandle(name));
 
         if (file) {
@@ -132,9 +173,15 @@ export async function stat(path: string): Promise<FileInfo> {
 /**
  * Checks if the given path exists.
  */
-export async function exists(path: string): Promise<boolean> {
+export async function exists(path: string, options: {
+    /**
+     * The root directory handle to operate in. This option is only available in
+     * the browser.
+     */
+    root?: FileSystemDirectoryHandle | undefined;
+} = {}): Promise<boolean> {
     try {
-        await stat(path);
+        await stat(path, options);
         return true;
     } catch {
         return false;
@@ -156,6 +203,11 @@ export async function mkdir(path: string, options: {
      * @default 0o777
      */
     mode?: number;
+    /**
+     * The root directory handle to operate in. This option is only available in
+     * the browser.
+     */
+    root?: FileSystemDirectoryHandle | undefined;
 } = {}): Promise<void> {
     path = sanitize(path);
 
@@ -165,10 +217,7 @@ export async function mkdir(path: string, options: {
         const fs = await import("fs/promises");
         await fs.mkdir(path, options);
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        await getDirHandle(path, {
-            create: true,
-            recursive: options?.recursive ?? false,
-        });
+        await getDirHandle(path, { create: true, ...options });
     } else {
         throw new Error("Unsupported runtime");
     }
@@ -177,13 +226,23 @@ export async function mkdir(path: string, options: {
 /**
  * Reads the directory of the given path and iterates its entries.
  */
-export async function* readDir(path: string, options: {
+export async function* readDir(target: string | FileSystemDirectoryHandle, options: {
     /**
      * Whether to read the sub-directories recursively.
      */
     recursive?: boolean;
+    /**
+     * The root directory handle to operate in. This option is only available in
+     * the browser.
+     */
+    root?: FileSystemDirectoryHandle | undefined;
 } = {}): AsyncIterable<DirEntry> {
-    path = sanitize(path);
+    if (typeof target === "object") {
+        yield* readDirHandle(target, options);
+        return;
+    }
+
+    const path = sanitize(target);
 
     if (isDeno) {
         yield* (async function* read(path: string, base: string): AsyncIterable<DirEntry> {
@@ -230,38 +289,53 @@ export async function* readDir(path: string, options: {
             }
         })(path, "");
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        const dir = await getDirHandle(path);
+        const dir = await getDirHandle(path, { root: options.root });
+        yield* readDirHandle(dir, options);
+    }
+}
 
-        yield* (async function* read(
-            dir: FileSystemDirectoryHandle,
-            base: string
-        ): AsyncIterable<DirEntry> {
-            const entries = (dir as any)["entries"]() as AsyncIterable<[string, FileSystemHandle]>;
+async function* readDirHandle(dir: FileSystemDirectoryHandle, options: {
+    base?: string,
+    recursive?: boolean;
+} = {}): AsyncIterable<DirEntry> {
+    const { base = "", recursive = false } = options;
+    const entries = (dir as any)["entries"]() as AsyncIterable<[string, FileSystemHandle]>;
 
-            for await (const [_, entry] of entries) {
-                const _entry: DirEntry = {
-                    name: entry.name,
-                    kind: entry.kind,
-                    path: join(base, entry.name),
-                };
+    for await (const [_, entry] of entries) {
+        const _entry: DirEntry = {
+            name: entry.name,
+            kind: entry.kind,
+            path: join(base, entry.name),
+            handle: entry as FileSystemFileHandle | FileSystemDirectoryHandle,
+        };
 
-                yield _entry;
+        yield _entry;
 
-                if (options?.recursive && entry.kind === "directory") {
-                    yield* read(entry as FileSystemDirectoryHandle, _entry.path);
-                }
-            }
-        })(dir, "");
+        if (recursive && entry.kind === "directory") {
+            yield* readDirHandle(entry as FileSystemDirectoryHandle, {
+                base: _entry.path,
+                recursive,
+            });
+        }
     }
 }
 
 /**
  * Reads the content of the given file in bytes.
  */
-export async function readFile(filename: string, options: {
+export async function readFile(target: string | FileSystemFileHandle, options: {
     signal?: AbortSignal;
+    /**
+     * The root directory handle to operate in. This option is only available in
+     * the browser.
+     */
+    root?: FileSystemDirectoryHandle | undefined;
 } = {}): Promise<Uint8Array> {
-    filename = sanitize(filename);
+    if (typeof target === "object") {
+        return await readFileHandle(target, options);
+    }
+
+    const filename = sanitize(target);
 
     if (isDeno) {
         return await Deno.readFile(filename, options);
@@ -271,35 +345,51 @@ export async function readFile(filename: string, options: {
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         const path = dirname(filename);
         const name = basename(filename);
-        const dir = await getDirHandle(path);
+        const dir = await getDirHandle(path, { root: options.root });
         const handle = await dir.getFileHandle(name);
-        const file = await handle.getFile();
-        const arr = new Uint8Array(file.size);
-        let offset = 0;
-        let reader = toAsyncIterable(file.stream());
 
-        if (options.signal) {
-            reader = abortable(reader, options.signal);
-        }
-
-        for await (const chunk of reader) {
-            arr.set(chunk, offset);
-            offset += chunk.length;
-        }
-
-        return arr;
+        return await readFileHandle(handle, options);
     } else {
         throw new Error("Unsupported runtime");
     }
 }
 
+async function readFileHandle(handle: FileSystemFileHandle, options: {
+    signal?: AbortSignal | undefined;
+}): Promise<Uint8Array> {
+    const file = await handle.getFile();
+    const arr = new Uint8Array(file.size);
+    let offset = 0;
+    let reader = toAsyncIterable(file.stream());
+
+    if (options.signal) {
+        reader = abortable(reader, options.signal);
+    }
+
+    for await (const chunk of reader) {
+        arr.set(chunk, offset);
+        offset += chunk.length;
+    }
+
+    return arr;
+}
+
 /**
  * Reads the content of the given file as text.
  */
-export async function readFileAsText(filename: string, options: {
+export async function readFileAsText(target: string | FileSystemFileHandle, options: {
     signal?: AbortSignal;
+    /**
+     * The root directory handle to operate in. This option is only available in
+     * the browser.
+     */
+    root?: FileSystemDirectoryHandle | undefined;
 } = {}): Promise<string> {
-    filename = sanitize(filename);
+    if (typeof target === "object") {
+        return text(await readFileHandle(target, options));
+    }
+
+    const filename = sanitize(target);
 
     if (isDeno) {
         return await Deno.readTextFile(filename, options);
@@ -319,7 +409,7 @@ export async function readFileAsText(filename: string, options: {
 /**
  * Writes the given data to the file.
  */
-export async function writeFile(filename: string, data: Uint8Array | string, options: {
+export async function writeFile(target: string | FileSystemFileHandle, data: Uint8Array | string, options: {
     /**
      * Append the data to the file instead of overwriting it.
      */
@@ -332,8 +422,17 @@ export async function writeFile(filename: string, data: Uint8Array | string, opt
      */
     mode?: number;
     signal?: AbortSignal;
+    /**
+     * The root directory handle to operate in. This option is only available in
+     * the browser.
+     */
+    root?: FileSystemDirectoryHandle | undefined;
 } = {}): Promise<void> {
-    filename = sanitize(filename);
+    if (typeof target === "object") {
+        return await writeFileHandle(target, data, options);
+    }
+
+    const filename = sanitize(target);
 
     if (isDeno) {
         if (typeof data === "string") {
@@ -351,34 +450,42 @@ export async function writeFile(filename: string, data: Uint8Array | string, opt
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         const path = dirname(filename);
         const name = basename(filename);
-        const dir = await getDirHandle(path);
+        const dir = await getDirHandle(path, { root: options.root });
         const handle = await dir.getFileHandle(name, { create: true });
-        const writer = await handle.createWritable({
-            keepExistingData: options?.append ?? false,
-        });
 
-        if (options.append) {
-            const file = await handle.getFile();
-            file.size && writer.seek(file.size);
-        }
-
-        if (options.signal) {
-            const { signal } = options;
-
-            if (signal.aborted) {
-                throw signal.reason;
-            } else {
-                signal.addEventListener("abort", () => {
-                    writer.abort(signal.reason);
-                });
-            }
-        }
-
-        await writer.write(data);
-        await writer.close();
+        return await writeFileHandle(handle, data, options);
     } else {
         throw new Error("Unsupported runtime");
     }
+}
+
+async function writeFileHandle(handle: FileSystemFileHandle, data: Uint8Array | string, options: {
+    append?: boolean;
+    signal?: AbortSignal;
+}): Promise<void> {
+    const writer = await handle.createWritable({
+        keepExistingData: options?.append ?? false,
+    });
+
+    if (options.append) {
+        const file = await handle.getFile();
+        file.size && writer.seek(file.size);
+    }
+
+    if (options.signal) {
+        const { signal } = options;
+
+        if (signal.aborted) {
+            throw signal.reason;
+        } else {
+            signal.addEventListener("abort", () => {
+                writer.abort(signal.reason);
+            });
+        }
+    }
+
+    await writer.write(data);
+    await writer.close();
 }
 
 /**
@@ -390,6 +497,11 @@ export async function remove(path: string, options: {
      * is required in order to remove a non-empty directory.
      */
     recursive?: boolean;
+    /**
+     * The root directory handle to operate in. This option is only available in
+     * the browser.
+     */
+    root?: FileSystemDirectoryHandle | undefined;
 } = {}): Promise<void> {
     path = sanitize(path);
 
@@ -401,7 +513,7 @@ export async function remove(path: string, options: {
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         const parent = dirname(path);
         const name = basename(path);
-        const dir = await getDirHandle(parent);
+        const dir = await getDirHandle(parent, { root: options.root });
         await dir.removeEntry(name, options);
     } else {
         throw new Error("Unsupported runtime");
@@ -411,7 +523,13 @@ export async function remove(path: string, options: {
 /**
  * Renames the file or directory from the old path to the new path.
  */
-export async function rename(oldPath: string, newPath: string): Promise<void> {
+export async function rename(oldPath: string, newPath: string, options: {
+    /**
+     * The root directory handle to operate in. This option is only available in
+     * the browser.
+     */
+    root?: FileSystemDirectoryHandle | undefined;
+}): Promise<void> {
     oldPath = sanitize(oldPath);
     newPath = sanitize(newPath);
 
@@ -421,7 +539,10 @@ export async function rename(oldPath: string, newPath: string): Promise<void> {
         const fs = await import("fs/promises");
         await fs.rename(oldPath, newPath);
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        return await copyInBrowser(oldPath, newPath, { cut: true });
+        return await copyInBrowser(oldPath, newPath, {
+            root: options.root,
+            cut: true,
+        });
     } else {
         throw new Error("Unsupported runtime");
     }
@@ -433,7 +554,13 @@ export async function rename(oldPath: string, newPath: string): Promise<void> {
  * NOTE: If the old path is a file and the new path is a directory, the file
  * will be copied to the new directory with the same name.
  */
-export async function copy(oldPath: string, newPath: string): Promise<void> {
+export async function copy(oldPath: string, newPath: string, options: {
+    /**
+     * The root directory handle to operate in. This option is only available in
+     * the browser.
+     */
+    root?: FileSystemDirectoryHandle | undefined;
+}): Promise<void> {
     oldPath = sanitize(oldPath);
     newPath = sanitize(newPath);
 
@@ -495,25 +622,28 @@ export async function copy(oldPath: string, newPath: string): Promise<void> {
             }
         }
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        return await copyInBrowser(oldPath, newPath);
+        return await copyInBrowser(oldPath, newPath, {
+            root: options.root,
+        });
     } else {
         throw new Error("Unsupported runtime");
     }
 }
 
 async function copyInBrowser(oldPath: string, newPath: string, options: {
+    root?: FileSystemDirectoryHandle | undefined;
     cut?: boolean;
 } = {}): Promise<void> {
     const oldParent = dirname(oldPath);
     const oldName = basename(oldPath);
 
-    let oldDir = await getDirHandle(oldParent);
+    let oldDir = await getDirHandle(oldParent, { root: options.root });
     const [oldErr, oldFile] = await _try(oldDir.getFileHandle(oldName));
 
     if (oldFile) {
         const newParent = dirname(newPath);
         const newName = basename(newPath);
-        let newDir = await getDirHandle(newParent);
+        let newDir = await getDirHandle(newParent, { root: options.root });
         const [newErr, newFile] = await _try(newDir.getFileHandle(newName, {
             create: true,
         }));

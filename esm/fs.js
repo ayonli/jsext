@@ -2,7 +2,7 @@ import { abortable } from './async.js';
 import { text } from './bytes.js';
 import { isDeno, isNodeLike, isBrowserWindow, isDedicatedWorker, isSharedWorker } from './env.js';
 import { getMIME } from './filetype.js';
-import { sanitize, basename, extname, dirname, join } from './path.js';
+import { extname, sanitize, basename, dirname, join } from './path.js';
 import { toAsyncIterable } from './reader/util.js';
 import _try from './try.js';
 import { split } from './path/util.js';
@@ -16,12 +16,13 @@ import { split } from './path/util.js';
  * @experimental
  */
 async function getDirHandle(path, options = {}) {
+    var _a;
     if (typeof location === "object" && typeof location.origin === "string") {
         path = path.stripStart(location.origin);
     }
     const { create = false, recursive = false } = options;
     const paths = split(path.stripStart("/")).filter(p => p !== ".");
-    const root = await navigator.storage.getDirectory();
+    const root = (_a = options.root) !== null && _a !== void 0 ? _a : await navigator.storage.getDirectory();
     let dir = root;
     for (let i = 0; i < paths.length; i++) {
         const _path = paths[i];
@@ -34,9 +35,42 @@ async function getDirHandle(path, options = {}) {
 /**
  * Returns the information of the given file or directory.
  */
-async function stat(path) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
-    path = sanitize(path);
+async function stat(target, options = {}) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
+    if (typeof target === "object") {
+        if (typeof target.getFile === "function") {
+            const info = await target.getFile();
+            return {
+                name: target.name,
+                kind: "file",
+                size: info.size,
+                type: (_b = (_a = info.type) !== null && _a !== void 0 ? _a : getMIME(extname(target.name))) !== null && _b !== void 0 ? _b : "",
+                mtime: new Date(info.lastModified),
+                atime: null,
+                birthtime: null,
+                isBlockDevice: false,
+                isCharDevice: false,
+                isFIFO: false,
+                isSocket: false,
+            };
+        }
+        else {
+            return {
+                name: target.name,
+                kind: "directory",
+                size: 0,
+                type: "",
+                mtime: null,
+                atime: null,
+                birthtime: null,
+                isBlockDevice: false,
+                isCharDevice: false,
+                isFIFO: false,
+                isSocket: false,
+            };
+        }
+    }
+    const path = sanitize(target);
     if (isDeno) {
         const stat = await Deno.stat(path);
         return {
@@ -47,14 +81,14 @@ async function stat(path) {
                     ? "symlink"
                     : "file",
             size: stat.size,
-            type: (_a = getMIME(extname(path))) !== null && _a !== void 0 ? _a : "",
-            mtime: (_b = stat.mtime) !== null && _b !== void 0 ? _b : null,
-            atime: (_c = stat.atime) !== null && _c !== void 0 ? _c : null,
-            birthtime: (_d = stat.birthtime) !== null && _d !== void 0 ? _d : null,
-            isBlockDevice: (_e = stat.isBlockDevice) !== null && _e !== void 0 ? _e : false,
-            isCharDevice: (_f = stat.isCharDevice) !== null && _f !== void 0 ? _f : false,
-            isFIFO: (_g = stat.isFile) !== null && _g !== void 0 ? _g : false,
-            isSocket: (_h = stat.isSocket) !== null && _h !== void 0 ? _h : false,
+            type: (_c = getMIME(extname(path))) !== null && _c !== void 0 ? _c : "",
+            mtime: (_d = stat.mtime) !== null && _d !== void 0 ? _d : null,
+            atime: (_e = stat.atime) !== null && _e !== void 0 ? _e : null,
+            birthtime: (_f = stat.birthtime) !== null && _f !== void 0 ? _f : null,
+            isBlockDevice: (_g = stat.isBlockDevice) !== null && _g !== void 0 ? _g : false,
+            isCharDevice: (_h = stat.isCharDevice) !== null && _h !== void 0 ? _h : false,
+            isFIFO: (_j = stat.isFile) !== null && _j !== void 0 ? _j : false,
+            isSocket: (_k = stat.isSocket) !== null && _k !== void 0 ? _k : false,
         };
     }
     else if (isNodeLike) {
@@ -68,10 +102,10 @@ async function stat(path) {
                     ? "symlink"
                     : "file",
             size: stat.size,
-            type: (_j = getMIME(extname(path))) !== null && _j !== void 0 ? _j : "",
-            mtime: (_k = stat.mtime) !== null && _k !== void 0 ? _k : null,
-            atime: (_l = stat.atime) !== null && _l !== void 0 ? _l : null,
-            birthtime: (_m = stat.birthtime) !== null && _m !== void 0 ? _m : null,
+            type: (_l = getMIME(extname(path))) !== null && _l !== void 0 ? _l : "",
+            mtime: (_m = stat.mtime) !== null && _m !== void 0 ? _m : null,
+            atime: (_o = stat.atime) !== null && _o !== void 0 ? _o : null,
+            birthtime: (_p = stat.birthtime) !== null && _p !== void 0 ? _p : null,
             isBlockDevice: stat.isBlockDevice(),
             isCharDevice: stat.isCharacterDevice(),
             isFIFO: stat.isFIFO(),
@@ -81,7 +115,7 @@ async function stat(path) {
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         const parent = dirname(path);
         const name = basename(path);
-        const dir = await getDirHandle(parent);
+        const dir = await getDirHandle(parent, options);
         const [err, file] = await _try(dir.getFileHandle(name));
         if (file) {
             const info = await file.getFile();
@@ -89,7 +123,7 @@ async function stat(path) {
                 name,
                 kind: "file",
                 size: info.size,
-                type: (_p = (_o = info.type) !== null && _o !== void 0 ? _o : getMIME(extname(name))) !== null && _p !== void 0 ? _p : "",
+                type: (_r = (_q = info.type) !== null && _q !== void 0 ? _q : getMIME(extname(name))) !== null && _r !== void 0 ? _r : "",
                 mtime: new Date(info.lastModified),
                 atime: null,
                 birthtime: null,
@@ -125,9 +159,9 @@ async function stat(path) {
 /**
  * Checks if the given path exists.
  */
-async function exists(path) {
+async function exists(path, options = {}) {
     try {
-        await stat(path);
+        await stat(path, options);
         return true;
     }
     catch (_a) {
@@ -138,7 +172,6 @@ async function exists(path) {
  * Creates a new directory with the given path.
  */
 async function mkdir(path, options = {}) {
-    var _a;
     path = sanitize(path);
     if (isDeno) {
         await Deno.mkdir(path, options);
@@ -148,10 +181,7 @@ async function mkdir(path, options = {}) {
         await fs.mkdir(path, options);
     }
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        await getDirHandle(path, {
-            create: true,
-            recursive: (_a = options === null || options === void 0 ? void 0 : options.recursive) !== null && _a !== void 0 ? _a : false,
-        });
+        await getDirHandle(path, { create: true, ...options });
     }
     else {
         throw new Error("Unsupported runtime");
@@ -160,8 +190,12 @@ async function mkdir(path, options = {}) {
 /**
  * Reads the directory of the given path and iterates its entries.
  */
-async function* readDir(path, options = {}) {
-    path = sanitize(path);
+async function* readDir(target, options = {}) {
+    if (typeof target === "object") {
+        yield* readDirHandle(target, options);
+        return;
+    }
+    const path = sanitize(target);
     if (isDeno) {
         yield* (async function* read(path, base) {
             for await (const entry of Deno.readDir(path)) {
@@ -203,28 +237,37 @@ async function* readDir(path, options = {}) {
         })(path, "");
     }
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        const dir = await getDirHandle(path);
-        yield* (async function* read(dir, base) {
-            const entries = dir["entries"]();
-            for await (const [_, entry] of entries) {
-                const _entry = {
-                    name: entry.name,
-                    kind: entry.kind,
-                    path: join(base, entry.name),
-                };
-                yield _entry;
-                if ((options === null || options === void 0 ? void 0 : options.recursive) && entry.kind === "directory") {
-                    yield* read(entry, _entry.path);
-                }
-            }
-        })(dir, "");
+        const dir = await getDirHandle(path, { root: options.root });
+        yield* readDirHandle(dir, options);
+    }
+}
+async function* readDirHandle(dir, options = {}) {
+    const { base = "", recursive = false } = options;
+    const entries = dir["entries"]();
+    for await (const [_, entry] of entries) {
+        const _entry = {
+            name: entry.name,
+            kind: entry.kind,
+            path: join(base, entry.name),
+            handle: entry,
+        };
+        yield _entry;
+        if (recursive && entry.kind === "directory") {
+            yield* readDirHandle(entry, {
+                base: _entry.path,
+                recursive,
+            });
+        }
     }
 }
 /**
  * Reads the content of the given file in bytes.
  */
-async function readFile(filename, options = {}) {
-    filename = sanitize(filename);
+async function readFile(target, options = {}) {
+    if (typeof target === "object") {
+        return await readFileHandle(target, options);
+    }
+    const filename = sanitize(target);
     if (isDeno) {
         return await Deno.readFile(filename, options);
     }
@@ -235,30 +278,36 @@ async function readFile(filename, options = {}) {
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         const path = dirname(filename);
         const name = basename(filename);
-        const dir = await getDirHandle(path);
+        const dir = await getDirHandle(path, { root: options.root });
         const handle = await dir.getFileHandle(name);
-        const file = await handle.getFile();
-        const arr = new Uint8Array(file.size);
-        let offset = 0;
-        let reader = toAsyncIterable(file.stream());
-        if (options.signal) {
-            reader = abortable(reader, options.signal);
-        }
-        for await (const chunk of reader) {
-            arr.set(chunk, offset);
-            offset += chunk.length;
-        }
-        return arr;
+        return await readFileHandle(handle, options);
     }
     else {
         throw new Error("Unsupported runtime");
     }
 }
+async function readFileHandle(handle, options) {
+    const file = await handle.getFile();
+    const arr = new Uint8Array(file.size);
+    let offset = 0;
+    let reader = toAsyncIterable(file.stream());
+    if (options.signal) {
+        reader = abortable(reader, options.signal);
+    }
+    for await (const chunk of reader) {
+        arr.set(chunk, offset);
+        offset += chunk.length;
+    }
+    return arr;
+}
 /**
  * Reads the content of the given file as text.
  */
-async function readFileAsText(filename, options = {}) {
-    filename = sanitize(filename);
+async function readFileAsText(target, options = {}) {
+    if (typeof target === "object") {
+        return text(await readFileHandle(target, options));
+    }
+    const filename = sanitize(target);
     if (isDeno) {
         return await Deno.readTextFile(filename, options);
     }
@@ -279,9 +328,11 @@ async function readFileAsText(filename, options = {}) {
 /**
  * Writes the given data to the file.
  */
-async function writeFile(filename, data, options = {}) {
-    var _a;
-    filename = sanitize(filename);
+async function writeFile(target, data, options = {}) {
+    if (typeof target === "object") {
+        return await writeFileHandle(target, data, options);
+    }
+    const filename = sanitize(target);
     if (isDeno) {
         if (typeof data === "string") {
             return await Deno.writeTextFile(filename, data, options);
@@ -301,32 +352,36 @@ async function writeFile(filename, data, options = {}) {
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         const path = dirname(filename);
         const name = basename(filename);
-        const dir = await getDirHandle(path);
+        const dir = await getDirHandle(path, { root: options.root });
         const handle = await dir.getFileHandle(name, { create: true });
-        const writer = await handle.createWritable({
-            keepExistingData: (_a = options === null || options === void 0 ? void 0 : options.append) !== null && _a !== void 0 ? _a : false,
-        });
-        if (options.append) {
-            const file = await handle.getFile();
-            file.size && writer.seek(file.size);
-        }
-        if (options.signal) {
-            const { signal } = options;
-            if (signal.aborted) {
-                throw signal.reason;
-            }
-            else {
-                signal.addEventListener("abort", () => {
-                    writer.abort(signal.reason);
-                });
-            }
-        }
-        await writer.write(data);
-        await writer.close();
+        return await writeFileHandle(handle, data, options);
     }
     else {
         throw new Error("Unsupported runtime");
     }
+}
+async function writeFileHandle(handle, data, options) {
+    var _a;
+    const writer = await handle.createWritable({
+        keepExistingData: (_a = options === null || options === void 0 ? void 0 : options.append) !== null && _a !== void 0 ? _a : false,
+    });
+    if (options.append) {
+        const file = await handle.getFile();
+        file.size && writer.seek(file.size);
+    }
+    if (options.signal) {
+        const { signal } = options;
+        if (signal.aborted) {
+            throw signal.reason;
+        }
+        else {
+            signal.addEventListener("abort", () => {
+                writer.abort(signal.reason);
+            });
+        }
+    }
+    await writer.write(data);
+    await writer.close();
 }
 /**
  * Removes the file or directory of the given path from the file system.
@@ -343,7 +398,7 @@ async function remove(path, options = {}) {
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         const parent = dirname(path);
         const name = basename(path);
-        const dir = await getDirHandle(parent);
+        const dir = await getDirHandle(parent, { root: options.root });
         await dir.removeEntry(name, options);
     }
     else {
@@ -353,7 +408,7 @@ async function remove(path, options = {}) {
 /**
  * Renames the file or directory from the old path to the new path.
  */
-async function rename(oldPath, newPath) {
+async function rename(oldPath, newPath, options) {
     oldPath = sanitize(oldPath);
     newPath = sanitize(newPath);
     if (isDeno) {
@@ -364,7 +419,10 @@ async function rename(oldPath, newPath) {
         await fs.rename(oldPath, newPath);
     }
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        return await copyInBrowser(oldPath, newPath, { cut: true });
+        return await copyInBrowser(oldPath, newPath, {
+            root: options.root,
+            cut: true,
+        });
     }
     else {
         throw new Error("Unsupported runtime");
@@ -376,7 +434,7 @@ async function rename(oldPath, newPath) {
  * NOTE: If the old path is a file and the new path is a directory, the file
  * will be copied to the new directory with the same name.
  */
-async function copy(oldPath, newPath) {
+async function copy(oldPath, newPath, options) {
     oldPath = sanitize(oldPath);
     newPath = sanitize(newPath);
     if (isDeno) {
@@ -435,7 +493,9 @@ async function copy(oldPath, newPath) {
         }
     }
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        return await copyInBrowser(oldPath, newPath);
+        return await copyInBrowser(oldPath, newPath, {
+            root: options.root,
+        });
     }
     else {
         throw new Error("Unsupported runtime");
@@ -444,12 +504,12 @@ async function copy(oldPath, newPath) {
 async function copyInBrowser(oldPath, newPath, options = {}) {
     const oldParent = dirname(oldPath);
     const oldName = basename(oldPath);
-    let oldDir = await getDirHandle(oldParent);
+    let oldDir = await getDirHandle(oldParent, { root: options.root });
     const [oldErr, oldFile] = await _try(oldDir.getFileHandle(oldName));
     if (oldFile) {
         const newParent = dirname(newPath);
         const newName = basename(newPath);
-        let newDir = await getDirHandle(newParent);
+        let newDir = await getDirHandle(newParent, { root: options.root });
         const [newErr, newFile] = await _try(newDir.getFileHandle(newName, {
             create: true,
         }));

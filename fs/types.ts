@@ -6,6 +6,7 @@ export interface DirEntry {
     kind: "file" | "directory" | "symlink";
     /** The relative path of the entry */
     path: string;
+    handle?: FileSystemFileHandle | FileSystemDirectoryHandle;
 }
 
 /**
