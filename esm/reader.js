@@ -53,6 +53,9 @@ async function readAsArrayBuffer(source) {
     if (typeof Blob === "function" && source instanceof Blob) {
         return await source.arrayBuffer();
     }
+    else if (typeof Buffer === "function" && source instanceof Buffer) {
+        return source.buffer.slice(0, source.length);
+    }
     else if (source instanceof Uint8Array) {
         return source.buffer;
     }

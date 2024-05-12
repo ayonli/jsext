@@ -1,4 +1,4 @@
-import { basename, join } from '../path.js';
+import { join, basename } from '../path.js';
 import { isBrowserWindow, isDeno, isNodeLike } from '../env.js';
 import { platform } from '../runtime.js';
 import { which } from '../cli.js';
@@ -7,14 +7,16 @@ import { readFile } from './terminal/util.js';
 import { macPickFile, macPickFiles, macPickFolder } from './terminal/file/mac.js';
 import { linuxPickFile, linuxPickFiles, linuxPickFolder } from './terminal/file/linux.js';
 import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './terminal/file/windows.js';
+import { browserPickFile, browserPickFiles, browserPickFolder } from './terminal/file/browser.js';
+import { writeFile } from '../fs.js';
 import { toAsyncIterable } from '../reader/util.js';
 import { isWSL } from '../cli/common.js';
 
 /**
  * Open the file picker dialog and pick a file, this function returns the file's
- * path.
+ * path or a `FileSystemFileHandle` in the browser.
  *
- * NOTE: this function is not available in the browser.
+ * NOTE: Browser support is limited to the chromium family.
  */
 async function pickFile(options = {}) {
     const _platform = platform();
@@ -22,7 +24,13 @@ async function pickFile(options = {}) {
     if (options["save"]) {
         options.forSave = true;
     }
-    if (_platform === "darwin") {
+    if (typeof globalThis["showOpenFilePicker"] === "function") {
+        return await browserPickFile(options.type, {
+            forSave: options.forSave,
+            defaultName: options.defaultName,
+        });
+    }
+    else if (_platform === "darwin") {
         return await macPickFile(options.title, {
             type: options.type,
             forSave: options === null || options === void 0 ? void 0 : options.forSave,
@@ -47,13 +55,16 @@ async function pickFile(options = {}) {
 }
 /**
  * Open the file picker dialog and pick multiple files, this function returns the
- * paths of the files selected.
+ * paths or `FileSystemFileHandle` objects in the browser of the files selected.
  *
- * NOTE: this function is not available in the browser.
+ * NOTE: Browser support is limited to the chromium family.
  */
 async function pickFiles(options = {}) {
     const _platform = platform();
-    if (_platform === "darwin") {
+    if (typeof globalThis["showOpenFilePicker"] === "function") {
+        return await browserPickFiles(options.type);
+    }
+    else if (_platform === "darwin") {
         return await macPickFiles(options.title, options.type);
     }
     else if (_platform === "windows" || isWSL()) {
@@ -66,13 +77,16 @@ async function pickFiles(options = {}) {
 }
 /**
  * Open the file picker dialog and pick a directory, this function returns the
- * directory's path.
+ * directory's path or `FileSystemDirectoryHandle` in the browser.
  *
- * NOTE: this function is not available in the browser.
+ * NOTE: Browser support is limited to the chromium family.
  */
 async function pickDirectory(options = {}) {
     const _platform = platform();
-    if (_platform === "darwin") {
+    if (typeof globalThis["showDirectoryPicker"] === "function") {
+        return await browserPickFolder();
+    }
+    else if (_platform === "darwin") {
         return await macPickFolder(options.title);
     }
     else if (_platform === "windows" || isWSL()) {
@@ -85,7 +99,49 @@ async function pickDirectory(options = {}) {
 }
 async function openFile(options = {}) {
     const { title = "", type = "", multiple = false, directory = false } = options;
-    if (isBrowserWindow) {
+    if (directory && typeof globalThis["showDirectoryPicker"] === "function") {
+        const files = [];
+        const dir = await browserPickFolder();
+        if (!dir) {
+            return files;
+        }
+        await (async function walk(dir, base = "") {
+            const entries = dir.entries();
+            for await (const [_, entry] of entries) {
+                const path = join(base, entry.name);
+                if (entry.kind === "file") {
+                    const file = await entry.getFile();
+                    Object.defineProperty(file, "webkitRelativePath", {
+                        configurable: true,
+                        enumerable: true,
+                        writable: false,
+                        value: path !== null && path !== void 0 ? path : "",
+                    });
+                    files.push(file);
+                }
+                else {
+                    await walk(entry, path);
+                }
+            }
+        })(dir);
+        return files;
+    }
+    else if (typeof globalThis["showOpenPicker"] === "function") {
+        if (multiple) {
+            const handles = await browserPickFiles(type);
+            const files = [];
+            for (const handle of handles) {
+                const file = await handle.getFile();
+                files.push(file);
+            }
+            return files;
+        }
+        else {
+            const handle = await browserPickFile(type);
+            return handle ? await handle.getFile() : null;
+        }
+    }
+    else if (isBrowserWindow) {
         const input = document.createElement("input");
         input.type = "file";
         input.accept = type !== null && type !== void 0 ? type : "";
@@ -191,7 +247,16 @@ async function openFile(options = {}) {
     }
 }
 async function saveFile(file, options = {}) {
-    if (isBrowserWindow) {
+    if (typeof globalThis["showSaveFilePicker"] === "function") {
+        const handle = await browserPickFile(options.type, {
+            forSave: true,
+            defaultName: options.name,
+        });
+        if (handle) {
+            await writeFile(handle, file);
+        }
+    }
+    else if (isBrowserWindow) {
         const a = document.createElement("a");
         if (file instanceof ReadableStream) {
             const type = options.type || "application/octet-stream";
