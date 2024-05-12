@@ -260,6 +260,20 @@ async function* readDirHandle(dir, options = {}) {
         }
     }
 }
+async function readFileHandle(handle, options) {
+    const file = await handle.getFile();
+    const arr = new Uint8Array(file.size);
+    let offset = 0;
+    let reader = toAsyncIterable(file.stream());
+    if (options.signal) {
+        reader = abortable(reader, options.signal);
+    }
+    for await (const chunk of reader) {
+        arr.set(chunk, offset);
+        offset += chunk.length;
+    }
+    return arr;
+}
 /**
  * Reads the content of the given file in bytes.
  */
@@ -285,20 +299,6 @@ async function readFile(target, options = {}) {
     else {
         throw new Error("Unsupported runtime");
     }
-}
-async function readFileHandle(handle, options) {
-    const file = await handle.getFile();
-    const arr = new Uint8Array(file.size);
-    let offset = 0;
-    let reader = toAsyncIterable(file.stream());
-    if (options.signal) {
-        reader = abortable(reader, options.signal);
-    }
-    for await (const chunk of reader) {
-        arr.set(chunk, offset);
-        offset += chunk.length;
-    }
-    return arr;
 }
 /**
  * Reads the content of the given file as text.
@@ -408,7 +408,7 @@ async function remove(path, options = {}) {
 /**
  * Renames the file or directory from the old path to the new path.
  */
-async function rename(oldPath, newPath, options) {
+async function rename(oldPath, newPath, options = {}) {
     oldPath = sanitize(oldPath);
     newPath = sanitize(newPath);
     if (isDeno) {
@@ -434,7 +434,7 @@ async function rename(oldPath, newPath, options) {
  * NOTE: If the old path is a file and the new path is a directory, the file
  * will be copied to the new directory with the same name.
  */
-async function copy(oldPath, newPath, options) {
+async function copy(oldPath, newPath, options = {}) {
     oldPath = sanitize(oldPath);
     newPath = sanitize(newPath);
     if (isDeno) {

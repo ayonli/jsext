@@ -1,31 +1,31 @@
-async function stat(path) {
+async function stat(target, options = {}) {
     throw new Error("Unsupported runtime");
 }
-async function exists(path) {
+async function exists(path, options = {}) {
     throw new Error("Unsupported runtime");
 }
 async function mkdir(path, options = {}) {
     throw new Error("Unsupported runtime");
 }
-async function* readDir(path, options = {}) {
+async function* readDir(target, options = {}) {
     throw new Error("Unsupported runtime");
 }
-async function readFile(filename, options = {}) {
+async function readFile(target, options = {}) {
     throw new Error("Unsupported runtime");
 }
-async function readFileAsText(filename, options = {}) {
+async function readFileAsText(target, options = {}) {
     throw new Error("Unsupported runtime");
 }
-async function writeFile(filename, data, options = {}) {
+async function writeFile(target, data, options = {}) {
     throw new Error("Unsupported runtime");
 }
 async function remove(path, options = {}) {
     throw new Error("Unsupported runtime");
 }
-async function rename(oldPath, newPath) {
+async function rename(oldPath, newPath, options = {}) {
     throw new Error("Unsupported runtime");
 }
-async function copy(oldPath, newPath) {
+async function copy(oldPath, newPath, options = {}) {
     throw new Error("Unsupported runtime");
 }
 
