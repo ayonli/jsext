@@ -1,6 +1,6 @@
-import { CommonOptions, FileInfo, DirEntry } from "../fs/types";
+import type { CommonOptions, FileInfo, DirEntry } from "../fs/types";
 
-export { CommonOptions, FileInfo, DirEntry };
+export type { CommonOptions, FileInfo, DirEntry };
 
 export async function exists(path: string, options: CommonOptions = {}): Promise<boolean> {
     void path, options;
