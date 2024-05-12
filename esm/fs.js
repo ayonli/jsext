@@ -3,9 +3,10 @@ import { text } from './bytes.js';
 import { isDeno, isNodeLike, isBrowserWindow, isDedicatedWorker, isSharedWorker } from './env.js';
 import { getMIME } from './filetype.js';
 import { extname, sanitize, basename, dirname, join } from './path.js';
-import { toAsyncIterable } from './reader/util.js';
+import { readAsArrayBuffer } from './reader.js';
 import _try from './try.js';
 import { split } from './path/util.js';
+import { toAsyncIterable } from './reader/util.js';
 
 /**
  * Universal file system APIs for Node.js, Bun, Deno, and the browser.
@@ -287,7 +288,8 @@ async function readFile(target, options = {}) {
     }
     else if (isNodeLike) {
         const fs = await import('fs/promises');
-        return await fs.readFile(filename, options);
+        const buffer = await fs.readFile(filename, options);
+        return new Uint8Array(buffer.buffer, 0, buffer.byteLength);
     }
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         const path = dirname(filename);
@@ -337,6 +339,9 @@ async function writeFile(target, data, options = {}) {
         if (typeof data === "string") {
             return await Deno.writeTextFile(filename, data, options);
         }
+        else if (typeof File === "function" && data instanceof File) {
+            return await Deno.writeFile(filename, data.stream(), options);
+        }
         else {
             return await Deno.writeFile(filename, data, options);
         }
@@ -344,7 +349,23 @@ async function writeFile(target, data, options = {}) {
     else if (isNodeLike) {
         const fs = await import('fs/promises');
         const { append, ...rest } = options;
-        return await fs.writeFile(filename, data, {
+        let _data;
+        if (typeof File === "function" && data instanceof File) {
+            _data = new Uint8Array(await data.arrayBuffer());
+        }
+        else if (typeof Blob === "function" && data instanceof Blob) {
+            _data = new Uint8Array(await data.arrayBuffer());
+        }
+        else if (typeof ReadableStream === "function" && data instanceof ReadableStream) {
+            _data = new Uint8Array(await readAsArrayBuffer(data));
+        }
+        else if (typeof data === "string" || "buffer" in data) {
+            _data = data;
+        }
+        else {
+            throw new Error("Unsupported data type");
+        }
+        return await fs.writeFile(filename, _data, {
             flag: (options === null || options === void 0 ? void 0 : options.append) ? "a" : "w",
             ...rest,
         });
@@ -380,7 +401,15 @@ async function writeFileHandle(handle, data, options) {
             });
         }
     }
-    await writer.write(data);
+    if (typeof File === "function" && data instanceof File) {
+        await data.stream().pipeTo(writer);
+    }
+    else if (typeof ReadableStream === "function" && data instanceof ReadableStream) {
+        await data.pipeTo(writer);
+    }
+    else {
+        await writer.write(data);
+    }
     await writer.close();
 }
 /**

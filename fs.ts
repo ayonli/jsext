@@ -13,7 +13,7 @@ import { isBrowserWindow, isDedicatedWorker, isDeno, isNodeLike, isSharedWorker 
 import { getMIME } from "./filetype.ts";
 import { FileInfo, DirEntry, CommonOptions } from "./fs/types.ts";
 import { basename, dirname, extname, join, sanitize, split } from "./path.ts";
-import { toAsyncIterable } from "./reader.ts";
+import { readAsArrayBuffer, toAsyncIterable } from "./reader.ts";
 import _try from "./try.ts";
 
 export { CommonOptions, FileInfo, DirEntry };
@@ -337,7 +337,8 @@ export async function readFile(target: string | FileSystemFileHandle, options: C
         return await Deno.readFile(filename, options);
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
-        return await fs.readFile(filename, options);
+        const buffer = await fs.readFile(filename, options);
+        return new Uint8Array(buffer.buffer, 0, buffer.byteLength);
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         const path = dirname(filename);
         const name = basename(filename);
@@ -382,7 +383,7 @@ export async function readFileAsText(target: string | FileSystemFileHandle, opti
  */
 export async function writeFile(
     target: string | FileSystemFileHandle,
-    data: Uint8Array | string,
+    data: string | Uint8Array | ArrayBufferLike | ReadableStream<Uint8Array> | Blob | File,
     options: CommonOptions & {
         /**
          * Append the data to the file instead of overwriting it.
@@ -407,13 +408,29 @@ export async function writeFile(
     if (isDeno) {
         if (typeof data === "string") {
             return await Deno.writeTextFile(filename, data, options);
+        } else if (typeof File === "function" && data instanceof File) {
+            return await Deno.writeFile(filename, data.stream(), options);
         } else {
-            return await Deno.writeFile(filename, data, options);
+            return await Deno.writeFile(filename, data as any, options);
         }
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
         const { append, ...rest } = options;
-        return await fs.writeFile(filename, data, {
+        let _data: Uint8Array | string;
+
+        if (typeof File === "function" && data instanceof File) {
+            _data = new Uint8Array(await data.arrayBuffer());
+        } else if (typeof Blob === "function" && data instanceof Blob) {
+            _data = new Uint8Array(await data.arrayBuffer());
+        } else if (typeof ReadableStream === "function" && data instanceof ReadableStream) {
+            _data = new Uint8Array(await readAsArrayBuffer(data));
+        } else if (typeof data === "string" || "buffer" in data) {
+            _data = data;
+        } else {
+            throw new Error("Unsupported data type");
+        }
+
+        return await fs.writeFile(filename, _data, {
             flag: options?.append ? "a" : "w",
             ...rest,
         });
@@ -429,10 +446,14 @@ export async function writeFile(
     }
 }
 
-async function writeFileHandle(handle: FileSystemFileHandle, data: Uint8Array | string, options: {
-    append?: boolean;
-    signal?: AbortSignal;
-}): Promise<void> {
+async function writeFileHandle(
+    handle: FileSystemFileHandle,
+    data: string | Uint8Array | ArrayBufferLike | ReadableStream<Uint8Array> | Blob | File,
+    options: {
+        append?: boolean;
+        signal?: AbortSignal;
+    }
+): Promise<void> {
     const writer = await handle.createWritable({
         keepExistingData: options?.append ?? false,
     });
@@ -454,7 +475,14 @@ async function writeFileHandle(handle: FileSystemFileHandle, data: Uint8Array | 
         }
     }
 
-    await writer.write(data);
+    if (typeof File === "function" && data instanceof File) {
+        await data.stream().pipeTo(writer);
+    } else if (typeof ReadableStream === "function" && data instanceof ReadableStream) {
+        await data.pipeTo(writer);
+    } else {
+        await writer.write(data as any);
+    }
+
     await writer.close();
 }
 
