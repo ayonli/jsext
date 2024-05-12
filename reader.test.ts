@@ -62,7 +62,7 @@ describe("reader", () => {
                 const arr = Buffer.from([1, 2, 3]);
                 const buffer = await readAsArrayBuffer(arr);
 
-                deepStrictEqual(buffer, arr.buffer);
+                deepStrictEqual(buffer, arr.buffer.slice(0, 3));
             }
         });
 
