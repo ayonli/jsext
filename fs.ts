@@ -49,6 +49,10 @@ async function getDirHandle(path: string, options: CommonOptions & {
 
 /**
  * Checks if the given path exists.
+ * 
+ * The result of this function may be inaccurate if the operation is rejected
+ * by the permission system of the runtime, or the path is not accessible, in
+ * which case the function will return `false`.
  */
 export async function exists(path: string, options: CommonOptions = {}): Promise<boolean> {
     try {
@@ -69,8 +73,8 @@ export async function stat(
     } = {}
 ): Promise<FileInfo> {
     if (typeof target === "object") {
-        if (typeof (target as any).getFile === "function") {
-            const info = await (target as FileSystemFileHandle).getFile();
+        if (target.kind === "file") {
+            const info = await target.getFile();
             return {
                 name: target.name,
                 kind: "file",
@@ -211,7 +215,7 @@ export async function mkdir(path: string, options: CommonOptions & {
         const fs = await import("fs/promises");
         await fs.mkdir(path, options);
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        await getDirHandle(path, { create: true, ...options });
+        await getDirHandle(path, { ...options, create: true });
     } else {
         throw new Error("Unsupported runtime");
     }
@@ -491,9 +495,8 @@ async function writeFileHandle(
         await data.pipeTo(writer);
     } else {
         await writer.write(data);
+        await writer.close();
     }
-
-    await writer.close();
 }
 
 /**
@@ -506,7 +509,7 @@ export async function truncate(
     options: CommonOptions = {}
 ): Promise<void> {
     if (typeof target === "object") {
-        const writer = await target.createWritable();
+        const writer = await target.createWritable({ keepExistingData: true });
         await writer.truncate(size);
         await writer.close();
         return;
@@ -523,8 +526,8 @@ export async function truncate(
         const path = dirname(filename);
         const name = basename(filename);
         const dir = await getDirHandle(path, { root: options.root });
-        const handle = await dir.getFileHandle(name, { create: true });
-        const writer = await handle.createWritable();
+        const handle = await dir.getFileHandle(name);
+        const writer = await handle.createWritable({ keepExistingData: true });
 
         await writer.truncate(size);
         await writer.close();
@@ -585,7 +588,7 @@ export async function rename(
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         return await copyInBrowser(oldPath, newPath, {
             root: options.root,
-            cut: true,
+            move: true,
         });
     } else {
         throw new Error("Unsupported runtime");
@@ -597,7 +600,14 @@ export async function rename(
  * path.
  * 
  * NOTE: If the old path is a file and the new path is a directory, the file
- * will be copied to the new directory with the same name.
+ * will be copied into the new directory with the old name.
+ * 
+ * NOTE: In Unix/Linux systems, when using the `cp` command with a path ending
+ * in a slash, the command will copy the directory itself into the new path if
+ * the new path already exists. This function does not have this behavior, it
+ * does not distinguish between a path with a trailing slash and a path without
+ * it. So when copying a directory, this function always copy its contents to
+ * the new path, whether the new path already exists or not.
  */
 export async function copy(
     oldPath: string,
@@ -671,9 +681,8 @@ export async function copy(
     }
 }
 
-async function copyInBrowser(oldPath: string, newPath: string, options: {
-    root?: FileSystemDirectoryHandle | undefined;
-    cut?: boolean;
+async function copyInBrowser(oldPath: string, newPath: string, options: CommonOptions & {
+    move?: boolean;
 } = {}): Promise<void> {
     const oldParent = dirname(oldPath);
     const oldName = basename(oldPath);
@@ -694,26 +703,26 @@ async function copyInBrowser(oldPath: string, newPath: string, options: {
             const dest = await newFile.createWritable();
 
             await src.pipeTo(dest);
-            await dest.close();
 
-            if (options.cut) {
+            if (options.move) {
                 await oldDir.removeEntry(oldName);
             }
-        } else if ((newErr as DOMException).name === "TypeMismatchError" && !options.cut) {
+        } else if ((newErr as DOMException).name === "TypeMismatchError" && !options.move) {
+            // The destination is a directory, copy the file into the new path
+            // with the old name.
             newDir = await newDir.getDirectoryHandle(newName);
             const newFile = await newDir.getFileHandle(oldName, { create: true });
             const src = (await oldFile.getFile()).stream();
             const dest = await newFile.createWritable();
 
             await src.pipeTo(dest);
-            await dest.close();
         } else {
             throw newErr;
         }
     } else if ((oldErr as DOMException).name === "TypeMismatchError") {
         const parent = oldDir;
         oldDir = await oldDir.getDirectoryHandle(oldName);
-        const newDir = await getDirHandle(newPath, { create: true });
+        const newDir = await getDirHandle(newPath, { root: options.root, create: true });
 
         await (async function copyDir(
             oldDir: FileSystemDirectoryHandle,
@@ -731,26 +740,17 @@ async function copyInBrowser(oldPath: string, newPath: string, options: {
                     const writer = await newFile.createWritable();
 
                     await reader.pipeTo(writer);
-                    await writer.close();
-
-                    if (options.cut) {
-                        await oldDir.removeEntry(entry.name);
-                    }
                 } else {
                     const newSubDir = await newDir.getDirectoryHandle(entry.name, {
                         create: true,
                     });
                     await copyDir(entry as FileSystemDirectoryHandle, newSubDir);
-
-                    if (options.cut) {
-                        await oldDir.removeEntry(entry.name);
-                    }
                 }
             }
         })(oldDir, newDir);
 
-        if (options.cut) {
-            await parent.removeEntry(oldName);
+        if (options.move) {
+            await parent.removeEntry(oldName, { recursive: true });
         }
     } else {
         throw oldErr;
