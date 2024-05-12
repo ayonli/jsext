@@ -1,7 +1,7 @@
-async function stat(target, options = {}) {
+async function exists(path, options = {}) {
     throw new Error("Unsupported runtime");
 }
-async function exists(path, options = {}) {
+async function stat(target, options = {}) {
     throw new Error("Unsupported runtime");
 }
 async function mkdir(path, options = {}) {
@@ -19,6 +19,9 @@ async function readFileAsText(target, options = {}) {
 async function writeFile(target, data, options = {}) {
     throw new Error("Unsupported runtime");
 }
+async function truncate(target, size = 0, options = {}) {
+    throw new Error("Unsupported runtime");
+}
 async function remove(path, options = {}) {
     throw new Error("Unsupported runtime");
 }
@@ -28,6 +31,12 @@ async function rename(oldPath, newPath, options = {}) {
 async function copy(oldPath, newPath, options = {}) {
     throw new Error("Unsupported runtime");
 }
+async function link(src, dest, options = {}) {
+    throw new Error("Unsupported runtime");
+}
+async function readLink(path) {
+    throw new Error("Unsupported runtime");
+}
 
-export { copy, exists, mkdir, readDir, readFile, readFileAsText, remove, rename, stat, writeFile };
+export { copy, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, remove, rename, stat, truncate, writeFile };
 //# sourceMappingURL=fs.js.map

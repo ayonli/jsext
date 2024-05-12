@@ -2,16 +2,16 @@ import { CommonOptions, FileInfo, DirEntry } from "../fs/types";
 
 export { CommonOptions, FileInfo, DirEntry };
 
+export async function exists(path: string, options: CommonOptions = {}): Promise<boolean> {
+    void path, options;
+    throw new Error("Unsupported runtime");
+}
+
 export async function stat(
     target: string | FileSystemFileHandle | FileSystemDirectoryHandle,
     options: CommonOptions = {}
 ): Promise<FileInfo> {
     void target, options;
-    throw new Error("Unsupported runtime");
-}
-
-export async function exists(path: string, options: CommonOptions = {}): Promise<boolean> {
-    void path, options;
     throw new Error("Unsupported runtime");
 }
 
@@ -56,6 +56,15 @@ export async function writeFile(target: string | FileSystemFileHandle,
     throw new Error("Unsupported runtime");
 }
 
+export async function truncate(
+    target: string | FileSystemFileHandle,
+    size = 0,
+    options: CommonOptions = {}
+): Promise<void> {
+    void target, size, options;
+    throw new Error("Unsupported runtime");
+}
+
 export async function remove(path: string, options: CommonOptions & {
     recursive?: boolean;
 } = {}): Promise<void> {
@@ -78,5 +87,17 @@ export async function copy(
     options: CommonOptions = {}
 ): Promise<void> {
     void oldPath, newPath, options;
+    throw new Error("Unsupported runtime");
+}
+
+export async function link(src: string, dest: string, options: {
+    symbolic?: boolean;
+} = {}): Promise<void> {
+    void src, dest, options;
+    throw new Error("Unsupported runtime");
+}
+
+export async function readLink(path: string): Promise<string> {
+    void path;
     throw new Error("Unsupported runtime");
 }

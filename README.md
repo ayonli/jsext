@@ -85,6 +85,8 @@ categories:
   errors to/from other types of objects.
 - [filetype](https://jsr.io/@ayonli/jsext/doc/filetype/~) Functions to get file
   types in different fashions.
+- [fs](https://jsr.io/@ayonli/jsext/doc/fs/~) (Experimental) Universal file
+  system APIs for both server and browser applications.
 - [json](https://jsr.io/@ayonli/jsext/doc/json/~) Functions for parsing JSONs to
   specific structures.
 - [math](https://jsr.io/@ayonli/jsext/doc/math/~) Functions for mathematical

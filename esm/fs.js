@@ -4,17 +4,21 @@ import { isDeno, isNodeLike, isBrowserWindow, isDedicatedWorker, isSharedWorker 
 import { getMIME } from './filetype.js';
 import { extname, sanitize, basename, dirname, join } from './path.js';
 import { readAsArrayBuffer } from './reader.js';
+import { platform } from './runtime.js';
 import _try from './try.js';
 import { split } from './path/util.js';
 import { toAsyncIterable } from './reader/util.js';
 
 /**
- * Universal file system APIs for Node.js, Bun, Deno, and the browser.
+ * Universal file system APIs for both server and browser applications.
  *
- * In the browser, this module uses the Origin Private File System. The module
- * is experimental and may not be available in some browsers.
- * @module
+ * In most browsers, this module uses the Origin Private File System.
+ * In Chromium browsers, this module can also access the device's local file
+ * system via `window.showOpenFilePicker()` and `window.showDirectoryPicker()`.
+ *
+ * The module is experimental and may not work in some browsers.
  * @experimental
+ * @module
  */
 async function getDirHandle(path, options = {}) {
     var _a;
@@ -32,6 +36,18 @@ async function getDirHandle(path, options = {}) {
         });
     }
     return dir;
+}
+/**
+ * Checks if the given path exists.
+ */
+async function exists(path, options = {}) {
+    try {
+        await stat(path, options);
+        return true;
+    }
+    catch (_a) {
+        return false;
+    }
 }
 /**
  * Returns the information of the given file or directory.
@@ -155,18 +171,6 @@ async function stat(target, options = {}) {
     }
     else {
         throw new Error("Unsupported runtime");
-    }
-}
-/**
- * Checks if the given path exists.
- */
-async function exists(path, options = {}) {
-    try {
-        await stat(path, options);
-        return true;
-    }
-    catch (_a) {
-        return false;
     }
 }
 /**
@@ -413,6 +417,38 @@ async function writeFileHandle(handle, data, options) {
     await writer.close();
 }
 /**
+ * Truncates (or extends) the specified file, to reach the specified `size`.
+ * If `size` is not specified then the entire file contents are truncated.
+ */
+async function truncate(target, size = 0, options = {}) {
+    if (typeof target === "object") {
+        const writer = await target.createWritable();
+        await writer.truncate(size);
+        await writer.close();
+        return;
+    }
+    const filename = sanitize(target);
+    if (isDeno) {
+        await Deno.truncate(filename, size);
+    }
+    else if (isNodeLike) {
+        const fs = await import('fs/promises');
+        await fs.truncate(filename, size);
+    }
+    else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
+        const path = dirname(filename);
+        const name = basename(filename);
+        const dir = await getDirHandle(path, { root: options.root });
+        const handle = await dir.getFileHandle(name, { create: true });
+        const writer = await handle.createWritable();
+        await writer.truncate(size);
+        await writer.close();
+    }
+    else {
+        throw new Error("Unsupported runtime");
+    }
+}
+/**
  * Removes the file or directory of the given path from the file system.
  */
 async function remove(path, options = {}) {
@@ -422,7 +458,18 @@ async function remove(path, options = {}) {
     }
     else if (isNodeLike) {
         const fs = await import('fs/promises');
-        await fs.rm(path, options);
+        if (typeof fs.rm === "function") {
+            await fs.rm(path, options);
+        }
+        else {
+            const _stat = await fs.stat(path);
+            if (_stat.isDirectory()) {
+                await fs.rmdir(path, options);
+            }
+            else {
+                await fs.unlink(path);
+            }
+        }
     }
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         const parent = dirname(path);
@@ -458,7 +505,8 @@ async function rename(oldPath, newPath, options = {}) {
     }
 }
 /**
- * Copies the file or directory from the old path to the new path.
+ * Copies the file or directory (and its contents) from the old path to the new
+ * path.
  *
  * NOTE: If the old path is a file and the new path is a directory, the file
  * will be copied to the new directory with the same name.
@@ -599,6 +647,68 @@ async function copyInBrowser(oldPath, newPath, options = {}) {
         throw oldErr;
     }
 }
+/**
+ * Creates a hard link (or symbolic link) from the source path to the destination
+ * path.
+ *
+ * NOTE: This function is not available in the browser.
+ */
+async function link(src, dest, options = {}) {
+    src = sanitize(src);
+    dest = sanitize(dest);
+    if (isDeno) {
+        if (options.symbolic) {
+            if (platform() === "windows") {
+                const _stat = await stat(src);
+                await Deno.symlink(src, dest, {
+                    type: _stat.kind === "directory" ? "dir" : "file",
+                });
+            }
+            else {
+                await Deno.symlink(src, dest);
+            }
+        }
+        else {
+            await Deno.link(src, dest);
+        }
+    }
+    else if (isNodeLike) {
+        const fs = await import('fs/promises');
+        if (options.symbolic) {
+            if (platform() === "windows") {
+                const _stat = await stat(src);
+                await fs.symlink(src, dest, _stat.kind === "directory" ? "dir" : "file");
+            }
+            else {
+                await fs.symlink(src, dest);
+            }
+        }
+        else {
+            await fs.link(src, dest);
+        }
+    }
+    else {
+        throw new Error("Unsupported runtime");
+    }
+}
+/**
+ * Resolves to the full path destination of the named symbolic link.
+ *
+ * NOTE: This function is not available in the browser.
+ */
+async function readLink(path) {
+    path = sanitize(path);
+    if (isDeno) {
+        return await Deno.readLink(path);
+    }
+    else if (isNodeLike) {
+        const fs = await import('fs/promises');
+        return await fs.realpath(await fs.readlink(path));
+    }
+    else {
+        throw new Error("Unsupported runtime");
+    }
+}
 
-export { copy, exists, mkdir, readDir, readFile, readFileAsText, remove, rename, stat, writeFile };
+export { copy, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, remove, rename, stat, truncate, writeFile };
 //# sourceMappingURL=fs.js.map
