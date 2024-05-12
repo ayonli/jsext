@@ -6,6 +6,7 @@ import { readAsArray } from "./reader.ts";
 import { sep } from "./path.ts";
 import bytes, { equals } from "./bytes.ts";
 import {
+    EOL,
     copy,
     exists,
     link,
@@ -22,6 +23,16 @@ import {
 } from "./fs.ts";
 
 describe("fs", () => {
+    it("EOL", () => {
+        if (typeof Deno === "object" && Deno.build?.os === "windows") {
+            strictEqual(EOL, "\r\n");
+        } else if (typeof process === "object" && process.platform === "win32") {
+            strictEqual(EOL, "\r\n");
+        } else {
+            strictEqual(EOL, "\n");
+        }
+    });
+
     describe("exists", () => {
         it("file", async () => {
             const ok = await exists("./fs.ts");

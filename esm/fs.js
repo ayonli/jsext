@@ -20,6 +20,17 @@ import { toAsyncIterable } from './reader/util.js';
  * @experimental
  * @module
  */
+const EOL = (() => {
+    if (isDeno) {
+        return Deno.build.os === "windows" ? "\r\n" : "\n";
+    }
+    else if (typeof process === "object" && typeof process.platform === "string") {
+        return process.platform === "win32" ? "\r\n" : "\n";
+    }
+    else {
+        return "\n";
+    }
+})();
 async function getDirHandle(path, options = {}) {
     var _a;
     if (typeof location === "object" && typeof location.origin === "string") {
@@ -715,5 +726,5 @@ async function readLink(path) {
     }
 }
 
-export { copy, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, remove, rename, stat, truncate, writeFile };
+export { EOL, copy, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, remove, rename, stat, truncate, writeFile };
 //# sourceMappingURL=fs.js.map

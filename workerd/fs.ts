@@ -2,6 +2,8 @@ import type { CommonOptions, FileInfo, DirEntry } from "../fs/types";
 
 export type { CommonOptions, FileInfo, DirEntry };
 
+export const EOL: "\n" | "\r\n" = "\n";
+
 export async function exists(path: string, options: CommonOptions = {}): Promise<boolean> {
     void path, options;
     throw new Error("Unsupported runtime");

@@ -22,6 +22,16 @@ import _try from "./try.ts";
 
 export type { CommonOptions, FileInfo, DirEntry };
 
+export const EOL: "\n" | "\r\n" = (() => {
+    if (isDeno) {
+        return Deno.build.os === "windows" ? "\r\n" : "\n";
+    } else if (typeof process === "object" && typeof process.platform === "string") {
+        return process.platform === "win32" ? "\r\n" : "\n";
+    } else {
+        return "\n";
+    }
+})();
+
 async function getDirHandle(path: string, options: CommonOptions & {
     /** Create the directory if not exist. */
     create?: boolean;
