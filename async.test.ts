@@ -22,6 +22,10 @@ describe("async", () => {
     });
 
     describe("abortable", () => {
+        if (typeof AbortController === "undefined") {
+            return;
+        }
+
         describe("Promise", () => {
             it("already aborted", async () => {
                 const controller = new AbortController();
