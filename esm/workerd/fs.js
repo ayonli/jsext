@@ -44,6 +44,9 @@ async function readLink(path) {
 async function chmod(path, mode) {
     throw new Error("Unsupported runtime");
 }
+async function utimes(path, atime, mtime) {
+    throw new Error("Unsupported runtime");
+}
 
-export { EOL, chmod, copy, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, remove, rename, stat, truncate, writeFile };
+export { EOL, chmod, copy, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, remove, rename, stat, truncate, utimes, writeFile };
 //# sourceMappingURL=fs.js.map

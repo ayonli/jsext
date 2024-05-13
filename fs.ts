@@ -1068,3 +1068,25 @@ export async function chmod(path: string, mode: number): Promise<void> {
         throw new Error("Unsupported platform");
     }
 }
+
+/**
+ * Changes the access (`atime`) and modification (`mtime`) times of a file
+ * system object referenced by the `path`. Given times are either in seconds
+ * (UNIX epoch time) or as `Date` objects.
+ * 
+ * NOTE: This function is not available in the browser.
+ */
+export async function utimes(
+    path: string,
+    atime: number | Date,
+    mtime: number | Date
+): Promise<void> {
+    if (isDeno) {
+        await rawOp(Deno.utime(path, atime, mtime));
+    } else if (isNodeLike) {
+        const fs = await import("fs/promises");
+        await rawOp(fs.utimes(path, atime, mtime));
+    } else {
+        throw new Error("Unsupported runtime");
+    }
+}

@@ -971,6 +971,25 @@ async function chmod(path, mode) {
         throw new Error("Unsupported platform");
     }
 }
+/**
+ * Changes the access (`atime`) and modification (`mtime`) times of a file
+ * system object referenced by the `path`. Given times are either in seconds
+ * (UNIX epoch time) or as `Date` objects.
+ *
+ * NOTE: This function is not available in the browser.
+ */
+async function utimes(path, atime, mtime) {
+    if (isDeno) {
+        await rawOp(Deno.utime(path, atime, mtime));
+    }
+    else if (isNodeLike) {
+        const fs = await import('fs/promises');
+        await rawOp(fs.utimes(path, atime, mtime));
+    }
+    else {
+        throw new Error("Unsupported runtime");
+    }
+}
 
-export { EOL, chmod, copy, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, remove, rename, stat, truncate, writeFile };
+export { EOL, chmod, copy, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, remove, rename, stat, truncate, utimes, writeFile };
 //# sourceMappingURL=fs.js.map

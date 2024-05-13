@@ -22,6 +22,7 @@ import {
     rename,
     stat,
     truncate,
+    utimes,
     writeFile,
 } from "./fs.ts";
 
@@ -707,5 +708,31 @@ describe("fs", () => {
         strictEqual(_stat.name, "tmp.txt");
         strictEqual(_stat.kind, "file");
         strictEqual(_stat.mode & 0o755, 0o755);
+    }));
+
+    it("utimes", jsext.func(async (defer) => {
+        const path = "./tmp.txt";
+        await writeFile(path, "Hello, world!");
+        defer(() => remove(path));
+
+        const atime1 = new Date(0);
+        const mtime1 = new Date(0);
+        await utimes(path, atime1, mtime1);
+
+        const _stat1 = await stat(path);
+        strictEqual(_stat1.name, "tmp.txt");
+        strictEqual(_stat1.kind, "file");
+        deepStrictEqual(_stat1.atime, atime1);
+        deepStrictEqual(_stat1.mtime, mtime1);
+
+        const atime2 = Math.floor(Date.now() / 1000);
+        const mtime2 = Math.floor(Date.now() / 1000);
+        await utimes(path, atime2, mtime2);
+
+        const _stat2 = await stat(path);
+        strictEqual(_stat2.name, "tmp.txt");
+        strictEqual(_stat2.kind, "file");
+        deepStrictEqual(_stat2.atime, new Date(atime2 * 1000));
+        deepStrictEqual(_stat2.mtime, new Date(mtime2 * 1000));
     }));
 });

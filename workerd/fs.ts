@@ -115,3 +115,12 @@ export async function chmod(path: string, mode: number): Promise<void> {
     void path, mode;
     throw new Error("Unsupported runtime");
 }
+
+export async function utimes(
+    path: string,
+    atime: number | Date,
+    mtime: number | Date
+): Promise<void> {
+    void path, atime, mtime;
+    throw new Error("Unsupported runtime");
+}
