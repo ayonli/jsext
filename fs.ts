@@ -239,7 +239,7 @@ export async function* readDir(target: string | FileSystemDirectoryHandle, optio
      * Whether to read the sub-directories recursively.
      */
     recursive?: boolean;
-} = {}): AsyncIterable<DirEntry> {
+} = {}): AsyncIterableIterator<DirEntry> {
     if (typeof target === "object") {
         yield* readDirHandle(target, options);
         return;
@@ -248,7 +248,7 @@ export async function* readDir(target: string | FileSystemDirectoryHandle, optio
     const path = target;
 
     if (isDeno) {
-        yield* (async function* read(path: string, base: string): AsyncIterable<DirEntry> {
+        yield* (async function* read(path: string, base: string): AsyncIterableIterator<DirEntry> {
             for await (const entry of Deno.readDir(path)) {
                 const _entry: DirEntry = {
                     name: entry.name,
@@ -270,7 +270,7 @@ export async function* readDir(target: string | FileSystemDirectoryHandle, optio
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
 
-        yield* (async function* read(path: string, base: string): AsyncIterable<DirEntry> {
+        yield* (async function* read(path: string, base: string): AsyncIterableIterator<DirEntry> {
             const entries = await fs.readdir(path, { withFileTypes: true });
 
             for (const entry of entries) {
@@ -300,9 +300,9 @@ export async function* readDir(target: string | FileSystemDirectoryHandle, optio
 async function* readDirHandle(dir: FileSystemDirectoryHandle, options: {
     base?: string,
     recursive?: boolean;
-} = {}): AsyncIterable<DirEntry> {
+} = {}): AsyncIterableIterator<DirEntry> {
     const { base = "", recursive = false } = options;
-    const entries = (dir as any)["entries"]() as AsyncIterable<[string, FileSystemHandle]>;
+    const entries = dir.entries();
 
     for await (const [_, entry] of entries) {
         const _entry: DirEntry = {
@@ -738,7 +738,7 @@ async function copyInBrowser(oldPath: string, newPath: string, options: CommonOp
             oldDir: FileSystemDirectoryHandle,
             newDir: FileSystemDirectoryHandle
         ): Promise<void> {
-            const entries = (oldDir as any)["entries"]() as AsyncIterable<[string, FileSystemHandle]>;
+            const entries = oldDir.entries() as AsyncIterable<[string, FileSystemHandle]>;
 
             for await (const [_, entry] of entries) {
                 if (entry.kind === "file") {
