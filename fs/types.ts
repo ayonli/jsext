@@ -28,7 +28,8 @@ export interface FileInfo {
     name: string;
     kind: "file" | "directory" | "symlink";
     /**
-     * The size of the file in bytes. The value may be `0` if this is a directory.
+     * The size of the file in bytes. The value may be `0` if this is a
+     * directory.
      */
     size: number;
     /**
@@ -38,19 +39,24 @@ export interface FileInfo {
     type: string;
     /**
      * The last modified time of the file. This value may be `null` on
-     * unsupported platform.
+     * unsupported platforms.
      */
     mtime: Date | null;
     /**
      * The last accessed time of the file. This value may be `null` on
-     * unsupported platform.
+     * unsupported platforms.
      */
     atime: Date | null;
     /**
      * The creation time of the file. This value may be `null` on unsupported
-     * platform.
+     * platforms.
      */
     birthtime: Date | null;
+    /**
+     * The permission mode of the file. This value may be `0` on unsupported
+     * platforms.
+     */
+    mode: number;
     /**
      * Whether the file is a block device.
      */

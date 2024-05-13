@@ -8,6 +8,7 @@ import { join, resolve, sep } from "./path.ts";
 import bytes, { equals } from "./bytes.ts";
 import {
     EOL,
+    chmod,
     copy,
     ensureDir,
     exists,
@@ -61,6 +62,7 @@ describe("fs", () => {
                     mtime: stat2.mtime,
                     atime: stat2.atime,
                     birthtime: stat2.birthtime,
+                    mode: stat2.mode ?? 0,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
@@ -76,6 +78,7 @@ describe("fs", () => {
                     mtime: stat2.mtime,
                     atime: stat2.atime,
                     birthtime: stat2.birthtime,
+                    mode: stat2.mode,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
@@ -97,6 +100,7 @@ describe("fs", () => {
                     mtime: stat2.mtime,
                     atime: stat2.atime,
                     birthtime: stat2.birthtime,
+                    mode: stat2.mode ?? 0,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
@@ -112,6 +116,7 @@ describe("fs", () => {
                     mtime: stat2.mtime,
                     atime: stat2.atime,
                     birthtime: stat2.birthtime,
+                    mode: stat2.mode,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
@@ -149,6 +154,7 @@ describe("fs", () => {
                     mtime: _stat.mtime,
                     atime: _stat.atime,
                     birthtime: _stat.birthtime,
+                    mode: _stat.mode ?? 0,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
@@ -164,6 +170,7 @@ describe("fs", () => {
                     mtime: _stat.mtime,
                     atime: _stat.atime,
                     birthtime: _stat.birthtime,
+                    mode: _stat.mode,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
@@ -183,6 +190,7 @@ describe("fs", () => {
                     mtime: _stat.mtime,
                     atime: _stat.atime,
                     birthtime: _stat.birthtime,
+                    mode: _stat.mode ?? 0,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
@@ -198,6 +206,7 @@ describe("fs", () => {
                     mtime: _stat.mtime,
                     atime: _stat.atime,
                     birthtime: _stat.birthtime,
+                    mode: _stat.mode,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
@@ -682,4 +691,21 @@ describe("fs", () => {
             deepStrictEqual(srcEntries, destEntries);
         }));
     });
+
+    it("chmod", jsext.func(async (defer) => {
+        if (platform() === "windows") {
+            return;
+        }
+
+        const path = "./tmp.txt";
+        await writeFile(path, "Hello, world!");
+        defer(() => remove(path));
+
+        await chmod(path, 0o755);
+
+        const _stat = await stat(path);
+        strictEqual(_stat.name, "tmp.txt");
+        strictEqual(_stat.kind, "file");
+        strictEqual(_stat.mode & 0o755, 0o755);
+    }));
 });

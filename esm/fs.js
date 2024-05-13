@@ -41,7 +41,8 @@ import { toAsyncIterable } from './reader/util.js';
  * - `FilesystemLoopError`:  Too many symbolic links were encountered when
  *   resolving the filename.
  *
- * Other errors may be thrown by the runtime, such as `TypeError`.
+ * Other errors may also be thrown by the runtime, such as `TypeError` and
+ * errors saying `Unsupported runtime`.
  * @experimental
  * @module
  */
@@ -200,7 +201,7 @@ async function exists(path, options = {}) {
  * Returns the information of the given file or directory.
  */
 async function stat(target, options = {}) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u;
     if (typeof target === "object") {
         if (target.kind === "file") {
             const info = await rawOp(target.getFile(), "file");
@@ -212,6 +213,7 @@ async function stat(target, options = {}) {
                 mtime: new Date(info.lastModified),
                 atime: null,
                 birthtime: null,
+                mode: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
@@ -227,6 +229,7 @@ async function stat(target, options = {}) {
                 mtime: null,
                 atime: null,
                 birthtime: null,
+                mode: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
@@ -250,10 +253,11 @@ async function stat(target, options = {}) {
             mtime: (_d = stat.mtime) !== null && _d !== void 0 ? _d : null,
             atime: (_e = stat.atime) !== null && _e !== void 0 ? _e : null,
             birthtime: (_f = stat.birthtime) !== null && _f !== void 0 ? _f : null,
-            isBlockDevice: (_g = stat.isBlockDevice) !== null && _g !== void 0 ? _g : false,
-            isCharDevice: (_h = stat.isCharDevice) !== null && _h !== void 0 ? _h : false,
-            isFIFO: (_j = stat.isFifo) !== null && _j !== void 0 ? _j : false,
-            isSocket: (_k = stat.isSocket) !== null && _k !== void 0 ? _k : false,
+            mode: (_g = stat.mode) !== null && _g !== void 0 ? _g : 0,
+            isBlockDevice: (_h = stat.isBlockDevice) !== null && _h !== void 0 ? _h : false,
+            isCharDevice: (_j = stat.isCharDevice) !== null && _j !== void 0 ? _j : false,
+            isFIFO: (_k = stat.isFifo) !== null && _k !== void 0 ? _k : false,
+            isSocket: (_l = stat.isSocket) !== null && _l !== void 0 ? _l : false,
         };
     }
     else if (isNodeLike) {
@@ -268,10 +272,11 @@ async function stat(target, options = {}) {
             name: basename(path),
             kind,
             size: stat.size,
-            type: kind === "file" ? ((_l = getMIME(extname(path))) !== null && _l !== void 0 ? _l : "") : "",
-            mtime: (_m = stat.mtime) !== null && _m !== void 0 ? _m : null,
-            atime: (_o = stat.atime) !== null && _o !== void 0 ? _o : null,
-            birthtime: (_p = stat.birthtime) !== null && _p !== void 0 ? _p : null,
+            type: kind === "file" ? ((_m = getMIME(extname(path))) !== null && _m !== void 0 ? _m : "") : "",
+            mtime: (_o = stat.mtime) !== null && _o !== void 0 ? _o : null,
+            atime: (_p = stat.atime) !== null && _p !== void 0 ? _p : null,
+            birthtime: (_q = stat.birthtime) !== null && _q !== void 0 ? _q : null,
+            mode: (_r = stat.mode) !== null && _r !== void 0 ? _r : 0,
             isBlockDevice: stat.isBlockDevice(),
             isCharDevice: stat.isCharacterDevice(),
             isFIFO: stat.isFIFO(),
@@ -289,17 +294,18 @@ async function stat(target, options = {}) {
                 name,
                 kind: "file",
                 size: info.size,
-                type: (_r = (_q = info.type) !== null && _q !== void 0 ? _q : getMIME(extname(name))) !== null && _r !== void 0 ? _r : "",
+                type: (_t = (_s = info.type) !== null && _s !== void 0 ? _s : getMIME(extname(name))) !== null && _t !== void 0 ? _t : "",
                 mtime: new Date(info.lastModified),
                 atime: null,
                 birthtime: null,
+                mode: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
                 isSocket: false,
             };
         }
-        else if (((_s = as(err, Exception)) === null || _s === void 0 ? void 0 : _s.name) === "IsDirectoryError") {
+        else if (((_u = as(err, Exception)) === null || _u === void 0 ? void 0 : _u.name) === "IsDirectoryError") {
             return {
                 name,
                 kind: "directory",
@@ -308,6 +314,7 @@ async function stat(target, options = {}) {
                 mtime: null,
                 atime: null,
                 birthtime: null,
+                mode: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
@@ -924,6 +931,46 @@ async function readLink(path) {
         throw new Error("Unsupported runtime");
     }
 }
+/**
+ * Changes the permission of the specified file or directory.
+ *
+ * The mode is a sequence of 3 octal numbers. The first/left-most number
+ * specifies the permissions for the owner. The second number specifies the
+ * permissions for the group. The last/right-most number specifies the
+ * permissions for others. For example, with a mode of 0o764, the owner (7) can
+ * read/write/execute, the group (6) can read/write and everyone else (4) can
+ * read only.
+ *
+ * | Number | Description |
+ * | ------ | ----------- |
+ * | 7      | read, write, and execute |
+ * | 6      | read and write |
+ * | 5      | read and execute |
+ * | 4      | read only |
+ * | 3      | write and execute |
+ * | 2      | write only |
+ * | 1      | execute only |
+ * | 0      | no permission |
+ *
+ * NOTE: This function is not available in Windows and the browser.
+ */
+async function chmod(path, mode) {
+    if (platform() !== "windows") {
+        if (isDeno) {
+            await rawOp(Deno.chmod(path, mode));
+        }
+        else if (isNodeLike) {
+            const fs = await import('fs/promises');
+            await rawOp(fs.chmod(path, mode));
+        }
+        else {
+            throw new Error("Unsupported runtime");
+        }
+    }
+    else {
+        throw new Error("Unsupported platform");
+    }
+}
 
-export { EOL, copy, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, remove, rename, stat, truncate, writeFile };
+export { EOL, chmod, copy, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, remove, rename, stat, truncate, writeFile };
 //# sourceMappingURL=fs.js.map

@@ -28,7 +28,8 @@
  * - `FilesystemLoopError`:  Too many symbolic links were encountered when
  *   resolving the filename.
  * 
- * Other errors may be thrown by the runtime, such as `TypeError`.
+ * Other errors may also be thrown by the runtime, such as `TypeError` and
+ * errors saying `Unsupported runtime`.
  * @experimental
  * @module
  */
@@ -227,6 +228,7 @@ export async function stat(
                 mtime: new Date(info.lastModified),
                 atime: null,
                 birthtime: null,
+                mode: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
@@ -241,6 +243,7 @@ export async function stat(
                 mtime: null,
                 atime: null,
                 birthtime: null,
+                mode: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
@@ -267,6 +270,7 @@ export async function stat(
             mtime: stat.mtime ?? null,
             atime: stat.atime ?? null,
             birthtime: stat.birthtime ?? null,
+            mode: stat.mode ?? 0,
             isBlockDevice: stat.isBlockDevice ?? false,
             isCharDevice: stat.isCharDevice ?? false,
             isFIFO: stat.isFifo ?? false,
@@ -289,6 +293,7 @@ export async function stat(
             mtime: stat.mtime ?? null,
             atime: stat.atime ?? null,
             birthtime: stat.birthtime ?? null,
+            mode: stat.mode ?? 0,
             isBlockDevice: stat.isBlockDevice(),
             isCharDevice: stat.isCharacterDevice(),
             isFIFO: stat.isFIFO(),
@@ -310,6 +315,7 @@ export async function stat(
                 mtime: new Date(info.lastModified),
                 atime: null,
                 birthtime: null,
+                mode: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
@@ -324,6 +330,7 @@ export async function stat(
                 mtime: null,
                 atime: null,
                 birthtime: null,
+                mode: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
@@ -1021,5 +1028,43 @@ export async function readLink(path: string): Promise<string> {
         return await rawOp(fs.readlink(path));
     } else {
         throw new Error("Unsupported runtime");
+    }
+}
+
+/**
+ * Changes the permission of the specified file or directory.
+ * 
+ * The mode is a sequence of 3 octal numbers. The first/left-most number
+ * specifies the permissions for the owner. The second number specifies the
+ * permissions for the group. The last/right-most number specifies the
+ * permissions for others. For example, with a mode of 0o764, the owner (7) can
+ * read/write/execute, the group (6) can read/write and everyone else (4) can
+ * read only.
+ * 
+ * | Number | Description |
+ * | ------ | ----------- |
+ * | 7      | read, write, and execute |
+ * | 6      | read and write |
+ * | 5      | read and execute |
+ * | 4      | read only |
+ * | 3      | write and execute |
+ * | 2      | write only |
+ * | 1      | execute only |
+ * | 0      | no permission |
+ * 
+ * NOTE: This function is not available in Windows and the browser.
+ */
+export async function chmod(path: string, mode: number): Promise<void> {
+    if (platform() !== "windows") {
+        if (isDeno) {
+            await rawOp(Deno.chmod(path, mode));
+        } else if (isNodeLike) {
+            const fs = await import("fs/promises");
+            await rawOp(fs.chmod(path, mode));
+        } else {
+            throw new Error("Unsupported runtime");
+        }
+    } else {
+        throw new Error("Unsupported platform");
     }
 }
