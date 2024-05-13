@@ -111,11 +111,9 @@ export async function rename(
     throw new Error("Unsupported runtime");
 }
 
-export async function copy(
-    oldPath: string,
-    newPath: string,
-    options: CommonOptions = {}
-): Promise<void> {
+export async function copy(oldPath: string, newPath: string, options: CommonOptions & {
+    recursive?: boolean;
+} = {}): Promise<void> {
     void oldPath, newPath, options;
     throw new Error("Unsupported runtime");
 }

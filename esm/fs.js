@@ -33,7 +33,7 @@ import { toAsyncIterable } from './reader/util.js';
  * - `IsDirectoryError`: The path is a directory, not a file.
  * - `NotDirectoryError`: The path is a file, not a directory.
  * - `InvalidOperationError`: The operation is not supported, such as trying to
- *   copy a directory to a file.
+ *   copy a directory without the `recursive` option.
  * - `BusyError`: The file is busy, such as being locked by another program.
  * - `InterruptedError`: The operation is interrupted by the underlying file
  *   system.
@@ -837,6 +837,7 @@ async function rename(oldPath, newPath, options = {}) {
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         return await copyInBrowser(oldPath, newPath, {
             root: options.root,
+            recursive: true,
             move: true,
         });
     }
@@ -859,18 +860,28 @@ async function rename(oldPath, newPath, options = {}) {
  * contents to the new path, whether the new path already exists or not.
  */
 async function copy(oldPath, newPath, options = {}) {
+    var _a;
     if (isDeno || isNodeLike) {
         const oldStat = await stat(oldPath, { followSymlink: true });
         const isDirSrc = oldStat.kind === "directory";
         let isDirDest = false;
+        if (isDirSrc && !options.recursive) {
+            throw new Exception("Cannot copy a directory without the 'recursive' option", {
+                name: "InvalidOperationError",
+                code: 400,
+            });
+        }
         try {
             const newStat = await stat(newPath, { followSymlink: true });
             isDirDest = newStat.kind === "directory";
             if (isDirSrc && !isDirDest) {
-                throw new Error("Cannot copy a directory to a file");
+                throw new Exception(`'${newPath}' is not a directory`, {
+                    name: "NotDirectoryError",
+                    code: 415,
+                });
             }
         }
-        catch (_a) {
+        catch (_b) {
             if (isDirSrc) {
                 await mkdir(newPath);
                 isDirDest = true;
@@ -919,6 +930,7 @@ async function copy(oldPath, newPath, options = {}) {
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         return await copyInBrowser(oldPath, newPath, {
             root: options.root,
+            recursive: (_a = options.recursive) !== null && _a !== void 0 ? _a : false,
         });
     }
     else {
@@ -970,6 +982,12 @@ async function copyInBrowser(oldPath, newPath, options = {}) {
         }
     }
     else if (((_b = as(oldErr, Exception)) === null || _b === void 0 ? void 0 : _b.name) === "IsDirectoryError") {
+        if (!options.recursive) {
+            throw new Exception("Cannot copy a directory without the 'recursive' option", {
+                name: "InvalidOperationError",
+                code: 400,
+            });
+        }
         const parent = oldDir;
         oldDir = await rawOp(oldDir.getDirectoryHandle(oldName), "directory");
         const newDir = await getDirHandle(newPath, { root: options.root, create: true });
