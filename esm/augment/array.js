@@ -1,4 +1,4 @@
-import { first, last, random, count, equals, split, chunk, unique, uniqueBy, shuffle, orderBy, groupBy, keyBy } from '../array.js';
+import { first, last, random, count, equals, hasSubset, startsWith, endsWith, split, chunk, unique, uniqueBy, shuffle, orderBy, groupBy, keyBy } from '../array.js';
 
 Array.prototype.first = function first$1() {
     return first(this);
@@ -14,6 +14,15 @@ Array.prototype.count = function count$1(ele) {
 };
 Array.prototype.equals = function equals$1(another) {
     return equals(this, another);
+};
+Array.prototype.hasSubset = function hasSubset$1(subset) {
+    return hasSubset(this, subset);
+};
+Array.prototype.startsWith = function startsWith$1(subset) {
+    return startsWith(this, subset);
+};
+Array.prototype.endsWith = function endsWith$1(subset) {
+    return endsWith(this, subset);
 };
 Array.prototype.split = function split$1(delimiter) {
     return split(this, delimiter);

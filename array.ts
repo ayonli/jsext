@@ -8,6 +8,9 @@ import { random as rand } from "./number.ts";
 import {
     count as _count,
     equals as _equals,
+    hasSubset as _hasSubset,
+    startsWith as _startsWith,
+    endsWith as _endsWith,
     split as _split,
     chunk as _chunk,
 } from "./array/base.ts";
@@ -54,6 +57,21 @@ export function count<T>(arr: T[], item: T): number {
  */
 export function equals<T>(arr1: T[], arr2: T[]): boolean {
     return _equals(arr1, arr2);
+}
+
+/** Checks if the array contains the given subset. */
+export function hasSubset<T>(arr: T[], subset: T[]): boolean {
+    return _hasSubset(arr, subset);
+}
+
+/** Checks if the array starts with the given subset. */
+export function startsWith<T>(arr: T[], subset: T[]): boolean {
+    return _startsWith(arr, subset);
+}
+
+/** Checks if the array ends with the given subset. */
+export function endsWith<T>(arr: T[], subset: T[]): boolean {
+    return _endsWith(arr, subset);
 }
 
 /** Breaks the array into smaller chunks according to the given delimiter. */

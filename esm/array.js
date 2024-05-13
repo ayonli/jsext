@@ -1,6 +1,6 @@
 import { isSubclassOf } from './class.js';
 import { random as random$1 } from './number.js';
-import { count as count$1, equals as equals$1, split as split$1, chunk as chunk$1 } from './array/base.js';
+import { count as count$1, equals as equals$1, hasSubset as hasSubset$1, startsWith as startsWith$1, endsWith as endsWith$1, split as split$1, chunk as chunk$1 } from './array/base.js';
 
 /**
  * Functions for dealing with arrays.
@@ -45,6 +45,18 @@ function count(arr, item) {
  */
 function equals(arr1, arr2) {
     return equals$1(arr1, arr2);
+}
+/** Checks if the array contains the given subset. */
+function hasSubset(arr, subset) {
+    return hasSubset$1(arr, subset);
+}
+/** Checks if the array starts with the given subset. */
+function startsWith(arr, subset) {
+    return startsWith$1(arr, subset);
+}
+/** Checks if the array ends with the given subset. */
+function endsWith(arr, subset) {
+    return endsWith$1(arr, subset);
 }
 /** Breaks the array into smaller chunks according to the given delimiter. */
 function split(arr, delimiter) {
@@ -187,5 +199,5 @@ function keyBy(arr, fn, type = Object) {
     }
 }
 
-export { chunk, count, equals, first, groupBy, keyBy, last, orderBy, random, shuffle, split, uniq, uniqBy, unique, uniqueBy };
+export { chunk, count, endsWith, equals, first, groupBy, hasSubset, keyBy, last, orderBy, random, shuffle, split, startsWith, uniq, uniqBy, unique, uniqueBy };
 //# sourceMappingURL=array.js.map

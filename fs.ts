@@ -34,6 +34,7 @@
  * @module
  */
 
+import { startsWith } from "./array.ts";
 import { abortable } from "./async.ts";
 import { text } from "./bytes.ts";
 import { isBrowserWindow, isDedicatedWorker, isDeno, isNodeLike, isSharedWorker } from "./env.ts";
@@ -41,7 +42,7 @@ import { Exception } from "./error.ts";
 import { getMIME } from "./filetype.ts";
 import type { FileInfo, DirEntry, CommonOptions, DirTree } from "./fs/types.ts";
 import { as } from "./object.ts";
-import { basename, dirname, extname, join, split, startsWith } from "./path.ts";
+import { basename, dirname, extname, join, split } from "./path.ts";
 import { readAsArray, readAsArrayBuffer, toAsyncIterable } from "./reader.ts";
 import { platform } from "./runtime.ts";
 import _try from "./try.ts";
@@ -517,8 +518,7 @@ export async function readTree(
             }
 
             const paths = entry.paths;
-            const dirPath = entry.path;
-            const childEntries = store.filter(e => startsWith(e.path, dirPath));
+            const childEntries = store.filter(e => startsWith(e.paths, paths));
             const directChildren = childEntries
                 .filter(e => e.paths.length === paths.length + 1);
 

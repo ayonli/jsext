@@ -1,5 +1,17 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
-import bytes, { ByteArray, compare, concat, copy, split, text } from "./bytes.ts";
+import bytes, {
+    ByteArray,
+    compare,
+    concat,
+    copy,
+    equals,
+    hasSubset,
+    startsWith,
+    endsWith,
+    split,
+    chunk,
+    text,
+} from "./bytes.ts";
 
 describe("bytes", () => {
     describe("ByteArray", () => {
@@ -154,6 +166,109 @@ describe("bytes", () => {
         }
     });
 
+    it("equals", () => {
+        const arr1 = new Uint8Array([1, 2, 3, 4, 5]);
+        const arr2 = new Uint8Array([1, 2, 3, 4, 5]);
+        const arr3 = new Uint8Array([1, 2, 3, 4]);
+        const arr4 = new Uint8Array([2, 3, 4, 5, 6]);
+
+        strictEqual(equals(arr1, arr1), true);
+        strictEqual(equals(arr1, arr2), true);
+        strictEqual(equals(arr1, arr3), false);
+        strictEqual(equals(arr1, arr4), false);
+
+        const byte1 = bytes([1, 2, 3, 4, 5]);
+        const byte2 = bytes([1, 2, 3, 4, 5]);
+        const byte3 = bytes([1, 2, 3, 4]);
+        const byte4 = bytes([2, 3, 4, 5, 6]);
+
+        strictEqual(equals(byte1, byte1), true);
+        strictEqual(equals(byte1, byte2), true);
+        strictEqual(equals(byte1, byte3), false);
+        strictEqual(equals(byte1, byte4), false);
+
+        if (typeof Buffer === "function") {
+            const buf1 = Buffer.from([1, 2, 3]);
+            const buf2 = Buffer.from([4, 5, 6]);
+            const buf3 = Buffer.from([7, 8, 9]);
+            const buf4 = Buffer.from([1, 2, 3]);
+
+            strictEqual(equals(buf1, buf1), true);
+            strictEqual(equals(buf1, buf2), false);
+            strictEqual(equals(buf1, buf3), false);
+            strictEqual(equals(buf1, buf4), true);
+        }
+    });
+
+    it("hasSubset", () => {
+        const arr = new Uint8Array([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
+        strictEqual(hasSubset(arr, new Uint8Array([2, 3, 4])), true);
+        strictEqual(hasSubset(arr, new Uint8Array([2, 3, 4, 5])), true);
+        strictEqual(hasSubset(arr, new Uint8Array([2, 3, 4, 5, 6])), false);
+
+        const _bytes = bytes([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
+        strictEqual(hasSubset(_bytes, new ByteArray([2, 3, 4])), true);
+        strictEqual(hasSubset(_bytes, new ByteArray([2, 3, 4, 5])), true);
+        strictEqual(hasSubset(_bytes, new ByteArray([2, 3, 4, 5, 6])), false);
+
+        if (typeof Buffer === "function") {
+            const buf = Buffer.from([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
+            strictEqual(hasSubset(buf, Buffer.from([2, 3, 4])), true);
+            strictEqual(hasSubset(buf, Buffer.from([2, 3, 4, 5])), true);
+            strictEqual(hasSubset(buf, Buffer.from([2, 3, 4, 5, 6])), false);
+        }
+    });
+
+    it("startsWith", () => {
+        const arr = new Uint8Array([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
+        strictEqual(startsWith(arr, new Uint8Array([0, 1, 2])), true);
+        strictEqual(startsWith(arr, new Uint8Array([0, 1, 2, 3])), true);
+        strictEqual(startsWith(arr, new Uint8Array([0, 1, 2, 3, 4])), true);
+        strictEqual(startsWith(arr, new Uint8Array([0, 1, 2, 3, 4, 5])), true);
+        strictEqual(startsWith(arr, new Uint8Array([0, 1, 2, 3, 4, 5, 6])), false);
+
+        const _bytes = bytes([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
+        strictEqual(startsWith(_bytes, new ByteArray([0, 1, 2])), true);
+        strictEqual(startsWith(_bytes, new ByteArray([0, 1, 2, 3])), true);
+        strictEqual(startsWith(_bytes, new ByteArray([0, 1, 2, 3, 4])), true);
+        strictEqual(startsWith(_bytes, new ByteArray([0, 1, 2, 3, 4, 5])), true);
+        strictEqual(startsWith(_bytes, new ByteArray([0, 1, 2, 3, 4, 5, 6])), false);
+
+        if (typeof Buffer === "function") {
+            const buf = Buffer.from([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
+            strictEqual(startsWith(buf, Buffer.from([0, 1, 2])), true);
+            strictEqual(startsWith(buf, Buffer.from([0, 1, 2, 3])), true);
+            strictEqual(startsWith(buf, Buffer.from([0, 1, 2, 3, 4])), true);
+            strictEqual(startsWith(buf, Buffer.from([0, 1, 2, 3, 4, 5])), true);
+            strictEqual(startsWith(buf, Buffer.from([0, 1, 2, 3, 4, 5, 6])), false);
+        }
+    });
+
+    it("endsWith", () => {
+        const arr = new Uint8Array([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
+        strictEqual(endsWith(arr, new Uint8Array([2, 1])), true);
+        strictEqual(endsWith(arr, new Uint8Array([3, 2, 1])), true);
+        strictEqual(endsWith(arr, new Uint8Array([4, 3, 2, 1])), true);
+        strictEqual(endsWith(arr, new Uint8Array([5, 4, 3, 2, 1])), true);
+        strictEqual(endsWith(arr, new Uint8Array([6, 5, 4, 3, 2, 1])), false);
+
+        const _bytes = bytes([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
+        strictEqual(endsWith(_bytes, new ByteArray([2, 1])), true);
+        strictEqual(endsWith(_bytes, new ByteArray([3, 2, 1])), true);
+        strictEqual(endsWith(_bytes, new ByteArray([4, 3, 2, 1])), true);
+        strictEqual(endsWith(_bytes, new ByteArray([5, 4, 3, 2, 1])), true);
+        strictEqual(endsWith(_bytes, new ByteArray([6, 5, 4, 3, 2, 1])), false);
+
+        if (typeof Buffer === "function") {
+            const buf = Buffer.from([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
+            strictEqual(endsWith(buf, Buffer.from([2, 1])), true);
+            strictEqual(endsWith(buf, Buffer.from([3, 2, 1])), true);
+            strictEqual(endsWith(buf, Buffer.from([4, 3, 2, 1])), true);
+            strictEqual(endsWith(buf, Buffer.from([5, 4, 3, 2, 1])), true);
+            strictEqual(endsWith(buf, Buffer.from([6, 5, 4, 3, 2, 1])), false);
+        }
+    });
+
     it("split", () => {
         const arr = new Uint8Array([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
         deepStrictEqual(split(arr, 2), [
@@ -199,6 +314,85 @@ describe("bytes", () => {
                 Buffer.from([0]),
                 Buffer.from([2, 3, 4, 5, 4, 3, 2]),
                 Buffer.from([]),
+            ]);
+        }
+    });
+
+    it("chunk", () => {
+        const arr = new Uint8Array([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
+        deepStrictEqual(chunk(arr, 2), [
+            new Uint8Array([0, 1]),
+            new Uint8Array([2, 3]),
+            new Uint8Array([4, 5]),
+            new Uint8Array([4, 3]),
+            new Uint8Array([2, 1]),
+        ]);
+        deepStrictEqual(chunk(arr, 5), [
+            new Uint8Array([0, 1, 2, 3, 4]),
+            new Uint8Array([5, 4, 3, 2, 1]),
+        ]);
+        deepStrictEqual(chunk(arr, 1), [
+            new Uint8Array([0]),
+            new Uint8Array([1]),
+            new Uint8Array([2]),
+            new Uint8Array([3]),
+            new Uint8Array([4]),
+            new Uint8Array([5]),
+            new Uint8Array([4]),
+            new Uint8Array([3]),
+            new Uint8Array([2]),
+            new Uint8Array([1]),
+        ]);
+
+        const _bytes = bytes([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
+        deepStrictEqual(chunk(_bytes, 2), [
+            new ByteArray([0, 1]),
+            new ByteArray([2, 3]),
+            new ByteArray([4, 5]),
+            new ByteArray([4, 3]),
+            new ByteArray([2, 1]),
+        ]);
+        deepStrictEqual(chunk(_bytes, 5), [
+            new ByteArray([0, 1, 2, 3, 4]),
+            new ByteArray([5, 4, 3, 2, 1]),
+        ]);
+        deepStrictEqual(chunk(_bytes, 1), [
+            new ByteArray([0]),
+            new ByteArray([1]),
+            new ByteArray([2]),
+            new ByteArray([3]),
+            new ByteArray([4]),
+            new ByteArray([5]),
+            new ByteArray([4]),
+            new ByteArray([3]),
+            new ByteArray([2]),
+            new ByteArray([1]),
+        ]);
+
+        if (typeof Buffer === "function") {
+            const buf = Buffer.from([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
+            deepStrictEqual(chunk(buf, 2), [
+                Buffer.from([0, 1]),
+                Buffer.from([2, 3]),
+                Buffer.from([4, 5]),
+                Buffer.from([4, 3]),
+                Buffer.from([2, 1]),
+            ]);
+            deepStrictEqual(chunk(buf, 5), [
+                Buffer.from([0, 1, 2, 3, 4]),
+                Buffer.from([5, 4, 3, 2, 1]),
+            ]);
+            deepStrictEqual(chunk(buf, 1), [
+                Buffer.from([0]),
+                Buffer.from([1]),
+                Buffer.from([2]),
+                Buffer.from([3]),
+                Buffer.from([4]),
+                Buffer.from([5]),
+                Buffer.from([4]),
+                Buffer.from([3]),
+                Buffer.from([2]),
+                Buffer.from([1]),
             ]);
         }
     });

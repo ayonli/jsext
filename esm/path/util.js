@@ -1,3 +1,4 @@
+import { hasSubset, startsWith as startsWith$1, endsWith as endsWith$1, equals as equals$1 } from '../array.js';
 import { trim, trimEnd } from '../string.js';
 
 function isNotQuery(str) {
@@ -272,25 +273,7 @@ function contains(path, sub, options = {}) {
     if (result !== undefined) {
         return result;
     }
-    const head = subs[0];
-    for (let i = 0; i < paths.length; i++) {
-        if (paths[i] !== head)
-            continue;
-        const pin = i;
-        let matched = 1;
-        let j = i;
-        while (matched < subs.length) {
-            j++;
-            if (paths[j] !== subs[j - pin]) {
-                break;
-            }
-            matched++;
-        }
-        if (matched === subs.length) {
-            return true;
-        }
-    }
-    return false;
+    return hasSubset(paths, subs);
 }
 /**
  * Checks if the `path` starts with the given `sub` path.
@@ -326,12 +309,7 @@ function startsWith(path, sub, options = {}) {
     const { result, paths, subs } = extractSegmentsForComparison(path, sub, options);
     if (result !== undefined)
         return result;
-    for (let i = 0; i < subs.length; i++) {
-        if (subs[i] !== paths[i]) {
-            return false;
-        }
-    }
-    return true;
+    return startsWith$1(paths, subs);
 }
 /**
  * Checks if the `path` ends with the given `sub` path.
@@ -361,12 +339,7 @@ function endsWith(path, sub, options = {}) {
     const { result, paths, subs } = extractSegmentsForComparison(path, sub, options);
     if (result !== undefined)
         return result;
-    for (let i = subs.length - 1, j = paths.length - 1; i >= 0; i--, j--) {
-        if (subs[i] !== paths[j]) {
-            return false;
-        }
-    }
-    return true;
+    return endsWith$1(paths, subs);
 }
 /**
  * Checks if the `path1` and `path2` describe the same path.
@@ -396,15 +369,9 @@ function endsWith(path, sub, options = {}) {
  */
 function equals(path1, path2, options = {}) {
     const { result, paths, subs } = extractSegmentsForComparison(path1, path2, options);
-    if (result === false || paths.length !== subs.length) {
+    if (result === false || paths.length !== subs.length)
         return false;
-    }
-    for (let i = 0; i < paths.length; i++) {
-        if (paths[i] !== subs[i]) {
-            return false;
-        }
-    }
-    return true;
+    return equals$1(paths, subs);
 }
 
 export { contains, endsWith, equals, isAbsolute, isFileProtocol, isFileUrl, isFsPath, isNotQuery, isPosixPath, isUrl, isVolume, isWindowsPath, split, startsWith };

@@ -3,7 +3,14 @@
  * @module
  */
 
-import { equals as _equals, split as _split, chunk as _chunk } from "./array/base.ts";
+import {
+    equals as _equals,
+    hasSubset as _hasSubset,
+    startsWith as _startsWith,
+    endsWith as _endsWith,
+    split as _split,
+    chunk as _chunk,
+} from "./array/base.ts";
 import { as } from "./object.ts";
 import { sum } from "./math.ts";
 import { Constructor } from "./types.ts";
@@ -156,6 +163,21 @@ export function equals(arr1: Uint8Array, arr2: Uint8Array): boolean {
     }
 
     return true;
+}
+
+/** Checks if the byte array contains the given subset. */
+export function hasSubset(arr: Uint8Array, subset: Uint8Array): boolean {
+    return _hasSubset(arr, subset);
+}
+
+/** Checks if the byte array starts with the given subset. */
+export function startsWith(arr: Uint8Array, subset: Uint8Array): boolean {
+    return _startsWith(arr, subset);
+}
+
+/** Checks if the byte array ends with the given subset. */
+export function endsWith(arr: Uint8Array, subset: Uint8Array): boolean {
+    return _endsWith(arr, subset);
 }
 
 /** Breaks the byte array into smaller chunks according to the given delimiter. */

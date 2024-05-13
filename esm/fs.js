@@ -1,3 +1,4 @@
+import { startsWith } from './array.js';
 import { abortable } from './async.js';
 import { text } from './bytes.js';
 import { isDeno, isNodeLike, isBrowserWindow, isDedicatedWorker, isSharedWorker } from './env.js';
@@ -443,12 +444,11 @@ async function* readDir(target, options = {}) {
  * files), then by names alphabetically.
  */
 async function readTree(target, options = {}) {
-    var _a, _b;
+    var _a;
     const entries = (await readAsArray(readDir(target, { ...options, recursive: true })));
-    const sep = ((_a = entries[0]) === null || _a === void 0 ? void 0 : _a.path.includes("\\")) ? "\\" : "/";
     const list = entries.map(entry => ({
         ...entry,
-        paths: entry.path.split(sep),
+        paths: split(entry.path),
     }));
     const nodes = (function walk(list, store) {
         // Order the entries first by kind, then by names alphabetically.
@@ -468,8 +468,7 @@ async function readTree(target, options = {}) {
                 continue;
             }
             const paths = entry.paths;
-            const dirPath = entry.path + sep;
-            const childEntries = store.filter(e => e.path.startsWith(dirPath));
+            const childEntries = store.filter(e => startsWith(e.paths, paths));
             const directChildren = childEntries
                 .filter(e => e.paths.length === paths.length + 1);
             if (directChildren.length) {
@@ -494,11 +493,11 @@ async function readTree(target, options = {}) {
             }
         }
         return nodes;
-    })(list.filter(entry => !entry.path.includes(sep)), list.filter(entry => entry.path.includes(sep)));
+    })(list.filter(entry => entry.paths.length === 1), list.filter(entry => entry.paths.length > 1));
     return {
         name: typeof target === "object"
             ? (target.name || "(root)")
-            : ((_b = options.root) === null || _b === void 0 ? void 0 : _b.name) || (target && basename(target) || "(root)"),
+            : ((_a = options.root) === null || _a === void 0 ? void 0 : _a.name) || (target && basename(target) || "(root)"),
         kind: "directory",
         path: "",
         handle: typeof target === "object" ? target : options.root,

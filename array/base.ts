@@ -33,6 +33,80 @@ export function equals<T>(arr1: RealArrayLike<T>, arr2: RealArrayLike<T>): boole
     return true;
 }
 
+/** Checks if the array-like object contains the given subset. */
+export function hasSubset<T>(arr: RealArrayLike<T>, subset: RealArrayLike<T>): boolean {
+    if (arr === subset || !subset.length) {
+        return true;
+    }
+
+    const limit = arr.length;
+    const subLimit = subset.length;
+
+    if (subLimit > limit) {
+        return false;
+    }
+
+    for (let i = 0; i < limit; i++) {
+        if (arr[i] === subset[0]) {
+            let j = 1;
+
+            while (j < subLimit && arr[i + j] === subset[j]) {
+                j++;
+            }
+
+            if (j === subLimit) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+/** Checks if the array-like object starts with the given subset. */
+export function startsWith<T>(arr: RealArrayLike<T>, subset: RealArrayLike<T>): boolean {
+    if (arr === subset || !subset.length) {
+        return true;
+    }
+
+    const limit = arr.length;
+    const preLimit = subset.length;
+
+    if (preLimit > limit) {
+        return false;
+    }
+
+    for (let i = 0; i < preLimit; i++) {
+        if (arr[i] !== subset[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/** Checks if the array-like object ends with the given subset. */
+export function endsWith<T>(arr: RealArrayLike<T>, subset: RealArrayLike<T>): boolean {
+    if (arr === subset || !subset.length) {
+        return true;
+    }
+
+    const limit = arr.length;
+    const sufLimit = subset.length;
+
+    if (sufLimit > limit) {
+        return false;
+    }
+
+    for (let i = subset.length - 1, j = arr.length - 1; i >= 0; i--, j--) {
+        if (subset[i] !== arr[j]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 /** Breaks the array-like object into smaller chunks according to the given delimiter. */
 export function split<T>(arr: RealArrayLike<T>, delimiter: T): RealArrayLike<T>[] {
     const chunks: (typeof arr)[] = [];

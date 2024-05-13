@@ -47,6 +47,9 @@ _When import `@ayonli/jsext/augment`_
     - `random(remove?: boolean): T | undefined`
     - `count(item: T): number`
     - `equals(another: T[]): boolean`
+    - `hasSubset<T>(subset: T[]): boolean`
+    - `startsWith<T>(subset: T[]): boolean`
+    - `endsWith<T>(subset: T[]): boolean`
     - `split(delimiter: T): T[][]`
     - `chunk(length: number): T[][]`
     - `unique(): T[]`
@@ -147,10 +150,12 @@ _These types are augmented to the global scope._
 ### Augment Promise
 
 - `Promise`
-  - `timeout<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
-  - `after<T>(value: T | PromiseLike<T>, ms: number): Promise<T>`
+  - `abortable<T>(value: PromiseLike<T>, signal: AbortSignal): Promise<T>`
+  - `timeout<T>(value: PromiseLike<T>, ms: number): Promise<T>`
+  - `after<T>(value: PromiseLike<T>, ms: number): Promise<T>`
   - `sleep(ms: number): Promise<void>`
   - `until<T>(test: () => T | Promise<T>): Promise<T extends false | null | undefined ? never : T>`
+  - `select<T>(tasks: ((signal: AbortSignal) => Promise<T>)[]): Promise<T>`
 
 ### Augment String
 
@@ -186,6 +191,9 @@ _These types are augmented to the global scope._
   - `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
   - `prototype`
     - `equals(another: Uint8Array): boolean`
+    - `hasSubset(subset: Uint8Array): boolean`
+    - `startsWith(subset: Uint8Array): boolean`
+    - `endsWith(subset: Uint8Array): boolean`
     - `split(delimiter: number): this[]`
     - `chunk(length: number): this[]`
 

@@ -37,6 +37,45 @@ describe("Array", () => {
         strictEqual(arr.equals([2, 3, 4, 5, 6]), false);
     });
 
+    it("Array.prototype.hasSubset", () => {
+        const arr = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1];
+        const subset1 = [3, 4, 5];
+        const subset2 = [3, 4, 5, 6];
+        const subset3 = [3, 4, 5, 4];
+        const subset4 = [3, 4, 5, 4, 3, 2, 1];
+
+        strictEqual(arr.hasSubset(subset1), true);
+        strictEqual(arr.hasSubset(subset2), false);
+        strictEqual(arr.hasSubset(subset3), true);
+        strictEqual(arr.hasSubset(subset4), true);
+    });
+
+    it("Array.prototype.startsWith", () => {
+        const arr = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1];
+        const subset1 = [0, 1, 2];
+        const subset2 = [0, 1, 2, 3];
+        const subset3 = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1];
+        const subset = [1, 2, 3, 4];
+
+        strictEqual(arr.startsWith(subset1), true);
+        strictEqual(arr.startsWith(subset2), true);
+        strictEqual(arr.startsWith(subset3), true);
+        strictEqual(arr.startsWith(subset), false);
+    });
+
+    it("Array.prototype.endsWith", () => {
+        const arr = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1];
+        const subset1 = [2, 1];
+        const subset2 = [3, 2, 1];
+        const subset3 = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1];
+        const subset = [5, 4, 3, 2];
+
+        strictEqual(arr.endsWith(subset1), true);
+        strictEqual(arr.endsWith(subset2), true);
+        strictEqual(arr.endsWith(subset3), true);
+        strictEqual(arr.endsWith(subset), false);
+    });
+
     it("Array.prototype.split", () => {
         const arr1 = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1];
         deepStrictEqual(arr1.split(2), [[0, 1], [3, 4, 5, 4, 3], [1]]);

@@ -1,3 +1,9 @@
+import {
+    hasSubset,
+    startsWith as _startsWith,
+    endsWith as _endsWith,
+    equals as _equals,
+} from "../array.ts";
 import { trim, trimEnd } from "../string.ts";
 
 export function isNotQuery(str: string): boolean {
@@ -295,31 +301,7 @@ export function contains(path: string, sub: string, options: {
         return result;
     }
 
-    const head = subs[0];
-    for (let i = 0; i < paths.length; i++) {
-        if (paths[i] !== head)
-            continue;
-
-        const pin = i;
-        let matched = 1;
-        let j = i;
-
-        while (matched < subs.length) {
-            j++;
-
-            if (paths[j] !== subs[j - pin]) {
-                break;
-            }
-
-            matched++;
-        }
-
-        if (matched === subs.length) {
-            return true;
-        }
-    }
-
-    return false;
+    return hasSubset(paths, subs);
 }
 
 /**
@@ -361,13 +343,7 @@ export function startsWith(path: string, sub: string, options: {
     if (result !== undefined)
         return result;
 
-    for (let i = 0; i < subs.length; i++) {
-        if (subs[i] !== paths[i]) {
-            return false;
-        }
-    }
-
-    return true;
+    return _startsWith(paths, subs);
 }
 
 /**
@@ -403,13 +379,7 @@ export function endsWith(path: string, sub: string, options: {
     if (result !== undefined)
         return result;
 
-    for (let i = subs.length - 1, j = paths.length - 1; i >= 0; i--, j--) {
-        if (subs[i] !== paths[j]) {
-            return false;
-        }
-    }
-
-    return true;
+    return _endsWith(paths, subs);
 }
 
 /**
@@ -444,15 +414,8 @@ export function equals(path1: string, path2: string, options: {
 } = {}): boolean {
     const { result, paths, subs } = extractSegmentsForComparison(path1, path2, options);
 
-    if (result === false || paths.length !== subs.length) {
+    if (result === false || paths.length !== subs.length)
         return false;
-    }
 
-    for (let i = 0; i < paths.length; i++) {
-        if (paths[i] !== subs[i]) {
-            return false;
-        }
-    }
-
-    return true;
+    return _equals(paths, subs);
 }

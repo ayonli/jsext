@@ -4,6 +4,9 @@ import {
     chunk as _chunk,
     count as _count,
     equals as _equals,
+    hasSubset as _hasSubset,
+    startsWith as _startsWith,
+    endsWith as _endsWith,
     groupBy as _groupBy,
     keyBy as _keyBy,
     orderBy as _orderBy,
@@ -29,6 +32,12 @@ declare global {
          * this array.
          */
         equals(another: T[]): boolean;
+        /** Checks if the array contains the given subset. */
+        hasSubset<T>(subset: T[]): boolean;
+        /** Checks if the array starts with the given subset. */
+        startsWith<T>(subset: T[]): boolean;
+        /** Checks if the array ends with the given subset. */
+        endsWith<T>(subset: T[]): boolean;
         /** Breaks the array into smaller chunks according to the given delimiter. */
         split(delimiter: T): T[][];
         /** Breaks the array into smaller chunks according to the given length. */
@@ -106,6 +115,18 @@ Array.prototype.count = function count(ele) {
 
 Array.prototype.equals = function equals(another) {
     return _equals(this, another);
+};
+
+Array.prototype.hasSubset = function hasSubset(subset) {
+    return _hasSubset(this, subset);
+};
+
+Array.prototype.startsWith = function startsWith(subset) {
+    return _startsWith(this, subset);
+};
+
+Array.prototype.endsWith = function endsWith(subset) {
+    return _endsWith(this, subset);
 };
 
 Array.prototype.split = function split(delimiter) {

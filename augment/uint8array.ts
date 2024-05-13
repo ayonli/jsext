@@ -1,6 +1,9 @@
 import {
     compare,
     equals as _equals,
+    hasSubset as _hasSubset,
+    startsWith as _startsWith,
+    endsWith as _endsWith,
     split as _split,
     chunk as _chunk,
     concat,
@@ -20,6 +23,12 @@ declare global {
     interface Uint8Array {
         /** Checks if the two byte arrays are equal to each other. */
         equals(another: Uint8Array): boolean;
+        /** Checks if the byte array contains the given subset. */
+        hasSubset(subset: Uint8Array): boolean;
+        /** Checks if the byte array starts with the given subset. */
+        startsWith(subset: Uint8Array): boolean;
+        /** Checks if the byte array ends with the given subset. */
+        endsWith(subset: Uint8Array): boolean;
         /** Breaks the byte array into smaller chunks according to the given delimiter. */
         split(delimiter: number): this[];
         /** Breaks the byte array into smaller chunks according to the given length. */
@@ -33,6 +42,18 @@ Uint8Array.compare = compare;
 
 Uint8Array.prototype.equals = function equals(another) {
     return _equals(this, another);
+};
+
+Uint8Array.prototype.hasSubset = function hasSubset(subset) {
+    return _hasSubset(this, subset);
+};
+
+Uint8Array.prototype.startsWith = function startsWith(subset) {
+    return _startsWith(this, subset);
+};
+
+Uint8Array.prototype.endsWith = function endsWith(subset) {
+    return _endsWith(this, subset);
 };
 
 Uint8Array.prototype.split = function split(delimiter) {
