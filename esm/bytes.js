@@ -1,4 +1,4 @@
-import { equals as equals$1, hasSubset as hasSubset$1, startsWith as startsWith$1, endsWith as endsWith$1, split as split$1, chunk as chunk$1 } from './array/base.js';
+import { equals as equals$1, includeSlice, startsWith as startsWith$1, endsWith as endsWith$1, split as split$1, chunk as chunk$1 } from './array/base.js';
 import { as } from './object.js';
 import { sum } from './math.js';
 
@@ -129,17 +129,17 @@ function equals(arr1, arr2) {
     }
     return true;
 }
-/** Checks if the byte array contains the given subset. */
-function hasSubset(arr, subset) {
-    return hasSubset$1(arr, subset);
+/** Checks if the byte array contains another array as a slice of its contents. */
+function includesSlice(arr, slice) {
+    return includeSlice(arr, slice);
 }
-/** Checks if the byte array starts with the given subset. */
-function startsWith(arr, subset) {
-    return startsWith$1(arr, subset);
+/** Checks if the byte array starts with the given prefix. */
+function startsWith(arr, prefix) {
+    return startsWith$1(arr, prefix);
 }
-/** Checks if the byte array ends with the given subset. */
-function endsWith(arr, subset) {
-    return endsWith$1(arr, subset);
+/** Checks if the byte array ends with the given suffix. */
+function endsWith(arr, suffix) {
+    return endsWith$1(arr, suffix);
 }
 /** Breaks the byte array into smaller chunks according to the given delimiter. */
 function split(arr, delimiter) {
@@ -150,5 +150,5 @@ function chunk(arr, length) {
     return chunk$1(arr, length);
 }
 
-export { ByteArray, chunk, compare, concat, copy, bytes as default, endsWith, equals, hasSubset, split, startsWith, text };
+export { ByteArray, chunk, compare, concat, copy, bytes as default, endsWith, equals, includesSlice, split, startsWith, text };
 //# sourceMappingURL=bytes.js.map

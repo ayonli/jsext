@@ -26,20 +26,20 @@ function equals(arr1, arr2) {
     }
     return true;
 }
-/** Checks if the array-like object contains the given subset. */
-function hasSubset(arr, subset) {
-    if (arr === subset || !subset.length) {
+/** Checks if the array-like object contains another array as a slice of its contents. */
+function includeSlice(arr, slice) {
+    if (arr === slice || !slice.length) {
         return true;
     }
     const limit = arr.length;
-    const subLimit = subset.length;
+    const subLimit = slice.length;
     if (subLimit > limit) {
         return false;
     }
     for (let i = 0; i < limit; i++) {
-        if (arr[i] === subset[0]) {
+        if (arr[i] === slice[0]) {
             let j = 1;
-            while (j < subLimit && arr[i + j] === subset[j]) {
+            while (j < subLimit && arr[i + j] === slice[j]) {
                 j++;
             }
             if (j === subLimit) {
@@ -49,35 +49,36 @@ function hasSubset(arr, subset) {
     }
     return false;
 }
-/** Checks if the array-like object starts with the given subset. */
-function startsWith(arr, subset) {
-    if (arr === subset || !subset.length) {
+/** Checks if the array-like object starts with the given prefix. */
+function startsWith(arr, prefix) {
+    if (arr === prefix || !prefix.length) {
         return true;
     }
     const limit = arr.length;
-    const preLimit = subset.length;
+    const preLimit = prefix.length;
     if (preLimit > limit) {
         return false;
     }
     for (let i = 0; i < preLimit; i++) {
-        if (arr[i] !== subset[i]) {
+        if (arr[i] !== prefix[i]) {
             return false;
         }
     }
     return true;
 }
-/** Checks if the array-like object ends with the given subset. */
-function endsWith(arr, subset) {
-    if (arr === subset || !subset.length) {
+/** Checks if the array-like object ends with the given suffix. */
+function endsWith(arr, suffix) {
+    if (arr === suffix || !suffix.length) {
         return true;
     }
     const limit = arr.length;
-    const sufLimit = subset.length;
-    if (sufLimit > limit) {
+    const sufLimit = suffix.length;
+    const offset = limit - sufLimit;
+    if (offset < 0) {
         return false;
     }
-    for (let i = subset.length - 1, j = arr.length - 1; i >= 0; i--, j--) {
-        if (subset[i] !== arr[j]) {
+    for (let i = 0; i < sufLimit; i++) {
+        if (arr[offset + i] !== suffix[i]) {
             return false;
         }
     }
@@ -123,5 +124,5 @@ function chunk(arr, length) {
     return chunks;
 }
 
-export { chunk, count, endsWith, equals, hasSubset, split, startsWith };
+export { chunk, count, endsWith, equals, includeSlice, split, startsWith };
 //# sourceMappingURL=base.js.map

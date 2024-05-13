@@ -1,4 +1,4 @@
-import { hasSubset, startsWith as startsWith$1, endsWith as endsWith$1, equals as equals$1 } from '../array.js';
+import { includesSlice, startsWith as startsWith$1, endsWith as endsWith$1, equals as equals$1 } from '../array.js';
 import { trim, trimEnd } from '../string.js';
 
 function isNotQuery(str) {
@@ -273,7 +273,7 @@ function contains(path, sub, options = {}) {
     if (result !== undefined) {
         return result;
     }
-    return hasSubset(paths, subs);
+    return includesSlice(paths, subs);
 }
 /**
  * Checks if the `path` starts with the given `sub` path.
