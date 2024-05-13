@@ -8,6 +8,9 @@ async function stat(target, options = {}) {
 async function mkdir(path, options = {}) {
     throw new Error("Unsupported runtime");
 }
+async function ensureDir(path, options = {}) {
+    throw new Error("Unsupported runtime");
+}
 async function* readDir(target, options = {}) {
     throw new Error("Unsupported runtime");
 }
@@ -39,5 +42,5 @@ async function readLink(path) {
     throw new Error("Unsupported runtime");
 }
 
-export { EOL, copy, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, remove, rename, stat, truncate, writeFile };
+export { EOL, copy, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, remove, rename, stat, truncate, writeFile };
 //# sourceMappingURL=fs.js.map

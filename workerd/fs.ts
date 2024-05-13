@@ -25,6 +25,13 @@ export async function mkdir(path: string, options: CommonOptions & {
     throw new Error("Unsupported runtime");
 }
 
+export async function ensureDir(path: string, options: CommonOptions & {
+    mode?: number;
+} = {}): Promise<void> {
+    void path, options;
+    throw new Error("Unsupported runtime");
+}
+
 export async function* readDir(target: string | FileSystemDirectoryHandle, options: CommonOptions & {
     recursive?: boolean;
 } = {}): AsyncIterable<DirEntry> {

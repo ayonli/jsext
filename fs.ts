@@ -9,12 +9,12 @@
  * 
  * **Errors:**
  * 
- * When a file system operation fails, the module throws an `Exception` object
- * with the following names:
+ * When a file system operation fails, the module throws an {@link Exception}
+ * with one of the following names:
  * 
  * - `NotFoundError`: The file or directory does not exist.
- * - `NotAllowedError`: The operation is not allowed, such as blocked by the
- *   permission system.
+ * - `NotAllowedError`: The operation is not allowed, such as being blocked by
+ *   the permission system.
  * - `AlreadyExistsError`: The file or directory already exists.
  * - `IsDirectoryError`: The path is a directory, not a file.
  * - `NotDirectoryError`: The path is a file, not a directory.
