@@ -1,4 +1,4 @@
-import { getExtensions } from "@ayonli/jsext/filetype";
+import { getExtensions } from "../../../filetype.ts";
 
 function htmlAcceptToFileFilters(accept: string): {
     description: string;
