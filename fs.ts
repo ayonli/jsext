@@ -230,6 +230,8 @@ export async function stat(
                 atime: null,
                 birthtime: null,
                 mode: 0,
+                uid: 0,
+                gid: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
@@ -245,6 +247,8 @@ export async function stat(
                 atime: null,
                 birthtime: null,
                 mode: 0,
+                uid: 0,
+                gid: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
@@ -272,6 +276,8 @@ export async function stat(
             atime: stat.atime ?? null,
             birthtime: stat.birthtime ?? null,
             mode: stat.mode ?? 0,
+            uid: stat.uid ?? 0,
+            gid: stat.gid ?? 0,
             isBlockDevice: stat.isBlockDevice ?? false,
             isCharDevice: stat.isCharDevice ?? false,
             isFIFO: stat.isFifo ?? false,
@@ -295,6 +301,8 @@ export async function stat(
             atime: stat.atime ?? null,
             birthtime: stat.birthtime ?? null,
             mode: stat.mode ?? 0,
+            uid: stat.uid ?? 0,
+            gid: stat.gid ?? 0,
             isBlockDevice: stat.isBlockDevice(),
             isCharDevice: stat.isCharacterDevice(),
             isFIFO: stat.isFIFO(),
@@ -317,6 +325,8 @@ export async function stat(
                 atime: null,
                 birthtime: null,
                 mode: 0,
+                uid: 0,
+                gid: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
@@ -332,6 +342,8 @@ export async function stat(
                 atime: null,
                 birthtime: null,
                 mode: 0,
+                uid: 0,
+                gid: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
@@ -1085,7 +1097,7 @@ async function copyInBrowser(oldPath: string, newPath: string, options: CommonOp
             oldDir: FileSystemDirectoryHandle,
             newDir: FileSystemDirectoryHandle
         ): Promise<void> {
-            const entries = oldDir.entries() as AsyncIterable<[string, FileSystemHandle]>;
+            const entries = oldDir.entries();
 
             for await (const [_, entry] of entries) {
                 if (entry.kind === "file") {
@@ -1204,6 +1216,26 @@ export async function chmod(path: string, mode: number): Promise<void> {
         } else if (isNodeLike) {
             const fs = await import("fs/promises");
             await rawOp(fs.chmod(path, mode));
+        } else {
+            throw new Error("Unsupported runtime");
+        }
+    } else {
+        throw new Error("Unsupported platform");
+    }
+}
+
+/**
+ * Changes the owner and group of the specified file or directory.
+ * 
+ * NOTE: This function is not available in Windows and the browser.
+ */
+export async function chown(path: string, uid: number, gid: number): Promise<void> {
+    if (platform() !== "windows") {
+        if (isDeno) {
+            await rawOp(Deno.chown(path, uid, gid));
+        } else if (isNodeLike) {
+            const fs = await import("fs/promises");
+            await rawOp(fs.chown(path, uid, gid));
         } else {
             throw new Error("Unsupported runtime");
         }

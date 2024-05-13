@@ -8,6 +8,7 @@ import { join, resolve, sep } from "./path.ts";
 import bytes, { equals } from "./bytes.ts";
 import {
     EOL,
+    FileInfo,
     chmod,
     copy,
     ensureDir,
@@ -66,11 +67,13 @@ describe("fs", () => {
                     atime: stat2.atime,
                     birthtime: stat2.birthtime,
                     mode: stat2.mode ?? 0,
+                    uid: stat2.uid ?? 0,
+                    gid: stat2.gid ?? 0,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
                     isSocket: false,
-                });
+                } as FileInfo);
             } else {
                 const stat2 = await fs.stat("./fs.ts");
                 deepStrictEqual(stat1, {
@@ -82,11 +85,13 @@ describe("fs", () => {
                     atime: stat2.atime,
                     birthtime: stat2.birthtime,
                     mode: stat2.mode,
+                    uid: stat2.uid,
+                    gid: stat2.gid,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
                     isSocket: false,
-                });
+                } as FileInfo);
             }
         });
 
@@ -104,11 +109,13 @@ describe("fs", () => {
                     atime: stat2.atime,
                     birthtime: stat2.birthtime,
                     mode: stat2.mode ?? 0,
+                    uid: stat2.uid ?? 0,
+                    gid: stat2.gid ?? 0,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
                     isSocket: false,
-                });
+                } as FileInfo);
             } else {
                 const stat2 = await fs.stat("./fs");
                 deepStrictEqual(stat1, {
@@ -120,11 +127,13 @@ describe("fs", () => {
                     atime: stat2.atime,
                     birthtime: stat2.birthtime,
                     mode: stat2.mode,
+                    uid: stat2.uid,
+                    gid: stat2.gid,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
                     isSocket: false,
-                });
+                } as FileInfo);
             }
         });
 
@@ -158,11 +167,13 @@ describe("fs", () => {
                     atime: _stat.atime,
                     birthtime: _stat.birthtime,
                     mode: _stat.mode ?? 0,
+                    uid: _stat.uid ?? 0,
+                    gid: _stat.gid ?? 0,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
                     isSocket: false,
-                });
+                } as FileInfo);
             } else {
                 const _stat = await fs.lstat(dest);
                 deepStrictEqual(stat1, {
@@ -174,11 +185,13 @@ describe("fs", () => {
                     atime: _stat.atime,
                     birthtime: _stat.birthtime,
                     mode: _stat.mode,
+                    uid: _stat.uid,
+                    gid: _stat.gid,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
                     isSocket: false,
-                });
+                } as FileInfo);
             }
 
             const stat2 = await stat(dest, { followSymlink: true });
@@ -194,11 +207,13 @@ describe("fs", () => {
                     atime: _stat.atime,
                     birthtime: _stat.birthtime,
                     mode: _stat.mode ?? 0,
+                    uid: _stat.uid ?? 0,
+                    gid: _stat.gid ?? 0,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
                     isSocket: false,
-                });
+                } as FileInfo);
             } else {
                 const _stat = await fs.stat(dest);
                 deepStrictEqual(stat2, {
@@ -210,11 +225,13 @@ describe("fs", () => {
                     atime: _stat.atime,
                     birthtime: _stat.birthtime,
                     mode: _stat.mode,
+                    uid: _stat.uid,
+                    gid: _stat.gid,
                     isBlockDevice: false,
                     isCharDevice: false,
                     isFIFO: false,
                     isSocket: false,
-                });
+                } as FileInfo);
             }
         }));
     });
@@ -850,9 +867,9 @@ describe("fs", () => {
         }));
     });
 
-    it("chmod", jsext.func(async (defer) => {
+    it("chmod", jsext.func(async function (defer) {
         if (platform() === "windows") {
-            return;
+            this.skip();
         }
 
         const path = "./tmp.txt";

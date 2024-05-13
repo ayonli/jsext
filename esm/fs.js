@@ -202,7 +202,7 @@ async function exists(path, options = {}) {
  * Returns the information of the given file or directory.
  */
 async function stat(target, options = {}) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y;
     if (typeof target === "object") {
         if (target.kind === "file") {
             const info = await rawOp(target.getFile(), "file");
@@ -215,6 +215,8 @@ async function stat(target, options = {}) {
                 atime: null,
                 birthtime: null,
                 mode: 0,
+                uid: 0,
+                gid: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
@@ -231,6 +233,8 @@ async function stat(target, options = {}) {
                 atime: null,
                 birthtime: null,
                 mode: 0,
+                uid: 0,
+                gid: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
@@ -255,10 +259,12 @@ async function stat(target, options = {}) {
             atime: (_e = stat.atime) !== null && _e !== void 0 ? _e : null,
             birthtime: (_f = stat.birthtime) !== null && _f !== void 0 ? _f : null,
             mode: (_g = stat.mode) !== null && _g !== void 0 ? _g : 0,
-            isBlockDevice: (_h = stat.isBlockDevice) !== null && _h !== void 0 ? _h : false,
-            isCharDevice: (_j = stat.isCharDevice) !== null && _j !== void 0 ? _j : false,
-            isFIFO: (_k = stat.isFifo) !== null && _k !== void 0 ? _k : false,
-            isSocket: (_l = stat.isSocket) !== null && _l !== void 0 ? _l : false,
+            uid: (_h = stat.uid) !== null && _h !== void 0 ? _h : 0,
+            gid: (_j = stat.gid) !== null && _j !== void 0 ? _j : 0,
+            isBlockDevice: (_k = stat.isBlockDevice) !== null && _k !== void 0 ? _k : false,
+            isCharDevice: (_l = stat.isCharDevice) !== null && _l !== void 0 ? _l : false,
+            isFIFO: (_m = stat.isFifo) !== null && _m !== void 0 ? _m : false,
+            isSocket: (_o = stat.isSocket) !== null && _o !== void 0 ? _o : false,
         };
     }
     else if (isNodeLike) {
@@ -273,11 +279,13 @@ async function stat(target, options = {}) {
             name: basename(path),
             kind,
             size: stat.size,
-            type: kind === "file" ? ((_m = getMIME(extname(path))) !== null && _m !== void 0 ? _m : "") : "",
-            mtime: (_o = stat.mtime) !== null && _o !== void 0 ? _o : null,
-            atime: (_p = stat.atime) !== null && _p !== void 0 ? _p : null,
-            birthtime: (_q = stat.birthtime) !== null && _q !== void 0 ? _q : null,
-            mode: (_r = stat.mode) !== null && _r !== void 0 ? _r : 0,
+            type: kind === "file" ? ((_p = getMIME(extname(path))) !== null && _p !== void 0 ? _p : "") : "",
+            mtime: (_q = stat.mtime) !== null && _q !== void 0 ? _q : null,
+            atime: (_r = stat.atime) !== null && _r !== void 0 ? _r : null,
+            birthtime: (_s = stat.birthtime) !== null && _s !== void 0 ? _s : null,
+            mode: (_t = stat.mode) !== null && _t !== void 0 ? _t : 0,
+            uid: (_u = stat.uid) !== null && _u !== void 0 ? _u : 0,
+            gid: (_v = stat.gid) !== null && _v !== void 0 ? _v : 0,
             isBlockDevice: stat.isBlockDevice(),
             isCharDevice: stat.isCharacterDevice(),
             isFIFO: stat.isFIFO(),
@@ -295,18 +303,20 @@ async function stat(target, options = {}) {
                 name,
                 kind: "file",
                 size: info.size,
-                type: (_t = (_s = info.type) !== null && _s !== void 0 ? _s : getMIME(extname(name))) !== null && _t !== void 0 ? _t : "",
+                type: (_x = (_w = info.type) !== null && _w !== void 0 ? _w : getMIME(extname(name))) !== null && _x !== void 0 ? _x : "",
                 mtime: new Date(info.lastModified),
                 atime: null,
                 birthtime: null,
                 mode: 0,
+                uid: 0,
+                gid: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
                 isSocket: false,
             };
         }
-        else if (((_u = as(err, Exception)) === null || _u === void 0 ? void 0 : _u.name) === "IsDirectoryError") {
+        else if (((_y = as(err, Exception)) === null || _y === void 0 ? void 0 : _y.name) === "IsDirectoryError") {
             return {
                 name,
                 kind: "directory",
@@ -316,6 +326,8 @@ async function stat(target, options = {}) {
                 atime: null,
                 birthtime: null,
                 mode: 0,
+                uid: 0,
+                gid: 0,
                 isBlockDevice: false,
                 isCharDevice: false,
                 isFIFO: false,
@@ -1094,6 +1106,28 @@ async function chmod(path, mode) {
     }
 }
 /**
+ * Changes the owner and group of the specified file or directory.
+ *
+ * NOTE: This function is not available in Windows and the browser.
+ */
+async function chown(path, uid, gid) {
+    if (platform() !== "windows") {
+        if (isDeno) {
+            await rawOp(Deno.chown(path, uid, gid));
+        }
+        else if (isNodeLike) {
+            const fs = await import('fs/promises');
+            await rawOp(fs.chown(path, uid, gid));
+        }
+        else {
+            throw new Error("Unsupported runtime");
+        }
+    }
+    else {
+        throw new Error("Unsupported platform");
+    }
+}
+/**
  * Changes the access (`atime`) and modification (`mtime`) times of a file
  * system object referenced by the `path`. Given times are either in seconds
  * (UNIX epoch time) or as `Date` objects.
@@ -1113,5 +1147,5 @@ async function utimes(path, atime, mtime) {
     }
 }
 
-export { EOL, chmod, copy, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };
+export { EOL, chmod, chown, copy, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };
 //# sourceMappingURL=fs.js.map

@@ -72,6 +72,16 @@ export interface FileInfo {
      */
     mode: number;
     /**
+     * User ID of the owner of this file. This value may be `0` on unsupported
+     * platforms.
+     */
+    uid: number;
+    /**
+     * Group ID of the owner of this file. This value may be `0` on unsupported
+     * platforms.
+     */
+    gid: number;
+    /**
      * Whether the file is a block device.
      */
     isBlockDevice: boolean;
