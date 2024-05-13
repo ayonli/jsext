@@ -65,6 +65,19 @@ export async function writeFile(target: string | FileSystemFileHandle,
     throw new Error("Unsupported runtime");
 }
 
+export async function writeLines(
+    target: string | FileSystemFileHandle,
+    lines: string[],
+    options: CommonOptions & {
+        append?: boolean;
+        mode?: number;
+        signal?: AbortSignal;
+    } = {}
+): Promise<void> {
+    void target, lines, options;
+    throw new Error("Unsupported runtime");
+}
+
 export async function truncate(
     target: string | FileSystemFileHandle,
     size = 0,

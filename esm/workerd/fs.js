@@ -23,6 +23,9 @@ async function readFileAsText(target, options = {}) {
 async function writeFile(target, data, options = {}) {
     throw new Error("Unsupported runtime");
 }
+async function writeLines(target, lines, options = {}) {
+    throw new Error("Unsupported runtime");
+}
 async function truncate(target, size = 0, options = {}) {
     throw new Error("Unsupported runtime");
 }
@@ -48,5 +51,5 @@ async function utimes(path, atime, mtime) {
     throw new Error("Unsupported runtime");
 }
 
-export { EOL, chmod, copy, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, remove, rename, stat, truncate, utimes, writeFile };
+export { EOL, chmod, copy, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, remove, rename, stat, truncate, utimes, writeFile, writeLines };
 //# sourceMappingURL=fs.js.map

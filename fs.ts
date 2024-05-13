@@ -692,6 +692,66 @@ async function writeFileHandle(
 }
 
 /**
+ * Writes multiple lines of content into the specified file.
+ * 
+ * This function will automatically detect the line ending of the current
+ * content and use it to write the new lines. If the file is empty or does not
+ * exists (will be created automatically), it will use the system's default line
+ * ending to separate lines.
+ * 
+ * This function will append a new line at the end of the final content, in
+ * appending mode, it will also prepend a line ending before the input lines if
+ * the current content doesn't ends with one.
+ */
+export async function writeLines(
+    target: string | FileSystemFileHandle,
+    lines: string[],
+    options: CommonOptions & {
+        append?: boolean;
+        mode?: number;
+        signal?: AbortSignal;
+    } = {}
+): Promise<void> {
+    const current = await readFileAsText(target, options).catch(err => {
+        if (as(err, Exception)?.name !== "NotFoundError") {
+            throw err;
+        } else {
+            return "";
+        }
+    });
+    const lineEndings = current.match(/\r?\n/g);
+    let eol = EOL;
+
+    if (lineEndings) {
+        const crlf = lineEndings.filter(e => e === "\r\n").length;
+        const lf = lineEndings.length - crlf;
+        eol = crlf > lf ? "\r\n" : "\n";
+    }
+
+    let content = lines.join(eol);
+
+    if (!content.endsWith(eol)) {
+        if (eol === "\r\n" && content.endsWith("\r")) {
+            content += "\n";
+        } else {
+            content += eol;
+        }
+    }
+
+    if (options.append && !current.endsWith(eol) && !content.startsWith(eol)) {
+        if (eol === "\r\n" && current.endsWith("\r")) {
+            if (!content.startsWith("\n")) {
+                content = "\n" + content;
+            }
+        } else {
+            content = eol + content;
+        }
+    }
+
+    await writeFile(target, content, options);
+}
+
+/**
  * Truncates (or extends) the specified file, to reach the specified `size`.
  * If `size` is not specified then the entire file contents are truncated.
  */

@@ -24,6 +24,7 @@ import {
     truncate,
     utimes,
     writeFile,
+    writeLines,
 } from "./fs.ts";
 
 describe("fs", () => {
@@ -523,6 +524,100 @@ describe("fs", () => {
                 const _stat = await fs.stat(path);
                 strictEqual(_stat.mode & 0o755, 0o755);
             }
+        }));
+    });
+
+    describe("writeLines", () => {
+        const path = "./tmp.txt";
+
+        after(async () => {
+            await remove(path).catch(() => null);
+        });
+
+        it("has old content", async () => {
+            let content = "This is the first line.\r\n"
+                + "This is the second line.\r\n"
+                + "This is the third line.\n";
+            await writeFile(path, content);
+
+            const lines = [
+                "new line 1",
+                "new line 2",
+            ];
+            await writeLines(path, lines);
+
+            const text1 = await readFileAsText(path);
+            strictEqual(text1, lines[0] + "\r\n" + lines[1] + "\r\n");
+
+            content = "This is the first line.\n"
+                + "This is the second line.\n"
+                + "This is the third line.\r\n";
+
+            await writeFile(path, content);
+            await writeLines(path, lines);
+
+            const text2 = await readFileAsText(path);
+            strictEqual(text2, lines[0] + "\n" + lines[1] + "\n");
+        });
+
+        it("do not have old content", async () => {
+            await writeFile(path, "");
+
+            const lines = [
+                "new line 1",
+                "new line 2",
+            ];
+            await writeLines(path, lines);
+
+            const text = await readFileAsText(path);
+            strictEqual(text, lines[0] + EOL + lines[1] + EOL);
+        });
+
+        it("append", async () => {
+            let content = "This is the first line.\r\n"
+                + "This is the second line.\r\n"
+                + "This is the third line.\n";
+            await writeFile(path, content);
+
+            const lines = [
+                "new line 1",
+                "new line 2",
+            ];
+            await writeLines(path, lines, { append: true });
+
+            const text1 = await readFileAsText(path);
+            strictEqual(text1, content + "\r\n" + lines[0] + "\r\n" + lines[1] + "\r\n");
+
+            content = content.slice(0, -1) + "\r";
+
+            await writeFile(path, content);
+            await writeLines(path, lines, { append: true });
+
+            const text2 = await readFileAsText(path);
+            strictEqual(text2, content + "\n" + lines[0] + "\r\n" + lines[1] + "\r\n");
+
+            content = "This is the first line.\n"
+                + "This is the second line.\r\n"
+                + "This is the third line.\n";
+
+            await writeFile(path, content);
+            await writeLines(path, lines, { append: true });
+
+            const text3 = await readFileAsText(path);
+            strictEqual(text3, content + lines[0] + "\n" + lines[1] + "\n");
+        });
+
+        it("new file", jsext.func(async (defer) => {
+            const path = "./tmp1.txt";
+            const lines = [
+                "new line 1",
+                "new line 2",
+            ];
+            await writeLines(path, lines);
+            defer(() => remove(path));
+
+            const text = await readFileAsText(path);
+            strictEqual(text, lines[0] + EOL + lines[1] + EOL);
         }));
     });
 
