@@ -8,7 +8,7 @@ import { random as rand } from "./number.ts";
 import {
     count as _count,
     equals as _equals,
-    hasSubset as _hasSubset,
+    includeSlice as _includesSlice,
     startsWith as _startsWith,
     endsWith as _endsWith,
     split as _split,
@@ -59,19 +59,19 @@ export function equals<T>(arr1: T[], arr2: T[]): boolean {
     return _equals(arr1, arr2);
 }
 
-/** Checks if the array contains the given subset. */
-export function hasSubset<T>(arr: T[], subset: T[]): boolean {
-    return _hasSubset(arr, subset);
+/** Checks if the array-like object contains another array as a slice of its contents. */
+export function includesSlice<T>(arr: T[], slice: T[]): boolean {
+    return _includesSlice(arr, slice);
 }
 
-/** Checks if the array starts with the given subset. */
-export function startsWith<T>(arr: T[], subset: T[]): boolean {
-    return _startsWith(arr, subset);
+/** Checks if the array starts with the given prefix. */
+export function startsWith<T>(arr: T[], prefix: T[]): boolean {
+    return _startsWith(arr, prefix);
 }
 
-/** Checks if the array ends with the given subset. */
-export function endsWith<T>(arr: T[], subset: T[]): boolean {
-    return _endsWith(arr, subset);
+/** Checks if the array ends with the given suffix. */
+export function endsWith<T>(arr: T[], suffix: T[]): boolean {
+    return _endsWith(arr, suffix);
 }
 
 /** Breaks the array into smaller chunks according to the given delimiter. */

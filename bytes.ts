@@ -5,7 +5,7 @@
 
 import {
     equals as _equals,
-    hasSubset as _hasSubset,
+    includeSlice as _includesSlice,
     startsWith as _startsWith,
     endsWith as _endsWith,
     split as _split,
@@ -165,19 +165,19 @@ export function equals(arr1: Uint8Array, arr2: Uint8Array): boolean {
     return true;
 }
 
-/** Checks if the byte array contains the given subset. */
-export function hasSubset(arr: Uint8Array, subset: Uint8Array): boolean {
-    return _hasSubset(arr, subset);
+/** Checks if the byte array contains another array as a slice of its contents. */
+export function includesSlice(arr: Uint8Array, slice: Uint8Array): boolean {
+    return _includesSlice(arr, slice);
 }
 
-/** Checks if the byte array starts with the given subset. */
-export function startsWith(arr: Uint8Array, subset: Uint8Array): boolean {
-    return _startsWith(arr, subset);
+/** Checks if the byte array starts with the given prefix. */
+export function startsWith(arr: Uint8Array, prefix: Uint8Array): boolean {
+    return _startsWith(arr, prefix);
 }
 
-/** Checks if the byte array ends with the given subset. */
-export function endsWith(arr: Uint8Array, subset: Uint8Array): boolean {
-    return _endsWith(arr, subset);
+/** Checks if the byte array ends with the given suffix. */
+export function endsWith(arr: Uint8Array, suffix: Uint8Array): boolean {
+    return _endsWith(arr, suffix);
 }
 
 /** Breaks the byte array into smaller chunks according to the given delimiter. */

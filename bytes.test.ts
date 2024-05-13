@@ -5,7 +5,7 @@ import bytes, {
     concat,
     copy,
     equals,
-    hasSubset,
+    includesSlice,
     startsWith,
     endsWith,
     split,
@@ -200,22 +200,22 @@ describe("bytes", () => {
         }
     });
 
-    it("hasSubset", () => {
+    it("includesSlice", () => {
         const arr = new Uint8Array([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
-        strictEqual(hasSubset(arr, new Uint8Array([2, 3, 4])), true);
-        strictEqual(hasSubset(arr, new Uint8Array([2, 3, 4, 5])), true);
-        strictEqual(hasSubset(arr, new Uint8Array([2, 3, 4, 5, 6])), false);
+        strictEqual(includesSlice(arr, new Uint8Array([2, 3, 4])), true);
+        strictEqual(includesSlice(arr, new Uint8Array([2, 3, 4, 5])), true);
+        strictEqual(includesSlice(arr, new Uint8Array([2, 3, 4, 5, 6])), false);
 
         const _bytes = bytes([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
-        strictEqual(hasSubset(_bytes, new ByteArray([2, 3, 4])), true);
-        strictEqual(hasSubset(_bytes, new ByteArray([2, 3, 4, 5])), true);
-        strictEqual(hasSubset(_bytes, new ByteArray([2, 3, 4, 5, 6])), false);
+        strictEqual(includesSlice(_bytes, new ByteArray([2, 3, 4])), true);
+        strictEqual(includesSlice(_bytes, new ByteArray([2, 3, 4, 5])), true);
+        strictEqual(includesSlice(_bytes, new ByteArray([2, 3, 4, 5, 6])), false);
 
         if (typeof Buffer === "function") {
             const buf = Buffer.from([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
-            strictEqual(hasSubset(buf, Buffer.from([2, 3, 4])), true);
-            strictEqual(hasSubset(buf, Buffer.from([2, 3, 4, 5])), true);
-            strictEqual(hasSubset(buf, Buffer.from([2, 3, 4, 5, 6])), false);
+            strictEqual(includesSlice(buf, Buffer.from([2, 3, 4])), true);
+            strictEqual(includesSlice(buf, Buffer.from([2, 3, 4, 5])), true);
+            strictEqual(includesSlice(buf, Buffer.from([2, 3, 4, 5, 6])), false);
         }
     });
 

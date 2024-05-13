@@ -37,17 +37,17 @@ describe("Array", () => {
         strictEqual(arr.equals([2, 3, 4, 5, 6]), false);
     });
 
-    it("Array.prototype.hasSubset", () => {
+    it("Array.prototype.includesSlice", () => {
         const arr = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1];
         const subset1 = [3, 4, 5];
         const subset2 = [3, 4, 5, 6];
         const subset3 = [3, 4, 5, 4];
         const subset4 = [3, 4, 5, 4, 3, 2, 1];
 
-        strictEqual(arr.hasSubset(subset1), true);
-        strictEqual(arr.hasSubset(subset2), false);
-        strictEqual(arr.hasSubset(subset3), true);
-        strictEqual(arr.hasSubset(subset4), true);
+        strictEqual(arr.includesSlice(subset1), true);
+        strictEqual(arr.includesSlice(subset2), false);
+        strictEqual(arr.includesSlice(subset3), true);
+        strictEqual(arr.includesSlice(subset4), true);
     });
 
     it("Array.prototype.startsWith", () => {

@@ -1,7 +1,7 @@
 import {
     compare,
     equals as _equals,
-    hasSubset as _hasSubset,
+    includesSlice as _includesSlice,
     startsWith as _startsWith,
     endsWith as _endsWith,
     split as _split,
@@ -23,12 +23,12 @@ declare global {
     interface Uint8Array {
         /** Checks if the two byte arrays are equal to each other. */
         equals(another: Uint8Array): boolean;
-        /** Checks if the byte array contains the given subset. */
-        hasSubset(subset: Uint8Array): boolean;
-        /** Checks if the byte array starts with the given subset. */
-        startsWith(subset: Uint8Array): boolean;
-        /** Checks if the byte array ends with the given subset. */
-        endsWith(subset: Uint8Array): boolean;
+        /** Checks if the byte array contains another array as a slice of its contents. */
+        includesSlice(subset: Uint8Array): boolean;
+        /** Checks if the byte array starts with the given prefix. */
+        startsWith(prefix: Uint8Array): boolean;
+        /** Checks if the byte array ends with the given suffix. */
+        endsWith(suffix: Uint8Array): boolean;
         /** Breaks the byte array into smaller chunks according to the given delimiter. */
         split(delimiter: number): this[];
         /** Breaks the byte array into smaller chunks according to the given length. */
@@ -44,16 +44,16 @@ Uint8Array.prototype.equals = function equals(another) {
     return _equals(this, another);
 };
 
-Uint8Array.prototype.hasSubset = function hasSubset(subset) {
-    return _hasSubset(this, subset);
+Uint8Array.prototype.includesSlice = function includesSlice(slice) {
+    return _includesSlice(this, slice);
 };
 
-Uint8Array.prototype.startsWith = function startsWith(subset) {
-    return _startsWith(this, subset);
+Uint8Array.prototype.startsWith = function startsWith(prefix) {
+    return _startsWith(this, prefix);
 };
 
-Uint8Array.prototype.endsWith = function endsWith(subset) {
-    return _endsWith(this, subset);
+Uint8Array.prototype.endsWith = function endsWith(suffix) {
+    return _endsWith(this, suffix);
 };
 
 Uint8Array.prototype.split = function split(delimiter) {

@@ -33,24 +33,24 @@ export function equals<T>(arr1: RealArrayLike<T>, arr2: RealArrayLike<T>): boole
     return true;
 }
 
-/** Checks if the array-like object contains the given subset. */
-export function hasSubset<T>(arr: RealArrayLike<T>, subset: RealArrayLike<T>): boolean {
-    if (arr === subset || !subset.length) {
+/** Checks if the array-like object contains another array as a slice of its contents. */
+export function includeSlice<T>(arr: RealArrayLike<T>, slice: RealArrayLike<T>): boolean {
+    if (arr === slice || !slice.length) {
         return true;
     }
 
     const limit = arr.length;
-    const subLimit = subset.length;
+    const subLimit = slice.length;
 
     if (subLimit > limit) {
         return false;
     }
 
     for (let i = 0; i < limit; i++) {
-        if (arr[i] === subset[0]) {
+        if (arr[i] === slice[0]) {
             let j = 1;
 
-            while (j < subLimit && arr[i + j] === subset[j]) {
+            while (j < subLimit && arr[i + j] === slice[j]) {
                 j++;
             }
 
@@ -63,21 +63,21 @@ export function hasSubset<T>(arr: RealArrayLike<T>, subset: RealArrayLike<T>): b
     return false;
 }
 
-/** Checks if the array-like object starts with the given subset. */
-export function startsWith<T>(arr: RealArrayLike<T>, subset: RealArrayLike<T>): boolean {
-    if (arr === subset || !subset.length) {
+/** Checks if the array-like object starts with the given prefix. */
+export function startsWith<T>(arr: RealArrayLike<T>, prefix: RealArrayLike<T>): boolean {
+    if (arr === prefix || !prefix.length) {
         return true;
     }
 
     const limit = arr.length;
-    const preLimit = subset.length;
+    const preLimit = prefix.length;
 
     if (preLimit > limit) {
         return false;
     }
 
     for (let i = 0; i < preLimit; i++) {
-        if (arr[i] !== subset[i]) {
+        if (arr[i] !== prefix[i]) {
             return false;
         }
     }
@@ -85,21 +85,22 @@ export function startsWith<T>(arr: RealArrayLike<T>, subset: RealArrayLike<T>): 
     return true;
 }
 
-/** Checks if the array-like object ends with the given subset. */
-export function endsWith<T>(arr: RealArrayLike<T>, subset: RealArrayLike<T>): boolean {
-    if (arr === subset || !subset.length) {
+/** Checks if the array-like object ends with the given suffix. */
+export function endsWith<T>(arr: RealArrayLike<T>, suffix: RealArrayLike<T>): boolean {
+    if (arr === suffix || !suffix.length) {
         return true;
     }
 
     const limit = arr.length;
-    const sufLimit = subset.length;
+    const sufLimit = suffix.length;
+    const offset = limit - sufLimit;
 
-    if (sufLimit > limit) {
+    if (offset < 0) {
         return false;
     }
 
-    for (let i = subset.length - 1, j = arr.length - 1; i >= 0; i--, j--) {
-        if (subset[i] !== arr[j]) {
+    for (let i = 0; i < sufLimit; i++) {
+        if (arr[offset + i] !== suffix[i]) {
             return false;
         }
     }

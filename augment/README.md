@@ -47,7 +47,7 @@ _When import `@ayonli/jsext/augment`_
     - `random(remove?: boolean): T | undefined`
     - `count(item: T): number`
     - `equals(another: T[]): boolean`
-    - `hasSubset<T>(subset: T[]): boolean`
+    - `includesSlice<T>(subset: T[]): boolean`
     - `startsWith<T>(subset: T[]): boolean`
     - `endsWith<T>(subset: T[]): boolean`
     - `split(delimiter: T): T[][]`
@@ -191,7 +191,7 @@ _These types are augmented to the global scope._
   - `compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1`
   - `prototype`
     - `equals(another: Uint8Array): boolean`
-    - `hasSubset(subset: Uint8Array): boolean`
+    - `includesSlice(subset: Uint8Array): boolean`
     - `startsWith(subset: Uint8Array): boolean`
     - `endsWith(subset: Uint8Array): boolean`
     - `split(delimiter: number): this[]`

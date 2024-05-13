@@ -1,5 +1,5 @@
 import {
-    hasSubset,
+    includesSlice,
     startsWith as _startsWith,
     endsWith as _endsWith,
     equals as _equals,
@@ -301,7 +301,7 @@ export function contains(path: string, sub: string, options: {
         return result;
     }
 
-    return hasSubset(paths, subs);
+    return includesSlice(paths, subs);
 }
 
 /**

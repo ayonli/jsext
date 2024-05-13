@@ -4,7 +4,7 @@ import {
     chunk as _chunk,
     count as _count,
     equals as _equals,
-    hasSubset as _hasSubset,
+    includesSlice as _includesSlice,
     startsWith as _startsWith,
     endsWith as _endsWith,
     groupBy as _groupBy,
@@ -32,12 +32,12 @@ declare global {
          * this array.
          */
         equals(another: T[]): boolean;
-        /** Checks if the array contains the given subset. */
-        hasSubset<T>(subset: T[]): boolean;
-        /** Checks if the array starts with the given subset. */
-        startsWith<T>(subset: T[]): boolean;
-        /** Checks if the array ends with the given subset. */
-        endsWith<T>(subset: T[]): boolean;
+        /** Checks if the byte array contains another array as a slice of its contents. */
+        includesSlice<T>(slice: T[]): boolean;
+        /** Checks if the array starts with the given prefix. */
+        startsWith<T>(prefix: T[]): boolean;
+        /** Checks if the array ends with the given suffix. */
+        endsWith<T>(suffix: T[]): boolean;
         /** Breaks the array into smaller chunks according to the given delimiter. */
         split(delimiter: T): T[][];
         /** Breaks the array into smaller chunks according to the given length. */
@@ -117,16 +117,16 @@ Array.prototype.equals = function equals(another) {
     return _equals(this, another);
 };
 
-Array.prototype.hasSubset = function hasSubset(subset) {
-    return _hasSubset(this, subset);
+Array.prototype.includesSlice = function includesSlice(slice) {
+    return _includesSlice(this, slice);
 };
 
-Array.prototype.startsWith = function startsWith(subset) {
-    return _startsWith(this, subset);
+Array.prototype.startsWith = function startsWith(prefix) {
+    return _startsWith(this, prefix);
 };
 
-Array.prototype.endsWith = function endsWith(subset) {
-    return _endsWith(this, subset);
+Array.prototype.endsWith = function endsWith(suffix) {
+    return _endsWith(this, suffix);
 };
 
 Array.prototype.split = function split(delimiter) {
