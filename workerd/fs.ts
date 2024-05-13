@@ -1,6 +1,6 @@
-import type { CommonOptions, FileInfo, DirEntry } from "../fs/types";
+import type { CommonOptions, FileInfo, DirEntry, DirTree } from "../fs/types";
 
-export type { CommonOptions, FileInfo, DirEntry };
+export type { CommonOptions, FileInfo, DirEntry, DirTree };
 
 export const EOL: "\n" | "\r\n" = "\n";
 
@@ -35,6 +35,14 @@ export async function ensureDir(path: string, options: CommonOptions & {
 export async function* readDir(target: string | FileSystemDirectoryHandle, options: CommonOptions & {
     recursive?: boolean;
 } = {}): AsyncIterable<DirEntry> {
+    void target, options;
+    throw new Error("Unsupported runtime");
+}
+
+export async function readTree(
+    target: string | FileSystemDirectoryHandle,
+    options: CommonOptions = {}
+): Promise<DirTree> {
     void target, options;
     throw new Error("Unsupported runtime");
 }

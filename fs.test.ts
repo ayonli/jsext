@@ -18,6 +18,7 @@ import {
     readFile,
     readFileAsText,
     readLink,
+    readTree,
     remove,
     rename,
     stat,
@@ -344,6 +345,67 @@ describe("fs", () => {
 
             const files = await readAsArray(readDir("./fs"));
             ok(files.some(file => file.name === "types-ln.ts" && file.kind === "symlink"));
+        }));
+    });
+
+    describe("readTree", () => {
+        it("default", jsext.func(async (defer) => {
+            const root = "./tmp";
+            const dir1 = "./tmp/a";
+            const dir2 = "./tmp/b/c";
+            const file1 = "./tmp/d.txt";
+            const file2 = "./tmp/b/e.txt";
+
+            await mkdir(dir1, { recursive: true });
+            await mkdir(dir2, { recursive: true });
+            await writeFile(file1, "Hello, world!");
+            await writeFile(file2, "Hello, world!");
+            defer(() => remove(root, { recursive: true }));
+
+            const tree = await readTree(root);
+
+            deepStrictEqual(tree, {
+                name: "tmp",
+                kind: "directory",
+                path: "",
+                handle: undefined,
+                children: [
+                    {
+                        name: "a",
+                        kind: "directory",
+                        path: "a",
+                        handle: undefined,
+                        children: [],
+                    },
+                    {
+                        name: "b",
+                        kind: "directory",
+                        path: "b",
+                        handle: undefined,
+                        children: [
+                            {
+                                name: "c",
+                                kind: "directory",
+                                path: join("b", "c"),
+                                handle: undefined,
+                                children: [],
+                            },
+                            {
+                                name: "e.txt",
+                                kind: "file",
+                                path: join("b", "e.txt"),
+                                handle: undefined,
+                            },
+                        ],
+                    },
+                    {
+                        name: "d.txt",
+                        kind: "file",
+                        path: "d.txt",
+                        handle: undefined,
+                    },
+                ],
+            });
         }));
     });
 

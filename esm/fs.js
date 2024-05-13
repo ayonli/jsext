@@ -5,7 +5,7 @@ import { as } from './object.js';
 import Exception from './error/Exception.js';
 import { getMIME } from './filetype.js';
 import { extname, basename, dirname, join } from './path.js';
-import { readAsArrayBuffer } from './reader.js';
+import { readAsArray, readAsArrayBuffer } from './reader.js';
 import { platform } from './runtime.js';
 import _try from './try.js';
 import { split } from './path/util.js';
@@ -375,6 +375,8 @@ async function ensureDir(path, options = {}) {
 }
 /**
  * Reads the directory of the given path and iterates its entries.
+ *
+ * NOTE: The order of the entries is not guaranteed.
  */
 async function* readDir(target, options = {}) {
     if (typeof target === "object") {
@@ -431,6 +433,77 @@ async function* readDir(target, options = {}) {
         const dir = await getDirHandle(path, { root: options.root });
         yield* readDirHandle(dir, options);
     }
+}
+/**
+ * Recursively reads the contents of the directory and transform them into a
+ * tree structure.
+ *
+ * NOTE: Unlike {@link readDir}, the order of the entries returned by this
+ * function is guaranteed, they are ordered first by kind (directories before
+ * files), then by names alphabetically.
+ */
+async function readTree(target, options = {}) {
+    var _a, _b;
+    const entries = (await readAsArray(readDir(target, { ...options, recursive: true })));
+    const sep = ((_a = entries[0]) === null || _a === void 0 ? void 0 : _a.path.includes("\\")) ? "\\" : "/";
+    const list = entries.map(entry => ({
+        ...entry,
+        paths: entry.path.split(sep),
+    }));
+    const nodes = (function walk(list, store) {
+        // Order the entries first by kind, then by names alphabetically.
+        list = [
+            ...list.filter(e => e.kind === "directory").orderBy(e => e.name, "asc"),
+            ...list.filter(e => e.kind === "file").orderBy(e => e.name, "asc"),
+        ];
+        const nodes = [];
+        for (const entry of list) {
+            if (entry.kind === "file") {
+                nodes.push({
+                    name: entry.name,
+                    kind: entry.kind,
+                    path: entry.path,
+                    handle: entry.handle,
+                });
+                continue;
+            }
+            const paths = entry.paths;
+            const dirPath = entry.path + sep;
+            const childEntries = store.filter(e => e.path.startsWith(dirPath));
+            const directChildren = childEntries
+                .filter(e => e.paths.length === paths.length + 1);
+            if (directChildren.length) {
+                const indirectChildren = childEntries
+                    .filter(e => !directChildren.includes(e));
+                nodes.push({
+                    name: entry.name,
+                    kind: entry.kind,
+                    path: entry.path,
+                    handle: entry.handle,
+                    children: walk(directChildren, indirectChildren),
+                });
+            }
+            else {
+                nodes.push({
+                    name: entry.name,
+                    kind: entry.kind,
+                    path: entry.path,
+                    handle: entry.handle,
+                    children: [],
+                });
+            }
+        }
+        return nodes;
+    })(list.filter(entry => !entry.path.includes(sep)), list.filter(entry => entry.path.includes(sep)));
+    return {
+        name: typeof target === "object"
+            ? (target.name || "(root)")
+            : ((_b = options.root) === null || _b === void 0 ? void 0 : _b.name) || (target && basename(target) || "(root)"),
+        kind: "directory",
+        path: "",
+        handle: typeof target === "object" ? target : options.root,
+        children: nodes,
+    };
 }
 async function* readDirHandle(dir, options = {}) {
     const { base = "", recursive = false } = options;
@@ -1041,5 +1114,5 @@ async function utimes(path, atime, mtime) {
     }
 }
 
-export { EOL, chmod, copy, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, remove, rename, stat, truncate, utimes, writeFile, writeLines };
+export { EOL, chmod, copy, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };
 //# sourceMappingURL=fs.js.map

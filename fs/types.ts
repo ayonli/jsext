@@ -16,9 +16,23 @@ export type CommonOptions = {
 export interface DirEntry {
     name: string;
     kind: "file" | "directory" | "symlink";
-    /** The relative path of the entry */
+    /**
+     * The relative path of the entry. This is an empty string if the entry is
+     * the root directory.
+     */
     path: string;
-    handle?: FileSystemFileHandle | FileSystemDirectoryHandle;
+    /**
+     * The raw file system handle of the entry, only available in the browser.
+     */
+    handle?: FileSystemFileHandle | FileSystemDirectoryHandle | undefined;
+}
+
+export interface DirTree extends DirEntry {
+    /**
+     * The child nodes of the current entry. this is `undefined` if the entry is
+     * a file.
+     */
+    children?: DirTree[];
 }
 
 /**

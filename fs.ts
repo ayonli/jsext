@@ -39,14 +39,14 @@ import { text } from "./bytes.ts";
 import { isBrowserWindow, isDedicatedWorker, isDeno, isNodeLike, isSharedWorker } from "./env.ts";
 import { Exception } from "./error.ts";
 import { getMIME } from "./filetype.ts";
-import type { FileInfo, DirEntry, CommonOptions } from "./fs/types.ts";
+import type { FileInfo, DirEntry, CommonOptions, DirTree } from "./fs/types.ts";
 import { as } from "./object.ts";
 import { basename, dirname, extname, join, split } from "./path.ts";
-import { readAsArrayBuffer, toAsyncIterable } from "./reader.ts";
+import { readAsArray, readAsArrayBuffer, toAsyncIterable } from "./reader.ts";
 import { platform } from "./runtime.ts";
 import _try from "./try.ts";
 
-export type { CommonOptions, FileInfo, DirEntry };
+export type { CommonOptions, FileInfo, DirEntry, DirTree };
 
 export const EOL: "\n" | "\r\n" = (() => {
     if (isDeno) {
@@ -407,6 +407,8 @@ export async function ensureDir(path: string, options: CommonOptions & {
 
 /**
  * Reads the directory of the given path and iterates its entries.
+ * 
+ * NOTE: The order of the entries is not guaranteed.
  */
 export async function* readDir(target: string | FileSystemDirectoryHandle, options: CommonOptions & {
     /**
@@ -473,6 +475,88 @@ export async function* readDir(target: string | FileSystemDirectoryHandle, optio
         const dir = await getDirHandle(path, { root: options.root });
         yield* readDirHandle(dir, options);
     }
+}
+
+/**
+ * Recursively reads the contents of the directory and transform them into a
+ * tree structure.
+ * 
+ * NOTE: Unlike {@link readDir}, the order of the entries returned by this
+ * function is guaranteed, they are ordered first by kind (directories before
+ * files), then by names alphabetically.
+ */
+export async function readTree(
+    target: string | FileSystemDirectoryHandle,
+    options: CommonOptions = {}
+): Promise<DirTree> {
+    const entries = (await readAsArray(readDir(target, { ...options, recursive: true })));
+    const sep = entries[0]?.path.includes("\\") ? "\\" : "/";
+    type CustomDirEntry = DirEntry & { paths: string[]; };
+    const list: CustomDirEntry[] = entries.map(entry => ({
+        ...entry,
+        paths: entry.path.split(sep),
+    }));
+
+    const nodes = (function walk(list: CustomDirEntry[], store: CustomDirEntry[]): DirTree[] {
+        // Order the entries first by kind, then by names alphabetically.
+        list = [
+            ...list.filter(e => e.kind === "directory").orderBy(e => e.name, "asc"),
+            ...list.filter(e => e.kind === "file").orderBy(e => e.name, "asc"),
+        ];
+
+        const nodes: DirTree[] = [];
+
+        for (const entry of list) {
+            if (entry.kind === "file") {
+                nodes.push({
+                    name: entry.name,
+                    kind: entry.kind,
+                    path: entry.path,
+                    handle: entry.handle,
+                });
+                continue;
+            }
+
+            const paths = entry.paths;
+            const dirPath = entry.path + sep;
+            const childEntries = store.filter(e => e.path.startsWith(dirPath));
+            const directChildren = childEntries
+                .filter(e => e.paths.length === paths.length + 1);
+
+            if (directChildren.length) {
+                const indirectChildren = childEntries
+                    .filter(e => !directChildren.includes(e));
+                nodes.push({
+                    name: entry.name,
+                    kind: entry.kind,
+                    path: entry.path,
+                    handle: entry.handle,
+                    children: walk(directChildren, indirectChildren),
+                });
+            } else {
+                nodes.push({
+                    name: entry.name,
+                    kind: entry.kind,
+                    path: entry.path,
+                    handle: entry.handle,
+                    children: [],
+                });
+            }
+        }
+
+        return nodes;
+    })(list.filter(entry => !entry.path.includes(sep)),
+        list.filter(entry => entry.path.includes(sep)));
+
+    return {
+        name: typeof target === "object"
+            ? (target.name || "(root)")
+            : options.root?.name || (target && basename(target) || "(root)"),
+        kind: "directory",
+        path: "",
+        handle: typeof target === "object" ? target : options.root,
+        children: nodes,
+    } as DirTree;
 }
 
 async function* readDirHandle(dir: FileSystemDirectoryHandle, options: {
