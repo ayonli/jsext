@@ -3,7 +3,8 @@ import fs from "node:fs/promises";
 import { isBun, isDeno } from "./env.ts";
 import jsext from "./index.ts";
 import { readAsArray } from "./reader.ts";
-import { sep } from "./path.ts";
+import { platform } from "./runtime.ts";
+import { join, resolve, sep } from "./path.ts";
 import bytes, { equals } from "./bytes.ts";
 import {
     EOL,
@@ -119,25 +120,28 @@ describe("fs", () => {
         });
 
         it("symlink", jsext.func(async (defer) => {
+            const src = resolve("./fs");
+            const dest = resolve("./fs-ln");
+
             if (isDeno) {
-                await Deno.symlink("./fs", "./fs-tmp", { type: "dir" });
+                await Deno.symlink(src, dest, { type: "dir" });
             } else {
-                await fs.symlink("./fs", "./fs-tmp", "dir");
+                await fs.symlink(src, dest, "dir");
             }
             defer(async () => {
                 if (isDeno) {
-                    await Deno.remove("./fs-tmp");
+                    await Deno.remove(dest);
                 } else {
-                    fs.unlink("./fs-tmp");
+                    fs.unlink(dest);
                 }
             });
 
-            const stat1 = await stat("./fs-tmp");
+            const stat1 = await stat(dest);
 
             if (isDeno) {
-                const _stat = await Deno.lstat("./fs-tmp");
+                const _stat = await Deno.lstat(dest);
                 deepStrictEqual(stat1, {
-                    name: "fs-tmp",
+                    name: "fs-ln",
                     kind: "symlink",
                     size: _stat.size,
                     type: "",
@@ -150,9 +154,9 @@ describe("fs", () => {
                     isSocket: false,
                 });
             } else {
-                const _stat = await fs.lstat("./fs-tmp");
+                const _stat = await fs.lstat(dest);
                 deepStrictEqual(stat1, {
-                    name: "fs-tmp",
+                    name: "fs-ln",
                     kind: "symlink",
                     size: _stat.size,
                     type: "",
@@ -166,12 +170,12 @@ describe("fs", () => {
                 });
             }
 
-            const stat2 = await stat("./fs-tmp", { followSymlink: true });
+            const stat2 = await stat(dest, { followSymlink: true });
 
             if (isDeno) {
-                const _stat = await Deno.stat("./fs-tmp");
+                const _stat = await Deno.stat(dest);
                 deepStrictEqual(stat2, {
-                    name: "fs-tmp",
+                    name: "fs-ln",
                     kind: "directory",
                     size: _stat.size,
                     type: "",
@@ -184,9 +188,9 @@ describe("fs", () => {
                     isSocket: false,
                 });
             } else {
-                const _stat = await fs.stat("./fs-tmp");
+                const _stat = await fs.stat(dest);
                 deepStrictEqual(stat2, {
-                    name: "fs-tmp",
+                    name: "fs-ln",
                     kind: "directory",
                     size: _stat.size,
                     type: "",
@@ -221,7 +225,11 @@ describe("fs", () => {
             strictEqual(_stat.kind, "directory");
         }));
 
-        it("mode", jsext.func(async (defer) => {
+        it("mode", jsext.func(async function (defer) {
+            if (platform() === "windows") {
+                this.skip();
+            }
+
             await mkdir("./tmp", { mode: 0o755 });
             defer(() => fs.rmdir("./tmp", { recursive: true }));
 
@@ -450,7 +458,11 @@ describe("fs", () => {
             strictEqual(text, output + output);
         });
 
-        it("mode", jsext.func(async (defer) => {
+        it("mode", jsext.func(async function (defer) {
+            if (platform() === "windows") {
+                this.skip();
+            }
+
             const path = "./tmp1.txt";
             await writeFile(path, "Hello, world!", { mode: 0o755 });
             defer(() => remove(path));
@@ -581,9 +593,9 @@ describe("fs", () => {
             const srcEntries = await readAsArray(readDir(src, { recursive: true }));
             deepStrictEqual(srcEntries, [
                 { name: "a", kind: "directory", path: "a" },
-                { name: "b", kind: "directory", path: "a/b" },
-                { name: "c", kind: "directory", path: "a/b/c" },
-                { name: "tmp.txt", kind: "file", path: "a/b/c/tmp.txt" },
+                { name: "b", kind: "directory", path: join("a", "b") },
+                { name: "c", kind: "directory", path: join("a", "b", "c") },
+                { name: "tmp.txt", kind: "file", path: join("a", "b", "c", "tmp.txt") },
             ]);
 
             await copy(src, dest);
@@ -609,8 +621,8 @@ describe("fs", () => {
         }));
 
         it("symbolic link", jsext.func(async (defer) => {
-            const src = "./tmp";
-            const dest = "./tmp1";
+            const src = resolve("./tmp");
+            const dest = resolve("./tmp1");
 
             await mkdir(src + "/a/b/c", { recursive: true });
             await writeFile(src + "/a/b/c/tmp.txt", "Hello, world!");
