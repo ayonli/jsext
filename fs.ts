@@ -41,7 +41,7 @@ import { Exception } from "./error.ts";
 import { getMIME } from "./filetype.ts";
 import type { FileInfo, DirEntry, CommonOptions, DirTree } from "./fs/types.ts";
 import { as } from "./object.ts";
-import { basename, dirname, extname, join, split } from "./path.ts";
+import { basename, dirname, extname, join, split, startsWith } from "./path.ts";
 import { readAsArray, readAsArrayBuffer, toAsyncIterable } from "./reader.ts";
 import { platform } from "./runtime.ts";
 import _try from "./try.ts";
@@ -490,11 +490,10 @@ export async function readTree(
     options: CommonOptions = {}
 ): Promise<DirTree> {
     const entries = (await readAsArray(readDir(target, { ...options, recursive: true })));
-    const sep = entries[0]?.path.includes("\\") ? "\\" : "/";
     type CustomDirEntry = DirEntry & { paths: string[]; };
     const list: CustomDirEntry[] = entries.map(entry => ({
         ...entry,
-        paths: entry.path.split(sep),
+        paths: split(entry.path),
     }));
 
     const nodes = (function walk(list: CustomDirEntry[], store: CustomDirEntry[]): DirTree[] {
@@ -518,8 +517,8 @@ export async function readTree(
             }
 
             const paths = entry.paths;
-            const dirPath = entry.path + sep;
-            const childEntries = store.filter(e => e.path.startsWith(dirPath));
+            const dirPath = entry.path;
+            const childEntries = store.filter(e => startsWith(e.path, dirPath));
             const directChildren = childEntries
                 .filter(e => e.paths.length === paths.length + 1);
 
@@ -545,8 +544,8 @@ export async function readTree(
         }
 
         return nodes;
-    })(list.filter(entry => !entry.path.includes(sep)),
-        list.filter(entry => entry.path.includes(sep)));
+    })(list.filter(entry => entry.paths.length === 1),
+        list.filter(entry => entry.paths.length > 1));
 
     return {
         name: typeof target === "object"
