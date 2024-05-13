@@ -6,6 +6,29 @@
  * system via `window.showOpenFilePicker()` and `window.showDirectoryPicker()`.
  * 
  * The module is experimental and may not work in some browsers.
+ * 
+ * **Errors:**
+ * 
+ * When a file system operation fails, the module throws an `Exception` object
+ * with the following names:
+ * 
+ * - `NotFoundError`: The file or directory does not exist.
+ * - `NotAllowedError`: The operation is not allowed, such as blocked by the
+ *   permission system.
+ * - `AlreadyExistsError`: The file or directory already exists.
+ * - `IsDirectoryError`: The path is a directory, not a file.
+ * - `NotDirectoryError`: The path is a file, not a directory.
+ * - `InvalidOperationError`: The operation is not supported, such as trying to
+ *   copy a directory to a file.
+ * - `BusyError`: The file is busy, such as being locked by another program.
+ * - `InterruptedError`: The operation is interrupted by the underlying file
+ *   system.
+ * - `FileTooLargeError`: The file is too large, or the file system doesn't have
+ *   enough space to store the new content.
+ * - `FilesystemLoopError`:  Too many symbolic links were encountered when
+ *   resolving the filename.
+ * 
+ * Other errors may be thrown by the runtime, such as `TypeError`.
  * @experimental
  * @module
  */
@@ -13,8 +36,10 @@
 import { abortable } from "./async.ts";
 import { text } from "./bytes.ts";
 import { isBrowserWindow, isDedicatedWorker, isDeno, isNodeLike, isSharedWorker } from "./env.ts";
+import { Exception } from "./error.ts";
 import { getMIME } from "./filetype.ts";
 import type { FileInfo, DirEntry, CommonOptions } from "./fs/types.ts";
+import { as } from "./object.ts";
 import { basename, dirname, extname, join, split } from "./path.ts";
 import { readAsArrayBuffer, toAsyncIterable } from "./reader.ts";
 import { platform } from "./runtime.ts";
@@ -32,6 +57,110 @@ export const EOL: "\n" | "\r\n" = (() => {
     }
 })();
 
+function getErrorName(err: Error): string {
+    if (err.constructor === Error) {
+        return err.constructor.name;
+    } else {
+        return err.name;
+    }
+}
+
+/**
+ * Wraps a raw file system error to a predefined error by this module.
+ * 
+ * @param type Used for `FileSystemHandle` operations.
+ */
+function wrapFsError(
+    err: unknown,
+    type: "file" | "directory" | undefined = undefined
+): Exception | Error {
+    if (err instanceof Error && !(err instanceof Exception) && !(err instanceof TypeError)) {
+        const errName = getErrorName(err);
+        const errCode = (err as any).code as string | number | undefined;
+
+        if (errName === "NotFoundError"
+            || errName === "NotFound"
+            || errCode === "ENOENT"
+            || errCode === "ENOTFOUND"
+        ) {
+            return new Exception(err.message, { name: "NotFoundError", code: 404, cause: err });
+        } else if (errName === "NotAllowedError"
+            || errName === "PermissionDenied"
+            || errName === "InvalidStateError"
+            || errName === "SecurityError"
+            || errName === "EACCES"
+            || errCode === "EPERM"
+            || errCode === "ERR_ACCESS_DENIED"
+        ) {
+            return new Exception(err.message, { name: "NotAllowedError", code: 403, cause: err });
+        } else if (errName === "AlreadyExists"
+            || errCode === "EEXIST"
+            || errCode === "ERR_FS_CP_EEXIST"
+        ) {
+            return new Exception(err.message, { name: "AlreadyExistsError", code: 409, cause: err });
+        } else if ((errName === "TypeMismatchError" && type === "file")
+            || errName === "IsADirectory"
+            || errCode === "EISDIR"
+            || errCode === "ERR_FS_EISDIR"
+        ) {
+            return new Exception(err.message, { name: "IsDirectoryError", code: 415, cause: err });
+        } else if ((errName === "TypeMismatchError" && type === "directory")
+            || errName === "NotADirectory"
+            || errCode === "ENOTDIR"
+        ) {
+            return new Exception(err.message, { name: "NotDirectoryError", code: 415, cause: err });
+        } else if (errName === "InvalidModificationError"
+            || errName === "NotSupported"
+            || errCode === "ENOTEMPTY"
+            || errCode === "ERR_FS_CP_EINVAL"
+            || errCode === "ERR_FS_CP_FIFO_PIPE"
+            || errCode === "ERR_FS_CP_DIR_TO_NON_DIR"
+            || errCode === "ERR_FS_CP_NON_DIR_TO_DIR"
+            || errCode === "ERR_FS_CP_SOCKET"
+            || errCode === "ERR_FS_CP_SYMLINK_TO_SUBDIRECTORY"
+            || errCode === "ERR_FS_CP_UNKNOWN"
+            || errCode === "ERR_FS_INVALID_SYMLINK_TYPE"
+        ) {
+            return new Exception(err.message, { name: "InvalidOperationError", code: 405, cause: err });
+        } else if (errName === "NoModificationAllowedError"
+            || errName === "Busy"
+            || errName === "TimedOut"
+            || errCode === "ERR_DIR_CONCURRENT_OPERATION"
+        ) {
+            return new Exception(errName, { name: "BusyError", code: 409, cause: err });
+        } else if (errName === "Interrupted" || errCode === "ERR_DIR_CLOSED") {
+            return new Exception(err.message, { name: "InterruptedError", code: 409, cause: err });
+        } else if (errName === "QuotaExceededError"
+            || errCode === "ERR_FS_FILE_TOO_LARGE"
+        ) {
+            return new Exception(err.message, { name: "FileTooLargeError", code: 413, cause: err });
+        } else if (errName === "FilesystemLoop") {
+            return new Exception(err.message, { name: "FilesystemLoopError", code: 508, cause: err });
+        } else {
+            console.log(err.name);
+            return err;
+        }
+    } else if (err instanceof Error) {
+        return err;
+    } else if (typeof err === "string") {
+        return new Exception(err, { code: 500, cause: err });
+    } else {
+        return new Exception("Unknown error", { code: 500, cause: err });
+    }
+}
+
+/**
+ * Wraps a raw file system operation so that when any error occurs, the error is
+ * wrapped to a predefined error by this module.
+ * 
+ * @param type Only used for `FileSystemHandle` operations.
+ */
+function rawOp<T>(op: Promise<T>, type: "file" | "directory" | undefined = undefined): Promise<T> {
+    return op.catch((err) => {
+        throw wrapFsError(err, type);
+    });
+}
+
 async function getDirHandle(path: string, options: CommonOptions & {
     /** Create the directory if not exist. */
     create?: boolean;
@@ -44,14 +173,14 @@ async function getDirHandle(path: string, options: CommonOptions & {
 
     const { create = false, recursive = false } = options;
     const paths = split(path.stripStart("/")).filter(p => p !== ".");
-    const root = options.root ?? await navigator.storage.getDirectory();
+    const root = options.root ?? await rawOp(navigator.storage.getDirectory(), "directory");
     let dir = root;
 
     for (let i = 0; i < paths.length; i++) {
         const _path = paths[i]!;
-        dir = await dir.getDirectoryHandle(_path, {
+        dir = await rawOp(dir.getDirectoryHandle(_path, {
             create: create && (recursive || (i === paths.length - 1)),
-        });
+        }), "directory");
     }
 
     return dir;
@@ -60,16 +189,21 @@ async function getDirHandle(path: string, options: CommonOptions & {
 /**
  * Checks if the given path exists.
  * 
- * The result of this function may be inaccurate if the operation is rejected
- * by the permission system of the runtime, or the path is not accessible, in
- * which case the function will return `false`.
+ * This function may throw an error if the path is invalid or the operation is
+ * not allowed.
  */
 export async function exists(path: string, options: CommonOptions = {}): Promise<boolean> {
     try {
         await stat(path, options);
         return true;
-    } catch {
-        return false;
+    } catch (err) {
+        if (err instanceof Exception) {
+            if (err.name === "NotFoundError") {
+                return false;
+            }
+        }
+
+        throw err;
     }
 }
 
@@ -84,7 +218,7 @@ export async function stat(
 ): Promise<FileInfo> {
     if (typeof target === "object") {
         if (target.kind === "file") {
-            const info = await target.getFile();
+            const info = await rawOp(target.getFile(), "file");
             return {
                 name: target.name,
                 kind: "file",
@@ -118,7 +252,7 @@ export async function stat(
     const path = target;
 
     if (isDeno) {
-        const stat = await (options.followSymlink ? Deno.stat(path) : Deno.lstat(path));
+        const stat = await rawOp(options.followSymlink ? Deno.stat(path) : Deno.lstat(path));
         const kind = stat.isDirectory
             ? "directory"
             : stat.isSymlink
@@ -140,7 +274,7 @@ export async function stat(
         };
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
-        const stat = await (options.followSymlink ? fs.stat(path) : fs.lstat(path));
+        const stat = await rawOp(options.followSymlink ? fs.stat(path) : fs.lstat(path));
         const kind = stat.isDirectory()
             ? "directory"
             : stat.isSymbolicLink()
@@ -164,10 +298,10 @@ export async function stat(
         const parent = dirname(path);
         const name = basename(path);
         const dir = await getDirHandle(parent, options);
-        const [err, file] = await _try(dir.getFileHandle(name));
+        const [err, file] = await _try(rawOp(dir.getFileHandle(name), "file"));
 
         if (file) {
-            const info = await file.getFile();
+            const info = await rawOp(file.getFile(), "file");
             return {
                 name,
                 kind: "file",
@@ -181,7 +315,7 @@ export async function stat(
                 isFIFO: false,
                 isSocket: false,
             };
-        } else if ((err as DOMException).name === "TypeMismatchError") {
+        } else if (as(err, Exception)?.name === "IsDirectoryError") {
             return {
                 name,
                 kind: "directory",
@@ -220,14 +354,47 @@ export async function mkdir(path: string, options: CommonOptions & {
     mode?: number;
 } = {}): Promise<void> {
     if (isDeno) {
-        await Deno.mkdir(path, options);
+        await rawOp(Deno.mkdir(path, options));
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
-        await fs.mkdir(path, options);
+        await rawOp(fs.mkdir(path, options));
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
+        if (await exists(path, { root: options.root })) {
+            throw new Exception(`File or folder already exists, mkdir '${path}'`, {
+                name: "AlreadyExistsError",
+                code: 409,
+            });
+        }
+
         await getDirHandle(path, { ...options, create: true });
     } else {
         throw new Error("Unsupported runtime");
+    }
+}
+
+/**
+ * Ensures the directory exists, creating it (and any parent directory) if not.
+ */
+export async function ensureDir(path: string, options: CommonOptions & {
+    /**
+     * The permission mode of the directory, only used when creating the
+     * directory.
+     * @default 0o777
+     */
+    mode?: number;
+} = {}): Promise<void> {
+    if (await exists(path, options)) {
+        return;
+    }
+
+    try {
+        await mkdir(path, { ...options, recursive: true });
+    } catch (err) {
+        if (as(err, Exception)?.name === "AlreadyExistsError") {
+            return;
+        } else {
+            throw err;
+        }
     }
 }
 
@@ -249,29 +416,33 @@ export async function* readDir(target: string | FileSystemDirectoryHandle, optio
 
     if (isDeno) {
         yield* (async function* read(path: string, base: string): AsyncIterableIterator<DirEntry> {
-            for await (const entry of Deno.readDir(path)) {
-                const _entry: DirEntry = {
-                    name: entry.name,
-                    kind: entry.isDirectory
-                        ? "directory"
-                        : entry.isSymlink
-                            ? "symlink"
-                            : "file",
-                    path: join(base, entry.name),
-                };
+            try {
+                for await (const entry of Deno.readDir(path)) {
+                    const _entry: DirEntry = {
+                        name: entry.name,
+                        kind: entry.isDirectory
+                            ? "directory"
+                            : entry.isSymlink
+                                ? "symlink"
+                                : "file",
+                        path: join(base, entry.name),
+                    };
 
-                yield _entry;
+                    yield _entry;
 
-                if (options?.recursive && entry.isDirectory) {
-                    yield* read(join(path, entry.name), _entry.path);
+                    if (options?.recursive && entry.isDirectory) {
+                        yield* read(join(path, entry.name), _entry.path);
+                    }
                 }
+            } catch (err) {
+                throw wrapFsError(err);
             }
         })(path, "");
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
 
         yield* (async function* read(path: string, base: string): AsyncIterableIterator<DirEntry> {
-            const entries = await fs.readdir(path, { withFileTypes: true });
+            const entries = await rawOp(fs.readdir(path, { withFileTypes: true }));
 
             for (const entry of entries) {
                 const _entry: DirEntry = {
@@ -326,7 +497,7 @@ async function* readDirHandle(dir: FileSystemDirectoryHandle, options: {
 async function readFileHandle(handle: FileSystemFileHandle, options: {
     signal?: AbortSignal | undefined;
 }): Promise<Uint8Array> {
-    const file = await handle.getFile();
+    const file = await rawOp(handle.getFile(), "file");
     const arr = new Uint8Array(file.size);
     let offset = 0;
     let reader = toAsyncIterable(file.stream());
@@ -356,16 +527,16 @@ export async function readFile(target: string | FileSystemFileHandle, options: C
     const filename = target;
 
     if (isDeno) {
-        return await Deno.readFile(filename, options);
+        return await rawOp(Deno.readFile(filename, options));
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
-        const buffer = await fs.readFile(filename, options);
+        const buffer = await rawOp(fs.readFile(filename, options));
         return new Uint8Array(buffer.buffer, 0, buffer.byteLength);
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         const path = dirname(filename);
         const name = basename(filename);
         const dir = await getDirHandle(path, { root: options.root });
-        const handle = await dir.getFileHandle(name);
+        const handle = await rawOp(dir.getFileHandle(name), "file");
 
         return await readFileHandle(handle, options);
     } else {
@@ -386,13 +557,13 @@ export async function readFileAsText(target: string | FileSystemFileHandle, opti
     const filename = target;
 
     if (isDeno) {
-        return await Deno.readTextFile(filename, options);
+        return await rawOp(Deno.readTextFile(filename, options));
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
-        return await fs.readFile(filename, {
+        return await rawOp(fs.readFile(filename, {
             encoding: "utf-8",
             signal: options.signal,
-        });
+        }));
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         return text(await readFile(filename, options));
     } else {
@@ -429,13 +600,13 @@ export async function writeFile(
 
     if (isDeno) {
         if (typeof data === "string") {
-            return await Deno.writeTextFile(filename, data, options);
+            return await rawOp(Deno.writeTextFile(filename, data, options));
         } else if (data instanceof Blob) {
-            return await Deno.writeFile(filename, data.stream(), options);
+            return await rawOp(Deno.writeFile(filename, data.stream(), options));
         } else if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
-            return await Deno.writeFile(filename, new Uint8Array(data), options);
+            return await rawOp(Deno.writeFile(filename, new Uint8Array(data), options));
         } else {
-            return await Deno.writeFile(filename, data as any, options);
+            return await rawOp(Deno.writeFile(filename, data as any, options));
         }
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
@@ -454,15 +625,15 @@ export async function writeFile(
             throw new Error("Unsupported data type");
         }
 
-        return await fs.writeFile(filename, _data, {
+        return await rawOp(fs.writeFile(filename, _data, {
             flag: options?.append ? "a" : "w",
             ...rest,
-        });
+        }));
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         const path = dirname(filename);
         const name = basename(filename);
         const dir = await getDirHandle(path, { root: options.root });
-        const handle = await dir.getFileHandle(name, { create: true });
+        const handle = await rawOp(dir.getFileHandle(name, { create: true }), "file");
 
         return await writeFileHandle(handle, data, options);
     } else {
@@ -478,12 +649,12 @@ async function writeFileHandle(
         signal?: AbortSignal;
     }
 ): Promise<void> {
-    const writer = await handle.createWritable({
+    const writer = await rawOp(handle.createWritable({
         keepExistingData: options?.append ?? false,
-    });
+    }), "file");
 
     if (options.append) {
-        const file = await handle.getFile();
+        const file = await rawOp(handle.getFile(), "file");
         file.size && writer.seek(file.size);
     }
 
@@ -499,13 +670,17 @@ async function writeFileHandle(
         }
     }
 
-    if (data instanceof Blob) {
-        await data.stream().pipeTo(writer);
-    } else if (data instanceof ReadableStream) {
-        await data.pipeTo(writer);
-    } else {
-        await writer.write(data);
-        await writer.close();
+    try {
+        if (data instanceof Blob) {
+            await data.stream().pipeTo(writer);
+        } else if (data instanceof ReadableStream) {
+            await data.pipeTo(writer);
+        } else {
+            await writer.write(data);
+            await writer.close();
+        }
+    } catch (err) {
+        throw wrapFsError(err, "file");
     }
 }
 
@@ -519,28 +694,37 @@ export async function truncate(
     options: CommonOptions = {}
 ): Promise<void> {
     if (typeof target === "object") {
-        const writer = await target.createWritable({ keepExistingData: true });
-        await writer.truncate(size);
-        await writer.close();
-        return;
+        try {
+            const writer = await target.createWritable({ keepExistingData: true });
+            await writer.truncate(size);
+            await writer.close();
+            return;
+        } catch (err) {
+            throw wrapFsError(err, "file");
+        }
     }
 
     const filename = target;
 
     if (isDeno) {
-        await Deno.truncate(filename, size);
+        await rawOp(Deno.truncate(filename, size));
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
-        await fs.truncate(filename, size);
+        await rawOp(fs.truncate(filename, size));
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         const path = dirname(filename);
         const name = basename(filename);
         const dir = await getDirHandle(path, { root: options.root });
-        const handle = await dir.getFileHandle(name);
-        const writer = await handle.createWritable({ keepExistingData: true });
 
-        await writer.truncate(size);
-        await writer.close();
+        try {
+            const handle = await dir.getFileHandle(name);
+            const writer = await handle.createWritable({ keepExistingData: true });
+
+            await writer.truncate(size);
+            await writer.close();
+        } catch (err) {
+            throw wrapFsError(err, "file");
+        }
     } else {
         throw new Error("Unsupported runtime");
     }
@@ -557,26 +741,30 @@ export async function remove(path: string, options: CommonOptions & {
     recursive?: boolean;
 } = {}): Promise<void> {
     if (isDeno) {
-        await Deno.remove(path, options);
+        await rawOp(Deno.remove(path, options));
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
 
         if (typeof fs.rm === "function") {
-            await fs.rm(path, options);
+            await rawOp(fs.rm(path, options));
         } else {
-            const _stat = await fs.stat(path);
+            try {
+                const _stat = await fs.stat(path);
 
-            if (_stat.isDirectory()) {
-                await fs.rmdir(path, options);
-            } else {
-                await fs.unlink(path);
+                if (_stat.isDirectory()) {
+                    await fs.rmdir(path, options);
+                } else {
+                    await fs.unlink(path);
+                }
+            } catch (err) {
+                throw wrapFsError(err);
             }
         }
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         const parent = dirname(path);
         const name = basename(path);
         const dir = await getDirHandle(parent, { root: options.root });
-        await dir.removeEntry(name, options);
+        await rawOp(dir.removeEntry(name, options), "directory");
     } else {
         throw new Error("Unsupported runtime");
     }
@@ -591,10 +779,10 @@ export async function rename(
     options: CommonOptions = {}
 ): Promise<void> {
     if (isDeno) {
-        await Deno.rename(oldPath, newPath);
+        await rawOp(Deno.rename(oldPath, newPath));
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
-        await fs.rename(oldPath, newPath);
+        await rawOp(fs.rename(oldPath, newPath));
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
         return await copyInBrowser(oldPath, newPath, {
             root: options.root,
@@ -652,14 +840,14 @@ export async function copy(
                     const _newPath = join(newPath, entry.path);
 
                     if (entry.kind === "directory") {
-                        await Deno.mkdir(_newPath);
+                        await rawOp(Deno.mkdir(_newPath));
                     } else {
-                        await Deno.copyFile(_oldPath, _newPath);
+                        await rawOp(Deno.copyFile(_oldPath, _newPath));
                     }
                 }
             } else {
                 const _newPath = isDirDest ? join(newPath, basename(oldPath)) : newPath;
-                await Deno.copyFile(oldPath, _newPath);
+                await rawOp(Deno.copyFile(oldPath, _newPath));
             }
         } else {
             const fs = await import("fs/promises");
@@ -672,14 +860,14 @@ export async function copy(
                     const _newPath = join(newPath, entry.path);
 
                     if (entry.kind === "directory") {
-                        await fs.mkdir(_newPath);
+                        await rawOp(fs.mkdir(_newPath));
                     } else {
-                        await fs.copyFile(_oldPath, _newPath);
+                        await rawOp(fs.copyFile(_oldPath, _newPath));
                     }
                 }
             } else {
                 const _newPath = isDirDest ? join(newPath, basename(oldPath)) : newPath;
-                await fs.copyFile(oldPath, _newPath);
+                await rawOp(fs.copyFile(oldPath, _newPath));
             }
         }
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
@@ -698,40 +886,49 @@ async function copyInBrowser(oldPath: string, newPath: string, options: CommonOp
     const oldName = basename(oldPath);
 
     let oldDir = await getDirHandle(oldParent, { root: options.root });
-    const [oldErr, oldFile] = await _try(oldDir.getFileHandle(oldName));
+    const [oldErr, oldFile] = await _try(rawOp(oldDir.getFileHandle(oldName), "file"));
 
     if (oldFile) {
         const newParent = dirname(newPath);
         const newName = basename(newPath);
         let newDir = await getDirHandle(newParent, { root: options.root });
-        const [newErr, newFile] = await _try(newDir.getFileHandle(newName, {
+        const [newErr, newFile] = await _try(rawOp(newDir.getFileHandle(newName, {
             create: true,
-        }));
+        }), "file"));
 
         if (newFile) {
-            const src = (await oldFile.getFile()).stream();
-            const dest = await newFile.createWritable();
+            try {
+                const src = (await oldFile.getFile()).stream();
+                const dest = await newFile.createWritable();
 
-            await src.pipeTo(dest);
+                await src.pipeTo(dest);
+            } catch (err) {
+                throw wrapFsError(err, "file");
+            }
 
             if (options.move) {
-                await oldDir.removeEntry(oldName);
+                await rawOp(oldDir.removeEntry(oldName), "directory");
             }
-        } else if ((newErr as DOMException).name === "TypeMismatchError" && !options.move) {
+        } else if (as(newErr, Exception)?.name === "IsDirectoryError" && !options.move) {
             // The destination is a directory, copy the file into the new path
             // with the old name.
-            newDir = await newDir.getDirectoryHandle(newName);
-            const newFile = await newDir.getFileHandle(oldName, { create: true });
-            const src = (await oldFile.getFile()).stream();
-            const dest = await newFile.createWritable();
+            newDir = await rawOp(newDir.getDirectoryHandle(newName), "directory");
 
-            await src.pipeTo(dest);
+            try {
+                const newFile = await newDir.getFileHandle(oldName, { create: true });
+                const src = (await oldFile.getFile()).stream();
+                const dest = await newFile.createWritable();
+
+                await src.pipeTo(dest);
+            } catch (err) {
+                throw wrapFsError(err, "file");
+            }
         } else {
             throw newErr;
         }
-    } else if ((oldErr as DOMException).name === "TypeMismatchError") {
+    } else if (as(oldErr, Exception)?.name === "IsDirectoryError") {
         const parent = oldDir;
-        oldDir = await oldDir.getDirectoryHandle(oldName);
+        oldDir = await rawOp(oldDir.getDirectoryHandle(oldName), "directory");
         const newDir = await getDirHandle(newPath, { root: options.root, create: true });
 
         await (async function copyDir(
@@ -742,25 +939,29 @@ async function copyInBrowser(oldPath: string, newPath: string, options: CommonOp
 
             for await (const [_, entry] of entries) {
                 if (entry.kind === "file") {
-                    const oldFile = await (entry as FileSystemFileHandle).getFile();
-                    const newFile = await newDir.getFileHandle(entry.name, {
-                        create: true,
-                    });
-                    const reader = oldFile.stream();
-                    const writer = await newFile.createWritable();
+                    try {
+                        const oldFile = await (entry as FileSystemFileHandle).getFile();
+                        const newFile = await newDir.getFileHandle(entry.name, {
+                            create: true,
+                        });
+                        const reader = oldFile.stream();
+                        const writer = await newFile.createWritable();
 
-                    await reader.pipeTo(writer);
+                        await reader.pipeTo(writer);
+                    } catch (err) {
+                        throw wrapFsError(err, "file");
+                    }
                 } else {
-                    const newSubDir = await newDir.getDirectoryHandle(entry.name, {
+                    const newSubDir = await rawOp(newDir.getDirectoryHandle(entry.name, {
                         create: true,
-                    });
+                    }), "directory");
                     await copyDir(entry as FileSystemDirectoryHandle, newSubDir);
                 }
             }
         })(oldDir, newDir);
 
         if (options.move) {
-            await parent.removeEntry(oldName, { recursive: true });
+            await rawOp(parent.removeEntry(oldName, { recursive: true }), "directory");
         }
     } else {
         throw oldErr;
@@ -780,14 +981,14 @@ export async function link(src: string, dest: string, options: {
         if (options.symbolic) {
             if (platform() === "windows") {
                 const _stat = await stat(src);
-                await Deno.symlink(src, dest, {
+                await rawOp(Deno.symlink(src, dest, {
                     type: _stat.kind === "directory" ? "dir" : "file",
-                });
+                }));
             } else {
-                await Deno.symlink(src, dest);
+                await rawOp(Deno.symlink(src, dest));
             }
         } else {
-            await Deno.link(src, dest);
+            await rawOp(Deno.link(src, dest));
         }
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
@@ -795,12 +996,12 @@ export async function link(src: string, dest: string, options: {
         if (options.symbolic) {
             if (platform() === "windows") {
                 const _stat = await stat(src);
-                await fs.symlink(src, dest, _stat.kind === "directory" ? "dir" : "file");
+                await rawOp(fs.symlink(src, dest, _stat.kind === "directory" ? "dir" : "file"));
             } else {
-                await fs.symlink(src, dest);
+                await rawOp(fs.symlink(src, dest));
             }
         } else {
-            await fs.link(src, dest);
+            await rawOp(fs.link(src, dest));
         }
     } else {
         throw new Error("Unsupported runtime");
@@ -814,10 +1015,10 @@ export async function link(src: string, dest: string, options: {
  */
 export async function readLink(path: string): Promise<string> {
     if (isDeno) {
-        return await Deno.readLink(path);
+        return await rawOp(Deno.readLink(path));
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
-        return await fs.readlink(path);
+        return await rawOp(fs.readlink(path));
     } else {
         throw new Error("Unsupported runtime");
     }

@@ -9,6 +9,7 @@ import bytes, { equals } from "./bytes.ts";
 import {
     EOL,
     copy,
+    ensureDir,
     exists,
     link,
     mkdir,
@@ -238,6 +239,44 @@ describe("fs", () => {
                 strictEqual((_stat.mode ?? 0) & 0o755, 0o755);
             } else {
                 const _stat = await fs.stat("./tmp");
+                strictEqual(_stat.mode & 0o755, 0o755);
+            }
+        }));
+    });
+
+    describe("ensureDir", () => {
+        it("ignore", jsext.func(async (defer) => {
+            const path = "./tmp/a/b/c";
+            await mkdir(path, { recursive: true });
+            defer(() => remove("./tmp", { recursive: true }));
+
+            await ensureDir(path);
+        }));
+
+        it("create", jsext.func(async (defer) => {
+            const path = "./tmp/a/b/c";
+            await ensureDir(path);
+            defer(() => remove("./tmp", { recursive: true }));
+
+            const _stat = await stat(path);
+            strictEqual(_stat.name, "c");
+            strictEqual(_stat.kind, "directory");
+        }));
+
+        it("mode", jsext.func(async function (defer) {
+            if (platform() === "windows") {
+                this.skip();
+            }
+
+            const path = "./tmp/a/b/c";
+            await ensureDir(path, { mode: 0o755 });
+            defer(() => remove("./tmp", { recursive: true }));
+
+            if (isDeno) {
+                const _stat = await Deno.stat(path);
+                strictEqual((_stat.mode ?? 0) & 0o755, 0o755);
+            } else {
+                const _stat = await fs.stat(path);
                 strictEqual(_stat.mode & 0o755, 0o755);
             }
         }));

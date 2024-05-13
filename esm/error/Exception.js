@@ -1,3 +1,7 @@
+/**
+ * The universal exception class, which can be used to represent any kind of error.
+ * It's similar to the `DOMException`, but for any JavaScript environment.
+ */
 class Exception extends Error {
     constructor(message, options = 0) {
         super(message);
