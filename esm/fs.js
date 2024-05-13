@@ -851,12 +851,12 @@ async function rename(oldPath, newPath, options = {}) {
  * NOTE: If the old path is a file and the new path is a directory, the file
  * will be copied into the new directory with the old name.
  *
- * NOTE: In Unix/Linux systems, when using the `cp` command with a path ending
- * in a slash, the command will copy the directory itself into the new path if
- * the new path already exists. This function does not have this behavior, it
- * does not distinguish between a path with a trailing slash and a path without
- * it. So when copying a directory, this function always copy its contents to
- * the new path, whether the new path already exists or not.
+ * NOTE: In Unix/Linux systems, when using the `cp -R` command to copy a path
+ * without an ending slash, the command will copy the directory itself into the
+ * new path if the new path already exists. This function does not have this
+ * behavior, it does not distinguish between a path with a trailing slash and a
+ * path without it. So when copying a directory, this function always copy its
+ * contents to the new path, whether the new path already exists or not.
  */
 async function copy(oldPath, newPath, options = {}) {
     if (isDeno || isNodeLike) {
