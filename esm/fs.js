@@ -846,24 +846,13 @@ async function rename(oldPath, newPath, options = {}) {
         throw new Error("Unsupported runtime");
     }
 }
-/**
- * Copies the file or directory (and its contents) from the old path to the new
- * path.
- *
- * NOTE: If the old path is a file and the new path is a directory, the file
- * will be copied into the new directory with the old name.
- *
- * NOTE: In Unix/Linux systems, when using the `cp -R` command to copy a path
- * without an ending slash, the command will copy the directory itself into the
- * new path if the new path already exists. This function does not have this
- * behavior, it does not distinguish between a path with a trailing slash and a
- * path without it. So when copying a directory, this function always copy its
- * contents to the new path, whether the new path already exists or not.
- */
-async function copy(oldPath, newPath, options = {}) {
-    var _a;
+async function copy(src, dest, options = {}) {
+    var _a, _b;
+    if (typeof src === "object" || typeof dest === "object") {
+        return copyInBrowser(src, dest, { recursive: (_a = options === null || options === void 0 ? void 0 : options.recursive) !== null && _a !== void 0 ? _a : false });
+    }
     if (isDeno || isNodeLike) {
-        const oldStat = await stat(oldPath, { followSymlink: true });
+        const oldStat = await stat(src, { followSymlink: true });
         const isDirSrc = oldStat.kind === "directory";
         let isDirDest = false;
         if (isDirSrc && !options.recursive) {
@@ -873,27 +862,27 @@ async function copy(oldPath, newPath, options = {}) {
             });
         }
         try {
-            const newStat = await stat(newPath, { followSymlink: true });
+            const newStat = await stat(dest, { followSymlink: true });
             isDirDest = newStat.kind === "directory";
             if (isDirSrc && !isDirDest) {
-                throw new Exception(`'${newPath}' is not a directory`, {
+                throw new Exception(`'${dest}' is not a directory`, {
                     name: "NotDirectoryError",
                     code: 415,
                 });
             }
         }
-        catch (_b) {
+        catch (_c) {
             if (isDirSrc) {
-                await mkdir(newPath);
+                await mkdir(dest);
                 isDirDest = true;
             }
         }
         if (isDeno) {
             if (isDirSrc) {
-                const entries = readDir(oldPath, { recursive: true });
+                const entries = readDir(src, { recursive: true });
                 for await (const entry of entries) {
-                    const _oldPath = join(oldPath, entry.path);
-                    const _newPath = join(newPath, entry.path);
+                    const _oldPath = join(src, entry.path);
+                    const _newPath = join(dest, entry.path);
                     if (entry.kind === "directory") {
                         await rawOp(Deno.mkdir(_newPath));
                     }
@@ -903,17 +892,17 @@ async function copy(oldPath, newPath, options = {}) {
                 }
             }
             else {
-                const _newPath = isDirDest ? join(newPath, basename(oldPath)) : newPath;
-                await rawOp(Deno.copyFile(oldPath, _newPath));
+                const _newPath = isDirDest ? join(dest, basename(src)) : dest;
+                await rawOp(Deno.copyFile(src, _newPath));
             }
         }
         else {
             const fs = await import('fs/promises');
             if (isDirSrc) {
-                const entries = readDir(oldPath, { recursive: true });
+                const entries = readDir(src, { recursive: true });
                 for await (const entry of entries) {
-                    const _oldPath = join(oldPath, entry.path);
-                    const _newPath = join(newPath, entry.path);
+                    const _oldPath = join(src, entry.path);
+                    const _newPath = join(dest, entry.path);
                     if (entry.kind === "directory") {
                         await rawOp(fs.mkdir(_newPath));
                     }
@@ -923,43 +912,67 @@ async function copy(oldPath, newPath, options = {}) {
                 }
             }
             else {
-                const _newPath = isDirDest ? join(newPath, basename(oldPath)) : newPath;
-                await rawOp(fs.copyFile(oldPath, _newPath));
+                const _newPath = isDirDest ? join(dest, basename(src)) : dest;
+                await rawOp(fs.copyFile(src, _newPath));
             }
         }
     }
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        return await copyInBrowser(oldPath, newPath, {
+        return await copyInBrowser(src, dest, {
             root: options.root,
-            recursive: (_a = options.recursive) !== null && _a !== void 0 ? _a : false,
+            recursive: (_b = options.recursive) !== null && _b !== void 0 ? _b : false,
         });
     }
     else {
         throw new Error("Unsupported runtime");
     }
 }
-async function copyInBrowser(oldPath, newPath, options = {}) {
+async function copyInBrowser(src, dest, options = {}) {
     var _a, _b;
-    const oldParent = dirname(oldPath);
-    const oldName = basename(oldPath);
+    if (typeof src === "object" && typeof dest !== "object") {
+        throw new TypeError("The destination must be a FileSystemHandle");
+    }
+    else if (typeof dest === "object" && typeof src !== "object") {
+        throw new TypeError("The source must be a FileSystemHandle");
+    }
+    else if (typeof src === "object" && typeof dest === "object") {
+        if (src.kind === "file") {
+            if (dest.kind === "file") {
+                return await copyFileHandleToFileHandle(src, dest);
+            }
+            else {
+                return await copyFileHandleToDirHandle(src, dest);
+            }
+        }
+        else if (dest.kind === "directory") {
+            if (!options.recursive) {
+                throw new Exception("Cannot copy a directory without the 'recursive' option", {
+                    name: "InvalidOperationError",
+                    code: 400,
+                });
+            }
+            return await copyDirHandleToDirHandle(src, dest);
+        }
+        else {
+            throw new Exception("The destination location is not a directory", {
+                name: "NotDirectoryError",
+                code: 415,
+            });
+        }
+    }
+    const oldParent = dirname(src);
+    const oldName = basename(src);
     let oldDir = await getDirHandle(oldParent, { root: options.root });
     const [oldErr, oldFile] = await _try(rawOp(oldDir.getFileHandle(oldName), "file"));
     if (oldFile) {
-        const newParent = dirname(newPath);
-        const newName = basename(newPath);
+        const newParent = dirname(dest);
+        const newName = basename(dest);
         let newDir = await getDirHandle(newParent, { root: options.root });
         const [newErr, newFile] = await _try(rawOp(newDir.getFileHandle(newName, {
             create: true,
         }), "file"));
         if (newFile) {
-            try {
-                const src = (await oldFile.getFile()).stream();
-                const dest = await newFile.createWritable();
-                await src.pipeTo(dest);
-            }
-            catch (err) {
-                throw wrapFsError(err, "file");
-            }
+            await copyFileHandleToFileHandle(oldFile, newFile);
             if (options.move) {
                 await rawOp(oldDir.removeEntry(oldName), "directory");
             }
@@ -968,15 +981,7 @@ async function copyInBrowser(oldPath, newPath, options = {}) {
             // The destination is a directory, copy the file into the new path
             // with the old name.
             newDir = await rawOp(newDir.getDirectoryHandle(newName), "directory");
-            try {
-                const newFile = await newDir.getFileHandle(oldName, { create: true });
-                const src = (await oldFile.getFile()).stream();
-                const dest = await newFile.createWritable();
-                await src.pipeTo(dest);
-            }
-            catch (err) {
-                throw wrapFsError(err, "file");
-            }
+            await copyFileHandleToDirHandle(oldFile, newDir);
         }
         else {
             throw newErr;
@@ -991,38 +996,60 @@ async function copyInBrowser(oldPath, newPath, options = {}) {
         }
         const parent = oldDir;
         oldDir = await rawOp(oldDir.getDirectoryHandle(oldName), "directory");
-        const newDir = await getDirHandle(newPath, { root: options.root, create: true });
-        await (async function copyDir(oldDir, newDir) {
-            const entries = oldDir.entries();
-            for await (const [_, entry] of entries) {
-                if (entry.kind === "file") {
-                    try {
-                        const oldFile = await entry.getFile();
-                        const newFile = await newDir.getFileHandle(entry.name, {
-                            create: true,
-                        });
-                        const reader = oldFile.stream();
-                        const writer = await newFile.createWritable();
-                        await reader.pipeTo(writer);
-                    }
-                    catch (err) {
-                        throw wrapFsError(err, "file");
-                    }
-                }
-                else {
-                    const newSubDir = await rawOp(newDir.getDirectoryHandle(entry.name, {
-                        create: true,
-                    }), "directory");
-                    await copyDir(entry, newSubDir);
-                }
-            }
-        })(oldDir, newDir);
+        const newDir = await getDirHandle(dest, { root: options.root, create: true });
+        await copyDirHandleToDirHandle(oldDir, newDir);
         if (options.move) {
             await rawOp(parent.removeEntry(oldName, { recursive: true }), "directory");
         }
     }
     else {
         throw oldErr;
+    }
+}
+async function copyFileHandleToFileHandle(src, dest) {
+    try {
+        const srcFile = await src.getFile();
+        const destFile = await dest.createWritable();
+        await srcFile.stream().pipeTo(destFile);
+    }
+    catch (err) {
+        throw wrapFsError(err, "file");
+    }
+}
+async function copyFileHandleToDirHandle(src, dest) {
+    try {
+        const srcFile = await src.getFile();
+        const newFile = await dest.getFileHandle(src.name, { create: true });
+        const destFile = await newFile.createWritable();
+        await srcFile.stream().pipeTo(destFile);
+    }
+    catch (err) {
+        throw wrapFsError(err, "file");
+    }
+}
+async function copyDirHandleToDirHandle(src, dest) {
+    const entries = src.entries();
+    for await (const [_, entry] of entries) {
+        if (entry.kind === "file") {
+            try {
+                const oldFile = await entry.getFile();
+                const newFile = await dest.getFileHandle(entry.name, {
+                    create: true,
+                });
+                const reader = oldFile.stream();
+                const writer = await newFile.createWritable();
+                await reader.pipeTo(writer);
+            }
+            catch (err) {
+                throw wrapFsError(err, "file");
+            }
+        }
+        else {
+            const newSubDir = await rawOp(dest.getDirectoryHandle(entry.name, {
+                create: true,
+            }), "directory");
+            await copyDirHandleToDirHandle(entry, newSubDir);
+        }
     }
 }
 /**

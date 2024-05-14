@@ -38,7 +38,7 @@ async function remove(path, options = {}) {
 async function rename(oldPath, newPath, options = {}) {
     throw new Error("Unsupported runtime");
 }
-async function copy(oldPath, newPath, options = {}) {
+async function copy(src, dest, options = {}) {
     throw new Error("Unsupported runtime");
 }
 async function link(src, dest, options = {}) {

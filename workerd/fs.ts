@@ -111,10 +111,28 @@ export async function rename(
     throw new Error("Unsupported runtime");
 }
 
-export async function copy(oldPath: string, newPath: string, options: CommonOptions & {
-    recursive?: boolean;
-} = {}): Promise<void> {
-    void oldPath, newPath, options;
+export async function copy(
+    src: string,
+    dest: string,
+    options?: CommonOptions & { recursive?: boolean; }
+): Promise<void>;
+export async function copy(
+    src: FileSystemFileHandle,
+    dest: FileSystemFileHandle | FileSystemDirectoryHandle
+): Promise<void>;
+export async function copy(
+    src: FileSystemDirectoryHandle,
+    dest: FileSystemDirectoryHandle,
+    options?: { recursive?: boolean; }
+): Promise<void>;
+export async function copy(
+    src: string | FileSystemFileHandle | FileSystemDirectoryHandle,
+    dest: string | FileSystemFileHandle | FileSystemDirectoryHandle,
+    options: CommonOptions & {
+        recursive?: boolean;
+    } = {}
+): Promise<void> {
+    void src, dest, options;
     throw new Error("Unsupported runtime");
 }
 
