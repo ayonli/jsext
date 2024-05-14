@@ -1,7 +1,7 @@
 import { orderBy, startsWith } from './array.js';
 import { abortable } from './async.js';
 import { text } from './bytes.js';
-import { isDeno, isNodeLike, isBrowserWindow, isDedicatedWorker, isSharedWorker } from './env.js';
+import { isDeno, isNodeLike, isBrowserWindow, isWorker } from './env.js';
 import { as } from './object.js';
 import Exception from './error/Exception.js';
 import { getMIME } from './filetype.js';
@@ -312,7 +312,7 @@ async function stat(target, options = {}) {
             isSocket: stat.isSocket(),
         };
     }
-    else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
+    else if (isBrowserWindow || isWorker) {
         const [err, file] = await _try(getFileHandle(path, options));
         if (file) {
             const info = await rawOp(file.getFile(), "file");
@@ -370,7 +370,7 @@ async function mkdir(path, options = {}) {
         const fs = await import('fs/promises');
         await rawOp(fs.mkdir(path, options));
     }
-    else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
+    else if (isBrowserWindow || isWorker) {
         if (await exists(path, { root: options.root })) {
             throw new Exception(`File or folder already exists, mkdir '${path}'`, {
                 name: "AlreadyExistsError",
@@ -459,7 +459,7 @@ async function* readDir(target, options = {}) {
             }
         })(path, "");
     }
-    else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
+    else if (isBrowserWindow || isWorker) {
         const dir = await getDirHandle(path, { root: options.root });
         yield* readDirHandle(dir, options);
     }
@@ -582,7 +582,7 @@ async function readFile(target, options = {}) {
         const buffer = await rawOp(fs.readFile(filename, options));
         return new Uint8Array(buffer.buffer, 0, buffer.byteLength);
     }
-    else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
+    else if (isBrowserWindow || isWorker) {
         const handle = await getFileHandle(filename, { root: options.root });
         return await readFileHandle(handle, options);
     }
@@ -608,7 +608,7 @@ async function readFileAsText(target, options = {}) {
             signal: options.signal,
         }));
     }
-    else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
+    else if (isBrowserWindow || isWorker) {
         return text(await readFile(filename, options));
     }
     else {
@@ -661,7 +661,7 @@ async function writeFile(target, data, options = {}) {
             ...rest,
         }));
     }
-    else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
+    else if (isBrowserWindow || isWorker) {
         const handle = await getFileHandle(filename, { create: true });
         return await writeFileHandle(handle, data, options);
     }
@@ -771,7 +771,7 @@ async function truncate(target, size = 0, options = {}) {
         const fs = await import('fs/promises');
         await rawOp(fs.truncate(filename, size));
     }
-    else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
+    else if (isBrowserWindow || isWorker) {
         const handle = await getFileHandle(filename, { root: options.root });
         await truncateFileHandle(handle, size);
     }
@@ -816,7 +816,7 @@ async function remove(path, options = {}) {
             }
         }
     }
-    else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
+    else if (isBrowserWindow || isWorker) {
         const parent = dirname(path);
         const name = basename(path);
         const dir = await getDirHandle(parent, { root: options.root });
@@ -837,7 +837,7 @@ async function rename(oldPath, newPath, options = {}) {
         const fs = await import('fs/promises');
         await rawOp(fs.rename(oldPath, newPath));
     }
-    else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
+    else if (isBrowserWindow || isWorker) {
         return await copyInBrowser(oldPath, newPath, {
             root: options.root,
             recursive: true,
@@ -919,7 +919,7 @@ async function copy(src, dest, options = {}) {
             }
         }
     }
-    else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
+    else if (isBrowserWindow || isWorker) {
         return await copyInBrowser(src, dest, {
             root: options.root,
             recursive: (_b = options.recursive) !== null && _b !== void 0 ? _b : false,
