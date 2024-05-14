@@ -127,7 +127,7 @@ async function openFile(options = {}) {
         })(dir);
         return files;
     }
-    else if (typeof globalThis["showOpenPicker"] === "function") {
+    else if (typeof globalThis["showOpenFilePicker"] === "function") {
         if (multiple) {
             const handles = await browserPickFiles(type);
             const files = [];

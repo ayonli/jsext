@@ -197,7 +197,7 @@ export async function openFile(options: {
         })(dir);
 
         return files;
-    } else if (typeof (globalThis as any)["showOpenPicker"] === "function") {
+    } else if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
         if (multiple) {
             const handles = await browserPickFiles(type);
             const files: File[] = [];

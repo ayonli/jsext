@@ -141,7 +141,10 @@
 
             const downloadFileBtn = document.getElementById('download-file');
             downloadFileBtn.addEventListener('click', async () => {
-                const file = await openFile();
+                const res = await fetch('./');
+                const buf = await res.arrayBuffer();
+                const type = await res.headers.get('Content-Type') ?? "";
+                const file = new File([buf], 'index.html', { type });
 
                 if (file) {
                     console.log(file);
