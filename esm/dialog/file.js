@@ -8,6 +8,7 @@ import { macPickFile, macPickFiles, macPickFolder } from './terminal/file/mac.js
 import { linuxPickFile, linuxPickFiles, linuxPickFolder } from './terminal/file/linux.js';
 import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './terminal/file/windows.js';
 import { browserPickFile, browserPickFiles, browserPickFolder } from './terminal/file/browser.js';
+import { getExtensions } from '../filetype.js';
 import { writeFile } from '../fs.js';
 import { as } from '../object.js';
 import { toAsyncIterable } from '../reader/util.js';
@@ -250,34 +251,44 @@ async function openFile(options = {}) {
 async function saveFile(file, options = {}) {
     var _a;
     if (typeof globalThis["showSaveFilePicker"] === "function") {
-        const handle = await browserPickFile(options.type, {
-            forSave: true,
-            defaultName: options.name || ((_a = as(file, Blob)) === null || _a === void 0 ? void 0 : _a.name),
-        });
-        if (handle) {
-            await writeFile(handle, file);
+        try {
+            const handle = await browserPickFile(options.type, {
+                forSave: true,
+                defaultName: options.name || ((_a = as(file, Blob)) === null || _a === void 0 ? void 0 : _a.name),
+            });
+            if (handle) {
+                await writeFile(handle, file);
+            }
+            return;
+        }
+        catch (err) {
+            // A `SecurityError` is typically thrown due to lack of user activation.
+            // We can ignore this error and fallback to the default download behavior.
+            if (err.name !== "SecurityError") {
+                throw err;
+            }
         }
     }
-    else if (isBrowserWindow) {
+    if (isBrowserWindow) {
         const a = document.createElement("a");
         if (file instanceof ReadableStream) {
             const type = options.type || "application/octet-stream";
             a.href = await readAsObjectURL(file, type);
-            a.download = options.name || "Unnamed";
+            a.download = options.name || "Unnamed" + (getExtensions(type)[0] || "");
         }
         else if (file instanceof File) {
             a.href = URL.createObjectURL(file);
-            a.download = options.name || file.name || "Unnamed";
+            a.download = options.name || file.name || "Unnamed" + (getExtensions(file.type)[0] || "");
         }
         else if (file instanceof Blob) {
             a.href = URL.createObjectURL(file);
-            a.download = options.name || "Unnamed";
+            a.download = options.name || "Unnamed" + (getExtensions(file.type)[0] || "");
         }
         else {
             const type = options.type || "application/octet-stream";
             const blob = new Blob([file], { type });
             a.href = URL.createObjectURL(blob);
-            a.download = options.name || "Unnamed";
+            a.download = options.name || "Unnamed" + (getExtensions(type)[0] || "");
         }
         a.click();
     }

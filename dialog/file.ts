@@ -24,6 +24,7 @@ import {
     browserPickFile,
     browserPickFiles,
 } from "./terminal/file/browser.ts";
+import { getExtensions } from "../filetype.ts";
 import { writeFile } from "../fs.ts";
 import { as } from "../object.ts";
 
@@ -341,32 +342,44 @@ export async function saveFile(
     } = {}
 ): Promise<void> {
     if (typeof (globalThis as any)["showSaveFilePicker"] === "function") {
-        const handle = await browserPickFile(options.type, {
-            forSave: true,
-            defaultName: options.name || as(file, Blob)?.name,
-        });
+        try {
+            const handle = await browserPickFile(options.type, {
+                forSave: true,
+                defaultName: options.name || as(file, Blob)?.name,
+            });
 
-        if (handle) {
-            await writeFile(handle, file);
+            if (handle) {
+                await writeFile(handle, file);
+            }
+
+            return;
+        } catch (err) {
+            // A `SecurityError` is typically thrown due to lack of user activation.
+            // We can ignore this error and fallback to the default download behavior.
+            if ((err as DOMException).name !== "SecurityError") {
+                throw err;
+            }
         }
-    } else if (isBrowserWindow) {
+    }
+
+    if (isBrowserWindow) {
         const a = document.createElement("a");
 
         if (file instanceof ReadableStream) {
             const type = options.type || "application/octet-stream";
             a.href = await readAsObjectURL(file, type);
-            a.download = options.name || "Unnamed";
+            a.download = options.name || "Unnamed" + (getExtensions(type)[0] || "");
         } else if (file instanceof File) {
             a.href = URL.createObjectURL(file);
-            a.download = options.name || file.name || "Unnamed";
+            a.download = options.name || file.name || "Unnamed" + (getExtensions(file.type)[0] || "");
         } else if (file instanceof Blob) {
             a.href = URL.createObjectURL(file);
-            a.download = options.name || "Unnamed";
+            a.download = options.name || "Unnamed" + (getExtensions(file.type)[0] || "");
         } else {
             const type = options.type || "application/octet-stream";
             const blob = new Blob([file], { type });
             a.href = URL.createObjectURL(blob);
-            a.download = options.name || "Unnamed";
+            a.download = options.name || "Unnamed" + (getExtensions(type)[0] || "");
         }
 
         a.click();
