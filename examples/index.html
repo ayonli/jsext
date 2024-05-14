@@ -9,6 +9,49 @@
     <script src="../bundle/jsext.js">
         // this will also include the sub-modules and augmentations
     </script>
+    <script type="importmap">
+        {
+            "imports": {
+                "@ayonli/jsext": "../esm/index.js",
+                "@ayonli/jsext/array": "../esm/array.js",
+                "@ayonli/jsext/async": "../esm/async.js",
+                "@ayonli/jsext/bytes": "../esm/bytes.js",
+                "@ayonli/jsext/chan": "../esm/chan.js",
+                "@ayonli/jsext/class": "../esm/class.js",
+                "@ayonli/jsext/cli": "../esm/cli.js",
+                "@ayonli/jsext/collections": "../esm/collections.js",
+                "@ayonli/jsext/debounce": "../esm/debounce.js",
+                "@ayonli/jsext/deprecate": "../esm/deprecate.js",
+                "@ayonli/jsext/dialog": "../esm/dialog.js",
+                "@ayonli/jsext/error": "../esm/error.js",
+                "@ayonli/jsext/example": "../esm/example.js",
+                "@ayonli/jsext/filetype": "../esm/filetype.js",
+                "@ayonli/jsext/fs": "../esm/fs.js",
+                "@ayonli/jsext/func": "../esm/func.js",
+                "@ayonli/jsext/json": "../esm/json.js",
+                "@ayonli/jsext/lock": "../esm/lock.js",
+                "@ayonli/jsext/math": "../esm/math.js",
+                "@ayonli/jsext/mixin": "../esm/mixin.js",
+                "@ayonli/jsext/module": "../esm/module.js",
+                "@ayonli/jsext/number": "../esm/number.js",
+                "@ayonli/jsext/object": "../esm/object.js",
+                "@ayonli/jsext/parallel": "../esm/parallel.js",
+                "@ayonli/jsext/path": "../esm/path.js",
+                "@ayonli/jsext/pipe": "../esm/pipe.js",
+                "@ayonli/jsext/queue": "../esm/queue.js",
+                "@ayonli/jsext/read": "../esm/read.js",
+                "@ayonli/jsext/readAll": "../esm/readAll.js",
+                "@ayonli/jsext/reader": "../esm/reader.js",
+                "@ayonli/jsext/run": "../esm/run.js",
+                "@ayonli/jsext/runtime": "../esm/runtime.js",
+                "@ayonli/jsext/string": "../esm/string.js",
+                "@ayonli/jsext/throttle": "../esm/throttle.js",
+                "@ayonli/jsext/try": "../esm/try.js",
+                "@ayonli/jsext/types": "../esm/types.js",
+                "@ayonli/jsext/wrap": "../esm/wrap.js"
+            }
+        }
+    </script>
     <script type="module">
         import { alert, confirm, prompt, progress, openFile, saveFile } from "../esm/dialog.js";
         import { sleep } from "../esm/async.js";
@@ -78,8 +121,8 @@
             const openFileBtn = document.getElementById('open-file');
             openFileBtn.addEventListener('click', async () => {
                 const file = await openFile();
-                alert("You selected: " + file?.name);
                 console.log(file);
+                await alert("You selected: " + file?.name);
             });
 
             const openFilesBtn = document.getElementById('open-files');
@@ -101,7 +144,8 @@
                 const file = await openFile();
 
                 if (file) {
-                    await saveFile(file, { defaultName: file.name });
+                    console.log(file);
+                    await saveFile(file, { name: file.name });
                 }
             });
 

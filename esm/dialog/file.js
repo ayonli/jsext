@@ -9,6 +9,7 @@ import { linuxPickFile, linuxPickFiles, linuxPickFolder } from './terminal/file/
 import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './terminal/file/windows.js';
 import { browserPickFile, browserPickFiles, browserPickFolder } from './terminal/file/browser.js';
 import { writeFile } from '../fs.js';
+import { as } from '../object.js';
 import { toAsyncIterable } from '../reader/util.js';
 import { isWSL } from '../cli/common.js';
 
@@ -247,10 +248,11 @@ async function openFile(options = {}) {
     }
 }
 async function saveFile(file, options = {}) {
+    var _a;
     if (typeof globalThis["showSaveFilePicker"] === "function") {
         const handle = await browserPickFile(options.type, {
             forSave: true,
-            defaultName: options.name,
+            defaultName: options.name || ((_a = as(file, Blob)) === null || _a === void 0 ? void 0 : _a.name),
         });
         if (handle) {
             await writeFile(handle, file);
@@ -265,7 +267,7 @@ async function saveFile(file, options = {}) {
         }
         else if (file instanceof File) {
             a.href = URL.createObjectURL(file);
-            a.download = file.name;
+            a.download = options.name || file.name || "Unnamed";
         }
         else if (file instanceof Blob) {
             a.href = URL.createObjectURL(file);
@@ -283,7 +285,7 @@ async function saveFile(file, options = {}) {
         const { title } = options;
         let stream;
         let filename;
-        if (file instanceof ReadableStream) {
+        if (typeof ReadableStream === "function" && file instanceof ReadableStream) {
             stream = file;
             filename = await pickFile({
                 title,
@@ -292,16 +294,16 @@ async function saveFile(file, options = {}) {
                 defaultName: options.name,
             });
         }
-        else if (file instanceof File) {
+        else if (typeof File === "function" && file instanceof File) {
             stream = file.stream();
             filename = await pickFile({
                 title,
                 type: file.type,
                 forSave: true,
-                defaultName: file.name,
+                defaultName: options.name || file.name,
             });
         }
-        else if (file instanceof Blob) {
+        else if (typeof Blob === "function" && file instanceof Blob) {
             stream = file.stream();
             filename = await pickFile({
                 title,

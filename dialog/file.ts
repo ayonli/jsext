@@ -25,6 +25,7 @@ import {
     browserPickFiles,
 } from "./terminal/file/browser.ts";
 import { writeFile } from "../fs.ts";
+import { as } from "../object.ts";
 
 /**
  * Open the file picker dialog and pick a file, this function returns the file's
@@ -323,8 +324,8 @@ export async function saveFile(file: File, options?: {
 export async function saveFile(
     file: Blob | ArrayBufferLike | ReadableStream<Uint8Array> | Uint8Array,
     options: {
-        /** The name of the */
-        name: string;
+        /** The suggested name of the file. */
+        name?: string;
         /** The MIME type of the file. */
         type?: string;
         /** Custom the dialog's title. This option is ignored in the browser. */
@@ -342,7 +343,7 @@ export async function saveFile(
     if (typeof (globalThis as any)["showSaveFilePicker"] === "function") {
         const handle = await browserPickFile(options.type, {
             forSave: true,
-            defaultName: options.name,
+            defaultName: options.name || as(file, Blob)?.name,
         });
 
         if (handle) {
@@ -357,7 +358,7 @@ export async function saveFile(
             a.download = options.name || "Unnamed";
         } else if (file instanceof File) {
             a.href = URL.createObjectURL(file);
-            a.download = file.name;
+            a.download = options.name || file.name || "Unnamed";
         } else if (file instanceof Blob) {
             a.href = URL.createObjectURL(file);
             a.download = options.name || "Unnamed";
@@ -374,7 +375,7 @@ export async function saveFile(
         let stream: ReadableStream<Uint8Array> | undefined;
         let filename: string | null | undefined;
 
-        if (file instanceof ReadableStream) {
+        if (typeof ReadableStream === "function" && file instanceof ReadableStream) {
             stream = file;
             filename = await pickFile({
                 title,
@@ -382,15 +383,15 @@ export async function saveFile(
                 forSave: true,
                 defaultName: options.name,
             }) as string | null;
-        } else if (file instanceof File) {
+        } else if (typeof File === "function" && file instanceof File) {
             stream = file.stream();
             filename = await pickFile({
                 title,
                 type: file.type,
                 forSave: true,
-                defaultName: file.name,
+                defaultName: options.name || file.name,
             }) as string | null;
-        } else if (file instanceof Blob) {
+        } else if (typeof Blob === "function" && file instanceof Blob) {
             stream = file.stream();
             filename = await pickFile({
                 title,
@@ -400,7 +401,7 @@ export async function saveFile(
             }) as string | null;
         } else {
             const type = options.type || "application/octet-stream";
-            const blob = new Blob([file], { type });
+            const blob = new Blob([file as Uint8Array | ArrayBuffer], { type });
             stream = blob.stream();
             filename = await pickFile({
                 title,
