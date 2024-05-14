@@ -46,7 +46,7 @@ function count(arr, item) {
 function equals(arr1, arr2) {
     return equals$1(arr1, arr2);
 }
-/** Checks if the array-like object contains another array as a slice of its contents. */
+/** Checks if the array contains another array as a slice of its contents. */
 function includesSlice(arr, slice) {
     return includeSlice(arr, slice);
 }

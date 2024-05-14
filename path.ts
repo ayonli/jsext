@@ -43,8 +43,8 @@ export {
 };
 
 /**
- * Platform-specific path segment separator. The value is `\` on Windows
- * server-side runtime, and `/` otherwise.
+ * Platform-specific path segment separator. The value is `\` in Windows
+ * server-side environments, and `/` otherwise.
  */
 export const sep: "/" | "\\" = (() => {
     if (isDeno) {

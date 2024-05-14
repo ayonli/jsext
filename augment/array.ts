@@ -32,7 +32,7 @@ declare global {
          * this array.
          */
         equals(another: T[]): boolean;
-        /** Checks if the byte array contains another array as a slice of its contents. */
+        /** Checks if the array contains another array as a slice of its contents. */
         includesSlice<T>(slice: T[]): boolean;
         /** Checks if the array starts with the given prefix. */
         startsWith<T>(prefix: T[]): boolean;
@@ -66,16 +66,16 @@ declare global {
         toShuffled(): T[];
         toReversed(): T[];
         toSorted(fn?: ((a: T, b: T) => number) | undefined): T[];
+        /** Orders the items of the array according to the given callback function. */
+        orderBy(fn: (item: T, i: number) => string | number | bigint, order?: "asc" | "desc"): T[];
         /**
-         * Orders the items of the array according to the specified comparable `key` (whose value
-         * must either be a numeric or string).
+         * Orders the items of the array according to the specified comparable `key`
+         * (whose value must either be a numeric or string).
          * 
          * @deprecated This signature is not in line with other functions, such as
          * {@link groupBy} and {@link keyBy}, use the callback form instead.
          */
         orderBy(key: keyof T, order?: "asc" | "desc"): T[];
-        /** Orders the items of the array according to the given callback function. */
-        orderBy(fn: (item: T, i: number) => string | number | bigint, order?: "asc" | "desc"): T[];
         /**
          * Groups the items of the array according to the comparable values returned by a provided
          * callback function.

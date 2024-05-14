@@ -59,7 +59,7 @@ export function equals<T>(arr1: T[], arr2: T[]): boolean {
     return _equals(arr1, arr2);
 }
 
-/** Checks if the array-like object contains another array as a slice of its contents. */
+/** Checks if the array contains another array as a slice of its contents. */
 export function includesSlice<T>(arr: T[], slice: T[]): boolean {
     return _includesSlice(arr, slice);
 }
@@ -132,23 +132,23 @@ export function shuffle<T>(arr: T[]): T[] {
     return arr;
 }
 
-/**
- * Orders the items of the array according to the specified comparable `key` (whose value
- * must either be a numeric or string).
- * 
- * @deprecated This signature is not in line with other functions, such as
- * {@link groupBy} and {@link keyBy}, use the callback form instead.
- */
-export function orderBy<T>(arr: T[], key: keyof T, order?: "asc" | "desc"): T[];
 /** Orders the items of the array according to the given callback function. */
 export function orderBy<T>(
     arr: T[],
     fn: (item: T, i: number) => string | number | bigint,
     order?: "asc" | "desc"
 ): T[];
+/**
+ * Orders the items of the array according to the specified comparable `key`
+ * (whose value must either be a numeric or string).
+ * 
+ * @deprecated This signature is not in line with other functions, such as
+ * {@link groupBy} and {@link keyBy}, use the callback form instead.
+ */
+export function orderBy<T>(arr: T[], key: keyof T, order?: "asc" | "desc"): T[];
 export function orderBy<T>(
     arr: T[],
-    key: keyof T | ((item: T, i: number) => string | number | bigint),
+    key: ((item: T, i: number) => string | number | bigint) | keyof T,
     order: "asc" | "desc" = "asc"
 ): T[] {
     const items = arr.slice();

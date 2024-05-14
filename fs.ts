@@ -1,12 +1,23 @@
 /**
  * Universal file system APIs for both server and browser applications.
  * 
+ * This module is guaranteed to work in the following environments:
+ * 
+ * - Node.js
+ * - Deno
+ * - Bun
+ * - Modern browsers
+ * 
+ * We can also use the {@link runtime} function to check whether the runtime
+ * has file system support. When `runtime().fsSupport` is `true`, this module
+ * should work properly.
+ * 
  * In most browsers, this module uses the
  * [Origin Private File System](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system).
  * In Chromium browsers, this module can also access the device's local file
  * system via `window.showOpenFilePicker()` and `window.showDirectoryPicker()`.
  * 
- * **Errors:**
+ * **Exceptions:**
  * 
  * When a file system operation fails, this module throws an {@link Exception}
  * with one of the following names:
@@ -27,14 +38,7 @@
  * - `FilesystemLoopError`:  Too many symbolic links were encountered when
  *   resolving the filename.
  * 
- * Other errors may also be thrown by the runtime, such as `TypeError` and
- * errors saying `Unsupported runtime`.
- * 
- * NOTE: This module is experimental and may not work in environments.
- * 
- * We can use the {@link runtime} function to check if the current runtime
- * has file system support. When `runtime().fsSupport` is `true`, this module
- * can work properly.
+ * Other errors may also be thrown by the runtime, such as `TypeError`.
  * 
  * @experimental
  * @module
@@ -56,6 +60,10 @@ import _try from "./try.ts";
 
 export type { CommonOptions, FileInfo, DirEntry, DirTree };
 
+/**
+ * Platform-specific end-of-line marker. The value is `\r\n` in Windows
+ * server-side environments, and `\n` otherwise.
+ */
 export const EOL: "\n" | "\r\n" = (() => {
     if (isDeno) {
         return Deno.build.os === "windows" ? "\r\n" : "\n";
@@ -343,7 +351,7 @@ export async function stat(
             isFIFO: stat.isFIFO(),
             isSocket: stat.isSocket(),
         };
-    } else if (isBrowserWindow || isWorker) {
+    } else {
         const [err, file] = await _try(getFileHandle(path, options));
 
         if (file) {
@@ -384,8 +392,6 @@ export async function stat(
         } else {
             throw err;
         }
-    } else {
-        throw new Error("Unsupported runtime");
     }
 }
 
@@ -410,7 +416,7 @@ export async function mkdir(path: string, options: CommonOptions & {
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
         await rawOp(fs.mkdir(path, options));
-    } else if (isBrowserWindow || isWorker) {
+    } else {
         if (await exists(path, { root: options.root })) {
             throw new Exception(`File or folder already exists, mkdir '${path}'`, {
                 name: "AlreadyExistsError",
@@ -419,8 +425,6 @@ export async function mkdir(path: string, options: CommonOptions & {
         }
 
         await getDirHandle(path, { ...options, create: true });
-    } else {
-        throw new Error("Unsupported runtime");
     }
 }
 
@@ -666,11 +670,9 @@ export async function readFile(target: string | FileSystemFileHandle, options: C
         const fs = await import("fs/promises");
         const buffer = await rawOp(fs.readFile(filename, options));
         return new Uint8Array(buffer.buffer, 0, buffer.byteLength);
-    } else if (isBrowserWindow || isWorker) {
+    } else {
         const handle = await getFileHandle(filename, { root: options.root });
         return await readFileHandle(handle, options);
-    } else {
-        throw new Error("Unsupported runtime");
     }
 }
 
@@ -694,10 +696,8 @@ export async function readFileAsText(target: string | FileSystemFileHandle, opti
             encoding: "utf-8",
             signal: options.signal,
         }));
-    } else if (isBrowserWindow || isWorker) {
-        return text(await readFile(filename, options));
     } else {
-        throw new Error("Unsupported runtime");
+        return text(await readFile(filename, options));
     }
 }
 
@@ -759,11 +759,9 @@ export async function writeFile(
             flag: options?.append ? "a" : "w",
             ...rest,
         }));
-    } else if (isBrowserWindow || isWorker) {
+    } else {
         const handle = await getFileHandle(filename, { create: true });
         return await writeFileHandle(handle, data, options);
-    } else {
-        throw new Error("Unsupported runtime");
     }
 }
 
@@ -899,11 +897,9 @@ export async function truncate(
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
         await rawOp(fs.truncate(filename, size));
-    } else if (isBrowserWindow || isWorker) {
+    } else {
         const handle = await getFileHandle(filename, { root: options.root });
         await truncateFileHandle(handle, size);
-    } else {
-        throw new Error("Unsupported runtime");
     }
 }
 
@@ -950,13 +946,11 @@ export async function remove(path: string, options: CommonOptions & {
                 throw wrapFsError(err);
             }
         }
-    } else if (isBrowserWindow || isWorker) {
+    } else {
         const parent = dirname(path);
         const name = basename(path);
         const dir = await getDirHandle(parent, { root: options.root });
         await rawOp(dir.removeEntry(name, options), "directory");
-    } else {
-        throw new Error("Unsupported runtime");
     }
 }
 
@@ -973,14 +967,12 @@ export async function rename(
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
         await rawOp(fs.rename(oldPath, newPath));
-    } else if (isBrowserWindow || isWorker) {
+    } else {
         return await copyInBrowser(oldPath, newPath, {
             root: options.root,
             recursive: true,
             move: true,
         });
-    } else {
-        throw new Error("Unsupported runtime");
     }
 }
 
@@ -1091,13 +1083,11 @@ export async function copy(
                 await rawOp(fs.copyFile(src, _newPath));
             }
         }
-    } else if (isBrowserWindow || isWorker) {
+    } else {
         return await copyInBrowser(src, dest, {
             root: options.root,
             recursive: options.recursive ?? false,
         });
-    } else {
-        throw new Error("Unsupported runtime");
     }
 }
 
