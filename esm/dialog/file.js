@@ -168,7 +168,12 @@ async function openFile(options = {}) {
                     resolve(null);
                 }
             };
-            input.click();
+            if (typeof input.showPicker === "function") {
+                input.showPicker();
+            }
+            else {
+                input.click();
+            }
         });
     }
     else if (isDeno || isNodeLike) {
