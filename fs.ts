@@ -47,7 +47,7 @@
 import { orderBy, startsWith } from "./array.ts";
 import { abortable } from "./async.ts";
 import { text } from "./bytes.ts";
-import { isBrowserWindow, isDeno, isNodeLike, isWorker } from "./env.ts";
+import { isDeno, isNodeLike } from "./env.ts";
 import { Exception } from "./error.ts";
 import { getMIME } from "./filetype.ts";
 import type { FileInfo, DirEntry, CommonOptions, DirTree } from "./fs/types.ts";
@@ -520,7 +520,7 @@ export async function* readDir(target: string | FileSystemDirectoryHandle, optio
                 }
             }
         })(path, "");
-    } else if (isBrowserWindow || isWorker) {
+    } else {
         const dir = await getDirHandle(path, { root: options.root });
         yield* readDirHandle(dir, options);
     }
@@ -760,7 +760,7 @@ export async function writeFile(
             ...rest,
         }));
     } else {
-        const handle = await getFileHandle(filename, { create: true });
+        const handle = await getFileHandle(filename, { root: options.root, create: true });
         return await writeFileHandle(handle, data, options);
     }
 }

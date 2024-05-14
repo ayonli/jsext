@@ -1,7 +1,7 @@
 import { orderBy, startsWith } from './array.js';
 import { abortable } from './async.js';
 import { text } from './bytes.js';
-import { isDeno, isNodeLike, isBrowserWindow, isWorker } from './env.js';
+import { isDeno, isNodeLike } from './env.js';
 import { as } from './object.js';
 import Exception from './error/Exception.js';
 import { getMIME } from './filetype.js';
@@ -470,7 +470,7 @@ async function* readDir(target, options = {}) {
             }
         })(path, "");
     }
-    else if (isBrowserWindow || isWorker) {
+    else {
         const dir = await getDirHandle(path, { root: options.root });
         yield* readDirHandle(dir, options);
     }
@@ -667,7 +667,7 @@ async function writeFile(target, data, options = {}) {
         }));
     }
     else {
-        const handle = await getFileHandle(filename, { create: true });
+        const handle = await getFileHandle(filename, { root: options.root, create: true });
         return await writeFileHandle(handle, data, options);
     }
 }
