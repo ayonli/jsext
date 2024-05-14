@@ -165,11 +165,14 @@ function rawOp<T>(op: Promise<T>, type: "file" | "directory" | undefined = undef
 }
 
 /**
- * Obtains the directory handle of given path.
+ * Obtains the directory handle of the given path.
  * 
  * NOTE: This function is only available in the browser.
+ * 
+ * NOTE: If the `path` is not provided or is empty, the root directory handle
+ * will be returned.
  */
-export async function getDirHandle(path: string, options: CommonOptions & {
+export async function getDirHandle(path: string = "", options: CommonOptions & {
     /** Create the directory if not exist. */
     create?: boolean;
     /**

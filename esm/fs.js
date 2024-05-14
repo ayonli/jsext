@@ -163,11 +163,14 @@ function rawOp(op, type = undefined) {
     });
 }
 /**
- * Obtains the directory handle of given path.
+ * Obtains the directory handle of the given path.
  *
  * NOTE: This function is only available in the browser.
+ *
+ * NOTE: If the `path` is not provided or is empty, the root directory handle
+ * will be returned.
  */
-async function getDirHandle(path, options = {}) {
+async function getDirHandle(path = "", options = {}) {
     var _a;
     if (typeof location === "object" && typeof location.origin === "string") {
         path = stripStart(path, location.origin);
