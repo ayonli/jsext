@@ -5,11 +5,11 @@
  * In Chromium browsers, this module can also access the device's local file
  * system via `window.showOpenFilePicker()` and `window.showDirectoryPicker()`.
  * 
- * The module is experimental and may not work in some browsers.
+ * This module is experimental and may not work in some browsers.
  * 
  * **Errors:**
  * 
- * When a file system operation fails, the module throws an {@link Exception}
+ * When a file system operation fails, this module throws an {@link Exception}
  * with one of the following names:
  * 
  * - `NotFoundError`: The file or directory does not exist.
@@ -34,7 +34,7 @@
  * @module
  */
 
-import { startsWith } from "./array.ts";
+import { orderBy, startsWith } from "./array.ts";
 import { abortable } from "./async.ts";
 import { text } from "./bytes.ts";
 import { isBrowserWindow, isDedicatedWorker, isDeno, isNodeLike, isSharedWorker } from "./env.ts";
@@ -45,6 +45,7 @@ import { as } from "./object.ts";
 import { basename, dirname, extname, join, split } from "./path.ts";
 import { readAsArray, readAsArrayBuffer, toAsyncIterable } from "./reader.ts";
 import { platform } from "./runtime.ts";
+import { stripStart } from "./string.ts";
 import _try from "./try.ts";
 
 export type { CommonOptions, FileInfo, DirEntry, DirTree };
@@ -170,11 +171,11 @@ async function getDirHandle(path: string, options: CommonOptions & {
     recursive?: boolean;
 } = {}): Promise<FileSystemDirectoryHandle> {
     if (typeof location === "object" && typeof location.origin === "string") {
-        path = path.stripStart(location.origin);
+        path = stripStart(path, location.origin);
     }
 
     const { create = false, recursive = false } = options;
-    const paths = split(path.stripStart("/")).filter(p => p !== ".");
+    const paths = split(stripStart(path, "/")).filter(p => p !== ".");
     const root = options.root ?? await rawOp(navigator.storage.getDirectory(), "directory");
     let dir = root;
 
@@ -512,8 +513,8 @@ export async function readTree(
     const nodes = (function walk(list: CustomDirEntry[], store: CustomDirEntry[]): DirTree[] {
         // Order the entries first by kind, then by names alphabetically.
         list = [
-            ...list.filter(e => e.kind === "directory").orderBy(e => e.name, "asc"),
-            ...list.filter(e => e.kind === "file").orderBy(e => e.name, "asc"),
+            ...orderBy(list.filter(e => e.kind === "directory"), e => e.name, "asc"),
+            ...orderBy(list.filter(e => e.kind === "file"), e => e.name, "asc"),
         ];
 
         const nodes: DirTree[] = [];
@@ -787,7 +788,7 @@ async function writeFileHandle(
 }
 
 /**
- * Writes multiple lines of content into the specified file.
+ * Writes multiple lines of content to the file.
  * 
  * This function will automatically detect the line ending of the current
  * content and use it to write the new lines. If the file is empty or does not

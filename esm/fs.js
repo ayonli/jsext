@@ -1,4 +1,4 @@
-import { startsWith } from './array.js';
+import { orderBy, startsWith } from './array.js';
 import { abortable } from './async.js';
 import { text } from './bytes.js';
 import { isDeno, isNodeLike, isBrowserWindow, isDedicatedWorker, isSharedWorker } from './env.js';
@@ -8,6 +8,7 @@ import { getMIME } from './filetype.js';
 import { extname, basename, dirname, join } from './path.js';
 import { readAsArray, readAsArrayBuffer } from './reader.js';
 import { platform } from './runtime.js';
+import { stripStart } from './string.js';
 import _try from './try.js';
 import { split } from './path/util.js';
 import { toAsyncIterable } from './reader/util.js';
@@ -19,11 +20,11 @@ import { toAsyncIterable } from './reader/util.js';
  * In Chromium browsers, this module can also access the device's local file
  * system via `window.showOpenFilePicker()` and `window.showDirectoryPicker()`.
  *
- * The module is experimental and may not work in some browsers.
+ * This module is experimental and may not work in some browsers.
  *
  * **Errors:**
  *
- * When a file system operation fails, the module throws an {@link Exception}
+ * When a file system operation fails, this module throws an {@link Exception}
  * with one of the following names:
  *
  * - `NotFoundError`: The file or directory does not exist.
@@ -164,10 +165,10 @@ function rawOp(op, type = undefined) {
 async function getDirHandle(path, options = {}) {
     var _a;
     if (typeof location === "object" && typeof location.origin === "string") {
-        path = path.stripStart(location.origin);
+        path = stripStart(path, location.origin);
     }
     const { create = false, recursive = false } = options;
-    const paths = split(path.stripStart("/")).filter(p => p !== ".");
+    const paths = split(stripStart(path, "/")).filter(p => p !== ".");
     const root = (_a = options.root) !== null && _a !== void 0 ? _a : await rawOp(navigator.storage.getDirectory(), "directory");
     let dir = root;
     for (let i = 0; i < paths.length; i++) {
@@ -465,8 +466,8 @@ async function readTree(target, options = {}) {
     const nodes = (function walk(list, store) {
         // Order the entries first by kind, then by names alphabetically.
         list = [
-            ...list.filter(e => e.kind === "directory").orderBy(e => e.name, "asc"),
-            ...list.filter(e => e.kind === "file").orderBy(e => e.name, "asc"),
+            ...orderBy(list.filter(e => e.kind === "directory"), e => e.name, "asc"),
+            ...orderBy(list.filter(e => e.kind === "file"), e => e.name, "asc"),
         ];
         const nodes = [];
         for (const entry of list) {
@@ -695,7 +696,7 @@ async function writeFileHandle(handle, data, options) {
     }
 }
 /**
- * Writes multiple lines of content into the specified file.
+ * Writes multiple lines of content to the file.
  *
  * This function will automatically detect the line ending of the current
  * content and use it to write the new lines. If the file is empty or does not
