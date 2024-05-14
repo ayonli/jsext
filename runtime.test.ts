@@ -1,6 +1,6 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import * as util from "node:util";
-import runtime, { platform, env, customInspect } from "./runtime.ts";
+import runtime, { platform, env, customInspect, RuntimeInfo } from "./runtime.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 
 declare const Bun: any;
@@ -11,24 +11,27 @@ describe("runtime", () => {
             deepStrictEqual(runtime(), {
                 identity: "node",
                 version: process.version.slice(1),
+                fsSupport: true,
                 tsSupport: process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
                     || /\.tsx?$|\bvite\b/.test(process.argv[1] ?? ""),
                 worker: undefined,
-            });
+            } as RuntimeInfo);
         } else if (isDeno) {
             deepStrictEqual(runtime(), {
                 identity: "deno",
                 version: Deno.version.deno,
+                fsSupport: true,
                 tsSupport: true,
                 worker: undefined,
-            });
+            } as RuntimeInfo);
         } else if (isBun) {
             deepStrictEqual(runtime(), {
                 identity: "bun",
                 version: Bun.version,
+                fsSupport: true,
                 tsSupport: true,
                 worker: undefined,
-            });
+            } as RuntimeInfo);
         }
     });
 

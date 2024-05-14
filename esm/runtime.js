@@ -24,6 +24,7 @@ function runtime() {
         return {
             identity: "deno",
             version: Deno.version.deno,
+            fsSupport: true,
             tsSupport: true,
             worker: isMainThread ? undefined : "dedicated",
         };
@@ -32,6 +33,7 @@ function runtime() {
         return {
             identity: "bun",
             version: Bun.version,
+            fsSupport: true,
             tsSupport: true,
             worker: isMainThread ? undefined : "dedicated",
         };
@@ -40,11 +42,13 @@ function runtime() {
         return {
             identity: "node",
             version: process.version.slice(1),
+            fsSupport: true,
             tsSupport: process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
                 || /\.tsx?$|\bvite\b/.test((_a = process.argv[1]) !== null && _a !== void 0 ? _a : ""),
             worker: isMainThread ? undefined : "dedicated",
         };
     }
+    const fsSupport = typeof FileSystemHandle === "function";
     const worker = isSharedWorker ? "shared"
         : isServiceWorker ? "service"
             : isDedicatedWorker ? "dedicated"
@@ -63,6 +67,7 @@ function runtime() {
                 return {
                     identity: "safari",
                     version: safari.version,
+                    fsSupport,
                     tsSupport: false,
                     worker,
                 };
@@ -71,6 +76,7 @@ function runtime() {
                 return {
                     identity: "firefox",
                     version: firefox.version,
+                    fsSupport,
                     tsSupport: false,
                     worker,
                 };
@@ -79,6 +85,7 @@ function runtime() {
                 return {
                     identity: "chrome",
                     version: chrome.version,
+                    fsSupport,
                     tsSupport: false,
                     worker,
                 };
@@ -87,6 +94,7 @@ function runtime() {
                 return {
                     identity: "unknown",
                     version: undefined,
+                    fsSupport,
                     tsSupport: false,
                     worker,
                 };
@@ -96,6 +104,7 @@ function runtime() {
             return {
                 identity: "cloudflare-worker",
                 version: undefined,
+                fsSupport,
                 tsSupport: (() => {
                     try {
                         throw new Error("Test error");
@@ -108,7 +117,13 @@ function runtime() {
             };
         }
     }
-    return { identity: "unknown", version: undefined, tsSupport: false, worker };
+    return {
+        identity: "unknown",
+        version: undefined,
+        fsSupport,
+        tsSupport: false,
+        worker,
+    };
 }
 const WellknownPlatforms = [
     "darwin",

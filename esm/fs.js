@@ -16,11 +16,10 @@ import { toAsyncIterable } from './reader/util.js';
 /**
  * Universal file system APIs for both server and browser applications.
  *
- * In most browsers, this module uses the Origin Private File System.
+ * In most browsers, this module uses the
+ * [Origin Private File System](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system).
  * In Chromium browsers, this module can also access the device's local file
  * system via `window.showOpenFilePicker()` and `window.showDirectoryPicker()`.
- *
- * This module is experimental and may not work in some browsers.
  *
  * **Errors:**
  *
@@ -45,6 +44,13 @@ import { toAsyncIterable } from './reader/util.js';
  *
  * Other errors may also be thrown by the runtime, such as `TypeError` and
  * errors saying `Unsupported runtime`.
+ *
+ * NOTE: This module is experimental and may not work in environments.
+ *
+ * We can use the {@link runtime} function to check if the current runtime
+ * has file system support. When `runtime().fsSupport` is `true`, this module
+ * can work properly.
+ *
  * @experimental
  * @module
  */

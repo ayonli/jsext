@@ -38,10 +38,19 @@ export type RuntimeInfo = {
     /** The representation term of the runtime. */
     identity: WellknownRuntimes | "unknown";
     /**
-     * The version of the runtime. This property is `undefined` when `identity` is `others`.
+     * The version of the runtime. This property is `undefined` when `identity`
+     * is `unknown`.
      */
     version?: string | undefined;
-    /** Whether the runtime supports TypeScript. */
+    /**
+     * Whether the runtime has file system support. When `true`, the program can
+     * use the `@ayonli/jsext/fs` module to access the file system.
+     */
+    fsSupport: boolean;
+    /**
+     * Whether the runtime has TypeScript support. When `true`, the program can
+     * import TypeScript files directly.
+     */
     tsSupport: boolean;
     /**
      * If the program is running in a worker thread, this property indicates the
@@ -59,6 +68,7 @@ export default function runtime(): RuntimeInfo {
         return {
             identity: "deno",
             version: Deno.version.deno,
+            fsSupport: true,
             tsSupport: true,
             worker: isMainThread ? undefined : "dedicated",
         };
@@ -66,6 +76,7 @@ export default function runtime(): RuntimeInfo {
         return {
             identity: "bun",
             version: Bun.version,
+            fsSupport: true,
             tsSupport: true,
             worker: isMainThread ? undefined : "dedicated",
         };
@@ -73,12 +84,14 @@ export default function runtime(): RuntimeInfo {
         return {
             identity: "node",
             version: process.version.slice(1),
+            fsSupport: true,
             tsSupport: process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
                 || /\.tsx?$|\bvite\b/.test(process.argv[1] ?? ""),
             worker: isMainThread ? undefined : "dedicated",
         };
     }
 
+    const fsSupport = typeof FileSystemHandle === "function";
     const worker = isSharedWorker ? "shared"
         : isServiceWorker ? "service"
             : isDedicatedWorker ? "dedicated"
@@ -100,6 +113,7 @@ export default function runtime(): RuntimeInfo {
                 return {
                     identity: "safari",
                     version: safari!.version,
+                    fsSupport,
                     tsSupport: false,
                     worker,
                 };
@@ -107,6 +121,7 @@ export default function runtime(): RuntimeInfo {
                 return {
                     identity: "firefox",
                     version: firefox!.version,
+                    fsSupport,
                     tsSupport: false,
                     worker,
                 };
@@ -114,6 +129,7 @@ export default function runtime(): RuntimeInfo {
                 return {
                     identity: "chrome",
                     version: chrome!.version,
+                    fsSupport,
                     tsSupport: false,
                     worker,
                 };
@@ -121,6 +137,7 @@ export default function runtime(): RuntimeInfo {
                 return {
                     identity: "unknown",
                     version: undefined,
+                    fsSupport,
                     tsSupport: false,
                     worker,
                 };
@@ -129,6 +146,7 @@ export default function runtime(): RuntimeInfo {
             return {
                 identity: "cloudflare-worker",
                 version: undefined,
+                fsSupport,
                 tsSupport: (() => {
                     try {
                         throw new Error("Test error");
@@ -141,7 +159,13 @@ export default function runtime(): RuntimeInfo {
         }
     }
 
-    return { identity: "unknown", version: undefined, tsSupport: false, worker };
+    return {
+        identity: "unknown",
+        version: undefined,
+        fsSupport,
+        tsSupport: false,
+        worker,
+    };
 }
 
 export type WellknownPlatforms = "darwin"
