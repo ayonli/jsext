@@ -62,7 +62,7 @@ export type { CommonOptions, FileInfo, DirEntry, DirTree };
 
 /**
  * Platform-specific end-of-line marker. The value is `\r\n` in Windows
- * server-side environments, and `\n` otherwise.
+ * server-side environments, and `\n` elsewhere.
  */
 export const EOL: "\n" | "\r\n" = (() => {
     if (isDeno) {
@@ -878,8 +878,8 @@ export async function writeLines(
 }
 
 /**
- * Truncates (or extends) the specified file, to reach the specified `size`.
- * If `size` is not specified then the entire file contents are truncated.
+ * Truncates (or extends) the file to reach the specified `size`. If `size` is
+ * not specified then the entire file contents are truncated.
  */
 export async function truncate(
     target: string | FileSystemFileHandle,
@@ -1275,7 +1275,7 @@ export async function link(src: string, dest: string, options: {
 }
 
 /**
- * Resolves to the path destination of the named symbolic link.
+ * Returns the destination path of a symbolic link.
  * 
  * NOTE: This function is not available in the browser.
  */
@@ -1349,9 +1349,9 @@ export async function chown(path: string, uid: number, gid: number): Promise<voi
 }
 
 /**
- * Changes the access (`atime`) and modification (`mtime`) times of a file
- * system object referenced by the `path`. Given times are either in seconds
- * (UNIX epoch time) or as `Date` objects.
+ * Changes the access (`atime`) and modification (`mtime`) times of the file
+ * or directory. Given times are either in seconds (UNIX epoch time) or as `Date`
+ * objects.
  * 
  * NOTE: This function is not available in the browser.
  */

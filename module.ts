@@ -16,7 +16,7 @@ import { equals, extname, isUrl } from "./path.ts";
  * But sometimes, this behavior is not guaranteed, for example, when the `module`
  * is an ES module and it does have a default export as an object, or the
  * `module.exports` is the only export in the CommonJS file. In this case,
- * this function will be confused and may return the undesired object.
+ * this function will be confused and may return an undesired object.
  * 
  * To fix this, you can set the `strict` parameter to `true`, so this function
  * will only return the `exports` object when the module also has an `__esModule`
@@ -141,8 +141,9 @@ const urlCache = new Map<string, string>();
 /**
  * This function downloads the resource from the original URL and convert it to
  * an object URL which can bypass the CORS policy in the browser, and convert
- * the response to a new Blob with the correct MIME type if the original one is
- * not matched. It ensures the resource can be loaded correctly in the browser.
+ * the response to a new Blob with the correct MIME type if the original one
+ * does not match. It ensures the resource can be loaded correctly in the
+ * browser.
  */
 export async function getObjectURL(
     src: string,
@@ -189,7 +190,7 @@ const importCache = new Map<string, Promise<void>>();
  * Imports a script from the given URL to the current document, useful for
  * loading 3rd-party libraries dynamically in the browser.
  * 
- * NOTE: this function will throw an error if called outside the browser.
+ * NOTE: This function is only available in the browser.
  */
 export function importScript(url: string, options: {
     type?: "classic" | "module";
@@ -226,7 +227,7 @@ export function importScript(url: string, options: {
  * Imports a stylesheet from the given URL to the current document, useful for
  * loading 3rd-party libraries dynamically in the browser.
  * 
- * NOTE: this function will throw an error if called outside the browser.
+ * NOTE: This function is only available in the browser.
  */
 export function importStylesheet(url: string): Promise<void> {
     if (!isBrowserWindow) {

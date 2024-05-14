@@ -60,7 +60,7 @@ import { toAsyncIterable } from './reader/util.js';
  */
 /**
  * Platform-specific end-of-line marker. The value is `\r\n` in Windows
- * server-side environments, and `\n` otherwise.
+ * server-side environments, and `\n` elsewhere.
  */
 const EOL = (() => {
     if (isDeno) {
@@ -758,8 +758,8 @@ async function writeLines(target, lines, options = {}) {
     await writeFile(target, content, options);
 }
 /**
- * Truncates (or extends) the specified file, to reach the specified `size`.
- * If `size` is not specified then the entire file contents are truncated.
+ * Truncates (or extends) the file to reach the specified `size`. If `size` is
+ * not specified then the entire file contents are truncated.
  */
 async function truncate(target, size = 0, options = {}) {
     if (typeof target === "object") {
@@ -1087,7 +1087,7 @@ async function link(src, dest, options = {}) {
     }
 }
 /**
- * Resolves to the path destination of the named symbolic link.
+ * Returns the destination path of a symbolic link.
  *
  * NOTE: This function is not available in the browser.
  */
@@ -1166,9 +1166,9 @@ async function chown(path, uid, gid) {
     }
 }
 /**
- * Changes the access (`atime`) and modification (`mtime`) times of a file
- * system object referenced by the `path`. Given times are either in seconds
- * (UNIX epoch time) or as `Date` objects.
+ * Changes the access (`atime`) and modification (`mtime`) times of the file
+ * or directory. Given times are either in seconds (UNIX epoch time) or as `Date`
+ * objects.
  *
  * NOTE: This function is not available in the browser.
  */

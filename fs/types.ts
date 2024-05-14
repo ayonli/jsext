@@ -42,7 +42,7 @@ export interface FileInfo {
     name: string;
     kind: "file" | "directory" | "symlink";
     /**
-     * The size of the file in bytes. The value may be `0` if this is a
+     * The size of the file in bytes. This value may be `0` if this is a
      * directory.
      */
     size: number;
@@ -72,12 +72,12 @@ export interface FileInfo {
      */
     mode: number;
     /**
-     * User ID of the owner of this file. This value may be `0` on unsupported
+     * User ID of the owner of the file. This value may be `0` on unsupported
      * platforms.
      */
     uid: number;
     /**
-     * Group ID of the owner of this file. This value may be `0` on unsupported
+     * Group ID of the owner of the file. This value may be `0` on unsupported
      * platforms.
      */
     gid: number;

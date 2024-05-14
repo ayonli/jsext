@@ -72,8 +72,9 @@ const urlCache = new Map();
 /**
  * This function downloads the resource from the original URL and convert it to
  * an object URL which can bypass the CORS policy in the browser, and convert
- * the response to a new Blob with the correct MIME type if the original one is
- * not matched. It ensures the resource can be loaded correctly in the browser.
+ * the response to a new Blob with the correct MIME type if the original one
+ * does not match. It ensures the resource can be loaded correctly in the
+ * browser.
  */
 async function getObjectURL(src, mimeType = "text/javascript") {
     var _a;
@@ -111,7 +112,7 @@ const importCache = new Map();
  * Imports a script from the given URL to the current document, useful for
  * loading 3rd-party libraries dynamically in the browser.
  *
- * NOTE: this function will throw an error if called outside the browser.
+ * NOTE: This function is only available in the browser.
  */
 function importScript(url, options = {}) {
     if (!isBrowserWindow) {
@@ -140,7 +141,7 @@ function importScript(url, options = {}) {
  * Imports a stylesheet from the given URL to the current document, useful for
  * loading 3rd-party libraries dynamically in the browser.
  *
- * NOTE: this function will throw an error if called outside the browser.
+ * NOTE: This function is only available in the browser.
  */
 function importStylesheet(url) {
     if (!isBrowserWindow) {

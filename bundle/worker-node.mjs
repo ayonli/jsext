@@ -716,7 +716,7 @@ function split(path) {
  */
 /**
  * Platform-specific path segment separator. The value is `\` in Windows
- * server-side environments, and `/` otherwise.
+ * server-side environments, and `/` elsewhere.
  */
 const sep = (() => {
     if (isDeno) {
@@ -834,8 +834,8 @@ function join(...segments) {
  * Resolves path `segments` into a well-formed path.
  *
  * This function is similar to {@link join}, except it always returns an
- * absolute path based on current working directory if the input segments are not
- * absolute by themselves.
+ * absolute path based on the current working directory if the input segments
+ * are not absolute by themselves.
  * @experimental
  */
 function resolve(...segments) {
@@ -908,8 +908,9 @@ const urlCache = new Map();
 /**
  * This function downloads the resource from the original URL and convert it to
  * an object URL which can bypass the CORS policy in the browser, and convert
- * the response to a new Blob with the correct MIME type if the original one is
- * not matched. It ensures the resource can be loaded correctly in the browser.
+ * the response to a new Blob with the correct MIME type if the original one
+ * does not match. It ensures the resource can be loaded correctly in the
+ * browser.
  */
 async function getObjectURL(src, mimeType = "text/javascript") {
     var _a;

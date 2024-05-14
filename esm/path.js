@@ -15,7 +15,7 @@ export { contains, endsWith, equals, startsWith } from './path/util.js';
  */
 /**
  * Platform-specific path segment separator. The value is `\` in Windows
- * server-side environments, and `/` otherwise.
+ * server-side environments, and `/` elsewhere.
  */
 const sep = (() => {
     if (isDeno) {
@@ -164,8 +164,8 @@ function sanitize(path) {
  * Resolves path `segments` into a well-formed path.
  *
  * This function is similar to {@link join}, except it always returns an
- * absolute path based on current working directory if the input segments are not
- * absolute by themselves.
+ * absolute path based on the current working directory if the input segments
+ * are not absolute by themselves.
  * @experimental
  */
 function resolve(...segments) {
