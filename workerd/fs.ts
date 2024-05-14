@@ -4,6 +4,21 @@ export type { CommonOptions, FileInfo, DirEntry, DirTree };
 
 export const EOL: "\n" | "\r\n" = "\n";
 
+export async function getDirHandle(path: string, options: CommonOptions & {
+    create?: boolean;
+    recursive?: boolean;
+} = {}): Promise<FileSystemDirectoryHandle> {
+    void path, options;
+    throw new Error("Unsupported runtime");
+}
+
+export async function getFileHandle(path: string, options: CommonOptions & {
+    create?: boolean;
+} = {}): Promise<FileSystemFileHandle> {
+    void path, options;
+    throw new Error("Unsupported runtime");
+}
+
 export async function exists(path: string, options: CommonOptions = {}): Promise<boolean> {
     void path, options;
     throw new Error("Unsupported runtime");

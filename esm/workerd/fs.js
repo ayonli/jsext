@@ -1,4 +1,10 @@
 const EOL = "\n";
+async function getDirHandle(path, options = {}) {
+    throw new Error("Unsupported runtime");
+}
+async function getFileHandle(path, options = {}) {
+    throw new Error("Unsupported runtime");
+}
 async function exists(path, options = {}) {
     throw new Error("Unsupported runtime");
 }
@@ -57,5 +63,5 @@ async function utimes(path, atime, mtime) {
     throw new Error("Unsupported runtime");
 }
 
-export { EOL, chmod, chown, copy, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };
+export { EOL, chmod, chown, copy, ensureDir, exists, getDirHandle, getFileHandle, link, mkdir, readDir, readFile, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };
 //# sourceMappingURL=fs.js.map

@@ -164,10 +164,18 @@ function rawOp<T>(op: Promise<T>, type: "file" | "directory" | undefined = undef
     });
 }
 
-async function getDirHandle(path: string, options: CommonOptions & {
+/**
+ * Obtains the directory handle of given path.
+ * 
+ * NOTE: This function is only available in the browser.
+ */
+export async function getDirHandle(path: string, options: CommonOptions & {
     /** Create the directory if not exist. */
     create?: boolean;
-    /** Used when `create` is `true`. */
+    /**
+     * Used when `create` is `true`, recursively create the directory and its
+     * parent directories.
+     */
     recursive?: boolean;
 } = {}): Promise<FileSystemDirectoryHandle> {
     if (typeof location === "object" && typeof location.origin === "string") {
@@ -187,6 +195,23 @@ async function getDirHandle(path: string, options: CommonOptions & {
     }
 
     return dir;
+}
+
+/**
+ * Obtains the file handle of the given path.
+ * 
+ * NOTE: This function is only available in the browser.
+ */
+export async function getFileHandle(path: string, options: CommonOptions & {
+    /** Create the file if not exist. */
+    create?: boolean;
+} = {}): Promise<FileSystemFileHandle> {
+    const dirPath = dirname(path);
+    const name = basename(path);
+    const dir = await getDirHandle(dirPath, { root: options.root });
+    return await rawOp(dir.getFileHandle(name, {
+        create: options.create ?? false,
+    }), "file");
 }
 
 /**
@@ -310,18 +335,15 @@ export async function stat(
             isSocket: stat.isSocket(),
         };
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        const parent = dirname(path);
-        const name = basename(path);
-        const dir = await getDirHandle(parent, options);
-        const [err, file] = await _try(rawOp(dir.getFileHandle(name), "file"));
+        const [err, file] = await _try(getFileHandle(path, options));
 
         if (file) {
             const info = await rawOp(file.getFile(), "file");
             return {
-                name,
+                name: info.name,
                 kind: "file",
                 size: info.size,
-                type: info.type ?? getMIME(extname(name)) ?? "",
+                type: info.type ?? getMIME(extname(info.name)) ?? "",
                 mtime: new Date(info.lastModified),
                 atime: null,
                 birthtime: null,
@@ -335,7 +357,7 @@ export async function stat(
             };
         } else if (as(err, Exception)?.name === "IsDirectoryError") {
             return {
-                name,
+                name: basename(path),
                 kind: "directory",
                 size: 0,
                 type: "",
@@ -636,11 +658,7 @@ export async function readFile(target: string | FileSystemFileHandle, options: C
         const buffer = await rawOp(fs.readFile(filename, options));
         return new Uint8Array(buffer.buffer, 0, buffer.byteLength);
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        const path = dirname(filename);
-        const name = basename(filename);
-        const dir = await getDirHandle(path, { root: options.root });
-        const handle = await rawOp(dir.getFileHandle(name), "file");
-
+        const handle = await getFileHandle(filename, { root: options.root });
         return await readFileHandle(handle, options);
     } else {
         throw new Error("Unsupported runtime");
@@ -733,11 +751,7 @@ export async function writeFile(
             ...rest,
         }));
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        const path = dirname(filename);
-        const name = basename(filename);
-        const dir = await getDirHandle(path, { root: options.root });
-        const handle = await rawOp(dir.getFileHandle(name, { create: true }), "file");
-
+        const handle = await getFileHandle(filename, { create: true });
         return await writeFileHandle(handle, data, options);
     } else {
         throw new Error("Unsupported runtime");
@@ -866,14 +880,7 @@ export async function truncate(
     options: CommonOptions = {}
 ): Promise<void> {
     if (typeof target === "object") {
-        try {
-            const writer = await target.createWritable({ keepExistingData: true });
-            await writer.truncate(size);
-            await writer.close();
-            return;
-        } catch (err) {
-            throw wrapFsError(err, "file");
-        }
+        return await truncateFileHandle(target, size);
     }
 
     const filename = target;
@@ -884,21 +891,23 @@ export async function truncate(
         const fs = await import("fs/promises");
         await rawOp(fs.truncate(filename, size));
     } else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        const path = dirname(filename);
-        const name = basename(filename);
-        const dir = await getDirHandle(path, { root: options.root });
-
-        try {
-            const handle = await dir.getFileHandle(name);
-            const writer = await handle.createWritable({ keepExistingData: true });
-
-            await writer.truncate(size);
-            await writer.close();
-        } catch (err) {
-            throw wrapFsError(err, "file");
-        }
+        const handle = await getFileHandle(filename, { root: options.root });
+        await truncateFileHandle(handle, size);
     } else {
         throw new Error("Unsupported runtime");
+    }
+}
+
+async function truncateFileHandle(
+    handle: FileSystemFileHandle,
+    size: number = 0
+): Promise<void> {
+    try {
+        const writer = await handle.createWritable({ keepExistingData: true });
+        await writer.truncate(size);
+        await writer.close();
+    } catch (err) {
+        throw wrapFsError(err, "file");
     }
 }
 

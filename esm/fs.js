@@ -5,7 +5,7 @@ import { isDeno, isNodeLike, isBrowserWindow, isDedicatedWorker, isSharedWorker 
 import { as } from './object.js';
 import Exception from './error/Exception.js';
 import { getMIME } from './filetype.js';
-import { extname, basename, dirname, join } from './path.js';
+import { dirname, basename, extname, join } from './path.js';
 import { readAsArray, readAsArrayBuffer } from './reader.js';
 import { platform } from './runtime.js';
 import { stripStart } from './string.js';
@@ -162,6 +162,11 @@ function rawOp(op, type = undefined) {
         throw wrapFsError(err, type);
     });
 }
+/**
+ * Obtains the directory handle of given path.
+ *
+ * NOTE: This function is only available in the browser.
+ */
 async function getDirHandle(path, options = {}) {
     var _a;
     if (typeof location === "object" && typeof location.origin === "string") {
@@ -178,6 +183,20 @@ async function getDirHandle(path, options = {}) {
         }), "directory");
     }
     return dir;
+}
+/**
+ * Obtains the file handle of the given path.
+ *
+ * NOTE: This function is only available in the browser.
+ */
+async function getFileHandle(path, options = {}) {
+    var _a;
+    const dirPath = dirname(path);
+    const name = basename(path);
+    const dir = await getDirHandle(dirPath, { root: options.root });
+    return await rawOp(dir.getFileHandle(name, {
+        create: (_a = options.create) !== null && _a !== void 0 ? _a : false,
+    }), "file");
 }
 /**
  * Checks if the given path exists.
@@ -294,17 +313,14 @@ async function stat(target, options = {}) {
         };
     }
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        const parent = dirname(path);
-        const name = basename(path);
-        const dir = await getDirHandle(parent, options);
-        const [err, file] = await _try(rawOp(dir.getFileHandle(name), "file"));
+        const [err, file] = await _try(getFileHandle(path, options));
         if (file) {
             const info = await rawOp(file.getFile(), "file");
             return {
-                name,
+                name: info.name,
                 kind: "file",
                 size: info.size,
-                type: (_x = (_w = info.type) !== null && _w !== void 0 ? _w : getMIME(extname(name))) !== null && _x !== void 0 ? _x : "",
+                type: (_x = (_w = info.type) !== null && _w !== void 0 ? _w : getMIME(extname(info.name))) !== null && _x !== void 0 ? _x : "",
                 mtime: new Date(info.lastModified),
                 atime: null,
                 birthtime: null,
@@ -319,7 +335,7 @@ async function stat(target, options = {}) {
         }
         else if (((_y = as(err, Exception)) === null || _y === void 0 ? void 0 : _y.name) === "IsDirectoryError") {
             return {
-                name,
+                name: basename(path),
                 kind: "directory",
                 size: 0,
                 type: "",
@@ -567,10 +583,7 @@ async function readFile(target, options = {}) {
         return new Uint8Array(buffer.buffer, 0, buffer.byteLength);
     }
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        const path = dirname(filename);
-        const name = basename(filename);
-        const dir = await getDirHandle(path, { root: options.root });
-        const handle = await rawOp(dir.getFileHandle(name), "file");
+        const handle = await getFileHandle(filename, { root: options.root });
         return await readFileHandle(handle, options);
     }
     else {
@@ -649,10 +662,7 @@ async function writeFile(target, data, options = {}) {
         }));
     }
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        const path = dirname(filename);
-        const name = basename(filename);
-        const dir = await getDirHandle(path, { root: options.root });
-        const handle = await rawOp(dir.getFileHandle(name, { create: true }), "file");
+        const handle = await getFileHandle(filename, { create: true });
         return await writeFileHandle(handle, data, options);
     }
     else {
@@ -751,15 +761,7 @@ async function writeLines(target, lines, options = {}) {
  */
 async function truncate(target, size = 0, options = {}) {
     if (typeof target === "object") {
-        try {
-            const writer = await target.createWritable({ keepExistingData: true });
-            await writer.truncate(size);
-            await writer.close();
-            return;
-        }
-        catch (err) {
-            throw wrapFsError(err, "file");
-        }
+        return await truncateFileHandle(target, size);
     }
     const filename = target;
     if (isDeno) {
@@ -770,21 +772,21 @@ async function truncate(target, size = 0, options = {}) {
         await rawOp(fs.truncate(filename, size));
     }
     else if (isBrowserWindow || isDedicatedWorker || isSharedWorker) {
-        const path = dirname(filename);
-        const name = basename(filename);
-        const dir = await getDirHandle(path, { root: options.root });
-        try {
-            const handle = await dir.getFileHandle(name);
-            const writer = await handle.createWritable({ keepExistingData: true });
-            await writer.truncate(size);
-            await writer.close();
-        }
-        catch (err) {
-            throw wrapFsError(err, "file");
-        }
+        const handle = await getFileHandle(filename, { root: options.root });
+        await truncateFileHandle(handle, size);
     }
     else {
         throw new Error("Unsupported runtime");
+    }
+}
+async function truncateFileHandle(handle, size = 0) {
+    try {
+        const writer = await handle.createWritable({ keepExistingData: true });
+        await writer.truncate(size);
+        await writer.close();
+    }
+    catch (err) {
+        throw wrapFsError(err, "file");
     }
 }
 /**
@@ -1193,5 +1195,5 @@ async function utimes(path, atime, mtime) {
     }
 }
 
-export { EOL, chmod, chown, copy, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };
+export { EOL, chmod, chown, copy, ensureDir, exists, getDirHandle, getFileHandle, link, mkdir, readDir, readFile, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };
 //# sourceMappingURL=fs.js.map
