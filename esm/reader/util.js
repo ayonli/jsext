@@ -76,17 +76,15 @@ function resolveReadableStream(promise, type = "default") {
                 reader = _reader.getReader({ mode: "byob" });
             },
             async pull(controller) {
-                var _a;
-                if ("byobRequest" in controller && ((_a = controller.byobRequest) === null || _a === void 0 ? void 0 : _a.view)) {
-                    const view = controller.byobRequest.view;
-                    const buffer = view.buffer;
-                    const newView = new Uint8Array(buffer, view.byteOffset, view.byteLength);
-                    const { done, value } = await reader.read(newView);
+                if (controller.byobRequest) {
+                    const byobRequest = controller.byobRequest;
+                    const buffer = byobRequest.view.buffer;
+                    const { done, value } = await reader.read(new Uint8Array(buffer));
                     if (done) {
                         controller.close();
                     }
                     else {
-                        controller.byobRequest.respond(value.byteLength);
+                        byobRequest.respond(value.byteLength);
                     }
                 }
                 else {

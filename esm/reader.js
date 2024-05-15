@@ -14,18 +14,15 @@ function toReadableStream(source, eventMap = undefined) {
         return resolveReadableStream(source);
     }
     const iterable = toAsyncIterable(source, eventMap);
+    const iterator = iterable[Symbol.asyncIterator]();
     return new ReadableStream({
-        async start(controller) {
-            try {
-                for await (const chunk of iterable) {
-                    controller.enqueue(chunk);
-                }
-            }
-            catch (error) {
-                controller.error(error);
-            }
-            finally {
+        async pull(controller) {
+            const { done, value } = await iterator.next();
+            if (done) {
                 controller.close();
+            }
+            else {
+                controller.enqueue(value);
             }
         }
     });

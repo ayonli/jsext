@@ -45,17 +45,16 @@ export function toReadableStream<T>(source: any, eventMap: {
     }
 
     const iterable = toAsyncIterable(source, eventMap) as AsyncIterable<T>;
+    const iterator = iterable[Symbol.asyncIterator]();
 
     return new ReadableStream<T>({
-        async start(controller) {
-            try {
-                for await (const chunk of iterable) {
-                    controller.enqueue(chunk);
-                }
-            } catch (error) {
-                controller.error(error);
-            } finally {
+        async pull(controller) {
+            const { done, value } = await iterator.next();
+
+            if (done) {
                 controller.close();
+            } else {
+                controller.enqueue(value);
             }
         }
     });

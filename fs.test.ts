@@ -586,7 +586,7 @@ describe("fs", () => {
 
             const output = bytes("Hello, world!");
             const stream = new ReadableStream({
-                start(controller) {
+                pull(controller) {
                     controller.enqueue(output);
                     controller.close();
                 }

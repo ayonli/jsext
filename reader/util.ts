@@ -99,16 +99,15 @@ export function resolveReadableStream<T>(
                 reader = _reader.getReader({ mode: "byob" });
             },
             async pull(controller) {
-                if ("byobRequest" in controller && controller.byobRequest?.view) {
-                    const view = controller.byobRequest.view!;
-                    const buffer = view.buffer;
-                    const newView = new Uint8Array(buffer, view.byteOffset, view.byteLength);
-                    const { done, value } = await reader.read(newView);
+                if ((controller as any).byobRequest) {
+                    const byobRequest = (controller as ReadableByteStreamController).byobRequest!;
+                    const buffer = byobRequest.view!.buffer;
+                    const { done, value } = await reader.read(new Uint8Array(buffer));
 
                     if (done) {
                         controller.close();
                     } else {
-                        controller.byobRequest.respond(value.byteLength);
+                        byobRequest.respond(value.byteLength);
                     }
                 } else {
                     const buffer = new ArrayBuffer(4096);
