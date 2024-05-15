@@ -28,15 +28,11 @@ async function* resolveAsyncIterable(promise) {
         throw new TypeError("The given source is not an async iterable object.");
     }
 }
-function resolveReadableStream(promise) {
-    let reader;
-    let controller;
-    const stream = new ReadableStream({
-        start(c) {
-            controller = c;
-        },
-        async pull() {
-            if (!reader) {
+function resolveReadableStream(promise, type = "default") {
+    if (type === "default") {
+        let reader;
+        return new ReadableStream({
+            async start() {
                 const _reader = await promise;
                 if ("getReader" in _reader) {
                     reader = _reader.getReader();
@@ -47,29 +43,70 @@ function resolveReadableStream(promise) {
                 else {
                     reader = _reader[Symbol.iterator]();
                 }
-            }
-            let done;
-            let value;
-            if ("read" in reader) {
-                ({ done, value } = await reader.read());
-            }
-            else {
-                ({ done = false, value } = await reader.next());
-            }
-            if (done) {
-                controller === null || controller === void 0 ? void 0 : controller.close();
-            }
-            else {
-                controller === null || controller === void 0 ? void 0 : controller.enqueue(value);
-            }
-        },
-        cancel(reason = undefined) {
-            if (reader && "cancel" in reader) {
-                reader.cancel(reason);
-            }
-        },
-    });
-    return stream;
+            },
+            async pull(controller) {
+                let done;
+                let value;
+                if ("read" in reader) {
+                    ({ done, value } = await reader.read());
+                }
+                else {
+                    ({ done = false, value } = await reader.next());
+                }
+                if (done) {
+                    controller.close();
+                }
+                else {
+                    controller.enqueue(value);
+                }
+            },
+            cancel(reason = undefined) {
+                if (reader && "cancel" in reader) {
+                    reader.cancel(reason);
+                }
+            },
+        });
+    }
+    else {
+        let reader;
+        return new ReadableStream({
+            type: "bytes",
+            async start() {
+                const _reader = await promise;
+                reader = _reader.getReader({ mode: "byob" });
+            },
+            async pull(controller) {
+                var _a;
+                if ("byobRequest" in controller && ((_a = controller.byobRequest) === null || _a === void 0 ? void 0 : _a.view)) {
+                    const view = controller.byobRequest.view;
+                    const buffer = view.buffer;
+                    const newView = new Uint8Array(buffer, view.byteOffset, view.byteLength);
+                    const { done, value } = await reader.read(newView);
+                    if (done) {
+                        controller.close();
+                    }
+                    else {
+                        controller.byobRequest.respond(value.byteLength);
+                    }
+                }
+                else {
+                    const buffer = new ArrayBuffer(4096);
+                    const { done, value } = await reader.read(new Uint8Array(buffer));
+                    if (done) {
+                        controller.close();
+                    }
+                    else {
+                        controller.enqueue(value);
+                    }
+                }
+            },
+            cancel(reason = undefined) {
+                if (reader && "cancel" in reader) {
+                    reader.cancel(reason);
+                }
+            },
+        });
+    }
 }
 /**
  * Converts the given `source` into an `AsyncIterable` object if it's not one

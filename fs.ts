@@ -54,6 +54,7 @@ import type { FileInfo, DirEntry, CommonOptions, DirTree } from "./fs/types.ts";
 import { as } from "./object.ts";
 import { basename, dirname, extname, join, split } from "./path.ts";
 import { readAsArray, readAsArrayBuffer, toAsyncIterable, toReadableStream } from "./reader.ts";
+import { resolveReadableStream } from "./reader/util.ts";
 import runtime, { platform } from "./runtime.ts";
 import { stripStart } from "./string.ts";
 import _try from "./try.ts";
@@ -747,7 +748,16 @@ export function readFileAsStream(
     target: string | FileSystemFileHandle,
     options: CommonOptions = {}
 ): ReadableStream<Uint8Array> {
-    return toReadableStream((async () => {
+    if (isNodeLike) {
+        return resolveReadableStream((async () => {
+            const filename = target as string;
+            const fs = await import("fs");
+            const reader = fs.createReadStream(filename);
+            return toReadableStream<Uint8Array>(reader);
+        })());
+    }
+
+    return resolveReadableStream((async () => {
         if (typeof target === "object") {
             return await readFileHandleAsStream(target);
         }
@@ -757,15 +767,11 @@ export function readFileAsStream(
         if (isDeno) {
             const file = await rawOp(Deno.open(filename, { read: true }));
             return file.readable;
-        } else if (isNodeLike) {
-            const fs = await import("fs");
-            const reader = fs.createReadStream(filename);
-            return toReadableStream<Uint8Array>(reader);
         } else {
             const handle = await getFileHandle(filename, { root: options.root });
             return await readFileHandleAsStream(handle);
         }
-    })());
+    })(), "bytes");
 }
 
 async function readFileHandleAsStream(

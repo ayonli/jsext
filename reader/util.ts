@@ -34,17 +34,30 @@ async function* resolveAsyncIterable<T>(
     }
 }
 
+/**
+ * When the iterable object or readable stream is being carried by a promise,
+ * this function will resolve the promise and return a readable stream object
+ * that iterates over the data.
+ */
 export function resolveReadableStream<T>(
-    promise: Promise<AsyncIterable<T> | Iterable<T> | ReadableStream<T>>
+    promise: Promise<AsyncIterable<T> | Iterable<T> | ReadableStream<T>>,
+): ReadableStream<T>;
+/**
+ * When the `type` is set to `"bytes"`, that mean the underlying stream is a
+ * byte stream and we shall use zero-copy buffer to transfer the data.
+ */
+export function resolveReadableStream<Uint8Array>(
+    promise: Promise<ReadableStream<Uint8Array>>,
+    type: "bytes"
+): ReadableStream<Uint8Array>;
+export function resolveReadableStream<T>(
+    promise: Promise<AsyncIterable<T> | Iterable<T> | ReadableStream<T>>,
+    type: "default" | "bytes" = "default"
 ): ReadableStream<T> {
-    let reader: ReadableStreamDefaultReader<T> | AsyncIterator<T> | Iterator<T> | undefined;
-    let controller: ReadableStreamDefaultController<T> | undefined;
-    const stream = new ReadableStream<T>({
-        start(c) {
-            controller = c;
-        },
-        async pull() {
-            if (!reader) {
+    if (type === "default") {
+        let reader: ReadableStreamDefaultReader<T> | AsyncIterator<T> | Iterator<T> | undefined;
+        return new ReadableStream<T>({
+            async start() {
                 const _reader = await promise;
 
                 if ("getReader" in _reader) {
@@ -54,31 +67,67 @@ export function resolveReadableStream<T>(
                 } else {
                     reader = (_reader as Iterable<T>)[Symbol.iterator]();
                 }
-            }
+            },
+            async pull(controller) {
+                let done: boolean;
+                let value: T | undefined;
 
-            let done: boolean;
-            let value: T | undefined;
+                if ("read" in reader!) {
+                    ({ done, value } = await reader.read());
+                } else {
+                    ({ done = false, value } = await reader!.next());
+                }
 
-            if ("read" in reader) {
-                ({ done, value } = await reader.read());
-            } else {
-                ({ done = false, value } = await reader.next());
-            }
+                if (done) {
+                    controller.close();
+                } else {
+                    controller.enqueue(value);
+                }
+            },
+            cancel(reason = undefined) {
+                if (reader && "cancel" in reader) {
+                    reader.cancel(reason);
+                }
+            },
+        });
+    } else {
+        let reader: ReadableStreamBYOBReader;
+        return new ReadableStream<Uint8Array>({
+            type: "bytes",
+            async start() {
+                const _reader = await promise as ReadableStream<Uint8Array>;
+                reader = _reader.getReader({ mode: "byob" });
+            },
+            async pull(controller) {
+                if ("byobRequest" in controller && controller.byobRequest?.view) {
+                    const view = controller.byobRequest.view!;
+                    const buffer = view.buffer;
+                    const newView = new Uint8Array(buffer, view.byteOffset, view.byteLength);
+                    const { done, value } = await reader.read(newView);
 
-            if (done) {
-                controller?.close();
-            } else {
-                controller?.enqueue(value);
-            }
-        },
-        cancel(reason = undefined) {
-            if (reader && "cancel" in reader) {
-                reader.cancel(reason);
-            }
-        },
-    });
+                    if (done) {
+                        controller.close();
+                    } else {
+                        controller.byobRequest.respond(value.byteLength);
+                    }
+                } else {
+                    const buffer = new ArrayBuffer(4096);
+                    const { done, value } = await reader.read(new Uint8Array(buffer));
 
-    return stream;
+                    if (done) {
+                        controller.close();
+                    } else {
+                        controller.enqueue(value);
+                    }
+                }
+            },
+            cancel(reason = undefined) {
+                if (reader && "cancel" in reader) {
+                    reader.cancel(reason);
+                }
+            },
+        }) as ReadableStream<T>;
+    }
 }
 
 /**
