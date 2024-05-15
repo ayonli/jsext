@@ -101,7 +101,7 @@ export function copy(src: Uint8Array, dest: Uint8Array): number {
 /** Like `Buffer.concat` but for pure `Uint8Array`. */
 export function concat<T extends Uint8Array>(...arrays: T[]): T {
     const length = sum(...arrays.map(arr => arr.length));
-    const ctor = (arrays[0] as T).constructor as Constructor<T>;
+    const ctor = ((arrays[0] as T)?.constructor || Uint8Array) as Constructor<T>;
     const result = new ctor(length);
     let offset = 0;
 

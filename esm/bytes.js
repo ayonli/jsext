@@ -72,8 +72,9 @@ function copy(src, dest) {
 }
 /** Like `Buffer.concat` but for pure `Uint8Array`. */
 function concat(...arrays) {
+    var _a;
     const length = sum(...arrays.map(arr => arr.length));
-    const ctor = arrays[0].constructor;
+    const ctor = (((_a = arrays[0]) === null || _a === void 0 ? void 0 : _a.constructor) || Uint8Array);
     const result = new ctor(length);
     let offset = 0;
     for (const arr of arrays) {
