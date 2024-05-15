@@ -87,6 +87,7 @@ async function handleTerminalProgress(message, fn, options) {
                         break;
                     }
                 }
+                denoReader.releaseLock();
             })();
         }
     }

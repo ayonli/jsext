@@ -106,6 +106,8 @@ export async function handleTerminalProgress(
                         break;
                     }
                 }
+
+                denoReader.releaseLock();
             })();
         }
     }

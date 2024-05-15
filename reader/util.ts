@@ -31,18 +31,22 @@ export function resolveReadableStream<T>(promise: Promise<ReadableStream<T>>): R
             reader = stream.getReader();
         },
         async pull(controller) {
-            const { done, value } = await reader.read();
+            try {
+                const { done, value } = await reader.read();
 
-            if (done) {
-                controller.close();
-            } else {
-                controller.enqueue(value);
+                if (done) {
+                    controller.close();
+                } else {
+                    controller.enqueue(value);
+                }
+            } catch (err) {
+                reader.releaseLock();
+                controller.error(err);
             }
         },
         cancel(reason = undefined) {
-            if ("cancel" in reader) {
-                reader.cancel(reason);
-            }
+            reader.cancel(reason);
+            reader.releaseLock();
         },
     });
 }
@@ -74,64 +78,70 @@ export function resolveByteStream(
             }
         },
         async pull(controller) {
-            let request: ReadableStreamBYOBRequest | undefined;
-            let view: Uint8Array | undefined;
-            let result: ReadableStreamReadResult<Uint8Array>;
+            try {
+                let request: ReadableStreamBYOBRequest | undefined;
+                let view: Uint8Array | undefined;
+                let result: ReadableStreamReadResult<Uint8Array>;
 
-            if ("byobRequest" in controller && controller.byobRequest?.view) {
-                // This stream is requested for zero-copy read.
-                request = controller.byobRequest;
-                view = request.view as Uint8Array;
-            } else if (reader instanceof ReadableStreamBYOBReader) {
-                view = new Uint8Array(4096);
-            }
+                if ("byobRequest" in controller && controller.byobRequest?.view) {
+                    // This stream is requested for zero-copy read.
+                    request = controller.byobRequest;
+                    view = request.view as Uint8Array;
+                } else if (reader instanceof ReadableStreamBYOBReader) {
+                    view = new Uint8Array(4096);
+                }
 
-            if (reader instanceof ReadableStreamBYOBReader) {
-                // The source stream supports zero-copy read, we can read its
-                // data directly into the request view's buffer.
-                result = await reader.read(view!);
-            } else {
-                // The source stream does not support zero-copy read, we need to
-                // copy its data to a new buffer.
-                result = await reader.read();
-            }
+                if (reader instanceof ReadableStreamBYOBReader) {
+                    // The source stream supports zero-copy read, we can read its
+                    // data directly into the request view's buffer.
+                    result = await reader.read(view!);
+                } else {
+                    // The source stream does not support zero-copy read, we need to
+                    // copy its data to a new buffer.
+                    result = await reader.read();
+                }
 
-            if (request) {
-                if (result.done) {
-                    controller.close();
+                if (request) {
+                    if (result.done) {
+                        controller.close();
 
-                    // The final chunk may be empty, but still needs to be
-                    // responded in order to close the request reader.
-                    if (result.value !== undefined) {
+                        // The final chunk may be empty, but still needs to be
+                        // responded in order to close the request reader.
+                        if (result.value !== undefined) {
+                            request.respondWithNewView(result.value);
+                        } else {
+                            request.respond(0);
+                        }
+                    } else if (reader instanceof ReadableStreamBYOBReader
+                        || (view && result.value.buffer.byteLength === view.buffer.byteLength)
+                    ) {
+                        // Respond to the request reader with the same underlying
+                        // buffer of the source stream.
+                        // Or the source stream doesn't support zero-copy read, but
+                        // the result bytes has the same buffer size as the request
+                        // view.
                         request.respondWithNewView(result.value);
                     } else {
-                        request.respond(0);
+                        // This stream is requested for zero-copy read, but the
+                        // source stream doesn't support it. We need to copy and
+                        // deliver the new buffer instead.
+                        controller.enqueue(result.value);
                     }
-                } else if (reader instanceof ReadableStreamBYOBReader
-                    || (view && result.value.buffer.byteLength === view.buffer.byteLength)
-                ) {
-                    // Respond to the request reader with the same underlying
-                    // buffer of the source stream.
-                    // Or the source stream doesn't support zero-copy read, but
-                    // the result bytes has the same buffer size as the request
-                    // view.
-                    request.respondWithNewView(result.value);
                 } else {
-                    // This stream is requested for zero-copy read, but the
-                    // source stream doesn't support it. We need to copy and
-                    // deliver the new buffer instead.
-                    controller.enqueue(result.value);
+                    if (result.done) {
+                        controller.close();
+                    } else {
+                        controller.enqueue(result.value);
+                    }
                 }
-            } else {
-                if (result.done) {
-                    controller.close();
-                } else {
-                    controller.enqueue(result.value);
-                }
+            } catch (err) {
+                reader.releaseLock();
+                controller.error(err);
             }
         },
         cancel(reason = undefined) {
             reader.cancel(reason);
+            reader.releaseLock();
         },
     });
 }
