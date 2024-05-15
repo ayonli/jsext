@@ -2,7 +2,7 @@ import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import fs from "node:fs/promises";
 import { isBun, isDeno } from "./env.ts";
 import jsext, { _try } from "./index.ts";
-import { readAsArray } from "./reader.ts";
+import { readAsArray, readAsText } from "./reader.ts";
 import { platform } from "./runtime.ts";
 import { join, resolve, sep } from "./path.ts";
 import bytes, { equals } from "./bytes.ts";
@@ -18,6 +18,8 @@ import {
     readDir,
     readFile,
     readFileAsText,
+    readFileAsFile,
+    readFileAsStream,
     readLink,
     readTree,
     remove,
@@ -485,6 +487,64 @@ describe("fs", () => {
             ok(err instanceof Error);
             strictEqual(err.name, "AbortError");
             strictEqual(res, undefined);
+        });
+    });
+
+    describe("readFileAsFile", () => {
+        if (typeof File === "undefined") {
+            return;
+        }
+
+        it("default", async () => {
+            const file = await readFileAsFile("./fs.ts");
+            let _file: File;
+
+            if (isDeno) {
+                _file = new File([await Deno.readFile("./fs.ts")], "fs.ts", {
+                    type: "video/mp2t"
+                });
+            } else {
+                _file = new File([await fs.readFile("./fs.ts")], "fs.ts", {
+                    type: "video/mp2t"
+                });
+            }
+
+            ok(file instanceof File);
+            strictEqual(file.name, _file.name);
+            strictEqual(file.size, _file.size);
+            strictEqual(file.type, _file.type);
+        });
+
+        it("signal", async function () {
+            if (typeof AbortController === "undefined" || isBun) {
+                this.skip();
+            }
+
+            const controller = new AbortController();
+            const signal = controller.signal;
+            const promise = readFileAsFile("./fs.ts", { signal });
+
+            controller.abort();
+
+            const [err, res] = await jsext._try(promise);
+            ok(err instanceof Error);
+            strictEqual(err.name, "AbortError");
+            strictEqual(res, undefined);
+        });
+    });
+
+    describe("readFileAsStream", () => {
+        if (typeof ReadableStream === "undefined") {
+            return;
+        }
+
+        it("default", async () => {
+            const stream = readFileAsStream("./fs.ts");
+            ok(stream instanceof ReadableStream);
+
+            const text = await readAsText(stream);
+            const _text = await readFileAsText("./fs.ts");
+            strictEqual(text, _text);
         });
     });
 

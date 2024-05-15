@@ -53,7 +53,7 @@ import { getMIME } from "./filetype.ts";
 import type { FileInfo, DirEntry, CommonOptions, DirTree } from "./fs/types.ts";
 import { as } from "./object.ts";
 import { basename, dirname, extname, join, split } from "./path.ts";
-import { readAsArray, readAsArrayBuffer, toAsyncIterable } from "./reader.ts";
+import { readAsArray, readAsArrayBuffer, toAsyncIterable, toReadableStream } from "./reader.ts";
 import runtime, { platform } from "./runtime.ts";
 import { stripStart } from "./string.ts";
 import _try from "./try.ts";
@@ -154,7 +154,6 @@ function wrapFsError(
         } else if (errName === "FilesystemLoop") {
             return new Exception(err.message, { name: "FilesystemLoopError", code: 508, cause: err });
         } else {
-            console.log(err.name);
             return err;
         }
     } else if (err instanceof Error) {
@@ -699,6 +698,81 @@ export async function readFileAsText(target: string | FileSystemFileHandle, opti
     } else {
         return text(await readFile(filename, options));
     }
+}
+
+/**
+ * Reads the file as a `File` object.
+ */
+export async function readFileAsFile(target: string | FileSystemFileHandle, options: CommonOptions & {
+    signal?: AbortSignal;
+} = {}): Promise<File> {
+    if (typeof target === "object") {
+        return await readFileHandleAsFile(target);
+    }
+
+    const filename = target;
+
+    if (isDeno || isNodeLike) {
+        const bytes = await readFile(filename, options);
+        const type = getMIME(extname(filename)) ?? "";
+        return new File([bytes], basename(filename), { type });
+    } else {
+        const handle = await getFileHandle(target, { root: options.root });
+        return await readFileHandleAsFile(handle);
+    }
+}
+
+async function readFileHandleAsFile(handle: FileSystemFileHandle): Promise<File> {
+    const file = await rawOp(handle.getFile(), "file");
+
+    if (!file.type) {
+        const ext = extname(file.name);
+
+        if (ext) {
+            Object.defineProperty(file, "type", {
+                value: getMIME(ext) ?? "",
+                writable: false,
+                configurable: true,
+            });
+        }
+    }
+
+    return file;
+}
+
+/**
+ * Reads the file as a `ReadableStream`.
+ */
+export function readFileAsStream(
+    target: string | FileSystemFileHandle,
+    options: CommonOptions = {}
+): ReadableStream<Uint8Array> {
+    return toReadableStream((async () => {
+        if (typeof target === "object") {
+            return await readFileHandleAsStream(target);
+        }
+
+        const filename = target;
+
+        if (isDeno) {
+            const file = await rawOp(Deno.open(filename, { read: true }));
+            return file.readable;
+        } else if (isNodeLike) {
+            const fs = await import("fs");
+            const reader = fs.createReadStream(filename);
+            return toReadableStream<Uint8Array>(reader);
+        } else {
+            const handle = await getFileHandle(filename, { root: options.root });
+            return await readFileHandleAsStream(handle);
+        }
+    })());
+}
+
+async function readFileHandleAsStream(
+    handle: FileSystemFileHandle
+): Promise<ReadableStream<Uint8Array>> {
+    const file = await rawOp(handle.getFile(), "file");
+    return file.stream();
 }
 
 /**

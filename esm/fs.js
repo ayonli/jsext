@@ -6,7 +6,7 @@ import { as } from './object.js';
 import Exception from './error/Exception.js';
 import { getMIME } from './filetype.js';
 import { dirname, basename, extname, join } from './path.js';
-import { readAsArray, readAsArrayBuffer } from './reader.js';
+import { readAsArray, toReadableStream, readAsArrayBuffer } from './reader.js';
 import { platform } from './runtime.js';
 import { stripStart } from './string.js';
 import _try from './try.js';
@@ -151,7 +151,6 @@ function wrapFsError(err, type = undefined) {
             return new Exception(err.message, { name: "FilesystemLoopError", code: 508, cause: err });
         }
         else {
-            console.log(err.name);
             return err;
         }
     }
@@ -619,6 +618,68 @@ async function readFileAsText(target, options = {}) {
     else {
         return text(await readFile(filename, options));
     }
+}
+/**
+ * Reads the file as a `File` object.
+ */
+async function readFileAsFile(target, options = {}) {
+    var _a;
+    if (typeof target === "object") {
+        return await readFileHandleAsFile(target);
+    }
+    const filename = target;
+    if (isDeno || isNodeLike) {
+        const bytes = await readFile(filename, options);
+        const type = (_a = getMIME(extname(filename))) !== null && _a !== void 0 ? _a : "";
+        return new File([bytes], basename(filename), { type });
+    }
+    else {
+        const handle = await getFileHandle(target, { root: options.root });
+        return await readFileHandleAsFile(handle);
+    }
+}
+async function readFileHandleAsFile(handle) {
+    var _a;
+    const file = await rawOp(handle.getFile(), "file");
+    if (!file.type) {
+        const ext = extname(file.name);
+        if (ext) {
+            Object.defineProperty(file, "type", {
+                value: (_a = getMIME(ext)) !== null && _a !== void 0 ? _a : "",
+                writable: false,
+                configurable: true,
+            });
+        }
+    }
+    return file;
+}
+/**
+ * Reads the file as a `ReadableStream`.
+ */
+function readFileAsStream(target, options = {}) {
+    return toReadableStream((async () => {
+        if (typeof target === "object") {
+            return await readFileHandleAsStream(target);
+        }
+        const filename = target;
+        if (isDeno) {
+            const file = await rawOp(Deno.open(filename, { read: true }));
+            return file.readable;
+        }
+        else if (isNodeLike) {
+            const fs = await import('fs');
+            const reader = fs.createReadStream(filename);
+            return toReadableStream(reader);
+        }
+        else {
+            const handle = await getFileHandle(filename, { root: options.root });
+            return await readFileHandleAsStream(handle);
+        }
+    })());
+}
+async function readFileHandleAsStream(handle) {
+    const file = await rawOp(handle.getFile(), "file");
+    return file.stream();
 }
 /**
  * Writes the given data to the file.
@@ -1185,5 +1246,5 @@ async function utimes(path, atime, mtime) {
     }
 }
 
-export { EOL, chmod, chown, copy, ensureDir, exists, getDirHandle, getFileHandle, link, mkdir, readDir, readFile, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };
+export { EOL, chmod, chown, copy, ensureDir, exists, getDirHandle, getFileHandle, link, mkdir, readDir, readFile, readFileAsFile, readFileAsStream, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };
 //# sourceMappingURL=fs.js.map
