@@ -657,14 +657,6 @@ async function readFileHandleAsFile(handle) {
  * Reads the file as a `ReadableStream`.
  */
 function readFileAsStream(target, options = {}) {
-    if (isNodeLike) {
-        return resolveReadableStream((async () => {
-            const filename = target;
-            const fs = await import('fs');
-            const reader = fs.createReadStream(filename);
-            return toReadableStream(reader);
-        })());
-    }
     return resolveReadableStream((async () => {
         if (typeof target === "object") {
             return await readFileHandleAsStream(target);
@@ -674,11 +666,17 @@ function readFileAsStream(target, options = {}) {
             const file = await rawOp(Deno.open(filename, { read: true }));
             return file.readable;
         }
+        else if (isNodeLike) {
+            const filename = target;
+            const fs = await import('fs');
+            const reader = fs.createReadStream(filename);
+            return toReadableStream(reader);
+        }
         else {
             const handle = await getFileHandle(filename, { root: options.root });
             return await readFileHandleAsStream(handle);
         }
-    })(), "bytes");
+    })());
 }
 async function readFileHandleAsStream(handle) {
     const file = await rawOp(handle.getFile(), "file");

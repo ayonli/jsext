@@ -28,83 +28,56 @@ async function* resolveAsyncIterable(promise) {
         throw new TypeError("The given source is not an async iterable object.");
     }
 }
-function resolveReadableStream(promise, type = "default") {
-    if (type === "default") {
-        let reader;
-        return new ReadableStream({
-            async start() {
-                const _reader = await promise;
-                if ("getReader" in _reader) {
+function resolveReadableStream(promise) {
+    let reader;
+    return new ReadableStream({
+        async start() {
+            const _reader = await promise;
+            if ("getReader" in _reader) {
+                try { // zero-copy read
+                    reader = _reader.getReader({ mode: "byob" });
+                }
+                catch (err) {
                     reader = _reader.getReader();
                 }
-                else if (typeof _reader[Symbol.asyncIterator] === "function") {
-                    reader = _reader[Symbol.asyncIterator]();
+            }
+            else if (typeof _reader[Symbol.asyncIterator] === "function") {
+                reader = _reader[Symbol.asyncIterator]();
+            }
+            else {
+                reader = _reader[Symbol.iterator]();
+            }
+        },
+        async pull(controller) {
+            let done;
+            let value;
+            if ("read" in reader) {
+                if (reader instanceof ReadableStreamBYOBReader) {
+                    const buffer = new ArrayBuffer(4096);
+                    const result = await reader.read(new Uint8Array(buffer));
+                    done = result.done;
+                    value = result.value;
                 }
                 else {
-                    reader = _reader[Symbol.iterator]();
-                }
-            },
-            async pull(controller) {
-                let done;
-                let value;
-                if ("read" in reader) {
                     ({ done, value } = await reader.read());
                 }
-                else {
-                    ({ done = false, value } = await reader.next());
-                }
-                if (done) {
-                    controller.close();
-                }
-                else {
-                    controller.enqueue(value);
-                }
-            },
-            cancel(reason = undefined) {
-                if (reader && "cancel" in reader) {
-                    reader.cancel(reason);
-                }
-            },
-        });
-    }
-    else {
-        let reader;
-        return new ReadableStream({
-            type: "bytes",
-            async start() {
-                const _reader = await promise;
-                reader = _reader.getReader({ mode: "byob" });
-            },
-            async pull(controller) {
-                if (controller.byobRequest) {
-                    const byobRequest = controller.byobRequest;
-                    const buffer = byobRequest.view.buffer;
-                    const { done, value } = await reader.read(new Uint8Array(buffer));
-                    if (done) {
-                        controller.close();
-                    }
-                    else {
-                        byobRequest.respond(value.byteLength);
-                    }
-                }
-                else {
-                    const buffer = new ArrayBuffer(4096);
-                    const { done, value } = await reader.read(new Uint8Array(buffer));
-                    if (done) {
-                        controller.close();
-                    }
-                    else {
-                        controller.enqueue(value);
-                    }
-                }
-            },
-            cancel(reason = undefined) {
-                if (reader && "cancel" in reader) {
-                    reader.cancel(reason);
-                }
-            },
-        });
-    }
+            }
+            else {
+                ({ done = false, value } = await reader.next());
+            }
+            if (done) {
+                controller.close();
+            }
+            else {
+                controller.enqueue(value);
+            }
+        },
+        cancel(reason = undefined) {
+            if (reader && "cancel" in reader) {
+                reader.cancel(reason);
+            }
+        },
+    });
 }
 /**
  * Converts the given `source` into an `AsyncIterable` object if it's not one
