@@ -15,6 +15,7 @@ import {
     readAsJSON,
     readAsObjectURL,
     readAsText,
+    resolveByteStream,
     toAsyncIterable,
     toReadableStream,
 } from "./reader.ts";
@@ -517,17 +518,6 @@ describe("reader", () => {
             deepStrictEqual(messages2, ["foo", "bar"]);
         });
 
-        it("promise of iterable", async () => {
-            const file = Promise.resolve(createReadStream("./package.json"));
-            const chunks: Buffer[] = [];
-
-            for await (const chunk of toAsyncIterable(file)) {
-                chunks.push(chunk as Buffer);
-            }
-
-            ok(chunks.length > 0);
-        });
-
         it("promise of ReadableStream", async function () {
             if (typeof ReadableStream !== "function" || typeof Response !== "function") {
                 this.skip();
@@ -785,18 +775,115 @@ describe("reader", () => {
             deepStrictEqual(messages2, ["foo", "bar"]);
         });
 
-        it("promise of iterable", async () => {
-            const file = Promise.resolve(createReadStream("./package.json"));
-            const chunks = await readAsArray(toReadableStream(file));
-
-            ok(chunks.length > 0);
-        });
-
         it("promise of ReadableStream", async () => {
             const res = new Response("hello, world");
             const chunks = await readAsArray(toReadableStream(Promise.resolve(res.body!)));
 
             ok(chunks.length > 0);
+        });
+    });
+
+    describe("resolveByteStream", () => {
+        if (typeof ReadableStream === "undefined") {
+            return;
+        }
+
+        it("resolve byte stream for bytes reader", async function () {
+            if (typeof File === "undefined") {
+                this.skip();
+            }
+
+            // File.stream() is a byte stream that supports zero-copy.
+            const file = new File(["Hello, World!"], "hello.txt", { type: "text/plain" });
+            const stream = resolveByteStream(Promise.resolve(file.stream()));
+            const reader = stream.getReader({ mode: "byob" });
+            const result: Uint8Array[] = [];
+
+            while (true) {
+                const view = new Uint8Array(8);
+                const { done, value } = await reader.read(view);
+
+                if (done) {
+                    break;
+                }
+
+                result.push(value);
+            }
+
+            deepStrictEqual(result, [
+                new Uint8Array([72, 101, 108, 108, 111, 44, 32, 87]),
+                new Uint8Array([111, 114, 108, 100, 33])
+            ]);
+        });
+
+        it("resolve byte stream for default reader", async function () {
+            if (typeof File === "undefined") {
+                this.skip();
+            }
+
+            // File.stream() is a byte stream that supports zero-copy.
+            const file = new File(["Hello, World!"], "hello.txt", { type: "text/plain" });
+            const stream = resolveByteStream(Promise.resolve(file.stream()));
+            const reader = stream.getReader();
+            const result: string[] = [];
+
+            while (true) {
+                const { done, value } = await reader.read();
+
+                if (done) {
+                    break;
+                }
+
+                result.push(new TextDecoder().decode(value));
+            }
+
+            deepStrictEqual(result, ["Hello, World!"]);
+        });
+
+        it("resolve default stream for bytes reader", async () => {
+            const promise = Promise.resolve(toReadableStream<Uint8Array>([
+                new TextEncoder().encode("Hello, World!")
+            ]));
+            const resolved = resolveByteStream(promise);
+            const reader = resolved.getReader({ mode: "byob" });
+            const result: Uint8Array[] = [];
+
+            while (true) {
+                const view = new Uint8Array(8);
+                const { done, value } = await reader.read(view);
+
+                if (done) {
+                    break;
+                }
+
+                result.push(value);
+            }
+
+            deepStrictEqual(result, [
+                new Uint8Array([72, 101, 108, 108, 111, 44, 32, 87]),
+                new Uint8Array([111, 114, 108, 100, 33])
+            ]);
+        });
+
+        it("resolve default stream for default reader", async () => {
+            const promise = Promise.resolve(toReadableStream<Uint8Array>([
+                new TextEncoder().encode("Hello, World!")
+            ]));
+            const resolved = resolveByteStream(promise);
+            const reader = resolved.getReader();
+            const result: string[] = [];
+
+            while (true) {
+                const { done, value } = await reader.read();
+
+                if (done) {
+                    break;
+                }
+
+                result.push(new TextDecoder().decode(value));
+            }
+
+            deepStrictEqual(result, ["Hello, World!"]);
         });
     });
 });

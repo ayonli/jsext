@@ -4,75 +4,34 @@ function isFunction(val: unknown): val is (...args: any[]) => any {
     return typeof val === "function";
 }
 
-async function* resolveAsyncIterable<T>(
-    promise: Promise<AsyncIterable<T> | Iterable<T> | ReadableStream<T>>
-): AsyncIterable<T> {
-    const source = await promise;
+async function* resolveAsyncIterable<T>(promise: Promise<ReadableStream<T>>): AsyncIterable<T> {
+    const stream = await promise;
+    const reader = stream.getReader();
 
-    if ("getReader" in source) {
-        const reader = source.getReader();
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
 
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-
-                if (done) {
-                    break;
-                }
-
-                yield value;
+            if (done) {
+                break;
             }
-        } finally {
-            reader.releaseLock();
+
+            yield value;
         }
-    } else if ((typeof (source as any)[Symbol.asyncIterator] === "function")
-        || (typeof (source as any)[Symbol.iterator] === "function")
-    ) {
-        yield* source;
-    } else {
-        throw new TypeError("The given source is not an async iterable object.");
+    } finally {
+        reader.releaseLock();
     }
 }
 
-export function resolveReadableStream<T>(
-    promise: Promise<AsyncIterable<T> | Iterable<T> | ReadableStream<T>>,
-): ReadableStream<T> {
-    let reader: ReadableStreamBYOBReader
-        | ReadableStreamDefaultReader<T>
-        | AsyncIterator<T> | Iterator<T> | undefined;
+export function resolveReadableStream<T>(promise: Promise<ReadableStream<T>>): ReadableStream<T> {
+    let reader: ReadableStreamDefaultReader<T>;
     return new ReadableStream<T>({
         async start() {
-            const _reader = await promise;
-
-            if ("getReader" in _reader) {
-                try { // zero-copy read
-                    reader = _reader.getReader({ mode: "byob" });
-                } catch (err) {
-                    reader = _reader.getReader();
-                }
-            } else if (typeof (_reader as any)[Symbol.asyncIterator] === "function") {
-                reader = (_reader as AsyncIterable<T>)[Symbol.asyncIterator]();
-            } else {
-                reader = (_reader as Iterable<T>)[Symbol.iterator]();
-            }
+            const stream = await promise;
+            reader = stream.getReader();
         },
         async pull(controller) {
-            let done: boolean;
-            let value: T | undefined;
-
-            if ("read" in reader!) {
-                if (reader instanceof ReadableStreamBYOBReader) {
-                    const buffer = new ArrayBuffer(4096);
-                    const result = await reader.read(new Uint8Array(buffer));
-
-                    done = result.done;
-                    value = result.value as T;
-                } else {
-                    ({ done, value } = await reader.read());
-                }
-            } else {
-                ({ done = false, value } = await reader!.next());
-            }
+            const { done, value } = await reader.read();
 
             if (done) {
                 controller.close();
@@ -81,9 +40,98 @@ export function resolveReadableStream<T>(
             }
         },
         cancel(reason = undefined) {
-            if (reader && "cancel" in reader) {
+            if ("cancel" in reader) {
                 reader.cancel(reason);
             }
+        },
+    });
+}
+
+/**
+ * If the given `promise` resolves to a `ReadableStream<Uint8Array>`, this
+ * function will return a new `ReadableStream<Uint8Array>` object that can be
+ * used to read the byte stream without the need to wait for the promise to
+ * resolve.
+ * 
+ * This function is optimized for zero-copy read, so it's recommended to use
+ * this function when the source stream is a byte stream.
+ */
+export function resolveByteStream(
+    promise: Promise<ReadableStream<Uint8Array>>
+): ReadableStream<Uint8Array> {
+    let reader: ReadableStreamBYOBReader
+        | ReadableStreamDefaultReader<Uint8Array>;
+
+    return new ReadableStream<Uint8Array>({
+        type: "bytes",
+        async start() {
+            const source = await promise;
+
+            try { // zero-copy read from the source stream
+                reader = source.getReader({ mode: "byob" });
+            } catch {
+                reader = source.getReader();
+            }
+        },
+        async pull(controller) {
+            let request: ReadableStreamBYOBRequest | undefined;
+            let view: Uint8Array | undefined;
+            let result: ReadableStreamReadResult<Uint8Array>;
+
+            if ("byobRequest" in controller && controller.byobRequest?.view) {
+                // This stream is requested for zero-copy read.
+                request = controller.byobRequest;
+                view = request.view as Uint8Array;
+            } else if (reader instanceof ReadableStreamBYOBReader) {
+                view = new Uint8Array(4096);
+            }
+
+            if (reader instanceof ReadableStreamBYOBReader) {
+                // The source stream supports zero-copy read, we can read its
+                // data directly into the request view's buffer.
+                result = await reader.read(view!);
+            } else {
+                // The source stream does not support zero-copy read, we need to
+                // copy its data to a new buffer.
+                result = await reader.read();
+            }
+
+            if (request) {
+                if (result.done) {
+                    controller.close();
+
+                    // The final chunk may be empty, but still needs to be
+                    // responded in order to close the request reader.
+                    if (result.value !== undefined) {
+                        request.respondWithNewView(result.value);
+                    } else {
+                        request.respond(0);
+                    }
+                } else if (reader instanceof ReadableStreamBYOBReader
+                    || (view && result.value.buffer.byteLength === view.buffer.byteLength)
+                ) {
+                    // Respond to the request reader with the same underlying
+                    // buffer of the source stream.
+                    // Or the source stream doesn't support zero-copy read, but
+                    // the result bytes has the same buffer size as the request
+                    // view.
+                    request.respondWithNewView(result.value);
+                } else {
+                    // This stream is requested for zero-copy read, but the
+                    // source stream doesn't support it. We need to copy and
+                    // deliver the new buffer instead.
+                    controller.enqueue(result.value);
+                }
+            } else {
+                if (result.done) {
+                    controller.close();
+                } else {
+                    controller.enqueue(result.value);
+                }
+            }
+        },
+        cancel(reason = undefined) {
+            reader.cancel(reason);
         },
     });
 }
@@ -135,9 +183,7 @@ export function asAsyncIterable(source: any): AsyncIterable<any> | null {
  * Wraps a source as an `AsyncIterable` object that can be used in the
  * `for await...of...` loop for reading streaming data.
  */
-export function toAsyncIterable<T>(
-    iterable: AsyncIterable<T> | Iterable<T> | Promise<AsyncIterable<T> | Iterable<T>>
-): AsyncIterable<T>;
+export function toAsyncIterable<T>(iterable: AsyncIterable<T> | Iterable<T>): AsyncIterable<T>;
 /**
  * @example
  * ```ts

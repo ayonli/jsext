@@ -4,18 +4,21 @@
  * @module
  */
 import { concat, text } from "./bytes.ts";
-import { asAsyncIterable, toAsyncIterable, resolveReadableStream } from "./reader/util.ts";
+import {
+    asAsyncIterable,
+    toAsyncIterable,
+    resolveByteStream,
+    resolveReadableStream,
+} from "./reader/util.ts";
 
-export { toAsyncIterable };
+export { toAsyncIterable, resolveByteStream };
 
 /**
  * Wraps a source as a `ReadableStream` object that can be used to process streaming data.
  * This function is similar to {@link toAsyncIterable}, except it returns a `ReadableStream`
  * object.
  */
-export function toReadableStream<T>(
-    iterable: AsyncIterable<T> | Iterable<T> | Promise<AsyncIterable<T> | Iterable<T>>
-): ReadableStream<T>;
+export function toReadableStream<T>(iterable: AsyncIterable<T> | Iterable<T>): ReadableStream<T>;
 export function toReadableStream<T>(
     iterable: ReadableStream<T> | Promise<ReadableStream<T>>
 ): ReadableStream<T>;

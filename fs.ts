@@ -53,8 +53,13 @@ import { getMIME } from "./filetype.ts";
 import type { FileInfo, DirEntry, CommonOptions, DirTree } from "./fs/types.ts";
 import { as } from "./object.ts";
 import { basename, dirname, extname, join, split } from "./path.ts";
-import { readAsArray, readAsArrayBuffer, toAsyncIterable, toReadableStream } from "./reader.ts";
-import { resolveReadableStream } from "./reader/util.ts";
+import {
+    readAsArray,
+    readAsArrayBuffer,
+    resolveByteStream,
+    toAsyncIterable,
+    toReadableStream,
+} from "./reader.ts";
 import runtime, { platform } from "./runtime.ts";
 import { stripStart } from "./string.ts";
 import _try from "./try.ts";
@@ -748,7 +753,7 @@ export function readFileAsStream(
     target: string | FileSystemFileHandle,
     options: CommonOptions = {}
 ): ReadableStream<Uint8Array> {
-    return resolveReadableStream((async () => {
+    return resolveByteStream((async () => {
         if (typeof target === "object") {
             return await readFileHandleAsStream(target);
         }

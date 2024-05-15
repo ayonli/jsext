@@ -4,67 +4,30 @@ function isFunction(val) {
     return typeof val === "function";
 }
 async function* resolveAsyncIterable(promise) {
-    const source = await promise;
-    if ("getReader" in source) {
-        const reader = source.getReader();
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) {
-                    break;
-                }
-                yield value;
+    const stream = await promise;
+    const reader = stream.getReader();
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
             }
-        }
-        finally {
-            reader.releaseLock();
+            yield value;
         }
     }
-    else if ((typeof source[Symbol.asyncIterator] === "function")
-        || (typeof source[Symbol.iterator] === "function")) {
-        yield* source;
-    }
-    else {
-        throw new TypeError("The given source is not an async iterable object.");
+    finally {
+        reader.releaseLock();
     }
 }
 function resolveReadableStream(promise) {
     let reader;
     return new ReadableStream({
         async start() {
-            const _reader = await promise;
-            if ("getReader" in _reader) {
-                try { // zero-copy read
-                    reader = _reader.getReader({ mode: "byob" });
-                }
-                catch (err) {
-                    reader = _reader.getReader();
-                }
-            }
-            else if (typeof _reader[Symbol.asyncIterator] === "function") {
-                reader = _reader[Symbol.asyncIterator]();
-            }
-            else {
-                reader = _reader[Symbol.iterator]();
-            }
+            const stream = await promise;
+            reader = stream.getReader();
         },
         async pull(controller) {
-            let done;
-            let value;
-            if ("read" in reader) {
-                if (reader instanceof ReadableStreamBYOBReader) {
-                    const buffer = new ArrayBuffer(4096);
-                    const result = await reader.read(new Uint8Array(buffer));
-                    done = result.done;
-                    value = result.value;
-                }
-                else {
-                    ({ done, value } = await reader.read());
-                }
-            }
-            else {
-                ({ done = false, value } = await reader.next());
-            }
+            const { done, value } = await reader.read();
             if (done) {
                 controller.close();
             }
@@ -73,9 +36,96 @@ function resolveReadableStream(promise) {
             }
         },
         cancel(reason = undefined) {
-            if (reader && "cancel" in reader) {
+            if ("cancel" in reader) {
                 reader.cancel(reason);
             }
+        },
+    });
+}
+/**
+ * If the given `promise` resolves to a `ReadableStream<Uint8Array>`, this
+ * function will return a new `ReadableStream<Uint8Array>` object that can be
+ * used to read the byte stream without the need to wait for the promise to
+ * resolve.
+ *
+ * This function is optimized for zero-copy read, so it's recommended to use
+ * this function when the source stream is a byte stream.
+ */
+function resolveByteStream(promise) {
+    let reader;
+    return new ReadableStream({
+        type: "bytes",
+        async start() {
+            const source = await promise;
+            try { // zero-copy read from the source stream
+                reader = source.getReader({ mode: "byob" });
+            }
+            catch (_a) {
+                reader = source.getReader();
+            }
+        },
+        async pull(controller) {
+            var _a;
+            let request;
+            let view;
+            let result;
+            if ("byobRequest" in controller && ((_a = controller.byobRequest) === null || _a === void 0 ? void 0 : _a.view)) {
+                // This stream is requested for zero-copy read.
+                request = controller.byobRequest;
+                view = request.view;
+            }
+            else if (reader instanceof ReadableStreamBYOBReader) {
+                view = new Uint8Array(4096);
+            }
+            if (reader instanceof ReadableStreamBYOBReader) {
+                // The source stream supports zero-copy read, we can read its
+                // data directly into the request view's buffer.
+                result = await reader.read(view);
+            }
+            else {
+                // The source stream does not support zero-copy read, we need to
+                // copy its data to a new buffer.
+                result = await reader.read();
+            }
+            if (request) {
+                if (result.done) {
+                    controller.close();
+                    // The final chunk may be empty, but still needs to be
+                    // responded in order to close the request reader.
+                    if (result.value !== undefined) {
+                        request.respondWithNewView(result.value);
+                    }
+                    else {
+                        request.respond(0);
+                    }
+                }
+                else if (reader instanceof ReadableStreamBYOBReader
+                    || (view && result.value.buffer.byteLength === view.buffer.byteLength)) {
+                    // Respond to the request reader with the same underlying
+                    // buffer of the source stream.
+                    // Or the source stream doesn't support zero-copy read, but
+                    // the result bytes has the same buffer size as the request
+                    // view.
+                    request.respondWithNewView(result.value);
+                }
+                else {
+                    // This stream is requested for zero-copy read, but the
+                    // source stream doesn't support it. We need to copy and
+                    // deliver the new buffer instead.
+                    controller.enqueue(result.value);
+                }
+            }
+            else {
+                if (result.done) {
+                    controller.close();
+                }
+                else {
+                    controller.enqueue(result.value);
+                }
+            }
+        },
+        cancel(reason = undefined) {
+            reader.cancel(reason);
         },
     });
 }
@@ -267,5 +317,5 @@ function toAsyncIterable(source, eventMap = undefined) {
     };
 }
 
-export { asAsyncIterable, resolveReadableStream, toAsyncIterable };
+export { asAsyncIterable, resolveByteStream, resolveReadableStream, toAsyncIterable };
 //# sourceMappingURL=util.js.map

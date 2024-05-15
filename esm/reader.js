@@ -1,5 +1,6 @@
 import { concat, text } from './bytes.js';
 import { resolveReadableStream, toAsyncIterable, asAsyncIterable } from './reader/util.js';
+export { resolveByteStream } from './reader/util.js';
 
 /**
  * Utility functions for reading data from various types of source into various

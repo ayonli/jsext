@@ -7,11 +7,11 @@ import Exception from './error/Exception.js';
 import { getMIME } from './filetype.js';
 import { dirname, basename, extname, join } from './path.js';
 import { readAsArray, toReadableStream, readAsArrayBuffer } from './reader.js';
-import { resolveReadableStream, toAsyncIterable } from './reader/util.js';
 import { platform } from './runtime.js';
 import { stripStart } from './string.js';
 import _try from './try.js';
 import { split } from './path/util.js';
+import { resolveByteStream, toAsyncIterable } from './reader/util.js';
 
 /**
  * Universal file system APIs for both server and browser applications.
@@ -657,7 +657,7 @@ async function readFileHandleAsFile(handle) {
  * Reads the file as a `ReadableStream`.
  */
 function readFileAsStream(target, options = {}) {
-    return resolveReadableStream((async () => {
+    return resolveByteStream((async () => {
         if (typeof target === "object") {
             return await readFileHandleAsStream(target);
         }
