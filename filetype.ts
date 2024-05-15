@@ -15,6 +15,10 @@ export function getUTI(type: string): string | undefined {
         type = type.slice(1);
     }
 
+    if (!type) {
+        return undefined;
+    }
+
     for (const [uti, values] of Object.entries(UTIMap)) {
         if (values.includes(type)) {
             return uti;
@@ -35,7 +39,9 @@ export function getMIME(type: string): string | undefined {
         type = type.slice(1);
     }
 
-    if (type[0] !== ".") {
+    if (!type) {
+        return undefined;
+    } else if (type[0] !== ".") {
         const values = UTIMap[type] || null;
         return values ? values.find(v => v.includes("/")) : undefined;
     }
@@ -64,7 +70,9 @@ export function getExtensions(type: string): string[] {
         type = type.slice(1);
     }
 
-    if (type[0] === ".") {
+    if (!type) {
+        return [];
+    } else if (type[0] === ".") {
         return [type];
     }
 
