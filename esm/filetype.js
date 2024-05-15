@@ -13,6 +13,9 @@ function getUTI(type) {
     if (type.startsWith("*.")) {
         type = type.slice(1);
     }
+    if (!type) {
+        return undefined;
+    }
     for (const [uti, values] of Object.entries(UTIMap)) {
         if (values.includes(type)) {
             return uti;
@@ -29,7 +32,10 @@ function getMIME(type) {
     if (type.startsWith("*.")) {
         type = type.slice(1);
     }
-    if (type[0] !== ".") {
+    if (!type) {
+        return undefined;
+    }
+    else if (type[0] !== ".") {
         const values = UTIMap[type] || null;
         return values ? values.find(v => v.includes("/")) : undefined;
     }
@@ -52,7 +58,10 @@ function getExtensions(type) {
     if (type.startsWith("*.")) {
         type = type.slice(1);
     }
-    if (type[0] === ".") {
+    if (!type) {
+        return [];
+    }
+    else if (type[0] === ".") {
         return [type];
     }
     if (type[0] !== "." && !type.includes("/")) {
