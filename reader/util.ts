@@ -4,6 +4,83 @@ function isFunction(val: unknown): val is (...args: any[]) => any {
     return typeof val === "function";
 }
 
+async function* resolveAsyncIterable<T>(
+    promise: Promise<AsyncIterable<T> | Iterable<T> | ReadableStream<T>>
+): AsyncIterable<T> {
+    const source = await promise;
+
+    if ("getReader" in source) {
+        const reader = source.getReader();
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+
+                if (done) {
+                    break;
+                }
+
+                yield value;
+            }
+        } finally {
+            reader.releaseLock();
+        }
+    } else if ((typeof (source as any)[Symbol.asyncIterator] === "function")
+        || (typeof (source as any)[Symbol.iterator] === "function")
+    ) {
+        yield* source;
+    } else {
+        throw new TypeError("The given source is not an async iterable object.");
+    }
+}
+
+export function resolveReadableStream<T>(
+    promise: Promise<AsyncIterable<T> | Iterable<T> | ReadableStream<T>>
+): ReadableStream<T> {
+    let reader: ReadableStreamDefaultReader<T> | AsyncIterator<T> | Iterator<T> | undefined;
+    let controller: ReadableStreamDefaultController<T> | undefined;
+    const stream = new ReadableStream<T>({
+        start(c) {
+            controller = c;
+        },
+        async pull() {
+            if (!reader) {
+                const _reader = await promise;
+
+                if ("getReader" in _reader) {
+                    reader = _reader.getReader();
+                } else if (typeof (_reader as any)[Symbol.asyncIterator] === "function") {
+                    reader = (_reader as AsyncIterable<T>)[Symbol.asyncIterator]();
+                } else {
+                    reader = (_reader as Iterable<T>)[Symbol.iterator]();
+                }
+            }
+
+            let done: boolean;
+            let value: T | undefined;
+
+            if ("read" in reader) {
+                ({ done, value } = await reader.read());
+            } else {
+                ({ done = false, value } = await reader.next());
+            }
+
+            if (done) {
+                controller?.close();
+            } else {
+                controller?.enqueue(value);
+            }
+        },
+        cancel(reason = undefined) {
+            if (reader && "cancel" in reader) {
+                reader.cancel(reason);
+            }
+        },
+    });
+
+    return stream;
+}
+
 /**
  * Converts the given `source` into an `AsyncIterable` object if it's not one
  * already, returns `null` if failed.
@@ -40,6 +117,8 @@ export function asAsyncIterable(source: any): AsyncIterable<any> | null {
                 }
             },
         };
+    } else if (typeof source["then"] === "function") {
+        return resolveAsyncIterable(source);
     }
 
     return null;
@@ -49,7 +128,9 @@ export function asAsyncIterable(source: any): AsyncIterable<any> | null {
  * Wraps a source as an `AsyncIterable` object that can be used in the
  * `for await...of...` loop for reading streaming data.
  */
-export function toAsyncIterable<T>(iterable: AsyncIterable<T> | Iterable<T>): AsyncIterable<T>;
+export function toAsyncIterable<T>(
+    iterable: AsyncIterable<T> | Iterable<T> | Promise<AsyncIterable<T> | Iterable<T>>
+): AsyncIterable<T>;
 /**
  * @example
  * ```ts
@@ -62,7 +143,9 @@ export function toAsyncIterable<T>(iterable: AsyncIterable<T> | Iterable<T>): As
  * }
  * ```
  */
-export function toAsyncIterable<T>(stream: ReadableStream<T>): AsyncIterable<T>;
+export function toAsyncIterable<T>(
+    stream: ReadableStream<T> | Promise<ReadableStream<T>>
+): AsyncIterable<T>;
 /**
  * @example
  * ```ts

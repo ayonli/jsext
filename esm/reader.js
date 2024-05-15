@@ -1,5 +1,5 @@
 import { concat, text } from './bytes.js';
-import { toAsyncIterable, asAsyncIterable } from './reader/util.js';
+import { resolveReadableStream, toAsyncIterable, asAsyncIterable } from './reader/util.js';
 
 /**
  * Utility functions for reading data from various types of source into various
@@ -7,6 +7,12 @@ import { toAsyncIterable, asAsyncIterable } from './reader/util.js';
  * @module
  */
 function toReadableStream(source, eventMap = undefined) {
+    if (source instanceof ReadableStream) {
+        return source;
+    }
+    else if (typeof source["then"] === "function") {
+        return resolveReadableStream(source);
+    }
     const iterable = toAsyncIterable(source, eventMap);
     return new ReadableStream({
         async start(controller) {

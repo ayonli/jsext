@@ -3,6 +3,74 @@ import chan from '../chan.js';
 function isFunction(val) {
     return typeof val === "function";
 }
+async function* resolveAsyncIterable(promise) {
+    const source = await promise;
+    if ("getReader" in source) {
+        const reader = source.getReader();
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    break;
+                }
+                yield value;
+            }
+        }
+        finally {
+            reader.releaseLock();
+        }
+    }
+    else if ((typeof source[Symbol.asyncIterator] === "function")
+        || (typeof source[Symbol.iterator] === "function")) {
+        yield* source;
+    }
+    else {
+        throw new TypeError("The given source is not an async iterable object.");
+    }
+}
+function resolveReadableStream(promise) {
+    let reader;
+    let controller;
+    const stream = new ReadableStream({
+        start(c) {
+            controller = c;
+        },
+        async pull() {
+            if (!reader) {
+                const _reader = await promise;
+                if ("getReader" in _reader) {
+                    reader = _reader.getReader();
+                }
+                else if (typeof _reader[Symbol.asyncIterator] === "function") {
+                    reader = _reader[Symbol.asyncIterator]();
+                }
+                else {
+                    reader = _reader[Symbol.iterator]();
+                }
+            }
+            let done;
+            let value;
+            if ("read" in reader) {
+                ({ done, value } = await reader.read());
+            }
+            else {
+                ({ done = false, value } = await reader.next());
+            }
+            if (done) {
+                controller === null || controller === void 0 ? void 0 : controller.close();
+            }
+            else {
+                controller === null || controller === void 0 ? void 0 : controller.enqueue(value);
+            }
+        },
+        cancel(reason = undefined) {
+            if (reader && "cancel" in reader) {
+                reader.cancel(reason);
+            }
+        },
+    });
+    return stream;
+}
 /**
  * Converts the given `source` into an `AsyncIterable` object if it's not one
  * already, returns `null` if failed.
@@ -39,6 +107,9 @@ function asAsyncIterable(source) {
                 }
             },
         };
+    }
+    else if (typeof source["then"] === "function") {
+        return resolveAsyncIterable(source);
     }
     return null;
 }
@@ -188,5 +259,5 @@ function toAsyncIterable(source, eventMap = undefined) {
     };
 }
 
-export { asAsyncIterable, toAsyncIterable };
+export { asAsyncIterable, resolveReadableStream, toAsyncIterable };
 //# sourceMappingURL=util.js.map

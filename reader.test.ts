@@ -516,6 +516,33 @@ describe("reader", () => {
 
             deepStrictEqual(messages2, ["foo", "bar"]);
         });
+
+        it("promise of iterable", async () => {
+            const file = Promise.resolve(createReadStream("./package.json"));
+            const chunks: Buffer[] = [];
+
+            for await (const chunk of toAsyncIterable(file)) {
+                chunks.push(chunk as Buffer);
+            }
+
+            ok(chunks.length > 0);
+        });
+
+        it("promise of ReadableStream", async function () {
+            if (typeof ReadableStream !== "function" || typeof Response !== "function") {
+                this.skip();
+            }
+
+            const res = new Response("hello, world");
+            const task = Promise.resolve(res.body!);
+            const chunks: Uint8Array[] = [];
+
+            for await (const chunk of toAsyncIterable(task)) {
+                chunks.push(chunk as Uint8Array);
+            }
+
+            ok(chunks.length > 0);
+        });
     });
 
     describe("toReadableStream", () => {
@@ -756,6 +783,20 @@ describe("reader", () => {
             }
 
             deepStrictEqual(messages2, ["foo", "bar"]);
+        });
+
+        it("promise of iterable", async () => {
+            const file = Promise.resolve(createReadStream("./package.json"));
+            const chunks = await readAsArray(toReadableStream(file));
+
+            ok(chunks.length > 0);
+        });
+
+        it("promise of ReadableStream", async () => {
+            const res = new Response("hello, world");
+            const chunks = await readAsArray(toReadableStream(Promise.resolve(res.body!)));
+
+            ok(chunks.length > 0);
         });
     });
 });

@@ -4,7 +4,7 @@
  * @module
  */
 import { concat, text } from "./bytes.ts";
-import { asAsyncIterable, toAsyncIterable } from "./reader/util.ts";
+import { asAsyncIterable, toAsyncIterable, resolveReadableStream } from "./reader/util.ts";
 
 export { toAsyncIterable };
 
@@ -13,7 +13,12 @@ export { toAsyncIterable };
  * This function is similar to {@link toAsyncIterable}, except it returns a `ReadableStream`
  * object.
  */
-export function toReadableStream<T>(iterable: AsyncIterable<T> | Iterable<T>): ReadableStream<T>;
+export function toReadableStream<T>(
+    iterable: AsyncIterable<T> | Iterable<T> | Promise<AsyncIterable<T> | Iterable<T>>
+): ReadableStream<T>;
+export function toReadableStream<T>(
+    iterable: ReadableStream<T> | Promise<ReadableStream<T>>
+): ReadableStream<T>;
 export function toReadableStream(es: EventSource, options?: { event?: string; }): ReadableStream<string>;
 export function toReadableStream<T extends Uint8Array | string>(ws: WebSocket): ReadableStream<T>;
 export function toReadableStream<T>(target: EventTarget, eventMap?: {
@@ -33,6 +38,12 @@ export function toReadableStream<T>(source: any, eventMap: {
     error?: string;
     close?: string;
 } | undefined = undefined): ReadableStream<T> {
+    if (source instanceof ReadableStream) {
+        return source;
+    } else if (typeof source["then"] === "function") {
+        return resolveReadableStream(source);
+    }
+
     const iterable = toAsyncIterable(source, eventMap) as AsyncIterable<T>;
 
     return new ReadableStream<T>({
