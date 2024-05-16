@@ -19,7 +19,7 @@ export const isWorker = isServiceWorker || isSharedWorker || isDedicatedWorker;
 
 export const isDeno = typeof Deno === "object" && !!Deno.version?.deno;
 export const isBun = typeof Bun === "object" && !!Bun.version;
-export const isNodeLike = typeof process === "object" && !!process.versions?.node;
+export const isNodeLike = typeof process === "object" && !!process.versions?.node && !isDeno;
 export const isNode: boolean = isNodeLike && !isDeno && !isBun;
 
 export const isNodeBelow14 = isNode && parseInt(process.version.slice(1)) < 14;

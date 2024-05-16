@@ -8,7 +8,7 @@ typeof DedicatedWorkerGlobalScope === "function"
     && globalThis instanceof DedicatedWorkerGlobalScope;
 const isDeno = typeof Deno === "object" && !!((_a$1 = Deno.version) === null || _a$1 === void 0 ? void 0 : _a$1.deno);
 const isBun = typeof Bun === "object" && !!Bun.version;
-const isNodeLike = typeof process === "object" && !!((_b = process.versions) === null || _b === void 0 ? void 0 : _b.node);
+const isNodeLike = typeof process === "object" && !!((_b = process.versions) === null || _b === void 0 ? void 0 : _b.node) && !isDeno;
 const isNode = isNodeLike && !isDeno && !isBun;
 isNode && parseInt(process.version.slice(1)) < 14;
 isNode && parseInt(process.version.slice(1)) < 16;

@@ -59,6 +59,9 @@ export function toReadableStream<T>(source: any, eventMap: {
             } else {
                 controller.enqueue(value);
             }
+        },
+        cancel(reason = undefined) {
+            iterator.throw?.(reason);
         }
     });
 }

@@ -25,6 +25,10 @@ function toReadableStream(source, eventMap = undefined) {
             else {
                 controller.enqueue(value);
             }
+        },
+        cancel(reason = undefined) {
+            var _a;
+            (_a = iterator.throw) === null || _a === void 0 ? void 0 : _a.call(iterator, reason);
         }
     });
 }

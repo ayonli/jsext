@@ -12,7 +12,7 @@ const isDedicatedWorker = typeof DedicatedWorkerGlobalScope === "function"
 const isWorker = isServiceWorker || isSharedWorker || isDedicatedWorker;
 const isDeno = typeof Deno === "object" && !!((_a = Deno.version) === null || _a === void 0 ? void 0 : _a.deno);
 const isBun = typeof Bun === "object" && !!Bun.version;
-const isNodeLike = typeof process === "object" && !!((_b = process.versions) === null || _b === void 0 ? void 0 : _b.node);
+const isNodeLike = typeof process === "object" && !!((_b = process.versions) === null || _b === void 0 ? void 0 : _b.node) && !isDeno;
 const isNode = isNodeLike && !isDeno && !isBun;
 const isNodeBelow14 = isNode && parseInt(process.version.slice(1)) < 14;
 const isNodeBelow16 = isNode && parseInt(process.version.slice(1)) < 16;

@@ -172,6 +172,9 @@ function asAsyncIterable(source) {
                         yield value;
                     }
                 }
+                catch (err) {
+                    reader.cancel(err);
+                }
                 finally {
                     reader.releaseLock();
                 }

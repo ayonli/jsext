@@ -177,6 +177,8 @@ export function asAsyncIterable(source: any): AsyncIterable<any> | null {
 
                         yield value;
                     }
+                } catch (err) {
+                    reader.cancel(err);
                 } finally {
                     reader.releaseLock();
                 }
