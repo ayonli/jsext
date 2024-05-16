@@ -20,32 +20,9 @@ async function* resolveAsyncIterable(promise) {
     }
 }
 function resolveReadableStream(promise) {
-    let reader;
-    return new ReadableStream({
-        async start() {
-            const stream = await promise;
-            reader = stream.getReader();
-        },
-        async pull(controller) {
-            try {
-                const { done, value } = await reader.read();
-                if (done) {
-                    controller.close();
-                }
-                else {
-                    controller.enqueue(value);
-                }
-            }
-            catch (err) {
-                reader.releaseLock();
-                controller.error(err);
-            }
-        },
-        cancel(reason = undefined) {
-            reader.cancel(reason);
-            reader.releaseLock();
-        },
-    });
+    const { readable, writable } = new TransformStream();
+    promise.then(stream => stream.pipeTo(writable));
+    return readable;
 }
 /**
  * If the given `promise` resolves to a `ReadableStream<Uint8Array>`, this

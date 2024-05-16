@@ -24,31 +24,9 @@ async function* resolveAsyncIterable<T>(promise: Promise<ReadableStream<T>>): As
 }
 
 export function resolveReadableStream<T>(promise: Promise<ReadableStream<T>>): ReadableStream<T> {
-    let reader: ReadableStreamDefaultReader<T>;
-    return new ReadableStream<T>({
-        async start() {
-            const stream = await promise;
-            reader = stream.getReader();
-        },
-        async pull(controller) {
-            try {
-                const { done, value } = await reader.read();
-
-                if (done) {
-                    controller.close();
-                } else {
-                    controller.enqueue(value);
-                }
-            } catch (err) {
-                reader.releaseLock();
-                controller.error(err);
-            }
-        },
-        cancel(reason = undefined) {
-            reader.cancel(reason);
-            reader.releaseLock();
-        },
-    });
+    const { readable, writable } = new TransformStream();
+    promise.then(stream => stream.pipeTo(writable));
+    return readable;
 }
 
 /**

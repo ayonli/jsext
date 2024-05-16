@@ -1477,74 +1477,28 @@ export function createWritableStream(
     } = {}
 ): WritableStream<Uint8Array> {
     if (typeof target === "object") {
-        let dest: FileSystemWritableFileStream;
-        return new WritableStream<Uint8Array>({
-            async start() {
-                dest = await createFileHandleWritableStream(target, options);
-            },
-            write(chunk) {
-                return dest.write(chunk);
-            },
-            close() {
-                return dest.close();
-            },
-            abort(reason = undefined) {
-                return dest.abort(reason);
-            },
-        });
+        const { readable, writable } = new TransformStream();
+        createFileHandleWritableStream(target, options)
+            .then(stream => readable.pipeTo(stream));
+        return writable;
     }
 
     const filename = target;
 
     if (isDeno) {
-        let dest: WritableStream<Uint8Array>;
-        return new WritableStream<Uint8Array>({
-            async start() {
-                const file = await Deno.open(filename, {
-                    write: true,
-                    create: true,
-                    append: options.append ?? false,
-                });
-                dest = file.writable;
-            },
-            async write(chunk) {
-                const writer = dest.getWriter();
-
-                try {
-                    await writer.write(chunk);
-                } finally {
-                    writer.releaseLock();
-                }
-            },
-            close() {
-                return dest.close();
-            },
-            abort(reason = undefined) {
-                return dest.abort(reason);
-            },
-        });
+        const { readable, writable } = new TransformStream();
+        Deno.open(filename, { write: true, create: true, append: options.append ?? false })
+            .then(file => file.writable)
+            .then(stream => readable.pipeTo(stream));
+        return writable;
     } else if (isNodeLike) {
         return createNodeWritableStream(filename, options);
     } else {
-        let dest: FileSystemWritableFileStream;
-        return new WritableStream<Uint8Array>({
-            async start() {
-                const handle = await getFileHandle(filename, {
-                    root: options.root,
-                    create: true,
-                });
-                dest = await createFileHandleWritableStream(handle, options);
-            },
-            write(chunk) {
-                return dest.write(chunk);
-            },
-            close() {
-                return dest.close();
-            },
-            abort(reason = undefined) {
-                return dest.abort(reason);
-            },
-        });
+        const { readable, writable } = new TransformStream();
+        getFileHandle(filename, { root: options.root, create: true })
+            .then(handle => createFileHandleWritableStream(handle, options))
+            .then(stream => readable.pipeTo(stream));
+        return writable;
     }
 }
 

@@ -1258,76 +1258,30 @@ const readFileAsStream = createReadableStream;
  * Creates a writable stream for the target file.
  */
 function createWritableStream(target, options = {}) {
+    var _a;
     if (typeof target === "object") {
-        let dest;
-        return new WritableStream({
-            async start() {
-                dest = await createFileHandleWritableStream(target, options);
-            },
-            write(chunk) {
-                return dest.write(chunk);
-            },
-            close() {
-                return dest.close();
-            },
-            abort(reason = undefined) {
-                return dest.abort(reason);
-            },
-        });
+        const { readable, writable } = new TransformStream();
+        createFileHandleWritableStream(target, options)
+            .then(stream => readable.pipeTo(stream));
+        return writable;
     }
     const filename = target;
     if (isDeno) {
-        let dest;
-        return new WritableStream({
-            async start() {
-                var _a;
-                const file = await Deno.open(filename, {
-                    write: true,
-                    create: true,
-                    append: (_a = options.append) !== null && _a !== void 0 ? _a : false,
-                });
-                dest = file.writable;
-            },
-            async write(chunk) {
-                const writer = dest.getWriter();
-                try {
-                    await writer.write(chunk);
-                }
-                finally {
-                    writer.releaseLock();
-                }
-            },
-            close() {
-                return dest.close();
-            },
-            abort(reason = undefined) {
-                return dest.abort(reason);
-            },
-        });
+        const { readable, writable } = new TransformStream();
+        Deno.open(filename, { write: true, create: true, append: (_a = options.append) !== null && _a !== void 0 ? _a : false })
+            .then(file => file.writable)
+            .then(stream => readable.pipeTo(stream));
+        return writable;
     }
     else if (isNodeLike) {
         return createNodeWritableStream(filename, options);
     }
     else {
-        let dest;
-        return new WritableStream({
-            async start() {
-                const handle = await getFileHandle(filename, {
-                    root: options.root,
-                    create: true,
-                });
-                dest = await createFileHandleWritableStream(handle, options);
-            },
-            write(chunk) {
-                return dest.write(chunk);
-            },
-            close() {
-                return dest.close();
-            },
-            abort(reason = undefined) {
-                return dest.abort(reason);
-            },
-        });
+        const { readable, writable } = new TransformStream();
+        getFileHandle(filename, { root: options.root, create: true })
+            .then(handle => createFileHandleWritableStream(handle, options))
+            .then(stream => readable.pipeTo(stream));
+        return writable;
     }
 }
 async function createFileHandleWritableStream(handle, options) {
