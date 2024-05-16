@@ -1,3 +1,6 @@
+import { getMIME } from "../filetype.ts";
+import { extname } from "../path.ts";
+
 /**
  * Common options for file system operations.
  */
@@ -97,4 +100,20 @@ export interface FileInfo {
      * Whether the file is a UNIX socket.
      */
     isSocket: boolean;
+}
+
+export function fixFileType(file: File): File {
+    if (!file.type) {
+        const ext = extname(file.name);
+
+        if (ext) {
+            Object.defineProperty(file, "type", {
+                value: getMIME(ext) ?? "",
+                writable: false,
+                configurable: true,
+            });
+        }
+    }
+
+    return file;
 }

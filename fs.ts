@@ -51,6 +51,7 @@ import { isDeno, isNodeLike } from "./env.ts";
 import { Exception } from "./error.ts";
 import { getMIME } from "./filetype.ts";
 import type { FileInfo, DirEntry, CommonOptions, DirTree } from "./fs/types.ts";
+import { fixFileType } from "./fs/types.ts";
 import { as } from "./object.ts";
 import { basename, dirname, extname, join, split } from "./path.ts";
 import { readAsArray, resolveByteStream, toAsyncIterable } from "./reader.ts";
@@ -724,20 +725,7 @@ export async function readFileAsFile(target: string | FileSystemFileHandle, opti
 
 async function readFileHandleAsFile(handle: FileSystemFileHandle): Promise<File> {
     const file = await rawOp(handle.getFile(), "file");
-
-    if (!file.type) {
-        const ext = extname(file.name);
-
-        if (ext) {
-            Object.defineProperty(file, "type", {
-                value: getMIME(ext) ?? "",
-                writable: false,
-                configurable: true,
-            });
-        }
-    }
-
-    return file;
+    return fixFileType(file);
 }
 
 /**

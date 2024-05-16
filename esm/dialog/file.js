@@ -6,9 +6,9 @@ import { macPickFile, macPickFiles, macPickFolder } from './terminal/file/mac.js
 import { linuxPickFile, linuxPickFiles, linuxPickFolder } from './terminal/file/linux.js';
 import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './terminal/file/windows.js';
 import { browserPickFile, browserPickFiles, browserPickFolder } from './terminal/file/browser.js';
-import { getMIME, getExtensions } from '../filetype.js';
+import { getExtensions } from '../filetype.js';
 import { readDir, readFileAsFile, writeFile } from '../fs.js';
-import { extname } from '../path.js';
+import { fixFileType } from '../fs/types.js';
 import { as } from '../object.js';
 import { isWSL } from '../cli/common.js';
 
@@ -98,7 +98,7 @@ async function pickDirectory(options = {}) {
     throw new Error("Unsupported platform");
 }
 async function openFile(options = {}) {
-    var _a, _b, _c;
+    var _a, _b;
     const { title = "", type = "", multiple = false, directory = false } = options;
     if (directory && typeof globalThis["showDirectoryPicker"] === "function") {
         const files = [];
@@ -115,17 +115,7 @@ async function openFile(options = {}) {
                     writable: false,
                     value: (_a = entry.path) !== null && _a !== void 0 ? _a : "",
                 });
-                if (!file.type) {
-                    const ext = extname(file.name);
-                    if (ext) {
-                        Object.defineProperty(file, "type", {
-                            value: (_b = getMIME(ext)) !== null && _b !== void 0 ? _b : "",
-                            writable: false,
-                            configurable: true,
-                        });
-                    }
-                }
-                files.push(file);
+                files.push(fixFileType(file));
             }
         }
         return files;
@@ -136,13 +126,13 @@ async function openFile(options = {}) {
             const files = [];
             for (const handle of handles) {
                 const file = await handle.getFile();
-                files.push(file);
+                files.push(fixFileType(file));
             }
             return files;
         }
         else {
             const handle = await browserPickFile(type);
-            return handle ? await handle.getFile() : null;
+            return handle ? await handle.getFile().then(fixFileType) : null;
         }
     }
     else if (isBrowserWindow) {
@@ -200,9 +190,9 @@ async function openFile(options = {}) {
                         configurable: true,
                         enumerable: true,
                         writable: false,
-                        value: (_c = entry.path) !== null && _c !== void 0 ? _c : "",
+                        value: (_b = entry.path) !== null && _b !== void 0 ? _b : "",
                     });
-                    files.push(file);
+                    files.push(fixFileType(file));
                 }
             }
             return files;

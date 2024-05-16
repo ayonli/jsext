@@ -5,6 +5,7 @@ import { isDeno, isNodeLike } from './env.js';
 import { as } from './object.js';
 import Exception from './error/Exception.js';
 import { getMIME } from './filetype.js';
+import { fixFileType } from './fs/types.js';
 import { dirname, basename, extname, join } from './path.js';
 import { readAsArray } from './reader.js';
 import { platform } from './runtime.js';
@@ -639,19 +640,8 @@ async function readFileAsFile(target, options = {}) {
     }
 }
 async function readFileHandleAsFile(handle) {
-    var _a;
     const file = await rawOp(handle.getFile(), "file");
-    if (!file.type) {
-        const ext = extname(file.name);
-        if (ext) {
-            Object.defineProperty(file, "type", {
-                value: (_a = getMIME(ext)) !== null && _a !== void 0 ? _a : "",
-                writable: false,
-                configurable: true,
-            });
-        }
-    }
-    return file;
+    return fixFileType(file);
 }
 /**
  * Writes the given data to the file.

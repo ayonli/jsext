@@ -22,9 +22,9 @@ import {
     browserPickFile,
     browserPickFiles,
 } from "./terminal/file/browser.ts";
-import { getExtensions, getMIME } from "../filetype.ts";
+import { getExtensions } from "../filetype.ts";
 import { readDir, readFileAsFile, writeFile } from "../fs.ts";
-import { extname } from "../path.ts";
+import { fixFileType } from "../fs/types.ts";
 import { as } from "../object.ts";
 
 /**
@@ -184,19 +184,7 @@ export async function openFile(options: {
                     value: entry.path ?? "",
                 });
 
-                if (!file.type) {
-                    const ext = extname(file.name);
-
-                    if (ext) {
-                        Object.defineProperty(file, "type", {
-                            value: getMIME(ext) ?? "",
-                            writable: false,
-                            configurable: true,
-                        });
-                    }
-                }
-
-                files.push(file);
+                files.push(fixFileType(file));
             }
         }
 
@@ -208,13 +196,13 @@ export async function openFile(options: {
 
             for (const handle of handles) {
                 const file = await handle.getFile();
-                files.push(file);
+                files.push(fixFileType(file));
             }
 
             return files;
         } else {
             const handle = await browserPickFile(type);
-            return handle ? await handle.getFile() : null;
+            return handle ? await handle.getFile().then(fixFileType) : null;
         }
     } else if (isBrowserWindow) {
         const input = document.createElement("input");
@@ -274,7 +262,7 @@ export async function openFile(options: {
                         value: entry.path ?? "",
                     });
 
-                    files.push(file);
+                    files.push(fixFileType(file));
                 }
             }
 
