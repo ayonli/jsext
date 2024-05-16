@@ -94,7 +94,7 @@ function wrapFsError(
 ): Exception | Error {
     if (err instanceof Error && !(err instanceof Exception) && !(err instanceof TypeError)) {
         const errName = getErrorName(err);
-        const errCode = (err as any).code as string | number | undefined;
+        const errCode = (err as NodeJS.ErrnoException).code;
 
         if (errName === "NotFoundError"
             || errName === "NotFound"
@@ -763,7 +763,7 @@ export async function writeFile(
         } else if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
             return await rawOp(Deno.writeFile(filename, new Uint8Array(data), options));
         } else {
-            return await rawOp(Deno.writeFile(filename, data as any, options));
+            return await rawOp(Deno.writeFile(filename, data, options));
         }
     } else if (isNodeLike) {
         if (typeof Blob === "function" && data instanceof Blob) {

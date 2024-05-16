@@ -55,7 +55,7 @@ export default function bytes(data: any): ByteArray {
     if (typeof data === "string") {
         return new ByteArray(defaultEncoder.encode(data).buffer);
     } else {
-        return new ByteArray(data as any);
+        return new ByteArray(data);
     }
 }
 

@@ -155,7 +155,7 @@ async function lockStdin(task) {
             }
             // copy listeners in cased being modified
             const listeners = [...stdin.listeners("data")];
-            if (listeners === null || listeners === void 0 ? void 0 : listeners.length) {
+            if (listeners.length) {
                 stdin.removeAllListeners("data");
             }
             try {
@@ -164,7 +164,7 @@ async function lockStdin(task) {
             }
             finally {
                 stdin.setRawMode(false);
-                if (listeners === null || listeners === void 0 ? void 0 : listeners.length) {
+                if (listeners.length) {
                     listeners.forEach(listener => stdin.addListener("data", listener));
                 }
                 else {
