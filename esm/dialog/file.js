@@ -1,17 +1,15 @@
-import { join, basename } from '../path.js';
 import { isBrowserWindow, isDeno, isNodeLike } from '../env.js';
 import { platform } from '../runtime.js';
 import { which } from '../cli.js';
 import { readAsObjectURL } from '../reader.js';
-import { readFile } from './terminal/util.js';
 import { macPickFile, macPickFiles, macPickFolder } from './terminal/file/mac.js';
 import { linuxPickFile, linuxPickFiles, linuxPickFolder } from './terminal/file/linux.js';
 import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './terminal/file/windows.js';
 import { browserPickFile, browserPickFiles, browserPickFolder } from './terminal/file/browser.js';
-import { getExtensions } from '../filetype.js';
-import { writeFile } from '../fs.js';
+import { getMIME, getExtensions } from '../filetype.js';
+import { readDir, readFileAsFile, writeFile } from '../fs.js';
+import { extname } from '../path.js';
 import { as } from '../object.js';
-import { toAsyncIterable } from '../reader/util.js';
 import { isWSL } from '../cli/common.js';
 
 /**
@@ -100,6 +98,7 @@ async function pickDirectory(options = {}) {
     throw new Error("Unsupported platform");
 }
 async function openFile(options = {}) {
+    var _a, _b, _c;
     const { title = "", type = "", multiple = false, directory = false } = options;
     if (directory && typeof globalThis["showDirectoryPicker"] === "function") {
         const files = [];
@@ -107,25 +106,28 @@ async function openFile(options = {}) {
         if (!dir) {
             return files;
         }
-        await (async function walk(dir, base = "") {
-            const entries = dir.entries();
-            for await (const [_, entry] of entries) {
-                const path = join(base, entry.name);
-                if (entry.kind === "file") {
-                    const file = await entry.getFile();
-                    Object.defineProperty(file, "webkitRelativePath", {
-                        configurable: true,
-                        enumerable: true,
-                        writable: false,
-                        value: path !== null && path !== void 0 ? path : "",
-                    });
-                    files.push(file);
+        for await (const entry of readDir(dir, { recursive: true })) {
+            if (entry.kind === "file") {
+                const file = await entry.handle.getFile();
+                Object.defineProperty(file, "webkitRelativePath", {
+                    configurable: true,
+                    enumerable: true,
+                    writable: false,
+                    value: (_a = entry.path) !== null && _a !== void 0 ? _a : "",
+                });
+                if (!file.type) {
+                    const ext = extname(file.name);
+                    if (ext) {
+                        Object.defineProperty(file, "type", {
+                            value: (_b = getMIME(ext)) !== null && _b !== void 0 ? _b : "",
+                            writable: false,
+                            configurable: true,
+                        });
+                    }
                 }
-                else {
-                    await walk(entry, path);
-                }
+                files.push(file);
             }
-        })(dir);
+        }
         return files;
     }
     else if (typeof globalThis["showOpenFilePicker"] === "function") {
@@ -190,57 +192,26 @@ async function openFile(options = {}) {
             filename = await pickFile({ title, type });
         }
         if (dirname) {
-            const folder = basename(dirname);
             const files = [];
-            if (typeof Deno === "object") {
-                await (async function walk(dirname, relativePath = "") {
-                    for await (const entry of Deno.readDir(dirname)) {
-                        if (entry.isFile) {
-                            files.push({
-                                path: join(dirname, entry.name),
-                                relativePath: relativePath + "/" + entry.name,
-                            });
-                        }
-                        else if (entry.isDirectory) {
-                            await walk(join(dirname, entry.name), relativePath + "/" + entry.name);
-                        }
-                        else if (entry.isSymlink) {
-                            const symlink = await Deno.readLink(join(dirname, entry.name));
-                            await walk(symlink, relativePath + "/" + entry.name);
-                        }
-                    }
-                })(dirname, folder);
+            for await (const entry of readDir(dirname, { recursive: true })) {
+                if (entry.kind === "file") {
+                    const file = await entry.handle.getFile();
+                    Object.defineProperty(file, "webkitRelativePath", {
+                        configurable: true,
+                        enumerable: true,
+                        writable: false,
+                        value: (_c = entry.path) !== null && _c !== void 0 ? _c : "",
+                    });
+                    files.push(file);
+                }
             }
-            else {
-                const { readdir, readlink } = await import('fs/promises');
-                await (async function walk(dirname, relativePath = "") {
-                    const entries = await readdir(dirname, { withFileTypes: true });
-                    for (const entry of entries) {
-                        if (entry.isFile()) {
-                            files.push({
-                                path: join(dirname, entry.name),
-                                relativePath: relativePath + "/" + entry.name,
-                            });
-                        }
-                        else if (entry.isDirectory()) {
-                            await walk(join(dirname, entry.name), relativePath + "/" + entry.name);
-                        }
-                        else if (entry.isSymbolicLink()) {
-                            const symlink = await readlink(join(dirname, entry.name));
-                            await walk(symlink, relativePath + "/" + entry.name);
-                        }
-                    }
-                })(dirname, folder);
-            }
-            return await Promise.all(files.map(({ path, relativePath }) => {
-                return readFile(path, relativePath);
-            }));
+            return files;
         }
         else if (filenames) {
-            return await Promise.all(filenames.map(path => readFile(path)));
+            return await Promise.all(filenames.map(path => readFileAsFile(path)));
         }
         else if (filename) {
-            return await readFile(filename);
+            return await readFileAsFile(filename);
         }
         else if (directory || multiple) {
             return [];
@@ -254,12 +225,12 @@ async function openFile(options = {}) {
     }
 }
 async function saveFile(file, options = {}) {
-    var _a;
+    var _a, _b;
     if (typeof globalThis["showSaveFilePicker"] === "function") {
         try {
             const handle = await browserPickFile(options.type, {
                 forSave: true,
-                defaultName: options.name || ((_a = as(file, Blob)) === null || _a === void 0 ? void 0 : _a.name),
+                defaultName: options.name || ((_a = as(file, File)) === null || _a === void 0 ? void 0 : _a.name),
             });
             if (handle) {
                 await writeFile(handle, file);
@@ -299,39 +270,16 @@ async function saveFile(file, options = {}) {
     }
     else if (isDeno || isNodeLike) {
         const { title } = options;
-        let stream;
         let filename;
-        if (typeof ReadableStream === "function" && file instanceof ReadableStream) {
-            stream = file;
-            filename = await pickFile({
-                title,
-                type: options.type,
-                forSave: true,
-                defaultName: options.name,
-            });
-        }
-        else if (typeof File === "function" && file instanceof File) {
-            stream = file.stream();
-            filename = await pickFile({
-                title,
-                type: file.type,
-                forSave: true,
-                defaultName: options.name || file.name,
-            });
-        }
-        else if (typeof Blob === "function" && file instanceof Blob) {
-            stream = file.stream();
+        if (typeof Blob === "function" && file instanceof Blob) {
             filename = await pickFile({
                 title,
                 type: options.type || file.type,
                 forSave: true,
-                defaultName: options.name,
+                defaultName: options.name || ((_b = as(file, File)) === null || _b === void 0 ? void 0 : _b.name),
             });
         }
         else {
-            const type = options.type || "application/octet-stream";
-            const blob = new Blob([file], { type });
-            stream = blob.stream();
             filename = await pickFile({
                 title,
                 type: options.type,
@@ -340,17 +288,7 @@ async function saveFile(file, options = {}) {
             });
         }
         if (filename) {
-            if (typeof Deno === "object") {
-                await Deno.writeFile(filename, stream, { create: true });
-            }
-            else {
-                const { createWriteStream } = await import('fs');
-                const out = createWriteStream(filename, { flags: "w" });
-                for await (const chunk of toAsyncIterable(stream)) {
-                    out.write(chunk);
-                }
-                out.close();
-            }
+            await writeFile(filename, file);
         }
     }
     else {
