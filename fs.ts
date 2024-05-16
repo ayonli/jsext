@@ -53,13 +53,7 @@ import { getMIME } from "./filetype.ts";
 import type { FileInfo, DirEntry, CommonOptions, DirTree } from "./fs/types.ts";
 import { as } from "./object.ts";
 import { basename, dirname, extname, join, split } from "./path.ts";
-import {
-    readAsArray,
-    readAsArrayBuffer,
-    resolveByteStream,
-    toAsyncIterable,
-    toReadableStream,
-} from "./reader.ts";
+import { readAsArray, resolveByteStream, toAsyncIterable } from "./reader.ts";
 import runtime, { platform } from "./runtime.ts";
 import { stripStart } from "./string.ts";
 import _try from "./try.ts";
@@ -747,42 +741,6 @@ async function readFileHandleAsFile(handle: FileSystemFileHandle): Promise<File>
 }
 
 /**
- * Reads the file as a `ReadableStream`.
- */
-export function readFileAsStream(
-    target: string | FileSystemFileHandle,
-    options: CommonOptions = {}
-): ReadableStream<Uint8Array> {
-    return resolveByteStream((async () => {
-        if (typeof target === "object") {
-            return await readFileHandleAsStream(target);
-        }
-
-        const filename = target;
-
-        if (isDeno) {
-            const file = await rawOp(Deno.open(filename, { read: true }));
-            return file.readable;
-        } else if (isNodeLike) {
-            const filename = target as string;
-            const fs = await import("fs");
-            const reader = fs.createReadStream(filename);
-            return toReadableStream<Uint8Array>(reader);
-        } else {
-            const handle = await getFileHandle(filename, { root: options.root });
-            return await readFileHandleAsStream(handle);
-        }
-    })());
-}
-
-async function readFileHandleAsStream(
-    handle: FileSystemFileHandle
-): Promise<ReadableStream<Uint8Array>> {
-    const file = await rawOp(handle.getFile(), "file");
-    return file.stream();
-}
-
-/**
  * Writes the given data to the file.
  */
 export async function writeFile(
@@ -820,26 +778,31 @@ export async function writeFile(
             return await rawOp(Deno.writeFile(filename, data as any, options));
         }
     } else if (isNodeLike) {
-        const fs = await import("fs/promises");
-        const { append, ...rest } = options;
-        let _data: Uint8Array | string;
-
         if (typeof Blob === "function" && data instanceof Blob) {
-            _data = new Uint8Array(await data.arrayBuffer());
+            const reader = data.stream();
+            const writer = createNodeWritableStream(filename, options);
+            await reader.pipeTo(writer);
         } else if (typeof ReadableStream === "function" && data instanceof ReadableStream) {
-            _data = new Uint8Array(await readAsArrayBuffer(data));
-        } else if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
-            _data = new Uint8Array(data);
-        } else if (typeof data === "string" || "buffer" in data) {
-            _data = data;
+            const writer = createNodeWritableStream(filename, options);
+            await data.pipeTo(writer);
         } else {
-            throw new Error("Unsupported data type");
-        }
+            const fs = await import("fs/promises");
+            const { append, ...rest } = options;
+            let _data: Uint8Array | string;
 
-        return await rawOp(fs.writeFile(filename, _data, {
-            flag: options?.append ? "a" : "w",
-            ...rest,
-        }));
+            if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
+                _data = new Uint8Array(data);
+            } else if (typeof data === "string" || "buffer" in data) {
+                _data = data;
+            } else {
+                throw new TypeError("Unsupported data type");
+            }
+
+            return await rawOp(fs.writeFile(filename, _data, {
+                flag: append ? "a" : "w",
+                ...rest,
+            }));
+        }
     } else {
         const handle = await getFileHandle(filename, { root: options.root, create: true });
         return await writeFileHandle(handle, data, options);
@@ -854,14 +817,7 @@ async function writeFileHandle(
         signal?: AbortSignal;
     }
 ): Promise<void> {
-    const writer = await rawOp(handle.createWritable({
-        keepExistingData: options?.append ?? false,
-    }), "file");
-
-    if (options.append) {
-        const file = await rawOp(handle.getFile(), "file");
-        file.size && writer.seek(file.size);
-    }
+    const writer = await createFileHandleWritableStream(handle, options);
 
     if (options.signal) {
         const { signal } = options;
@@ -1449,4 +1405,202 @@ export async function utimes(
     } else {
         throw new Error("Unsupported runtime");
     }
+}
+
+/**
+ * Creates a readable stream for the target file.
+ */
+export function createReadableStream(
+    target: string | FileSystemFileHandle,
+    options: CommonOptions = {}
+): ReadableStream<Uint8Array> {
+    if (isNodeLike) {
+        if (typeof target === "object") {
+            throw new TypeError("Expected a file path, got a file handle");
+        }
+
+        const filename = target as string;
+        let reader: import("fs").ReadStream;
+
+        return new ReadableStream<Uint8Array>({
+            async start(controller) {
+                const fs = await import("fs");
+
+                reader = fs.createReadStream(filename);
+                reader.on("data", (chunk: Buffer) => {
+                    const bytes = new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+                    controller.enqueue(bytes);
+                });
+                reader.on("end", () => controller.close());
+                reader.on("error", (err: Error) => controller.error(err));
+            },
+            cancel(reason = undefined) {
+                reader.destroy(reason);
+            },
+        });
+    }
+
+    return resolveByteStream((async () => {
+        if (typeof target === "object") {
+            return await readFileHandleAsStream(target);
+        }
+
+        const filename = target;
+
+        if (isDeno) {
+            const file = await rawOp(Deno.open(filename, { read: true }));
+            return file.readable;
+        } else {
+            const handle = await getFileHandle(filename, { root: options.root });
+            return await readFileHandleAsStream(handle);
+        }
+    })());
+}
+
+async function readFileHandleAsStream(
+    handle: FileSystemFileHandle
+): Promise<ReadableStream<Uint8Array>> {
+    const file = await rawOp(handle.getFile(), "file");
+    return file.stream();
+}
+
+/**
+ * @deprecated use `createReadableStream` instead.
+ */
+export const readFileAsStream = createReadableStream;
+
+/**
+ * Creates a writable stream for the target file.
+ */
+export function createWritableStream(
+    target: string | FileSystemFileHandle,
+    options: CommonOptions & {
+        /**
+         * Append the data to the file instead of overwriting it.
+         */
+        append?: boolean;
+        /**
+         * Permissions always applied to file.
+         * 
+         * NOTE: This option is ignored in the browser.
+         * @default 0o666
+         */
+        mode?: number;
+    } = {}
+): WritableStream<Uint8Array> {
+    if (typeof target === "object") {
+        let dest: FileSystemWritableFileStream;
+        return new WritableStream<Uint8Array>({
+            async start() {
+                dest = await createFileHandleWritableStream(target, options);
+            },
+            write(chunk) {
+                return dest.write(chunk);
+            },
+            close() {
+                return dest.close();
+            },
+            abort(reason = undefined) {
+                return dest.abort(reason);
+            },
+        });
+    }
+
+    const filename = target;
+
+    if (isDeno) {
+        let dest: WritableStream<Uint8Array>;
+        return new WritableStream<Uint8Array>({
+            async start() {
+                const file = await Deno.open(filename, {
+                    write: true,
+                    create: true,
+                    append: options.append ?? false,
+                });
+                dest = file.writable;
+            },
+            async write(chunk) {
+                const writer = dest.getWriter();
+
+                try {
+                    await writer.write(chunk);
+                } finally {
+                    writer.releaseLock();
+                }
+            },
+            close() {
+                return dest.close();
+            },
+            abort(reason = undefined) {
+                return dest.abort(reason);
+            },
+        });
+    } else if (isNodeLike) {
+        return createNodeWritableStream(filename, options);
+    } else {
+        let dest: FileSystemWritableFileStream;
+        return new WritableStream<Uint8Array>({
+            async start() {
+                const handle = await getFileHandle(filename, {
+                    root: options.root,
+                    create: true,
+                });
+                dest = await createFileHandleWritableStream(handle, options);
+            },
+            write(chunk) {
+                return dest.write(chunk);
+            },
+            close() {
+                return dest.close();
+            },
+            abort(reason = undefined) {
+                return dest.abort(reason);
+            },
+        });
+    }
+}
+
+async function createFileHandleWritableStream(handle: FileSystemFileHandle, options: {
+    append?: boolean;
+}): Promise<FileSystemWritableFileStream> {
+    const stream = await rawOp(handle.createWritable({
+        keepExistingData: options?.append ?? false,
+    }), "file");
+
+    if (options.append) {
+        const file = await rawOp(handle.getFile(), "file");
+        file.size && stream.seek(file.size);
+    }
+
+    return stream;
+}
+
+function createNodeWritableStream(filename: string, options: {
+    append?: boolean;
+    mode?: number;
+}): WritableStream<Uint8Array> {
+    let dest: import("fs").WriteStream;
+    return new WritableStream<Uint8Array>({
+        async start() {
+            const { append, ...rest } = options;
+            const { createWriteStream } = await import("fs");
+            dest = createWriteStream(filename, {
+                flags: append ? "a" : "w",
+                ...rest,
+            });
+        },
+        write(chunk) {
+            return new Promise<void>((resolve, reject) => {
+                dest.write(chunk, (err) => err ? reject(err) : resolve());
+            });
+        },
+        close() {
+            return new Promise((resolve, reject) => {
+                dest.close((err) => err ? reject(err) : resolve());
+            });
+        },
+        abort(reason) {
+            dest.destroy(reason);
+        }
+    });
 }

@@ -29,6 +29,8 @@ import {
     utimes,
     writeFile,
     writeLines,
+    createReadableStream,
+    createWritableStream,
 } from "./fs.ts";
 
 describe("fs", () => {
@@ -973,4 +975,40 @@ describe("fs", () => {
         deepStrictEqual(_stat2.atime, new Date(atime2 * 1000));
         deepStrictEqual(_stat2.mtime, new Date(mtime2 * 1000));
     }));
+
+    describe("createReadableStream", () => {
+        if (typeof ReadableStream === "undefined") {
+            return;
+        }
+
+        it("default", async () => {
+            const stream = createReadableStream("./fs.ts");
+            ok(stream instanceof ReadableStream);
+
+            const text = await readAsText(stream);
+            const _text = await readFileAsText("./fs.ts");
+            strictEqual(text, _text);
+        });
+    });
+
+    describe("createWritableStream", async () => {
+        if (typeof ReadableStream === "undefined" || typeof WritableStream === "undefined") {
+            return;
+        }
+
+        it("default", jsext.func(async (defer) => {
+            const src = "./fs.ts";
+            const dest = "./tmp.txt";
+            const reader = createReadableStream(src);
+            const writer = createWritableStream("./tmp.txt");
+            defer(() => remove(dest));
+
+            ok(writer instanceof WritableStream);
+            await reader.pipeTo(writer);
+
+            const srcData = await readFile(src);
+            const destData = await readFile(dest);
+            ok(equals(srcData, destData));
+        }));
+    });
 });

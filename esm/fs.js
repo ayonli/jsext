@@ -6,7 +6,7 @@ import { as } from './object.js';
 import Exception from './error/Exception.js';
 import { getMIME } from './filetype.js';
 import { dirname, basename, extname, join } from './path.js';
-import { readAsArray, toReadableStream, readAsArrayBuffer } from './reader.js';
+import { readAsArray } from './reader.js';
 import { platform } from './runtime.js';
 import { stripStart } from './string.js';
 import _try from './try.js';
@@ -654,35 +654,6 @@ async function readFileHandleAsFile(handle) {
     return file;
 }
 /**
- * Reads the file as a `ReadableStream`.
- */
-function readFileAsStream(target, options = {}) {
-    return resolveByteStream((async () => {
-        if (typeof target === "object") {
-            return await readFileHandleAsStream(target);
-        }
-        const filename = target;
-        if (isDeno) {
-            const file = await rawOp(Deno.open(filename, { read: true }));
-            return file.readable;
-        }
-        else if (isNodeLike) {
-            const filename = target;
-            const fs = await import('fs');
-            const reader = fs.createReadStream(filename);
-            return toReadableStream(reader);
-        }
-        else {
-            const handle = await getFileHandle(filename, { root: options.root });
-            return await readFileHandleAsStream(handle);
-        }
-    })());
-}
-async function readFileHandleAsStream(handle) {
-    const file = await rawOp(handle.getFile(), "file");
-    return file.stream();
-}
-/**
  * Writes the given data to the file.
  */
 async function writeFile(target, data, options = {}) {
@@ -705,28 +676,33 @@ async function writeFile(target, data, options = {}) {
         }
     }
     else if (isNodeLike) {
-        const fs = await import('fs/promises');
-        const { append, ...rest } = options;
-        let _data;
         if (typeof Blob === "function" && data instanceof Blob) {
-            _data = new Uint8Array(await data.arrayBuffer());
+            const reader = data.stream();
+            const writer = createNodeWritableStream(filename, options);
+            await reader.pipeTo(writer);
         }
         else if (typeof ReadableStream === "function" && data instanceof ReadableStream) {
-            _data = new Uint8Array(await readAsArrayBuffer(data));
-        }
-        else if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
-            _data = new Uint8Array(data);
-        }
-        else if (typeof data === "string" || "buffer" in data) {
-            _data = data;
+            const writer = createNodeWritableStream(filename, options);
+            await data.pipeTo(writer);
         }
         else {
-            throw new Error("Unsupported data type");
+            const fs = await import('fs/promises');
+            const { append, ...rest } = options;
+            let _data;
+            if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
+                _data = new Uint8Array(data);
+            }
+            else if (typeof data === "string" || "buffer" in data) {
+                _data = data;
+            }
+            else {
+                throw new TypeError("Unsupported data type");
+            }
+            return await rawOp(fs.writeFile(filename, _data, {
+                flag: append ? "a" : "w",
+                ...rest,
+            }));
         }
-        return await rawOp(fs.writeFile(filename, _data, {
-            flag: (options === null || options === void 0 ? void 0 : options.append) ? "a" : "w",
-            ...rest,
-        }));
     }
     else {
         const handle = await getFileHandle(filename, { root: options.root, create: true });
@@ -734,14 +710,7 @@ async function writeFile(target, data, options = {}) {
     }
 }
 async function writeFileHandle(handle, data, options) {
-    var _a;
-    const writer = await rawOp(handle.createWritable({
-        keepExistingData: (_a = options === null || options === void 0 ? void 0 : options.append) !== null && _a !== void 0 ? _a : false,
-    }), "file");
-    if (options.append) {
-        const file = await rawOp(handle.getFile(), "file");
-        file.size && writer.seek(file.size);
-    }
+    const writer = await createFileHandleWritableStream(handle, options);
     if (options.signal) {
         const { signal } = options;
         if (signal.aborted) {
@@ -1246,6 +1215,168 @@ async function utimes(path, atime, mtime) {
         throw new Error("Unsupported runtime");
     }
 }
+/**
+ * Creates a readable stream for the target file.
+ */
+function createReadableStream(target, options = {}) {
+    if (isNodeLike) {
+        if (typeof target === "object") {
+            throw new TypeError("Expected a file path, got a file handle");
+        }
+        const filename = target;
+        let reader;
+        return new ReadableStream({
+            async start(controller) {
+                const fs = await import('fs');
+                reader = fs.createReadStream(filename);
+                reader.on("data", (chunk) => {
+                    const bytes = new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+                    controller.enqueue(bytes);
+                });
+                reader.on("end", () => controller.close());
+                reader.on("error", (err) => controller.error(err));
+            },
+            cancel(reason = undefined) {
+                reader.destroy(reason);
+            },
+        });
+    }
+    return resolveByteStream((async () => {
+        if (typeof target === "object") {
+            return await readFileHandleAsStream(target);
+        }
+        const filename = target;
+        if (isDeno) {
+            const file = await rawOp(Deno.open(filename, { read: true }));
+            return file.readable;
+        }
+        else {
+            const handle = await getFileHandle(filename, { root: options.root });
+            return await readFileHandleAsStream(handle);
+        }
+    })());
+}
+async function readFileHandleAsStream(handle) {
+    const file = await rawOp(handle.getFile(), "file");
+    return file.stream();
+}
+/**
+ * @deprecated use `createReadableStream` instead.
+ */
+const readFileAsStream = createReadableStream;
+/**
+ * Creates a writable stream for the target file.
+ */
+function createWritableStream(target, options = {}) {
+    if (typeof target === "object") {
+        let dest;
+        return new WritableStream({
+            async start() {
+                dest = await createFileHandleWritableStream(target, options);
+            },
+            write(chunk) {
+                return dest.write(chunk);
+            },
+            close() {
+                return dest.close();
+            },
+            abort(reason = undefined) {
+                return dest.abort(reason);
+            },
+        });
+    }
+    const filename = target;
+    if (isDeno) {
+        let dest;
+        return new WritableStream({
+            async start() {
+                var _a;
+                const file = await Deno.open(filename, {
+                    write: true,
+                    create: true,
+                    append: (_a = options.append) !== null && _a !== void 0 ? _a : false,
+                });
+                dest = file.writable;
+            },
+            async write(chunk) {
+                const writer = dest.getWriter();
+                try {
+                    await writer.write(chunk);
+                }
+                finally {
+                    writer.releaseLock();
+                }
+            },
+            close() {
+                return dest.close();
+            },
+            abort(reason = undefined) {
+                return dest.abort(reason);
+            },
+        });
+    }
+    else if (isNodeLike) {
+        return createNodeWritableStream(filename, options);
+    }
+    else {
+        let dest;
+        return new WritableStream({
+            async start() {
+                const handle = await getFileHandle(filename, {
+                    root: options.root,
+                    create: true,
+                });
+                dest = await createFileHandleWritableStream(handle, options);
+            },
+            write(chunk) {
+                return dest.write(chunk);
+            },
+            close() {
+                return dest.close();
+            },
+            abort(reason = undefined) {
+                return dest.abort(reason);
+            },
+        });
+    }
+}
+async function createFileHandleWritableStream(handle, options) {
+    var _a;
+    const stream = await rawOp(handle.createWritable({
+        keepExistingData: (_a = options === null || options === void 0 ? void 0 : options.append) !== null && _a !== void 0 ? _a : false,
+    }), "file");
+    if (options.append) {
+        const file = await rawOp(handle.getFile(), "file");
+        file.size && stream.seek(file.size);
+    }
+    return stream;
+}
+function createNodeWritableStream(filename, options) {
+    let dest;
+    return new WritableStream({
+        async start() {
+            const { append, ...rest } = options;
+            const { createWriteStream } = await import('fs');
+            dest = createWriteStream(filename, {
+                flags: append ? "a" : "w",
+                ...rest,
+            });
+        },
+        write(chunk) {
+            return new Promise((resolve, reject) => {
+                dest.write(chunk, (err) => err ? reject(err) : resolve());
+            });
+        },
+        close() {
+            return new Promise((resolve, reject) => {
+                dest.close((err) => err ? reject(err) : resolve());
+            });
+        },
+        abort(reason) {
+            dest.destroy(reason);
+        }
+    });
+}
 
-export { EOL, chmod, chown, copy, ensureDir, exists, getDirHandle, getFileHandle, link, mkdir, readDir, readFile, readFileAsFile, readFileAsStream, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };
+export { EOL, chmod, chown, copy, createReadableStream, createWritableStream, ensureDir, exists, getDirHandle, getFileHandle, link, mkdir, readDir, readFile, readFileAsFile, readFileAsStream, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };
 //# sourceMappingURL=fs.js.map
