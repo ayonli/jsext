@@ -3,6 +3,17 @@
  * @module
  */
 
+/** This interface represents the abstract constructor/class of the given `T` type. */
+export interface AbstractConstructor<T = object> extends Function {
+    prototype: T;
+}
+
+/** This interface represents the constructor/class of the given `T` type. */
+export interface Constructor<T = object> extends Function {
+    new(...args: any[]): T;
+    prototype: T;
+}
+
 /** This is the very constructor/class of all async functions. */
 export const AsyncFunction = (async function () { }).constructor as AsyncFunctionConstructor;
 export interface AsyncFunction {
@@ -22,23 +33,10 @@ export interface AsyncFunctionConstructor {
 /** This is the very constructor/class of all async generator functions. */
 export const AsyncGeneratorFunction = (async function* () { }).constructor as AsyncGeneratorFunctionConstructor;
 
-/** This interface represents the constructor/class of the given `T` type. */
-export interface Constructor<T = object> extends Function {
-    new(...args: any[]): T;
-    prototype: T;
-}
-
-/** A real-array-like object is an array-like object with a `slice` method. */
-export interface RealArrayLike<T> extends ArrayLike<T> {
-    slice(start?: number, end?: number): RealArrayLike<T>;
-}
-
 /**
  * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray
  */
-/**
- * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray
- */
+export const TypedArray = Object.getPrototypeOf(Uint8Array) as AbstractConstructor<TypedArray>;
 export interface TypedArray {
     readonly BYTES_PER_ELEMENT: number;
     readonly buffer: ArrayBufferLike;
@@ -79,6 +77,11 @@ export interface TypedArray {
 
     [index: number]: number;
     [Symbol.iterator](): IterableIterator<number>;
+}
+
+/** A real-array-like object is an array-like object with a `slice` method. */
+export interface RealArrayLike<T> extends ArrayLike<T> {
+    slice(start?: number, end?: number): RealArrayLike<T>;
 }
 
 /**
