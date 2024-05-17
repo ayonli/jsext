@@ -23,23 +23,8 @@ import "@ayonli/jsext/augment/promise";
 import "@ayonli/jsext/augment/string";
 import "@ayonli/jsext/augment/uint8array";
 import "@ayonli/jsext/augment/pipe";
+import "@ayonli/jsext/augment/types";
 ```
-
-### Augment global types
-
-_When import `@ayonli/jsext/augment`_
-
-- `Constructor<T>`
-- `AbstractConstructor<T>`
-- `AsyncFunction`
-- `GeneratorFunction`
-- `AsyncGeneratorFunction`
-- `AsyncFunctionConstructor`
-- `TypedArray`
-- `RealArrayLike<T>`
-- `Optional<T, K extends keyof T>`
-- `Ensured<T, K extends keyof T>`
-- `ValueOf<T>`
 
 ### Augment Array
 
@@ -218,3 +203,17 @@ _These types are augmented to the global scope._
 - `SharedArrayBuffer.prototype.pipe`
 - `Blob.prototype.pipe`
 - `Event.prototype.pipe`
+
+### Augment global types
+
+- `Constructor<T>`
+- `AbstractConstructor<T>`
+- `AsyncFunction`
+- `GeneratorFunction`
+- `AsyncGeneratorFunction`
+- `AsyncFunctionConstructor`
+- `TypedArray`
+- `RealArrayLike<T>`
+- `Optional<T, K extends keyof T>`
+- `Ensured<T, K extends keyof T>`
+- `ValueOf<T>`

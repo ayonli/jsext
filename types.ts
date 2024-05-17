@@ -14,7 +14,20 @@ export interface AbstractConstructor<T = object> extends Function {
     prototype: T;
 }
 
-/** This is the very constructor/class of all async functions. */
+/**
+ * This is the very constructor/class of all async functions.
+ * 
+ * @example
+ * ```ts
+ * import { AsyncFunction } from "@ayonli/jsext/types";
+ * 
+ * async function foo() {
+ *       // ...
+ * }
+ * 
+ * console.assert(foo instanceof AsyncFunction);
+ * ```
+ */
 export const AsyncFunction = (async function () { }).constructor as AsyncFunctionConstructor;
 export interface AsyncFunction {
     (...args: any[]): Promise<unknown>;
@@ -30,14 +43,51 @@ export interface AsyncFunctionConstructor {
     readonly prototype: AsyncFunction;
 }
 
-/** This is the very constructor/class of all generator functions. */
+/**
+ * This is the very constructor/class of all generator functions.
+ * 
+ * @example
+ * ```ts
+ * import { GeneratorFunction } from "@ayonli/jsext/types";
+ * 
+ * function* foo() {
+ *     // ...
+ * }
+ * 
+ * console.assert(foo instanceof GeneratorFunction);
+ * ```
+ */
 export const GeneratorFunction = (function* () { }).constructor as GeneratorFunctionConstructor;
 
-/** This is the very constructor/class of all async generator functions. */
+/**
+ * This is the very constructor/class of all async generator functions.
+ * 
+ * @example
+ * ```ts
+ * import { AsyncGeneratorFunction } from "@ayonli/jsext/types";
+ * 
+ * async function* foo() {
+ *    // ...
+ * }
+ * 
+ * console.assert(foo instanceof AsyncGeneratorFunction);
+ * ```
+ */
 export const AsyncGeneratorFunction = (async function* () { }).constructor as AsyncGeneratorFunctionConstructor;
 
 /**
+ * This is the superclass of all of all `TypedArray` subclasses, such as `Uint8Array`,
+ * `Int16Array`, etc.
+ * 
  * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray
+ * 
+ * @example
+ * ```ts
+ * import { TypedArray } from "@ayonli/jsext/types";
+ * 
+ * const arr = new Uint8Array(10);
+ * console.assert(arr instanceof TypedArray);
+ * ```
  */
 export const TypedArray = Object.getPrototypeOf(Uint8Array) as AbstractConstructor<TypedArray>;
 export interface TypedArray {
@@ -92,6 +142,8 @@ export interface RealArrayLike<T> extends ArrayLike<T> {
  * 
  * @example
  * ```ts
+ * import { Optional } from "@ayonli/jsext/types";
+ * 
  * interface User {
  *     name: string;
  *     age: number;
@@ -107,6 +159,8 @@ export type Optional<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
  * 
  * @example
  * ```ts
+ * import { Ensured } from "@ayonli/jsext/types";
+ * 
  * interface User {
  *     name: string;
  *     age?: number;
