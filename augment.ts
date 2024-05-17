@@ -10,18 +10,18 @@ import "./augment/collections.ts";
 import "./augment/error.ts";
 import "./augment/json.ts";
 import "./augment/pipe.ts";
-import { AsyncFunction, AsyncGeneratorFunction, TypedArray } from "./types.ts";
+import { AsyncFunction, GeneratorFunction, AsyncGeneratorFunction, TypedArray } from "./types.ts";
 import { customInspect } from "./runtime.ts";
 
 declare global {
-    /** This interface represents the abstract constructor/class of the given `T` type. */
-    export interface AbstractConstructor<T = object> extends Function {
-        prototype: T;
-    }
-
     /** This interface represents the constructor/class of the given `T` type. */
     interface Constructor<T = object> extends Function {
         new(...args: any[]): T;
+        prototype: T;
+    }
+
+    /** This interface represents the abstract constructor/class of the given `T` type. */
+    export interface AbstractConstructor<T = object> extends Function {
         prototype: T;
     }
 
@@ -40,6 +40,9 @@ declare global {
         readonly name: string;
         readonly prototype: AsyncFunction;
     }
+
+    /** This is the very constructor/class of all generator functions. */
+    const GeneratorFunction: GeneratorFunctionConstructor;
 
     /** This is the very constructor/class of all async generator functions. */
     const AsyncGeneratorFunction: AsyncGeneratorFunctionConstructor;
@@ -128,10 +131,23 @@ declare global {
      * ```
      */
     type Ensured<T, K extends keyof T> = Required<Pick<T, K>> & Omit<T, K>;
+
+    /**
+     * Returns the primitive value held by the given type if its a wrapper object,
+     * otherwise returns the type itself.
+     */
+    type ValueOf<T> = T extends String ? string
+        : T extends Number ? number
+        : T extends Boolean ? boolean
+        : T extends BigInt ? bigint
+        : T extends Symbol ? symbol
+        : T;
 }
 
 // @ts-ignore
 globalThis["AsyncFunction"] = AsyncFunction;
+// @ts-ignore
+globalThis["GeneratorFunction"] = GeneratorFunction;
 // @ts-ignore
 globalThis["AsyncGeneratorFunction"] = AsyncGeneratorFunction;
 // @ts-ignore

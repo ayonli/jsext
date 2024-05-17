@@ -29,14 +29,17 @@ import "@ayonli/jsext/augment/pipe";
 
 _When import `@ayonli/jsext/augment`_
 
-- `AsyncFunction`
-- `AsyncFunctionConstructor`
-- `AsyncGeneratorFunction`
 - `Constructor<T>`
-- `RealArrayLike<T>`
+- `AbstractConstructor<T>`
+- `AsyncFunction`
+- `GeneratorFunction`
+- `AsyncGeneratorFunction`
+- `AsyncFunctionConstructor`
 - `TypedArray`
+- `RealArrayLike<T>`
 - `Optional<T, K extends keyof T>`
 - `Ensured<T, K extends keyof T>`
+- `ValueOf<T>`
 
 ### Augment Array
 

@@ -109,8 +109,8 @@ categories:
   functions to retrieve runtime information or modify runtime behaviors.
 - [string](https://jsr.io/@ayonli/jsext/doc/string/~) Functions for dealing with
   strings.
-- [types](https://jsr.io/@ayonli/jsext/doc/types/~) The missing utility types
-  for TypeScript.
+- [types](https://jsr.io/@ayonli/jsext/doc/types/~) The missing builtin classes
+  of JavaScript and utility types for TypeScript.
 
 ## Augmentation
 

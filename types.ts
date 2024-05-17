@@ -3,14 +3,14 @@
  * @module
  */
 
-/** This interface represents the abstract constructor/class of the given `T` type. */
-export interface AbstractConstructor<T = object> extends Function {
-    prototype: T;
-}
-
 /** This interface represents the constructor/class of the given `T` type. */
 export interface Constructor<T = object> extends Function {
     new(...args: any[]): T;
+    prototype: T;
+}
+
+/** This interface represents the abstract constructor/class of the given `T` type. */
+export interface AbstractConstructor<T = object> extends Function {
     prototype: T;
 }
 
@@ -29,6 +29,9 @@ export interface AsyncFunctionConstructor {
     readonly name: string;
     readonly prototype: AsyncFunction;
 }
+
+/** This is the very constructor/class of all generator functions. */
+export const GeneratorFunction = (function* () { }).constructor as GeneratorFunctionConstructor;
 
 /** This is the very constructor/class of all async generator functions. */
 export const AsyncGeneratorFunction = (async function* () { }).constructor as AsyncGeneratorFunctionConstructor;

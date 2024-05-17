@@ -1,5 +1,5 @@
 import { ok } from "node:assert";
-import { AsyncFunction, AsyncGeneratorFunction, TypedArray } from "./types.ts";
+import { AsyncFunction, GeneratorFunction, AsyncGeneratorFunction, TypedArray } from "./types.ts";
 
 describe("types", () => {
     const fn1: AsyncFunction = async function () { };
@@ -19,6 +19,17 @@ describe("types", () => {
         ok(!(fn5 instanceof AsyncFunction));
         ok(!(fn6 instanceof AsyncFunction));
         ok(!(class1 instanceof AsyncFunction));
+    });
+
+    it("GeneratorFunction", () => {
+        ok(fn4 instanceof GeneratorFunction);
+
+        ok(!(fn1 instanceof GeneratorFunction));
+        ok(!(fn2 instanceof GeneratorFunction));
+        ok(!(fn3 instanceof GeneratorFunction));
+        ok(!(fn5 instanceof GeneratorFunction));
+        ok(!(fn6 instanceof GeneratorFunction));
+        ok(!(class1 instanceof GeneratorFunction));
     });
 
     it("AsyncGeneratorFunction", () => {
