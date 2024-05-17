@@ -195,7 +195,7 @@ export const WellknownPlatforms: WellknownPlatforms[] = [
  */
 export function platform(): WellknownPlatforms | "unknown" {
     if (isDeno) {
-        if (WellknownPlatforms.includes(Deno.build.os as any)) {
+        if ((WellknownPlatforms as string[]).includes(Deno.build.os)) {
             return Deno.build.os as WellknownPlatforms;
         }
     } else if (isNodeLike) {

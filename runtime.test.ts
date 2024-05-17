@@ -44,7 +44,7 @@ describe("runtime", () => {
         const others = "others";
 
         if (typeof Deno === "object") {
-            if (platforms.includes(Deno.build.os as any)) {
+            if (platforms.includes(Deno.build.os)) {
                 strictEqual(Deno.build.os, platform());
             } else {
                 strictEqual(others, platform());

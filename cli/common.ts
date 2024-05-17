@@ -168,9 +168,9 @@ export async function lockStdin<T>(task: () => Promise<T>): Promise<T | null> {
             }
 
             // copy listeners in cased being modified
-            const listeners = [...stdin.listeners("data")];
+            const listeners = [...stdin.listeners("data")] as ((chunk: Buffer) => void)[];
 
-            if (listeners?.length) {
+            if (listeners.length) {
                 stdin.removeAllListeners("data");
             }
 
@@ -180,8 +180,8 @@ export async function lockStdin<T>(task: () => Promise<T>): Promise<T | null> {
             } finally {
                 stdin.setRawMode(false);
 
-                if (listeners?.length) {
-                    listeners.forEach(listener => stdin.addListener("data", listener as any));
+                if (listeners.length) {
+                    listeners.forEach(listener => stdin.addListener("data", listener));
                 } else {
                     stdin.pause();
                 }
