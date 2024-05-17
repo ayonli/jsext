@@ -581,6 +581,14 @@ describe("fs", () => {
             ok(equals(data, output));
         });
 
+        it("DataView", async () => {
+            const output = new DataView(bytes("Hello, world!").buffer);
+            await writeFile("./tmp.txt", output);
+
+            const data = await readFile(path);
+            ok(equals(data, bytes("Hello, world!")));
+        });
+
         it("ReadableStream", async function () {
             if (typeof ReadableStream === "undefined") {
                 this.skip();

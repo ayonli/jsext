@@ -1,6 +1,6 @@
 import { orderBy, startsWith } from './array.js';
 import { abortable } from './async.js';
-import { text } from './bytes.js';
+import bytes, { text } from './bytes.js';
 import { isDeno, isNodeLike } from './env.js';
 import { as } from './object.js';
 import Exception from './error/Exception.js';
@@ -661,6 +661,9 @@ async function writeFile(target, data, options = {}) {
         else if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
             return await rawOp(Deno.writeFile(filename, new Uint8Array(data), options));
         }
+        else if (data instanceof DataView) {
+            return await rawOp(Deno.writeFile(filename, bytes(data), options));
+        }
         else {
             return await rawOp(Deno.writeFile(filename, data, options));
         }
@@ -681,6 +684,9 @@ async function writeFile(target, data, options = {}) {
             let _data;
             if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
                 _data = new Uint8Array(data);
+            }
+            else if (data instanceof DataView) {
+                _data = bytes(data); // Bun may not support writing DataView
             }
             else if (typeof data === "string" || "buffer" in data) {
                 _data = data;

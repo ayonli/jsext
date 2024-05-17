@@ -33,29 +33,54 @@ describe("bytes", () => {
         });
     });
 
-    it("bytes", () => {
-        deepStrictEqual(
-            new Uint8Array(bytes("Hello, World!")),
-            new TextEncoder().encode("Hello, World!")
-        );
-        deepStrictEqual(new Uint8Array(bytes([1, 2, 3, 4, 5])), new Uint8Array([1, 2, 3, 4, 5]));
-        deepStrictEqual(
-            bytes(new Uint8Array([1, 2, 3, 4, 5])).buffer,
-            new Uint8Array([1, 2, 3, 4, 5]).buffer
-        );
-        deepStrictEqual(
-            bytes(new Uint8Array([1, 2, 3, 4, 5]).buffer).buffer,
-            new Uint8Array([1, 2, 3, 4, 5]).buffer
-        );
-        deepStrictEqual(bytes(new ArrayBuffer(5)).buffer, new Uint8Array(5).buffer);
-        deepStrictEqual(bytes(5).buffer, new Uint8Array(5).buffer);
+    describe("bytes", () => {
+        it("number", () => {
+            deepStrictEqual(bytes(5).buffer, new Uint8Array(5).buffer);
+            strictEqual(bytes(5).length, 5);
+        });
 
-        if (typeof Buffer === "function") {
+        it("string", () => {
+            deepStrictEqual(
+                new Uint8Array(bytes("Hello, World!")),
+                new TextEncoder().encode("Hello, World!")
+            );
+        });
+
+        it("ArrayLike<number>", () => {
+            deepStrictEqual(new Uint8Array(bytes([1, 2, 3, 4, 5])), new Uint8Array([1, 2, 3, 4, 5]));
+        });
+
+        it("Uint8Array", () => {
+            deepStrictEqual(
+                bytes(new Uint8Array([1, 2, 3, 4, 5])).buffer,
+                new Uint8Array([1, 2, 3, 4, 5]).buffer
+            );
+        });
+
+        it("ArrayBuffer", () => {
+            deepStrictEqual(bytes(new ArrayBuffer(5)).buffer, new Uint8Array(5).buffer);
+            deepStrictEqual(
+                bytes(new Uint8Array([1, 2, 3, 4, 5]).buffer).buffer,
+                new Uint8Array([1, 2, 3, 4, 5]).buffer
+            );
+        });
+
+        it("DataView", () => {
+            const arr = new Uint8Array([1, 2, 3, 4, 5]);
+            const dataView = new DataView(arr.buffer);
+            deepStrictEqual(bytes(dataView).buffer, arr.buffer);
+        });
+
+        it("Buffer", function () {
+            if (typeof Buffer !== "function") {
+                this.skip();
+            }
+
             deepStrictEqual(
                 bytes(Buffer.from("Hello, World!")).buffer,
                 new Uint8Array([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]).buffer
             );
-        }
+        });
     });
 
     it("text", () => {

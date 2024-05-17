@@ -47,13 +47,20 @@ export class ByteArray extends Uint8Array {
  * console.log(String(arr)); // "Hello, World!"
  * ```
  */
+export default function bytes(length: number): ByteArray;
 export default function bytes(str: string): ByteArray;
 export default function bytes(arr: ArrayLike<number>): ByteArray;
 export default function bytes(buf: ArrayBufferLike): ByteArray;
-export default function bytes(length: number): ByteArray;
-export default function bytes(data: any): ByteArray {
-    if (typeof data === "string") {
+export default function bytes(view: DataView): ByteArray;
+export default function bytes(
+    data: number | string | ArrayLike<number> | ArrayBufferLike | DataView
+): ByteArray {
+    if (typeof data === "number") {
+        return new ByteArray(data);
+    } else if (typeof data === "string") {
         return new ByteArray(defaultEncoder.encode(data).buffer);
+    } else if (data instanceof DataView) {
+        return new ByteArray(data.buffer);
     } else {
         return new ByteArray(data);
     }

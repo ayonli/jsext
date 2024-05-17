@@ -46,7 +46,7 @@
 
 import { orderBy, startsWith } from "./array.ts";
 import { abortable } from "./async.ts";
-import { text } from "./bytes.ts";
+import bytes, { text } from "./bytes.ts";
 import { isDeno, isNodeLike } from "./env.ts";
 import { Exception } from "./error.ts";
 import { getMIME } from "./filetype.ts";
@@ -733,7 +733,7 @@ async function readFileHandleAsFile(handle: FileSystemFileHandle): Promise<File>
  */
 export async function writeFile(
     target: string | FileSystemFileHandle,
-    data: string | Uint8Array | ArrayBufferLike | ReadableStream<Uint8Array> | Blob | File,
+    data: string | Uint8Array | ArrayBufferLike | DataView | ReadableStream<Uint8Array> | Blob | File,
     options: CommonOptions & {
         /**
          * Append the data to the file instead of overwriting it.
@@ -762,6 +762,8 @@ export async function writeFile(
             return await rawOp(Deno.writeFile(filename, data.stream(), options));
         } else if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
             return await rawOp(Deno.writeFile(filename, new Uint8Array(data), options));
+        } else if (data instanceof DataView) {
+            return await rawOp(Deno.writeFile(filename, bytes(data), options));
         } else {
             return await rawOp(Deno.writeFile(filename, data, options));
         }
@@ -780,6 +782,8 @@ export async function writeFile(
 
             if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
                 _data = new Uint8Array(data);
+            } else if (data instanceof DataView) {
+                _data = bytes(data); // Bun may not support writing DataView
             } else if (typeof data === "string" || "buffer" in data) {
                 _data = data;
             } else {
@@ -799,7 +803,7 @@ export async function writeFile(
 
 async function writeFileHandle(
     handle: FileSystemFileHandle,
-    data: string | Uint8Array | ArrayBufferLike | ReadableStream<Uint8Array> | Blob | File,
+    data: string | Uint8Array | ArrayBufferLike | DataView | ReadableStream<Uint8Array> | Blob | File,
     options: {
         append?: boolean;
         signal?: AbortSignal;

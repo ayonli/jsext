@@ -24,8 +24,14 @@ class ByteArray extends Uint8Array {
     }
 }
 function bytes(data) {
-    if (typeof data === "string") {
+    if (typeof data === "number") {
+        return new ByteArray(data);
+    }
+    else if (typeof data === "string") {
         return new ByteArray(defaultEncoder.encode(data).buffer);
+    }
+    else if (data instanceof DataView) {
+        return new ByteArray(data.buffer);
     }
     else {
         return new ByteArray(data);
