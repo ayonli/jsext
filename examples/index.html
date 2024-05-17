@@ -53,9 +53,17 @@
         }
     </script>
     <script type="module">
-        import { alert, confirm, prompt, progress, openFile, saveFile } from "../esm/dialog.js";
-        import { sleep } from "../esm/async.js";
-        import runtime, { isREPL } from "../esm/runtime.js";
+        import { sleep } from "@ayonli/jsext/async";
+        import {
+            alert,
+            confirm,
+            prompt,
+            progress,
+            openFile,
+            saveFile,
+            downloadFile,
+        } from "@ayonli/jsext/dialog";
+        import runtime, { isREPL } from "@ayonli/jsext/runtime";
 
         self.onload = () => {
             const alertBtn = document.getElementById('alert');
@@ -152,6 +160,11 @@
                 }
             });
 
+            const downloadUrlBtn = document.getElementById('download-file-url');
+            downloadUrlBtn.addEventListener('click', async () => {
+                await downloadFile("./", { name: 'index.html' });
+            });
+
             const runtimeInfoBtn = document.getElementById('runtime-info');
             runtimeInfoBtn.addEventListener('click', async () => {
                 const info = {
@@ -184,6 +197,7 @@
         <button id="open-files">Open Files</button>
         <button id="open-directory">Open Directory</button>
         <button id="download-file">Download File</button>
+        <button id="download-file-url">Download File (URL)</button>
         <button id="runtime-info">Runtime Info</button>
     </div>
 </body>

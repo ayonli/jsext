@@ -6,6 +6,8 @@ import { macPickFile, macPickFiles, macPickFolder } from './terminal/file/mac.js
 import { linuxPickFile, linuxPickFiles, linuxPickFolder } from './terminal/file/linux.js';
 import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './terminal/file/windows.js';
 import { browserPickFile, browserPickFiles, browserPickFolder } from './terminal/file/browser.js';
+import { asyncTask } from '../async.js';
+import { concat } from '../bytes.js';
 import { getExtensions } from '../filetype.js';
 import { readDir, readFileAsFile, writeFile } from '../fs.js';
 import { fixFileType } from '../fs/types.js';
@@ -285,6 +287,52 @@ async function saveFile(file, options = {}) {
         throw new Error("Unsupported runtime");
     }
 }
+/**
+ * This function wraps the {@link saveFile} function, instead of taking a file
+ * object, it takes a URL and downloads the file from the URL.
+ */
+async function downloadFile(url, options = {}) {
+    if (typeof fetch === "function") {
+        const res = await fetch(url);
+        if (!res.ok) {
+            throw new Error(`Failed to download: ${url}`);
+        }
+        return await saveFile(res.body, options);
+    }
+    else if (isNodeLike) {
+        const _url = typeof url === "object" ? url.href : url;
+        const task = asyncTask();
+        const handleHttpResponse = (res) => {
+            if (res.statusCode !== 200) {
+                task.reject(new Error(`Failed to download: ${_url}`));
+                return;
+            }
+            else {
+                const chunks = [];
+                res.on("data", (chunk) => {
+                    chunks.push(chunk);
+                }).once("end", () => {
+                    const buf = concat(...chunks);
+                    task.resolve(saveFile(buf.buffer, options));
+                }).once("error", err => {
+                    task.reject(err);
+                });
+            }
+        };
+        if (/https:\/\//i.test(_url)) {
+            const https = await import('https');
+            https.get(_url, handleHttpResponse);
+        }
+        else {
+            const http = await import('http');
+            http.get(_url, handleHttpResponse);
+        }
+        return await task;
+    }
+    else {
+        throw new Error("Unsupported runtime");
+    }
+}
 
-export { openFile, pickDirectory, pickFile, pickFiles, saveFile };
+export { downloadFile, openFile, pickDirectory, pickFile, pickFiles, saveFile };
 //# sourceMappingURL=file.js.map

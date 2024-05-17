@@ -75,6 +75,9 @@ const urlCache = new Map();
  * the response to a new Blob with the correct MIME type if the original one
  * does not match. It ensures the resource can be loaded correctly in the
  * browser.
+ *
+ * NOTE: This function is primarily designed for the browser, it has very little
+ * use on the server side.
  */
 async function getObjectURL(src, mimeType = "text/javascript") {
     var _a;

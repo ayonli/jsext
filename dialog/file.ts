@@ -22,6 +22,8 @@ import {
     browserPickFile,
     browserPickFiles,
 } from "./terminal/file/browser.ts";
+import { asyncTask } from "../async.ts";
+import { concat } from "../bytes.ts";
 import { getExtensions } from "../filetype.ts";
 import { readDir, readFileAsFile, writeFile } from "../fs.ts";
 import { fixFileType } from "../fs/types.ts";
@@ -376,6 +378,58 @@ export async function saveFile(
         if (filename) {
             await writeFile(filename, file);
         }
+    } else {
+        throw new Error("Unsupported runtime");
+    }
+}
+
+/**
+ * This function wraps the {@link saveFile} function, instead of taking a file
+ * object, it takes a URL and downloads the file from the URL.
+ */
+export async function downloadFile(url: string | URL, options: {
+    title?: string;
+    name?: string;
+    type?: string;
+} = {}): Promise<void> {
+    if (typeof fetch === "function") {
+        const res = await fetch(url);
+
+        if (!res.ok) {
+            throw new Error(`Failed to download: ${url}`);
+        }
+
+        return await saveFile(res.body!, options);
+    } else if (isNodeLike) {
+        const _url = typeof url === "object" ? url.href : url;
+        const task = asyncTask<void>();
+        const handleHttpResponse = (res: import("http").IncomingMessage) => {
+            if (res.statusCode !== 200) {
+                task.reject(new Error(`Failed to download: ${_url}`));
+                return;
+            } else {
+                const chunks: Buffer[] = [];
+
+                res.on("data", (chunk: Buffer) => {
+                    chunks.push(chunk);
+                }).once("end", () => {
+                    const buf = concat(...chunks);
+                    task.resolve(saveFile(buf.buffer, options));
+                }).once("error", err => {
+                    task.reject(err);
+                });
+            }
+        };
+
+        if (/https:\/\//i.test(_url)) {
+            const https = await import("https");
+            https.get(_url, handleHttpResponse);
+        } else {
+            const http = await import("http");
+            http.get(_url, handleHttpResponse);
+        }
+
+        return await task;
     } else {
         throw new Error("Unsupported runtime");
     }
