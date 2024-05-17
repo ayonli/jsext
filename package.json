@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.9.7",
+    "version": "0.9.8",
     "description": "Additional functions for JavaScript to build strong applications.",
     "exports": {
         ".": {

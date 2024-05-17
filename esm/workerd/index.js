@@ -14,7 +14,7 @@ import example$1 from './example.js';
 import deprecate from '../deprecate.js';
 import pipe from '../pipe.js';
 import { isClass as isClass$1, isSubclassOf as isSubclassOf$1 } from '../class.js';
-export { AsyncFunction, AsyncGeneratorFunction } from '../types.js';
+export { AsyncFunction, AsyncGeneratorFunction, GeneratorFunction, TypedArray } from '../types.js';
 import { toAsyncIterable } from '../reader/util.js';
 
 /** @deprecated import `Queue` from `@ayonli/jsext/queue` instead. */
