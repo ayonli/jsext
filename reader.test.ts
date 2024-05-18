@@ -18,6 +18,7 @@ import {
     resolveByteStream,
     toAsyncIterable,
     toReadableStream,
+    concat,
 } from "./reader.ts";
 
 describe("reader", () => {
@@ -884,6 +885,26 @@ describe("reader", () => {
             }
 
             deepStrictEqual(result, ["Hello, World!"]);
+        });
+    });
+
+    describe("concat", () => {
+        it("AsyncIterable", async () => {
+            const iterator1 = toAsyncIterable([1, 2, 3]);
+            const iterator2 = toAsyncIterable([4, 5, 6]);
+            const iterator3 = toAsyncIterable([7, 8, 9]);
+
+            const result = await readAsArray(concat(iterator1, iterator2, iterator3));
+            deepStrictEqual(result, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        });
+
+        it("ReadableStream", async () => {
+            const stream1 = toReadableStream([1, 2, 3]);
+            const stream2 = toReadableStream([4, 5, 6]);
+            const stream3 = toReadableStream([7, 8, 9]);
+
+            const result = await readAsArray(concat(stream1, stream2, stream3));
+            deepStrictEqual(result, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
         });
     });
 });

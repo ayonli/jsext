@@ -3,7 +3,7 @@
  * forms.
  * @module
  */
-import { concat, text } from "./bytes.ts";
+import { concat as concatBytes, text } from "./bytes.ts";
 import {
     asAsyncIterable,
     toAsyncIterable,
@@ -113,7 +113,7 @@ export async function readAsArrayBuffer(
     }
 
     const chunks = await readAsArray(iterable);
-    const bytes = concat(...chunks.map(chunk => new Uint8Array(chunk)));
+    const bytes = concatBytes(...chunks.map(chunk => new Uint8Array(chunk)));
 
     return bytes.buffer;
 }
@@ -198,4 +198,70 @@ export async function readAsJSON<T>(
 ): Promise<T> {
     const text = await readAsText(source);
     return JSON.parse(text);
+}
+
+/**
+ * Concatenates multiple async iterable objects into a single one.
+ */
+export function concat<T>(...sources: AsyncIterable<T>[]): AsyncIterable<T>;
+/**
+ * Concatenates multiple readable streams into a single one.
+ */
+export function concat<T>(...sources: ReadableStream<T>[]): ReadableStream<T>;
+export function concat<T>(
+    ...sources: (AsyncIterable<T>[]) | (ReadableStream<T>[])
+): AsyncIterable<T> | ReadableStream<T> {
+    if (!sources[0]) {
+        throw new TypeError("No sources provided");
+    }
+
+    if (typeof ReadableStream === "function" && sources[0] instanceof ReadableStream) {
+        if (!sources.every(source => source instanceof ReadableStream)) {
+            throw new TypeError("All sources must be readable streams");
+        }
+
+        const streams = sources as ReadableStream<T>[];
+        let current: number = 0;
+        let reader: ReadableStreamDefaultReader<T> | null = null;
+
+        return new ReadableStream<T>({
+            start() {
+                reader = streams[current]!.getReader();
+            },
+            async pull(controller) {
+                try {
+                    let { done, value } = await reader!.read();
+
+                    if (!done) {
+                        controller.enqueue(value);
+                    } else {
+                        current++;
+
+                        if (current < streams.length) {
+                            reader = streams[current]!.getReader();
+                            return this.pull!(controller);
+                        } else {
+                            controller.close();
+                        }
+                    }
+                } catch (err) {
+                    reader!.releaseLock();
+                    controller.error(err);
+                }
+            }
+        });
+    } else {
+        if (sources.some(source => typeof (source as any)[Symbol.asyncIterator] !== "function")) {
+            throw new TypeError("All sources must be async iterable objects");
+        }
+
+        const iterables = sources as AsyncIterable<T>[];
+        return {
+            [Symbol.asyncIterator]: async function* () {
+                for (const source of iterables) {
+                    yield* source;
+                }
+            }
+        };
+    }
 }

@@ -1,4 +1,4 @@
-import { concat, text } from './bytes.js';
+import { concat as concat$1, text } from './bytes.js';
 import { resolveReadableStream, toAsyncIterable, asAsyncIterable } from './reader/util.js';
 export { resolveByteStream } from './reader/util.js';
 
@@ -72,7 +72,7 @@ async function readAsArrayBuffer(source) {
         throw new TypeError("The source is not an async iterable object.");
     }
     const chunks = await readAsArray(iterable);
-    const bytes = concat(...chunks.map(chunk => new Uint8Array(chunk)));
+    const bytes = concat$1(...chunks.map(chunk => new Uint8Array(chunk)));
     return bytes.buffer;
 }
 /**
@@ -137,6 +137,59 @@ async function readAsJSON(source) {
     const text = await readAsText(source);
     return JSON.parse(text);
 }
+function concat(...sources) {
+    if (!sources[0]) {
+        throw new TypeError("No sources provided");
+    }
+    if (typeof ReadableStream === "function" && sources[0] instanceof ReadableStream) {
+        if (!sources.every(source => source instanceof ReadableStream)) {
+            throw new TypeError("All sources must be readable streams");
+        }
+        const streams = sources;
+        let current = 0;
+        let reader = null;
+        return new ReadableStream({
+            start() {
+                reader = streams[current].getReader();
+            },
+            async pull(controller) {
+                try {
+                    let { done, value } = await reader.read();
+                    if (!done) {
+                        controller.enqueue(value);
+                    }
+                    else {
+                        current++;
+                        if (current < streams.length) {
+                            reader = streams[current].getReader();
+                            return this.pull(controller);
+                        }
+                        else {
+                            controller.close();
+                        }
+                    }
+                }
+                catch (err) {
+                    reader.releaseLock();
+                    controller.error(err);
+                }
+            }
+        });
+    }
+    else {
+        if (sources.some(source => typeof source[Symbol.asyncIterator] !== "function")) {
+            throw new TypeError("All sources must be async iterable objects");
+        }
+        const iterables = sources;
+        return {
+            [Symbol.asyncIterator]: async function* () {
+                for (const source of iterables) {
+                    yield* source;
+                }
+            }
+        };
+    }
+}
 
-export { readAsArray, readAsArrayBuffer, readAsBlob, readAsDataURL, readAsJSON, readAsObjectURL, readAsText, toAsyncIterable, toReadableStream };
+export { concat, readAsArray, readAsArrayBuffer, readAsBlob, readAsDataURL, readAsJSON, readAsObjectURL, readAsText, toAsyncIterable, toReadableStream };
 //# sourceMappingURL=reader.js.map
