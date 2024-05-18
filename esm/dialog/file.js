@@ -115,7 +115,7 @@ async function openFile(options = {}) {
                     configurable: true,
                     enumerable: true,
                     writable: false,
-                    value: (_a = entry.path) !== null && _a !== void 0 ? _a : "",
+                    value: (_a = entry.relativePath) !== null && _a !== void 0 ? _a : "",
                 });
                 files.push(fixFileType(file));
             }
@@ -192,7 +192,7 @@ async function openFile(options = {}) {
                         configurable: true,
                         enumerable: true,
                         writable: false,
-                        value: (_b = entry.path) !== null && _b !== void 0 ? _b : "",
+                        value: (_b = entry.relativePath) !== null && _b !== void 0 ? _b : "",
                     });
                     files.push(fixFileType(file));
                 }

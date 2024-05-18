@@ -31,6 +31,8 @@ import {
     writeLines,
     createReadableStream,
     createWritableStream,
+    DirEntry,
+    DirTree,
 } from "./fs.ts";
 
 describe("fs", () => {
@@ -321,7 +323,7 @@ describe("fs", () => {
 
             for (const file of files) {
                 ok(file.name && file.name !== "");
-                strictEqual(file.path, file.name);
+                strictEqual(file.relativePath, file.name);
 
                 try {
                     strictEqual(file.kind, "file");
@@ -336,10 +338,10 @@ describe("fs", () => {
 
             for (const file of files) {
                 ok(file.name && file.name !== "");
-                ok(file.path && file.path !== "");
+                ok(file.relativePath && file.relativePath !== "");
 
-                if (file.path !== file.name) {
-                    ok(file.path.endsWith(sep + file.name));
+                if (file.relativePath !== file.name) {
+                    ok(file.relativePath.endsWith(sep + file.name));
                 }
 
                 try {
@@ -388,33 +390,33 @@ describe("fs", () => {
             deepStrictEqual(tree, {
                 name: "tmp",
                 kind: "directory",
-                path: "",
+                relativePath: "",
                 handle: undefined,
                 children: [
                     {
                         name: "a",
                         kind: "directory",
-                        path: "a",
+                        relativePath: "a",
                         handle: undefined,
                         children: [],
                     },
                     {
                         name: "b",
                         kind: "directory",
-                        path: "b",
+                        relativePath: "b",
                         handle: undefined,
                         children: [
                             {
                                 name: "c",
                                 kind: "directory",
-                                path: join("b", "c"),
+                                relativePath: join("b", "c"),
                                 handle: undefined,
                                 children: [],
                             },
                             {
                                 name: "e.txt",
                                 kind: "file",
-                                path: join("b", "e.txt"),
+                                relativePath: join("b", "e.txt"),
                                 handle: undefined,
                             },
                         ],
@@ -422,11 +424,11 @@ describe("fs", () => {
                     {
                         name: "d.txt",
                         kind: "file",
-                        path: "d.txt",
+                        relativePath: "d.txt",
                         handle: undefined,
                     },
                 ],
-            });
+            } satisfies DirTree);
         }));
     });
 
@@ -885,11 +887,11 @@ describe("fs", () => {
 
             const srcEntries = await readAsArray(readDir(src, { recursive: true }));
             deepStrictEqual(srcEntries, [
-                { name: "a", kind: "directory", path: "a" },
-                { name: "b", kind: "directory", path: join("a", "b") },
-                { name: "c", kind: "directory", path: join("a", "b", "c") },
-                { name: "tmp.txt", kind: "file", path: join("a", "b", "c", "tmp.txt") },
-            ]);
+                { name: "a", kind: "directory", relativePath: "a" },
+                { name: "b", kind: "directory", relativePath: join("a", "b") },
+                { name: "c", kind: "directory", relativePath: join("a", "b", "c") },
+                { name: "tmp.txt", kind: "file", relativePath: join("a", "b", "c", "tmp.txt") },
+            ] satisfies DirEntry[]);
 
             const [err] = await _try(copy(src, dest));
             ok(err instanceof Error);

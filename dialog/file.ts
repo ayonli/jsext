@@ -183,7 +183,7 @@ export async function openFile(options: {
                     configurable: true,
                     enumerable: true,
                     writable: false,
-                    value: entry.path ?? "",
+                    value: entry.relativePath ?? "",
                 });
 
                 files.push(fixFileType(file));
@@ -261,7 +261,7 @@ export async function openFile(options: {
                         configurable: true,
                         enumerable: true,
                         writable: false,
-                        value: entry.path ?? "",
+                        value: entry.relativePath ?? "",
                     });
 
                     files.push(fixFileType(file));

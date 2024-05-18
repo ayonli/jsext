@@ -75,6 +75,16 @@ export const EOL: "\n" | "\r\n" = (() => {
     }
 })();
 
+function fixDirEntry<T extends DirEntry>(entry: T): T {
+    Object.defineProperty(entry, "path", {
+        get() {
+            return entry.relativePath;
+        },
+    });
+
+    return entry;
+}
+
 function getErrorName(err: Error): string {
     if (err.constructor === Error) {
         return err.constructor.name;
@@ -476,20 +486,20 @@ export async function* readDir(target: string | FileSystemDirectoryHandle, optio
         yield* (async function* read(path: string, base: string): AsyncIterableIterator<DirEntry> {
             try {
                 for await (const entry of Deno.readDir(path)) {
-                    const _entry: DirEntry = {
+                    const _entry = fixDirEntry({
                         name: entry.name,
                         kind: entry.isDirectory
                             ? "directory"
                             : entry.isSymlink
                                 ? "symlink"
                                 : "file",
-                        path: join(base, entry.name),
-                    };
+                        relativePath: join(base, entry.name),
+                    });
 
                     yield _entry;
 
                     if (options?.recursive && entry.isDirectory) {
-                        yield* read(join(path, entry.name), _entry.path);
+                        yield* read(join(path, entry.name), _entry.relativePath);
                     }
                 }
             } catch (err) {
@@ -503,20 +513,20 @@ export async function* readDir(target: string | FileSystemDirectoryHandle, optio
             const entries = await rawOp(fs.readdir(path, { withFileTypes: true }));
 
             for (const entry of entries) {
-                const _entry: DirEntry = {
+                const _entry = fixDirEntry({
                     name: entry.name,
                     kind: entry.isDirectory()
                         ? "directory"
                         : entry.isSymbolicLink()
                             ? "symlink"
                             : "file",
-                    path: join(base, entry.name),
-                };
+                    relativePath: join(base, entry.name),
+                });
 
                 yield _entry;
 
                 if (options?.recursive && entry.isDirectory()) {
-                    yield* read(join(path, entry.name), _entry.path);
+                    yield* read(join(path, entry.name), _entry.relativePath);
                 }
             }
         })(path, "");
@@ -542,7 +552,7 @@ export async function readTree(
     type CustomDirEntry = DirEntry & { paths: string[]; };
     const list: CustomDirEntry[] = entries.map(entry => ({
         ...entry,
-        paths: split(entry.path),
+        paths: split(entry.relativePath),
     }));
 
     const nodes = (function walk(list: CustomDirEntry[], store: CustomDirEntry[]): DirTree[] {
@@ -556,12 +566,12 @@ export async function readTree(
 
         for (const entry of list) {
             if (entry.kind === "file") {
-                nodes.push({
+                nodes.push(fixDirEntry({
                     name: entry.name,
                     kind: entry.kind,
-                    path: entry.path,
+                    relativePath: entry.relativePath,
                     handle: entry.handle,
-                });
+                } satisfies DirTree));
                 continue;
             }
 
@@ -573,21 +583,21 @@ export async function readTree(
             if (directChildren.length) {
                 const indirectChildren = childEntries
                     .filter(e => !directChildren.includes(e));
-                nodes.push({
+                nodes.push(fixDirEntry({
                     name: entry.name,
                     kind: entry.kind,
-                    path: entry.path,
+                    relativePath: entry.relativePath,
                     handle: entry.handle,
                     children: walk(directChildren, indirectChildren),
-                });
+                } satisfies DirTree));
             } else {
-                nodes.push({
+                nodes.push(fixDirEntry({
                     name: entry.name,
                     kind: entry.kind,
-                    path: entry.path,
+                    relativePath: entry.relativePath,
                     handle: entry.handle,
                     children: [],
-                });
+                } satisfies DirTree));
             }
         }
 
@@ -595,15 +605,15 @@ export async function readTree(
     })(list.filter(entry => entry.paths.length === 1),
         list.filter(entry => entry.paths.length > 1));
 
-    return {
+    return fixDirEntry({
         name: typeof target === "object"
             ? (target.name || "(root)")
             : options.root?.name || (target && basename(target) || "(root)"),
         kind: "directory",
-        path: "",
+        relativePath: "",
         handle: typeof target === "object" ? target : options.root,
         children: nodes,
-    } as DirTree;
+    } satisfies DirTree);
 }
 
 async function* readDirHandle(dir: FileSystemDirectoryHandle, options: {
@@ -614,18 +624,18 @@ async function* readDirHandle(dir: FileSystemDirectoryHandle, options: {
     const entries = dir.entries();
 
     for await (const [_, entry] of entries) {
-        const _entry: DirEntry = {
+        const _entry = fixDirEntry({
             name: entry.name,
             kind: entry.kind,
-            path: join(base, entry.name),
+            relativePath: join(base, entry.name),
             handle: entry as FileSystemFileHandle | FileSystemDirectoryHandle,
-        };
+        });
 
         yield _entry;
 
         if (recursive && entry.kind === "directory") {
             yield* readDirHandle(entry as FileSystemDirectoryHandle, {
-                base: _entry.path,
+                base: _entry.relativePath,
                 recursive,
             });
         }
@@ -1078,8 +1088,8 @@ export async function copy(
                 const entries = readDir(src, { recursive: true });
 
                 for await (const entry of entries) {
-                    const _oldPath = join(src, entry.path);
-                    const _newPath = join(dest, entry.path);
+                    const _oldPath = join(src, entry.relativePath);
+                    const _newPath = join(dest, entry.relativePath);
 
                     if (entry.kind === "directory") {
                         await rawOp(Deno.mkdir(_newPath));
@@ -1098,8 +1108,8 @@ export async function copy(
                 const entries = readDir(src, { recursive: true });
 
                 for await (const entry of entries) {
-                    const _oldPath = join(src, entry.path);
-                    const _newPath = join(dest, entry.path);
+                    const _oldPath = join(src, entry.relativePath);
+                    const _newPath = join(dest, entry.relativePath);
 
                     if (entry.kind === "directory") {
                         await rawOp(fs.mkdir(_newPath));
