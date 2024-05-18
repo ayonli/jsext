@@ -17,3 +17,15 @@ export function avg(...values: number[]): number {
 export function product(...values: number[]): number {
     return values.slice(1).reduce((sum, value) => sum * value, values[0] ?? 0);
 };
+
+const _round = Math.round;
+
+/** Returns the rounded value of the given number. */
+export function round(value: number, precision = 0): number {
+    if (precision > 0) {
+        const factor = 10 ** precision;
+        return _round(value * factor) / factor;
+    } else {
+        return _round(value);
+    }
+}

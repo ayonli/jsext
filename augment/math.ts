@@ -1,4 +1,4 @@
-import { avg, product, sum } from "../math.ts";
+import { avg, product, sum, round } from "../math.ts";
 
 declare global {
     interface Math {
@@ -8,9 +8,12 @@ declare global {
         avg(...values: number[]): number;
         /** Returns a the product value multiplied by the given values. */
         product(...values: number[]): number;
+        /** Returns the rounded value of the given number to a specified precision. */
+        round(value: number, precision: number): number;
     }
 }
 
 Math.sum = sum;
 Math.avg = avg;
 Math.product = product;
+Math.round = round;

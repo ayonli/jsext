@@ -15,6 +15,17 @@ function product(...values) {
     var _a;
     return values.slice(1).reduce((sum, value) => sum * value, (_a = values[0]) !== null && _a !== void 0 ? _a : 0);
 }
+const _round = Math.round;
+/** Returns the rounded value of the given number. */
+function round(value, precision = 0) {
+    if (precision > 0) {
+        const factor = 10 ** precision;
+        return _round(value * factor) / factor;
+    }
+    else {
+        return _round(value);
+    }
+}
 
-export { avg, product, sum };
+export { avg, product, round, sum };
 //# sourceMappingURL=math.js.map

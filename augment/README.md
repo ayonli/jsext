@@ -98,6 +98,7 @@ _These types are augmented to the global scope._
   - `sum(...values: number[]): number`
   - `avg(...values: number[]): number`
   - `product(...values: number[]): number`
+  - `round(value: number, precision: number): number`
 
 ### Augment Number
 

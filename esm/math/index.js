@@ -1,2 +1,2 @@
-export { avg, product, sum } from '../math.js';
+export { avg, product, round, sum } from '../math.js';
 //# sourceMappingURL=index.js.map

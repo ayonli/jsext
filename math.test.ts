@@ -19,4 +19,10 @@ describe("Math", () => {
         strictEqual(Math.product(1, 2), 2);
         strictEqual(Math.product(1, 2, 0.5), 1);
     });
+
+    it("Math.round", () => {
+        strictEqual(Math.round(1), 1);
+        strictEqual(Math.round(1.5), 2);
+        strictEqual(Math.round(1.234, 2), 1.23);
+    });
 });
