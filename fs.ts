@@ -1,3 +1,4 @@
+/// <reference types="./lib.deno.d.ts" />
 /**
  * Universal file system APIs for both server and browser applications.
  * 

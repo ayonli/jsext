@@ -898,7 +898,11 @@ describe("reader", () => {
             deepStrictEqual(result, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
         });
 
-        it("ReadableStream", async () => {
+        it("ReadableStream", async function () {
+            if (typeof ReadableStream !== "function") {
+                this.skip();
+            }
+
             const stream1 = toReadableStream([1, 2, 3]);
             const stream2 = toReadableStream([4, 5, 6]);
             const stream3 = toReadableStream([7, 8, 9]);

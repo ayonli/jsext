@@ -19,6 +19,7 @@
         "noUncheckedIndexedAccess": true,
         "exactOptionalPropertyTypes": true,
         "experimentalDecorators": true,
+        "isolatedModules": true,
         "types": [
             "node",
             "mocha"
