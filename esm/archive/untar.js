@@ -1,5 +1,5 @@
 import { concat } from '../bytes.js';
-import { createReadableStream, ensureDir, writeFile } from '../fs.js';
+import { createReadableStream, ensureDir, createWritableStream } from '../fs.js';
 import { resolve, join, dirname } from '../path.js';
 import Tarball, { HEADER_LENGTH, parseHeader, createEntry } from './Tarball.js';
 
@@ -29,6 +29,9 @@ async function untar(src, dest = {}, options = {}) {
     const reader = input.getReader();
     let lastChunk = new Uint8Array(0);
     let headerInfo = null;
+    let writer;
+    let writtenBytes = 0;
+    let paddingSize = 0;
     while (true) {
         const { done, value } = await reader.read();
         if (done) {
@@ -36,6 +39,10 @@ async function untar(src, dest = {}, options = {}) {
             break;
         }
         lastChunk = lastChunk.byteLength ? concat(lastChunk, value) : value;
+        if (paddingSize > 0 && lastChunk.byteLength >= paddingSize) {
+            lastChunk = lastChunk.subarray(paddingSize);
+            paddingSize = 0;
+        }
         while (true) {
             if (!headerInfo) {
                 if (lastChunk.byteLength >= HEADER_LENGTH) {
@@ -45,38 +52,56 @@ async function untar(src, dest = {}, options = {}) {
                     break;
                 }
             }
-            const fileSize = parseInt(headerInfo.size, 8);
-            if (lastChunk.byteLength >= fileSize) {
-                const data = lastChunk.slice(0, fileSize); // use slice to make a copy
-                const info = createEntry(headerInfo);
-                if (info.kind === "directory") {
-                    if (_dest instanceof FileSystemDirectoryHandle) {
-                        await ensureDir(info.relativePath, { ...options, root: _dest });
-                    }
-                    else {
-                        await ensureDir(join(_dest, info.relativePath), options);
-                    }
+            const info = createEntry(headerInfo);
+            const fileSize = info.size;
+            if (writer) {
+                const chunk = lastChunk.subarray(0, fileSize - writtenBytes);
+                await writer.write(chunk);
+                lastChunk = lastChunk.subarray(fileSize - writtenBytes);
+                writtenBytes += chunk.byteLength;
+            }
+            else if (info.kind === "directory") {
+                if (typeof FileSystemDirectoryHandle === "function" &&
+                    _dest instanceof FileSystemDirectoryHandle) {
+                    await ensureDir(info.relativePath, {
+                        ...options,
+                        root: _dest,
+                        mode: info.mode,
+                    });
                 }
                 else {
-                    if (_dest instanceof FileSystemDirectoryHandle) {
-                        const _options = { ...options, root: _dest };
-                        await ensureDir(dirname(info.relativePath), _options);
-                        await writeFile(info.relativePath, data, _options);
-                    }
-                    else {
-                        const filename = join(_dest, info.relativePath);
-                        await ensureDir(dirname(filename), options);
-                        await writeFile(filename, data, options);
-                    }
+                    await ensureDir(join(_dest, info.relativePath), {
+                        ...options,
+                        mode: info.mode,
+                    });
                 }
-                const paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
-                if (paddingSize > 0) {
-                    lastChunk = lastChunk.subarray(fileSize + paddingSize);
+            }
+            else {
+                let filename;
+                let _options = options;
+                if (typeof FileSystemDirectoryHandle === "function" &&
+                    _dest instanceof FileSystemDirectoryHandle) {
+                    _options = { ...options, root: _dest };
+                    filename = info.relativePath;
                 }
                 else {
-                    lastChunk = lastChunk.subarray(fileSize);
+                    filename = join(_dest, info.relativePath);
                 }
+                await ensureDir(dirname(filename), _options);
+                const output = createWritableStream(filename, _options);
+                writer = output.getWriter();
+                continue;
+            }
+            if (writtenBytes === fileSize) {
+                paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
+                if (paddingSize && lastChunk.byteLength >= paddingSize) {
+                    lastChunk = lastChunk.subarray(paddingSize);
+                    paddingSize = 0;
+                }
+                writtenBytes = 0;
                 headerInfo = null;
+                writer === null || writer === void 0 ? void 0 : writer.close();
+                writer = undefined;
             }
             else {
                 break;
