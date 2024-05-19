@@ -152,7 +152,7 @@ function parseHeader(header: Uint8Array): [USTarFileHeader, leftChunk: Uint8Arra
     let offset = 0;
 
     for (const [field, length] of Object.entries(USTarFileHeaderFieldLengths)) {
-        let buffer = header.slice(offset, offset + length);
+        let buffer = header.subarray(offset, offset + length);
 
         if (field !== "magic") {
             buffer = trimBytes(buffer);
@@ -172,7 +172,7 @@ function parseHeader(header: Uint8Array): [USTarFileHeader, leftChunk: Uint8Arra
         throw new Error("Unsupported archive format: " + data.magic);
     }
 
-    return [data, header.slice(offset)];
+    return [data, header.subarray(offset)];
 }
 
 function getChecksum(header: Uint8Array): number {
@@ -485,7 +485,7 @@ export default class Tarball {
                 const fileSize = parseInt(headerInfo.size, 8);
 
                 if (lastChunk.byteLength >= fileSize) {
-                    const data = lastChunk.slice(0, fileSize);
+                    const data = lastChunk.slice(0, fileSize); // use slice to make a copy
                     const entry = {
                         ...createEntry(headerInfo),
                         header: formatHeader(headerInfo),
@@ -495,9 +495,9 @@ export default class Tarball {
 
                     const paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
                     if (paddingSize > 0) {
-                        lastChunk = lastChunk.slice(fileSize + paddingSize);
+                        lastChunk = lastChunk.subarray(fileSize + paddingSize);
                     } else {
-                        lastChunk = lastChunk.slice(fileSize);
+                        lastChunk = lastChunk.subarray(fileSize);
                     }
 
                     headerInfo = null;
