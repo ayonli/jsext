@@ -67,7 +67,7 @@ function parseHeader(header) {
     const data = {};
     let offset = 0;
     for (const [field, length] of Object.entries(USTarFileHeaderFieldLengths)) {
-        let buffer = header.slice(offset, offset + length);
+        let buffer = header.subarray(offset, offset + length);
         if (field !== "magic") {
             buffer = trimBytes(buffer);
         }
@@ -82,7 +82,7 @@ function parseHeader(header) {
     if (!data.magic.startsWith("ustar")) {
         throw new Error("Unsupported archive format: " + data.magic);
     }
-    return [data, header.slice(offset)];
+    return [data, header.subarray(offset)];
 }
 function getChecksum(header) {
     let sum = initialChecksum;
@@ -360,7 +360,7 @@ class Tarball {
                 }
                 const fileSize = parseInt(headerInfo.size, 8);
                 if (lastChunk.byteLength >= fileSize) {
-                    const data = lastChunk.slice(0, fileSize);
+                    const data = lastChunk.slice(0, fileSize); // use slice to make a copy
                     const entry = {
                         ...createEntry(headerInfo),
                         header: formatHeader(headerInfo),
@@ -369,10 +369,10 @@ class Tarball {
                     tarball[_entries].push(entry);
                     const paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
                     if (paddingSize > 0) {
-                        lastChunk = lastChunk.slice(fileSize + paddingSize);
+                        lastChunk = lastChunk.subarray(fileSize + paddingSize);
                     }
                     else {
-                        lastChunk = lastChunk.slice(fileSize);
+                        lastChunk = lastChunk.subarray(fileSize);
                     }
                     headerInfo = null;
                 }
@@ -385,5 +385,5 @@ class Tarball {
     }
 }
 
-export { createEntry, Tarball as default };
+export { HEADER_LENGTH, createEntry, Tarball as default, parseHeader };
 //# sourceMappingURL=Tarball.js.map

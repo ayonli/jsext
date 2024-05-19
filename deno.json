@@ -3,6 +3,7 @@
     "version": "0.9.9",
     "exports": {
         ".": "./index.ts",
+        "./archive": "./archive.ts",
         "./array": "./array.ts",
         "./async": "./async.ts",
         "./bytes": "./bytes.ts",

@@ -11,6 +11,14 @@
             "import": "./esm/index.js",
             "default": "./index.ts"
         },
+        "./archive": {
+            "types": "./types/archive.d.ts",
+            "bun": "./archive.ts",
+            "workerd": "./esm/workerd/archive.js",
+            "require": "./cjs/archive.js",
+            "import": "./esm/archive.js",
+            "default": "./archive.ts"
+        },
         "./array": {
             "types": "./types/array.d.ts",
             "bun": "./array.ts",

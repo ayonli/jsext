@@ -2,7 +2,7 @@ import bytes, { concat as concatBytes } from "../bytes.ts";
 import { Exception } from "../error.ts";
 import { omit } from "../object.ts";
 import { basename, dirname } from "../path.ts";
-import { concat, toReadableStream } from "../reader.ts";
+import { concat as concatStreams, toReadableStream } from "../reader.ts";
 import { Ensured } from "../types.ts";
 
 export interface TarEntryInfo {
@@ -72,7 +72,7 @@ enum FileTypes {
 }
 
 const USTAR_MAGIC_HEADER = "ustar\x00";
-const HEADER_LENGTH = 512;
+export const HEADER_LENGTH = 512;
 
 export interface USTarFileHeader {
     name: string;
@@ -146,7 +146,7 @@ function formatHeader(data: USTarFileHeader): Uint8Array {
     return buffer;
 }
 
-function parseHeader(header: Uint8Array): [USTarFileHeader, leftChunk: Uint8Array] {
+export function parseHeader(header: Uint8Array): [USTarFileHeader, leftChunk: Uint8Array] {
     const decoder = new TextDecoder();
     const data: USTarFileHeader = {} as USTarFileHeader;
     let offset = 0;
@@ -430,7 +430,7 @@ export default class Tarball {
             }
         }
 
-        const stream = concat(...streams);
+        const stream = concatStreams(...streams);
 
         if (options.gzip) {
             const gzip = new CompressionStream("gzip");
