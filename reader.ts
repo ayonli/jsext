@@ -222,12 +222,9 @@ export function concat<T>(
 
         const streams = sources as ReadableStream<T>[];
         let current: number = 0;
-        let reader: ReadableStreamDefaultReader<T> | null = null;
+        let reader = streams[current]!.getReader();
 
         return new ReadableStream<T>({
-            start() {
-                reader = streams[current]!.getReader();
-            },
             async pull(controller) {
                 try {
                     let { done, value } = await reader!.read();

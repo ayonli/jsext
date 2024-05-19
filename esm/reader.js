@@ -147,11 +147,8 @@ function concat(...sources) {
         }
         const streams = sources;
         let current = 0;
-        let reader = null;
+        let reader = streams[current].getReader();
         return new ReadableStream({
-            start() {
-                reader = streams[current].getReader();
-            },
             async pull(controller) {
                 try {
                     let { done, value } = await reader.read();
