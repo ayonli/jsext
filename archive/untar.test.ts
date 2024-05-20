@@ -1,7 +1,7 @@
 import { deepStrictEqual } from "node:assert";
 import tar from "./tar.ts";
 import { pick } from "../object.ts";
-import { TarEntryInfo } from "./Tarball.ts";
+import { TarEntry } from "./Tarball.ts";
 import { DirEntry, readDir, remove } from "../fs.ts";
 import func from "../func.ts";
 import untar from "./untar.ts";
@@ -37,7 +37,7 @@ describe("archive/untar", () => {
                 kind: "file",
                 relativePath: "fs/types.ts",
             },
-        ] as Partial<TarEntryInfo>[]);
+        ] as Partial<TarEntry>[]);
     });
 
     it("load tarball file with gzip", async () => {
@@ -54,7 +54,7 @@ describe("archive/untar", () => {
                 kind: "file",
                 relativePath: "fs/types.ts",
             },
-        ] as Partial<TarEntryInfo>[]);
+        ] as Partial<TarEntry>[]);
     });
 
     it("extract tarball files", func(async (defer) => {

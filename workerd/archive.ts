@@ -1,7 +1,7 @@
-import Tarball, { TarEntry, TarEntryInfo } from "../archive/Tarball.ts";
+import Tarball, { TarEntry } from "../archive/Tarball.ts";
 
 export { Tarball };
-export type { TarEntry, TarEntryInfo };
+export type { TarEntry };
 
 export type TarOptions = {
     gzip?: boolean;

@@ -1,6 +1,6 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { stat, createReadableStream, createWritableStream, readFileAsText, remove, exists } from "../fs.ts";
-import { Tarball, type TarEntryInfo } from "../archive.ts";
+import Tarball, { type TarEntry, _entries } from "../archive/Tarball.ts";
 import { readAsText } from "../reader.ts";
 import { omit } from "../object.ts";
 
@@ -65,7 +65,7 @@ describe("archive/Tarball", () => {
                     gid: info.gid,
                     owner: "",
                     group: "",
-                } as TarEntryInfo);
+                } as TarEntry);
             } else if (entry.kind === "directory") {
                 ok(entry.mtime instanceof Date);
                 deepStrictEqual(omit(entry, ["relativePath", "mtime", "stream"]), {
@@ -77,7 +77,7 @@ describe("archive/Tarball", () => {
                     gid: 0,
                     owner: "",
                     group: "",
-                } as TarEntryInfo);
+                } as TarEntry);
             }
         }
     });
@@ -102,10 +102,12 @@ describe("archive/Tarball", () => {
 
         ok([...tarball].some(entry => entry.kind === "directory"));
         strictEqual([...tarball].length, 4);
+        let i = 0;
 
         for (const entry of tarball) {
+            const _entry = tarball[_entries][i++]!;
             if (entry.kind === "file") {
-                const data = await readAsText(entry.stream);
+                const data = await readAsText(_entry.body);
                 const text = await readFileAsText(entry.relativePath);
                 strictEqual(data, text);
             } else if (entry.kind === "directory") {
@@ -119,7 +121,7 @@ describe("archive/Tarball", () => {
                     gid: 0,
                     owner: "",
                     group: "",
-                } as TarEntryInfo);
+                } as TarEntry);
             }
         }
     });
@@ -130,10 +132,12 @@ describe("archive/Tarball", () => {
 
         ok([...tarball].some(entry => entry.kind === "directory"));
         strictEqual([...tarball].length, 4);
+        let i = 0;
 
         for (const entry of tarball) {
+            const _entry = tarball[_entries][i++]!;
             if (entry.kind === "file") {
-                const data = await readAsText(entry.stream);
+                const data = await readAsText(_entry.body);
                 const text = await readFileAsText(entry.relativePath);
                 strictEqual(data, text);
             } else if (entry.kind === "directory") {
@@ -147,7 +151,7 @@ describe("archive/Tarball", () => {
                     gid: 0,
                     owner: "",
                     group: "",
-                } as TarEntryInfo);
+                } as TarEntry);
             }
         }
     });

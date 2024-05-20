@@ -302,10 +302,7 @@ class Tarball {
     *entries() {
         const iter = this[_entries][Symbol.iterator]();
         for (const entry of iter) {
-            yield {
-                ...omit(entry, ["header", "body"]),
-                stream: entry.body,
-            };
+            yield omit(entry, ["header", "body"]);
         }
     }
     [(_a = _entries, Symbol.iterator)]() {
@@ -407,5 +404,5 @@ class Tarball {
     }
 }
 
-export { HEADER_LENGTH, createEntry, Tarball as default, parseHeader };
+export { HEADER_LENGTH, _entries, createEntry, Tarball as default, parseHeader };
 //# sourceMappingURL=Tarball.js.map

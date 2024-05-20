@@ -6,7 +6,7 @@ import { concat as concatStreams, toReadableStream } from "../reader.ts";
 import { stripEnd } from "../string.ts";
 import { Ensured } from "../types.ts";
 
-export interface TarEntryInfo {
+export interface TarEntry {
     name: string;
     kind: "file"
     | "link"
@@ -54,11 +54,7 @@ export interface TarEntryInfo {
     group: string;
 }
 
-export interface TarEntry extends TarEntryInfo {
-    stream: ReadableStream<Uint8Array>;
-}
-
-interface TarEntryWithData extends TarEntryInfo {
+interface TarEntryWithData extends TarEntry {
     header: Uint8Array;
     body: ReadableStream<Uint8Array>;
 }
@@ -196,12 +192,12 @@ function getChecksum(header: Uint8Array): number {
     return sum;
 }
 
-export function createEntry(headerInfo: USTarFileHeader): TarEntryInfo {
+export function createEntry(headerInfo: USTarFileHeader): TarEntry {
     const relativePath = (headerInfo.prefix ? headerInfo.prefix + "/" : "")
         + stripEnd(headerInfo.name, "/");
     return {
         name: basename(relativePath),
-        kind: (FileTypes[parseInt(headerInfo.typeflag)] ?? "file") as TarEntryInfo["kind"],
+        kind: (FileTypes[parseInt(headerInfo.typeflag)] ?? "file") as TarEntry["kind"],
         relativePath,
         size: parseInt(headerInfo.size, 8),
         mtime: new Date(parseInt(headerInfo.mtime, 8) * 1000),
@@ -213,7 +209,7 @@ export function createEntry(headerInfo: USTarFileHeader): TarEntryInfo {
     };
 }
 
-const _entries = Symbol.for("entries");
+export const _entries = Symbol.for("entries");
 
 /**
  * A `Tarball` instance represents a tar archive.
@@ -267,7 +263,7 @@ export default class Tarball {
      */
     append(
         data: string | Uint8Array | ArrayBufferLike | DataView | Blob | ReadableStream<Uint8Array> | null,
-        info: Ensured<Partial<TarEntryInfo>, "relativePath">
+        info: Ensured<Partial<TarEntry>, "relativePath">
     ): void {
         if (data === null) {
             if (info.kind === "directory") {
@@ -408,10 +404,7 @@ export default class Tarball {
         const iter = this[_entries][Symbol.iterator]();
 
         for (const entry of iter) {
-            yield {
-                ...omit(entry, ["header", "body"]),
-                stream: entry.body,
-            };
+            yield omit(entry, ["header", "body"]);
         }
     }
 

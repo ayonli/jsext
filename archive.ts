@@ -6,14 +6,14 @@
  * server and browser environments.
  * 
  * NOTE: This module depends on the Web Streams API, in Node.js, it requires
- * version v16.5 or later.
+ * version v16.5 or higher.
  * @module
  * @experimental
  */
 
-import Tarball, { TarEntry, TarEntryInfo } from "./archive/Tarball.ts";
+import Tarball, { type TarEntry } from "./archive/Tarball.ts";
 import tar from "./archive/tar.ts";
 import untar from "./archive/untar.ts";
 
 export { Tarball, tar, untar };
-export type { TarEntry, TarEntryInfo };
+export type { TarEntry };
