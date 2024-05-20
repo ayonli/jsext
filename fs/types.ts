@@ -22,6 +22,9 @@ export interface DirEntry {
     /**
      * The relative path of the entry. This is an empty string if the entry is
      * the root directory.
+     * 
+     * NOTE: The separator of the path is platform-specific, it's `\` in Windows
+     * server-side applications, and `/` elsewhere.
      */
     relativePath: string;
     /**

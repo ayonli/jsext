@@ -18,6 +18,8 @@ export interface TarEntryInfo {
     | "contiguous-file";
     /**
     * The relative path of the entry.
+    * 
+    * NOTE: The path separator is always `/` regardless of the platform.
     */
     relativePath: string;
     /**
@@ -275,11 +277,12 @@ export default class Tarball {
             }
         }
 
-        const dir = dirname(info.relativePath);
+        const relativePath = info.relativePath.replace(/\\/g, "/");
+        const dir = dirname(relativePath).replace(/\\/g, "/");
         const fileName = info.name
             || (typeof File === "function" && data instanceof File
                 ? data.name
-                : basename(info.relativePath));
+                : basename(relativePath));
 
         // If the input path has parent directories that are not in the archive,
         // we need to add them first.
@@ -298,7 +301,7 @@ export default class Tarball {
         //   than 255 bytes.
         // 
         // So we need to separate file name into two parts if needed.
-        let name = info.relativePath;
+        let name = relativePath;
         let prefix = "";
 
         if (name.length > 100) {
@@ -388,7 +391,7 @@ export default class Tarball {
         this[_entries].push({
             name: fileName,
             kind,
-            relativePath: info.relativePath,
+            relativePath,
             size,
             mtime,
             mode,

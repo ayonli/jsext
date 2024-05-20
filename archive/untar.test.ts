@@ -6,6 +6,7 @@ import { DirEntry, readDir, remove } from "../fs.ts";
 import func from "../func.ts";
 import untar from "./untar.ts";
 import { readAsArray } from "../reader.ts";
+import { join } from "../path.ts";
 
 describe("archive/untar", () => {
     if (typeof ReadableStream !== "function") {
@@ -72,7 +73,7 @@ describe("archive/untar", () => {
             {
                 name: "types.ts",
                 kind: "file",
-                relativePath: "fs/types.ts",
+                relativePath: join("fs", "types.ts"),
             },
         ] as Partial<DirEntry>[]);
     }));
@@ -93,7 +94,7 @@ describe("archive/untar", () => {
             {
                 name: "types.ts",
                 kind: "file",
-                relativePath: "fs/types.ts",
+                relativePath: join("fs", "types.ts"),
             },
         ] as Partial<DirEntry>[]);
     }));

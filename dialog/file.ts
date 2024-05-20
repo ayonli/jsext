@@ -183,7 +183,7 @@ export async function openFile(options: {
                     configurable: true,
                     enumerable: true,
                     writable: false,
-                    value: entry.relativePath ?? "",
+                    value: entry.relativePath?.replace(/\\/g, "/") ?? "",
                 });
 
                 files.push(fixFileType(file));
@@ -261,7 +261,7 @@ export async function openFile(options: {
                         configurable: true,
                         enumerable: true,
                         writable: false,
-                        value: entry.relativePath ?? "",
+                        value: entry.relativePath?.replace(/\\/g, "/") ?? "",
                     });
 
                     files.push(fixFileType(file));

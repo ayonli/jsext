@@ -46,7 +46,7 @@ async function tar(src, dest = {}, options = {}) {
         tarball.append(stream, {
             name: entry.name,
             kind: entry.kind,
-            relativePath: baseDir ? join(baseDir, entry.relativePath) : entry.relativePath,
+            relativePath: baseDir ? baseDir + "/" + entry.relativePath : entry.relativePath,
             size: entry.kind === "directory" ? 0 : info.size,
             mtime: (_b = info.mtime) !== null && _b !== void 0 ? _b : new Date(),
             mode: info.mode,

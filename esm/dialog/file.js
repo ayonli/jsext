@@ -100,7 +100,7 @@ async function pickDirectory(options = {}) {
     throw new Error("Unsupported platform");
 }
 async function openFile(options = {}) {
-    var _a, _b;
+    var _a, _b, _c, _d;
     const { title = "", type = "", multiple = false, directory = false } = options;
     if (directory && typeof globalThis["showDirectoryPicker"] === "function") {
         const files = [];
@@ -115,7 +115,7 @@ async function openFile(options = {}) {
                     configurable: true,
                     enumerable: true,
                     writable: false,
-                    value: (_a = entry.relativePath) !== null && _a !== void 0 ? _a : "",
+                    value: (_b = (_a = entry.relativePath) === null || _a === void 0 ? void 0 : _a.replace(/\\/g, "/")) !== null && _b !== void 0 ? _b : "",
                 });
                 files.push(fixFileType(file));
             }
@@ -192,7 +192,7 @@ async function openFile(options = {}) {
                         configurable: true,
                         enumerable: true,
                         writable: false,
-                        value: (_b = entry.relativePath) !== null && _b !== void 0 ? _b : "",
+                        value: (_d = (_c = entry.relativePath) === null || _c === void 0 ? void 0 : _c.replace(/\\/g, "/")) !== null && _d !== void 0 ? _d : "",
                     });
                     files.push(fixFileType(file));
                 }
