@@ -113,7 +113,7 @@ export async function readAsArrayBuffer(
     }
 
     const chunks = await readAsArray(iterable);
-    const bytes = concatBytes(...chunks.map(chunk => new Uint8Array(chunk)));
+    const bytes = concatBytes(...chunks);
 
     return bytes.buffer;
 }

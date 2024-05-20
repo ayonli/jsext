@@ -679,7 +679,7 @@ export async function readFile(target: string | FileSystemFileHandle, options: C
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
         const buffer = await rawOp(fs.readFile(filename, options));
-        return new Uint8Array(buffer.buffer, 0, buffer.byteLength);
+        return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
     } else {
         const handle = await getFileHandle(filename, { root: options.root });
         return await readFileHandle(handle, options);

@@ -72,7 +72,7 @@ async function readAsArrayBuffer(source) {
         throw new TypeError("The source is not an async iterable object.");
     }
     const chunks = await readAsArray(iterable);
-    const bytes = concat$1(...chunks.map(chunk => new Uint8Array(chunk)));
+    const bytes = concat$1(...chunks);
     return bytes.buffer;
 }
 /**
