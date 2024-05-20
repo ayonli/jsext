@@ -189,15 +189,17 @@ async function lockStdin(task) {
 async function readStdin() {
     if (isDeno) {
         const reader = Deno.stdin.readable.getReader();
-        const { done, value } = await reader.read();
-        // Must release the lock immediately, otherwise the program won't work
-        // properly in the REPL.
-        reader.releaseLock();
-        if (done) {
-            return bytes([]);
+        try {
+            const { done, value } = await reader.read();
+            if (done) {
+                return bytes([]);
+            }
+            else {
+                return bytes(value);
+            }
         }
-        else {
-            return bytes(value);
+        finally {
+            reader.releaseLock();
         }
     }
     else if (isNodeLike) {

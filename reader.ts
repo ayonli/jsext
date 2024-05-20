@@ -232,6 +232,7 @@ export function concat<T>(
                     if (!done) {
                         controller.enqueue(value);
                     } else {
+                        reader!.releaseLock();
                         current++;
 
                         if (current < streams.length) {

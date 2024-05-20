@@ -156,6 +156,7 @@ function concat(...sources) {
                         controller.enqueue(value);
                     }
                     else {
+                        reader.releaseLock();
                         current++;
                         if (current < streams.length) {
                             reader = streams[current].getReader();

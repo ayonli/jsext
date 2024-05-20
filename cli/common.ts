@@ -203,16 +203,16 @@ export async function lockStdin<T>(task: () => Promise<T>): Promise<T | null> {
 export async function readStdin(): Promise<ByteArray> {
     if (isDeno) {
         const reader = Deno.stdin.readable.getReader();
-        const { done, value } = await reader.read();
+        try {
+            const { done, value } = await reader.read();
 
-        // Must release the lock immediately, otherwise the program won't work
-        // properly in the REPL.
-        reader.releaseLock();
-
-        if (done) {
-            return bytes([]);
-        } else {
-            return bytes(value);
+            if (done) {
+                return bytes([]);
+            } else {
+                return bytes(value);
+            }
+        } finally {
+            reader.releaseLock();
         }
     } else if (isNodeLike) {
         const stdin = process.stdin;
