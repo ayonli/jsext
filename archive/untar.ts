@@ -5,7 +5,7 @@ import Tarball, { HEADER_LENGTH, USTarFileHeader, createEntry, parseHeader } fro
 import { TarOptions } from "./tar.ts";
 
 /**
- * Loads the specified tarball file and creates a {@link Tarball} instance.
+ * Loads the specified tarball file to a {@link Tarball} instance.
  */
 export default function untar(
     src: string | FileSystemFileHandle | ReadableStream<Uint8Array>,
@@ -13,6 +13,8 @@ export default function untar(
 ): Promise<Tarball>;
 /**
  * Extracts files from a tarball file and writes them to the specified directory.
+ * 
+ * NOTE: If the destination directory does not exist, it will be created.
  */
 export default function untar(
     src: string | FileSystemFileHandle | ReadableStream<Uint8Array>,
@@ -39,15 +41,20 @@ export default async function untar(
         }
     }
 
-    const { signal } = options;
-    const input = src instanceof ReadableStream ? src : createReadableStream(src, options);
+    let input = src instanceof ReadableStream ? src : createReadableStream(src, options);
 
+    if (options.gzip) {
+        const gzip = new DecompressionStream("gzip");
+        input = input.pipeThrough<Uint8Array>(gzip);
+    }
+
+    const { signal } = options;
     signal?.addEventListener("abort", () => {
         input.cancel(signal.reason);
     });
 
     if (!_dest) {
-        return await Tarball.load(input, options);
+        return await Tarball.load(input);
     }
 
     const reader = input.getReader();
@@ -57,88 +64,103 @@ export default async function untar(
     let writtenBytes = 0;
     let paddingSize = 0;
 
-    while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) {
-            reader.releaseLock();
-            break;
-        }
-
-        lastChunk = lastChunk.byteLength ? concatBytes(lastChunk, value) : value;
-
-        if (paddingSize > 0 && lastChunk.byteLength >= paddingSize) {
-            lastChunk = lastChunk.subarray(paddingSize);
-            paddingSize = 0;
-        }
-
+    try {
+        outer:
         while (true) {
-            if (!headerInfo) {
-                if (lastChunk.byteLength >= HEADER_LENGTH) {
-                    [headerInfo, lastChunk] = parseHeader(lastChunk);
+            const { done, value } = await reader.read();
+
+            if (done) {
+                break;
+            }
+
+            lastChunk = lastChunk.byteLength ? concatBytes(lastChunk, value) : value;
+
+            if (paddingSize > 0 && lastChunk.byteLength >= paddingSize) {
+                lastChunk = lastChunk.subarray(paddingSize);
+                paddingSize = 0;
+            }
+
+            while (true) {
+                if (!headerInfo) {
+                    if (lastChunk.byteLength >= HEADER_LENGTH) {
+                        const _header = parseHeader(lastChunk);
+
+                        if (_header) {
+                            [headerInfo, lastChunk] = _header;
+                        } else {
+                            lastChunk = new Uint8Array(0);
+                            break outer;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+
+                const info = createEntry(headerInfo);
+                const fileSize = info.size;
+
+                if (writer) {
+                    const chunk = lastChunk.subarray(0, fileSize - writtenBytes);
+                    await writer.write(chunk);
+                    lastChunk = lastChunk.subarray(fileSize - writtenBytes);
+                    writtenBytes += chunk.byteLength;
+                } else if (info.kind === "directory") {
+                    if (typeof FileSystemDirectoryHandle === "function" &&
+                        _dest instanceof FileSystemDirectoryHandle
+                    ) {
+                        await ensureDir(info.relativePath, {
+                            ...options,
+                            root: _dest,
+                            mode: info.mode,
+                        });
+                    } else {
+                        await ensureDir(join(_dest as string, info.relativePath), {
+                            ...options,
+                            mode: info.mode,
+                        });
+                    }
+                } else {
+                    let filename: string;
+                    let _options = options;
+
+                    if (typeof FileSystemDirectoryHandle === "function" &&
+                        _dest instanceof FileSystemDirectoryHandle
+                    ) {
+                        _options = { ...options, root: _dest };
+                        filename = info.relativePath;
+                    } else {
+                        filename = join(_dest as string, info.relativePath);
+                    }
+
+                    await ensureDir(dirname(filename), _options);
+
+                    const output = createWritableStream(filename, _options);
+                    writer = output.getWriter();
+                    continue;
+                }
+
+                if (writtenBytes === fileSize) {
+                    paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
+
+                    if (paddingSize && lastChunk.byteLength >= paddingSize) {
+                        lastChunk = lastChunk.subarray(paddingSize);
+                        paddingSize = 0;
+                    }
+
+                    writtenBytes = 0;
+                    headerInfo = null;
+                    writer?.close();
+                    writer = undefined;
                 } else {
                     break;
                 }
             }
-
-            const info = createEntry(headerInfo);
-            const fileSize = info.size;
-
-            if (writer) {
-                const chunk = lastChunk.subarray(0, fileSize - writtenBytes);
-                await writer.write(chunk);
-                lastChunk = lastChunk.subarray(fileSize - writtenBytes);
-                writtenBytes += chunk.byteLength;
-            } else if (info.kind === "directory") {
-                if (typeof FileSystemDirectoryHandle === "function" &&
-                    _dest instanceof FileSystemDirectoryHandle
-                ) {
-                    await ensureDir(info.relativePath, {
-                        ...options,
-                        root: _dest,
-                        mode: info.mode,
-                    });
-                } else {
-                    await ensureDir(join(_dest as string, info.relativePath), {
-                        ...options,
-                        mode: info.mode,
-                    });
-                }
-            } else {
-                let filename: string;
-                let _options = options;
-
-                if (typeof FileSystemDirectoryHandle === "function" &&
-                    _dest instanceof FileSystemDirectoryHandle
-                ) {
-                    _options = { ...options, root: _dest };
-                    filename = info.relativePath;
-                } else {
-                    filename = join(_dest as string, info.relativePath);
-                }
-
-                await ensureDir(dirname(filename), _options);
-
-                const output = createWritableStream(filename, _options);
-                writer = output.getWriter();
-                continue;
-            }
-
-            if (writtenBytes === fileSize) {
-                paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
-
-                if (paddingSize && lastChunk.byteLength >= paddingSize) {
-                    lastChunk = lastChunk.subarray(paddingSize);
-                    paddingSize = 0;
-                }
-
-                writtenBytes = 0;
-                headerInfo = null;
-                writer?.close();
-                writer = undefined;
-            } else {
-                break;
-            }
         }
+
+        if (lastChunk.byteLength) {
+            throw new Error("The archive is corrupted");
+        }
+    } finally {
+        reader.releaseLock();
     }
 }

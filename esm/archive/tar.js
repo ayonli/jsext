@@ -1,5 +1,5 @@
 import { readDir, stat, createReadableStream, createWritableStream } from '../fs.js';
-import { resolve, join } from '../path.js';
+import { resolve, basename, join } from '../path.js';
 import Tarball from './Tarball.js';
 
 async function tar(src, dest = {}, options = {}) {
@@ -18,6 +18,7 @@ async function tar(src, dest = {}, options = {}) {
         }
     }
     const { signal } = options;
+    const baseDir = typeof src === "string" ? basename(src) : src.name;
     const entries = readDir(src, { ...options, recursive: true });
     const tarball = new Tarball();
     for await (const entry of entries) {
@@ -45,7 +46,7 @@ async function tar(src, dest = {}, options = {}) {
         tarball.append(stream, {
             name: entry.name,
             kind: entry.kind,
-            relativePath: entry.relativePath,
+            relativePath: baseDir ? join(baseDir, entry.relativePath) : entry.relativePath,
             size: entry.kind === "directory" ? 0 : info.size,
             mtime: (_b = info.mtime) !== null && _b !== void 0 ? _b : new Date(),
             mode: info.mode,

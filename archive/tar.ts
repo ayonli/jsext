@@ -1,5 +1,5 @@
 import { CommonOptions, createReadableStream, stat, readDir, FileInfo, createWritableStream } from "../fs.ts";
-import { join, resolve } from "../path.ts";
+import { basename, join, resolve } from "../path.ts";
 import Tarball from "./Tarball.ts";
 
 export type TarOptions = CommonOptions & {
@@ -8,16 +8,21 @@ export type TarOptions = CommonOptions & {
 };
 
 /**
- * Creates a {@link Tarball} instance and puts the files of the specified directory
- * into the archive.
+ * Creates a {@link Tarball} instance and puts the the specified directory into
+ * the archive.
+ * 
+ * NOTE: This function puts the directory itself into the archive, similar to
+ * `tar -cf archive.tar <directory>` in Unix-like systems.
  */
 export default function tar(
     src: string | FileSystemDirectoryHandle,
     options?: TarOptions
 ): Promise<Tarball>;
 /**
- * Collects all files in the specified directory and writes them to the specified
- * tarball file.
+ * Archives the specified directory and puts it to the specified tarball file.
+ * 
+ * NOTE: This function puts the directory itself into the archive, similar to
+ * `tar -cf archive.tar <directory>` in Unix-like systems.
  */
 export default function tar(
     src: string | FileSystemDirectoryHandle,
@@ -43,6 +48,7 @@ export default async function tar(
     }
 
     const { signal } = options;
+    const baseDir = typeof src === "string" ? basename(src) : src.name;
     const entries = readDir(src, { ...options, recursive: true });
     const tarball = new Tarball();
 
@@ -75,7 +81,7 @@ export default async function tar(
         tarball.append(stream, {
             name: entry.name,
             kind: entry.kind,
-            relativePath: entry.relativePath,
+            relativePath: baseDir ? join(baseDir, entry.relativePath) : entry.relativePath,
             size: entry.kind === "directory" ? 0 : info.size,
             mtime: info.mtime ?? new Date(),
             mode: info.mode,

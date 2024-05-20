@@ -1,7 +1,7 @@
 import "../augment.ts";
 import { strictEqual, deepStrictEqual, ok } from "node:assert";
 
-describe("Exception", () => {
+describe("error/Exception", () => {
     it("new Exception", () => {
         const e1 = new Exception("something went wrong");
         ok(e1 instanceof Error);

@@ -3,6 +3,7 @@ import { omit } from '../object.js';
 import Exception from '../error/Exception.js';
 import { dirname, basename } from '../path.js';
 import { toReadableStream, concat } from '../reader.js';
+import { stripEnd } from '../string.js';
 
 var _a;
 var FileTypes;
@@ -76,7 +77,12 @@ function parseHeader(header) {
         offset += length;
     }
     // validate checksum
-    if (parseInt(data.checksum, 8) !== getChecksum(header)) {
+    const checksum = getChecksum(header);
+    if (checksum !== parseInt(data.checksum, 8)) {
+        if (checksum === initialChecksum) {
+            // EOF
+            return null;
+        }
         throw new Error("The archive is corrupted");
     }
     if (!data.magic.startsWith("ustar")) {
@@ -97,7 +103,8 @@ function getChecksum(header) {
 }
 function createEntry(headerInfo) {
     var _b;
-    const relativePath = (headerInfo.prefix ? headerInfo.prefix + "/" : "") + headerInfo.name;
+    const relativePath = (headerInfo.prefix ? headerInfo.prefix + "/" : "")
+        + stripEnd(headerInfo.name, "/");
     return {
         name: basename(relativePath),
         kind: ((_b = FileTypes[parseInt(headerInfo.typeflag)]) !== null && _b !== void 0 ? _b : "file"),
@@ -342,46 +349,60 @@ class Tarball {
         const reader = stream.getReader();
         let lastChunk = new Uint8Array(0);
         let headerInfo = null;
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-                reader.releaseLock();
-                break;
-            }
-            lastChunk = lastChunk.byteLength ? concat$1(lastChunk, value) : value;
-            while (true) {
-                if (!headerInfo) {
-                    if (lastChunk.byteLength >= HEADER_LENGTH) {
-                        [headerInfo, lastChunk] = parseHeader(lastChunk);
+        try {
+            outer: while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    break;
+                }
+                lastChunk = lastChunk.byteLength ? concat$1(lastChunk, value) : value;
+                while (true) {
+                    if (!headerInfo) {
+                        if (lastChunk.byteLength >= HEADER_LENGTH) {
+                            const _header = parseHeader(lastChunk);
+                            if (_header) {
+                                [headerInfo, lastChunk] = _header;
+                            }
+                            else {
+                                lastChunk = new Uint8Array(0);
+                                break outer;
+                            }
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                    const fileSize = parseInt(headerInfo.size, 8);
+                    if (lastChunk.byteLength >= fileSize) {
+                        const data = lastChunk.slice(0, fileSize); // use slice to make a copy
+                        const entry = {
+                            ...createEntry(headerInfo),
+                            header: formatHeader(headerInfo),
+                            body: toReadableStream([data]),
+                        };
+                        tarball[_entries].push(entry);
+                        const paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
+                        if (paddingSize > 0) {
+                            lastChunk = lastChunk.subarray(fileSize + paddingSize);
+                        }
+                        else {
+                            lastChunk = lastChunk.subarray(fileSize);
+                        }
+                        headerInfo = null;
                     }
                     else {
                         break;
                     }
                 }
-                const fileSize = parseInt(headerInfo.size, 8);
-                if (lastChunk.byteLength >= fileSize) {
-                    const data = lastChunk.slice(0, fileSize); // use slice to make a copy
-                    const entry = {
-                        ...createEntry(headerInfo),
-                        header: formatHeader(headerInfo),
-                        body: toReadableStream([data]),
-                    };
-                    tarball[_entries].push(entry);
-                    const paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
-                    if (paddingSize > 0) {
-                        lastChunk = lastChunk.subarray(fileSize + paddingSize);
-                    }
-                    else {
-                        lastChunk = lastChunk.subarray(fileSize);
-                    }
-                    headerInfo = null;
-                }
-                else {
-                    break;
-                }
             }
+            if (lastChunk.byteLength) {
+                throw new Error("The archive is corrupted");
+            }
+            return tarball;
         }
-        return tarball;
+        finally {
+            reader.releaseLock();
+        }
     }
 }
 
