@@ -28,6 +28,7 @@ import { getExtensions } from "../filetype.ts";
 import { readDir, readFileAsFile, writeFile } from "../fs.ts";
 import { fixFileType } from "../fs/types.ts";
 import { as } from "../object.ts";
+import { join } from "../path.ts";
 
 /**
  * Open the file picker dialog and pick a file, this function returns the file's
@@ -183,7 +184,7 @@ export async function openFile(options: {
                     configurable: true,
                     enumerable: true,
                     writable: false,
-                    value: entry.relativePath?.replace(/\\/g, "/") ?? "",
+                    value: entry.relativePath.replace(/\\/g, "/"),
                 });
 
                 files.push(fixFileType(file));
@@ -255,13 +256,14 @@ export async function openFile(options: {
 
             for await (const entry of readDir(dirname, { recursive: true })) {
                 if (entry.kind === "file") {
-                    const file = await (entry.handle as FileSystemFileHandle).getFile();
+                    const path = join(dirname, entry.relativePath);
+                    const file = await readFileAsFile(path);
 
                     Object.defineProperty(file, "webkitRelativePath", {
                         configurable: true,
                         enumerable: true,
                         writable: false,
-                        value: entry.relativePath?.replace(/\\/g, "/") ?? "",
+                        value: entry.relativePath.replace(/\\/g, "/"),
                     });
 
                     files.push(fixFileType(file));

@@ -12,6 +12,7 @@ import { getExtensions } from '../filetype.js';
 import { readDir, readFileAsFile, writeFile } from '../fs.js';
 import { fixFileType } from '../fs/types.js';
 import { as } from '../object.js';
+import { join } from '../path.js';
 import { isWSL } from '../cli/common.js';
 
 /**
@@ -100,7 +101,6 @@ async function pickDirectory(options = {}) {
     throw new Error("Unsupported platform");
 }
 async function openFile(options = {}) {
-    var _a, _b, _c, _d;
     const { title = "", type = "", multiple = false, directory = false } = options;
     if (directory && typeof globalThis["showDirectoryPicker"] === "function") {
         const files = [];
@@ -115,7 +115,7 @@ async function openFile(options = {}) {
                     configurable: true,
                     enumerable: true,
                     writable: false,
-                    value: (_b = (_a = entry.relativePath) === null || _a === void 0 ? void 0 : _a.replace(/\\/g, "/")) !== null && _b !== void 0 ? _b : "",
+                    value: entry.relativePath.replace(/\\/g, "/"),
                 });
                 files.push(fixFileType(file));
             }
@@ -187,12 +187,13 @@ async function openFile(options = {}) {
             const files = [];
             for await (const entry of readDir(dirname, { recursive: true })) {
                 if (entry.kind === "file") {
-                    const file = await entry.handle.getFile();
+                    const path = join(dirname, entry.relativePath);
+                    const file = await readFileAsFile(path);
                     Object.defineProperty(file, "webkitRelativePath", {
                         configurable: true,
                         enumerable: true,
                         writable: false,
-                        value: (_d = (_c = entry.relativePath) === null || _c === void 0 ? void 0 : _c.replace(/\\/g, "/")) !== null && _d !== void 0 ? _d : "",
+                        value: entry.relativePath.replace(/\\/g, "/"),
                     });
                     files.push(fixFileType(file));
                 }
