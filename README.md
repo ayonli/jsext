@@ -63,6 +63,8 @@ browser.
 Each of these modules includes specific functions and classes for their target
 categories:
 
+- [archive](https://jsr.io/@ayonli/jsext/doc/archive/~) (Experimental) Collecting
+  files into an archive file, or extracting files from a archive file.
 - [array](https://jsr.io/@ayonli/jsext/doc/array/~) Functions for dealing with
   arrays.
 - [async](https://jsr.io/@ayonli/jsext/doc/async/~) Functions for async/promise
