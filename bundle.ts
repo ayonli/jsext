@@ -1,5 +1,6 @@
 import "./augment.ts";
 import jsext from "./index.ts";
+import * as archive from "./archive.ts";
 import * as array from "./array.ts";
 import * as _async from "./async.ts";
 import * as bytes from "./bytes.ts";
@@ -30,6 +31,7 @@ export default {
     Channel,
     ...types,
     ...jsext,
+    archive,
     array,
     async: _async,
     bytes: {

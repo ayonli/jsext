@@ -408,7 +408,7 @@ export default class Tarball {
         }
     }
 
-    [Symbol.iterator]() {
+    [Symbol.iterator](): IterableIterator<TarEntry> {
         return this.entries();
     }
 

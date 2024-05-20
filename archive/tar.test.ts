@@ -4,6 +4,7 @@ import { pick } from "../object.ts";
 import Tarball, { TarEntry } from "./Tarball.ts";
 import { createReadableStream, remove } from "../fs.ts";
 import func from "../func.ts";
+import "../augment.ts";
 
 describe("archive/tar", () => {
     if (typeof ReadableStream !== "function") {

@@ -14,7 +14,6 @@ import _try from './try.js';
 import { split } from './path/util.js';
 import { resolveByteStream, toAsyncIterable } from './reader/util.js';
 
-/// <reference types="./lib.deno.d.ts" />
 /**
  * Universal file system APIs for both server and browser applications.
  *
