@@ -7,6 +7,7 @@ import func from "../func.ts";
 import untar from "./untar.ts";
 import { readAsArray } from "../reader.ts";
 import { join } from "../path.ts";
+import { orderBy } from "../array.ts";
 
 describe("archive/untar", () => {
     if (typeof ReadableStream !== "function") {
@@ -26,7 +27,7 @@ describe("archive/untar", () => {
     it("load tarball file", async () => {
         const tarball = await untar(filename1);
         const entries = [...tarball].map(entry => pick(entry, ["name", "kind", "relativePath"]));
-        deepStrictEqual(entries, [
+        deepStrictEqual(orderBy(entries, e => e.relativePath), [
             {
                 name: "fs",
                 kind: "directory",
@@ -36,6 +37,11 @@ describe("archive/untar", () => {
                 name: "types.ts",
                 kind: "file",
                 relativePath: "fs/types.ts",
+            },
+            {
+                name: "util.ts",
+                kind: "file",
+                relativePath: "fs/util.ts",
             },
         ] as Partial<TarEntry>[]);
     });
@@ -43,7 +49,7 @@ describe("archive/untar", () => {
     it("load tarball file with gzip", async () => {
         const tarball = await untar(filename2, { gzip: true });
         const entries = [...tarball].map(entry => pick(entry, ["name", "kind", "relativePath"]));
-        deepStrictEqual(entries, [
+        deepStrictEqual(orderBy(entries, e => e.relativePath), [
             {
                 name: "fs",
                 kind: "directory",
@@ -53,6 +59,11 @@ describe("archive/untar", () => {
                 name: "types.ts",
                 kind: "file",
                 relativePath: "fs/types.ts",
+            },
+            {
+                name: "util.ts",
+                kind: "file",
+                relativePath: "fs/util.ts",
             },
         ] as Partial<TarEntry>[]);
     });
@@ -64,7 +75,7 @@ describe("archive/untar", () => {
 
         const _entries = await readAsArray(readDir(dir, { recursive: true }));
         const entries = _entries.map(entry => pick(entry, ["name", "kind", "relativePath"]));
-        deepStrictEqual(entries, [
+        deepStrictEqual(orderBy(entries, e => e.relativePath), [
             {
                 name: "fs",
                 kind: "directory",
@@ -74,6 +85,11 @@ describe("archive/untar", () => {
                 name: "types.ts",
                 kind: "file",
                 relativePath: join("fs", "types.ts"),
+            },
+            {
+                name: "util.ts",
+                kind: "file",
+                relativePath: join("fs", "util.ts"),
             },
         ] as Partial<DirEntry>[]);
     }));
@@ -85,7 +101,7 @@ describe("archive/untar", () => {
 
         const _entries = await readAsArray(readDir(dir, { recursive: true }));
         const entries = _entries.map(entry => pick(entry, ["name", "kind", "relativePath"]));
-        deepStrictEqual(entries, [
+        deepStrictEqual(orderBy(entries, e => e.relativePath), [
             {
                 name: "fs",
                 kind: "directory",
@@ -95,6 +111,11 @@ describe("archive/untar", () => {
                 name: "types.ts",
                 kind: "file",
                 relativePath: join("fs", "types.ts"),
+            },
+            {
+                name: "util.ts",
+                kind: "file",
+                relativePath: join("fs", "util.ts"),
             },
         ] as Partial<DirEntry>[]);
     }));

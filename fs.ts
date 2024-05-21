@@ -44,14 +44,13 @@
  * @module
  */
 
-import { orderBy, startsWith } from "./array.ts";
 import { abortable } from "./async.ts";
 import bytes, { text } from "./bytes.ts";
 import { isDeno, isNodeLike } from "./env.ts";
 import { Exception } from "./error.ts";
 import { getMIME } from "./filetype.ts";
 import type { FileInfo, DirEntry, FileSystemOptions, DirTree } from "./fs/types.ts";
-import { fixFileType } from "./fs/types.ts";
+import { fixDirEntry, fixFileType, makeTree } from "./fs/util.ts";
 import { as } from "./object.ts";
 import { basename, dirname, extname, join, split } from "./path.ts";
 import { readAsArray, resolveByteStream, toAsyncIterable } from "./reader.ts";
@@ -79,16 +78,6 @@ export const EOL: "\n" | "\r\n" = (() => {
         return "\n";
     }
 })();
-
-function fixDirEntry<T extends DirEntry>(entry: T): T {
-    Object.defineProperty(entry, "path", {
-        get() {
-            return entry.relativePath;
-        },
-    });
-
-    return entry;
-}
 
 function getErrorName(err: Error): string {
     if (err.constructor === Error) {
@@ -557,83 +546,13 @@ export async function readTree(
     options: FileSystemOptions = {}
 ): Promise<DirTree> {
     const entries = (await readAsArray(readDir(target, { ...options, recursive: true })));
-    type CustomDirEntry = DirEntry & { paths: string[]; };
-    const list: CustomDirEntry[] = entries.map(entry => ({
-        ...entry,
-        paths: split(entry.relativePath),
-    }));
+    const tree = makeTree<DirEntry, DirTree>(target, entries, true);
 
-    const nodes = (function walk(list: CustomDirEntry[], store: CustomDirEntry[]): DirTree[] {
-        // Order the entries first by kind, then by names alphabetically.
-        list = [
-            ...orderBy(list.filter(e => e.kind === "directory"), e => e.name, "asc"),
-            ...orderBy(list.filter(e => e.kind === "file"), e => e.name, "asc"),
-        ];
-
-        const nodes: DirTree[] = [];
-
-        for (const entry of list) {
-            if (entry.kind === "file") {
-                nodes.push(fixDirEntry({
-                    name: entry.name,
-                    kind: entry.kind,
-                    relativePath: entry.relativePath,
-                    handle: entry.handle,
-                } satisfies DirTree));
-                continue;
-            }
-
-            const paths = entry.paths;
-            const childEntries = store.filter(e => startsWith(e.paths, paths));
-            const directChildren = childEntries
-                .filter(e => e.paths.length === paths.length + 1);
-
-            if (directChildren.length) {
-                const indirectChildren = childEntries
-                    .filter(e => !directChildren.includes(e));
-                nodes.push(fixDirEntry({
-                    name: entry.name,
-                    kind: entry.kind,
-                    relativePath: entry.relativePath,
-                    handle: entry.handle,
-                    children: walk(directChildren, indirectChildren),
-                } satisfies DirTree));
-            } else {
-                nodes.push(fixDirEntry({
-                    name: entry.name,
-                    kind: entry.kind,
-                    relativePath: entry.relativePath,
-                    handle: entry.handle,
-                    children: [],
-                } satisfies DirTree));
-            }
-        }
-
-        return nodes;
-    })(list.filter(entry => entry.paths.length === 1),
-        list.filter(entry => entry.paths.length > 1));
-
-    let rootName: string;
-
-    if (typeof target === "object") {
-        rootName = target.name || "(root)";
-    } else if (target) {
-        rootName = basename(target);
-
-        if (!rootName || rootName === ".") {
-            rootName = "(root)";
-        }
-    } else {
-        rootName = "(root)";
+    if (!tree.handle && options.root) {
+        tree.handle = options.root;
     }
 
-    return fixDirEntry({
-        name: rootName,
-        kind: "directory",
-        relativePath: "",
-        handle: typeof target === "object" ? target : options.root,
-        children: nodes,
-    } satisfies DirTree);
+    return tree;
 }
 
 async function* readDirHandle(dir: FileSystemDirectoryHandle, options: {

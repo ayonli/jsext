@@ -1,6 +1,6 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { stat, createReadableStream, createWritableStream, readFileAsText, remove, exists } from "../fs.ts";
-import Tarball, { type TarEntry, _entries } from "../archive/Tarball.ts";
+import Tarball, { type TarEntry, _entries, TarTree } from "../archive/Tarball.ts";
 import { readAsText } from "../reader.ts";
 import { omit } from "../object.ts";
 
@@ -154,5 +154,56 @@ describe("archive/Tarball", () => {
                 } as TarEntry);
             }
         }
+    });
+
+    it("treeView", () => {
+        const tarball = new Tarball();
+        const now = new Date();
+
+        tarball.append(null, { kind: "directory", relativePath: "foo", mtime: now });
+        tarball.append("Hello, World!", { kind: "file", relativePath: "foo/hello.txt", mtime: now });
+
+        const tree = omit(tarball.treeView(), ["mtime"]);
+
+        deepStrictEqual(tree, {
+            name: "(root)",
+            kind: "directory",
+            relativePath: "",
+            size: 0,
+            // mtime: now,
+            mode: 0o755,
+            uid: 0,
+            gid: 0,
+            owner: "",
+            group: "",
+            children: [
+                {
+                    name: "foo",
+                    kind: "directory",
+                    relativePath: "foo",
+                    size: 0,
+                    mtime: now,
+                    mode: 0o755,
+                    uid: 0,
+                    gid: 0,
+                    owner: "",
+                    group: "",
+                    children: [
+                        {
+                            name: "hello.txt",
+                            kind: "file",
+                            relativePath: "foo/hello.txt",
+                            size: 13,
+                            mtime: now,
+                            mode: 0o666,
+                            uid: 0,
+                            gid: 0,
+                            owner: "",
+                            group: "",
+                        },
+                    ],
+                },
+            ],
+        } as Omit<TarTree, "mtime">);
     });
 });

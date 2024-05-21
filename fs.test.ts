@@ -391,33 +391,28 @@ describe("fs", () => {
                 name: "tmp",
                 kind: "directory",
                 relativePath: "",
-                handle: undefined,
                 children: [
                     {
                         name: "a",
                         kind: "directory",
                         relativePath: "a",
-                        handle: undefined,
                         children: [],
                     },
                     {
                         name: "b",
                         kind: "directory",
                         relativePath: "b",
-                        handle: undefined,
                         children: [
                             {
                                 name: "c",
                                 kind: "directory",
                                 relativePath: join("b", "c"),
-                                handle: undefined,
                                 children: [],
                             },
                             {
                                 name: "e.txt",
                                 kind: "file",
                                 relativePath: join("b", "e.txt"),
-                                handle: undefined,
                             },
                         ],
                     },
@@ -425,7 +420,6 @@ describe("fs", () => {
                         name: "d.txt",
                         kind: "file",
                         relativePath: "d.txt",
-                        handle: undefined,
                     },
                 ],
             } satisfies DirTree);

@@ -3,6 +3,7 @@ import tar from "./tar.ts";
 import { pick } from "../object.ts";
 import Tarball, { TarEntry } from "./Tarball.ts";
 import { createReadableStream, remove } from "../fs.ts";
+import { orderBy } from "../array.ts";
 import func from "../func.ts";
 import "../augment.ts";
 
@@ -17,7 +18,7 @@ describe("archive/tar", () => {
     it("create tarball instance", async () => {
         const tarball = await tar(dir);
         const entries = [...tarball].map(entry => pick(entry, ["name", "kind", "relativePath"]));
-        deepStrictEqual(entries, [
+        deepStrictEqual(orderBy(entries, e => e.relativePath), [
             {
                 name: "fs",
                 kind: "directory",
@@ -27,6 +28,11 @@ describe("archive/tar", () => {
                 name: "types.ts",
                 kind: "file",
                 relativePath: "fs/types.ts",
+            },
+            {
+                name: "util.ts",
+                kind: "file",
+                relativePath: "fs/util.ts",
             },
         ] as Partial<TarEntry>[]);
     });
@@ -38,7 +44,7 @@ describe("archive/tar", () => {
         const input = createReadableStream(filename);
         const tarball = await Tarball.load(input);
         const entries = [...tarball].map(entry => pick(entry, ["name", "kind", "relativePath"]));
-        deepStrictEqual(entries, [
+        deepStrictEqual(orderBy(entries, e => e.relativePath), [
             {
                 name: "fs",
                 kind: "directory",
@@ -48,6 +54,11 @@ describe("archive/tar", () => {
                 name: "types.ts",
                 kind: "file",
                 relativePath: "fs/types.ts",
+            },
+            {
+                name: "util.ts",
+                kind: "file",
+                relativePath: "fs/util.ts",
             },
         ] as Partial<TarEntry>[]);
     }));
@@ -59,7 +70,7 @@ describe("archive/tar", () => {
         const input = createReadableStream(filename);
         const tarball = await Tarball.load(input, { gzip: true });
         const entries = [...tarball].map(entry => pick(entry, ["name", "kind", "relativePath"]));
-        deepStrictEqual(entries, [
+        deepStrictEqual(orderBy(entries, e => e.relativePath), [
             {
                 name: "fs",
                 kind: "directory",
@@ -69,6 +80,11 @@ describe("archive/tar", () => {
                 name: "types.ts",
                 kind: "file",
                 relativePath: "fs/types.ts",
+            },
+            {
+                name: "util.ts",
+                kind: "file",
+                relativePath: "fs/util.ts",
             },
         ] as Partial<TarEntry>[]);
     }));

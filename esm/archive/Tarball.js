@@ -1,6 +1,7 @@
 import bytes, { concat as concat$1 } from '../bytes.js';
 import { omit } from '../object.js';
 import Exception from '../error/Exception.js';
+import { makeTree } from '../fs/util.js';
 import { dirname, basename } from '../path.js';
 import { toReadableStream, concat } from '../reader.js';
 import { stripEnd } from '../string.js';
@@ -299,14 +300,34 @@ class Tarball {
             body,
         });
     }
+    [(_a = _entries, Symbol.iterator)]() {
+        return this.entries();
+    }
+    /**
+     * Iterates over the entries in the archive.
+     */
     *entries() {
         const iter = this[_entries][Symbol.iterator]();
         for (const entry of iter) {
             yield omit(entry, ["header", "body"]);
         }
     }
-    [(_a = _entries, Symbol.iterator)]() {
-        return this.entries();
+    /**
+     * Returns a tree view of the entries in the archive.
+     */
+    treeView() {
+        const now = new Date();
+        const entries = [...this];
+        return {
+            ...makeTree("", entries),
+            size: 0,
+            mtime: now,
+            mode: 0o755,
+            uid: 0,
+            gid: 0,
+            owner: "",
+            group: "",
+        };
     }
     /**
      * Returns a readable stream of the archive that can be piped to a writable

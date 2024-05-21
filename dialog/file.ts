@@ -26,7 +26,7 @@ import { asyncTask } from "../async.ts";
 import { concat } from "../bytes.ts";
 import { getExtensions } from "../filetype.ts";
 import { readDir, readFileAsFile, writeFile } from "../fs.ts";
-import { fixFileType } from "../fs/types.ts";
+import { fixFileType } from "../fs/util.ts";
 import { as } from "../object.ts";
 import { join } from "../path.ts";
 

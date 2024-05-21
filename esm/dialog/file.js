@@ -10,7 +10,7 @@ import { asyncTask } from '../async.js';
 import { concat } from '../bytes.js';
 import { getExtensions } from '../filetype.js';
 import { readDir, readFileAsFile, writeFile } from '../fs.js';
-import { fixFileType } from '../fs/types.js';
+import { fixFileType } from '../fs/util.js';
 import { as } from '../object.js';
 import { join } from '../path.js';
 import { isWSL } from '../cli/common.js';

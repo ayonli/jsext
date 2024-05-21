@@ -1,5 +1,6 @@
 import bytes, { concat as concatBytes } from "../bytes.ts";
 import { Exception } from "../error.ts";
+import { makeTree } from "../fs/util.ts";
 import { omit } from "../object.ts";
 import { basename, dirname } from "../path.ts";
 import { concat as concatStreams, toReadableStream } from "../reader.ts";
@@ -52,6 +53,10 @@ export interface TarEntry {
      * unsupported platforms.
      */
     group: string;
+}
+
+export interface TarTree extends TarEntry {
+    children?: TarTree[];
 }
 
 interface TarEntryWithData extends TarEntry {
@@ -400,6 +405,13 @@ export default class Tarball {
         });
     }
 
+    [Symbol.iterator](): IterableIterator<TarEntry> {
+        return this.entries();
+    }
+
+    /**
+     * Iterates over the entries in the archive.
+     */
     *entries(): IterableIterator<TarEntry> {
         const iter = this[_entries][Symbol.iterator]();
 
@@ -408,8 +420,22 @@ export default class Tarball {
         }
     }
 
-    [Symbol.iterator](): IterableIterator<TarEntry> {
-        return this.entries();
+    /**
+     * Returns a tree view of the entries in the archive.
+     */
+    treeView(): TarTree {
+        const now = new Date();
+        const entries = [...this];
+        return {
+            ...makeTree<TarEntry, TarTree>("", entries),
+            size: 0,
+            mtime: now,
+            mode: 0o755,
+            uid: 0,
+            gid: 0,
+            owner: "",
+            group: "",
+        };
     }
 
     /**

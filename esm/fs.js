@@ -1,11 +1,10 @@
-import { orderBy, startsWith } from './array.js';
 import { abortable } from './async.js';
 import bytes, { text } from './bytes.js';
 import { isDeno, isNodeLike } from './env.js';
 import { as } from './object.js';
 import Exception from './error/Exception.js';
 import { getMIME } from './filetype.js';
-import { fixFileType } from './fs/types.js';
+import { fixDirEntry, makeTree, fixFileType } from './fs/util.js';
 import { dirname, basename, extname, join } from './path.js';
 import { readAsArray } from './reader.js';
 import { platform } from './runtime.js';
@@ -74,14 +73,6 @@ const EOL = (() => {
         return "\n";
     }
 })();
-function fixDirEntry(entry) {
-    Object.defineProperty(entry, "path", {
-        get() {
-            return entry.relativePath;
-        },
-    });
-    return entry;
-}
 function getErrorName(err) {
     if (err.constructor === Error) {
         return err.constructor.name;
@@ -493,74 +484,11 @@ async function* readDir(target, options = {}) {
  */
 async function readTree(target, options = {}) {
     const entries = (await readAsArray(readDir(target, { ...options, recursive: true })));
-    const list = entries.map(entry => ({
-        ...entry,
-        paths: split(entry.relativePath),
-    }));
-    const nodes = (function walk(list, store) {
-        // Order the entries first by kind, then by names alphabetically.
-        list = [
-            ...orderBy(list.filter(e => e.kind === "directory"), e => e.name, "asc"),
-            ...orderBy(list.filter(e => e.kind === "file"), e => e.name, "asc"),
-        ];
-        const nodes = [];
-        for (const entry of list) {
-            if (entry.kind === "file") {
-                nodes.push(fixDirEntry({
-                    name: entry.name,
-                    kind: entry.kind,
-                    relativePath: entry.relativePath,
-                    handle: entry.handle,
-                }));
-                continue;
-            }
-            const paths = entry.paths;
-            const childEntries = store.filter(e => startsWith(e.paths, paths));
-            const directChildren = childEntries
-                .filter(e => e.paths.length === paths.length + 1);
-            if (directChildren.length) {
-                const indirectChildren = childEntries
-                    .filter(e => !directChildren.includes(e));
-                nodes.push(fixDirEntry({
-                    name: entry.name,
-                    kind: entry.kind,
-                    relativePath: entry.relativePath,
-                    handle: entry.handle,
-                    children: walk(directChildren, indirectChildren),
-                }));
-            }
-            else {
-                nodes.push(fixDirEntry({
-                    name: entry.name,
-                    kind: entry.kind,
-                    relativePath: entry.relativePath,
-                    handle: entry.handle,
-                    children: [],
-                }));
-            }
-        }
-        return nodes;
-    })(list.filter(entry => entry.paths.length === 1), list.filter(entry => entry.paths.length > 1));
-    let rootName;
-    if (typeof target === "object") {
-        rootName = target.name || "(root)";
+    const tree = makeTree(target, entries, true);
+    if (!tree.handle && options.root) {
+        tree.handle = options.root;
     }
-    else if (target) {
-        rootName = basename(target);
-        if (!rootName || rootName === ".") {
-            rootName = "(root)";
-        }
-    }
-    else {
-        rootName = "(root)";
-    }
-    return fixDirEntry({
-        name: rootName,
-        kind: "directory",
-        relativePath: "",
-        handle: typeof target === "object" ? target : options.root,
-        children: nodes,
-    });
+    return tree;
 }
 async function* readDirHandle(dir, options = {}) {
     const { base = "", recursive = false } = options;
