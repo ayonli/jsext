@@ -35,6 +35,10 @@ export interface TarEntry {
      * The last modified time of the file.
      */
     mtime: Date;
+    /**
+     * The permission mode of the file. This value may be `0` on unsupported
+     * platforms.
+     */
     mode: number;
     /**
      * User ID of the owner of the file. This value may be `0` on unsupported
@@ -269,9 +273,14 @@ export default class Tarball {
      * Appends a file to the archive.
      * @param data The file data, can be `null` if the file info represents a directory.
      */
+    append(data: File): void;
     append(
         data: string | ArrayBuffer | Uint8Array | DataView | Blob | ReadableStream<Uint8Array> | null,
         info: Ensured<Partial<TarEntry>, "relativePath">
+    ): void;
+    append(
+        data: string | ArrayBuffer | Uint8Array | DataView | Blob | ReadableStream<Uint8Array> | null,
+        info: Partial<TarEntry> = {}
     ): void {
         if (data === null) {
             if (info.kind === "directory") {
@@ -281,7 +290,16 @@ export default class Tarball {
             }
         }
 
-        const relativePath = info.relativePath.replace(/\\/g, "/");
+        let relativePath = info.relativePath;
+
+        if (!relativePath) {
+            if (typeof File === "function" && data instanceof File) {
+                relativePath = (data.webkitRelativePath || data.name);
+            } else {
+                throw new TypeError("info.relativePath must be provided");
+            }
+        }
+
         const dir = dirname(relativePath).replace(/\\/g, "/");
         const fileName = info.name
             || (typeof File === "function" && data instanceof File

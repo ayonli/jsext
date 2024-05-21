@@ -164,11 +164,7 @@ class Tarball {
             throw new TypeError("ReadableStream is not supported in this environment");
         }
     }
-    /**
-     * Appends a file to the archive.
-     * @param data The file data, can be `null` if the file info represents a directory.
-     */
-    append(data, info) {
+    append(data, info = {}) {
         var _b, _c, _d, _e, _f;
         if (data === null) {
             if (info.kind === "directory") {
@@ -178,7 +174,15 @@ class Tarball {
                 throw new TypeError("data must be provided for files");
             }
         }
-        const relativePath = info.relativePath.replace(/\\/g, "/");
+        let relativePath = info.relativePath;
+        if (!relativePath) {
+            if (typeof File === "function" && data instanceof File) {
+                relativePath = (data.webkitRelativePath || data.name);
+            }
+            else {
+                throw new TypeError("info.relativePath must be provided");
+            }
+        }
         const dir = dirname(relativePath).replace(/\\/g, "/");
         const fileName = info.name
             || (typeof File === "function" && data instanceof File
