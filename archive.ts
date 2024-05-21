@@ -12,8 +12,8 @@
  */
 
 import Tarball, { type TarEntry } from "./archive/Tarball.ts";
-import tar from "./archive/tar.ts";
+import tar, { type TarOptions } from "./archive/tar.ts";
 import untar from "./archive/untar.ts";
 
 export { Tarball, tar, untar };
-export type { TarEntry };
+export type { TarEntry, TarOptions };

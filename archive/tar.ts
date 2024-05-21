@@ -1,8 +1,9 @@
-import { CommonOptions, createReadableStream, stat, readDir, FileInfo, createWritableStream } from "../fs.ts";
+import { FileSystemOptions, FileInfo } from "../fs/types.ts";
+import { createReadableStream, stat, readDir, createWritableStream } from "../fs.ts";
 import { basename, join, resolve } from "../path.ts";
 import Tarball from "./Tarball.ts";
 
-export type TarOptions = CommonOptions & {
+export type TarOptions = FileSystemOptions & {
     gzip?: boolean;
     signal?: AbortSignal;
 };

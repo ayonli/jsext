@@ -4,7 +4,7 @@ import { extname } from "../path.ts";
 /**
  * Common options for file system operations.
  */
-export type CommonOptions = {
+export type FileSystemOptions = {
     /**
      * The root directory handle to operate in. This option is only available in
      * the browser, usually obtained from `window.showDirectoryPicker()`. If not

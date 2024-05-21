@@ -50,7 +50,7 @@ import bytes, { text } from "./bytes.ts";
 import { isDeno, isNodeLike } from "./env.ts";
 import { Exception } from "./error.ts";
 import { getMIME } from "./filetype.ts";
-import type { FileInfo, DirEntry, CommonOptions, DirTree } from "./fs/types.ts";
+import type { FileInfo, DirEntry, FileSystemOptions, DirTree } from "./fs/types.ts";
 import { fixFileType } from "./fs/types.ts";
 import { as } from "./object.ts";
 import { basename, dirname, extname, join, split } from "./path.ts";
@@ -59,7 +59,12 @@ import runtime, { platform } from "./runtime.ts";
 import { stripStart } from "./string.ts";
 import _try from "./try.ts";
 
-export type { CommonOptions, FileInfo, DirEntry, DirTree };
+export type { FileSystemOptions, FileInfo, DirEntry, DirTree };
+
+/**
+ * @deprecated Use {@link FileSystemOptions} instead.
+ */
+export type CommonOptions = FileSystemOptions;
 
 /**
  * Platform-specific end-of-line marker. The value is `\r\n` in Windows
@@ -196,7 +201,7 @@ function rawOp<T>(op: Promise<T>, type: "file" | "directory" | undefined = undef
  * NOTE: If the `path` is not provided or is empty, the root directory handle
  * will be returned.
  */
-export async function getDirHandle(path: string = "", options: CommonOptions & {
+export async function getDirHandle(path: string = "", options: FileSystemOptions & {
     /** Create the directory if not exist. */
     create?: boolean;
     /**
@@ -229,7 +234,7 @@ export async function getDirHandle(path: string = "", options: CommonOptions & {
  * 
  * NOTE: This function is only available in the browser.
  */
-export async function getFileHandle(path: string, options: CommonOptions & {
+export async function getFileHandle(path: string, options: FileSystemOptions & {
     /** Create the file if not exist. */
     create?: boolean;
 } = {}): Promise<FileSystemFileHandle> {
@@ -247,7 +252,7 @@ export async function getFileHandle(path: string, options: CommonOptions & {
  * This function may throw an error if the path is invalid or the operation is
  * not allowed.
  */
-export async function exists(path: string, options: CommonOptions = {}): Promise<boolean> {
+export async function exists(path: string, options: FileSystemOptions = {}): Promise<boolean> {
     try {
         await stat(path, options);
         return true;
@@ -267,7 +272,7 @@ export async function exists(path: string, options: CommonOptions = {}): Promise
  */
 export async function stat(
     target: string | FileSystemFileHandle | FileSystemDirectoryHandle,
-    options: CommonOptions & {
+    options: FileSystemOptions & {
         followSymlink?: boolean;
     } = {}
 ): Promise<FileInfo> {
@@ -408,7 +413,7 @@ export async function stat(
 /**
  * Creates a new directory with the given path.
  */
-export async function mkdir(path: string, options: CommonOptions & {
+export async function mkdir(path: string, options: FileSystemOptions & {
     /**
      * Whether to create parent directories if they do not exist.
      */
@@ -441,7 +446,7 @@ export async function mkdir(path: string, options: CommonOptions & {
 /**
  * Ensures the directory exists, creating it (and any parent directory) if not.
  */
-export async function ensureDir(path: string, options: CommonOptions & {
+export async function ensureDir(path: string, options: FileSystemOptions & {
     /**
      * The permission mode of the directory, only used when creating the
      * directory.
@@ -469,12 +474,15 @@ export async function ensureDir(path: string, options: CommonOptions & {
  * 
  * NOTE: The order of the entries is not guaranteed.
  */
-export async function* readDir(target: string | FileSystemDirectoryHandle, options: CommonOptions & {
-    /**
-     * Whether to read the sub-directories recursively.
-     */
-    recursive?: boolean;
-} = {}): AsyncIterableIterator<DirEntry> {
+export async function* readDir(
+    target: string | FileSystemDirectoryHandle,
+    options: FileSystemOptions & {
+        /**
+         * Whether to read the sub-directories recursively.
+         */
+        recursive?: boolean;
+    } = {}
+): AsyncIterableIterator<DirEntry> {
     if (typeof target === "object") {
         yield* readDirHandle(target, options);
         return;
@@ -546,7 +554,7 @@ export async function* readDir(target: string | FileSystemDirectoryHandle, optio
  */
 export async function readTree(
     target: string | FileSystemDirectoryHandle,
-    options: CommonOptions = {}
+    options: FileSystemOptions = {}
 ): Promise<DirTree> {
     const entries = (await readAsArray(readDir(target, { ...options, recursive: true })));
     type CustomDirEntry = DirEntry & { paths: string[]; };
@@ -665,9 +673,12 @@ async function readFileHandle(handle: FileSystemFileHandle, options: {
 /**
  * Reads the content of the given file in bytes.
  */
-export async function readFile(target: string | FileSystemFileHandle, options: CommonOptions & {
-    signal?: AbortSignal;
-} = {}): Promise<Uint8Array> {
+export async function readFile(
+    target: string | FileSystemFileHandle,
+    options: FileSystemOptions & {
+        signal?: AbortSignal;
+    } = {}
+): Promise<Uint8Array> {
     if (typeof target === "object") {
         return await readFileHandle(target, options);
     }
@@ -689,9 +700,12 @@ export async function readFile(target: string | FileSystemFileHandle, options: C
 /**
  * Reads the content of the given file as text.
  */
-export async function readFileAsText(target: string | FileSystemFileHandle, options: CommonOptions & {
-    signal?: AbortSignal;
-} = {}): Promise<string> {
+export async function readFileAsText(
+    target: string | FileSystemFileHandle,
+    options: FileSystemOptions & {
+        signal?: AbortSignal;
+    } = {}
+): Promise<string> {
     if (typeof target === "object") {
         return text(await readFileHandle(target, options));
     }
@@ -714,9 +728,12 @@ export async function readFileAsText(target: string | FileSystemFileHandle, opti
 /**
  * Reads the file as a `File` object.
  */
-export async function readFileAsFile(target: string | FileSystemFileHandle, options: CommonOptions & {
-    signal?: AbortSignal;
-} = {}): Promise<File> {
+export async function readFileAsFile(
+    target: string | FileSystemFileHandle,
+    options: FileSystemOptions & {
+        signal?: AbortSignal;
+    } = {}
+): Promise<File> {
     if (typeof target === "object") {
         return await readFileHandleAsFile(target);
     }
@@ -744,7 +761,7 @@ async function readFileHandleAsFile(handle: FileSystemFileHandle): Promise<File>
 export async function writeFile(
     target: string | FileSystemFileHandle,
     data: string | Uint8Array | ArrayBufferLike | DataView | ReadableStream<Uint8Array> | Blob | File,
-    options: CommonOptions & {
+    options: FileSystemOptions & {
         /**
          * Append the data to the file instead of overwriting it.
          */
@@ -862,7 +879,7 @@ async function writeFileHandle(
 export async function writeLines(
     target: string | FileSystemFileHandle,
     lines: string[],
-    options: CommonOptions & {
+    options: FileSystemOptions & {
         /**
          * Append the data to the file instead of overwriting it.
          */
@@ -923,7 +940,7 @@ export async function writeLines(
 export async function truncate(
     target: string | FileSystemFileHandle,
     size = 0,
-    options: CommonOptions = {}
+    options: FileSystemOptions = {}
 ): Promise<void> {
     if (typeof target === "object") {
         return await truncateFileHandle(target, size);
@@ -958,7 +975,7 @@ async function truncateFileHandle(
 /**
  * Removes the file or directory of the given path from the file system.
  */
-export async function remove(path: string, options: CommonOptions & {
+export async function remove(path: string, options: FileSystemOptions & {
     /**
      * Whether to delete the sub-directories and files recursively. This option
      * is required in order to remove a non-empty directory.
@@ -999,7 +1016,7 @@ export async function remove(path: string, options: CommonOptions & {
 export async function rename(
     oldPath: string,
     newPath: string,
-    options: CommonOptions = {}
+    options: FileSystemOptions = {}
 ): Promise<void> {
     if (isDeno) {
         await rawOp(Deno.rename(oldPath, newPath));
@@ -1032,7 +1049,7 @@ export async function rename(
 export async function copy(
     src: string,
     dest: string,
-    options?: CommonOptions & { recursive?: boolean; }
+    options?: FileSystemOptions & { recursive?: boolean; }
 ): Promise<void>;
 export async function copy(
     src: FileSystemFileHandle,
@@ -1046,7 +1063,7 @@ export async function copy(
 export async function copy(
     src: string | FileSystemFileHandle | FileSystemDirectoryHandle,
     dest: string | FileSystemFileHandle | FileSystemDirectoryHandle,
-    options: CommonOptions & {
+    options: FileSystemOptions & {
         recursive?: boolean;
     } = {}
 ): Promise<void> {
@@ -1133,7 +1150,7 @@ export async function copy(
 async function copyInBrowser(
     src: string | FileSystemFileHandle | FileSystemDirectoryHandle,
     dest: string | FileSystemFileHandle | FileSystemDirectoryHandle,
-    options: CommonOptions & {
+    options: FileSystemOptions & {
         recursive?: boolean;
         move?: boolean;
     } = {}
@@ -1414,7 +1431,7 @@ export async function utimes(
  */
 export function createReadableStream(
     target: string | FileSystemFileHandle,
-    options: CommonOptions = {}
+    options: FileSystemOptions = {}
 ): ReadableStream<Uint8Array> {
     if (isNodeLike) {
         if (typeof target === "object") {
@@ -1476,7 +1493,7 @@ export const readFileAsStream = createReadableStream;
  */
 export function createWritableStream(
     target: string | FileSystemFileHandle,
-    options: CommonOptions & {
+    options: FileSystemOptions & {
         /**
          * Append the data to the file instead of overwriting it.
          */
