@@ -230,7 +230,7 @@ class Tarball {
             body = toReadableStream([data]);
             size = data.byteLength;
         }
-        else if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
+        else if (data instanceof ArrayBuffer) {
             body = toReadableStream([new Uint8Array(data)]);
             size = data.byteLength;
         }

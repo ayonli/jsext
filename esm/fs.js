@@ -492,7 +492,6 @@ async function* readDir(target, options = {}) {
  * files), then by names alphabetically.
  */
 async function readTree(target, options = {}) {
-    var _a;
     const entries = (await readAsArray(readDir(target, { ...options, recursive: true })));
     const list = entries.map(entry => ({
         ...entry,
@@ -542,10 +541,21 @@ async function readTree(target, options = {}) {
         }
         return nodes;
     })(list.filter(entry => entry.paths.length === 1), list.filter(entry => entry.paths.length > 1));
+    let rootName;
+    if (typeof target === "object") {
+        rootName = target.name || "(root)";
+    }
+    else if (target) {
+        rootName = basename(target);
+        if (!rootName || rootName === ".") {
+            rootName = "(root)";
+        }
+    }
+    else {
+        rootName = "(root)";
+    }
     return fixDirEntry({
-        name: typeof target === "object"
-            ? (target.name || "(root)")
-            : ((_a = options.root) === null || _a === void 0 ? void 0 : _a.name) || (target && basename(target) || "(root)"),
+        name: rootName,
         kind: "directory",
         relativePath: "",
         handle: typeof target === "object" ? target : options.root,
@@ -666,7 +676,7 @@ async function writeFile(target, data, options = {}) {
         else if (data instanceof Blob) {
             return await rawOp(Deno.writeFile(filename, data.stream(), options));
         }
-        else if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
+        else if (data instanceof ArrayBuffer) {
             return await rawOp(Deno.writeFile(filename, new Uint8Array(data), options));
         }
         else if (data instanceof DataView) {
@@ -690,7 +700,7 @@ async function writeFile(target, data, options = {}) {
             const fs = await import('fs/promises');
             const { append, ...rest } = options;
             let _data;
-            if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
+            if (data instanceof ArrayBuffer) {
                 _data = new Uint8Array(data);
             }
             else if (data instanceof DataView) {

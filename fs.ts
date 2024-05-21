@@ -613,10 +613,22 @@ export async function readTree(
     })(list.filter(entry => entry.paths.length === 1),
         list.filter(entry => entry.paths.length > 1));
 
+    let rootName: string;
+
+    if (typeof target === "object") {
+        rootName = target.name || "(root)";
+    } else if (target) {
+        rootName = basename(target);
+
+        if (!rootName || rootName === ".") {
+            rootName = "(root)";
+        }
+    } else {
+        rootName = "(root)";
+    }
+
     return fixDirEntry({
-        name: typeof target === "object"
-            ? (target.name || "(root)")
-            : options.root?.name || (target && basename(target) || "(root)"),
+        name: rootName,
         kind: "directory",
         relativePath: "",
         handle: typeof target === "object" ? target : options.root,
@@ -760,7 +772,7 @@ async function readFileHandleAsFile(handle: FileSystemFileHandle): Promise<File>
  */
 export async function writeFile(
     target: string | FileSystemFileHandle,
-    data: string | Uint8Array | ArrayBufferLike | DataView | ReadableStream<Uint8Array> | Blob | File,
+    data: string | ArrayBuffer | Uint8Array | DataView | ReadableStream<Uint8Array> | Blob | File,
     options: FileSystemOptions & {
         /**
          * Append the data to the file instead of overwriting it.
@@ -787,7 +799,7 @@ export async function writeFile(
             return await rawOp(Deno.writeTextFile(filename, data, options));
         } else if (data instanceof Blob) {
             return await rawOp(Deno.writeFile(filename, data.stream(), options));
-        } else if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
+        } else if (data instanceof ArrayBuffer) {
             return await rawOp(Deno.writeFile(filename, new Uint8Array(data), options));
         } else if (data instanceof DataView) {
             return await rawOp(Deno.writeFile(filename, bytes(data), options));
@@ -807,7 +819,7 @@ export async function writeFile(
             const { append, ...rest } = options;
             let _data: Uint8Array | string;
 
-            if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
+            if (data instanceof ArrayBuffer) {
                 _data = new Uint8Array(data);
             } else if (data instanceof DataView) {
                 _data = bytes(data); // Bun may not support writing DataView
@@ -830,7 +842,7 @@ export async function writeFile(
 
 async function writeFileHandle(
     handle: FileSystemFileHandle,
-    data: string | Uint8Array | ArrayBufferLike | DataView | ReadableStream<Uint8Array> | Blob | File,
+    data: string | ArrayBuffer | Uint8Array | DataView | ReadableStream<Uint8Array> | Blob | File,
     options: {
         append?: boolean;
         signal?: AbortSignal;

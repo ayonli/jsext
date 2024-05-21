@@ -262,7 +262,7 @@ export default class Tarball {
      * @param data The file data, can be `null` if the file info represents a directory.
      */
     append(
-        data: string | Uint8Array | ArrayBufferLike | DataView | Blob | ReadableStream<Uint8Array> | null,
+        data: string | ArrayBuffer | Uint8Array | DataView | Blob | ReadableStream<Uint8Array> | null,
         info: Ensured<Partial<TarEntry>, "relativePath">
     ): void {
         if (data === null) {
@@ -330,7 +330,7 @@ export default class Tarball {
         } else if (data instanceof Uint8Array) {
             body = toReadableStream([data]);
             size = data.byteLength;
-        } else if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
+        } else if (data instanceof ArrayBuffer) {
             body = toReadableStream([new Uint8Array(data)]);
             size = data.byteLength;
         } else if (data instanceof DataView) {

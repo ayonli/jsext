@@ -297,7 +297,7 @@ export async function saveFile(file: File, options?: {
     title?: string;
 }): Promise<void>;
 export async function saveFile(
-    file: Blob | ArrayBufferLike | DataView | ReadableStream<Uint8Array> | Uint8Array,
+    file: Blob | DataView | ReadableStream<Uint8Array> | Uint8Array | ArrayBuffer,
     options: {
         /** The suggested name of the file. */
         name?: string;
@@ -308,7 +308,7 @@ export async function saveFile(
     }
 ): Promise<void>;
 export async function saveFile(
-    file: File | Blob | ArrayBufferLike | DataView | ReadableStream<Uint8Array> | Uint8Array,
+    file: File | Blob | DataView | ReadableStream<Uint8Array> | Uint8Array | ArrayBuffer,
     options: {
         title?: string;
         name?: string;
