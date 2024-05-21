@@ -259,6 +259,9 @@ class Tarball {
         const kind = (_b = info.kind) !== null && _b !== void 0 ? _b : "file";
         const mode = (_c = info.mode) !== null && _c !== void 0 ? _c : (kind === "directory" ? 0o755 : 0o666);
         const mtime = (_d = info.mtime) !== null && _d !== void 0 ? _d : new Date();
+        if (kind === "directory") {
+            size = 0; // ensure size is 0 for directories
+        }
         const headerInfo = {
             name,
             mode: toFixedOctal(mode, USTarFileHeaderFieldLengths.mode),
@@ -372,7 +375,7 @@ class Tarball {
         const tarball = new Tarball();
         const reader = stream.getReader();
         let lastChunk = new Uint8Array(0);
-        let headerInfo = null;
+        let rawHeader = null;
         try {
             outer: while (true) {
                 const { done, value } = await reader.read();
@@ -381,11 +384,11 @@ class Tarball {
                 }
                 lastChunk = lastChunk.byteLength ? concat$1(lastChunk, value) : value;
                 while (true) {
-                    if (!headerInfo) {
+                    if (!rawHeader) {
                         if (lastChunk.byteLength >= HEADER_LENGTH) {
                             const _header = parseHeader(lastChunk);
                             if (_header) {
-                                [headerInfo, lastChunk] = _header;
+                                [rawHeader, lastChunk] = _header;
                             }
                             else {
                                 lastChunk = new Uint8Array(0);
@@ -396,12 +399,12 @@ class Tarball {
                             break;
                         }
                     }
-                    const fileSize = parseInt(headerInfo.size, 8);
+                    const fileSize = parseInt(rawHeader.size, 8);
                     if (lastChunk.byteLength >= fileSize) {
                         const data = lastChunk.slice(0, fileSize); // use slice to make a copy
                         const entry = {
-                            ...createEntry(headerInfo),
-                            header: formatHeader(headerInfo),
+                            ...createEntry(rawHeader),
+                            header: formatHeader(rawHeader),
                             body: toReadableStream([data]),
                         };
                         tarball[_entries].push(entry);
@@ -412,7 +415,7 @@ class Tarball {
                         else {
                             lastChunk = lastChunk.subarray(fileSize);
                         }
-                        headerInfo = null;
+                        rawHeader = null;
                     }
                     else {
                         break;

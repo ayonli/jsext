@@ -43,9 +43,28 @@ async function tar(src, dest = {}, options = {}) {
                 stream.cancel(signal.reason).catch(() => { });
             }, { once: true });
         }
+        let kind;
+        if (info.kind === "directory") {
+            kind = "directory";
+        }
+        else if (info.kind === "symlink") {
+            kind = "symlink";
+        }
+        else if (info.isBlockDevice) {
+            kind = "block-device";
+        }
+        else if (info.isCharDevice) {
+            kind = "character-device";
+        }
+        else if (info.isFIFO || info.isSocket) {
+            kind = "fifo";
+        }
+        else {
+            kind = "file";
+        }
         tarball.append(stream, {
             name: entry.name,
-            kind: entry.kind,
+            kind,
             relativePath: baseDir ? baseDir + "/" + entry.relativePath : entry.relativePath,
             size: entry.kind === "directory" ? 0 : info.size,
             mtime: (_b = info.mtime) !== null && _b !== void 0 ? _b : new Date(),

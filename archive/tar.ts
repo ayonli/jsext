@@ -1,7 +1,7 @@
 import { FileSystemOptions, FileInfo } from "../fs/types.ts";
 import { createReadableStream, stat, readDir, createWritableStream } from "../fs.ts";
 import { basename, join, resolve } from "../path.ts";
-import Tarball from "./Tarball.ts";
+import Tarball, { TarEntry } from "./Tarball.ts";
 
 export type TarOptions = FileSystemOptions & {
     gzip?: boolean;
@@ -79,9 +79,25 @@ export default async function tar(
             }, { once: true });
         }
 
+        let kind: TarEntry["kind"];
+
+        if (info.kind === "directory") {
+            kind = "directory";
+        } else if (info.kind === "symlink") {
+            kind = "symlink";
+        } else if (info.isBlockDevice) {
+            kind = "block-device";
+        } else if (info.isCharDevice) {
+            kind = "character-device";
+        } else if (info.isFIFO || info.isSocket) {
+            kind = "fifo";
+        } else {
+            kind = "file";
+        }
+
         tarball.append(stream, {
             name: entry.name,
-            kind: entry.kind,
+            kind,
             relativePath: baseDir ? baseDir + "/" + entry.relativePath : entry.relativePath,
             size: entry.kind === "directory" ? 0 : info.size,
             mtime: info.mtime ?? new Date(),

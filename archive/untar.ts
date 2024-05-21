@@ -1,7 +1,8 @@
 import { concat as concatBytes } from "../bytes.ts";
-import { createReadableStream, createWritableStream, ensureDir } from "../fs.ts";
+import { isDeno, isNodeLike } from "../env.ts";
+import { chmod, chown, createReadableStream, createWritableStream, ensureDir, utimes } from "../fs.ts";
 import { dirname, join, resolve } from "../path.ts";
-import Tarball, { HEADER_LENGTH, USTarFileHeader, createEntry, parseHeader } from "./Tarball.ts";
+import Tarball, { HEADER_LENGTH, TarEntry, USTarFileHeader, createEntry, parseHeader } from "./Tarball.ts";
 import { TarOptions } from "./tar.ts";
 
 /**
@@ -59,7 +60,9 @@ export default async function untar(
 
     const reader = input.getReader();
     let lastChunk: Uint8Array = new Uint8Array(0);
-    let headerInfo: USTarFileHeader | null = null;
+    let rawHeader: USTarFileHeader | null = null;
+    let entry: TarEntry | null = null;
+    let filename: string | undefined = undefined;
     let writer: WritableStreamDefaultWriter<Uint8Array> | undefined;
     let writtenBytes = 0;
     let paddingSize = 0;
@@ -81,12 +84,12 @@ export default async function untar(
             }
 
             while (true) {
-                if (!headerInfo) {
+                if (!rawHeader) {
                     if (lastChunk.byteLength >= HEADER_LENGTH) {
                         const _header = parseHeader(lastChunk);
 
                         if (_header) {
-                            [headerInfo, lastChunk] = _header;
+                            [rawHeader, lastChunk] = _header;
                         } else {
                             lastChunk = new Uint8Array(0);
                             break outer;
@@ -96,40 +99,40 @@ export default async function untar(
                     }
                 }
 
-                const info = createEntry(headerInfo);
-                const fileSize = info.size;
+                entry ??= createEntry(rawHeader);
+                const fileSize = entry.size;
 
                 if (writer) {
                     const chunk = lastChunk.subarray(0, fileSize - writtenBytes);
                     await writer.write(chunk);
                     lastChunk = lastChunk.subarray(fileSize - writtenBytes);
                     writtenBytes += chunk.byteLength;
-                } else if (info.kind === "directory") {
+                } else if (entry.kind === "directory") {
                     if (typeof FileSystemDirectoryHandle === "function" &&
                         _dest instanceof FileSystemDirectoryHandle
                     ) {
-                        await ensureDir(info.relativePath, {
+                        await ensureDir(entry.relativePath, {
                             ...options,
                             root: _dest,
-                            mode: info.mode,
+                            mode: entry.mode,
                         });
                     } else {
-                        await ensureDir(join(_dest as string, info.relativePath), {
+                        filename = join(_dest as string, entry.relativePath);
+                        await ensureDir(filename, {
                             ...options,
-                            mode: info.mode,
+                            mode: entry.mode,
                         });
                     }
                 } else {
-                    let filename: string;
                     let _options = options;
 
                     if (typeof FileSystemDirectoryHandle === "function" &&
                         _dest instanceof FileSystemDirectoryHandle
                     ) {
                         _options = { ...options, root: _dest };
-                        filename = info.relativePath;
+                        filename = entry.relativePath;
                     } else {
-                        filename = join(_dest as string, info.relativePath);
+                        filename = join(_dest as string, entry.relativePath);
                     }
 
                     await ensureDir(dirname(filename), _options);
@@ -147,10 +150,26 @@ export default async function untar(
                         paddingSize = 0;
                     }
 
+                    if ((isDeno || isNodeLike) && filename) {
+                        if (entry.mode) {
+                            await chmod(filename, entry.mode);
+                        }
+
+                        if (entry.uid || entry.gid) {
+                            await chown(filename, entry.uid || 0, entry.gid || 0);
+                        }
+
+                        if (entry.mtime) {
+                            await utimes(filename, entry.mtime, entry.mtime);
+                        }
+                    }
+
                     writtenBytes = 0;
-                    headerInfo = null;
+                    rawHeader = null;
                     writer?.close();
                     writer = undefined;
+                    filename = undefined;
+                    entry = null;
                 } else {
                     break;
                 }
