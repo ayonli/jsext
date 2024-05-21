@@ -2,6 +2,7 @@ import { concat as concatBytes } from "../bytes.ts";
 import { isDeno, isNodeLike } from "../env.ts";
 import { chmod, chown, createReadableStream, createWritableStream, ensureDir, utimes } from "../fs.ts";
 import { dirname, join, resolve } from "../path.ts";
+import { platform } from "../runtime.ts";
 import Tarball, { HEADER_LENGTH, TarEntry, USTarFileHeader, createEntry, parseHeader } from "./Tarball.ts";
 import { TarOptions } from "./tar.ts";
 
@@ -58,6 +59,7 @@ export default async function untar(
         return await Tarball.load(input);
     }
 
+    const _platform = platform();
     const reader = input.getReader();
     let lastChunk: Uint8Array = new Uint8Array(0);
     let rawHeader: USTarFileHeader | null = null;
@@ -150,7 +152,7 @@ export default async function untar(
                         paddingSize = 0;
                     }
 
-                    if ((isDeno || isNodeLike) && filename) {
+                    if ((isDeno || isNodeLike) && filename && _platform !== "windows") {
                         if (entry.mode) {
                             await chmod(filename, entry.mode);
                         }

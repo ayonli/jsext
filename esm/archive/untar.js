@@ -2,6 +2,7 @@ import { concat } from '../bytes.js';
 import { isDeno, isNodeLike } from '../env.js';
 import { createReadableStream, ensureDir, createWritableStream, chmod, chown, utimes } from '../fs.js';
 import { resolve, join, dirname } from '../path.js';
+import { platform } from '../runtime.js';
 import Tarball, { HEADER_LENGTH, parseHeader, createEntry } from './Tarball.js';
 
 async function untar(src, dest = {}, options = {}) {
@@ -31,6 +32,7 @@ async function untar(src, dest = {}, options = {}) {
     if (!_dest) {
         return await Tarball.load(input);
     }
+    const _platform = platform();
     const reader = input.getReader();
     let lastChunk = new Uint8Array(0);
     let rawHeader = null;
@@ -112,7 +114,7 @@ async function untar(src, dest = {}, options = {}) {
                         lastChunk = lastChunk.subarray(paddingSize);
                         paddingSize = 0;
                     }
-                    if ((isDeno || isNodeLike) && filename) {
+                    if ((isDeno || isNodeLike) && filename && _platform !== "windows") {
                         if (entry.mode) {
                             await chmod(filename, entry.mode);
                         }
