@@ -82,6 +82,58 @@ describe("archive/Tarball", () => {
         }
     });
 
+    it("append File instance", () => {
+        const tarball = new Tarball();
+        const file1 = new File(["Hello, World!"], "hello.txt", { type: "text/plain" });
+        const file2 = new File(["Hello, World!"], "bar.txt", { type: "text/plain" });
+
+        Object.defineProperty(file2, "webkitRelativePath", {
+            configurable: true,
+            enumerable: true,
+            writable: false,
+            value: "foo/bar.txt",
+        });
+
+        tarball.append(file1);
+        tarball.append(file2);
+
+        deepStrictEqual([...tarball].map(entry => omit(entry, ["mtime"])), [
+            {
+                name: "hello.txt",
+                kind: "file",
+                relativePath: "hello.txt",
+                size: 13,
+                mode: 0o666,
+                uid: 0,
+                gid: 0,
+                owner: "",
+                group: "",
+            },
+            {
+                name: "foo",
+                kind: "directory",
+                relativePath: "foo",
+                size: 0,
+                mode: 0o755,
+                uid: 0,
+                gid: 0,
+                owner: "",
+                group: "",
+            },
+            {
+                name: "bar.txt",
+                kind: "file",
+                relativePath: "foo/bar.txt",
+                size: 13,
+                mode: 0o666,
+                uid: 0,
+                gid: 0,
+                owner: "",
+                group: "",
+            },
+        ] as TarEntry[]);
+    });
+
     it("stream", async () => {
         ok(!(await exists(filename1)));
         const output = createWritableStream(filename1);
