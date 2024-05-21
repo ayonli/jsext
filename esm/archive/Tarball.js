@@ -18,8 +18,8 @@ var FileTypes;
     FileTypes[FileTypes["fifo"] = 6] = "fifo";
     FileTypes[FileTypes["contiguous-file"] = 7] = "contiguous-file";
 })(FileTypes || (FileTypes = {}));
-const USTAR_MAGIC_HEADER = "ustar\x00";
 const HEADER_LENGTH = 512;
+const USTAR_MAGIC_HEADER = "ustar\x00";
 const USTarFileHeaderFieldLengths = {
     name: 100, // 0
     mode: 8, // 100
@@ -47,7 +47,7 @@ const FilenameTooLongError = new Exception("UStar format does not allow a long f
     name: "FilenameTooLongError",
     code: 431
 });
-function pad(num, bytes) {
+function toFixedOctal(num, bytes) {
     return num.toString(8).padStart(bytes, "0");
 }
 function trimBytes(data) {
@@ -261,11 +261,11 @@ class Tarball {
         const mtime = (_d = info.mtime) !== null && _d !== void 0 ? _d : new Date();
         const headerInfo = {
             name,
-            mode: pad(mode, USTarFileHeaderFieldLengths.mode),
-            uid: pad((_e = info.uid) !== null && _e !== void 0 ? _e : 0, USTarFileHeaderFieldLengths.uid),
-            gid: pad((_f = info.gid) !== null && _f !== void 0 ? _f : 0, USTarFileHeaderFieldLengths.gid),
-            size: pad(size, USTarFileHeaderFieldLengths.size),
-            mtime: pad(Math.floor((mtime.getTime()) / 1000), USTarFileHeaderFieldLengths.mtime),
+            mode: toFixedOctal(mode, USTarFileHeaderFieldLengths.mode),
+            uid: toFixedOctal((_e = info.uid) !== null && _e !== void 0 ? _e : 0, USTarFileHeaderFieldLengths.uid),
+            gid: toFixedOctal((_f = info.gid) !== null && _f !== void 0 ? _f : 0, USTarFileHeaderFieldLengths.gid),
+            size: toFixedOctal(size, USTarFileHeaderFieldLengths.size),
+            mtime: toFixedOctal(Math.floor((mtime.getTime()) / 1000), USTarFileHeaderFieldLengths.mtime),
             checksum: "        ",
             typeflag: kind in FileTypes ? String(FileTypes[kind]) : "0",
             linkname: kind === "link" || kind === "symlink" ? name : "",
@@ -283,7 +283,7 @@ class Tarball {
         Object.values(headerInfo).forEach((data) => {
             checksum += encoder.encode(data).reduce((p, c) => p + c, 0);
         });
-        headerInfo.checksum = pad(checksum, USTarFileHeaderFieldLengths.checksum);
+        headerInfo.checksum = toFixedOctal(checksum, USTarFileHeaderFieldLengths.checksum);
         const header = formatHeader(headerInfo);
         this[_entries].push({
             name: fileName,
@@ -314,12 +314,16 @@ class Tarball {
     }
     /**
      * Returns a tree view of the entries in the archive.
+     *
+     * NOTE: The entries returned by this function are reordered first by kind
+     * (directories before files), then by names alphabetically.
      */
     treeView() {
         const now = new Date();
-        const entries = [...this];
+        const entries = [...this.entries()];
+        const { children, ...rest } = makeTree("", entries);
         return {
-            ...makeTree("", entries),
+            ...rest,
             size: 0,
             mtime: now,
             mode: 0o755,
@@ -327,6 +331,7 @@ class Tarball {
             gid: 0,
             owner: "",
             group: "",
+            children: children !== null && children !== void 0 ? children : [],
         };
     }
     /**

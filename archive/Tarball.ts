@@ -7,6 +7,9 @@ import { concat as concatStreams, toReadableStream } from "../reader.ts";
 import { stripEnd } from "../string.ts";
 import { Ensured } from "../types.ts";
 
+/**
+ * Information about a file in a tar archive.
+ */
 export interface TarEntry {
     name: string;
     kind: "file"
@@ -75,8 +78,8 @@ enum FileTypes {
     "contiguous-file" = 7,
 }
 
-const USTAR_MAGIC_HEADER = "ustar\x00";
 export const HEADER_LENGTH = 512;
+const USTAR_MAGIC_HEADER = "ustar\x00";
 
 export interface USTarFileHeader {
     name: string;
@@ -98,23 +101,23 @@ export interface USTarFileHeader {
 }
 
 const USTarFileHeaderFieldLengths = { // byte offset
-    name: 100,                // 0
-    mode: 8,                  // 100
-    uid: 8,                   // 108
-    gid: 8,                   // 116
-    size: 12,                 // 124
-    mtime: 12,                // 136
-    checksum: 8,              // 148
-    typeflag: 1,              // 156
-    linkname: 100,            // 157
-    magic: 6,                 // 257
-    version: 2,               // 263
-    uname: 32,                // 265
-    gname: 32,                // 297
-    devmajor: 8,              // 329
-    devminor: 8,              // 337
-    prefix: 155,              // 345
-    padding: 12,              // 500
+    name: 100,                        // 0
+    mode: 8,                          // 100
+    uid: 8,                           // 108
+    gid: 8,                           // 116
+    size: 12,                         // 124
+    mtime: 12,                        // 136
+    checksum: 8,                      // 148
+    typeflag: 1,                      // 156
+    linkname: 100,                    // 157
+    magic: 6,                         // 257
+    version: 2,                       // 263
+    uname: 32,                        // 265
+    gname: 32,                        // 297
+    devmajor: 8,                      // 329
+    devminor: 8,                      // 337
+    prefix: 155,                      // 345
+    padding: 12,                      // 500
 };
 
 // https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html#tag_20_92_13_06
@@ -128,7 +131,7 @@ const FilenameTooLongError = new Exception(
     code: 431
 });
 
-function pad(num: number, bytes: number): string {
+function toFixedOctal(num: number, bytes: number): string {
     return num.toString(8).padStart(bytes, "0");
 }
 
@@ -362,11 +365,11 @@ export default class Tarball {
         const mtime = info.mtime ?? new Date();
         const headerInfo: USTarFileHeader = {
             name,
-            mode: pad(mode, USTarFileHeaderFieldLengths.mode),
-            uid: pad(info.uid ?? 0, USTarFileHeaderFieldLengths.uid),
-            gid: pad(info.gid ?? 0, USTarFileHeaderFieldLengths.gid),
-            size: pad(size, USTarFileHeaderFieldLengths.size),
-            mtime: pad(Math.floor((mtime.getTime()) / 1000), USTarFileHeaderFieldLengths.mtime),
+            mode: toFixedOctal(mode, USTarFileHeaderFieldLengths.mode),
+            uid: toFixedOctal(info.uid ?? 0, USTarFileHeaderFieldLengths.uid),
+            gid: toFixedOctal(info.gid ?? 0, USTarFileHeaderFieldLengths.gid),
+            size: toFixedOctal(size, USTarFileHeaderFieldLengths.size),
+            mtime: toFixedOctal(Math.floor((mtime.getTime()) / 1000), USTarFileHeaderFieldLengths.mtime),
             checksum: "        ",
             typeflag: kind in FileTypes ? String(FileTypes[kind]) : "0",
             linkname: kind === "link" || kind === "symlink" ? name : "",
@@ -386,7 +389,7 @@ export default class Tarball {
             checksum += encoder.encode(data).reduce((p, c): number => p + c, 0);
         });
 
-        headerInfo.checksum = pad(checksum, USTarFileHeaderFieldLengths.checksum);
+        headerInfo.checksum = toFixedOctal(checksum, USTarFileHeaderFieldLengths.checksum);
         const header = formatHeader(headerInfo);
 
         this[_entries].push({
@@ -422,12 +425,17 @@ export default class Tarball {
 
     /**
      * Returns a tree view of the entries in the archive.
+     * 
+     * NOTE: The entries returned by this function are reordered first by kind
+     * (directories before files), then by names alphabetically.
      */
     treeView(): TarTree {
         const now = new Date();
-        const entries = [...this];
+        const entries = [...this.entries()];
+        const { children, ...rest } = makeTree<TarEntry, TarTree>("", entries);
+
         return {
-            ...makeTree<TarEntry, TarTree>("", entries),
+            ...rest,
             size: 0,
             mtime: now,
             mode: 0o755,
@@ -435,6 +443,7 @@ export default class Tarball {
             gid: 0,
             owner: "",
             group: "",
+            children: children ?? [],
         };
     }
 
