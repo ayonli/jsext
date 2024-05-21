@@ -1,7 +1,8 @@
 import { concat } from '../bytes.js';
 import { isDeno, isNodeLike } from '../env.js';
-import { createReadableStream, ensureDir, createWritableStream, chmod, chown, utimes } from '../fs.js';
-import { resolve, join, dirname } from '../path.js';
+import { createReadableStream, ensureDir, createWritableStream, chmod, utimes } from '../fs.js';
+import { makeTree } from '../fs/util.js';
+import { resolve, join, dirname, basename } from '../path.js';
 import { platform } from '../runtime.js';
 import Tarball, { HEADER_LENGTH, parseHeader, createEntry } from './Tarball.js';
 
@@ -32,12 +33,13 @@ async function untar(src, dest = {}, options = {}) {
     if (!_dest) {
         return await Tarball.load(input);
     }
-    const _platform = platform();
+    else if (typeof _dest === "string") {
+        await ensureDir(_dest, options);
+    }
+    const entries = [];
     const reader = input.getReader();
     let lastChunk = new Uint8Array(0);
-    let rawHeader = null;
     let entry = null;
-    let filename = undefined;
     let writer;
     let writtenBytes = 0;
     let paddingSize = 0;
@@ -53,11 +55,13 @@ async function untar(src, dest = {}, options = {}) {
                 paddingSize = 0;
             }
             while (true) {
-                if (!rawHeader) {
+                if (!entry) {
                     if (lastChunk.byteLength >= HEADER_LENGTH) {
                         const _header = parseHeader(lastChunk);
                         if (_header) {
-                            [rawHeader, lastChunk] = _header;
+                            lastChunk = _header[1];
+                            entry = createEntry(_header[0]);
+                            entries.push(entry);
                         }
                         else {
                             lastChunk = new Uint8Array(0);
@@ -68,8 +72,8 @@ async function untar(src, dest = {}, options = {}) {
                         break;
                     }
                 }
-                entry !== null && entry !== void 0 ? entry : (entry = createEntry(rawHeader));
                 const fileSize = entry.size;
+                let filename = undefined;
                 if (writer) {
                     const chunk = lastChunk.subarray(0, fileSize - writtenBytes);
                     await writer.write(chunk);
@@ -79,18 +83,11 @@ async function untar(src, dest = {}, options = {}) {
                 else if (entry.kind === "directory") {
                     if (typeof FileSystemDirectoryHandle === "function" &&
                         _dest instanceof FileSystemDirectoryHandle) {
-                        await ensureDir(entry.relativePath, {
-                            ...options,
-                            root: _dest,
-                            mode: entry.mode,
-                        });
+                        await ensureDir(entry.relativePath, { ...options, root: _dest });
                     }
                     else {
                         filename = join(_dest, entry.relativePath);
-                        await ensureDir(filename, {
-                            ...options,
-                            mode: entry.mode,
-                        });
+                        await ensureDir(filename, options);
                     }
                 }
                 else {
@@ -114,22 +111,9 @@ async function untar(src, dest = {}, options = {}) {
                         lastChunk = lastChunk.subarray(paddingSize);
                         paddingSize = 0;
                     }
-                    if ((isDeno || isNodeLike) && filename && _platform !== "windows") {
-                        if (entry.mode) {
-                            await chmod(filename, entry.mode);
-                        }
-                        if (entry.uid || entry.gid) {
-                            await chown(filename, entry.uid || 0, entry.gid || 0);
-                        }
-                        if (entry.mtime) {
-                            await utimes(filename, entry.mtime, entry.mtime);
-                        }
-                    }
                     writtenBytes = 0;
-                    rawHeader = null;
                     writer === null || writer === void 0 ? void 0 : writer.close();
                     writer = undefined;
-                    filename = undefined;
                     entry = null;
                 }
                 else {
@@ -143,6 +127,31 @@ async function untar(src, dest = {}, options = {}) {
     }
     finally {
         reader.releaseLock();
+    }
+    if ((isDeno || isNodeLike) && typeof _dest === "string" && platform() !== "windows") {
+        const tree = makeTree(basename(_dest), entries);
+        await (async function restoreStats(nodes) {
+            var _a;
+            for (const entry of nodes) {
+                const filename = join(_dest, entry.relativePath);
+                if (entry.kind === "directory" && ((_a = entry.children) === null || _a === void 0 ? void 0 : _a.length)) {
+                    // must restore contents' stats before the directory itself
+                    await restoreStats(entry.children);
+                }
+                // Only restore the permission mode and the last modified time,
+                // don't restore the owner and group, because they may not exist
+                // and may cause an error.
+                //
+                // This behavior is consistent with `tar -xf archive.tar` in
+                // Unix-like systems.
+                if (entry.mode) {
+                    await chmod(filename, entry.mode);
+                }
+                if (entry.mtime) {
+                    await utimes(filename, new Date(), entry.mtime);
+                }
+            }
+        })(tree.children);
     }
 }
 
