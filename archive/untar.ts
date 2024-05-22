@@ -165,7 +165,8 @@ export default async function untar(
         reader.releaseLock();
     }
 
-    if ((isDeno || isNodeLike) && typeof _dest === "string" && platform() !== "windows") {
+    if ((isDeno || isNodeLike) && typeof _dest === "string") {
+        const isWindows = platform() === "windows";
         const tree = makeTree<TarEntry, TarTree>(basename(_dest), entries);
 
         await (async function restoreStats(nodes: TarTree[]) {
@@ -183,7 +184,7 @@ export default async function untar(
                 //
                 // This behavior is consistent with `tar -xf archive.tar` in
                 // Unix-like systems.
-                if (entry.mode) {
+                if (entry.mode && !isWindows) {
                     await chmod(filename, entry.mode);
                 }
                 if (entry.mtime) {

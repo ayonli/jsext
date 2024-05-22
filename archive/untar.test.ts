@@ -122,10 +122,6 @@ describe("archive/untar", () => {
     }));
 
     it("extract tarball files and restore metadata", func(async function (defer) {
-        if (platform() === "windows") {
-            this.skip();
-        }
-
         const dir = "./tmp";
         await mkdir(dir);
         defer(() => remove(dir, { recursive: true }));
@@ -151,11 +147,11 @@ describe("archive/untar", () => {
         await untar(filename, dir);
 
         const stat1 = await stat("./tmp/foo");
-        strictEqual(stat1.mode & 0o777, 0o740);
+        platform() === "windows" || strictEqual(stat1.mode & 0o777, 0o740);
         strictEqual(stat1.mtime?.getTime(), 0);
 
         const stat2 = await stat("./tmp/foo/hello.txt");
-        strictEqual(stat2.mode & 0o777, 0o740);
+        platform() === "windows" || strictEqual(stat2.mode & 0o777, 0o740);
         strictEqual(stat2.mtime?.getTime(), 0);
     }));
 });
