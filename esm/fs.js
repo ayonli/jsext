@@ -1097,7 +1097,8 @@ async function readLink(path) {
  * | 1      | execute only |
  * | 0      | no permission |
  *
- * NOTE: This function is not available in Windows and the browser.
+ * NOTE: This function only works in Unix/Linux server-side environments, in
+ * other environments, it's a no-op.
  */
 async function chmod(path, mode) {
     if (platform() !== "windows") {
@@ -1108,18 +1109,13 @@ async function chmod(path, mode) {
             const fs = await import('fs/promises');
             await rawOp(fs.chmod(path, mode));
         }
-        else {
-            throw new Error("Unsupported runtime");
-        }
-    }
-    else {
-        throw new Error("Unsupported platform");
     }
 }
 /**
  * Changes the owner and group of the specified file or directory.
  *
- * NOTE: This function is not available in Windows and the browser.
+ * NOTE: This function only works in Unix/Linux server-side environments, in
+ * other environments, it's a no-op.
  */
 async function chown(path, uid, gid) {
     if (platform() !== "windows") {
@@ -1130,12 +1126,6 @@ async function chown(path, uid, gid) {
             const fs = await import('fs/promises');
             await rawOp(fs.chown(path, uid, gid));
         }
-        else {
-            throw new Error("Unsupported runtime");
-        }
-    }
-    else {
-        throw new Error("Unsupported platform");
     }
 }
 /**
@@ -1143,7 +1133,7 @@ async function chown(path, uid, gid) {
  * or directory. Given times are either in seconds (UNIX epoch time) or as `Date`
  * objects.
  *
- * NOTE: This function is not available in the browser.
+ * NOTE: This function is a no-op in the browser.
  */
 async function utimes(path, atime, mtime) {
     if (isDeno) {
@@ -1152,9 +1142,6 @@ async function utimes(path, atime, mtime) {
     else if (isNodeLike) {
         const fs = await import('fs/promises');
         await rawOp(fs.utimes(path, atime, mtime));
-    }
-    else {
-        throw new Error("Unsupported runtime");
     }
 }
 /**

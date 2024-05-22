@@ -1298,7 +1298,8 @@ export async function readLink(path: string): Promise<string> {
  * | 1      | execute only |
  * | 0      | no permission |
  * 
- * NOTE: This function is not available in Windows and the browser.
+ * NOTE: This function only works in Unix/Linux server-side environments, in
+ * other environments, it's a no-op.
  */
 export async function chmod(path: string, mode: number): Promise<void> {
     if (platform() !== "windows") {
@@ -1307,18 +1308,15 @@ export async function chmod(path: string, mode: number): Promise<void> {
         } else if (isNodeLike) {
             const fs = await import("fs/promises");
             await rawOp(fs.chmod(path, mode));
-        } else {
-            throw new Error("Unsupported runtime");
         }
-    } else {
-        throw new Error("Unsupported platform");
     }
 }
 
 /**
  * Changes the owner and group of the specified file or directory.
  * 
- * NOTE: This function is not available in Windows and the browser.
+ * NOTE: This function only works in Unix/Linux server-side environments, in
+ * other environments, it's a no-op.
  */
 export async function chown(path: string, uid: number, gid: number): Promise<void> {
     if (platform() !== "windows") {
@@ -1327,11 +1325,7 @@ export async function chown(path: string, uid: number, gid: number): Promise<voi
         } else if (isNodeLike) {
             const fs = await import("fs/promises");
             await rawOp(fs.chown(path, uid, gid));
-        } else {
-            throw new Error("Unsupported runtime");
         }
-    } else {
-        throw new Error("Unsupported platform");
     }
 }
 
@@ -1340,7 +1334,7 @@ export async function chown(path: string, uid: number, gid: number): Promise<voi
  * or directory. Given times are either in seconds (UNIX epoch time) or as `Date`
  * objects.
  * 
- * NOTE: This function is not available in the browser.
+ * NOTE: This function is a no-op in the browser.
  */
 export async function utimes(
     path: string,
@@ -1352,8 +1346,6 @@ export async function utimes(
     } else if (isNodeLike) {
         const fs = await import("fs/promises");
         await rawOp(fs.utimes(path, atime, mtime));
-    } else {
-        throw new Error("Unsupported runtime");
     }
 }
 
