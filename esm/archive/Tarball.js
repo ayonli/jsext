@@ -87,7 +87,7 @@ function parseHeader(header) {
         throw new Error("The archive is corrupted");
     }
     if (!data.magic.startsWith("ustar")) {
-        throw new Error("Unsupported archive format: " + data.magic);
+        throw new TypeError("Unsupported archive format: " + data.magic);
     }
     return [data, header.subarray(offset)];
 }

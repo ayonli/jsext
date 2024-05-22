@@ -231,6 +231,8 @@ export function platform(): WellknownPlatforms | "unknown" {
     return "unknown";
 }
 
+const ENV: { [x: string]: string; } = {};
+
 /** Returns all environment variables in an object. */
 export function env(): { [name: string]: string; };
 /** Returns a specific environment variable. */
@@ -296,8 +298,16 @@ export function env(
                 // @ts-ignore
                 (globalThis["__env__"] ??= {})[name] = String(value);
             }
+        } else if (typeof name === "object" && name !== null) {
+            for (const [key, val] of Object.entries(name)) {
+                ENV[key] = String(val);
+            }
+        } else if (name === undefined) {
+            return ENV;
+        } else if (value === undefined) {
+            return ENV[name];
         } else {
-            throw new Error("Unsupported runtime");
+            env[name] = String(value);
         }
     }
 }

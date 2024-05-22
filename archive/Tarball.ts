@@ -186,7 +186,7 @@ export function parseHeader(header: Uint8Array): [USTarFileHeader, leftChunk: Ui
     }
 
     if (!data.magic.startsWith("ustar")) {
-        throw new Error("Unsupported archive format: " + data.magic);
+        throw new TypeError("Unsupported archive format: " + data.magic);
     }
 
     return [data, header.subarray(offset)];

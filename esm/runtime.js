@@ -188,6 +188,7 @@ function platform() {
     }
     return "unknown";
 }
+const ENV = {};
 function env(name = undefined, value = undefined) {
     var _a, _b;
     if (isDeno) {
@@ -246,8 +247,19 @@ function env(name = undefined, value = undefined) {
                 ((_b = globalThis["__env__"]) !== null && _b !== void 0 ? _b : (globalThis["__env__"] = {}))[name] = String(value);
             }
         }
+        else if (typeof name === "object" && name !== null) {
+            for (const [key, val] of Object.entries(name)) {
+                ENV[key] = String(val);
+            }
+        }
+        else if (name === undefined) {
+            return ENV;
+        }
+        else if (value === undefined) {
+            return ENV[name];
+        }
         else {
-            throw new Error("Unsupported runtime");
+            env[name] = String(value);
         }
     }
 }

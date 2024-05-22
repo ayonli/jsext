@@ -49,36 +49,33 @@ export async function pickFile(options: {
     /** The default name of the file to save when `forSave` is set. */
     defaultName?: string | undefined;
 } = {}): Promise<string | FileSystemFileHandle | null> {
-    const _platform = platform();
-
-    // @ts-ignore for history compatibility
-    if (options["save"]) {
-        options.forSave = true;
-    }
-
     if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
         return await browserPickFile(options.type, {
             forSave: options.forSave,
             defaultName: options.defaultName,
         });
-    } else if (_platform === "darwin") {
-        return await macPickFile(options.title, {
-            type: options.type,
-            forSave: options?.forSave,
-            defaultName: options?.defaultName,
-        });
-    } else if (_platform === "windows" || isWSL()) {
-        return await windowsPickFile(options.title, {
-            type: options.type,
-            forSave: options?.forSave,
-            defaultName: options?.defaultName,
-        });
-    } else if (_platform === "linux" || await which("zenity")) {
-        return await linuxPickFile(options.title, {
-            type: options.type,
-            forSave: options?.forSave,
-            defaultName: options?.defaultName,
-        });
+    } else if (isDeno || isNodeLike) {
+        const _platform = platform();
+
+        if (_platform === "darwin") {
+            return await macPickFile(options.title, {
+                type: options.type,
+                forSave: options?.forSave,
+                defaultName: options?.defaultName,
+            });
+        } else if (_platform === "windows" || isWSL()) {
+            return await windowsPickFile(options.title, {
+                type: options.type,
+                forSave: options?.forSave,
+                defaultName: options?.defaultName,
+            });
+        } else if (_platform === "linux" || await which("zenity")) {
+            return await linuxPickFile(options.title, {
+                type: options.type,
+                forSave: options?.forSave,
+                defaultName: options?.defaultName,
+            });
+        }
     }
 
     throw new Error("Unsupported platform");
@@ -99,16 +96,18 @@ export async function pickFiles(options: {
      */
     type?: string;
 } = {}): Promise<string[] | FileSystemFileHandle[]> {
-    const _platform = platform();
-
     if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
         return await browserPickFiles(options.type);
-    } else if (_platform === "darwin") {
-        return await macPickFiles(options.title, options.type);
-    } else if (_platform === "windows" || isWSL()) {
-        return await windowsPickFiles(options.title, options.type);
-    } else if (_platform === "linux" || await which("zenity")) {
-        return await linuxPickFiles(options.title, options.type);
+    } else if (isDeno || isNodeLike) {
+        const _platform = platform();
+
+        if (_platform === "darwin") {
+            return await macPickFiles(options.title, options.type);
+        } else if (_platform === "windows" || isWSL()) {
+            return await windowsPickFiles(options.title, options.type);
+        } else if (_platform === "linux" || await which("zenity")) {
+            return await linuxPickFiles(options.title, options.type);
+        }
     }
 
     throw new Error("Unsupported platform");
@@ -124,16 +123,18 @@ export async function pickDirectory(options: {
     /** Custom the dialog's title. */
     title?: string;
 } = {}): Promise<string | FileSystemDirectoryHandle | null> {
-    const _platform = platform();
-
     if (typeof (globalThis as any)["showDirectoryPicker"] === "function") {
         return await browserPickFolder();
-    } else if (_platform === "darwin") {
-        return await macPickFolder(options.title);
-    } else if (_platform === "windows" || isWSL()) {
-        return await windowsPickFolder(options.title);
-    } else if (_platform === "linux" || await which("zenity")) {
-        return await linuxPickFolder(options.title);
+    } else if (isDeno || isNodeLike) {
+        const _platform = platform();
+
+        if (_platform === "darwin") {
+            return await macPickFolder(options.title);
+        } else if (_platform === "windows" || isWSL()) {
+            return await windowsPickFolder(options.title);
+        } else if (_platform === "linux" || await which("zenity")) {
+            return await linuxPickFolder(options.title);
+        }
     }
 
     throw new Error("Unsupported platform");
