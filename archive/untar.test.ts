@@ -8,6 +8,7 @@ import untar from "./untar.ts";
 import { readAsArray } from "../reader.ts";
 import { join } from "../path.ts";
 import { orderBy } from "../array.ts";
+import { platform } from "../runtime.ts";
 
 describe("archive/untar", () => {
     if (typeof ReadableStream !== "function") {
@@ -120,7 +121,11 @@ describe("archive/untar", () => {
         ] as Partial<DirEntry>[]);
     }));
 
-    it("extract tarball files and restore metadata", func(async (defer) => {
+    it("extract tarball files and restore metadata", func(async function (defer) {
+        if (platform() === "windows") {
+            this.skip();
+        }
+
         const dir = "./tmp";
         await mkdir(dir);
         defer(() => remove(dir, { recursive: true }));
