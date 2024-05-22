@@ -82,7 +82,11 @@ describe("archive/Tarball", () => {
         }
     });
 
-    it("append File instance", () => {
+    it("append File instance", function () {
+        if (typeof File !== "function") {
+            this.skip();
+        }
+
         const tarball = new Tarball();
         const file1 = new File(["Hello, World!"], "hello.txt", { type: "text/plain" });
         const file2 = new File(["Hello, World!"], "bar.txt", { type: "text/plain" });
