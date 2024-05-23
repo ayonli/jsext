@@ -2,7 +2,7 @@ import bytes, { concat as concat$1 } from '../bytes.js';
 import { omit } from '../object.js';
 import Exception from '../error/Exception.js';
 import { makeTree } from '../fs/util.js';
-import { dirname, basename } from '../path.js';
+import { basename, dirname } from '../path.js';
 import { toReadableStream, concat } from '../reader.js';
 import { stripEnd } from '../string.js';
 
@@ -164,38 +164,8 @@ class Tarball {
             throw new TypeError("ReadableStream is not supported in this environment");
         }
     }
-    append(data, info = {}) {
+    constructEntry(relativePath, data, info) {
         var _b, _c, _d, _e, _f;
-        if (data === null) {
-            if (info.kind === "directory") {
-                data = new Uint8Array(0);
-            }
-            else {
-                throw new TypeError("data must be provided for files");
-            }
-        }
-        let relativePath = info.relativePath;
-        if (!relativePath) {
-            if (typeof File === "function" && data instanceof File) {
-                relativePath = (data.webkitRelativePath || data.name);
-            }
-            else {
-                throw new TypeError("info.relativePath must be provided");
-            }
-        }
-        const dir = dirname(relativePath).replace(/\\/g, "/");
-        const fileName = info.name
-            || (typeof File === "function" && data instanceof File
-                ? data.name
-                : basename(relativePath));
-        // If the input path has parent directories that are not in the archive,
-        // we need to add them first.
-        if (dir && dir !== "." && !this[_entries].some((entry) => entry.relativePath === dir)) {
-            this.append(null, {
-                kind: "directory",
-                relativePath: dir,
-            });
-        }
         // UStar format has a limitation of file name length. Specifically:
         // 
         // 1. File names can contain at most 255 bytes.
@@ -292,7 +262,11 @@ class Tarball {
         });
         headerInfo.checksum = toFixedOctal(checksum, USTarFileHeaderFieldLengths.checksum);
         const header = formatHeader(headerInfo);
-        this[_entries].push({
+        const fileName = info.name
+            || (typeof File === "function" && data instanceof File
+                ? data.name
+                : basename(relativePath));
+        return {
             name: fileName,
             kind,
             relativePath,
@@ -305,7 +279,95 @@ class Tarball {
             group: info.group || "",
             header,
             body,
-        });
+        };
+    }
+    append(data, info = {}) {
+        if (data === null) {
+            if (info.kind === "directory") {
+                data = new Uint8Array(0);
+            }
+            else {
+                throw new TypeError("data must be provided for files");
+            }
+        }
+        let relativePath = info.relativePath;
+        if (!relativePath) {
+            if (typeof File === "function" && data instanceof File) {
+                relativePath = (data.webkitRelativePath || data.name);
+            }
+            else {
+                throw new TypeError("info.relativePath must be provided");
+            }
+        }
+        const dir = dirname(relativePath).replace(/\\/g, "/");
+        // If the input path has parent directories that are not in the archive,
+        // we need to add them first.
+        if (dir && dir !== "." && !this[_entries].some((entry) => entry.relativePath === dir)) {
+            this.append(null, {
+                kind: "directory",
+                relativePath: dir,
+            });
+        }
+        const entry = this.constructEntry(relativePath, data, info);
+        this[_entries].push(entry);
+    }
+    retrieve(relativePath, withData = false) {
+        const entry = this[_entries].find((entry) => entry.relativePath === relativePath);
+        if (!entry) {
+            return null;
+        }
+        else if (withData) {
+            return entry;
+        }
+        else {
+            return omit(entry, ["header", "body"]);
+        }
+    }
+    /**
+     * Removes an entry from the archive by its relative path.
+     *
+     * This function returns `true` if the entry is successfully removed, or `false` if the entry
+     * does not exist.
+     */
+    remove(relativePath) {
+        const index = this[_entries].findIndex((entry) => entry.relativePath === relativePath);
+        if (index === -1) {
+            return false;
+        }
+        else {
+            this[_entries].splice(index, 1);
+            return true;
+        }
+    }
+    /**
+     * Replaces an entry in the archive with new data.
+     *
+     * This function returns `true` if the entry is successfully replaced, or `false` if the entry
+     * does not exist or the entry kind of the new data is incompatible with the old one.
+     */
+    replace(relativePath, data, info = {}) {
+        const index = this[_entries].findIndex((entry) => entry.relativePath === relativePath);
+        const oldEntry = index === -1 ? undefined : this[_entries][index];
+        if (!oldEntry) {
+            return false;
+        }
+        else if (oldEntry.kind === "directory" && info.kind !== "directory") {
+            return false;
+        }
+        else if (oldEntry.kind !== "directory" && info.kind === "directory") {
+            return false;
+        }
+        else if (data === null) {
+            if (info.kind === "directory") {
+                data = new Uint8Array(0);
+            }
+            else {
+                throw new TypeError("data must be provided for files");
+            }
+        }
+        const newEntry = this.constructEntry(relativePath, data, info);
+        this[_entries][index] = newEntry;
+        return true;
     }
     [(_a = _entries, Symbol.iterator)]() {
         return this.entries();

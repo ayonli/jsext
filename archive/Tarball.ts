@@ -66,7 +66,7 @@ export interface TarTree extends TarEntry {
     children?: TarTree[];
 }
 
-interface TarEntryWithData extends TarEntry {
+export interface TarEntryWithData extends TarEntry {
     header: Uint8Array;
     body: ReadableStream<Uint8Array>;
 }
@@ -269,52 +269,11 @@ export default class Tarball {
         }
     }
 
-    /**
-     * Appends a file to the archive.
-     * @param data The file data, can be `null` if the file info represents a directory.
-     */
-    append(data: File): void;
-    append(
+    private constructEntry(
+        relativePath: string,
         data: string | ArrayBuffer | Uint8Array | DataView | Blob | ReadableStream<Uint8Array> | null,
-        info: Ensured<Partial<TarEntry>, "relativePath">
-    ): void;
-    append(
-        data: string | ArrayBuffer | Uint8Array | DataView | Blob | ReadableStream<Uint8Array> | null,
-        info: Partial<TarEntry> = {}
-    ): void {
-        if (data === null) {
-            if (info.kind === "directory") {
-                data = new Uint8Array(0);
-            } else {
-                throw new TypeError("data must be provided for files");
-            }
-        }
-
-        let relativePath = info.relativePath;
-
-        if (!relativePath) {
-            if (typeof File === "function" && data instanceof File) {
-                relativePath = (data.webkitRelativePath || data.name);
-            } else {
-                throw new TypeError("info.relativePath must be provided");
-            }
-        }
-
-        const dir = dirname(relativePath).replace(/\\/g, "/");
-        const fileName = info.name
-            || (typeof File === "function" && data instanceof File
-                ? data.name
-                : basename(relativePath));
-
-        // If the input path has parent directories that are not in the archive,
-        // we need to add them first.
-        if (dir && dir !== "." && !this[_entries].some((entry) => entry.relativePath === dir)) {
-            this.append(null, {
-                kind: "directory",
-                relativePath: dir,
-            });
-        }
-
+        info: Partial<Omit<TarEntry, "relativePath">>,
+    ): TarEntryWithData {
         // UStar format has a limitation of file name length. Specifically:
         // 
         // 1. File names can contain at most 255 bytes.
@@ -414,8 +373,12 @@ export default class Tarball {
 
         headerInfo.checksum = toFixedOctal(checksum, USTarFileHeaderFieldLengths.checksum);
         const header = formatHeader(headerInfo);
+        const fileName = info.name
+            || (typeof File === "function" && data instanceof File
+                ? data.name
+                : basename(relativePath));
 
-        this[_entries].push({
+        return {
             name: fileName,
             kind,
             relativePath,
@@ -428,7 +391,121 @@ export default class Tarball {
             group: info.group || "",
             header,
             body,
-        });
+        };
+    }
+
+    /**
+     * Appends a file to the archive.
+     * @param data The file data, can be `null` if the file info represents a directory.
+     */
+    append(data: File): void;
+    append(
+        data: string | ArrayBuffer | Uint8Array | DataView | Blob | ReadableStream<Uint8Array> | null,
+        info: Ensured<Partial<TarEntry>, "relativePath">
+    ): void;
+    append(
+        data: string | ArrayBuffer | Uint8Array | DataView | Blob | ReadableStream<Uint8Array> | null,
+        info: Partial<TarEntry> = {}
+    ): void {
+        if (data === null) {
+            if (info.kind === "directory") {
+                data = new Uint8Array(0);
+            } else {
+                throw new TypeError("data must be provided for files");
+            }
+        }
+
+        let relativePath = info.relativePath;
+
+        if (!relativePath) {
+            if (typeof File === "function" && data instanceof File) {
+                relativePath = (data.webkitRelativePath || data.name);
+            } else {
+                throw new TypeError("info.relativePath must be provided");
+            }
+        }
+
+        const dir = dirname(relativePath).replace(/\\/g, "/");
+
+        // If the input path has parent directories that are not in the archive,
+        // we need to add them first.
+        if (dir && dir !== "." && !this[_entries].some((entry) => entry.relativePath === dir)) {
+            this.append(null, {
+                kind: "directory",
+                relativePath: dir,
+            });
+        }
+
+        const entry = this.constructEntry(relativePath, data, info);
+
+        this[_entries].push(entry);
+    }
+
+    /**
+     * Retrieves an entry in the archive by its relative path.
+     */
+    retrieve(relativePath: string): TarEntry | null;
+    retrieve(relativePath: string, withData: true): TarEntryWithData | null;
+    retrieve(relativePath: string, withData = false): TarEntry | TarEntryWithData | null {
+        const entry = this[_entries].find((entry) => entry.relativePath === relativePath);
+
+        if (!entry) {
+            return null;
+        } else if (withData) {
+            return entry;
+        } else {
+            return omit(entry, ["header", "body"]);
+        }
+    }
+
+    /**
+     * Removes an entry from the archive by its relative path.
+     * 
+     * This function returns `true` if the entry is successfully removed, or `false` if the entry
+     * does not exist.
+     */
+    remove(relativePath: string): boolean {
+        const index = this[_entries].findIndex((entry) => entry.relativePath === relativePath);
+
+        if (index === -1) {
+            return false;
+        } else {
+            this[_entries].splice(index, 1);
+            return true;
+        }
+    }
+
+    /**
+     * Replaces an entry in the archive with new data.
+     * 
+     * This function returns `true` if the entry is successfully replaced, or `false` if the entry
+     * does not exist or the entry kind of the new data is incompatible with the old one.
+     */
+    replace(
+        relativePath: string,
+        data: string | ArrayBuffer | Uint8Array | DataView | Blob | File | ReadableStream<Uint8Array> | null,
+        info: Partial<Omit<TarEntry, "relativePath">> = {}
+    ): boolean {
+        const index = this[_entries].findIndex((entry) => entry.relativePath === relativePath);
+        const oldEntry = index === -1 ? undefined : this[_entries][index]!;
+
+        if (!oldEntry) {
+            return false;
+        } else if (oldEntry.kind === "directory" && info.kind !== "directory") {
+            return false;
+        } else if (oldEntry.kind !== "directory" && info.kind === "directory") {
+            return false;
+        } else if (data === null) {
+            if (info.kind === "directory") {
+                data = new Uint8Array(0);
+            } else {
+                throw new TypeError("data must be provided for files");
+            }
+        }
+
+        const newEntry = this.constructEntry(relativePath, data, info);
+        this[_entries][index] = newEntry;
+        return true;
     }
 
     [Symbol.iterator](): IterableIterator<TarEntry> {

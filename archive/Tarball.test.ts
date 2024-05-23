@@ -262,4 +262,74 @@ describe("archive/Tarball", () => {
             ],
         } as Omit<TarTree, "mtime">);
     });
+
+    it("retrieve", () => {
+        const tarball = new Tarball();
+        const now = new Date();
+
+        tarball.append(null, { kind: "directory", relativePath: "foo", mtime: now });
+        tarball.append("Hello, World!", { kind: "file", relativePath: "foo/hello.txt", mtime: now });
+
+        const entry1 = tarball.retrieve("foo/hello.txt");
+        const entry2 = tarball.retrieve("foo/hello.txt", true);
+        const entry3 = tarball.retrieve("bar/hello.txt");
+
+        deepStrictEqual(entry1, {
+            name: "hello.txt",
+            kind: "file",
+            relativePath: "foo/hello.txt",
+            size: 13,
+            mtime: now,
+            mode: 0o666,
+            uid: 0,
+            gid: 0,
+            owner: "",
+            group: "",
+        } as TarEntry);
+        ok(!!entry2);
+        deepStrictEqual(omit(entry2, ["header", "body"]), entry1);
+        ok(entry2.header instanceof Uint8Array);
+        ok(entry2.body instanceof ReadableStream);
+        strictEqual(entry3, null);
+    });
+
+    it("remove", () => {
+        const tarball = new Tarball();
+        const now = new Date();
+
+        tarball.append(null, { kind: "directory", relativePath: "foo", mtime: now });
+        tarball.append("Hello, World!", { kind: "file", relativePath: "foo/hello.txt", mtime: now });
+
+        const res1 = tarball.remove("foo/hello.txt");
+        strictEqual(res1, true);
+
+        const entry = tarball.retrieve("foo/hello.txt");
+        strictEqual(entry, null);
+
+        const res2 = tarball.remove("foo/bar.txt");
+        strictEqual(res2, false);
+    });
+
+    it("replace", async () => {
+        const tarball = new Tarball();
+        const now = new Date();
+
+        tarball.append(null, { kind: "directory", relativePath: "foo", mtime: now });
+        tarball.append("Hello, World!", { kind: "file", relativePath: "foo/hello.txt", mtime: now });
+
+        const res1 = tarball.replace("foo/hello.txt", "Hello, Deno!");
+        strictEqual(res1, true);
+
+        const entry = tarball.retrieve("foo/hello.txt", true)!;
+        strictEqual(await readAsText(entry.body), "Hello, Deno!");
+
+        const res2 = tarball.replace("foo/bar.txt", "Hello, Deno!");
+        strictEqual(res2, false);
+
+        const res3 = tarball.replace("foo/hello.txt", null, { kind: "directory" });
+        strictEqual(res3, false);
+
+        const res4 = tarball.replace("foo", "Hello, World!");
+        strictEqual(res4, false);
+    });
 });
