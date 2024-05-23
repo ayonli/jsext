@@ -13,6 +13,7 @@
         {
             "imports": {
                 "@ayonli/jsext": "../esm/index.js",
+                "@ayonli/archive": "../esm/archive.js",
                 "@ayonli/jsext/array": "../esm/array.js",
                 "@ayonli/jsext/async": "../esm/async.js",
                 "@ayonli/jsext/bytes": "../esm/bytes.js",
@@ -53,6 +54,7 @@
         }
     </script>
     <script type="module">
+        import { Tarball } from "@ayonli/archive";
         import { sleep } from "@ayonli/jsext/async";
         import {
             alert,
@@ -155,8 +157,9 @@
                 const file = new File([buf], 'index.html', { type });
 
                 if (file) {
-                    console.log(file);
-                    await saveFile(file, { name: file.name });
+                    const tarball = new Tarball();
+                    tarball.append(file);
+                    await saveFile(tarball.stream({ gzip: true }), { name: "archive.tar.gz" });
                 }
             });
 
