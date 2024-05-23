@@ -12,7 +12,7 @@ import { getExtensions } from '../filetype.js';
 import { readDir, readFileAsFile, writeFile } from '../fs.js';
 import { fixFileType } from '../fs/util.js';
 import { as } from '../object.js';
-import { join } from '../path.js';
+import { join, basename } from '../path.js';
 import { isWSL } from '../cli/common.js';
 
 /**
@@ -295,6 +295,11 @@ async function saveFile(file, options = {}) {
  * object, it takes a URL and downloads the file from the URL.
  */
 async function downloadFile(url, options = {}) {
+    let name = options.name;
+    if (!name) {
+        const src = typeof url === "object" ? url.href : url;
+        name = basename(src);
+    }
     if (typeof fetch === "function") {
         const res = await fetch(url);
         if (!res.ok) {

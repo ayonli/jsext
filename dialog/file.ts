@@ -28,7 +28,7 @@ import { getExtensions } from "../filetype.ts";
 import { readDir, readFileAsFile, writeFile } from "../fs.ts";
 import { fixFileType } from "../fs/util.ts";
 import { as } from "../object.ts";
-import { join } from "../path.ts";
+import { basename, join } from "../path.ts";
 
 /**
  * Open the file picker dialog and pick a file, this function returns the file's
@@ -395,6 +395,13 @@ export async function downloadFile(url: string | URL, options: {
     name?: string;
     type?: string;
 } = {}): Promise<void> {
+    let name = options.name;
+
+    if (!name) {
+        const src = typeof url === "object" ? url.href : url;
+        name = basename(src);
+    }
+
     if (typeof fetch === "function") {
         const res = await fetch(url);
 
