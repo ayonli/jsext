@@ -25,13 +25,19 @@ function htmlAcceptToFileFilters(accept: string): {
     return groups.map(group => {
         if (Array.isArray(group)) {
             return group.map(type => {
-                return {
-                    description: "",
-                    accept: {
-                        [type]: getExtensions(type),
-                    },
-                };
-            }).flat();
+                const extensions = getExtensions(type);
+
+                if (!extensions.length) {
+                    return undefined;
+                } else {
+                    return {
+                        description: "",
+                        accept: {
+                            [type]: getExtensions(type),
+                        },
+                    };
+                }
+            });
         } else if (group === "*/*") {
             return {
                 description: "All Files",
@@ -47,31 +53,31 @@ function htmlAcceptToFileFilters(accept: string): {
             } else if (group === "video/*") {
                 return {
                     description: "Video Files",
-                    accept: extensions,
+                    accept: { [group]: extensions },
                 };
             } else if (group === "audio/*") {
                 return {
                     description: "Audio Files",
-                    accept: extensions,
+                    accept: { [group]: extensions },
                 };
             } else if (group === "image/*") {
                 return {
                     description: "Image Files",
-                    accept: extensions,
+                    accept: { [group]: extensions },
                 };
             } else if (group === "text/*") {
                 return {
                     description: "Text Files",
-                    accept: extensions,
+                    accept: { [group]: extensions },
                 };
             } else {
                 return {
                     description: "",
-                    accept: extensions,
+                    accept: { [group]: extensions },
                 };
             }
         }
-    }).filter(Boolean) as {
+    }).flat().filter(item => !!item) as {
         description: string;
         accept: {
             [mime: string]: string[];

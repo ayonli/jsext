@@ -128,14 +128,14 @@
 
             const openFileBtn = document.getElementById('open-file');
             openFileBtn.addEventListener('click', async () => {
-                const file = await openFile();
+                const file = await openFile({ type: "image/*" });
                 console.log(file);
                 await alert("You selected: " + file?.name);
             });
 
             const openFilesBtn = document.getElementById('open-files');
             openFilesBtn.addEventListener('click', async () => {
-                const files = await openFile({ multiple: true });
+                const files = await openFile({ type: "image/*", multiple: true });
                 console.log(files);
                 await alert("You selected: " + files.map((file) => file.name).join(', '));
             });
