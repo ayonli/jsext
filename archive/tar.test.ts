@@ -63,7 +63,11 @@ describe("archive/tar", () => {
         ] as Partial<TarEntry>[]);
     }));
 
-    it("create tarball file with gzip", func(async (defer) => {
+    it("create tarball file with gzip", func(async function (defer) {
+        if (typeof CompressionStream === "undefined") {
+            this.skip();
+        }
+
         await tar(dir, filename, { gzip: true });
         defer(() => remove(filename));
 

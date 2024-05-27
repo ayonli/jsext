@@ -20,7 +20,7 @@ describe("archive/untar", () => {
     const filename2 = "./archive.tar.gz";
 
     before(() => tar(dir, filename1));
-    before(() => tar(dir, filename2, { gzip: true }));
+    before(() => tar(dir, filename2, { gzip: typeof CompressionStream === "function" }));
 
     after(() => remove(filename1));
     after(() => remove(filename2));
@@ -47,7 +47,11 @@ describe("archive/untar", () => {
         ] as Partial<TarEntry>[]);
     });
 
-    it("load tarball file with gzip", async () => {
+    it("load tarball file with gzip", async function () {
+        if (typeof CompressionStream !== "function") {
+            this.skip();
+        }
+
         const tarball = await untar(filename2, { gzip: true });
         const entries = [...tarball].map(entry => pick(entry, ["name", "kind", "relativePath"]));
         deepStrictEqual(orderBy(entries, e => e.relativePath), [
@@ -95,7 +99,11 @@ describe("archive/untar", () => {
         ] as Partial<DirEntry>[]);
     }));
 
-    it("extract tarball files with gzip", func(async (defer) => {
+    it("extract tarball files with gzip", func(async function (defer) {
+        if (typeof CompressionStream !== "function") {
+            this.skip();
+        }
+
         const dir = "./tmp";
         await untar(filename2, dir, { gzip: true });
         defer(() => remove(dir, { recursive: true }));

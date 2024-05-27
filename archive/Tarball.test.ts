@@ -22,7 +22,11 @@ describe("archive/Tarball", () => {
     const tarball2 = new Tarball();
 
     after(() => remove(filename1));
-    after(() => remove(filename2));
+    after(async () => {
+        try {
+            await remove(filename2);
+        } catch { }
+    });
 
     it("append", async () => {
         for (const file of files) {
@@ -156,7 +160,11 @@ describe("archive/Tarball", () => {
         ok(await exists(filename1));
     });
 
-    it("stream with gzip", async () => {
+    it("stream with gzip", async function () {
+        if (typeof CompressionStream === "undefined") {
+            this.skip();
+        }
+
         ok(!(await exists(filename2)));
         const output = createWritableStream(filename2);
         await tarball2.stream({ gzip: true }).pipeTo(output);
@@ -193,7 +201,11 @@ describe("archive/Tarball", () => {
         }
     });
 
-    it("load with gzip", async () => {
+    it("load with gzip", async function () {
+        if (typeof CompressionStream === "undefined") {
+            this.skip();
+        }
+
         const input = createReadableStream(filename2);
         const tarball = await Tarball.load(input, { gzip: true });
 
