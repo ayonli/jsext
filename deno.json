@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.9.12",
+    "version": "0.9.13",
     "exports": {
         ".": "./index.ts",
         "./archive": "./archive.ts",

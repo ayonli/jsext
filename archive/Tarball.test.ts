@@ -3,6 +3,7 @@ import { stat, createReadableStream, createWritableStream, readFileAsText, remov
 import Tarball, { type TarEntry, _entries, TarTree } from "../archive/Tarball.ts";
 import { readAsText } from "../reader.ts";
 import { omit } from "../object.ts";
+import { platform } from "../runtime.ts";
 
 describe("archive/Tarball", () => {
     if (typeof ReadableStream !== "function") {
@@ -139,8 +140,13 @@ describe("archive/Tarball", () => {
     });
 
     it("size", () => {
-        strictEqual(tarball1.size, 64512);
-        strictEqual(tarball2.size, 64512);
+        if (platform() === "windows") {
+            strictEqual(tarball1.size, 66048);
+            strictEqual(tarball2.size, 66048);
+        } else {
+            strictEqual(tarball1.size, 64512);
+            strictEqual(tarball2.size, 64512);
+        }
     });
 
     it("stream", async () => {
