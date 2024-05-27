@@ -634,7 +634,7 @@ async function writeFile(target, data, options = {}) {
             else if (data instanceof DataView) {
                 _data = bytes(data); // Bun may not support writing DataView
             }
-            else if (typeof data === "string" || "buffer" in data) {
+            else if (typeof data === "string" || ArrayBuffer.isView(data)) {
                 _data = data;
             }
             else {

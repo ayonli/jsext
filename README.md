@@ -89,6 +89,8 @@ categories:
   types in different fashions.
 - [fs](https://jsr.io/@ayonli/jsext/doc/fs/~) (Experimental) Universal file
   system APIs for both server and browser applications.
+- [hash](https://jsr.io/@ayonli/jsext/doc/hash/~) Simplified hash functions for
+  various data types.
 - [json](https://jsr.io/@ayonli/jsext/doc/json/~) Functions for parsing JSONs to
   specific structures.
 - [math](https://jsr.io/@ayonli/jsext/doc/math/~) Functions for mathematical

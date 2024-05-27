@@ -742,7 +742,7 @@ export async function writeFile(
                 _data = new Uint8Array(data);
             } else if (data instanceof DataView) {
                 _data = bytes(data); // Bun may not support writing DataView
-            } else if (typeof data === "string" || "buffer" in data) {
+            } else if (typeof data === "string" || ArrayBuffer.isView(data)) {
                 _data = data;
             } else {
                 throw new TypeError("Unsupported data type");

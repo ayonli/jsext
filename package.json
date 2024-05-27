@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.9.13",
+    "version": "0.9.14",
     "description": "Additional functions for JavaScript to build strong applications.",
     "exports": {
         ".": {
@@ -162,6 +162,13 @@
             "require": "./cjs/func.js",
             "import": "./esm/func.js",
             "default": "./func.ts"
+        },
+        "./hash": {
+            "types": "./types/hash.d.ts",
+            "bun": "./hash.ts",
+            "require": "./cjs/hash.js",
+            "import": "./esm/hash.js",
+            "default": "./hash.ts"
         },
         "./json": {
             "types": "./types/json.d.ts",

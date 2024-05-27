@@ -11,6 +11,7 @@ import * as dialog from "./dialog.ts";
 import * as error from "./error.ts";
 import * as filetype from "./filetype.ts";
 import * as fs from "./fs.ts";
+import * as hash from "./hash.ts";
 import * as json from "./json.ts";
 import * as math from "./math.ts";
 import * as module from "./module.ts";
@@ -45,6 +46,7 @@ export default {
     error,
     filetype,
     fs,
+    hash,
     json,
     math,
     module,
