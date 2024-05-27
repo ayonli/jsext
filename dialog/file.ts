@@ -409,7 +409,7 @@ export async function downloadFile(url: string | URL, options: {
             throw new Error(`Failed to download: ${url}`);
         }
 
-        return await saveFile(res.body!, options);
+        return await saveFile(res.body!, { ...options, name });
     } else if (isNodeLike) {
         const _url = typeof url === "object" ? url.href : url;
         const task = asyncTask<void>();
@@ -424,7 +424,7 @@ export async function downloadFile(url: string | URL, options: {
                     chunks.push(chunk);
                 }).once("end", () => {
                     const buf = concat(...chunks);
-                    task.resolve(saveFile(buf.buffer, options));
+                    task.resolve(saveFile(buf.buffer, { ...options, name }));
                 }).once("error", err => {
                     task.reject(err);
                 });

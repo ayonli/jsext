@@ -305,7 +305,7 @@ async function downloadFile(url, options = {}) {
         if (!res.ok) {
             throw new Error(`Failed to download: ${url}`);
         }
-        return await saveFile(res.body, options);
+        return await saveFile(res.body, { ...options, name });
     }
     else if (isNodeLike) {
         const _url = typeof url === "object" ? url.href : url;
@@ -321,7 +321,7 @@ async function downloadFile(url, options = {}) {
                     chunks.push(chunk);
                 }).once("end", () => {
                     const buf = concat(...chunks);
-                    task.resolve(saveFile(buf.buffer, options));
+                    task.resolve(saveFile(buf.buffer, { ...options, name }));
                 }).once("error", err => {
                     task.reject(err);
                 });
