@@ -4,10 +4,9 @@ import Tarball from './Tarball.js';
 
 async function tar(src, dest = {}, options = {}) {
     var _a, _b;
-    src = typeof src === "string" ? resolve(src) : src;
     let _dest = undefined;
     if (typeof dest === "string") {
-        _dest = resolve(dest);
+        _dest = options.root ? dest : resolve(dest);
     }
     else if (typeof dest === "object") {
         if (typeof FileSystemFileHandle === "function" && dest instanceof FileSystemFileHandle) {
@@ -17,6 +16,7 @@ async function tar(src, dest = {}, options = {}) {
             options = dest;
         }
     }
+    src = typeof src === "string" && !options.root ? resolve(src) : src;
     const { signal } = options;
     const baseDir = typeof src === "string" ? basename(src) : src.name;
     const entries = readDir(src, { ...options, recursive: true });

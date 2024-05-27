@@ -7,10 +7,9 @@ import { platform } from '../runtime.js';
 import Tarball, { HEADER_LENGTH, parseHeader, createEntry } from './Tarball.js';
 
 async function untar(src, dest = {}, options = {}) {
-    src = typeof src === "string" ? resolve(src) : src;
     let _dest = undefined;
     if (typeof dest === "string") {
-        _dest = resolve(dest);
+        _dest = options.root ? dest : resolve(dest);
     }
     else if (typeof dest === "object") {
         if (typeof FileSystemDirectoryHandle === "function" &&
@@ -21,6 +20,7 @@ async function untar(src, dest = {}, options = {}) {
             options = dest;
         }
     }
+    src = typeof src === "string" && options.root ? resolve(src) : src;
     let input = src instanceof ReadableStream ? src : createReadableStream(src, options);
     if (options.gzip) {
         const gzip = new DecompressionStream("gzip");
@@ -100,7 +100,10 @@ async function untar(src, dest = {}, options = {}) {
                     else {
                         filename = join(_dest, entry.relativePath);
                     }
-                    await ensureDir(dirname(filename), _options);
+                    const dir = dirname(filename);
+                    if (dir && dir !== "." && dir !== "/") {
+                        await ensureDir(dir, _options);
+                    }
                     const output = createWritableStream(filename, _options);
                     writer = output.getWriter();
                     continue;

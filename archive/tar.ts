@@ -35,11 +35,10 @@ export default async function tar(
     dest: string | FileSystemFileHandle | TarOptions = {},
     options: TarOptions = {}
 ): Promise<Tarball | void> {
-    src = typeof src === "string" ? resolve(src) : src;
     let _dest: string | FileSystemFileHandle | undefined = undefined;
 
     if (typeof dest === "string") {
-        _dest = resolve(dest);
+        _dest = options.root ? dest : resolve(dest);
     } else if (typeof dest === "object") {
         if (typeof FileSystemFileHandle === "function" && dest instanceof FileSystemFileHandle) {
             _dest = dest;
@@ -48,6 +47,7 @@ export default async function tar(
         }
     }
 
+    src = typeof src === "string" && !options.root ? resolve(src) : src;
     const { signal } = options;
     const baseDir = typeof src === "string" ? basename(src) : src.name;
     const entries = readDir(src, { ...options, recursive: true });

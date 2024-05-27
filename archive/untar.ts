@@ -29,11 +29,10 @@ export default async function untar(
     dest: string | FileSystemDirectoryHandle | TarOptions = {},
     options: TarOptions = {}
 ): Promise<Tarball | void> {
-    src = typeof src === "string" ? resolve(src) : src;
     let _dest: string | FileSystemDirectoryHandle | undefined = undefined;
 
     if (typeof dest === "string") {
-        _dest = resolve(dest);
+        _dest = options.root ? dest : resolve(dest);
     } else if (typeof dest === "object") {
         if (typeof FileSystemDirectoryHandle === "function" &&
             dest instanceof FileSystemDirectoryHandle
@@ -44,6 +43,7 @@ export default async function untar(
         }
     }
 
+    src = typeof src === "string" && options.root ? resolve(src) : src;
     let input = src instanceof ReadableStream ? src : createReadableStream(src, options);
 
     if (options.gzip) {
@@ -133,7 +133,11 @@ export default async function untar(
                         filename = join(_dest as string, entry.relativePath);
                     }
 
-                    await ensureDir(dirname(filename), _options);
+                    const dir = dirname(filename);
+
+                    if (dir && dir !== "." && dir !== "/") {
+                        await ensureDir(dir, _options);
+                    }
 
                     const output = createWritableStream(filename, _options);
                     writer = output.getWriter();

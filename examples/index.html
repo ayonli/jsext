@@ -54,17 +54,21 @@
         }
     </script>
     <script type="module">
-        import { Tarball } from "@ayonli/archive";
+        import { Tarball, tar, untar } from "@ayonli/archive";
         import { sleep } from "@ayonli/jsext/async";
         import {
             alert,
             confirm,
             prompt,
             progress,
+            pickDirectory,
+            pickFile,
             openFile,
             saveFile,
             downloadFile,
         } from "@ayonli/jsext/dialog";
+        import { getDirHandle } from "@ayonli/jsext/fs";
+        import { basename, extname } from "@ayonli/jsext/path";
         import runtime, { isREPL } from "@ayonli/jsext/runtime";
 
         self.onload = () => {
@@ -155,17 +159,54 @@
                 const buf = await res.arrayBuffer();
                 const type = await res.headers.get('Content-Type') ?? "";
                 const file = new File([buf], 'index.html', { type });
-
-                if (file) {
-                    const tarball = new Tarball();
-                    tarball.append(file);
-                    await saveFile(tarball.stream({ gzip: true }), { name: "archive.tar.gz" });
-                }
+                const tarball = new Tarball();
+                tarball.append(file);
+                await saveFile(tarball.stream({ gzip: true }), { name: "archive.tar.gz" });
             });
 
             const downloadUrlBtn = document.getElementById('download-file-url');
             downloadUrlBtn.addEventListener('click', async () => {
                 await downloadFile("./", { name: 'index.html' });
+            });
+
+            const createTarballBtn = document.getElementById('create-tarball');
+            createTarballBtn.addEventListener('click', async () => {
+                /** @type {FileSystemDirectoryHandle} */
+                const dirHandle = await pickDirectory();
+                /** @type {FileSystemFileHandle} */
+                const fileHandle = await pickFile({
+                    forSave: true,
+                    defaultName: dirHandle.name + ".tar",
+                });
+
+                await tar(dirHandle, fileHandle);
+            });
+
+            const extractTarballBtn = document.getElementById('extract-tarbell');
+            extractTarballBtn.addEventListener('click', async () => {
+                const res = await fetch('./');
+                const buf = await res.arrayBuffer();
+                const type = await res.headers.get('Content-Type') ?? "";
+                const file = new File([buf], 'index.html', { type });
+                const tarball = new Tarball();
+                tarball.append(file);
+
+                const stream = tarball.stream();
+                const directories = [...tarball.entries()].filter(entry => entry.kind === "directory");
+                /** @type {string} */
+                let dirName = directories.length === 1
+                    ? directories[0].name
+                    : "archive";
+
+                if (dirName.endsWith(".tar")) {
+                    dirName = dirName.slice(0, -4);
+                }
+
+                /** @type {FileSystemDirectoryHandle} */
+                const root = await pickDirectory();
+                const dirHandle = await getDirHandle(dirName, { root, create: true });
+
+                await untar(stream, dirHandle);
             });
 
             const runtimeInfoBtn = document.getElementById('runtime-info');
@@ -201,6 +242,8 @@
         <button id="open-directory">Open Directory</button>
         <button id="download-file">Download File</button>
         <button id="download-file-url">Download File (URL)</button>
+        <button id="create-tarball">Create Tarball</button>
+        <button id="extract-tarbell">Extract Tarball</button>
         <button id="runtime-info">Runtime Info</button>
     </div>
 </body>
