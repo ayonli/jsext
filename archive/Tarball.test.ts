@@ -138,6 +138,11 @@ describe("archive/Tarball", () => {
         ] as TarEntry[]);
     });
 
+    it("size", () => {
+        strictEqual(tarball1.size, 64512);
+        strictEqual(tarball2.size, 64512);
+    });
+
     it("stream", async () => {
         ok(!(await exists(filename1)));
         const output = createWritableStream(filename1);

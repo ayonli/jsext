@@ -548,6 +548,26 @@ export default class Tarball {
     }
 
     /**
+     * Returns the approximate size of the archive in bytes.
+     * 
+     * NOTE: This value may not reflect the actual size of the archive file
+     * when constructed via the {@link load} method.
+     */
+    get size(): number {
+        return this[_entries].reduce((size, entry) => {
+            size += entry.header.byteLength;
+            size += entry.size;
+
+            const paddingSize = HEADER_LENGTH - (entry.size % HEADER_LENGTH || HEADER_LENGTH);
+            if (paddingSize > 0) {
+                size += paddingSize;
+            }
+
+            return size;
+        }, 0);
+    }
+
+    /**
      * Returns a readable stream of the archive that can be piped to a writable
      * target.
      */
