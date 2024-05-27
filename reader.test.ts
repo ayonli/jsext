@@ -64,7 +64,8 @@ describe("reader", () => {
                 const arr = Buffer.from([1, 2, 3]);
                 const buffer = await readAsArrayBuffer(arr);
 
-                deepStrictEqual(buffer, arr.buffer.slice(0, 3));
+                deepStrictEqual(buffer, arr.buffer.slice(arr.byteOffset, arr.byteOffset + arr.byteLength));
+                deepStrictEqual(new Uint8Array(buffer), new Uint8Array([1, 2, 3]));
             }
         });
 

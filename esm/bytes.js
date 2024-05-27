@@ -59,8 +59,8 @@ function bytes(data) {
     else if (typeof data === "string") {
         return new ByteArray(defaultEncoder.encode(data).buffer);
     }
-    else if (data instanceof DataView) {
-        return new ByteArray(data.buffer);
+    else if (ArrayBuffer.isView(data)) {
+        return new ByteArray(data.buffer, data.byteOffset, data.byteLength);
     }
     else {
         return new ByteArray(data);

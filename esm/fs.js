@@ -607,10 +607,13 @@ async function writeFile(target, data, options = {}) {
         else if (data instanceof ArrayBuffer) {
             return await rawOp(Deno.writeFile(filename, new Uint8Array(data), options));
         }
-        else if (data instanceof DataView) {
+        else if (data instanceof Uint8Array) {
+            return await rawOp(Deno.writeFile(filename, data, options));
+        }
+        else if (ArrayBuffer.isView(data)) {
             return await rawOp(Deno.writeFile(filename, bytes(data), options));
         }
-        else {
+        else if (data) {
             return await rawOp(Deno.writeFile(filename, data, options));
         }
     }
@@ -631,10 +634,13 @@ async function writeFile(target, data, options = {}) {
             if (data instanceof ArrayBuffer) {
                 _data = new Uint8Array(data);
             }
-            else if (data instanceof DataView) {
-                _data = bytes(data); // Bun may not support writing DataView
+            else if (data instanceof Uint8Array) {
+                _data = data;
             }
-            else if (typeof data === "string" || ArrayBuffer.isView(data)) {
+            else if (ArrayBuffer.isView(data)) {
+                _data = bytes(data);
+            }
+            else if (typeof data === "string") {
                 _data = data;
             }
             else {

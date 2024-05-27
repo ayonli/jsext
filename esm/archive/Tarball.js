@@ -209,7 +209,7 @@ class Tarball {
             body = toReadableStream([new Uint8Array(data)]);
             size = data.byteLength;
         }
-        else if (data instanceof DataView) {
+        else if (ArrayBuffer.isView(data)) {
             const _data = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
             body = toReadableStream([_data]);
             size = _data.byteLength;
@@ -228,7 +228,7 @@ class Tarball {
             }
         }
         else {
-            throw new TypeError("data must be a string, Uint8Array, ArrayBuffer, DataView, Blob, or ReadableStream");
+            throw new TypeError("data must be a string, Uint8Array, ArrayBuffer, ArrayBufferView, Blob, or ReadableStream");
         }
         const kind = (_b = info.kind) !== null && _b !== void 0 ? _b : "file";
         const mode = (_c = info.mode) !== null && _c !== void 0 ? _c : (kind === "directory" ? 0o755 : 0o666);

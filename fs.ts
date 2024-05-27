@@ -691,7 +691,7 @@ async function readFileHandleAsFile(handle: FileSystemFileHandle): Promise<File>
  */
 export async function writeFile(
     target: string | FileSystemFileHandle,
-    data: string | ArrayBuffer | Uint8Array | DataView | ReadableStream<Uint8Array> | Blob | File,
+    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob | File,
     options: FileSystemOptions & {
         /**
          * Append the data to the file instead of overwriting it.
@@ -720,9 +720,11 @@ export async function writeFile(
             return await rawOp(Deno.writeFile(filename, data.stream(), options));
         } else if (data instanceof ArrayBuffer) {
             return await rawOp(Deno.writeFile(filename, new Uint8Array(data), options));
-        } else if (data instanceof DataView) {
+        } else if (data instanceof Uint8Array) {
+            return await rawOp(Deno.writeFile(filename, data, options));
+        } else if (ArrayBuffer.isView(data)) {
             return await rawOp(Deno.writeFile(filename, bytes(data), options));
-        } else {
+        } else if (data) {
             return await rawOp(Deno.writeFile(filename, data, options));
         }
     } else if (isNodeLike) {
@@ -740,9 +742,11 @@ export async function writeFile(
 
             if (data instanceof ArrayBuffer) {
                 _data = new Uint8Array(data);
-            } else if (data instanceof DataView) {
-                _data = bytes(data); // Bun may not support writing DataView
-            } else if (typeof data === "string" || ArrayBuffer.isView(data)) {
+            } else if (data instanceof Uint8Array) {
+                _data = data;
+            } else if (ArrayBuffer.isView(data)) {
+                _data = bytes(data);
+            } else if (typeof data === "string") {
                 _data = data;
             } else {
                 throw new TypeError("Unsupported data type");
@@ -761,7 +765,7 @@ export async function writeFile(
 
 async function writeFileHandle(
     handle: FileSystemFileHandle,
-    data: string | ArrayBuffer | Uint8Array | DataView | ReadableStream<Uint8Array> | Blob | File,
+    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob | File,
     options: {
         append?: boolean;
         signal?: AbortSignal;

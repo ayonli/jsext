@@ -1,31 +1,31 @@
 import bytes, { text } from '../bytes.js';
 import { readAsArrayBuffer } from '../reader.js';
 
-async function toArrayBuffer(data) {
-    let buffer;
+async function toBytes(data) {
+    let bin;
     if (typeof data === "string") {
-        buffer = bytes(data).buffer;
+        bin = bytes(data);
     }
     else if (data instanceof ArrayBuffer) {
-        buffer = data;
+        bin = new Uint8Array(data);
     }
     else if (ArrayBuffer.isView(data)) {
-        buffer = data.buffer;
+        bin = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
     }
     else if (typeof ReadableStream === "function" && data instanceof ReadableStream) {
-        buffer = await readAsArrayBuffer(data);
+        bin = new Uint8Array(await readAsArrayBuffer(data));
     }
     else if (typeof Blob === "function" && data instanceof Blob) {
-        buffer = await data.arrayBuffer();
+        bin = new Uint8Array(await data.arrayBuffer());
     }
     else {
         throw new TypeError("Unsupported data type");
     }
-    return buffer;
+    return bin;
 }
 async function sha1(data, encoding = undefined) {
-    const buffer = await toArrayBuffer(data);
-    const hash = await crypto.subtle.digest("SHA-1", buffer);
+    const bytes = await toBytes(data);
+    const hash = await crypto.subtle.digest("SHA-1", bytes);
     if (encoding === "hex") {
         return text(new Uint8Array(hash), "hex");
     }
@@ -37,8 +37,8 @@ async function sha1(data, encoding = undefined) {
     }
 }
 async function sha256(data, encoding = undefined) {
-    const buffer = await toArrayBuffer(data);
-    const hash = await crypto.subtle.digest("SHA-256", buffer);
+    const bytes = await toBytes(data);
+    const hash = await crypto.subtle.digest("SHA-256", bytes);
     if (encoding === "hex") {
         return text(new Uint8Array(hash), "hex");
     }
@@ -50,8 +50,8 @@ async function sha256(data, encoding = undefined) {
     }
 }
 async function sha512(data, encoding = undefined) {
-    const buffer = await toArrayBuffer(data);
-    const hash = await crypto.subtle.digest("SHA-512", buffer);
+    const bytes = await toBytes(data);
+    const hash = await crypto.subtle.digest("SHA-512", bytes);
     if (encoding === "hex") {
         return text(new Uint8Array(hash), "hex");
     }
@@ -63,5 +63,5 @@ async function sha512(data, encoding = undefined) {
     }
 }
 
-export { sha1, sha256, sha512, toArrayBuffer };
+export { sha1, sha256, sha512, toBytes };
 //# sourceMappingURL=web.js.map

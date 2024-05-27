@@ -1,5 +1,5 @@
 import { isDeno, isNodeLike } from './env.js';
-import { sha1 as sha1$1, sha256 as sha256$1, sha512 as sha512$1, toArrayBuffer } from './hash/web.js';
+import { sha1 as sha1$1, sha256 as sha256$1, sha512 as sha512$1, toBytes } from './hash/web.js';
 
 /**
  * Simplified hash functions for various data types.
@@ -7,9 +7,9 @@ import { sha1 as sha1$1, sha256 as sha256$1, sha512 as sha512$1, toArrayBuffer }
  */
 async function nodeHash(algorithm, data, encoding = undefined) {
     const crypto = await import('node:crypto');
-    const buffer = await toArrayBuffer(data);
+    const bytes = await toBytes(data);
     const hash = crypto.createHash(algorithm);
-    hash.update(new Uint8Array(buffer));
+    hash.update(bytes);
     if (encoding) {
         return hash.digest(encoding);
     }

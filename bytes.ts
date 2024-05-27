@@ -91,16 +91,16 @@ export default function bytes(length: number): ByteArray;
 export default function bytes(str: string): ByteArray;
 export default function bytes(arr: ArrayLike<number>): ByteArray;
 export default function bytes(buf: ArrayBufferLike): ByteArray;
-export default function bytes(view: DataView): ByteArray;
+export default function bytes(view: ArrayBufferView): ByteArray;
 export default function bytes(
-    data: number | string | ArrayLike<number> | ArrayBufferLike | DataView
+    data: number | string | ArrayLike<number> | ArrayBufferLike | ArrayBufferView
 ): ByteArray {
     if (typeof data === "number") {
         return new ByteArray(data);
     } else if (typeof data === "string") {
         return new ByteArray(defaultEncoder.encode(data).buffer);
-    } else if (data instanceof DataView) {
-        return new ByteArray(data.buffer);
+    } else if (ArrayBuffer.isView(data)) {
+        return new ByteArray(data.buffer, data.byteOffset, data.byteLength);
     } else {
         return new ByteArray(data);
     }

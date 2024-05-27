@@ -100,10 +100,8 @@ export async function readAsArrayBuffer(
 ): Promise<ArrayBuffer> {
     if (typeof Blob === "function" && source instanceof Blob) {
         return await source.arrayBuffer();
-    } else if (typeof Buffer === "function" && source instanceof Buffer) {
-        return source.buffer.slice(0, source.length);
-    } else if (source instanceof Uint8Array) {
-        return source.buffer as ArrayBuffer;
+    } else if (ArrayBuffer.isView(source)) {
+        return source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength);
     }
 
     const iterable = asAsyncIterable(source) as AsyncIterable<Uint8Array> | null;

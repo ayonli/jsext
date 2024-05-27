@@ -76,8 +76,9 @@ describe("bytes", () => {
                 this.skip();
             }
 
+            const buf = Buffer.from("Hello, World!");
             deepStrictEqual(
-                bytes(Buffer.from("Hello, World!")).buffer,
+                bytes(buf).buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
                 new Uint8Array([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]).buffer
             );
         });

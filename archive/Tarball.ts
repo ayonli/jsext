@@ -271,7 +271,7 @@ export default class Tarball {
 
     private constructEntry(
         relativePath: string,
-        data: string | ArrayBuffer | Uint8Array | DataView | Blob | ReadableStream<Uint8Array> | null,
+        data: string | ArrayBuffer | ArrayBufferView | Blob | ReadableStream<Uint8Array> | null,
         info: Partial<Omit<TarEntry, "relativePath">>,
     ): TarEntryWithData {
         // UStar format has a limitation of file name length. Specifically:
@@ -318,7 +318,7 @@ export default class Tarball {
         } else if (data instanceof ArrayBuffer) {
             body = toReadableStream([new Uint8Array(data)]);
             size = data.byteLength;
-        } else if (data instanceof DataView) {
+        } else if (ArrayBuffer.isView(data)) {
             const _data = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
             body = toReadableStream([_data]);
             size = _data.byteLength;
@@ -334,7 +334,7 @@ export default class Tarball {
                 throw new TypeError("size must be provided for ReadableStream data");
             }
         } else {
-            throw new TypeError("data must be a string, Uint8Array, ArrayBuffer, DataView, Blob, or ReadableStream");
+            throw new TypeError("data must be a string, Uint8Array, ArrayBuffer, ArrayBufferView, Blob, or ReadableStream");
         }
 
         const kind = info.kind ?? "file";
@@ -400,11 +400,11 @@ export default class Tarball {
      */
     append(data: File): void;
     append(
-        data: string | ArrayBuffer | Uint8Array | DataView | Blob | ReadableStream<Uint8Array> | null,
+        data: string | ArrayBuffer | ArrayBufferView | Blob | ReadableStream<Uint8Array> | null,
         info: Ensured<Partial<TarEntry>, "relativePath">
     ): void;
     append(
-        data: string | ArrayBuffer | Uint8Array | DataView | Blob | ReadableStream<Uint8Array> | null,
+        data: string | ArrayBuffer | ArrayBufferView | Blob | ReadableStream<Uint8Array> | null,
         info: Partial<TarEntry> = {}
     ): void {
         if (data === null) {
@@ -483,7 +483,7 @@ export default class Tarball {
      */
     replace(
         relativePath: string,
-        data: string | ArrayBuffer | Uint8Array | DataView | Blob | File | ReadableStream<Uint8Array> | null,
+        data: string | ArrayBuffer | ArrayBufferView | Blob | File | ReadableStream<Uint8Array> | null,
         info: Partial<Omit<TarEntry, "relativePath">> = {}
     ): boolean {
         const index = this[_entries].findIndex((entry) => entry.relativePath === relativePath);

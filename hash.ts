@@ -4,7 +4,7 @@
  */
 
 import { isDeno, isNodeLike } from "./env.ts";
-import { toArrayBuffer, sha1 as _sha1, sha256 as _sha256, sha512 as _sha512 } from "./hash/web.ts";
+import { toBytes, sha1 as _sha1, sha256 as _sha256, sha512 as _sha512 } from "./hash/web.ts";
 
 async function nodeHash(
     algorithm: "sha1" | "sha256" | "sha512" | "md5",
@@ -12,10 +12,10 @@ async function nodeHash(
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<ArrayBuffer | string> {
     const crypto = await import("node:crypto");
-    const buffer = await toArrayBuffer(data);
+    const bytes = await toBytes(data);
     const hash = crypto.createHash(algorithm);
 
-    hash.update(new Uint8Array(buffer));
+    hash.update(bytes);
 
     if (encoding) {
         return hash.digest(encoding);
