@@ -7,7 +7,7 @@ import { platform } from '../runtime.js';
 import Tarball, { HEADER_LENGTH, parseHeader, createEntry } from './Tarball.js';
 
 async function untar(src, dest = {}, options = {}) {
-    var _a, _b, _c;
+    var _a;
     let _dest = undefined;
     if (typeof dest === "string") {
         _dest = options.root ? dest : resolve(dest);
@@ -95,7 +95,9 @@ async function untar(src, dest = {}, options = {}) {
                     writtenBytes += chunk.byteLength;
                     if (totalBytes && chunk.byteLength) {
                         totalWrittenBytes += chunk.byteLength;
-                        (_b = options.onProgress) === null || _b === void 0 ? void 0 : _b.call(options, createProgressEvent(totalWrittenBytes, totalBytes, true));
+                        if (options.onProgress) {
+                            options.onProgress(createProgressEvent(totalWrittenBytes, totalBytes, true));
+                        }
                     }
                 }
                 else if (entry.kind === "directory") {
@@ -145,8 +147,8 @@ async function untar(src, dest = {}, options = {}) {
         if (lastChunk.byteLength) {
             throw new Error("The archive is corrupted");
         }
-        else if (totalBytes && totalWrittenBytes < totalBytes) {
-            (_c = options.onProgress) === null || _c === void 0 ? void 0 : _c.call(options, createProgressEvent(totalBytes, totalBytes, true));
+        else if (totalBytes && totalWrittenBytes < totalBytes && options.onProgress) {
+            options.onProgress(createProgressEvent(totalBytes, totalBytes, true));
         }
     }
     finally {

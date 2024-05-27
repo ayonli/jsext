@@ -143,11 +143,14 @@ export default async function untar(
 
                     if (totalBytes && chunk.byteLength) {
                         totalWrittenBytes += chunk.byteLength;
-                        options.onProgress?.(createProgressEvent(
-                            totalWrittenBytes,
-                            totalBytes,
-                            true
-                        ));
+
+                        if (options.onProgress) {
+                            options.onProgress(createProgressEvent(
+                                totalWrittenBytes,
+                                totalBytes,
+                                true
+                            ));
+                        }
                     }
                 } else if (entry.kind === "directory") {
                     if (typeof FileSystemDirectoryHandle === "function" &&
@@ -201,8 +204,8 @@ export default async function untar(
 
         if (lastChunk.byteLength) {
             throw new Error("The archive is corrupted");
-        } else if (totalBytes && totalWrittenBytes < totalBytes) {
-            options.onProgress?.(createProgressEvent(
+        } else if (totalBytes && totalWrittenBytes < totalBytes && options.onProgress) {
+            options.onProgress(createProgressEvent(
                 totalBytes,
                 totalBytes,
                 true

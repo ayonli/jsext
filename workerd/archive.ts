@@ -8,6 +8,11 @@ export type TarOptions = {
     signal?: AbortSignal;
 };
 
+export type UntarOptions = TarOptions & {
+    size?: number;
+    onProgress?: (event: ProgressEvent) => void;
+};
+
 export function tar(
     src: string | FileSystemDirectoryHandle,
     options?: TarOptions
