@@ -1,18 +1,31 @@
 import { concat as concatBytes } from "../bytes.ts";
 import { isDeno, isNodeLike } from "../env.ts";
-import { chmod, createReadableStream, createWritableStream, ensureDir, utimes } from "../fs.ts";
+import { chmod, createReadableStream, createWritableStream, ensureDir, stat, utimes } from "../fs.ts";
 import { makeTree } from "../fs/util.ts";
 import { basename, dirname, join, resolve } from "../path.ts";
 import { platform } from "../runtime.ts";
 import Tarball, { HEADER_LENGTH, TarEntry, TarTree, createEntry, parseHeader } from "./Tarball.ts";
 import { TarOptions } from "./tar.ts";
 
+export type UntarOptions = TarOptions & {
+    /**
+     * The size of the tarball file in bytes. This option is only required when
+     * we need to emit the progress event while the source is a readable stream.
+     */
+    size?: number;
+    /**
+     * Listen to the progress event of the extraction operation, only functional
+     * when the size of the tarball file is known.
+     */
+    onProgress?: (event: ProgressEvent) => void;
+};
+
 /**
  * Loads the specified tarball file to a {@link Tarball} instance.
  */
 export default function untar(
     src: string | FileSystemFileHandle | ReadableStream<Uint8Array>,
-    options?: TarOptions
+    options?: UntarOptions
 ): Promise<Tarball>;
 /**
  * Extracts files from a tarball file and writes them to the specified directory.
@@ -22,12 +35,12 @@ export default function untar(
 export default function untar(
     src: string | FileSystemFileHandle | ReadableStream<Uint8Array>,
     dest: string | FileSystemDirectoryHandle,
-    options?: TarOptions
+    options?: UntarOptions
 ): Promise<void>;
 export default async function untar(
     src: string | FileSystemFileHandle | ReadableStream<Uint8Array>,
-    dest: string | FileSystemDirectoryHandle | TarOptions = {},
-    options: TarOptions = {}
+    dest: string | FileSystemDirectoryHandle | UntarOptions = {},
+    options: UntarOptions = {}
 ): Promise<Tarball | void> {
     let _dest: string | FileSystemDirectoryHandle | undefined = undefined;
 
@@ -39,7 +52,7 @@ export default async function untar(
         ) {
             _dest = dest;
         } else {
-            options = dest as TarOptions;
+            options = dest as UntarOptions;
         }
     }
 
@@ -60,6 +73,21 @@ export default async function untar(
         return await Tarball.load(input);
     } else if (typeof _dest === "string") {
         await ensureDir(_dest, options);
+    }
+
+    let totalWrittenBytes = 0;
+    let totalBytes = options.size ?? 0;
+
+    if (!totalBytes) {
+        if (src === "string") {
+            const info = await stat(src, options);
+            totalBytes = info.size;
+        } else if (typeof FileSystemFileHandle === "function"
+            && src instanceof FileSystemFileHandle
+        ) {
+            const info = await src.getFile();
+            totalBytes = info.size;
+        }
     }
 
     const entries: TarEntry[] = [];
@@ -112,6 +140,15 @@ export default async function untar(
                     await writer.write(chunk);
                     lastChunk = lastChunk.subarray(fileSize - writtenBytes);
                     writtenBytes += chunk.byteLength;
+
+                    if (totalBytes && chunk.byteLength) {
+                        totalWrittenBytes += chunk.byteLength;
+                        options.onProgress?.(createProgressEvent(
+                            totalWrittenBytes,
+                            totalBytes,
+                            true
+                        ));
+                    }
                 } else if (entry.kind === "directory") {
                     if (typeof FileSystemDirectoryHandle === "function" &&
                         _dest instanceof FileSystemDirectoryHandle
@@ -164,6 +201,12 @@ export default async function untar(
 
         if (lastChunk.byteLength) {
             throw new Error("The archive is corrupted");
+        } else if (totalBytes && totalWrittenBytes < totalBytes) {
+            options.onProgress?.(createProgressEvent(
+                totalBytes,
+                totalBytes,
+                true
+            ));
         }
     } finally {
         reader.releaseLock();
@@ -196,5 +239,33 @@ export default async function untar(
                 }
             }
         })(tree.children!);
+    }
+}
+
+function createProgressEvent(
+    loaded: number,
+    total: number,
+    lengthComputable: boolean
+): ProgressEvent {
+    if (typeof ProgressEvent === "function") {
+        return new ProgressEvent("progress", {
+            lengthComputable,
+            loaded,
+            total,
+        });
+    } else {
+        const event = new Event("progress", {
+            bubbles: false,
+            cancelable: false,
+            composed: false,
+        });
+
+        Object.defineProperties(event, {
+            lengthComputable: { value: lengthComputable },
+            loaded: { value: loaded },
+            total: { value: total },
+        });
+
+        return event as ProgressEvent;
     }
 }

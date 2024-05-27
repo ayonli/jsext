@@ -1,12 +1,13 @@
 import { concat } from '../bytes.js';
 import { isDeno, isNodeLike } from '../env.js';
-import { createReadableStream, ensureDir, createWritableStream, chmod, utimes } from '../fs.js';
+import { createReadableStream, ensureDir, stat, createWritableStream, chmod, utimes } from '../fs.js';
 import { makeTree } from '../fs/util.js';
 import { resolve, join, dirname, basename } from '../path.js';
 import { platform } from '../runtime.js';
 import Tarball, { HEADER_LENGTH, parseHeader, createEntry } from './Tarball.js';
 
 async function untar(src, dest = {}, options = {}) {
+    var _a, _b, _c;
     let _dest = undefined;
     if (typeof dest === "string") {
         _dest = options.root ? dest : resolve(dest);
@@ -35,6 +36,19 @@ async function untar(src, dest = {}, options = {}) {
     }
     else if (typeof _dest === "string") {
         await ensureDir(_dest, options);
+    }
+    let totalWrittenBytes = 0;
+    let totalBytes = (_a = options.size) !== null && _a !== void 0 ? _a : 0;
+    if (!totalBytes) {
+        if (src === "string") {
+            const info = await stat(src, options);
+            totalBytes = info.size;
+        }
+        else if (typeof FileSystemFileHandle === "function"
+            && src instanceof FileSystemFileHandle) {
+            const info = await src.getFile();
+            totalBytes = info.size;
+        }
     }
     const entries = [];
     const reader = input.getReader();
@@ -79,6 +93,10 @@ async function untar(src, dest = {}, options = {}) {
                     await writer.write(chunk);
                     lastChunk = lastChunk.subarray(fileSize - writtenBytes);
                     writtenBytes += chunk.byteLength;
+                    if (totalBytes && chunk.byteLength) {
+                        totalWrittenBytes += chunk.byteLength;
+                        (_b = options.onProgress) === null || _b === void 0 ? void 0 : _b.call(options, createProgressEvent(totalWrittenBytes, totalBytes, true));
+                    }
                 }
                 else if (entry.kind === "directory") {
                     if (typeof FileSystemDirectoryHandle === "function" &&
@@ -127,6 +145,9 @@ async function untar(src, dest = {}, options = {}) {
         if (lastChunk.byteLength) {
             throw new Error("The archive is corrupted");
         }
+        else if (totalBytes && totalWrittenBytes < totalBytes) {
+            (_c = options.onProgress) === null || _c === void 0 ? void 0 : _c.call(options, createProgressEvent(totalBytes, totalBytes, true));
+        }
     }
     finally {
         reader.releaseLock();
@@ -156,6 +177,28 @@ async function untar(src, dest = {}, options = {}) {
                 }
             }
         })(tree.children);
+    }
+}
+function createProgressEvent(loaded, total, lengthComputable) {
+    if (typeof ProgressEvent === "function") {
+        return new ProgressEvent("progress", {
+            lengthComputable,
+            loaded,
+            total,
+        });
+    }
+    else {
+        const event = new Event("progress", {
+            bubbles: false,
+            cancelable: false,
+            composed: false,
+        });
+        Object.defineProperties(event, {
+            lengthComputable: { value: lengthComputable },
+            loaded: { value: loaded },
+            total: { value: total },
+        });
+        return event;
     }
 }
 

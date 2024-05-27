@@ -184,12 +184,26 @@
 
             const extractTarballBtn = document.getElementById('extract-tarbell');
             extractTarballBtn.addEventListener('click', async () => {
-                const res = await fetch('./');
-                const buf = await res.arrayBuffer();
-                const type = await res.headers.get('Content-Type') ?? "";
-                const file = new File([buf], 'index.html', { type });
                 const tarball = new Tarball();
-                tarball.append(file);
+
+                const res1 = await fetch('./');
+                const buf1 = await res1.arrayBuffer();
+                const type1 = await res1.headers.get('Content-Type') ?? "";
+                const file1 = new File([buf1], 'index.html', { type: type1 });
+
+                const res2 = await fetch('./styles.css');
+                const buf2 = await res2.arrayBuffer();
+                const type2 = await res2.headers.get('Content-Type') ?? "";
+                const file2 = new File([buf2], 'styles.css', { type: type2 });
+
+                const res3 = await fetch("../bundle/jsext.js");
+                const buf3 = await res3.arrayBuffer();
+                const type3 = await res3.headers.get('Content-Type') ?? "";
+                const file3 = new File([buf3], 'jsext.js', { type: type3 });
+
+                tarball.append(file1);
+                tarball.append(file2);
+                tarball.append(file3);
 
                 const stream = tarball.stream();
                 const directories = [...tarball.entries()].filter(entry => entry.kind === "directory");
@@ -206,7 +220,21 @@
                 const root = await pickDirectory();
                 const dirHandle = await getDirHandle(dirName, { root, create: true });
 
-                await untar(stream, dirHandle);
+                await progress('Extracting...', async (update) => {
+                    update({ percent: 0 });
+
+                    await untar(stream, dirHandle, {
+                        size: tarball.size,
+                        onProgress: (event) => {
+                            console.log(event);
+                            update({
+                                percent: Math.round((event.loaded / event.total) * 100),
+                            });
+                        },
+                    });
+
+                    await sleep(500);
+                });
             });
 
             const runtimeInfoBtn = document.getElementById('runtime-info');
