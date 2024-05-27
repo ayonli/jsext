@@ -17,6 +17,46 @@ import { Constructor } from "./types.ts";
 
 const defaultEncoder = new TextEncoder();
 const defaultDecoder = new TextDecoder();
+const base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+function base64(bytes: Uint8Array): string {
+    let result = "";
+    let i: number;
+    const l = bytes.length;
+
+    for (i = 2; i < l; i += 3) {
+        result += base64Chars[(bytes[i - 2]!) >> 2];
+        result += base64Chars[
+            (((bytes[i - 2]!) & 0x03) << 4) |
+            ((bytes[i - 1]!) >> 4)
+        ];
+        result += base64Chars[
+            (((bytes[i - 1]!) & 0x0f) << 2) |
+            ((bytes[i]!) >> 6)
+        ];
+        result += base64Chars[(bytes[i]!) & 0x3f];
+    }
+
+    if (i === l + 1) {
+        // 1 octet yet to write
+        result += base64Chars[(bytes[i - 2]!) >> 2];
+        result += base64Chars[((bytes[i - 2]!) & 0x03) << 4];
+        result += "==";
+    }
+
+    if (i === l) {
+        // 2 octets yet to write
+        result += base64Chars[(bytes[i - 2]!) >> 2];
+        result += base64Chars[
+            (((bytes[i - 2]!) & 0x03) << 4) |
+            ((bytes[i - 1]!) >> 4)
+        ];
+        result += base64Chars[((bytes[i - 1]!) & 0x0f) << 2];
+        result += "=";
+    }
+
+    return result;
+}
 
 /**
  * A byte array is a `Uint8Array` that can be coerced to a string with `utf8`
@@ -86,7 +126,7 @@ export function text(
         if (typeof Buffer === "function") {
             return (as(bytes, Buffer) as Buffer ?? Buffer.from(bytes)).toString("base64");
         } else {
-            return btoa(defaultDecoder.decode(bytes));
+            return base64(bytes);
         }
     } else if (typeof Buffer === "function" && bytes instanceof Buffer) {
         return bytes.toString("utf8");
@@ -109,7 +149,9 @@ export function copy(src: Uint8Array, dest: Uint8Array): number {
 export function concat<T extends Uint8Array>(...arrays: T[]): T {
     const length = sum(...arrays.map(arr => arr.length));
     const ctor = ((arrays[0] as T)?.constructor || Uint8Array) as Constructor<T>;
-    const result = new ctor(length);
+    const result = typeof Buffer === "function" && Object.is(ctor, Buffer)
+        ? Buffer.alloc(length) as unknown as T
+        : new ctor(length);
     let offset = 0;
 
     for (const arr of arrays) {

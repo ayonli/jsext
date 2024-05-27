@@ -8,6 +8,35 @@ import { sum } from './math.js';
  */
 const defaultEncoder = new TextEncoder();
 const defaultDecoder = new TextDecoder();
+const base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+function base64(bytes) {
+    let result = "";
+    let i;
+    const l = bytes.length;
+    for (i = 2; i < l; i += 3) {
+        result += base64Chars[(bytes[i - 2]) >> 2];
+        result += base64Chars[(((bytes[i - 2]) & 0x03) << 4) |
+            ((bytes[i - 1]) >> 4)];
+        result += base64Chars[(((bytes[i - 1]) & 0x0f) << 2) |
+            ((bytes[i]) >> 6)];
+        result += base64Chars[(bytes[i]) & 0x3f];
+    }
+    if (i === l + 1) {
+        // 1 octet yet to write
+        result += base64Chars[(bytes[i - 2]) >> 2];
+        result += base64Chars[((bytes[i - 2]) & 0x03) << 4];
+        result += "==";
+    }
+    if (i === l) {
+        // 2 octets yet to write
+        result += base64Chars[(bytes[i - 2]) >> 2];
+        result += base64Chars[(((bytes[i - 2]) & 0x03) << 4) |
+            ((bytes[i - 1]) >> 4)];
+        result += base64Chars[((bytes[i - 1]) & 0x0f) << 2];
+        result += "=";
+    }
+    return result;
+}
 /**
  * A byte array is a `Uint8Array` that can be coerced to a string with `utf8`
  * encoding.
@@ -58,7 +87,7 @@ function text(bytes, encoding = "utf8") {
             return ((_b = as(bytes, Buffer)) !== null && _b !== void 0 ? _b : Buffer.from(bytes)).toString("base64");
         }
         else {
-            return btoa(defaultDecoder.decode(bytes));
+            return base64(bytes);
         }
     }
     else if (typeof Buffer === "function" && bytes instanceof Buffer) {
@@ -81,7 +110,9 @@ function concat(...arrays) {
     var _a;
     const length = sum(...arrays.map(arr => arr.length));
     const ctor = (((_a = arrays[0]) === null || _a === void 0 ? void 0 : _a.constructor) || Uint8Array);
-    const result = new ctor(length);
+    const result = typeof Buffer === "function" && Object.is(ctor, Buffer)
+        ? Buffer.alloc(length)
+        : new ctor(length);
     let offset = 0;
     for (const arr of arrays) {
         result.set(arr, offset);
