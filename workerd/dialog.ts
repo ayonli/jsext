@@ -96,16 +96,22 @@ export async function pickDirectory(options: {
 export async function saveFile(file: File, options?: {
     title?: string;
 }): Promise<void>;
-export async function saveFile(file: Blob | ReadableStream<Uint8Array> | Uint8Array, options: {
-    name: string;
-    type?: string;
-    title?: string;
-}): Promise<void>;
-export async function saveFile(file: File | Blob | ReadableStream<Uint8Array> | Uint8Array, options: {
-    title?: string;
-    name?: string;
-    type?: string;
-} = {}): Promise<void> {
+export async function saveFile(
+    file: Blob | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array>,
+    options: {
+        name: string;
+        type?: string;
+        title?: string;
+    }
+): Promise<void>;
+export async function saveFile(
+    file: File | Blob | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array>,
+    options: {
+        title?: string;
+        name?: string;
+        type?: string;
+    } = {}
+): Promise<void> {
     void file, options;
     throw new Error("Unsupported runtime");
 }

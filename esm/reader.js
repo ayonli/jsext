@@ -62,7 +62,7 @@ async function readAsArrayBuffer(source) {
         return await source.arrayBuffer();
     }
     else if (ArrayBuffer.isView(source)) {
-        return source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength);
+        return source.buffer;
     }
     const iterable = asAsyncIterable(source);
     if (!iterable) {
@@ -76,7 +76,7 @@ async function readAsArrayBuffer(source) {
  * Reads all data from the given source to a `Blob`.
  */
 async function readAsBlob(source, type) {
-    if (source instanceof ArrayBuffer || source instanceof Uint8Array) {
+    if (source instanceof ArrayBuffer || ArrayBuffer.isView(source)) {
         return new Blob([source], { type });
     }
     const buffer = await readAsArrayBuffer(source);
@@ -94,6 +94,11 @@ async function readAsDataURL(source, type) {
         const base64 = text(source, "base64");
         return `data:${type};base64,${base64}`;
     }
+    else if (ArrayBuffer.isView(source)) {
+        const bytes = new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
+        const base64 = text(bytes, "base64");
+        return `data:${type};base64,${base64}`;
+    }
     const buffer = await readAsArrayBuffer(source);
     const _bytes = new Uint8Array(buffer);
     const base64 = text(_bytes, "base64");
@@ -103,10 +108,10 @@ async function readAsDataURL(source, type) {
  * Reads all data from the given source to an object URL.
  */
 async function readAsObjectURL(source, type) {
-    if (typeof Blob === "function" && source instanceof Blob) {
+    if (source instanceof Blob) {
         return URL.createObjectURL(source);
     }
-    else if (source instanceof ArrayBuffer || source instanceof Uint8Array) {
+    else if (source instanceof ArrayBuffer || ArrayBuffer.isView(source)) {
         const blob = new Blob([source], { type });
         return URL.createObjectURL(blob);
     }
@@ -121,7 +126,7 @@ async function readAsText(source, encoding = undefined) {
     if (typeof Blob === "function" && source instanceof Blob && !encoding) {
         return await source.text();
     }
-    else if (source instanceof ArrayBuffer || source instanceof Uint8Array) {
+    else if (source instanceof ArrayBuffer || ArrayBuffer.isView(source)) {
         return new TextDecoder(encoding).decode(source);
     }
     const buffer = await readAsArrayBuffer(source);

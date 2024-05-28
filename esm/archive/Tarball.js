@@ -201,12 +201,12 @@ class Tarball {
             body = toReadableStream([_data]);
             size = _data.byteLength;
         }
-        else if (data instanceof Uint8Array) {
-            body = toReadableStream([data]);
-            size = data.byteLength;
-        }
         else if (data instanceof ArrayBuffer) {
             body = toReadableStream([new Uint8Array(data)]);
+            size = data.byteLength;
+        }
+        else if (data instanceof Uint8Array) {
+            body = toReadableStream([data]);
             size = data.byteLength;
         }
         else if (ArrayBuffer.isView(data)) {

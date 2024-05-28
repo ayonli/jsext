@@ -691,7 +691,7 @@ async function readFileHandleAsFile(handle: FileSystemFileHandle): Promise<File>
  */
 export async function writeFile(
     target: string | FileSystemFileHandle,
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob | File,
+    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
     options: FileSystemOptions & {
         /**
          * Append the data to the file instead of overwriting it.
@@ -765,7 +765,7 @@ export async function writeFile(
 
 async function writeFileHandle(
     handle: FileSystemFileHandle,
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob | File,
+    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
     options: {
         append?: boolean;
         signal?: AbortSignal;

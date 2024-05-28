@@ -9,6 +9,9 @@ async function toBytes(data) {
     else if (data instanceof ArrayBuffer) {
         bin = new Uint8Array(data);
     }
+    else if (data instanceof Uint8Array) {
+        bin = data;
+    }
     else if (ArrayBuffer.isView(data)) {
         bin = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
     }

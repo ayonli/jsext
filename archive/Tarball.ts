@@ -271,7 +271,7 @@ export default class Tarball {
 
     private constructEntry(
         relativePath: string,
-        data: string | ArrayBuffer | ArrayBufferView | Blob | ReadableStream<Uint8Array> | null,
+        data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob | null,
         info: Partial<Omit<TarEntry, "relativePath">>,
     ): TarEntryWithData {
         // UStar format has a limitation of file name length. Specifically:
@@ -312,11 +312,11 @@ export default class Tarball {
             const _data = bytes(data);
             body = toReadableStream([_data]);
             size = _data.byteLength;
-        } else if (data instanceof Uint8Array) {
-            body = toReadableStream([data]);
-            size = data.byteLength;
         } else if (data instanceof ArrayBuffer) {
             body = toReadableStream([new Uint8Array(data)]);
+            size = data.byteLength;
+        } else if (data instanceof Uint8Array) {
+            body = toReadableStream([data]);
             size = data.byteLength;
         } else if (ArrayBuffer.isView(data)) {
             const _data = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
@@ -483,7 +483,7 @@ export default class Tarball {
      */
     replace(
         relativePath: string,
-        data: string | ArrayBuffer | ArrayBufferView | Blob | File | ReadableStream<Uint8Array> | null,
+        data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob | null,
         info: Partial<Omit<TarEntry, "relativePath">> = {}
     ): boolean {
         const index = this[_entries].findIndex((entry) => entry.relativePath === relativePath);

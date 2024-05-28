@@ -205,8 +205,9 @@ export default async function untar(
         if (lastChunk.byteLength) {
             throw new Error("The archive is corrupted");
         } else if (totalBytes && totalWrittenBytes < totalBytes && options.onProgress) {
+            totalWrittenBytes = totalBytes;
             options.onProgress(createProgressEvent(
-                totalBytes,
+                totalWrittenBytes,
                 totalBytes,
                 true
             ));

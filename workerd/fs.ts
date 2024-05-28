@@ -76,8 +76,9 @@ export async function readFileAsText(target: string | FileSystemFileHandle, opti
     throw new Error("Unsupported runtime");
 }
 
-export async function writeFile(target: string | FileSystemFileHandle,
-    data: Uint8Array | string,
+export async function writeFile(
+    target: string | FileSystemFileHandle,
+    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
     options: FileSystemOptions & {
         append?: boolean;
         mode?: number;

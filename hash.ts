@@ -21,6 +21,7 @@ async function nodeHash(
         return hash.digest(encoding);
     } else {
         const result = hash.digest();
+        // Truncate the buffer to the actual byte length so it's consistent with the web API.
         return result.buffer.slice(0, result.byteLength);
     }
 }

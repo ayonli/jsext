@@ -148,7 +148,8 @@ async function untar(src, dest = {}, options = {}) {
             throw new Error("The archive is corrupted");
         }
         else if (totalBytes && totalWrittenBytes < totalBytes && options.onProgress) {
-            options.onProgress(createProgressEvent(totalBytes, totalBytes, true));
+            totalWrittenBytes = totalBytes;
+            options.onProgress(createProgressEvent(totalWrittenBytes, totalBytes, true));
         }
     }
     finally {
