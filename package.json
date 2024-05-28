@@ -166,6 +166,7 @@
         "./hash": {
             "types": "./types/hash.d.ts",
             "bun": "./hash.ts",
+            "workerd": "./esm/workerd/hash.js",
             "require": "./cjs/hash.js",
             "import": "./esm/hash.js",
             "default": "./hash.ts"
