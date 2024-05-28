@@ -9,7 +9,7 @@ import { browserPickFile, browserPickFiles, browserPickFolder } from './terminal
 import { asyncTask } from '../async.js';
 import { concat } from '../bytes.js';
 import { getExtensions } from '../filetype.js';
-import { readDir, readFileAsFile, writeFile } from '../fs.js';
+import { readFileAsFile, readDir, writeFile } from '../fs.js';
 import { fixFileType } from '../fs/util.js';
 import { as } from '../object.js';
 import { join, basename } from '../path.js';
@@ -104,7 +104,94 @@ async function pickDirectory(options = {}) {
 }
 async function openFile(options = {}) {
     const { title = "", type = "", multiple = false, directory = false } = options;
-    if (directory && typeof globalThis["showDirectoryPicker"] === "function") {
+    if (directory) {
+        return await openDirectory({ title });
+    }
+    else if (multiple) {
+        return await openFiles({ title, type });
+    }
+    if (typeof globalThis["showOpenFilePicker"] === "function") {
+        const handle = await browserPickFile(type);
+        return handle ? await handle.getFile().then(fixFileType) : null;
+    }
+    else if (isBrowserWindow) {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = type !== null && type !== void 0 ? type : "";
+        return await new Promise(resolve => {
+            input.onchange = () => {
+                var _a;
+                const file = (_a = input.files) === null || _a === void 0 ? void 0 : _a[0];
+                resolve(file ? fixFileType(file) : null);
+            };
+            input.oncancel = () => {
+                resolve(null);
+            };
+            if (typeof input.showPicker === "function") {
+                input.showPicker();
+            }
+            else {
+                input.click();
+            }
+        });
+    }
+    else if (isDeno || isNodeLike) {
+        let filename = await pickFile({ title, type });
+        if (filename) {
+            return await readFileAsFile(filename);
+        }
+        else {
+            return null;
+        }
+    }
+    else {
+        throw new Error("Unsupported runtime");
+    }
+}
+/**
+ * Open the file picker dialog and pick multiple files to open.
+ */
+async function openFiles(options = {}) {
+    if (typeof globalThis["showOpenFilePicker"] === "function") {
+        const handles = await browserPickFiles(options.type);
+        const files = [];
+        for (const handle of handles) {
+            const file = await handle.getFile();
+            files.push(fixFileType(file));
+        }
+        return files;
+    }
+    else if (isBrowserWindow) {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.multiple = true;
+        input.accept = options.type || "";
+        return await new Promise(resolve => {
+            input.onchange = () => {
+                const files = input.files;
+                resolve(files ? [...files].map(fixFileType) : []);
+            };
+            input.oncancel = () => {
+                resolve([]);
+            };
+            if (typeof input.showPicker === "function") {
+                input.showPicker();
+            }
+            else {
+                input.click();
+            }
+        });
+    }
+    else if (isDeno || isNodeLike) {
+        const filenames = await pickFiles(options);
+        return await Promise.all(filenames.map(path => readFileAsFile(path)));
+    }
+    else {
+        throw new Error("Unsupported runtime");
+    }
+}
+async function openDirectory(options = {}) {
+    if (typeof globalThis["showDirectoryPicker"] === "function") {
         const files = [];
         const dir = await browserPickFolder();
         if (!dir) {
@@ -124,45 +211,17 @@ async function openFile(options = {}) {
         }
         return files;
     }
-    else if (typeof globalThis["showOpenFilePicker"] === "function") {
-        if (multiple) {
-            const handles = await browserPickFiles(type);
-            const files = [];
-            for (const handle of handles) {
-                const file = await handle.getFile();
-                files.push(fixFileType(file));
-            }
-            return files;
-        }
-        else {
-            const handle = await browserPickFile(type);
-            return handle ? await handle.getFile().then(fixFileType) : null;
-        }
-    }
     else if (isBrowserWindow) {
         const input = document.createElement("input");
         input.type = "file";
-        input.accept = type !== null && type !== void 0 ? type : "";
-        input.multiple = multiple !== null && multiple !== void 0 ? multiple : false;
-        input.webkitdirectory = directory !== null && directory !== void 0 ? directory : false;
+        input.webkitdirectory = true;
         return await new Promise(resolve => {
             input.onchange = () => {
-                var _a;
                 const files = input.files;
-                if (directory || multiple) {
-                    resolve(files ? [...files] : []);
-                }
-                else {
-                    resolve(files ? ((_a = files[0]) !== null && _a !== void 0 ? _a : null) : null);
-                }
+                resolve(files ? [...files].map(fixFileType) : []);
             };
             input.oncancel = () => {
-                if (directory || multiple) {
-                    resolve([]);
-                }
-                else {
-                    resolve(null);
-                }
+                resolve([]);
             };
             if (typeof input.showPicker === "function") {
                 input.showPicker();
@@ -173,18 +232,7 @@ async function openFile(options = {}) {
         });
     }
     else if (isDeno || isNodeLike) {
-        let filename;
-        let filenames;
-        let dirname;
-        if (directory) {
-            dirname = await pickDirectory({ title });
-        }
-        else if (multiple) {
-            filenames = await pickFiles({ title, type });
-        }
-        else {
-            filename = await pickFile({ title, type });
-        }
+        const dirname = await pickDirectory(options);
         if (dirname) {
             const files = [];
             for await (const entry of readDir(dirname, { recursive: true })) {
@@ -202,17 +250,8 @@ async function openFile(options = {}) {
             }
             return files;
         }
-        else if (filenames) {
-            return await Promise.all(filenames.map(path => readFileAsFile(path)));
-        }
-        else if (filename) {
-            return await readFileAsFile(filename);
-        }
-        else if (directory || multiple) {
-            return [];
-        }
         else {
-            return null;
+            return [];
         }
     }
     else {
@@ -342,5 +381,5 @@ async function downloadFile(url, options = {}) {
     }
 }
 
-export { downloadFile, openFile, pickDirectory, pickFile, pickFiles, saveFile };
+export { downloadFile, openDirectory, openFile, openFiles, pickDirectory, pickFile, pickFiles, saveFile };
 //# sourceMappingURL=file.js.map

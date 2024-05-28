@@ -49,11 +49,17 @@ export function openFile(options?: {
     title?: string;
     type?: string;
 }): Promise<File | null>;
+/**
+ * @deprecated use {@link openFiles} instead.
+ */
 export function openFile(options: {
     title?: string;
     type?: string;
     multiple: true;
 }): Promise<File[]>;
+/**
+ * @deprecated use {@link openDirectory} instead.
+ */
 export function openFile(options: {
     title?: string;
     directory: true;
@@ -64,6 +70,21 @@ export async function openFile(options: {
     multiple?: boolean;
     directory?: boolean;
 } = {}): Promise<File | File[] | null> {
+    void options;
+    throw new Error("Unsupported runtime");
+}
+
+export async function openFiles(options?: {
+    title?: string;
+    type?: string;
+}): Promise<File[] | null> {
+    void options;
+    throw new Error("Unsupported runtime");
+}
+
+export async function openDirectory(options?: {
+    title?: string;
+}): Promise<File | null> {
     void options;
     throw new Error("Unsupported runtime");
 }

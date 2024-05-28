@@ -140,7 +140,9 @@ export async function pickDirectory(options: {
     throw new Error("Unsupported platform");
 }
 
-/** Open the file picker dialog and pick a file to open. */
+/**
+ * Open the file picker dialog and pick a file to open.
+ */
 export function openFile(options?: {
     /** Custom the dialog's title. This option is ignored in the browser. */
     title?: string;
@@ -150,13 +152,21 @@ export function openFile(options?: {
      */
     type?: string;
 }): Promise<File | null>;
-/** Open the file picker dialog and pick multiple files to open. */
+/**
+ * Open the file picker dialog and pick multiple files to open.
+ * 
+ * @deprecated use {@link openFiles} instead.
+ */
 export function openFile(options: {
     title?: string;
     type?: string;
     multiple: true;
 }): Promise<File[]>;
-/** Open the file picker dialog and pick a directory to open. */
+/**
+ * Open the file picker dialog and pick a directory to open.
+ * 
+ * @deprecated use {@link openDirectory} instead.
+ */
 export function openFile(options: {
     title?: string;
     directory: true;
@@ -169,7 +179,104 @@ export async function openFile(options: {
 } = {}): Promise<File | File[] | null> {
     const { title = "", type = "", multiple = false, directory = false } = options;
 
-    if (directory && typeof (globalThis as any)["showDirectoryPicker"] === "function") {
+    if (directory) {
+        return await openDirectory({ title });
+    } else if (multiple) {
+        return await openFiles({ title, type });
+    }
+
+    if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
+        const handle = await browserPickFile(type);
+        return handle ? await handle.getFile().then(fixFileType) : null;
+    } else if (isBrowserWindow) {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = type ?? "";
+
+        return await new Promise<File | File[] | null>(resolve => {
+            input.onchange = () => {
+                const file = input.files?.[0];
+                resolve(file ? fixFileType(file) : null);
+            };
+            input.oncancel = () => {
+                resolve(null);
+            };
+
+            if (typeof input.showPicker === "function") {
+                input.showPicker();
+            } else {
+                input.click();
+            }
+        });
+    } else if (isDeno || isNodeLike) {
+        let filename = await pickFile({ title, type }) as string | null;
+
+        if (filename) {
+            return await readFileAsFile(filename);
+        } else {
+            return null;
+        }
+    } else {
+        throw new Error("Unsupported runtime");
+    }
+}
+
+/**
+ * Open the file picker dialog and pick multiple files to open.
+ */
+export async function openFiles(options: {
+    /** Custom the dialog's title. This option is ignored in the browser. */
+    title?: string;
+    /**
+     * Filter files by providing a MIME type or suffix, multiple types can be
+     * separated via `,`.
+     */
+    type?: string;
+} = {}): Promise<File[]> {
+    if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
+        const handles = await browserPickFiles(options.type);
+        const files: File[] = [];
+
+        for (const handle of handles) {
+            const file = await handle.getFile();
+            files.push(fixFileType(file));
+        }
+
+        return files;
+    } else if (isBrowserWindow) {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.multiple = true;
+        input.accept = options.type || "";
+
+        return await new Promise<File[]>(resolve => {
+            input.onchange = () => {
+                const files = input.files;
+                resolve(files ? [...files].map(fixFileType) : []);
+            };
+            input.oncancel = () => {
+                resolve([]);
+            };
+
+            if (typeof input.showPicker === "function") {
+                input.showPicker();
+            } else {
+                input.click();
+            }
+        });
+    } else if (isDeno || isNodeLike) {
+        const filenames = await pickFiles(options) as string[];
+        return await Promise.all(filenames.map(path => readFileAsFile(path)));
+    } else {
+        throw new Error("Unsupported runtime");
+    }
+}
+
+export async function openDirectory(options: {
+    /** Custom the dialog's title. This option is ignored in the browser. */
+    title?: string;
+} = {}): Promise<File[]> {
+    if (typeof (globalThis as any)["showDirectoryPicker"] === "function") {
         const files: File[] = [];
         const dir = await browserPickFolder();
 
@@ -193,44 +300,18 @@ export async function openFile(options: {
         }
 
         return files;
-    } else if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
-        if (multiple) {
-            const handles = await browserPickFiles(type);
-            const files: File[] = [];
-
-            for (const handle of handles) {
-                const file = await handle.getFile();
-                files.push(fixFileType(file));
-            }
-
-            return files;
-        } else {
-            const handle = await browserPickFile(type);
-            return handle ? await handle.getFile().then(fixFileType) : null;
-        }
     } else if (isBrowserWindow) {
         const input = document.createElement("input");
         input.type = "file";
-        input.accept = type ?? "";
-        input.multiple = multiple ?? false;
-        input.webkitdirectory = directory ?? false;
+        input.webkitdirectory = true;
 
-        return await new Promise<File | File[] | null>(resolve => {
+        return await new Promise<File[]>(resolve => {
             input.onchange = () => {
                 const files = input.files;
-
-                if (directory || multiple) {
-                    resolve(files ? [...files] : []);
-                } else {
-                    resolve(files ? (files[0] ?? null) : null);
-                }
+                resolve(files ? [...files].map(fixFileType) : []);
             };
             input.oncancel = () => {
-                if (directory || multiple) {
-                    resolve([]);
-                } else {
-                    resolve(null);
-                }
+                resolve([]);
             };
 
             if (typeof input.showPicker === "function") {
@@ -240,17 +321,7 @@ export async function openFile(options: {
             }
         });
     } else if (isDeno || isNodeLike) {
-        let filename: string | null | undefined;
-        let filenames: string[] | null | undefined;
-        let dirname: string | null | undefined;
-
-        if (directory) {
-            dirname = await pickDirectory({ title }) as string | null;
-        } else if (multiple) {
-            filenames = await pickFiles({ title, type }) as string[];
-        } else {
-            filename = await pickFile({ title, type }) as string | null;
-        }
+        const dirname = await pickDirectory(options) as string | null;
 
         if (dirname) {
             const files: File[] = [];
@@ -272,14 +343,8 @@ export async function openFile(options: {
             }
 
             return files;
-        } else if (filenames) {
-            return await Promise.all(filenames.map(path => readFileAsFile(path)));
-        } else if (filename) {
-            return await readFileAsFile(filename);
-        } else if (directory || multiple) {
-            return [];
         } else {
-            return null;
+            return [];
         }
     } else {
         throw new Error("Unsupported runtime");
