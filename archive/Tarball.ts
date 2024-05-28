@@ -621,6 +621,9 @@ export default class Tarball {
         const reader = stream.getReader();
         let lastChunk: Uint8Array = new Uint8Array(0);
         let rawHeader: USTarFileHeader | null = null;
+        let entry: TarEntry | null = null;
+        let writer: Uint8Array[] | null = null;
+        let writtenBytes = 0;
 
         try {
             outer:
@@ -634,12 +637,13 @@ export default class Tarball {
                 lastChunk = lastChunk.byteLength ? concatBytes(lastChunk, value) : value;
 
                 while (true) {
-                    if (!rawHeader) {
+                    if (!entry) {
                         if (lastChunk.byteLength >= HEADER_LENGTH) {
                             const _header = parseHeader(lastChunk);
 
                             if (_header) {
                                 [rawHeader, lastChunk] = _header;
+                                entry = createEntry(rawHeader);
                             } else {
                                 lastChunk = new Uint8Array(0);
                                 break outer;
@@ -649,25 +653,36 @@ export default class Tarball {
                         }
                     }
 
-                    const fileSize = parseInt(rawHeader.size, 8);
+                    const fileSize = entry.size;
 
-                    if (lastChunk.byteLength >= fileSize) {
-                        const data = lastChunk.slice(0, fileSize); // use slice to make a copy
-                        const entry = {
-                            ...createEntry(rawHeader),
-                            header: formatHeader(rawHeader),
-                            body: toReadableStream([data]),
+                    if (writer) {
+                        const chunk = lastChunk.slice(0, fileSize - writtenBytes);
+                        writer.push(chunk);
+                        lastChunk = lastChunk.slice(fileSize - writtenBytes);
+                        writtenBytes += chunk.byteLength;
+                    } else {
+                        writer = [];
+                        continue;
+                    }
+
+                    if (writtenBytes === fileSize) {
+                        const _entry: TarEntryWithData = {
+                            ...entry,
+                            header: formatHeader(rawHeader!),
+                            body: toReadableStream(writer),
                         };
-                        tarball[_entries].push(entry);
+                        tarball[_entries].push(_entry);
 
                         const paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
-                        if (paddingSize > 0) {
-                            lastChunk = lastChunk.subarray(fileSize + paddingSize);
-                        } else {
-                            lastChunk = lastChunk.subarray(fileSize);
+
+                        if (paddingSize && lastChunk.byteLength >= paddingSize) {
+                            lastChunk = lastChunk.slice(paddingSize);
                         }
 
+                        writtenBytes = 0;
                         rawHeader = null;
+                        entry = null;
+                        writer = null;
                     } else {
                         break;
                     }

@@ -459,6 +459,9 @@ class Tarball {
         const reader = stream.getReader();
         let lastChunk = new Uint8Array(0);
         let rawHeader = null;
+        let entry = null;
+        let writer = null;
+        let writtenBytes = 0;
         try {
             outer: while (true) {
                 const { done, value } = await reader.read();
@@ -467,11 +470,12 @@ class Tarball {
                 }
                 lastChunk = lastChunk.byteLength ? concat$1(lastChunk, value) : value;
                 while (true) {
-                    if (!rawHeader) {
+                    if (!entry) {
                         if (lastChunk.byteLength >= HEADER_LENGTH) {
                             const _header = parseHeader(lastChunk);
                             if (_header) {
                                 [rawHeader, lastChunk] = _header;
+                                entry = createEntry(rawHeader);
                             }
                             else {
                                 lastChunk = new Uint8Array(0);
@@ -482,23 +486,32 @@ class Tarball {
                             break;
                         }
                     }
-                    const fileSize = parseInt(rawHeader.size, 8);
-                    if (lastChunk.byteLength >= fileSize) {
-                        const data = lastChunk.slice(0, fileSize); // use slice to make a copy
-                        const entry = {
-                            ...createEntry(rawHeader),
+                    const fileSize = entry.size;
+                    if (writer) {
+                        const chunk = lastChunk.slice(0, fileSize - writtenBytes);
+                        writer.push(chunk);
+                        lastChunk = lastChunk.slice(fileSize - writtenBytes);
+                        writtenBytes += chunk.byteLength;
+                    }
+                    else {
+                        writer = [];
+                        continue;
+                    }
+                    if (writtenBytes === fileSize) {
+                        const _entry = {
+                            ...entry,
                             header: formatHeader(rawHeader),
-                            body: toReadableStream([data]),
+                            body: toReadableStream(writer),
                         };
-                        tarball[_entries].push(entry);
+                        tarball[_entries].push(_entry);
                         const paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
-                        if (paddingSize > 0) {
-                            lastChunk = lastChunk.subarray(fileSize + paddingSize);
+                        if (paddingSize && lastChunk.byteLength >= paddingSize) {
+                            lastChunk = lastChunk.slice(paddingSize);
                         }
-                        else {
-                            lastChunk = lastChunk.subarray(fileSize);
-                        }
+                        writtenBytes = 0;
                         rawHeader = null;
+                        entry = null;
+                        writer = null;
                     }
                     else {
                         break;

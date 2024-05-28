@@ -94,9 +94,8 @@ export default async function untar(
     const reader = input.getReader();
     let lastChunk: Uint8Array = new Uint8Array(0);
     let entry: TarEntry | null = null;
-    let writer: WritableStreamDefaultWriter<Uint8Array> | undefined;
+    let writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
     let writtenBytes = 0;
-    let paddingSize = 0;
 
     try {
         outer:
@@ -108,11 +107,6 @@ export default async function untar(
             }
 
             lastChunk = lastChunk.byteLength ? concatBytes(lastChunk, value) : value;
-
-            if (paddingSize > 0 && lastChunk.byteLength >= paddingSize) {
-                lastChunk = lastChunk.subarray(paddingSize);
-                paddingSize = 0;
-            }
 
             while (true) {
                 if (!entry) {
@@ -185,16 +179,15 @@ export default async function untar(
                 }
 
                 if (writtenBytes === fileSize) {
-                    paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
+                    const paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
 
                     if (paddingSize && lastChunk.byteLength >= paddingSize) {
                         lastChunk = lastChunk.subarray(paddingSize);
-                        paddingSize = 0;
                     }
 
                     writtenBytes = 0;
                     writer?.close();
-                    writer = undefined;
+                    writer = null;
                     entry = null;
                 } else {
                     break;
