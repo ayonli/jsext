@@ -89,7 +89,7 @@ function parseHeader(header) {
     if (!data.magic.startsWith("ustar")) {
         throw new TypeError("Unsupported archive format: " + data.magic);
     }
-    return [data, header.subarray(offset)];
+    return [data, header.subarray(0, offset), header.subarray(offset)];
 }
 function getChecksum(header) {
     let sum = initialChecksum;
@@ -458,10 +458,12 @@ class Tarball {
         const tarball = new Tarball();
         const reader = stream.getReader();
         let lastChunk = new Uint8Array(0);
-        let rawHeader = null;
+        let header = null;
+        let headerInfo = null;
         let entry = null;
         let writer = null;
         let writtenBytes = 0;
+        let paddingSize = 0;
         try {
             outer: while (true) {
                 const { done, value } = await reader.read();
@@ -470,12 +472,16 @@ class Tarball {
                 }
                 lastChunk = lastChunk.byteLength ? concat$1(lastChunk, value) : value;
                 while (true) {
+                    if (paddingSize > 0 && lastChunk.byteLength >= paddingSize) {
+                        lastChunk = lastChunk.subarray(paddingSize);
+                        paddingSize = 0;
+                    }
                     if (!entry) {
                         if (lastChunk.byteLength >= HEADER_LENGTH) {
                             const _header = parseHeader(lastChunk);
                             if (_header) {
-                                [rawHeader, lastChunk] = _header;
-                                entry = createEntry(rawHeader);
+                                [headerInfo, header, lastChunk] = _header;
+                                entry = createEntry(headerInfo);
                             }
                             else {
                                 lastChunk = new Uint8Array(0);
@@ -488,10 +494,18 @@ class Tarball {
                     }
                     const fileSize = entry.size;
                     if (writer) {
-                        const chunk = lastChunk.slice(0, fileSize - writtenBytes);
-                        writer.push(chunk);
-                        lastChunk = lastChunk.slice(fileSize - writtenBytes);
-                        writtenBytes += chunk.byteLength;
+                        let leftBytes = fileSize - writtenBytes;
+                        if (lastChunk.byteLength > leftBytes) {
+                            const chunk = lastChunk.subarray(0, leftBytes);
+                            writer.push(chunk);
+                            writtenBytes += chunk.byteLength;
+                            lastChunk = lastChunk.subarray(leftBytes);
+                        }
+                        else {
+                            writer.push(lastChunk);
+                            writtenBytes += lastChunk.byteLength;
+                            lastChunk = new Uint8Array(0);
+                        }
                     }
                     else {
                         writer = [];
@@ -500,16 +514,14 @@ class Tarball {
                     if (writtenBytes === fileSize) {
                         const _entry = {
                             ...entry,
-                            header: formatHeader(rawHeader),
+                            header: header,
                             body: toReadableStream(writer),
                         };
                         tarball[_entries].push(_entry);
-                        const paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
-                        if (paddingSize && lastChunk.byteLength >= paddingSize) {
-                            lastChunk = lastChunk.slice(paddingSize);
-                        }
+                        paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
                         writtenBytes = 0;
-                        rawHeader = null;
+                        headerInfo = null;
+                        header = null;
                         entry = null;
                         writer = null;
                     }

@@ -157,7 +157,7 @@ function formatHeader(data: USTarFileHeader): Uint8Array {
     return buffer;
 }
 
-export function parseHeader(header: Uint8Array): [USTarFileHeader, leftChunk: Uint8Array] | null {
+export function parseHeader(header: Uint8Array): [USTarFileHeader, header: Uint8Array, leftChunk: Uint8Array] | null {
     const decoder = new TextDecoder();
     const data: USTarFileHeader = {} as USTarFileHeader;
     let offset = 0;
@@ -189,7 +189,7 @@ export function parseHeader(header: Uint8Array): [USTarFileHeader, leftChunk: Ui
         throw new TypeError("Unsupported archive format: " + data.magic);
     }
 
-    return [data, header.subarray(offset)];
+    return [data, header.subarray(0, offset), header.subarray(offset)];
 }
 
 function getChecksum(header: Uint8Array): number {
@@ -620,10 +620,12 @@ export default class Tarball {
         const tarball = new Tarball();
         const reader = stream.getReader();
         let lastChunk: Uint8Array = new Uint8Array(0);
-        let rawHeader: USTarFileHeader | null = null;
+        let header: Uint8Array | null = null;
+        let headerInfo: USTarFileHeader | null = null;
         let entry: TarEntry | null = null;
         let writer: Uint8Array[] | null = null;
         let writtenBytes = 0;
+        let paddingSize = 0;
 
         try {
             outer:
@@ -637,13 +639,18 @@ export default class Tarball {
                 lastChunk = lastChunk.byteLength ? concatBytes(lastChunk, value) : value;
 
                 while (true) {
+                    if (paddingSize > 0 && lastChunk.byteLength >= paddingSize) {
+                        lastChunk = lastChunk.subarray(paddingSize);
+                        paddingSize = 0;
+                    }
+
                     if (!entry) {
                         if (lastChunk.byteLength >= HEADER_LENGTH) {
                             const _header = parseHeader(lastChunk);
 
                             if (_header) {
-                                [rawHeader, lastChunk] = _header;
-                                entry = createEntry(rawHeader);
+                                [headerInfo, header, lastChunk] = _header;
+                                entry = createEntry(headerInfo);
                             } else {
                                 lastChunk = new Uint8Array(0);
                                 break outer;
@@ -656,10 +663,18 @@ export default class Tarball {
                     const fileSize = entry.size;
 
                     if (writer) {
-                        const chunk = lastChunk.slice(0, fileSize - writtenBytes);
-                        writer.push(chunk);
-                        lastChunk = lastChunk.slice(fileSize - writtenBytes);
-                        writtenBytes += chunk.byteLength;
+                        let leftBytes = fileSize - writtenBytes;
+
+                        if (lastChunk.byteLength > leftBytes) {
+                            const chunk = lastChunk.subarray(0, leftBytes);
+                            writer.push(chunk);
+                            writtenBytes += chunk.byteLength;
+                            lastChunk = lastChunk.subarray(leftBytes);
+                        } else {
+                            writer.push(lastChunk);
+                            writtenBytes += lastChunk.byteLength;
+                            lastChunk = new Uint8Array(0);
+                        }
                     } else {
                         writer = [];
                         continue;
@@ -668,19 +683,15 @@ export default class Tarball {
                     if (writtenBytes === fileSize) {
                         const _entry: TarEntryWithData = {
                             ...entry,
-                            header: formatHeader(rawHeader!),
+                            header: header!,
                             body: toReadableStream(writer),
                         };
                         tarball[_entries].push(_entry);
 
-                        const paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
-
-                        if (paddingSize && lastChunk.byteLength >= paddingSize) {
-                            lastChunk = lastChunk.slice(paddingSize);
-                        }
-
+                        paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
                         writtenBytes = 0;
-                        rawHeader = null;
+                        headerInfo = null;
+                        header = null;
                         entry = null;
                         writer = null;
                     } else {

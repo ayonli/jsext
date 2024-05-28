@@ -2,7 +2,7 @@ import { deepStrictEqual, strictEqual } from "node:assert";
 import tar from "./tar.ts";
 import { pick } from "../object.ts";
 import Tarball, { TarEntry } from "./Tarball.ts";
-import { DirEntry, createWritableStream, mkdir, readDir, remove, stat } from "../fs.ts";
+import { DirEntry, createWritableStream, exists, mkdir, readDir, readFileAsText, remove, stat } from "../fs.ts";
 import func from "../func.ts";
 import untar from "./untar.ts";
 import { readAsArray } from "../reader.ts";
@@ -74,13 +74,16 @@ describe("archive/untar", () => {
     });
 
     it("extract tarball files", func(async (defer) => {
-        const dir = "./tmp";
-        await untar(filename1, dir);
-        defer(() => remove(dir, { recursive: true }));
+        const outDir = "./tmp";
+        await untar(filename1, outDir);
+        defer(() => remove(outDir, { recursive: true }));
 
-        const _entries = await readAsArray(readDir(dir, { recursive: true }));
-        const entries = _entries.map(entry => pick(entry, ["name", "kind", "relativePath"]));
-        deepStrictEqual(orderBy(entries, e => e.relativePath), [
+        const _entries = await readAsArray(readDir(outDir, { recursive: true }));
+        const entries = orderBy(
+            _entries.map(entry => pick(entry, ["name", "kind", "relativePath"])),
+            e => e.relativePath);
+
+        deepStrictEqual(entries, [
             {
                 name: "fs",
                 kind: "directory",
@@ -97,6 +100,17 @@ describe("archive/untar", () => {
                 relativePath: join("fs", "util.ts"),
             },
         ] as Partial<DirEntry>[]);
+
+        for (const entry of entries) {
+            if (entry.kind === "file") {
+                const content1 = await readFileAsText(join(outDir, entry.relativePath));
+                const content2 = await readFileAsText(entry.relativePath);
+                strictEqual(content1, content2);
+            } else if (entry.kind === "directory") {
+                const ok = await exists(entry.relativePath);
+                strictEqual(ok, true);
+            }
+        }
     }));
 
     it("extract tarball files with gzip", func(async function (defer) {
@@ -104,13 +118,16 @@ describe("archive/untar", () => {
             this.skip();
         }
 
-        const dir = "./tmp";
-        await untar(filename2, dir, { gzip: true });
-        defer(() => remove(dir, { recursive: true }));
+        const outDir = "./tmp";
+        await untar(filename2, outDir, { gzip: true });
+        defer(() => remove(outDir, { recursive: true }));
 
-        const _entries = await readAsArray(readDir(dir, { recursive: true }));
-        const entries = _entries.map(entry => pick(entry, ["name", "kind", "relativePath"]));
-        deepStrictEqual(orderBy(entries, e => e.relativePath), [
+        const _entries = await readAsArray(readDir(outDir, { recursive: true }));
+        const entries = orderBy(
+            _entries.map(entry => pick(entry, ["name", "kind", "relativePath"])),
+            e => e.relativePath);
+
+        deepStrictEqual(entries, [
             {
                 name: "fs",
                 kind: "directory",
@@ -127,6 +144,59 @@ describe("archive/untar", () => {
                 relativePath: join("fs", "util.ts"),
             },
         ] as Partial<DirEntry>[]);
+
+        for (const entry of entries) {
+            if (entry.kind === "file") {
+                const content1 = await readFileAsText(join(outDir, entry.relativePath));
+                const content2 = await readFileAsText(entry.relativePath);
+                strictEqual(content1, content2);
+            } else if (entry.kind === "directory") {
+                const ok = await exists(entry.relativePath);
+                strictEqual(ok, true);
+            }
+        }
+    }));
+
+    it("extract tarball files from another tarball", func(async function (defer) {
+        const gzip = typeof CompressionStream === "function";
+        const outDir = "./tmp";
+        const tarball = await untar(gzip ? filename2 : filename1, { gzip });
+        await untar(tarball.stream(), outDir);
+        defer(() => remove(outDir, { recursive: true }));
+
+        const _entries = await readAsArray(readDir(outDir, { recursive: true }));
+        const entries = orderBy(
+            _entries.map(entry => pick(entry, ["name", "kind", "relativePath"])),
+            e => e.relativePath);
+
+        deepStrictEqual(entries, [
+            {
+                name: "fs",
+                kind: "directory",
+                relativePath: "fs",
+            },
+            {
+                name: "types.ts",
+                kind: "file",
+                relativePath: join("fs", "types.ts"),
+            },
+            {
+                name: "util.ts",
+                kind: "file",
+                relativePath: join("fs", "util.ts"),
+            },
+        ] as Partial<DirEntry>[]);
+
+        for (const entry of entries) {
+            if (entry.kind === "file") {
+                const content1 = await readFileAsText(join(outDir, entry.relativePath));
+                const content2 = await readFileAsText(entry.relativePath);
+                strictEqual(content1, content2);
+            } else if (entry.kind === "directory") {
+                const ok = await exists(entry.relativePath);
+                strictEqual(ok, true);
+            }
+        }
     }));
 
     it("extract tarball files and restore metadata", func(async function (defer) {

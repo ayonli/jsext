@@ -56,6 +56,7 @@ async function untar(src, dest = {}, options = {}) {
     let entry = null;
     let writer = null;
     let writtenBytes = 0;
+    let paddingSize = 0;
     try {
         outer: while (true) {
             const { done, value } = await reader.read();
@@ -64,11 +65,15 @@ async function untar(src, dest = {}, options = {}) {
             }
             lastChunk = lastChunk.byteLength ? concat(lastChunk, value) : value;
             while (true) {
+                if (paddingSize > 0 && lastChunk.byteLength >= paddingSize) {
+                    lastChunk = lastChunk.subarray(paddingSize);
+                    paddingSize = 0;
+                }
                 if (!entry) {
                     if (lastChunk.byteLength >= HEADER_LENGTH) {
                         const _header = parseHeader(lastChunk);
                         if (_header) {
-                            lastChunk = _header[1];
+                            lastChunk = _header[2];
                             entry = createEntry(_header[0]);
                             entries.push(entry);
                         }
@@ -124,10 +129,7 @@ async function untar(src, dest = {}, options = {}) {
                     continue;
                 }
                 if (writtenBytes === fileSize) {
-                    const paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
-                    if (paddingSize && lastChunk.byteLength >= paddingSize) {
-                        lastChunk = lastChunk.subarray(paddingSize);
-                    }
+                    paddingSize = HEADER_LENGTH - (fileSize % HEADER_LENGTH || HEADER_LENGTH);
                     writtenBytes = 0;
                     writer === null || writer === void 0 ? void 0 : writer.close();
                     writer = null;

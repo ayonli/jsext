@@ -235,6 +235,38 @@ describe("archive/Tarball", () => {
         }
     });
 
+    it("load from another tarball", async () => {
+        const gzip = typeof CompressionStream === "undefined";
+        const input = createReadableStream(gzip ? filename2 : filename1);
+        const _tarball = await Tarball.load(input, { gzip });
+        const tarball = await Tarball.load(_tarball.stream());
+
+        ok([...tarball].some(entry => entry.kind === "directory"));
+        strictEqual([...tarball].length, 4);
+        let i = 0;
+
+        for (const entry of tarball) {
+            const _entry = tarball[_entries][i++]!;
+            if (entry.kind === "file") {
+                const data = await readAsText(_entry.body);
+                const text = await readFileAsText(entry.relativePath);
+                strictEqual(data, text);
+            } else if (entry.kind === "directory") {
+                ok(entry.mtime instanceof Date);
+                deepStrictEqual(omit(entry, ["relativePath", "mtime", "stream"]), {
+                    name: "array",
+                    kind: "directory",
+                    size: 0,
+                    mode: 0o755,
+                    uid: 0,
+                    gid: 0,
+                    owner: "",
+                    group: "",
+                } as TarEntry);
+            }
+        }
+    });
+
     it("treeView", () => {
         const tarball = new Tarball();
         const now = new Date();
