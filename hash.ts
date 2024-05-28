@@ -4,7 +4,9 @@
  */
 
 import { isDeno, isNodeLike } from "./env.ts";
-import { toBytes, sha1 as _sha1, sha256 as _sha256, sha512 as _sha512 } from "./hash/web.ts";
+import { hash, toBytes, sha1 as _sha1, sha256 as _sha256, sha512 as _sha512 } from "./hash/web.ts";
+
+export default hash;
 
 async function nodeHash(
     algorithm: "sha1" | "sha256" | "sha512" | "md5",

@@ -46,7 +46,10 @@ export default {
     error,
     filetype,
     fs,
-    hash,
+    hash: {
+        ...object.omit(hash, ["default"]),
+        hash: hash.default,
+    },
     json,
     math,
     module,

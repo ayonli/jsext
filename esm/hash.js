@@ -1,5 +1,5 @@
 import { isDeno, isNodeLike } from './env.js';
-import { sha1 as sha1$1, sha256 as sha256$1, sha512 as sha512$1, toBytes } from './hash/web.js';
+import { hash, sha1 as sha1$1, sha256 as sha256$1, sha512 as sha512$1, toBytes } from './hash/web.js';
 
 /**
  * Simplified hash functions for various data types.
@@ -61,5 +61,5 @@ async function md5(data, encoding = undefined) {
     }
 }
 
-export { md5, sha1, sha256, sha512 };
+export { hash as default, md5, sha1, sha256, sha512 };
 //# sourceMappingURL=hash.js.map

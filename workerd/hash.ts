@@ -1,6 +1,7 @@
 import { text } from "../bytes.ts";
-import { toBytes, sha1, sha256, sha512 } from "../hash/web.ts";
+import { hash, toBytes, sha1, sha256, sha512 } from "../hash/web.ts";
 
+export default hash;
 export { sha1, sha256, sha512 };
 
 export function md5(

@@ -1,5 +1,5 @@
 import { text } from '../bytes.js';
-import { toBytes } from '../hash/web.js';
+import { hash, toBytes } from '../hash/web.js';
 export { sha1, sha256, sha512 } from '../hash/web.js';
 
 async function md5(data, encoding = undefined) {
@@ -16,5 +16,5 @@ async function md5(data, encoding = undefined) {
     }
 }
 
-export { md5 };
+export { hash as default, md5 };
 //# sourceMappingURL=hash.js.map

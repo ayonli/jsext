@@ -1,9 +1,23 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { Buffer } from "node:buffer";
 import bytes from "./bytes.ts";
-import { sha1, sha256, sha512, md5 } from "./hash.ts";
+import hash, { sha1, sha256, sha512, md5 } from "./hash.ts";
 
 describe("hash", () => {
+    describe("hash", () => {
+        it("string", () => {
+            strictEqual(hash("hello world"), 2616892229);
+        });
+
+        it("ArrayBuffer", () => {
+            strictEqual(hash(bytes("hello world").buffer), 2616892229);
+        });
+
+        it("Uint8Array", () => {
+            strictEqual(hash(bytes("hello world")), 2616892229);
+        });
+    });
+
     describe("sha1", () => {
         const hex = "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed";
         const base64 = "Kq5sNclPz7QV2+lfQIuc6R7oRu0=";
