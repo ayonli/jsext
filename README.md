@@ -1,10 +1,22 @@
 # JsExt
 
-Additional functions for JavaScript to build strong applications.
+A JavaScript extension package for building strong and modern applications.
 
-This package provides universal high-level APIs that can work across different
-runtime environments and operating systems, whether it's Node.js, Deno, Bun,
-Cloudflare Workers, browsers, Windows, macOS or Linux.
+This package is built on top of modern web standard and provides universal
+high-level APIs that can work across different runtime environments, whether
+it's Node.js, Deno, Bun, Cloudflare Workers, browsers, Windows, macOS or Linux.
+
+## Outstanding Features
+
+- [x] Various useful functions for built-in data types that are not built-in.
+- [x] Various utility functions to extend the ability of flow control.
+- [x] Multi-threaded JavaScript with parallel threads.
+- [x] File system APIs for both server and browser environments.
+- [x] Open dialogs in both CLI and web applications.
+- [x] Manipulate file system paths and URLs in the same way.
+- [x] Handle byte arrays and readable streams effortlessly.
+- [x] Create, extract and preview archives in all runtimes.
+- [x] And many more...
 
 ## Import
 
@@ -36,7 +48,7 @@ browser.
 </script>
 ```
 
-## Major Functions
+## Top-Level Functions
 
 - [_try](#_try) Calls a function safely and return errors when captured.
 - [func](#func) Declares a function along with a `defer` keyword, inspired by
@@ -58,7 +70,7 @@ browser.
 - [pipe](#pipe) Performs pipe operations through a series of functions upon a
   value.
 
-## Categories
+## Subcategories
 
 Each of these modules includes specific functions and classes for their target
 categories:
@@ -109,8 +121,8 @@ categories:
   - Historically, there was a `read` module and a `realAll` module, but they
     have been merged into this module as the `toAsyncIterable` function and the
     `readAsArray` function.
-- [runtime](https://jsr.io/@ayonli/jsext/doc/runtime/~) (Experimental) Utility
-  functions to retrieve runtime information or modify runtime behaviors.
+- [runtime](https://jsr.io/@ayonli/jsext/doc/runtime/~) Utility functions to
+  retrieve runtime information or modify runtime behaviors.
 - [string](https://jsr.io/@ayonli/jsext/doc/string/~) Functions for dealing with
   strings.
 - [types](https://jsr.io/@ayonli/jsext/doc/types/~) The missing builtin classes
