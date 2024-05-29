@@ -64,6 +64,8 @@
             pickDirectory,
             pickFile,
             openFile,
+            openFiles,
+            openDirectory,
             saveFile,
             downloadFile,
         } from "@ayonli/jsext/dialog";
@@ -141,14 +143,14 @@
 
             const openFilesBtn = document.getElementById('open-files');
             openFilesBtn.addEventListener('click', async () => {
-                const files = await openFile({ type: "image/*", multiple: true });
+                const files = await openFiles({ type: "image/*" });
                 console.log(files);
                 await alert("You selected: " + files.map((file) => file.name).join(', '));
             });
 
             const openDirBtn = document.getElementById('open-directory');
             openDirBtn.addEventListener('click', async () => {
-                const files = await openFile({ directory: true });
+                const files = await openDirectory();
                 console.log(files);
                 await alert("You selected: " + files.map((file) => file.name).join(', '));
             });
