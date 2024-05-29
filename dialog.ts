@@ -8,14 +8,32 @@
 
 import progress from "./dialog/progress.ts";
 import type { ProgressState, ProgressFunc, ProgressAbortHandler } from "./dialog/progress.ts";
-import { openFile, pickFile, pickFiles, pickDirectory, saveFile, downloadFile } from "./dialog/file.ts";
+import {
+    openFile,
+    openFiles,
+    openDirectory,
+    pickFile,
+    pickFiles,
+    pickDirectory,
+    saveFile,
+    downloadFile,
+} from "./dialog/file.ts";
 import { alertInBrowser, confirmInBrowser, promptInBrowser } from "./dialog/browser/index.ts";
 import alertInTerminal from "./dialog/terminal/alert.ts";
 import confirmInTerminal from "./dialog/terminal/confirm.ts";
 import promptInTerminal from "./dialog/terminal/prompt.ts";
 import { isBrowserWindow, isDeno, isNodeLike } from "./env.ts";
 
-export { openFile, pickFile, pickFiles, pickDirectory, saveFile, downloadFile };
+export {
+    openFile,
+    openFiles,
+    openDirectory,
+    pickFile,
+    pickFiles,
+    pickDirectory,
+    saveFile,
+    downloadFile,
+};
 export { progress, ProgressState, ProgressFunc, ProgressAbortHandler };
 
 /**
