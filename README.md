@@ -2,7 +2,7 @@
 
 A JavaScript extension package for building strong and modern applications.
 
-This package is built on top of modern web standard and provides universal
+This package is built on top of modern web standards and provides universal
 high-level APIs that can work across different runtime environments, whether
 it's Node.js, Deno, Bun, Cloudflare Workers, browsers, Windows, macOS or Linux.
 
