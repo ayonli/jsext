@@ -31,8 +31,8 @@ import { as } from "../object.ts";
 import { basename, join } from "../path.ts";
 
 /**
- * Open the file picker dialog and pick a file, this function returns the file's
- * path or a `FileSystemFileHandle` in the browser.
+ * Opens the file picker dialog and pick a file, this function returns the
+ * file's path or a `FileSystemFileHandle` in the browser.
  * 
  * NOTE: Browser support is limited to the chromium family.
  */
@@ -82,8 +82,9 @@ export async function pickFile(options: {
 }
 
 /**
- * Open the file picker dialog and pick multiple files, this function returns the
- * paths or `FileSystemFileHandle` objects in the browser of the files selected.
+ * Opens the file picker dialog and pick multiple files, this function returns
+ * the paths or `FileSystemFileHandle` objects in the browser of the files
+ * selected.
  * 
  * NOTE: Browser support is limited to the chromium family.
  */
@@ -114,7 +115,7 @@ export async function pickFiles(options: {
 }
 
 /**
- * Open the file picker dialog and pick a directory, this function returns the
+ * Opens the file picker dialog and pick a directory, this function returns the
  * directory's path or `FileSystemDirectoryHandle` in the browser.
  * 
  * NOTE: Browser support is limited to the chromium family.
@@ -141,7 +142,7 @@ export async function pickDirectory(options: {
 }
 
 /**
- * Open the file picker dialog and pick a file to open.
+ * Opens the file picker dialog and selects a file to open.
  */
 export function openFile(options?: {
     /** Custom the dialog's title. This option is ignored in the browser. */
@@ -153,7 +154,7 @@ export function openFile(options?: {
     type?: string;
 }): Promise<File | null>;
 /**
- * Open the file picker dialog and pick multiple files to open.
+ * Opens the file picker dialog and selects multiple files to open.
  * 
  * @deprecated use {@link openFiles} instead.
  */
@@ -163,7 +164,7 @@ export function openFile(options: {
     multiple: true;
 }): Promise<File[]>;
 /**
- * Open the file picker dialog and pick a directory to open.
+ * Opens the directory picker dialog and selects all its files.
  * 
  * @deprecated use {@link openDirectory} instead.
  */
@@ -222,7 +223,7 @@ export async function openFile(options: {
 }
 
 /**
- * Open the file picker dialog and pick multiple files to open.
+ * Opens the file picker dialog and selects multiple files to open.
  */
 export async function openFiles(options: {
     /** Custom the dialog's title. This option is ignored in the browser. */
@@ -272,6 +273,9 @@ export async function openFiles(options: {
     }
 }
 
+/**
+ * Opens the directory picker dialog and selects all its files to open.
+ */
 export async function openDirectory(options: {
     /** Custom the dialog's title. This option is ignored in the browser. */
     title?: string;
@@ -352,11 +356,11 @@ export async function openDirectory(options: {
 }
 
 /**
- * Save a file to the file system.
+ * Saves a file to the file system.
  * 
- * In the terminal and chromium browsers, this function will open a dialog to
- * let the user choose the location where the file will be saved. In others
- * browsers, the file will be saved to the default download location.
+ * In the CLI and chromium browsers, this function will open a dialog to let the
+ * user choose the location where the file will be saved. In others browsers,
+ * the file will be saved to the default download location.
  */
 export async function saveFile(file: File, options?: {
     /** Custom the dialog's title. This option is ignored in the browser. */

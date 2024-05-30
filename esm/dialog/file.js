@@ -16,8 +16,8 @@ import { join, basename } from '../path.js';
 import { isWSL } from '../cli/common.js';
 
 /**
- * Open the file picker dialog and pick a file, this function returns the file's
- * path or a `FileSystemFileHandle` in the browser.
+ * Opens the file picker dialog and pick a file, this function returns the
+ * file's path or a `FileSystemFileHandle` in the browser.
  *
  * NOTE: Browser support is limited to the chromium family.
  */
@@ -55,8 +55,9 @@ async function pickFile(options = {}) {
     throw new Error("Unsupported platform");
 }
 /**
- * Open the file picker dialog and pick multiple files, this function returns the
- * paths or `FileSystemFileHandle` objects in the browser of the files selected.
+ * Opens the file picker dialog and pick multiple files, this function returns
+ * the paths or `FileSystemFileHandle` objects in the browser of the files
+ * selected.
  *
  * NOTE: Browser support is limited to the chromium family.
  */
@@ -79,7 +80,7 @@ async function pickFiles(options = {}) {
     throw new Error("Unsupported platform");
 }
 /**
- * Open the file picker dialog and pick a directory, this function returns the
+ * Opens the file picker dialog and pick a directory, this function returns the
  * directory's path or `FileSystemDirectoryHandle` in the browser.
  *
  * NOTE: Browser support is limited to the chromium family.
@@ -149,7 +150,7 @@ async function openFile(options = {}) {
     }
 }
 /**
- * Open the file picker dialog and pick multiple files to open.
+ * Opens the file picker dialog and selects multiple files to open.
  */
 async function openFiles(options = {}) {
     if (typeof globalThis["showOpenFilePicker"] === "function") {
@@ -190,6 +191,9 @@ async function openFiles(options = {}) {
         throw new Error("Unsupported runtime");
     }
 }
+/**
+ * Opens the directory picker dialog and selects all its files to open.
+ */
 async function openDirectory(options = {}) {
     if (typeof globalThis["showDirectoryPicker"] === "function") {
         const files = [];
