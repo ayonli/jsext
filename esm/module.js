@@ -1,11 +1,17 @@
 import { isDedicatedWorker, isSharedWorker, isBrowserWindow } from './env.js';
 import { extname } from './path.js';
-import { equals, isUrl } from './path/util.js';
+import { getObjectURL } from './module/util.js';
+import { equals } from './path/util.js';
 
 /**
  * Utility functions for working with JavaScript modules.
  * @module
  */
+/**
+ * @deprecated There was some misunderstanding of this function in the past, it
+ * should not be used in the user space anymore.
+ */
+const _getObjectURL = getObjectURL;
 function interop(module, strict = undefined) {
     if (typeof module === "function") {
         return module().then(mod => interop(mod, strict));
@@ -68,48 +74,6 @@ function isMain(importMeta) {
     }
     return false;
 }
-const urlCache = new Map();
-/**
- * This function downloads the resource from the original URL and convert it to
- * an object URL which can bypass the CORS policy in the browser, and convert
- * the response to a new Blob with the correct MIME type if the original one
- * does not match. It ensures the resource can be loaded correctly in the
- * browser.
- *
- * NOTE: This function is primarily designed for the browser, it has very little
- * use on the server side.
- */
-async function getObjectURL(src, mimeType = "text/javascript") {
-    var _a;
-    const isAbsolute = isUrl(src);
-    let cache = isAbsolute ? urlCache.get(src) : undefined;
-    if (cache) {
-        return cache;
-    }
-    // Use fetch to download the script and compose an object URL which can
-    // bypass CORS security constraint in the browser.
-    const res = await fetch(src);
-    let blob;
-    if (!res.ok) {
-        throw new Error(`Failed to fetch resource: ${src}`);
-    }
-    // JavaScript has more than one MIME types, so we just check it loosely.
-    const type = mimeType.includes("javascript") ? "javascript" : mimeType;
-    if ((_a = res.headers.get("content-type")) === null || _a === void 0 ? void 0 : _a.includes(type)) {
-        blob = await res.blob();
-    }
-    else {
-        // If the MIME type is not matched, we need to convert the response to
-        // a new Blob with the correct MIME type.
-        const buf = await res.arrayBuffer();
-        blob = new Blob([new Uint8Array(buf)], {
-            type: mimeType,
-        });
-    }
-    cache = URL.createObjectURL(blob);
-    isAbsolute && urlCache.set(src, cache);
-    return cache;
-}
 const importCache = new Map();
 /**
  * Imports a script from the given URL to the current document, useful for
@@ -170,5 +134,5 @@ function importStylesheet(url) {
     return cache;
 }
 
-export { getObjectURL, importScript, importStylesheet, interop, isMain };
+export { _getObjectURL as getObjectURL, importScript, importStylesheet, interop, isMain };
 //# sourceMappingURL=module.js.map

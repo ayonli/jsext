@@ -4,7 +4,7 @@ import { AsyncTask } from "../async.ts";
 import { isBun, isDeno, isNode, isNodeBelow14, isNodeLike } from "../env.ts";
 import { BunWorker, NodeWorker, CallResponse, ChannelMessage } from "./types.ts";
 import { handleChannelMessage, isChannelMessage, wrapChannel } from "./channel.ts";
-import { getObjectURL } from "../module.ts";
+import { getObjectURL } from "../module/util.ts";
 import { isPlainObject } from "../object.ts";
 import { serial } from "../number.ts";
 import {

@@ -1,7 +1,8 @@
 import { isNode, isBun, isDeno } from '../env.js';
 import { toFsPath } from '../path.js';
 import { trim } from '../string.js';
-import { getObjectURL, interop } from '../module.js';
+import { interop } from '../module.js';
+import { getObjectURL } from '../module/util.js';
 import { isFsPath } from '../path/util.js';
 
 const moduleCache = new Map();

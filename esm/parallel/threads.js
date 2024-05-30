@@ -1,7 +1,7 @@
 import { Channel } from '../chan.js';
 import { isNode, isBun, isDeno, isNodeLike, isNodeBelow14 } from '../env.js';
 import { wrapChannel, isChannelMessage, handleChannelMessage } from './channel.js';
-import { getObjectURL } from '../module.js';
+import { getObjectURL } from '../module/util.js';
 import { isPlainObject } from '../object.js';
 import { serial } from '../number.js';
 import { fromErrorEvent, isDOMException, isAggregateError, toObject, fromObject } from '../error.js';

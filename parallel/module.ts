@@ -1,7 +1,8 @@
 import { isBun, isDeno, isNode } from "../env.ts";
 import { isFsPath, toFsPath } from "../path.ts";
 import { trim } from "../string.ts";
-import { getObjectURL, interop } from "../module.ts";
+import { interop } from "../module.ts";
+import { getObjectURL } from "../module/util.ts";
 
 const moduleCache = new Map();
 

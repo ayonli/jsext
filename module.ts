@@ -4,7 +4,15 @@
  */
 
 import { isBrowserWindow, isDedicatedWorker, isSharedWorker } from "./env.ts";
-import { equals, extname, isUrl } from "./path.ts";
+import { equals, extname } from "./path.ts";
+import { getObjectURL } from "./module/util.ts";
+
+/**
+ * @deprecated There was some misunderstanding of this function in the past, it
+ * should not be used in the user space anymore.
+ */
+const _getObjectURL = getObjectURL;
+export { _getObjectURL as getObjectURL };
 
 /**
  * Performs interop on the given module. This functions is used to fix CommonJS
@@ -134,57 +142,6 @@ export function isMain(importMeta: ImportMeta | NodeJS.Module): boolean {
     }
 
     return false;
-}
-
-const urlCache = new Map<string, string>();
-
-/**
- * This function downloads the resource from the original URL and convert it to
- * an object URL which can bypass the CORS policy in the browser, and convert
- * the response to a new Blob with the correct MIME type if the original one
- * does not match. It ensures the resource can be loaded correctly in the
- * browser.
- * 
- * NOTE: This function is primarily designed for the browser, it has very little
- * use on the server side.
- */
-export async function getObjectURL(
-    src: string,
-    mimeType: string = "text/javascript"
-): Promise<string> {
-    const isAbsolute = isUrl(src);
-    let cache = isAbsolute ? urlCache.get(src) : undefined;
-
-    if (cache) {
-        return cache;
-    }
-
-    // Use fetch to download the script and compose an object URL which can
-    // bypass CORS security constraint in the browser.
-    const res = await fetch(src);
-    let blob: Blob;
-
-    if (!res.ok) {
-        throw new Error(`Failed to fetch resource: ${src}`);
-    }
-
-    // JavaScript has more than one MIME types, so we just check it loosely.
-    const type = mimeType.includes("javascript") ? "javascript" : mimeType;
-
-    if (res.headers.get("content-type")?.includes(type)) {
-        blob = await res.blob();
-    } else {
-        // If the MIME type is not matched, we need to convert the response to
-        // a new Blob with the correct MIME type.
-        const buf = await res.arrayBuffer();
-        blob = new Blob([new Uint8Array(buf)], {
-            type: mimeType,
-        });
-    }
-
-    cache = URL.createObjectURL(blob);
-    isAbsolute && urlCache.set(src, cache);
-    return cache;
 }
 
 const importCache = new Map<string, Promise<void>>();
