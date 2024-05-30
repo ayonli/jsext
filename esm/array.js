@@ -14,7 +14,10 @@ function first(arr) {
 function last(arr) {
     return arr.length > 0 ? arr[arr.length - 1] : undefined;
 }
-/** Returns a random element of the array, or `undefined` if the array is empty. */
+/**
+ * Returns a random element of the array, or `undefined` if the array is empty.
+ * @param remove If `true`, the element will be removed from the array.
+ */
 function random(arr, remove = false) {
     if (!arr.length) {
         return undefined;
@@ -35,38 +38,130 @@ function random(arr, remove = false) {
         return arr[i];
     }
 }
-/** Counts the occurrence of the element in the array. */
+/**
+ * Counts the occurrence of the element in the array.
+ *
+ * @example
+ * ```ts
+ * import { count } from "@ayonli/jsext/array";
+ *
+ * const arr = [1, 2, 3, 4, 5, 2, 3, 4, 2];
+ *
+ * console.log(count(arr, 2)); // 3
+ * console.log(count(arr, 6)); // 0
+ * ```
+ */
 function count(arr, item) {
     return count$1(arr, item);
 }
 /**
  * Performs a shallow compare to another array and see if it contains the same elements as
  * this array.
+ *
+ * @example
+ * ```ts
+ * import { equals } from "@ayonli/jsext/array";
+ *
+ * const arr1 = [1, 2, 3, 4, 5];
+ * const arr2 = [{ foo: "bar" }];
+ *
+ * console.log(equals(arr1, [1, 2, 3, 4, 5])); // true
+ * console.log(equals(arr2, [{ foo: "bar" }])); // false, object refs are different
+ * ```
  */
 function equals(arr1, arr2) {
     return equals$1(arr1, arr2);
 }
-/** Checks if the array contains another array as a slice of its contents. */
+/**
+ * Checks if the array contains another array as a slice of its contents.
+ *
+ * @example
+ * ```ts
+ * import { includesSlice } from "@ayonli/jsext/array";
+ *
+ * const arr = [1, 2, 3, 4, 5];
+ *
+ * console.log(includesSlice(arr, [2, 3, 4])); // true
+ * console.log(includesSlice(arr, [2, 4, 3])); // false
+ * ```
+ */
 function includesSlice(arr, slice) {
     return includeSlice(arr, slice);
 }
-/** Checks if the array starts with the given prefix. */
+/**
+ * Checks if the array starts with the given prefix.
+ *
+ * @example
+ * ```ts
+ * import { startsWith } from "@ayonli/jsext/array";
+ *
+ * const arr = [1, 2, 3, 4, 5];
+ *
+ * console.log(startsWith(arr, [1, 2])); // true
+ * console.log(startsWith(arr, [2, 1])); // false
+ * ```
+ */
 function startsWith(arr, prefix) {
     return startsWith$1(arr, prefix);
 }
-/** Checks if the array ends with the given suffix. */
+/**
+ * Checks if the array ends with the given suffix.
+ *
+ * @example
+ * ```ts
+ * import { endsWith } from "@ayonli/jsext/array";
+ *
+ * const arr = [1, 2, 3, 4, 5];
+ *
+ * console.log(endsWith(arr, [4, 5])); // true
+ * console.log(endsWith(arr, [5, 4])); // false
+ * ```
+ */
 function endsWith(arr, suffix) {
     return endsWith$1(arr, suffix);
 }
-/** Breaks the array into smaller chunks according to the given delimiter. */
+/**
+ * Breaks the array into smaller chunks according to the given delimiter.
+ *
+ * @example
+ * ```ts
+ * import { split } from "@ayonli/jsext/array";
+ *
+ * const arr = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+ *
+ * console.log(split(arr, 5)); // [[1, 2, 3, 4], [6, 7, 8, 9]]
+ * ```
+ */
 function split(arr, delimiter) {
     return split$1(arr, delimiter);
 }
-/** Breaks the array into smaller chunks according to the given length. */
+/**
+ * Breaks the array into smaller chunks according to the given length.
+ *
+ * @example
+ * ```ts
+ * import { chunk } from "@ayonli/jsext/array";
+ *
+ * const arr = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+ *
+ * console.log(chunk(arr, 5)); // [[1, 2, 3, 4, 5], [6, 7, 8, 9]]
+ * ```
+ */
 function chunk(arr, length) {
     return chunk$1(arr, length);
 }
-/** Returns a subset of the array that contains only unique items. */
+/**
+ * Returns a subset of the array that contains only unique items.
+ *
+ * @example
+ * ```ts
+ * import { unique } from "@ayonli/jsext/array";
+ *
+ * const arr = [1, 2, 3, 4, 5, 2, 3, 4, 2];
+ *
+ * console.log(unique(arr)); // [1, 2, 3, 4, 5]
+ * ```
+ */
 function unique(arr) {
     return [...new Set(arr)];
 }
@@ -77,6 +172,26 @@ const uniq = unique;
 /**
  * Returns a subset of the array that contains only unique items filtered by the
  * given callback function.
+ *
+ * @example
+ * ```ts
+ * import { uniqueBy } from "@ayonli/jsext/array";
+ *
+ * const arr = [
+ *     { id: 1, name: "foo" },
+ *     { id: 2, name: "bar" },
+ *     { id: 3, name: "foo" },
+ *     { id: 4, name: "baz" },
+ *     { id: 5, name: "bar" },
+ * ];
+ *
+ * console.log(uniqueBy(arr, item => item.name));
+ * // [
+ * //     { id: 1, name: "foo" },
+ * //     { id: 2, name: "bar" },
+ * //     { id: 4, name: "baz" }
+ * // ]
+ * ```
  */
 function uniqueBy(arr, fn) {
     const map = new Map();

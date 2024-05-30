@@ -9,27 +9,43 @@ export type TarOptions = FileSystemOptions & {
 };
 
 /**
- * Creates a {@link Tarball} instance and puts the the specified directory into
- * the archive.
- * 
- * NOTE: This function puts the directory itself into the archive, similar to
- * `tar -cf archive.tar <directory>` in Unix-like systems.
- */
-export default function tar(
-    src: string | FileSystemDirectoryHandle,
-    options?: TarOptions
-): Promise<Tarball>;
-/**
  * Archives the specified directory and puts it to the specified tarball file.
  * 
  * NOTE: This function puts the directory itself into the archive, similar to
  * `tar -cf archive.tar <directory>` in Unix-like systems.
+ * 
+ * @example
+ * ```ts
+ * import { tar } from "@ayonli/jsext/archive";
+ * 
+ * await tar("/path/to/directory", "/path/to/archive.tar");
+ * // with gzip
+ * await tar("/path/to/directory", "/path/to/archive.tar.gz", { gzip: true });
+ * ```
  */
 export default function tar(
     src: string | FileSystemDirectoryHandle,
     dest: string | FileSystemFileHandle,
     options?: TarOptions
 ): Promise<void>;
+/**
+ * Creates a {@link Tarball} instance and puts the the specified directory into
+ * the archive.
+ * 
+ * NOTE: This function puts the directory itself into the archive, similar to
+ * `tar -cf archive.tar <directory>` in Unix-like systems.
+ * 
+ * @example
+ * ```ts
+ * import { tar } from "@ayonli/jsext/archive";
+ * 
+ * const tarball = await tar("/path/to/directory");
+ * ```
+ */
+export default function tar(
+    src: string | FileSystemDirectoryHandle,
+    options?: FileSystemOptions
+): Promise<Tarball>;
 export default async function tar(
     src: string | FileSystemDirectoryHandle,
     dest: string | FileSystemFileHandle | TarOptions = {},

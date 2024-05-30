@@ -3,6 +3,7 @@ import jsext from "./index.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { asyncTask, abortable, sleep } from "./async.ts";
 import { isNodeBelow16 } from "./env.ts";
+import { as } from "./object.ts";
 
 describe("async", () => {
     describe("asyncTask", () => {
@@ -171,7 +172,7 @@ describe("async", () => {
         });
         const [err, res2] = await jsext.try(Promise.timeout(job, 50));
         strictEqual(res2, undefined);
-        deepStrictEqual(err, new Error("operation timeout after 50ms"));
+        deepStrictEqual(as(err, Error)?.message, "operation timeout after 50ms");
     });
 
     it("after", async () => {

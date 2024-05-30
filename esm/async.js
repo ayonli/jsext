@@ -1,4 +1,5 @@
 import { unrefTimer } from './runtime.js';
+import Exception from './error/Exception.js';
 
 /**
  * Functions for async/promise context handling.
@@ -8,6 +9,18 @@ import { unrefTimer } from './runtime.js';
  * Creates a promise that can be resolved or rejected manually.
  *
  * This function is like `Promise.withResolvers` but less verbose.
+ *
+ * @example
+ * ```ts
+ * import { asyncTask } from "@ayonli/jsext/async";
+ *
+ * const task = asyncTask<number>();
+ *
+ * setTimeout(() => task.resolve(42), 1000);
+ *
+ * const result = await task;
+ * console.log(result); // 42
+ * ```
  */
 function asyncTask() {
     let resolve;
@@ -62,17 +75,43 @@ async function* abortableAsyncIterable(task, signal) {
         }
     }
 }
-/** Try to resolve a promise with a timeout limit. */
+/**
+ * Try to resolve a promise with a timeout limit.
+ *
+ * @example
+ * ```ts
+ * import { timeout, sleep } from "@ayonli/jsext/async";
+ *
+ * const task = sleep(1000);
+ *
+ * await timeout(task, 500); // throws TimeoutError after 500ms
+ * ```
+ */
 async function timeout(task, ms) {
     const result = await Promise.race([
         task,
         new Promise((_, reject) => unrefTimer(setTimeout(() => {
-            reject(new Error(`operation timeout after ${ms}ms`));
+            reject(new Exception(`operation timeout after ${ms}ms`, {
+                name: "TimeoutError",
+                code: 408,
+            }));
         }, ms)))
     ]);
     return result;
 }
-/** Resolves a promise only after the given duration. */
+/**
+ * Resolves a promise only after the given duration.
+ *
+ * @example
+ * ```ts
+ * import { after } from "@ayonli/jsext/async";
+ *
+ * const task = fetch("https://example.com")
+ * const res = await after(task, 1000);
+ *
+ * console.log(res); // the response will not be printed unless 1 second has passed
+ * ```
+ */
 async function after(task, ms) {
     const [result] = await Promise.allSettled([
         task,
@@ -85,7 +124,19 @@ async function after(task, ms) {
         throw result.reason;
     }
 }
-/** Blocks the context for a given duration. */
+/**
+ * Blocks the context for a given duration.
+ *
+ * @example
+ * ```ts
+ * import { sleep } from "@ayonli/jsext/async";
+ *
+ * console.log("Hello");
+ *
+ * await sleep(1000);
+ * console.log("World"); // "World" will be printed after 1 second
+ * ```
+ */
 async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -95,6 +146,14 @@ async function sleep(ms) {
  * treated as a falsy value and the loop continues.
  *
  * This functions returns the same result as the test function when passed.
+ *
+ * @example
+ * ```ts
+ * import { until } from "@ayonli/jsext/async";
+ *
+ * // wait for the header element to be present in the DOM
+ * const ele = await until(() => document.querySelector("header"));
+ * ```
  */
 async function until(test) {
     return new Promise((resolve) => {

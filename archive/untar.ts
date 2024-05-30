@@ -21,22 +21,40 @@ export type UntarOptions = TarOptions & {
 };
 
 /**
- * Loads the specified tarball file to a {@link Tarball} instance.
- */
-export default function untar(
-    src: string | FileSystemFileHandle | ReadableStream<Uint8Array>,
-    options?: UntarOptions
-): Promise<Tarball>;
-/**
  * Extracts files from a tarball file and writes them to the specified directory.
  * 
  * NOTE: If the destination directory does not exist, it will be created.
+ * 
+ * @example
+ * ```ts
+ * import { untar } from "@ayonli/jsext/archive";
+ * 
+ * await untar("/path/to/archive.tar", "/path/to/directory");
+ * // with gzip
+ * await untar("/path/to/archive.tar.gz", "/path/to/directory", { gzip: true });
+ * ```
  */
 export default function untar(
     src: string | FileSystemFileHandle | ReadableStream<Uint8Array>,
     dest: string | FileSystemDirectoryHandle,
     options?: UntarOptions
 ): Promise<void>;
+/**
+ * Loads the specified tarball file to a {@link Tarball} instance.
+ * 
+ * @example
+ * ```ts
+ * import { untar } from "@ayonli/jsext/archive";
+ * 
+ * const tarball = await untar("/path/to/archive.tar");
+ * // with gzip
+ * const tarball = await untar("/path/to/archive.tar.gz", { gzip: true });
+ * ```
+ */
+export default function untar(
+    src: string | FileSystemFileHandle | ReadableStream<Uint8Array>,
+    options?: TarOptions
+): Promise<Tarball>;
 export default async function untar(
     src: string | FileSystemFileHandle | ReadableStream<Uint8Array>,
     dest: string | FileSystemDirectoryHandle | UntarOptions = {},

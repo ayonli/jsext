@@ -4,6 +4,7 @@
  */
 
 import { unrefTimer } from "./runtime.ts";
+import Exception from "./error/Exception.ts";
 
 /** A promise that can be resolved or rejected manually. */
 export type AsyncTask<T> = Promise<T> & {
@@ -15,6 +16,18 @@ export type AsyncTask<T> = Promise<T> & {
  * Creates a promise that can be resolved or rejected manually.
  * 
  * This function is like `Promise.withResolvers` but less verbose.
+ * 
+ * @example
+ * ```ts
+ * import { asyncTask } from "@ayonli/jsext/async";
+ * 
+ * const task = asyncTask<number>();
+ * 
+ * setTimeout(() => task.resolve(42), 1000);
+ * 
+ * const result = await task;
+ * console.log(result); // 42
+ * ```
  */
 export function asyncTask<T>(): AsyncTask<T> {
     let resolve: (value: T | PromiseLike<T>) => void;
@@ -36,10 +49,43 @@ export function asyncTask<T>(): AsyncTask<T> {
  * **NOTE:** This function does not cancel the task itself, it only prematurely
  * breaks the current routine when the signal is aborted. In order to support
  * cancellation, the task must be designed to handle the abort signal itself.
+ * 
+ * @example
+ * ```ts
+ * import { abortable, sleep } from "@ayonli/jsext/async";
+ * 
+ * const task = sleep(1000);
+ * const controller = new AbortController();
+ * 
+ * setTimeout(() => controller.abort(), 100);
+ * 
+ * await abortable(task, controller.signal); // throws AbortError after 100ms
+ * ```
  */
 export function abortable<T>(task: PromiseLike<T>, signal: AbortSignal): Promise<T>;
 /**
  * Wraps an async iterable object with an abort signal.
+ * 
+ * @example
+ * ```ts
+ * import { abortable, sleep } from "@ayonli/jsext/async";
+ * 
+ * async function* generate() {
+ *     yield "Hello";
+ *     await sleep(1000);
+ *     yield "World";
+ * }
+ * 
+ * const iterator = generate();
+ * const controller = new AbortController();
+ * 
+ * setTimeout(() => controller.abort(), 100);
+ * 
+ * // prints "Hello" and throws AbortError after 100ms
+ * for await (const value of abortable(iterator, controller.signal)) {
+ *     console.log(value); // "Hello"
+ * }
+ * ```
  */
 export function abortable<T>(task: AsyncIterable<T>, signal: AbortSignal): AsyncIterable<T>;
 export function abortable<T>(
@@ -97,18 +143,44 @@ async function* abortableAsyncIterable<T>(
     }
 }
 
-/** Try to resolve a promise with a timeout limit. */
+/**
+ * Try to resolve a promise with a timeout limit.
+ * 
+ * @example
+ * ```ts
+ * import { timeout, sleep } from "@ayonli/jsext/async";
+ * 
+ * const task = sleep(1000);
+ * 
+ * await timeout(task, 500); // throws TimeoutError after 500ms
+ * ```
+ */
 export async function timeout<T>(task: PromiseLike<T>, ms: number): Promise<T> {
     const result = await Promise.race([
         task,
         new Promise<T>((_, reject) => unrefTimer(setTimeout(() => {
-            reject(new Error(`operation timeout after ${ms}ms`));
+            reject(new Exception(`operation timeout after ${ms}ms`, {
+                name: "TimeoutError",
+                code: 408,
+            }));
         }, ms)))
     ]);
     return result;
 }
 
-/** Resolves a promise only after the given duration. */
+/**
+ * Resolves a promise only after the given duration.
+ * 
+ * @example
+ * ```ts
+ * import { after } from "@ayonli/jsext/async";
+ * 
+ * const task = fetch("https://example.com")
+ * const res = await after(task, 1000);
+ * 
+ * console.log(res); // the response will not be printed unless 1 second has passed
+ * ```
+ */
 export async function after<T>(task: PromiseLike<T>, ms: number): Promise<T> {
     const [result] = await Promise.allSettled([
         task,
@@ -122,7 +194,19 @@ export async function after<T>(task: PromiseLike<T>, ms: number): Promise<T> {
     }
 }
 
-/** Blocks the context for a given duration. */
+/**
+ * Blocks the context for a given duration.
+ * 
+ * @example
+ * ```ts
+ * import { sleep } from "@ayonli/jsext/async";
+ * 
+ * console.log("Hello");
+ * 
+ * await sleep(1000);
+ * console.log("World"); // "World" will be printed after 1 second
+ * ```
+ */
 export async function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -133,6 +217,14 @@ export async function sleep(ms: number): Promise<void> {
  * treated as a falsy value and the loop continues.
  * 
  * This functions returns the same result as the test function when passed.
+ * 
+ * @example
+ * ```ts
+ * import { until } from "@ayonli/jsext/async";
+ * 
+ * // wait for the header element to be present in the DOM
+ * const ele = await until(() => document.querySelector("header"));
+ * ```
  */
 export async function until<T>(
     test: () => T | Promise<T>

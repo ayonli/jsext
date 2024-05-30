@@ -14,9 +14,9 @@ declare global {
     interface Uint8ArrayConstructor {
         /** Copies bytes from `src` array to `dest` and returns the number of bytes copied. */
         copy(src: Uint8Array, dest: Uint8Array): number;
-        /** Like `Buffer.concat` but for pure `Uint8Array`. */
+        /** Like `Buffer.concat` but for native `Uint8Array`. */
         concat<T extends Uint8Array>(...arrays: T[]): T;
-        /** Like `Buffer.compare` but for pure `Uint8Array`. */
+        /** Like `Buffer.compare` but for native `Uint8Array`. */
         compare(arr1: Uint8Array, arr2: Uint8Array): -1 | 0 | 1;
     }
 
