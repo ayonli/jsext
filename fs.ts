@@ -183,6 +183,21 @@ function rawOp<T>(op: Promise<T>, type: "file" | "directory" | undefined = undef
 }
 
 /**
+ * Options for the {@link getDirHandle} function.
+ */
+export interface GetDirOptions extends FileSystemOptions {
+    /**
+     * Create the directory if not exist.
+     */
+    create?: boolean;
+    /**
+     * Used when `create` is `true`, recursively create the directory and its
+     * parent directories.
+     */
+    recursive?: boolean;
+}
+
+/**
  * Obtains the directory handle of the given path.
  * 
  * NOTE: This function is only available in the browser.
@@ -190,15 +205,10 @@ function rawOp<T>(op: Promise<T>, type: "file" | "directory" | undefined = undef
  * NOTE: If the `path` is not provided or is empty, the root directory handle
  * will be returned.
  */
-export async function getDirHandle(path: string = "", options: FileSystemOptions & {
-    /** Create the directory if not exist. */
-    create?: boolean;
-    /**
-     * Used when `create` is `true`, recursively create the directory and its
-     * parent directories.
-     */
-    recursive?: boolean;
-} = {}): Promise<FileSystemDirectoryHandle> {
+export async function getDirHandle(
+    path: string = "",
+    options: GetDirOptions = {}
+): Promise<FileSystemDirectoryHandle> {
     if (typeof location === "object" && typeof location.origin === "string") {
         path = stripStart(path, location.origin);
     }
@@ -219,14 +229,24 @@ export async function getDirHandle(path: string = "", options: FileSystemOptions
 }
 
 /**
+ * Options for the {@link getFileHandle} function.
+ */
+export interface GetFileOptions extends FileSystemOptions {
+    /**
+     * Create the file if not exist.
+     */
+    create?: boolean;
+}
+
+/**
  * Obtains the file handle of the given path.
  * 
  * NOTE: This function is only available in the browser.
  */
-export async function getFileHandle(path: string, options: FileSystemOptions & {
-    /** Create the file if not exist. */
-    create?: boolean;
-} = {}): Promise<FileSystemFileHandle> {
+export async function getFileHandle(
+    path: string,
+    options: GetFileOptions = {}
+): Promise<FileSystemFileHandle> {
     const dirPath = dirname(path);
     const name = basename(path);
     const dir = await getDirHandle(dirPath, { root: options.root });
@@ -257,13 +277,22 @@ export async function exists(path: string, options: FileSystemOptions = {}): Pro
 }
 
 /**
+ * Options for the {@link stat} function.
+ */
+export interface StatOptions extends FileSystemOptions {
+    /**
+     * Whether to follow the symbolic link.
+     * @default false
+     */
+    followSymlink?: boolean;
+}
+
+/**
  * Returns the information of the given file or directory.
  */
 export async function stat(
     target: string | FileSystemFileHandle | FileSystemDirectoryHandle,
-    options: FileSystemOptions & {
-        followSymlink?: boolean;
-    } = {}
+    options: StatOptions = {}
 ): Promise<FileInfo> {
     if (typeof target === "object") {
         if (target.kind === "file") {
@@ -400,9 +429,9 @@ export async function stat(
 }
 
 /**
- * Creates a new directory with the given path.
+ * Options for the {@link mkdir} function.
  */
-export async function mkdir(path: string, options: FileSystemOptions & {
+export interface MkdirOptions extends FileSystemOptions {
     /**
      * Whether to create parent directories if they do not exist.
      */
@@ -410,11 +439,16 @@ export async function mkdir(path: string, options: FileSystemOptions & {
     /**
      * The permission mode of the directory.
      * 
-     * NOTE: This option is ignored in the browser.
+     * NOTE: This option is ignored in the browser and in Windows.
      * @default 0o777
      */
     mode?: number;
-} = {}): Promise<void> {
+}
+
+/**
+ * Creates a new directory with the given path.
+ */
+export async function mkdir(path: string, options: MkdirOptions = {}): Promise<void> {
     if (isDeno) {
         await rawOp(Deno.mkdir(path, options));
     } else if (isNodeLike) {
@@ -435,14 +469,10 @@ export async function mkdir(path: string, options: FileSystemOptions & {
 /**
  * Ensures the directory exists, creating it (and any parent directory) if not.
  */
-export async function ensureDir(path: string, options: FileSystemOptions & {
-    /**
-     * The permission mode of the directory, only used when creating the
-     * directory.
-     * @default 0o777
-     */
-    mode?: number;
-} = {}): Promise<void> {
+export async function ensureDir(
+    path: string,
+    options: Omit<MkdirOptions, "recursive"> = {}
+): Promise<void> {
     if (await exists(path, options)) {
         return;
     }
@@ -459,18 +489,23 @@ export async function ensureDir(path: string, options: FileSystemOptions & {
 }
 
 /**
+ * Options for the {@link readDir} function.
+ */
+export interface ReadDirOptions extends FileSystemOptions {
+    /**
+     * Whether to read the sub-directories recursively.
+     */
+    recursive?: boolean;
+}
+
+/**
  * Reads the directory of the given path and iterates its entries.
  * 
  * NOTE: The order of the entries is not guaranteed.
  */
 export async function* readDir(
     target: string | FileSystemDirectoryHandle,
-    options: FileSystemOptions & {
-        /**
-         * Whether to read the sub-directories recursively.
-         */
-        recursive?: boolean;
-    } = {}
+    options: ReadDirOptions = {}
 ): AsyncIterableIterator<DirEntry> {
     if (typeof target === "object") {
         yield* readDirHandle(target, options);
@@ -602,13 +637,19 @@ async function readFileHandle(handle: FileSystemFileHandle, options: {
 }
 
 /**
+ * Options for file reading functions, such as {@link readFile},
+ * {@link readFileAsText} and {@link readFileAsFile}.
+ */
+export interface ReadFileOptions extends FileSystemOptions {
+    signal?: AbortSignal;
+}
+
+/**
  * Reads the content of the given file in bytes.
  */
 export async function readFile(
     target: string | FileSystemFileHandle,
-    options: FileSystemOptions & {
-        signal?: AbortSignal;
-    } = {}
+    options: ReadFileOptions = {}
 ): Promise<Uint8Array> {
     if (typeof target === "object") {
         return await readFileHandle(target, options);
@@ -629,13 +670,11 @@ export async function readFile(
 }
 
 /**
- * Reads the content of the given file as text.
+ * Reads the content of the given file as text with `utf-8` encoding.
  */
 export async function readFileAsText(
     target: string | FileSystemFileHandle,
-    options: FileSystemOptions & {
-        signal?: AbortSignal;
-    } = {}
+    options: ReadFileOptions = {}
 ): Promise<string> {
     if (typeof target === "object") {
         return text(await readFileHandle(target, options));
@@ -661,9 +700,7 @@ export async function readFileAsText(
  */
 export async function readFileAsFile(
     target: string | FileSystemFileHandle,
-    options: FileSystemOptions & {
-        signal?: AbortSignal;
-    } = {}
+    options: ReadFileOptions = {}
 ): Promise<File> {
     if (typeof target === "object") {
         return await readFileHandleAsFile(target);
@@ -687,25 +724,30 @@ async function readFileHandleAsFile(handle: FileSystemFileHandle): Promise<File>
 }
 
 /**
+ * Options for file writing functions, such as {@link writeFile} and {@link writeLines}.
+ */
+export interface WriteFileOptions extends FileSystemOptions {
+    /**
+     * Append the data to the file instead of overwriting it.
+     */
+    append?: boolean;
+    /**
+     * Permissions always applied to file.
+     * 
+     * NOTE: This option is ignored in the browser.
+     * @default 0o666
+     */
+    mode?: number;
+    signal?: AbortSignal;
+}
+
+/**
  * Writes the given data to the file.
  */
 export async function writeFile(
     target: string | FileSystemFileHandle,
     data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
-    options: FileSystemOptions & {
-        /**
-         * Append the data to the file instead of overwriting it.
-         */
-        append?: boolean;
-        /**
-         * Permissions always applied to file.
-         * 
-         * NOTE: This option is ignored in the browser.
-         * @default 0o666
-         */
-        mode?: number;
-        signal?: AbortSignal;
-    } = {}
+    options: WriteFileOptions = {}
 ): Promise<void> {
     if (typeof target === "object") {
         return await writeFileHandle(target, data, options);
@@ -814,20 +856,7 @@ async function writeFileHandle(
 export async function writeLines(
     target: string | FileSystemFileHandle,
     lines: string[],
-    options: FileSystemOptions & {
-        /**
-         * Append the data to the file instead of overwriting it.
-         */
-        append?: boolean;
-        /**
-         * Permissions always applied to file.
-         * 
-         * NOTE: This option is ignored in the browser.
-         * @default 0o666
-         */
-        mode?: number;
-        signal?: AbortSignal;
-    } = {}
+    options: WriteFileOptions = {}
 ): Promise<void> {
     const current = await readFileAsText(target, options).catch(err => {
         if (as(err, Exception)?.name !== "NotFoundError") {
@@ -908,15 +937,20 @@ async function truncateFileHandle(
 }
 
 /**
- * Removes the file or directory of the given path from the file system.
+ * Options for the {@link remove} function.
  */
-export async function remove(path: string, options: FileSystemOptions & {
+export interface RemoveOptions extends FileSystemOptions {
     /**
      * Whether to delete the sub-directories and files recursively. This option
      * is required in order to remove a non-empty directory.
      */
     recursive?: boolean;
-} = {}): Promise<void> {
+}
+
+/**
+ * Removes the file or directory of the given path from the file system.
+ */
+export async function remove(path: string, options: RemoveOptions = {}): Promise<void> {
     if (isDeno) {
         await rawOp(Deno.remove(path, options));
     } else if (isNodeLike) {
@@ -968,6 +1002,17 @@ export async function rename(
 }
 
 /**
+ * Options for the {@link copy} function.
+ */
+export interface CopyOptions extends FileSystemOptions {
+    /**
+     * Whether to copy the directory recursively, which means to copy the
+     * directory and all its contents.
+     */
+    recursive?: boolean;
+}
+
+/**
  * Copies the file or directory (and its contents) from the old location to the
  * new location.
  * 
@@ -981,11 +1026,7 @@ export async function rename(
  * path without it. So when copying a directory, this function always copy its
  * contents to the new path, whether the new path already exists or not.
  */
-export async function copy(
-    src: string,
-    dest: string,
-    options?: FileSystemOptions & { recursive?: boolean; }
-): Promise<void>;
+export async function copy(src: string, dest: string, options?: CopyOptions): Promise<void>;
 export async function copy(
     src: FileSystemFileHandle,
     dest: FileSystemFileHandle | FileSystemDirectoryHandle
@@ -993,14 +1034,12 @@ export async function copy(
 export async function copy(
     src: FileSystemDirectoryHandle,
     dest: FileSystemDirectoryHandle,
-    options?: { recursive?: boolean; }
+    options?: Pick<CopyOptions, "recursive">
 ): Promise<void>;
 export async function copy(
     src: string | FileSystemFileHandle | FileSystemDirectoryHandle,
     dest: string | FileSystemFileHandle | FileSystemDirectoryHandle,
-    options: FileSystemOptions & {
-        recursive?: boolean;
-    } = {}
+    options: CopyOptions = {}
 ): Promise<void> {
     if (typeof src === "object" || typeof dest === "object") {
         return copyInBrowser(src, dest, { recursive: options?.recursive ?? false });
@@ -1226,14 +1265,22 @@ async function copyDirHandleToDirHandle(
 }
 
 /**
+ * Options for the {@link link} function.
+ */
+export interface LinkOptions {
+    /**
+     * Create a symbolic link instead of a hard link.
+     */
+    symbolic?: boolean;
+}
+
+/**
  * Creates a hard link (or symbolic link) from the source path to the destination
  * path.
  * 
  * NOTE: This function is not available in the browser.
  */
-export async function link(src: string, dest: string, options: {
-    symbolic?: boolean;
-} = {}): Promise<void> {
+export async function link(src: string, dest: string, options: LinkOptions = {}): Promise<void> {
     if (isDeno) {
         if (options.symbolic) {
             if (platform() === "windows") {
@@ -1420,19 +1467,7 @@ export const readFileAsStream = createReadableStream;
  */
 export function createWritableStream(
     target: string | FileSystemFileHandle,
-    options: FileSystemOptions & {
-        /**
-         * Append the data to the file instead of overwriting it.
-         */
-        append?: boolean;
-        /**
-         * Permissions always applied to file.
-         * 
-         * NOTE: This option is ignored in the browser.
-         * @default 0o666
-         */
-        mode?: number;
-    } = {}
+    options: Omit<WriteFileOptions, "signal"> = {}
 ): WritableStream<Uint8Array> {
     if (typeof target === "object") {
         const { readable, writable } = new TransformStream();

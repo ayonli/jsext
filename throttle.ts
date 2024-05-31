@@ -12,6 +12,28 @@ type Throttle = {
 const Cache = new Map<any, Throttle>();
 
 /**
+ * Options for the {@link throttle} function.
+ */
+export interface ThrottleOptions {
+    duration: number;
+    /**
+     * Use the throttle strategy `for` the given key, this will keep the
+     * result in a global cache, binding new `handler` function for the same
+     * key will result in the same result as the previous, unless the
+     * duration has passed. This mechanism guarantees that both creating the
+     * throttled function in function scopes and overwriting the handler are
+     * possible.
+     */
+    for?: any;
+    /**
+     * When turned on, respond with the last cache (if available)
+     * immediately, even if it has expired, and update the cache in the
+     * background.
+     */
+    noWait?: boolean;
+}
+
+/**
  * Creates a throttled function that will only be run once in a certain amount
  * of time.
  * 
@@ -64,30 +86,12 @@ export default function throttle<I, Fn extends (this: I, ...args: any[]) => any>
  */
 export default function throttle<I, Fn extends (this: I, ...args: any[]) => any>(
     handler: Fn,
-    options: {
-        duration: number;
-        /**
-         * Use the throttle strategy `for` the given key, this will keep the
-         * result in a global cache, binding new `handler` function for the same
-         * key will result in the same result as the previous, unless the
-         * duration has passed. This mechanism guarantees that both creating the
-         * throttled function in function scopes and overwriting the handler are
-         * possible.
-         */
-        for?: any;
-        /**
-         * When turned on, respond with the last cache (if available)
-         * immediately, even if it has expired, and update the cache in the
-         * background.
-         */
-        noWait?: boolean;
-    }
+    options: ThrottleOptions
 ): Fn;
-export default function throttle(handler: (this: any, ...args: any[]) => any, options: number | {
-    duration: number;
-    for?: any;
-    noWait?: boolean;
-}) {
+export default function throttle(
+    handler: (this: any, ...args: any[]) => any,
+    options: number | ThrottleOptions
+) {
     const key = typeof options === "number" ? null : options.for;
     const duration = typeof options === "number" ? options : options.duration;
     const noWait = typeof options === "number" ? false : !!options?.noWait;

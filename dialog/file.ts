@@ -31,24 +31,40 @@ import { as } from "../object.ts";
 import { basename, join } from "../path.ts";
 
 /**
- * Opens the file picker dialog and pick a file, this function returns the
- * file's path or a `FileSystemFileHandle` in the browser.
- * 
- * NOTE: Browser support is limited to the chromium family.
+ * Options for file dialog functions, such as {@link pickFile} and
+ * {@link openFile}.
  */
-export async function pickFile(options: {
-    /** Custom the dialog's title. */
+export interface FileDialogOptions {
+    /**
+     * Custom the dialog's title. This option is ignored in the browser.
+     */
     title?: string | undefined;
     /**
      * Filter files by providing a MIME type or suffix, multiple types can be
      * separated via `,`.
      */
     type?: string | undefined;
+}
+
+/**
+ * Options for the {@link pickFile} function.
+ */
+export interface PickFileOptions extends FileDialogOptions {
     /** Open the dialog in save mode. */
     forSave?: boolean;
     /** The default name of the file to save when `forSave` is set. */
     defaultName?: string | undefined;
-} = {}): Promise<string | FileSystemFileHandle | null> {
+}
+
+/**
+ * Opens the file picker dialog and pick a file, this function returns the
+ * file's path or a `FileSystemFileHandle` in the browser.
+ * 
+ * NOTE: Browser support is limited to the chromium family.
+ */
+export async function pickFile(
+    options: PickFileOptions = {}
+): Promise<string | FileSystemFileHandle | null> {
     if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
         return await browserPickFile(options.type, {
             forSave: options.forSave,
@@ -88,15 +104,9 @@ export async function pickFile(options: {
  * 
  * NOTE: Browser support is limited to the chromium family.
  */
-export async function pickFiles(options: {
-    /** Custom the dialog's title. */
-    title?: string;
-    /**
-     * Filter files by providing a MIME type or suffix, multiple types can be
-     * separated via `,`.
-     */
-    type?: string;
-} = {}): Promise<string[] | FileSystemFileHandle[]> {
+export async function pickFiles(
+    options: FileDialogOptions = {}
+): Promise<string[] | FileSystemFileHandle[]> {
     if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
         return await browserPickFiles(options.type);
     } else if (isDeno || isNodeLike) {
@@ -120,10 +130,9 @@ export async function pickFiles(options: {
  * 
  * NOTE: Browser support is limited to the chromium family.
  */
-export async function pickDirectory(options: {
-    /** Custom the dialog's title. */
-    title?: string;
-} = {}): Promise<string | FileSystemDirectoryHandle | null> {
+export async function pickDirectory(
+    options: Pick<FileDialogOptions, "title"> = {}
+): Promise<string | FileSystemDirectoryHandle | null> {
     if (typeof (globalThis as any)["showDirectoryPicker"] === "function") {
         return await browserPickFolder();
     } else if (isDeno || isNodeLike) {
@@ -144,23 +153,13 @@ export async function pickDirectory(options: {
 /**
  * Opens the file picker dialog and selects a file to open.
  */
-export function openFile(options?: {
-    /** Custom the dialog's title. This option is ignored in the browser. */
-    title?: string;
-    /**
-     * Filter files by providing a MIME type or suffix, multiple types can be
-     * separated via `,`.
-     */
-    type?: string;
-}): Promise<File | null>;
+export function openFile(options?: FileDialogOptions): Promise<File | null>;
 /**
  * Opens the file picker dialog and selects multiple files to open.
  * 
  * @deprecated use {@link openFiles} instead.
  */
-export function openFile(options: {
-    title?: string;
-    type?: string;
+export function openFile(options: FileDialogOptions & {
     multiple: true;
 }): Promise<File[]>;
 /**
@@ -168,13 +167,10 @@ export function openFile(options: {
  * 
  * @deprecated use {@link openDirectory} instead.
  */
-export function openFile(options: {
-    title?: string;
+export function openFile(options: Pick<FileDialogOptions, "title"> & {
     directory: true;
 }): Promise<File[]>;
-export async function openFile(options: {
-    title?: string;
-    type?: string;
+export async function openFile(options: FileDialogOptions & {
     multiple?: boolean;
     directory?: boolean;
 } = {}): Promise<File | File[] | null> {
@@ -225,15 +221,7 @@ export async function openFile(options: {
 /**
  * Opens the file picker dialog and selects multiple files to open.
  */
-export async function openFiles(options: {
-    /** Custom the dialog's title. This option is ignored in the browser. */
-    title?: string;
-    /**
-     * Filter files by providing a MIME type or suffix, multiple types can be
-     * separated via `,`.
-     */
-    type?: string;
-} = {}): Promise<File[]> {
+export async function openFiles(options: FileDialogOptions = {}): Promise<File[]> {
     if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
         const handles = await browserPickFiles(options.type);
         const files: File[] = [];
@@ -276,10 +264,9 @@ export async function openFiles(options: {
 /**
  * Opens the directory picker dialog and selects all its files to open.
  */
-export async function openDirectory(options: {
-    /** Custom the dialog's title. This option is ignored in the browser. */
-    title?: string;
-} = {}): Promise<File[]> {
+export async function openDirectory(
+    options: Pick<FileDialogOptions, "title"> = {}
+): Promise<File[]> {
     if (typeof (globalThis as any)["showDirectoryPicker"] === "function") {
         const files: File[] = [];
         const dir = await browserPickFolder();
@@ -356,34 +343,35 @@ export async function openDirectory(options: {
 }
 
 /**
+ * Options for the {@link saveFile} function and the {@link downloadFile}
+ * function.
+ */
+export interface SaveFileOptions {
+    /**
+     * Custom the dialog's title. This option is ignored in the browser.
+     */
+    title?: string;
+    /** The suggested name of the file. */
+    name?: string;
+    /** The MIME type of the file. */
+    type?: string;
+}
+
+/**
  * Saves a file to the file system.
  * 
  * In the CLI and chromium browsers, this function will open a dialog to let the
  * user choose the location where the file will be saved. In others browsers,
  * the file will be saved to the default download location.
  */
-export async function saveFile(file: File, options?: {
-    /** Custom the dialog's title. This option is ignored in the browser. */
-    title?: string;
-}): Promise<void>;
+export async function saveFile(file: File, options?: Pick<SaveFileOptions, "title">): Promise<void>;
 export async function saveFile(
     file: Blob | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array>,
-    options: {
-        /** The suggested name of the file. */
-        name?: string;
-        /** The MIME type of the file. */
-        type?: string;
-        /** Custom the dialog's title. This option is ignored in the browser. */
-        title?: string;
-    }
+    options?: SaveFileOptions
 ): Promise<void>;
 export async function saveFile(
     file: File | Blob | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array>,
-    options: {
-        title?: string;
-        name?: string;
-        type?: string;
-    } = {}
+    options: SaveFileOptions = {}
 ): Promise<void> {
     if (typeof (globalThis as any)["showSaveFilePicker"] === "function") {
         try {
@@ -459,11 +447,10 @@ export async function saveFile(
  * This function wraps the {@link saveFile} function, instead of taking a file
  * object, it takes a URL and downloads the file from the URL.
  */
-export async function downloadFile(url: string | URL, options: {
-    title?: string;
-    name?: string;
-    type?: string;
-} = {}): Promise<void> {
+export async function downloadFile(
+    url: string | URL,
+    options: SaveFileOptions = {}
+): Promise<void> {
     let name = options.name;
 
     if (!name) {

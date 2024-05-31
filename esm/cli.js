@@ -27,6 +27,21 @@ const isTsRuntime = () => runtime().tsSupport;
 const platform = platform$1;
 /**
  * Executes a command in the terminal and returns the exit code and outputs.
+ *
+ * In Windows, this function will use PowerShell to execute the command when
+ * possible, which has a lot UNIX-like aliases/commands available, such as `ls`,
+ * `cat`, `rm`, etc.
+ *
+ * @example
+ * ```ts
+ * import { run } from "@ayonli/jsext/cli";
+ *
+ * const { code, stdout, stderr } = await run("echo", ["Hello, World!"]);
+ *
+ * console.log(code); // 0
+ * console.log(JSON.stringify(stdout)); // "Hello, World!\n"
+ * console.log(JSON.stringify(stderr)); // ""
+ * ```
  */
 async function run(cmd, args) {
     const isWindows = platform() === "windows";
@@ -94,6 +109,21 @@ async function run(cmd, args) {
  *
  * This function can also be called within Windows Subsystem for Linux to
  * directly interact with PowerShell.
+ *
+ * NOTE: This function is only available in Windows and Windows Subsystem for
+ * Linux.
+ *
+ * @example
+ * ```ts
+ * import { powershell } from "@ayonli/jsext/cli";
+ *
+ * const cmd = "ls";
+ * const {
+ *     code,
+ *     stdout,
+ *     stderr,
+ * } = await powershell(`Get-Command -Name ${cmd} | Select-Object -ExpandProperty Source`);
+ * ```
  */
 async function powershell(script) {
     let command = "powershell";
@@ -104,6 +134,13 @@ async function powershell(script) {
 }
 /**
  * Executes a command with elevated privileges using `sudo` (or UAC in Windows).
+ *
+ * @example
+ * ```ts
+ * import { sudo } from "@ayonli/jsext/cli";
+ *
+ * await sudo("apt", ["install", "build-essential"]);
+ * ```
  */
 async function sudo(cmd, args, options = {}) {
     const _platform = platform();
@@ -143,6 +180,18 @@ async function sudo(cmd, args, options = {}) {
 /**
  * Returns the path of the given command if it exists in the system,
  * otherwise returns `null`.
+ *
+ * This function is available in Windows as well.
+ *
+ * @example
+ * ```ts
+ * import { which } from "@ayonli/jsext/cli";
+ *
+ * const path = await which("node");
+ *
+ * console.log(path);
+ * // e.g. "/usr/bin/node" in UNIX/Linux or "C:\\Program Files\\nodejs\\node.exe" in Windows
+ * ```
  */
 async function which(cmd) {
     if (platform() === "windows") {
@@ -172,6 +221,15 @@ async function which(cmd) {
  *
  * In the browser, this function will always try to open the file in VS Code,
  * regardless of whether it's available or not.
+ *
+ * @example
+ * ```ts
+ * import { edit } from "@ayonli/jsext/cli";
+ *
+ * await edit("path/to/file.txt");
+ *
+ * await edit("path/to/file.txt:10"); // open the file at line 10
+ * ```
  */
 async function edit(filename) {
     const match = filename.match(/(:|#L)(\d+)/);

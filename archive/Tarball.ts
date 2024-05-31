@@ -573,7 +573,7 @@ export default class Tarball {
      */
     stream(options: {
         /**
-         * Compress the archive using gzip.
+         * Compress the archive with gzip.
          */
         gzip?: boolean;
     } = {}): ReadableStream<Uint8Array> {
@@ -608,7 +608,7 @@ export default class Tarball {
      */
     static async load(stream: ReadableStream<Uint8Array>, options: {
         /**
-         * Decompress the archive using gzip.
+         * Decompress the archive with gzip.
          */
         gzip?: boolean;
     } = {}): Promise<Tarball> {

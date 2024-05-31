@@ -545,7 +545,7 @@ async function readFile(target, options = {}) {
     }
 }
 /**
- * Reads the content of the given file as text.
+ * Reads the content of the given file as text with `utf-8` encoding.
  */
 async function readFileAsText(target, options = {}) {
     if (typeof target === "object") {

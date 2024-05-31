@@ -3,14 +3,14 @@ export { };
 /**
  * Common options for file system operations.
  */
-export type FileSystemOptions = {
+export interface FileSystemOptions {
     /**
      * The root directory handle to operate in. This option is only available in
      * the browser, usually obtained from `window.showDirectoryPicker()`. If not
      * provided, the result of `navigator.storage.getDirectory()` will be used.
      */
     root?: FileSystemDirectoryHandle | undefined;
-};
+}
 
 /**
  * Information about a directory entry.

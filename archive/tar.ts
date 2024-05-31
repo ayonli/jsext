@@ -3,10 +3,16 @@ import { createReadableStream, stat, readDir, createWritableStream } from "../fs
 import { basename, join, resolve } from "../path.ts";
 import Tarball, { TarEntry } from "./Tarball.ts";
 
-export type TarOptions = FileSystemOptions & {
+/**
+ * Options for creating a tarball or loading a tarball.
+ */
+export interface TarOptions extends FileSystemOptions {
+    /**
+     * Compress/Decompress the archive with gzip.
+     */
     gzip?: boolean;
     signal?: AbortSignal;
-};
+}
 
 /**
  * Archives the specified directory and puts it to the specified tarball file.

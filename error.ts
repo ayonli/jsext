@@ -5,9 +5,10 @@
 
 import { Constructor } from "./types.ts";
 import { isPlainObject, omit } from "./object.ts";
-import Exception from "./error/Exception.ts";
+import Exception, { type ExceptionOptions } from "./error/Exception.ts";
 
 export { Exception };
+export type { ExceptionOptions };
 
 /** Transform the error to a plain object. */
 export function toObject<T extends Error>(err: T): { [x: string | symbol]: any; } {

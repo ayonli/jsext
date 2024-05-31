@@ -1,4 +1,24 @@
 /**
+ * Options for creating an exception, used by the {@link Exception} constructor.
+ */
+export interface ExceptionOptions {
+    /**
+     * The name of the exception, usually use the same names as the
+     * `DOMException` instances, such as `TimeoutError`, `NetworkError`, etc.
+     */
+    name?: string;
+    /**
+     * The cause of the exception, usually the original error or exception.
+     */
+    cause?: unknown;
+    /**
+     * The error code of the exception, usually use the same codes as the HTTP
+     * status.
+     */
+    code?: number;
+}
+
+/**
  * The universal exception class, which can be used to represent any kind of error.
  * It's similar to the `DOMException`, but for any JavaScript environment.
  */
@@ -8,8 +28,8 @@ export default class Exception extends Error {
 
     constructor(message: string, name?: string);
     constructor(message: string, code?: number);
-    constructor(message: string, options: { name?: string; cause?: unknown; code?: number; });
-    constructor(message: string, options: number | string | { name?: string; cause?: unknown; code?: number; } = 0) {
+    constructor(message: string, options: ExceptionOptions);
+    constructor(message: string, options: number | string | ExceptionOptions = 0) {
         super(message);
 
         if (typeof options === "number") {

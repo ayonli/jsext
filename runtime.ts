@@ -34,7 +34,10 @@ export const WellknownRuntimes: WellknownRuntimes[] = [
     "cloudflare-worker",
 ];
 
-export type RuntimeInfo = {
+/**
+ * The information of the runtime environment in which the program is running.
+ */
+export interface RuntimeInfo {
     /** The representation term of the runtime. */
     identity: WellknownRuntimes | "unknown";
     /**

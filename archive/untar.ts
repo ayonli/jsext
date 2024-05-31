@@ -7,7 +7,10 @@ import { platform } from "../runtime.ts";
 import Tarball, { HEADER_LENGTH, TarEntry, TarTree, createEntry, parseHeader } from "./Tarball.ts";
 import { TarOptions } from "./tar.ts";
 
-export type UntarOptions = TarOptions & {
+/**
+ * Options for the {@link untar} function.
+ */
+export interface UntarOptions extends TarOptions {
     /**
      * The size of the tarball file in bytes. This option is only required when
      * we need to emit the progress event while the source is a readable stream.

@@ -55,6 +55,16 @@ const isTTY = (() => {
 })();
 /**
  * Returns the width of a single character.
+ *
+ * @example
+ * ```ts
+ * import { charWidth } from "@ayonli/jsext/cli";
+ *
+ * console.log(charWidth("a")); // 1
+ * console.log(charWidth("你")); // 2
+ * console.log(charWidth("👋")); // 2
+ * console.log(charWidth("♥")); // 1
+ * ```
  */
 function charWidth(char) {
     if (EMOJI_CHAR.test(char)) {
@@ -72,6 +82,15 @@ function charWidth(char) {
 }
 /**
  * Returns the width of a string.
+ *
+ * @example
+ * ```ts
+ * import { stringWidth } from "@ayonli/jsext/cli";
+ *
+ * console.log(stringWidth("Hello, World!")); // 13
+ * console.log(stringWidth("你好，世界！")); // 12
+ * console.log(stringWidth("👋🌍🚀♥️♣")); // 8
+ * ```
  */
 function stringWidth(str) {
     return sum(...chars(str).map(charWidth));
@@ -449,6 +468,18 @@ function parseArgs(args, options = {}) {
 }
 /**
  * Quotes a string to be used as a single argument to a shell command.
+ *
+ * @example
+ * ```ts
+ * import { quote } from "@ayonli/jsext/cli";
+ *
+ * console.log(quote("Hello, World!")); // "Hello, World!"
+ * console.log(quote("Hello, 'World'!")); // "Hello, 'World'!"
+ * console.log(quote("Hello, \"World\"!")); // "Hello, \"World\"!"
+ * console.log(quote("Hello, $World!")); // "Hello, \$World!"
+ * console.log(quote("Hello, `World`!")); // "Hello, \`World\`!"
+ * console.log(quote("Hello, \\World!")); // "Hello, \\World!"
+ * ```
  */
 function quote(arg) {
     if ((/["'\s]/).test(arg)) {

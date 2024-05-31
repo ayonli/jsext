@@ -1,5 +1,26 @@
 const inverse = Symbol("inverse");
-/** Bi-directional map, keys and values are unique and map to each other. */
+/**
+ * Bi-directional map, keys and values are unique and map to each other.
+ *
+ * @example
+ * ```ts
+ * import { BiMap } from "@ayonli/jsext/collections";
+ *
+ * const map = new BiMap<string, string>();
+ *
+ * map.set("foo", "hello");
+ * map.set("bar", "world");
+ *
+ * console.log(map.get("foo")); // hello
+ * console.log(map.getKey("world")); // bar
+ *
+ * map.delete("foo");
+ * console.log(map.hasValue("hello")); // false
+ *
+ * map.deleteValue("world");
+ * console.log(map.has("bar")); // false
+ * ```
+ */
 class BiMap extends Map {
     get [Symbol.toStringTag]() {
         return "BiMap";

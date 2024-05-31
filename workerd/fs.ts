@@ -4,17 +4,27 @@ export type { FileSystemOptions, FileInfo, DirEntry, DirTree };
 
 export const EOL: "\n" | "\r\n" = "\n";
 
-export async function getDirHandle(path: string, options: FileSystemOptions & {
+export interface GetDirOptions extends FileSystemOptions {
     create?: boolean;
     recursive?: boolean;
-} = {}): Promise<FileSystemDirectoryHandle> {
+}
+
+export async function getDirHandle(
+    path: string,
+    options: GetDirOptions = {}
+): Promise<FileSystemDirectoryHandle> {
     void path, options;
     throw new Error("Unsupported runtime");
 }
 
-export async function getFileHandle(path: string, options: FileSystemOptions & {
+export interface GetFileOptions extends FileSystemOptions {
     create?: boolean;
-} = {}): Promise<FileSystemFileHandle> {
+}
+
+export async function getFileHandle(
+    path: string,
+    options: GetFileOptions = {}
+): Promise<FileSystemFileHandle> {
     void path, options;
     throw new Error("Unsupported runtime");
 }
@@ -24,32 +34,45 @@ export async function exists(path: string, options: FileSystemOptions = {}): Pro
     throw new Error("Unsupported runtime");
 }
 
+export interface StatOptions extends FileSystemOptions {
+    followSymlink?: boolean;
+}
+
 export async function stat(
     target: string | FileSystemFileHandle | FileSystemDirectoryHandle,
-    options: FileSystemOptions = {}
+    options: StatOptions = {}
 ): Promise<FileInfo> {
     void target, options;
     throw new Error("Unsupported runtime");
 }
 
-export async function mkdir(path: string, options: FileSystemOptions & {
+export interface MkdirOptions extends FileSystemOptions {
     recursive?: boolean;
     mode?: number;
-} = {}): Promise<void> {
+}
+
+export async function mkdir(path: string, options: MkdirOptions = {}): Promise<void> {
     void path, options;
     throw new Error("Unsupported runtime");
 }
 
-export async function ensureDir(path: string, options: FileSystemOptions & {
-    mode?: number;
-} = {}): Promise<void> {
+export async function ensureDir(
+    path: string,
+    options: Omit<MkdirOptions, "recursive"> = {}
+): Promise<void> {
     void path, options;
     throw new Error("Unsupported runtime");
 }
 
-export async function* readDir(target: string | FileSystemDirectoryHandle, options: FileSystemOptions & {
+
+export interface ReadDirOptions extends FileSystemOptions {
     recursive?: boolean;
-} = {}): AsyncIterable<DirEntry> {
+}
+
+export async function* readDir(
+    target: string | FileSystemDirectoryHandle,
+    options: ReadDirOptions = {}
+): AsyncIterableIterator<DirEntry> {
     void target, options;
     throw new Error("Unsupported runtime");
 }
@@ -62,28 +85,44 @@ export async function readTree(
     throw new Error("Unsupported runtime");
 }
 
-export async function readFile(target: string | FileSystemFileHandle, options: FileSystemOptions & {
+export interface ReadFileOptions extends FileSystemOptions {
     signal?: AbortSignal;
-} = {}): Promise<Uint8Array> {
+}
+
+export async function readFile(
+    target: string | FileSystemFileHandle,
+    options: ReadFileOptions = {}
+): Promise<Uint8Array> {
     void target, options;
     throw new Error("Unsupported runtime");
 }
 
-export async function readFileAsText(target: string | FileSystemFileHandle, options: FileSystemOptions & {
-    signal?: AbortSignal;
-} = {}): Promise<string> {
+export async function readFileAsText(
+    target: string | FileSystemFileHandle,
+    options: ReadFileOptions = {}
+): Promise<string> {
     void target, options;
     throw new Error("Unsupported runtime");
+}
+
+export async function readFileAsFile(
+    target: string | FileSystemFileHandle,
+    options: ReadFileOptions = {}
+): Promise<File> {
+    void target, options;
+    throw new Error("Unsupported runtime");
+}
+
+export interface WriteFileOptions extends FileSystemOptions {
+    append?: boolean;
+    mode?: number;
+    signal?: AbortSignal;
 }
 
 export async function writeFile(
     target: string | FileSystemFileHandle,
     data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
-    options: FileSystemOptions & {
-        append?: boolean;
-        mode?: number;
-        signal?: AbortSignal;
-    } = {}
+    options: WriteFileOptions = {}
 ): Promise<void> {
     void target, data, options;
     throw new Error("Unsupported runtime");
@@ -92,11 +131,7 @@ export async function writeFile(
 export async function writeLines(
     target: string | FileSystemFileHandle,
     lines: string[],
-    options: FileSystemOptions & {
-        append?: boolean;
-        mode?: number;
-        signal?: AbortSignal;
-    } = {}
+    options: WriteFileOptions = {}
 ): Promise<void> {
     void target, lines, options;
     throw new Error("Unsupported runtime");
@@ -111,9 +146,11 @@ export async function truncate(
     throw new Error("Unsupported runtime");
 }
 
-export async function remove(path: string, options: FileSystemOptions & {
+export interface RemoveOptions extends FileSystemOptions {
     recursive?: boolean;
-} = {}): Promise<void> {
+}
+
+export async function remove(path: string, options: RemoveOptions = {}): Promise<void> {
     void path, options;
     throw new Error("Unsupported runtime");
 }
@@ -127,11 +164,11 @@ export async function rename(
     throw new Error("Unsupported runtime");
 }
 
-export async function copy(
-    src: string,
-    dest: string,
-    options?: FileSystemOptions & { recursive?: boolean; }
-): Promise<void>;
+export interface CopyOptions extends FileSystemOptions {
+    recursive?: boolean;
+}
+
+export async function copy(src: string, dest: string, options?: CopyOptions): Promise<void>;
 export async function copy(
     src: FileSystemFileHandle,
     dest: FileSystemFileHandle | FileSystemDirectoryHandle
@@ -139,22 +176,23 @@ export async function copy(
 export async function copy(
     src: FileSystemDirectoryHandle,
     dest: FileSystemDirectoryHandle,
-    options?: { recursive?: boolean; }
+    options?: Pick<CopyOptions, "recursive">
 ): Promise<void>;
 export async function copy(
     src: string | FileSystemFileHandle | FileSystemDirectoryHandle,
     dest: string | FileSystemFileHandle | FileSystemDirectoryHandle,
-    options: FileSystemOptions & {
-        recursive?: boolean;
-    } = {}
+    options: CopyOptions = {}
 ): Promise<void> {
     void src, dest, options;
     throw new Error("Unsupported runtime");
 }
 
-export async function link(src: string, dest: string, options: {
+
+export interface LinkOptions {
     symbolic?: boolean;
-} = {}): Promise<void> {
+}
+
+export async function link(src: string, dest: string, options: LinkOptions = {}): Promise<void> {
     void src, dest, options;
     throw new Error("Unsupported runtime");
 }
@@ -180,5 +218,21 @@ export async function utimes(
     mtime: number | Date
 ): Promise<void> {
     void path, atime, mtime;
+    throw new Error("Unsupported runtime");
+}
+
+export function createReadableStream(
+    target: string | FileSystemFileHandle,
+    options: FileSystemOptions = {}
+): ReadableStream<Uint8Array> {
+    void target, options;
+    throw new Error("Unsupported runtime");
+}
+
+export function createWritableStream(
+    target: string | FileSystemFileHandle,
+    options: Omit<WriteFileOptions, "signal"> = {}
+): WritableStream<Uint8Array> {
+    void target, options;
     throw new Error("Unsupported runtime");
 }

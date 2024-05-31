@@ -14,6 +14,25 @@ type Debounce = {
 const registry = new Map<any, Debounce>();
 
 /**
+ * Options for the {@link debounce} function.
+ */
+export interface DebounceOptions {
+    /**
+     * The delay duration (in milliseconds) to wait before invoking the
+     * handler function.
+     */
+    delay: number,
+    /**
+     * Use the debounce strategy `for` the given key, this will keep the
+     * debounce context in a global registry, binding new `handler` function
+     * for the same key will override the previous settings. This mechanism
+     * guarantees that both creating the debounced function in function
+     * scopes and overwriting the handler are possible.
+     */
+    for?: any;
+}
+
+/**
  * Creates a debounced function that delays invoking `handler` until after
  * `delay` duration (in milliseconds) have elapsed since the last time the
  * debounced function was invoked. 
@@ -103,22 +122,12 @@ export default function debounce<I, T, R>(
  */
 export default function debounce<I, T, R>(
     handler: (this: I, data: T) => R | Promise<R>,
-    options: {
-        delay: number,
-        /**
-         * Use the debounce strategy `for` the given key, this will keep the
-         * debounce context in a global registry, binding new `handler` function
-         * for the same key will override the previous settings. This mechanism
-         * guarantees that both creating the debounced function in function
-         * scopes and overwriting the handler are possible.
-         */
-        for?: any;
-    },
+    options: DebounceOptions,
     reducer?: (prev: T, current: T) => T
 ): (this: I, data: T) => Promise<R>;
 export default function debounce<I, T = any, R = any>(
     handler: (this: I, data: T) => R | Promise<R>,
-    options: number | { delay: number; for?: any; },
+    options: number | DebounceOptions,
     reducer: ((prev: T, current: T) => T) | undefined = undefined,
 ): (this: I, data: T) => Promise<R> {
     const delay = typeof options === "number" ? options : options.delay;

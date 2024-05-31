@@ -209,6 +209,15 @@ export function split(path: string): string[] {
     }
 }
 
+/**
+ * Options for path comparison functions, such as {@link contains},
+ * {@link startsWith}, {@link endsWith} and {@link equals}.
+ */
+export interface PathCompareOptions {
+    caseInsensitive?: boolean;
+    ignoreFileProtocol?: boolean;
+}
+
 function stripFileProtocol(path: string): string {
     return path
         .replace(/^file:\/\/(localhost)?\/?([a-z]:)/i, "$2")
@@ -217,10 +226,11 @@ function stripFileProtocol(path: string): string {
         .replace(/^file:\//i, "/");
 }
 
-function extractSegmentsForComparison(path: string, sub: string, options: {
-    caseInsensitive?: boolean;
-    ignoreFileProtocol?: boolean;
-} = {}): {
+function extractSegmentsForComparison(
+    path: string,
+    sub: string,
+    options: PathCompareOptions = {}
+): {
     result: boolean | undefined;
     paths: string[];
     subs: string[];
@@ -291,10 +301,7 @@ function extractSegmentsForComparison(path: string, sub: string, options: {
  * console.assert(contains("http://example.com/foo/b", "http://example.com"));
  * ```
  */
-export function contains(path: string, sub: string, options: {
-    caseInsensitive?: boolean;
-    ignoreFileProtocol?: boolean;
-} = {}): boolean {
+export function contains(path: string, sub: string, options: PathCompareOptions = {}): boolean {
     const { result, paths, subs } = extractSegmentsForComparison(path, sub, options);
 
     if (result !== undefined) {
@@ -334,10 +341,7 @@ export function contains(path: string, sub: string, options: {
  * }));
  * ```
  */
-export function startsWith(path: string, sub: string, options: {
-    caseInsensitive?: boolean;
-    ignoreFileProtocol?: boolean;
-} = {}): boolean {
+export function startsWith(path: string, sub: string, options: PathCompareOptions = {}): boolean {
     const { result, paths, subs } = extractSegmentsForComparison(path, sub, options);
 
     if (result !== undefined)
@@ -370,10 +374,7 @@ export function startsWith(path: string, sub: string, options: {
  * console.assert(!endsWith("/usr/bin", "/bin"));
  * ```
  */
-export function endsWith(path: string, sub: string, options: {
-    caseInsensitive?: boolean;
-    ignoreFileProtocol?: boolean;
-} = {}): boolean {
+export function endsWith(path: string, sub: string, options: PathCompareOptions = {}): boolean {
     const { result, paths, subs } = extractSegmentsForComparison(path, sub, options);
 
     if (result !== undefined)
@@ -408,10 +409,7 @@ export function endsWith(path: string, sub: string, options: {
  * }));
  * ```
  */
-export function equals(path1: string, path2: string, options: {
-    caseInsensitive?: boolean;
-    ignoreFileProtocol?: boolean;
-} = {}): boolean {
+export function equals(path1: string, path2: string, options: PathCompareOptions = {}): boolean {
     const { result, paths, subs } = extractSegmentsForComparison(path1, path2, options);
 
     if (result === false || paths.length !== subs.length)

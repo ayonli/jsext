@@ -1,4 +1,19 @@
-/** Case-insensitive map, keys are case-insensitive. */
+/**
+ * Case-insensitive map, keys are case-insensitive.
+ *
+ * @example
+ * ```ts
+ * import { CiMap } from "@ayonli/jsext/collections";
+ *
+ * const map = new CiMap<string, string>();
+ *
+ * map.set("foo", "hello");
+ * map.set("bar", "world");
+ *
+ * console.log(map.get("FOO")); // hello
+ * console.log(map.has("BAR")); // true
+ * ```
+ */
 class CiMap extends Map {
     get [Symbol.toStringTag]() {
         return "CiMap";

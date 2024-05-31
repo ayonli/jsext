@@ -65,6 +65,16 @@ export const isTTY: boolean = (() => {
 
 /**
  * Returns the width of a single character.
+ * 
+ * @example
+ * ```ts
+ * import { charWidth } from "@ayonli/jsext/cli";
+ * 
+ * console.log(charWidth("a")); // 1
+ * console.log(charWidth("你")); // 2
+ * console.log(charWidth("👋")); // 2
+ * console.log(charWidth("♥")); // 1
+ * ```
  */
 export function charWidth(char: string): 1 | 2 {
     if (EMOJI_CHAR.test(char)) {
@@ -82,6 +92,15 @@ export function charWidth(char: string): 1 | 2 {
 
 /**
  * Returns the width of a string.
+ * 
+ * @example
+ * ```ts
+ * import { stringWidth } from "@ayonli/jsext/cli";
+ * 
+ * console.log(stringWidth("Hello, World!")); // 13
+ * console.log(stringWidth("你好，世界！")); // 12
+ * console.log(stringWidth("👋🌍🚀♥️♣")); // 8
+ * ```
  */
 export function stringWidth(str: string): number {
     return sum(...chars(str).map(charWidth));
@@ -369,6 +388,30 @@ function parseKeyValue(
 }
 
 /**
+ * Options for parsing CLI arguments, used by the {@link parseArgs} function.
+ */
+export interface ParseOptions {
+    /**
+     * A map of alias characters to their full names. Once set, we can use the
+     * alias characters in the arguments, and they will be converted to their
+     * full names in the result object after parsing.
+     */
+    alias?: { [char: string]: string; };
+    /**
+     * Argument names that should be treated as lists. When an argument is in
+     * this list, the result object will store its values in an array.
+     */
+    lists?: string[];
+    /**
+     * By default, the {@link parseArgs} function will automatically convert the
+     * argument value to a number or boolean if it looks like one. If we don't
+     * want this behavior for some arguments, we can set this option to `true`,
+     * or an array of argument names that should not be coerced.
+     */
+    noCoercion?: boolean | string[];
+}
+
+/**
  * Parses the given CLI arguments into an object.
  * 
  * @example
@@ -399,11 +442,7 @@ function parseKeyValue(
  * // }
  * ```
  */
-export function parseArgs(args: string[], options: {
-    alias?: { [char: string]: string; };
-    lists?: string[];
-    noCoercion?: boolean | string[];
-} = {}): {
+export function parseArgs(args: string[], options: ParseOptions = {}): {
     [key: string]: string | number | boolean | (string | number | boolean)[];
     [x: number]: string | number | boolean;
     "--"?: string[];
@@ -480,6 +519,18 @@ export function parseArgs(args: string[], options: {
 
 /**
  * Quotes a string to be used as a single argument to a shell command.
+ * 
+ * @example
+ * ```ts
+ * import { quote } from "@ayonli/jsext/cli";
+ * 
+ * console.log(quote("Hello, World!")); // "Hello, World!"
+ * console.log(quote("Hello, 'World'!")); // "Hello, 'World'!"
+ * console.log(quote("Hello, \"World\"!")); // "Hello, \"World\"!"
+ * console.log(quote("Hello, $World!")); // "Hello, \$World!"
+ * console.log(quote("Hello, `World`!")); // "Hello, \`World\`!"
+ * console.log(quote("Hello, \\World!")); // "Hello, \\World!"
+ * ```
  */
 export function quote(arg: string): string {
     if ((/["'\s]/).test(arg)) {

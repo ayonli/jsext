@@ -16,6 +16,13 @@ import { isBrowserWindow, isDeno, isNodeLike } from './env.js';
 /**
  * Displays a dialog with a message, and to wait until the user dismisses the
  * dialog.
+ *
+ * @example
+ * ```ts
+ * import { alert } from "@ayonli/jsext/dialog";
+ *
+ * await alert("Hello, world!");
+ * ```
  */
 async function alert(message, options = {}) {
     if (isBrowserWindow) {
@@ -31,6 +38,17 @@ async function alert(message, options = {}) {
 /**
  * Displays a dialog with a message, and to wait until the user either confirms
  * or cancels the dialog.
+ *
+ * @example
+ * ```ts
+ * import { confirm } from "@ayonli/jsext/dialog";
+ *
+ * if (await confirm("Are you sure?")) {
+ *     console.log("Confirmed");
+ * } else {
+ *     console.log("Canceled");
+ * }
+ * ```
  */
 async function confirm(message, options = {}) {
     if (isBrowserWindow) {

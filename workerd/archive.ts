@@ -1,27 +1,28 @@
+import { FileSystemOptions } from "../fs/types.ts";
 import Tarball, { TarEntry } from "../archive/Tarball.ts";
 
 export { Tarball };
 export type { TarEntry };
 
-export type TarOptions = {
+export interface TarOptions extends FileSystemOptions {
     gzip?: boolean;
     signal?: AbortSignal;
-};
+}
 
-export type UntarOptions = TarOptions & {
+export interface UntarOptions extends TarOptions {
     size?: number;
     onProgress?: (event: ProgressEvent) => void;
-};
+}
 
-export function tar(
-    src: string | FileSystemDirectoryHandle,
-    options?: TarOptions
-): Promise<Tarball>;
 export function tar(
     src: string | FileSystemDirectoryHandle,
     dest: string | FileSystemFileHandle,
     options?: TarOptions
 ): Promise<void>;
+export function tar(
+    src: string | FileSystemDirectoryHandle,
+    options?: FileSystemOptions
+): Promise<Tarball>;
 export async function tar(
     src: string | FileSystemDirectoryHandle,
     dest: string | FileSystemFileHandle | TarOptions = {},
@@ -33,17 +34,17 @@ export async function tar(
 
 export function untar(
     src: string | FileSystemFileHandle | ReadableStream<Uint8Array>,
-    options?: TarOptions
-): Promise<Tarball>;
+    dest: string | FileSystemDirectoryHandle,
+    options?: UntarOptions
+): Promise<void>;
 export function untar(
     src: string | FileSystemFileHandle | ReadableStream<Uint8Array>,
-    dest: string | FileSystemDirectoryHandle,
     options?: TarOptions
-): Promise<void>;
+): Promise<Tarball>;
 export async function untar(
     src: string | FileSystemFileHandle | ReadableStream<Uint8Array>,
     dest: string | FileSystemDirectoryHandle | TarOptions = {},
-    options: TarOptions = {}
+    options: UntarOptions = {}
 ): Promise<Tarball | void> {
     void src, dest, options;
     throw new Error("Unsupported runtime");

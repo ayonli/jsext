@@ -28,13 +28,43 @@ export const isTsRuntime: () => boolean = () => runtime().tsSupport;
 export const platform: () => string = runtimePlatform;
 
 /**
- * Executes a command in the terminal and returns the exit code and outputs.
+ * The result of command execution functions such as the {@link run},
+ * {@link powershell} and {@link sudo}.
  */
-export async function run(cmd: string, args: string[]): Promise<{
+export interface CommandResult {
+    /**
+     * The exit code of the command. A non-zero value indicates an error.
+     */
     code: number;
+    /**
+     * The standard output of the command, may end with a newline character.
+     */
     stdout: string;
+    /**
+     * The standard error of the command, may end with a newline character.
+     */
     stderr: string;
-}> {
+}
+
+/**
+ * Executes a command in the terminal and returns the exit code and outputs.
+ * 
+ * In Windows, this function will use PowerShell to execute the command when
+ * possible, which has a lot UNIX-like aliases/commands available, such as `ls`,
+ * `cat`, `rm`, etc.
+ * 
+ * @example
+ * ```ts
+ * import { run } from "@ayonli/jsext/cli";
+ * 
+ * const { code, stdout, stderr } = await run("echo", ["Hello, World!"]);
+ * 
+ * console.log(code); // 0
+ * console.log(JSON.stringify(stdout)); // "Hello, World!\n"
+ * console.log(JSON.stringify(stderr)); // ""
+ * ```
+ */
+export async function run(cmd: string, args: string[]): Promise<CommandResult> {
     const isWindows = platform() === "windows";
     const isWslPs = isWSL() && cmd.endsWith("powershell.exe");
 
@@ -101,12 +131,23 @@ export async function run(cmd: string, args: string[]): Promise<{
  * 
  * This function can also be called within Windows Subsystem for Linux to
  * directly interact with PowerShell.
+ * 
+ * NOTE: This function is only available in Windows and Windows Subsystem for
+ * Linux.
+ * 
+ * @example
+ * ```ts
+ * import { powershell } from "@ayonli/jsext/cli";
+ * 
+ * const cmd = "ls";
+ * const {
+ *     code,
+ *     stdout,
+ *     stderr,
+ * } = await powershell(`Get-Command -Name ${cmd} | Select-Object -ExpandProperty Source`);
+ * ```
  */
-export async function powershell(script: string): Promise<{
-    code: number;
-    stdout: string;
-    stderr: string;
-}> {
+export async function powershell(script: string): Promise<CommandResult> {
     let command = "powershell";
 
     if (isWSL()) {
@@ -117,25 +158,39 @@ export async function powershell(script: string): Promise<{
 }
 
 /**
- * Executes a command with elevated privileges using `sudo` (or UAC in Windows).
+ * Options for the {@link sudo} function.
  */
-export async function sudo(cmd: string, args: string[], options: {
+export interface SudoOptions {
     /**
-     * By default, this function will use the `sudo` command when available and
-     * running in text mode. Set this option to `true` to force using the GUI
-     * prompt instead.
+     * By default, the {@link sudo} function will use the `sudo` command when
+     * available and running in text mode. Set this option to `true` to force
+     * using the GUI prompt instead.
      * 
-     * NOTE: this option is not available and will be ignored in Windows
+     * NOTE: This option is not available and will be ignored in Windows
      * Subsystem for Linux.
      */
     gui?: boolean;
-    /** Custom the dialog's title when `gui` option is set. */
+    /**
+     * Custom the dialog's title when `gui` option is set.
+     */
     title?: string;
-} = {}): Promise<{
-    code: number;
-    stdout: string;
-    stderr: string;
-}> {
+}
+
+/**
+ * Executes a command with elevated privileges using `sudo` (or UAC in Windows).
+ * 
+ * @example
+ * ```ts
+ * import { sudo } from "@ayonli/jsext/cli";
+ * 
+ * await sudo("apt", ["install", "build-essential"]);
+ * ```
+ */
+export async function sudo(
+    cmd: string,
+    args: string[],
+    options: SudoOptions = {}
+): Promise<CommandResult> {
     const _platform = platform();
 
     if ((_platform !== "windows" && !options?.gui) ||
@@ -179,6 +234,18 @@ export async function sudo(cmd: string, args: string[], options: {
 /**
  * Returns the path of the given command if it exists in the system,
  * otherwise returns `null`.
+ * 
+ * This function is available in Windows as well.
+ * 
+ * @example
+ * ```ts
+ * import { which } from "@ayonli/jsext/cli";
+ * 
+ * const path = await which("node");
+ * 
+ * console.log(path);
+ * // e.g. "/usr/bin/node" in UNIX/Linux or "C:\\Program Files\\nodejs\\node.exe" in Windows
+ * ```
  */
 export async function which(cmd: string): Promise<string | null> {
     if (platform() === "windows") {
@@ -208,6 +275,15 @@ export async function which(cmd: string): Promise<string | null> {
  * 
  * In the browser, this function will always try to open the file in VS Code,
  * regardless of whether it's available or not.
+ * 
+ * @example
+ * ```ts
+ * import { edit } from "@ayonli/jsext/cli";
+ * 
+ * await edit("path/to/file.txt");
+ * 
+ * await edit("path/to/file.txt:10"); // open the file at line 10
+ * ```
  */
 export async function edit(filename: string): Promise<void> {
     const match = filename.match(/(:|#L)(\d+)/);

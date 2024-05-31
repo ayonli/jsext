@@ -41,6 +41,61 @@ let gcTimer: number | NodeJS.Timeout;
 const workerConsumerQueue: (() => void)[] = [];
 
 /**
+ * Options for the {@link run} function.
+ */
+export interface RunOptions {
+    /**
+     * If not set, invoke the default function, otherwise invoke the specified
+     * function.
+     */
+    fn?: string;
+    /** Automatically abort the task when timeout (in milliseconds). */
+    timeout?: number;
+    /**
+     * Instead of dropping the worker after the task has completed, keep it
+     * alive so that it can be reused by other tasks.
+     */
+    keepAlive?: boolean;
+    /**
+     * Choose whether to use `worker_threads` or `child_process` for running
+     * the script. The default setting is `worker_threads`.
+     * 
+     * In browsers and Deno, this option is ignored and will always use the web
+     * worker.
+     * 
+     * @deprecated Always prefer `worker_threads` over `child_process` since it
+     * consumes less system resources and `child_process` may not work in
+     * Windows. `child_process` support may be removed in the future once
+     * considered thoroughly.
+     */
+    adapter?: "worker_threads" | "child_process";
+}
+
+/**
+ * The return value of the {@link run} function.
+ */
+export interface WorkerTask<R> {
+    /**
+     * The ID of the worker thread that runs the task.
+     */
+    workerId: number;
+    /**
+     * Retrieves the return value of the function being called.
+     */
+    result(): Promise<R>;
+    /**
+     * Iterates the yield value if the function being called returns a generator.
+     */
+    iterate(): AsyncIterable<R>;
+    /**
+     * Terminates the worker thread and aborts the task. If `reason` is provided,
+     * `result()` or `iterate()` will throw the error. Otherwise, the task will
+     * be aborted silently.
+     */
+    abort(reason?: Error | null): Promise<void>;
+}
+
+/**
  * Runs the given `script` in a worker thread and abort the task at any time.
  * 
  * This function is similar to {@link parallel}(), many features and
@@ -100,45 +155,11 @@ const workerConsumerQueue: (() => void)[] = [];
  * console.assert(res === undefined);
  * ```
  */
-async function run<R, A extends any[] = any[]>(script: string, args?: A, options?: {
-    /**
-     * If not set, invoke the default function, otherwise invoke the specified
-     * function.
-     */
-    fn?: string;
-    /** Automatically abort the task when timeout (in milliseconds). */
-    timeout?: number;
-    /**
-     * Instead of dropping the worker after the task has completed, keep it
-     * alive so that it can be reused by other tasks.
-     */
-    keepAlive?: boolean;
-    /**
-     * Choose whether to use `worker_threads` or `child_process` for running
-     * the script. The default setting is `worker_threads`.
-     * 
-     * In browsers and Deno, this option is ignored and will always use the web
-     * worker.
-     * 
-     * @deprecated Always prefer `worker_threads` over `child_process` since it
-     * consumes less system resources and `child_process` may not work in
-     * Windows. `child_process` support may be removed in the future once
-     * considered thoroughly.
-     */
-    adapter?: "worker_threads" | "child_process";
-}): Promise<{
-    workerId: number;
-    /** Retrieves the return value of the function being called. */
-    result(): Promise<R>;
-    /** Iterates the yield value if the function being called returns a generator. */
-    iterate(): AsyncIterable<R>;
-    /**
-     * Terminates the worker thread and aborts the task. If `reason` is provided,
-     * `result()` or `iterate()` will throw the error. Otherwise, the task will
-     * be aborted silently.
-     */
-    abort(reason?: Error | null): Promise<void>;
-}> {
+async function run<R, A extends any[] = any[]>(
+    script: string,
+    args?: A,
+    options?: RunOptions
+): Promise<WorkerTask<R>> {
     if (!isNode && typeof Worker !== "function") {
         throw new Error("Unsupported runtime");
     }

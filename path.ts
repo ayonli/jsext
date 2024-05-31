@@ -26,7 +26,10 @@ import {
     isWindowsPath,
     split,
     startsWith,
+    type PathCompareOptions,
 } from "./path/util.ts";
+
+export type { PathCompareOptions };
 
 export {
     isWindowsPath,
