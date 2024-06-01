@@ -7,6 +7,14 @@ import { UTIMap } from "./filetype/constants.ts";
 /**
  * Returns the corresponding UTI (Uniform Type Identifier) for the given
  * type, where the type is a file extension or a MIME type name.
+ * 
+ * @example
+ * ```ts
+ * import { getUTI } from "@ayonli/jsext/filetype";
+ * 
+ * console.log(getUTI(".png")); // public.png
+ * console.log(getUTI("image/png")); // public.png
+ * ```
  */
 export function getUTI(type: string): string | undefined {
     type = type.toLowerCase();
@@ -31,6 +39,14 @@ export function getUTI(type: string): string | undefined {
 /**
  * Returns the corresponding MIME type for the given type, where the type is a
  * file extension or a UTI (Uniform Type Identifier) name.
+ * 
+ * @example
+ * ```ts
+ * import { getMIME } from "@ayonli/jsext/filetype";
+ * 
+ * console.log(getMIME(".png")); // image/png
+ * console.log(getMIME("public.png")); // image/png
+ * ```
  */
 export function getMIME(type: string): string | undefined {
     type = type.toLowerCase();
@@ -62,6 +78,14 @@ export function getMIME(type: string): string | undefined {
 /**
  * Returns the corresponding file extensions for the given type, where the type
  * is a MIME type or a UTI (Uniform Type Identifier) name.
+ * 
+ * @example
+ * ```ts
+ * import { getExtensions } from "@ayonli/jsext/filetype";
+ * 
+ * console.log(getExtensions("image/png")); // [".png"]
+ * console.log(getExtensions("public.png")); // [".png"]
+ * ```
  */
 export function getExtensions(type: string): string[] {
     type = type.toLowerCase();

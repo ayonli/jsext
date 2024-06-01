@@ -1,6 +1,34 @@
 /**
  * The universal exception class, which can be used to represent any kind of error.
  * It's similar to the `DOMException`, but for any JavaScript environment.
+ *
+ * @example
+ * ```ts
+ * // throw an exception with a name
+ * import { Exception } from "@ayonli/jsext/error";
+ *
+ * throw new Exception("The resource cannot be found", "NotFoundError");
+ * ```
+ *
+ * @example
+ * ```ts
+ * // throw an exception with a code
+ * import { Exception } from "@ayonli/jsext/error";
+ *
+ * throw new Exception("The resource cannot be found", 404);
+ * ```
+ *
+ * @example
+ * ```ts
+ * // rethrow an exception with a cause
+ * import { Exception } from "@ayonli/jsext/error";
+ *
+ * try {
+ *     throw new Error("Something went wrong");
+ * } catch (error) {
+ *     throw new Exception("An error occurred", { cause: error });
+ * }
+ * ```
  */
 class Exception extends Error {
     constructor(message, options = 0) {

@@ -5,7 +5,25 @@ import Exception from './error/Exception.js';
  * Functions for converting errors to/from other types of objects.
  * @module
  */
-/** Transform the error to a plain object. */
+/**
+ * Transforms the error to a plain object.
+ *
+ * @example
+ * ```ts
+ * import { toObject } from "@ayonli/jsext/error";
+ *
+ * const err = new Error("Something went wrong.");
+ *
+ * const obj = toObject(err);
+ * console.log(obj);
+ * // {
+ * //     "@@type": "Error",
+ * //     name: "Error",
+ * //     message: "Something went wrong.",
+ * //     stack: "Error: Something went wrong.\n    at <anonymous>:1:13"
+ * // }
+ * ```
+ */
 function toObject(err) {
     if (!(err instanceof Error) && err["name"] && err["message"]) { // Error-like
         err = fromObject(err, Error);
@@ -95,7 +113,27 @@ function fromObject(obj, ctor = undefined) {
     }
     return err;
 }
-/** Creates an `ErrorEvent` instance based on the given error. */
+/**
+ * Creates an `ErrorEvent` instance based on the given error.
+ *
+ * @example
+ * ```ts
+ * import { toErrorEvent } from "@ayonli/jsext/error";
+ *
+ * const err = new Error("Something went wrong.");
+ *
+ * const event = toErrorEvent(err);
+ * console.log(event);
+ * // ErrorEvent {
+ * //     error: Error: Something went wrong.
+ * //         at <anonymous>:1:13,
+ * //     message: "Something went wrong.",
+ * //     filename: "",
+ * //     lineno: 1,
+ * //     colno: 13
+ * // }
+ * ```
+ */
 function toErrorEvent(err, type = "error") {
     let filename = "";
     let lineno = 0;
@@ -133,8 +171,26 @@ function toErrorEvent(err, type = "error") {
         colno,
     });
 }
-const isFirefoxOrSafari = typeof navigator === "object" && /Firefox|Safari/.test(navigator.userAgent);
-/** Creates an error instance based on the given `ErrorEvent` instance. */
+/**
+ * Creates an error instance based on the given `ErrorEvent` instance.
+ *
+ * @example
+ * ```ts
+ * import { fromErrorEvent } from "@ayonli/jsext/error";
+ *
+ * const event = new ErrorEvent("error", {
+ *     message: "Something went wrong.",
+ *     filename: "",
+ *     lineno: 1,
+ *     colno: 13,
+ * });
+ *
+ * const err = fromErrorEvent(event);
+ * console.log(err);
+ * // Error: Something went wrong.
+ * //     at <anonymous>:1:13
+ * ```
+ */
 function fromErrorEvent(event) {
     if (event.error instanceof Error) {
         return event.error;
@@ -157,19 +213,33 @@ function fromErrorEvent(event) {
     }
     if (shouldPatchStack) {
         let stack = "";
-        if (event.filename) {
-            if (isFirefoxOrSafari) {
+        if (typeof navigator === "object" && navigator.userAgent.includes("Firefox")) {
+            if (event.filename) {
                 stack = "@" + event.filename;
             }
             else {
-                stack = `Error: ${event.message}\n    at ${event.filename}`;
+                stack = "@debugger eval code";
             }
-            if (event.lineno) {
-                stack += ":" + event.lineno;
+        }
+        else if (typeof navigator === "object"
+            && navigator.userAgent.includes("Safari")
+            && !navigator.userAgent.includes("Chrome") // Chrome likes to pretend it's Safari
+        ) {
+            if (event.filename) {
+                stack = "@" + event.filename;
             }
-            if (event.colno) {
-                stack += ":" + event.colno;
+            else {
+                stack = "global code@";
             }
+        }
+        else {
+            stack = `${err.name}: ${event.message}\n    at ${event.filename || "<anonymous>"}`;
+        }
+        if (event.lineno && stack !== "global code@") {
+            stack += ":" + event.lineno;
+        }
+        if (event.colno && stack !== "global code@") {
+            stack += ":" + event.colno;
         }
         Object.defineProperty(err, "stack", {
             configurable: true,

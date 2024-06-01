@@ -204,6 +204,39 @@ export interface GetDirOptions extends FileSystemOptions {
  * 
  * NOTE: If the `path` is not provided or is empty, the root directory handle
  * will be returned.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { getDirHandle } from "@ayonli/jsext/fs";
+ * 
+ * const dir = await getDirHandle("/path/to/dir");
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { getDirHandle } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * const dir = await getDirHandle("/path/to/dir", { root });
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // create the directory if not exist
+ * import { getDirHandle } from "@ayonli/jsext/fs";
+ * 
+ * const dir = await getDirHandle("/path/to/dir", { create: true, recursive: true });
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // return the root directory handle
+ * import { getDirHandle } from "@ayonli/jsext/fs";
+ * 
+ * const root = await getDirHandle();
+ * ```
  */
 export async function getDirHandle(
     path: string = "",
@@ -242,6 +275,31 @@ export interface GetFileOptions extends FileSystemOptions {
  * Obtains the file handle of the given path.
  * 
  * NOTE: This function is only available in the browser.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { getFileHandle } from "@ayonli/jsext/fs";
+ * 
+ * const file = await getFileHandle("/path/to/file.txt");
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { getFileHandle } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * const file = await getFileHandle("/path/to/file.txt", { root });
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // create the file if not exist
+ * import { getFileHandle } from "@ayonli/jsext/fs";
+ * 
+ * const file = await getFileHandle("/path/to/file.txt", { create: true });
+ * ```
  */
 export async function getFileHandle(
     path: string,
@@ -260,6 +318,32 @@ export async function getFileHandle(
  * 
  * This function may throw an error if the path is invalid or the operation is
  * not allowed.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { exists } from "@ayonli/jsext/fs";
+ * 
+ * if (await exists("/path/to/file.txt")) {
+ *     console.log("The file exists.");
+ * } else {
+ *     console.log("The file does not exist.");
+ * }
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { exists } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * 
+ * if (await exists("/path/to/file.txt", { root })) {
+ *     console.log("The file exists.");
+ * } else {
+ *     console.log("The file does not exist.");
+ * }
+ * ```
  */
 export async function exists(path: string, options: FileSystemOptions = {}): Promise<boolean> {
     try {
@@ -289,6 +373,25 @@ export interface StatOptions extends FileSystemOptions {
 
 /**
  * Returns the information of the given file or directory.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { stat } from "@ayonli/jsext/fs";
+ * 
+ * const info = await stat("/path/to/file.txt");
+ * console.log(`${info.name} is a ${info.kind}, its size is ${info.size} bytes, with MIME type ${info.type}.`);
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { stat } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * const info = await stat("/path/to/file.txt", { root });
+ * console.log(`${info.name} is a ${info.kind}, its size is ${info.size} bytes, with MIME type ${info.type}.`);
+ * ```
  */
 export async function stat(
     target: string | FileSystemFileHandle | FileSystemDirectoryHandle,
@@ -447,6 +550,31 @@ export interface MkdirOptions extends FileSystemOptions {
 
 /**
  * Creates a new directory with the given path.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { mkdir } from "@ayonli/jsext/fs";
+ * 
+ * await mkdir("/path/to/dir");
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { mkdir } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * await mkdir("/path/to/dir", { root });
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // create the directory and its parent directories if not exist
+ * import { mkdir } from "@ayonli/jsext/fs";
+ * 
+ * await mkdir("/path/to/dir", { recursive: true });
+ * ```
  */
 export async function mkdir(path: string, options: MkdirOptions = {}): Promise<void> {
     if (isDeno) {
@@ -468,6 +596,23 @@ export async function mkdir(path: string, options: MkdirOptions = {}): Promise<v
 
 /**
  * Ensures the directory exists, creating it (and any parent directory) if not.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { ensureDir } from "@ayonli/jsext/fs";
+ * 
+ * await ensureDir("/path/to/dir");
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { ensureDir } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * await ensureDir("/path/to/dir", { root });
+ * ```
  */
 export async function ensureDir(
     path: string,
@@ -502,6 +647,37 @@ export interface ReadDirOptions extends FileSystemOptions {
  * Reads the directory of the given path and iterates its entries.
  * 
  * NOTE: The order of the entries is not guaranteed.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { readDir } from "@ayonli/jsext/fs";
+ * 
+ * for await (const entry of readDir("/path/to/dir")) {
+ *     console.log(`${entry.name} is a ${entry.kind}, its relative path is '${entry.relativePath}'.`);
+ * }
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { readDir } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * for await (const entry of readDir("/path/to/dir", { root })) {
+ *     console.log(`${entry.name} is a ${entry.kind}, its relative path is '${entry.relativePath}'.`);
+ * }
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // read the sub-directories recursively
+ * import { readDir } from "@ayonli/jsext/fs";
+ * 
+ * for await (const entry of readDir("/path/to/dir", { recursive: true })) {
+ *     console.log(`${entry.name} is a ${entry.kind}, its relative path is '${entry.relativePath}'.`);
+ * }
+ * ```
  */
 export async function* readDir(
     target: string | FileSystemDirectoryHandle,
@@ -575,6 +751,25 @@ export async function* readDir(
  * NOTE: Unlike {@link readDir}, the order of the entries returned by this
  * function is guaranteed, they are ordered first by kind (directories before
  * files), then by names alphabetically.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { readTree } from "@ayonli/jsext/fs";
+ * 
+ * const tree = await readTree("/path/to/dir");
+ * console.log(tree);
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { readTree } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * const tree = await readTree("/path/to/dir", { root });
+ * console.log(tree);
+ * ```
  */
 export async function readTree(
     target: string | FileSystemDirectoryHandle,
@@ -646,6 +841,23 @@ export interface ReadFileOptions extends FileSystemOptions {
 
 /**
  * Reads the content of the given file in bytes.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { readFile } from "@ayonli/jsext/fs";
+ * 
+ * const bytes = await readFile("/path/to/file.txt");
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { readFile } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * const bytes = await readFile("/path/to/file.txt", { root });
+ * ```
  */
 export async function readFile(
     target: string | FileSystemFileHandle,
@@ -671,6 +883,23 @@ export async function readFile(
 
 /**
  * Reads the content of the given file as text with `utf-8` encoding.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { readFileAsText } from "@ayonli/jsext/fs";
+ * 
+ * const text = await readFileAsText("/path/to/file.txt");
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { readFileAsText } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * const text = await readFileAsText("/path/to/file.txt", { root });
+ * ```
  */
 export async function readFileAsText(
     target: string | FileSystemFileHandle,
@@ -697,6 +926,23 @@ export async function readFileAsText(
 
 /**
  * Reads the file as a `File` object.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { readFileAsFile } from "@ayonli/jsext/fs";
+ * 
+ * const file = await readFileAsFile("/path/to/file.txt");
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { readFileAsFile } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * const file = await readFileAsFile("/path/to/file.txt", { root });
+ * ```
  */
 export async function readFileAsFile(
     target: string | FileSystemFileHandle,
@@ -743,6 +989,59 @@ export interface WriteFileOptions extends FileSystemOptions {
 
 /**
  * Writes the given data to the file.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { writeFile } from "@ayonli/jsext/fs";
+ * 
+ * await writeFile("/path/to/file.txt", "Hello, world!");
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { writeFile } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * await writeFile("/path/to/file.txt", "Hello, world!", { root });
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // append the data to the file
+ * import { writeFile } from "@ayonli/jsext/fs";
+ * 
+ * await writeFile("/path/to/file.txt", "Hello, world!", { append: true });
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // write binary data to the file
+ * import { writeFile } from "@ayonli/jsext/fs";
+ * import bytes from "@ayonli/jsext/bytes";
+ * 
+ * const data = bytes("Hello, world!");
+ * await writeFile("/path/to/file.txt", data)
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // write a blob to the file
+ * import { writeFile } from "@ayonli/jsext/fs";
+ * 
+ * const blob = new Blob(["Hello, world!"], { type: "text/plain" });
+ * await writeFile("/path/to/file.txt", blob);
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // write a readable stream to the file
+ * import { writeFile } from "@ayonli/jsext/fs";
+ * 
+ * const res = await fetch("https://example.com/file.txt");
+ * await writeFile("/path/to/file.txt", res.body!);
+ * ```
  */
 export async function writeFile(
     target: string | FileSystemFileHandle,
@@ -852,6 +1151,31 @@ async function writeFileHandle(
  * This function will append a new line at the end of the final content, in
  * appending mode, it will also prepend a line ending before the input lines if
  * the current content doesn't ends with one.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { writeLines } from "@ayonli/jsext/fs";
+ * 
+ * await writeLines("/path/to/file.txt", ["Hello", "World"]);
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { writeLines } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * await writeLines("/path/to/file.txt", ["Hello", "World"], { root });
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // append the lines to the file
+ * import { writeLines } from "@ayonli/jsext/fs";
+ * 
+ * await writeLines("/path/to/file.txt", ["Hello", "World"], { append: true });
+ * ```
  */
 export async function writeLines(
     target: string | FileSystemFileHandle,
@@ -900,6 +1224,37 @@ export async function writeLines(
 /**
  * Truncates (or extends) the file to reach the specified `size`. If `size` is
  * not specified then the entire file contents are truncated.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { stat, truncate } from "@ayonli/jsext/fs";
+ * 
+ * await truncate("/path/to/file.txt", 1024);
+ * const info = await stat("/path/to/file.txt");
+ * console.assert(info.size === 1024);
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { stat, truncate } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * await truncate("/path/to/file.txt", 1024, { root });
+ * const info = await stat("/path/to/file.txt", { root });
+ * console.assert(info.size === 1024);
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // truncate the file to zero size
+ * import { stat, truncate } from "@ayonli/jsext/fs";
+ * 
+ * await truncate("/path/to/file.txt");
+ * const info = await stat("/path/to/file.txt");
+ * console.assert(info.size === 0);
+ * ```
  */
 export async function truncate(
     target: string | FileSystemFileHandle,
@@ -949,6 +1304,31 @@ export interface RemoveOptions extends FileSystemOptions {
 
 /**
  * Removes the file or directory of the given path from the file system.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { remove } from "@ayonli/jsext/fs";
+ * 
+ * await remove("/path/to/file.txt");
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { remove } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * await remove("/path/to/file.txt", { root });
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // remove the directory and its contents recursively
+ * import { remove } from "@ayonli/jsext/fs";
+ * 
+ * await remove("/path/to/dir", { recursive: true });
+ * ```
  */
 export async function remove(path: string, options: RemoveOptions = {}): Promise<void> {
     if (isDeno) {
@@ -981,6 +1361,23 @@ export async function remove(path: string, options: RemoveOptions = {}): Promise
 
 /**
  * Renames the file or directory from the old path to the new path.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { rename } from "@ayonli/jsext/fs";
+ * 
+ * await rename("/path/to/old.txt", "/path/to/new.txt");
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { rename } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * await rename("/path/to/old.txt", "/path/to/new.txt", { root });
+ * ```
  */
 export async function rename(
     oldPath: string,
@@ -1025,12 +1422,70 @@ export interface CopyOptions extends FileSystemOptions {
  * behavior, it does not distinguish between a path with a trailing slash and a
  * path without it. So when copying a directory, this function always copy its
  * contents to the new path, whether the new path already exists or not.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { copy } from "@ayonli/jsext/fs";
+ * 
+ * await copy("/path/to/old.txt", "/path/to/new.txt");
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { copy } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * await copy("/path/to/old.txt", "/path/to/new.txt", { root });
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // copy a directory and its contents recursively
+ * import { copy } from "@ayonli/jsext/fs";
+ * 
+ * await copy("/path/to/dir", "/path/to/new", { recursive: true });
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // copy a file to a directory
+ * import { copy, exists } from "@ayonli/jsext/fs";
+ * 
+ * await copy("/path/to/file.txt", "/path/to/dir");
+ * console.assert(await exists("/path/to/dir/file.txt"));
+ * ```
  */
 export async function copy(src: string, dest: string, options?: CopyOptions): Promise<void>;
+/**
+ * @example
+ * ```ts
+ * // copy a file from the device's file system to the browser's file system (Chromium only)
+ * import { copy, getFileHandle } from "@ayonli/jsext/fs";
+ * 
+ * const file1 = await window.showOpenFilePicker();
+ * const file2 = await getFileHandle("/path/to/file.txt");
+ * 
+ * await copy(file1[0], file2);
+ * ```
+ */
 export async function copy(
     src: FileSystemFileHandle,
     dest: FileSystemFileHandle | FileSystemDirectoryHandle
 ): Promise<void>;
+/**
+ * @example
+ * ```ts
+ * // copy a directory from the device's file system to the browser's file system (Chromium only)
+ * import { copy, getDirHandle } from "@ayonli/jsext/fs";
+ * 
+ * const dir1 = await window.showDirectoryPicker();
+ * const dir2 = await getDirHandle("/path/to/dir");
+ * 
+ * await copy(dir1, dir2, { recursive: true });
+ * ```
+ */
 export async function copy(
     src: FileSystemDirectoryHandle,
     dest: FileSystemDirectoryHandle,
@@ -1279,6 +1734,22 @@ export interface LinkOptions {
  * path.
  * 
  * NOTE: This function is not available in the browser.
+ * 
+ * @example
+ * ```ts
+ * // create a hard link
+ * import { link } from "@ayonli/jsext/fs";
+ * 
+ * await link("/path/to/file.txt", "/path/to/link.txt");
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // create a symbolic link
+ * import { link } from "@ayonli/jsext/fs";
+ * 
+ * await link("/path/to/file.txt", "/path/to/link.txt", { symbolic: true });
+ * ```
  */
 export async function link(src: string, dest: string, options: LinkOptions = {}): Promise<void> {
     if (isDeno) {
@@ -1316,6 +1787,14 @@ export async function link(src: string, dest: string, options: LinkOptions = {})
  * Returns the destination path of a symbolic link.
  * 
  * NOTE: This function is not available in the browser.
+ * 
+ * @example
+ * ```ts
+ * import { readLink } from "@ayonli/jsext/fs";
+ * 
+ * const dest = await readLink("/path/to/link.txt");
+ * console.log(dest);
+ * ```
  */
 export async function readLink(path: string): Promise<string> {
     if (isDeno) {
@@ -1351,6 +1830,14 @@ export async function readLink(path: string): Promise<string> {
  * 
  * NOTE: This function only works in Unix/Linux server-side environments, in
  * other environments, it's a no-op.
+ * 
+ * @example
+ * ```ts
+ * import { chmod } from "@ayonli/jsext/fs";
+ * 
+ * // Change the file's permission to read/write for owner, read for group and others.
+ * await chmod("/path/to/file.txt", 0o644);
+ * ```
  */
 export async function chmod(path: string, mode: number): Promise<void> {
     if (platform() !== "windows") {
@@ -1368,6 +1855,14 @@ export async function chmod(path: string, mode: number): Promise<void> {
  * 
  * NOTE: This function only works in Unix/Linux server-side environments, in
  * other environments, it's a no-op.
+ * 
+ * @example
+ * ```ts
+ * import { chown } from "@ayonli/jsext/fs";
+ * 
+ * // Change the owner and group of the file to root.
+ * await chown("/path/to/file.txt", 0, 0);
+ * ```
  */
 export async function chown(path: string, uid: number, gid: number): Promise<void> {
     if (platform() !== "windows") {
@@ -1386,6 +1881,14 @@ export async function chown(path: string, uid: number, gid: number): Promise<voi
  * objects.
  * 
  * NOTE: This function is a no-op in the browser.
+ * 
+ * @example
+ * ```ts
+ * import { utimes } from "@ayonli/jsext/fs";
+ * 
+ * // Set the access and modification times to the current time.
+ * await utimes("/path/to/file.txt", Date.now(), Date.now());
+ * ```
  */
 export async function utimes(
     path: string,
@@ -1402,6 +1905,31 @@ export async function utimes(
 
 /**
  * Creates a readable stream for the target file.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { createReadableStream } from "@ayonli/jsext/fs";
+ * import { readAsText } from "@ayonli/jsext/reader";
+ * 
+ * const input = createReadableStream("/path/to/file.txt");
+ * 
+ * const text = await readAsText(input);
+ * console.log(text);
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { createReadableStream } from "@ayonli/jsext/fs";
+ * import { readAsText } from "@ayonli/jsext/reader";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * const input = createReadableStream("/path/to/file.txt", { root });
+ * 
+ * const text = await readAsText(input);
+ * console.log(text);
+ * ```
  */
 export function createReadableStream(
     target: string | FileSystemFileHandle,
@@ -1464,6 +1992,29 @@ export const readFileAsStream = createReadableStream;
 
 /**
  * Creates a writable stream for the target file.
+ * 
+ * @example
+ * ```ts
+ * // with the default storage
+ * import { createWritableStream } from "@ayonli/jsext/fs";
+ * 
+ * const output = createWritableStream("/path/to/file.txt");
+ * const res = await fetch("https://example.com/file.txt");
+ * 
+ * await res.body!.pipeTo(output);
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // with a user-selected directory as root (Chromium only)
+ * import { createWritableStream } from "@ayonli/jsext/fs";
+ * 
+ * const root = await window.showDirectoryPicker();
+ * const output = createWritableStream("/path/to/file.txt", { root });
+ * const res = await fetch("https://example.com/file.txt");
+ * 
+ * await res.body!.pipeTo(output);
+ * ```
  */
 export function createWritableStream(
     target: string | FileSystemFileHandle,

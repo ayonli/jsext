@@ -20,6 +20,48 @@ import { isWSL } from '../cli/common.js';
  * file's path or a `FileSystemFileHandle` in the browser.
  *
  * NOTE: Browser support is limited to the chromium family.
+ *
+ * @example
+ * ```ts
+ * // default usage
+ * import { pickFile } from "@ayonli/jsext/dialog";
+ *
+ * // Node.js, Deno, Bun
+ * const filename = await pickFile() as string | null;
+ *
+ * // Browser (Chrome)
+ * const handle = await pickFile() as FileSystemFileHandle | null;
+ * ```
+ *
+ * @example
+ * ```ts
+ * // filter by MIME type
+ * import { pickFile } from "@ayonli/jsext/dialog";
+ *
+ * // Node.js, Deno, Bun
+ * const filename = await pickFile({ type: "image/*" }) as string | null;
+ *
+ * // Browser (Chrome)
+ * const handle = await pickFile({ type: "image/*" }) as FileSystemFileHandle | null;
+ * ```
+ *
+ * @example
+ * ```ts
+ * // pick for save
+ * import { pickFile } from "@ayonli/jsext/dialog";
+ *
+ * // Node.js, Deno, Bun
+ * const filename = await pickFile({
+ *     forSave: true,
+ *     defaultName: "hello.txt",
+ * }) as string | null;
+ *
+ * // Browser (Chrome)
+ * const handle = await pickFile({
+ *     forSave: true,
+ *     defaultName: "hello.txt",
+ * }) as FileSystemFileHandle | null;
+ * ```
  */
 async function pickFile(options = {}) {
     if (typeof globalThis["showOpenFilePicker"] === "function") {
@@ -60,6 +102,30 @@ async function pickFile(options = {}) {
  * selected.
  *
  * NOTE: Browser support is limited to the chromium family.
+ *
+ * @example
+ * ```ts
+ * // default usage
+ * import { pickFiles } from "@ayonli/jsext/dialog";
+ *
+ * // Node.js, Deno, Bun
+ * const filenames = await pickFiles() as string[];
+ *
+ * // Browser (Chrome)
+ * const handles = await pickFiles() as FileSystemFileHandle[];
+ * ```
+ *
+ * @example
+ * ```ts
+ * // filter by MIME type
+ * import { pickFiles } from "@ayonli/jsext/dialog";
+ *
+ * // Node.js, Deno, Bun
+ * const filenames = await pickFiles({ type: "image/*" }) as string[];
+ *
+ * // Browser (Chrome)
+ * const handles = await pickFiles({ type: "image/*" }) as FileSystemFileHandle[];
+ * ```
  */
 async function pickFiles(options = {}) {
     if (typeof globalThis["showOpenFilePicker"] === "function") {
@@ -84,6 +150,17 @@ async function pickFiles(options = {}) {
  * directory's path or `FileSystemDirectoryHandle` in the browser.
  *
  * NOTE: Browser support is limited to the chromium family.
+ *
+ * @example
+ * ```ts
+ * import { pickDirectory } from "@ayonli/jsext/dialog";
+ *
+ * // Node.js, Deno, Bun
+ * const dirname = await pickDirectory() as string | null;
+ *
+ * // Browser (Chrome)
+ * const handle = await pickDirectory() as FileSystemDirectoryHandle | null;
+ * ```
  */
 async function pickDirectory(options = {}) {
     if (typeof globalThis["showDirectoryPicker"] === "function") {
@@ -151,6 +228,31 @@ async function openFile(options = {}) {
 }
 /**
  * Opens the file picker dialog and selects multiple files to open.
+ *
+ * @example
+ * ```ts
+ * // default usage
+ * import { openFiles } from "@ayonli/jsext/dialog";
+ *
+ * const files = await openFiles();
+ *
+ * if (files.length > 0) {
+ *     console.log(`You selected: ${files.map(file => file.name).join(", ")}`);
+ * }
+ * ```
+ *
+ * @example
+ * ```ts
+ * // filter by MIME type
+ * import { openFiles } from "@ayonli/jsext/dialog";
+ *
+ * const files = await openFiles({ type: "image/*" });
+ *
+ * if (files.length > 0) {
+ *     console.log(`You selected: ${files.map(file => file.name).join(", ")}`);
+ *     console.assert(files.every(file => file.type.startsWith("image/")));
+ * }
+ * ```
  */
 async function openFiles(options = {}) {
     if (typeof globalThis["showOpenFilePicker"] === "function") {
@@ -193,6 +295,17 @@ async function openFiles(options = {}) {
 }
 /**
  * Opens the directory picker dialog and selects all its files to open.
+ *
+ * @example
+ * ```ts
+ * import { openDirectory } from "@ayonli/jsext/dialog";
+ *
+ * const files = await openDirectory();
+ *
+ * for (const file of files) {
+ *     console.log(`File name: ${file.name}, path: ${file.webkitRelativePath}`);
+ * }
+ * ```
  */
 async function openDirectory(options = {}) {
     if (typeof globalThis["showDirectoryPicker"] === "function") {
@@ -336,6 +449,13 @@ async function saveFile(file, options = {}) {
 /**
  * This function wraps the {@link saveFile} function, instead of taking a file
  * object, it takes a URL and downloads the file from the URL.
+ *
+ * @example
+ * ```ts
+ * import { downloadFile } from "@ayonli/jsext/dialog";
+ *
+ * await downloadFile("https://ayonli.github.io/jsext/README.md");
+ * ```
  */
 async function downloadFile(url, options = {}) {
     let name = options.name;

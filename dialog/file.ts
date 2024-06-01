@@ -61,6 +61,48 @@ export interface PickFileOptions extends FileDialogOptions {
  * file's path or a `FileSystemFileHandle` in the browser.
  * 
  * NOTE: Browser support is limited to the chromium family.
+ * 
+ * @example
+ * ```ts
+ * // default usage
+ * import { pickFile } from "@ayonli/jsext/dialog";
+ * 
+ * // Node.js, Deno, Bun
+ * const filename = await pickFile() as string | null;
+ * 
+ * // Browser (Chrome)
+ * const handle = await pickFile() as FileSystemFileHandle | null;
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // filter by MIME type
+ * import { pickFile } from "@ayonli/jsext/dialog";
+ * 
+ * // Node.js, Deno, Bun
+ * const filename = await pickFile({ type: "image/*" }) as string | null;
+ * 
+ * // Browser (Chrome)
+ * const handle = await pickFile({ type: "image/*" }) as FileSystemFileHandle | null;
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // pick for save
+ * import { pickFile } from "@ayonli/jsext/dialog";
+ * 
+ * // Node.js, Deno, Bun
+ * const filename = await pickFile({
+ *     forSave: true,
+ *     defaultName: "hello.txt",
+ * }) as string | null;
+ * 
+ * // Browser (Chrome)
+ * const handle = await pickFile({
+ *     forSave: true,
+ *     defaultName: "hello.txt",
+ * }) as FileSystemFileHandle | null;
+ * ```
  */
 export async function pickFile(
     options: PickFileOptions = {}
@@ -103,6 +145,30 @@ export async function pickFile(
  * selected.
  * 
  * NOTE: Browser support is limited to the chromium family.
+ * 
+ * @example
+ * ```ts
+ * // default usage
+ * import { pickFiles } from "@ayonli/jsext/dialog";
+ * 
+ * // Node.js, Deno, Bun
+ * const filenames = await pickFiles() as string[];
+ * 
+ * // Browser (Chrome)
+ * const handles = await pickFiles() as FileSystemFileHandle[];
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // filter by MIME type
+ * import { pickFiles } from "@ayonli/jsext/dialog";
+ * 
+ * // Node.js, Deno, Bun
+ * const filenames = await pickFiles({ type: "image/*" }) as string[];
+ * 
+ * // Browser (Chrome)
+ * const handles = await pickFiles({ type: "image/*" }) as FileSystemFileHandle[];
+ * ```
  */
 export async function pickFiles(
     options: FileDialogOptions = {}
@@ -129,6 +195,17 @@ export async function pickFiles(
  * directory's path or `FileSystemDirectoryHandle` in the browser.
  * 
  * NOTE: Browser support is limited to the chromium family.
+ * 
+ * @example
+ * ```ts
+ * import { pickDirectory } from "@ayonli/jsext/dialog";
+ * 
+ * // Node.js, Deno, Bun
+ * const dirname = await pickDirectory() as string | null;
+ * 
+ * // Browser (Chrome)
+ * const handle = await pickDirectory() as FileSystemDirectoryHandle | null;
+ * ```
  */
 export async function pickDirectory(
     options: Pick<FileDialogOptions, "title"> = {}
@@ -152,6 +229,31 @@ export async function pickDirectory(
 
 /**
  * Opens the file picker dialog and selects a file to open.
+ * 
+ * @example
+ * ```ts
+ * // default usage
+ * import { openFile } from "@ayonli/jsext/dialog";
+ * 
+ * const file = await openFile();
+ * 
+ * if (file) {
+ *     console.log(`You selected: ${file.name}`);
+ * }
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // filter by MIME type
+ * import { openFile } from "@ayonli/jsext/dialog";
+ * 
+ * const file = await openFile({ type: "image/*" });
+ * 
+ * if (file) {
+ *     console.log(`You selected: ${file.name}`);
+ *     console.assert(file.type.startsWith("image/"));
+ * }
+ * ```
  */
 export function openFile(options?: FileDialogOptions): Promise<File | null>;
 /**
@@ -220,6 +322,31 @@ export async function openFile(options: FileDialogOptions & {
 
 /**
  * Opens the file picker dialog and selects multiple files to open.
+ * 
+ * @example
+ * ```ts
+ * // default usage
+ * import { openFiles } from "@ayonli/jsext/dialog";
+ * 
+ * const files = await openFiles();
+ * 
+ * if (files.length > 0) {
+ *     console.log(`You selected: ${files.map(file => file.name).join(", ")}`);
+ * }
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // filter by MIME type
+ * import { openFiles } from "@ayonli/jsext/dialog";
+ * 
+ * const files = await openFiles({ type: "image/*" });
+ * 
+ * if (files.length > 0) {
+ *     console.log(`You selected: ${files.map(file => file.name).join(", ")}`);
+ *     console.assert(files.every(file => file.type.startsWith("image/")));
+ * }
+ * ```
  */
 export async function openFiles(options: FileDialogOptions = {}): Promise<File[]> {
     if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
@@ -263,6 +390,17 @@ export async function openFiles(options: FileDialogOptions = {}): Promise<File[]
 
 /**
  * Opens the directory picker dialog and selects all its files to open.
+ * 
+ * @example
+ * ```ts
+ * import { openDirectory } from "@ayonli/jsext/dialog";
+ * 
+ * const files = await openDirectory();
+ * 
+ * for (const file of files) {
+ *     console.log(`File name: ${file.name}, path: ${file.webkitRelativePath}`);
+ * }
+ * ```
  */
 export async function openDirectory(
     options: Pick<FileDialogOptions, "title"> = {}
@@ -363,8 +501,28 @@ export interface SaveFileOptions {
  * In the CLI and chromium browsers, this function will open a dialog to let the
  * user choose the location where the file will be saved. In others browsers,
  * the file will be saved to the default download location.
+ * 
+ * @example
+ * ```ts
+ * import { saveFile } from "@ayonli/jsext/dialog";
+ * 
+ * const file = new File(["Hello, World!"], "hello.txt", { type: "text/plain" });
+ * 
+ * await saveFile(file);
+ * ```
  */
 export async function saveFile(file: File, options?: Pick<SaveFileOptions, "title">): Promise<void>;
+/**
+ * @example
+ * ```ts
+ * import { saveFile } from "@ayonli/jsext/dialog";
+ * import bytes from "@ayonli/jsext/bytes";
+ * 
+ * const data = bytes("Hello, World!");
+ * 
+ * await saveFile(data, { name: "hello.txt", type: "text/plain" });
+ * ```
+ */
 export async function saveFile(
     file: Blob | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array>,
     options?: SaveFileOptions
@@ -446,6 +604,13 @@ export async function saveFile(
 /**
  * This function wraps the {@link saveFile} function, instead of taking a file
  * object, it takes a URL and downloads the file from the URL.
+ * 
+ * @example
+ * ```ts
+ * import { downloadFile } from "@ayonli/jsext/dialog";
+ * 
+ * await downloadFile("https://ayonli.github.io/jsext/README.md");
+ * ```
  */
 export async function downloadFile(
     url: string | URL,
