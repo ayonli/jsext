@@ -10,7 +10,25 @@ import Exception, { type ExceptionOptions } from "./error/Exception.ts";
 export { Exception };
 export type { ExceptionOptions };
 
-/** Transform the error to a plain object. */
+/**
+ * Transforms the error to a plain object.
+ * 
+ * @example
+ * ```ts
+ * import { toObject } from "@ayonli/jsext/error";
+ * 
+ * const err = new Error("Something went wrong.");
+ * 
+ * const obj = toObject(err);
+ * console.log(obj);
+ * // {
+ * //     "@@type": "Error",
+ * //     name: "Error",
+ * //     message: "Something went wrong.",
+ * //     stack: "Error: Something went wrong.\n    at <anonymous>:1:13"
+ * // }
+ * ```
+ */
 export function toObject<T extends Error>(err: T): { [x: string | symbol]: any; } {
     if (!(err instanceof Error) && err["name"] && err["message"]) { // Error-like
         err = fromObject(err, Error) as any;
@@ -30,7 +48,26 @@ export function toObject<T extends Error>(err: T): { [x: string | symbol]: any; 
     return obj;
 }
 
-/** Reverse a plain object to a specific error type. */
+/**
+ * Reverses a plain object to a specific error type.
+ * 
+ * @example
+ * ```ts
+ * import { fromObject } from "@ayonli/jsext/error";
+ * 
+ * const obj = {
+ *     "@@type": "Error",
+ *     name: "Error",
+ *     message: "Something went wrong.",
+ *     stack: "Error: Something went wrong.\n    at <anonymous>:1:13"
+ * };
+ * 
+ * const err = fromObject(obj);
+ * console.log(err);
+ * // Error: Something went wrong.
+ * //     at <anonymous>:1:13
+ * ```
+ */
 export function fromObject<T extends { name: "Error"; }>(obj: T): Error;
 export function fromObject<T extends { name: "EvalError"; }>(obj: T): EvalError;
 export function fromObject<T extends { name: "RangeError"; }>(obj: T): RangeError;
@@ -125,7 +162,27 @@ export function fromObject<T extends Error>(
     return err;
 }
 
-/** Creates an `ErrorEvent` instance based on the given error. */
+/**
+ * Creates an `ErrorEvent` instance based on the given error.
+ * 
+ * @example
+ * ```ts
+ * import { toErrorEvent } from "@ayonli/jsext/error";
+ * 
+ * const err = new Error("Something went wrong.");
+ * 
+ * const event = toErrorEvent(err);
+ * console.log(event);
+ * // ErrorEvent {
+ * //     error: Error: Something went wrong.
+ * //         at <anonymous>:1:13,
+ * //     message: "Something went wrong.",
+ * //     filename: "",
+ * //     lineno: 1,
+ * //     colno: 13
+ * // }
+ * ```
+ */
 export function toErrorEvent(err: Error, type: string = "error"): ErrorEvent {
     let filename = "";
     let lineno = 0;
@@ -170,9 +227,26 @@ export function toErrorEvent(err: Error, type: string = "error"): ErrorEvent {
     });
 }
 
-const isFirefoxOrSafari = typeof navigator === "object" && /Firefox|Safari/.test(navigator.userAgent);
-
-/** Creates an error instance based on the given `ErrorEvent` instance. */
+/**
+ * Creates an error instance based on the given `ErrorEvent` instance.
+ * 
+ * @example
+ * ```ts
+ * import { fromErrorEvent } from "@ayonli/jsext/error";
+ * 
+ * const event = new ErrorEvent("error", {
+ *     message: "Something went wrong.",
+ *     filename: "",
+ *     lineno: 1,
+ *     colno: 13,
+ * });
+ * 
+ * const err = fromErrorEvent(event);
+ * console.log(err);
+ * // Error: Something went wrong.
+ * //     at <anonymous>:1:13
+ * ```
+ */
 export function fromErrorEvent<T extends Error>(event: ErrorEvent): T | null {
     if (event.error instanceof Error) {
         return event.error as T;
@@ -198,20 +272,31 @@ export function fromErrorEvent<T extends Error>(event: ErrorEvent): T | null {
     if (shouldPatchStack) {
         let stack = "";
 
-        if (event.filename) {
-            if (isFirefoxOrSafari) {
+        if (typeof navigator === "object" && navigator.userAgent.includes("Firefox")) {
+            if (event.filename) {
                 stack = "@" + event.filename;
             } else {
-                stack = `Error: ${event.message}\n    at ${event.filename}`;
+                stack = "@debugger eval code";
             }
+        } else if (typeof navigator === "object"
+            && navigator.userAgent.includes("Safari")
+            && !navigator.userAgent.includes("Chrome") // Chrome likes to pretend it's Safari
+        ) {
+            if (event.filename) {
+                stack = "@" + event.filename;
+            } else {
+                stack = "global code@";
+            }
+        } else {
+            stack = `${err.name}: ${event.message}\n    at ${event.filename || "<anonymous>"}`;
+        }
 
-            if (event.lineno) {
-                stack += ":" + event.lineno;
-            }
+        if (event.lineno && stack !== "global code@") {
+            stack += ":" + event.lineno;
+        }
 
-            if (event.colno) {
-                stack += ":" + event.colno;
-            }
+        if (event.colno && stack !== "global code@") {
+            stack += ":" + event.colno;
         }
 
         Object.defineProperty(err, "stack", {

@@ -7,9 +7,9 @@ declare global {
     }
 
     interface ErrorConstructor {
-        /** Transform the error to a plain object. */
+        /** Transforms the error to a plain object. */
         toObject<T extends Error>(err: T): { [x: string | symbol]: any; };
-        /** Reverse a plain object to a specific error type. */
+        /** Reverses a plain object to a specific error type. */
         fromObject<T extends { name: "Error"; }>(obj: T): Error;
         fromObject<T extends { name: "EvalError"; }>(obj: T): EvalError;
         fromObject<T extends { name: "RangeError"; }>(obj: T): RangeError;

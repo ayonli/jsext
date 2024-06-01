@@ -1,6 +1,6 @@
 import "./augment.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { isNode, isBun } from "./env.ts";
+import { isNode, isBun, isDeno } from "./env.ts";
 import { pick } from "./object.ts";
 
 declare var AggregateError: new (errors: Error[], message?: string, options?: { cause: unknown; }) => Error & { errors: Error[]; };
@@ -394,5 +394,18 @@ describe("Error", () => {
         strictEqual(err3?.name, err.name);
         strictEqual(err3?.message, err.message);
         strictEqual(err3?.stack, err.stack);
+
+        if (isDeno) {
+            const event4 = new ErrorEvent("error", {
+                message: "Something went wrong.",
+                filename: "",
+                lineno: 1,
+                colno: 13,
+            });
+            const err4 = Error.fromErrorEvent(event4);
+            strictEqual(err4?.name, "Error");
+            strictEqual(err4?.message, "Something went wrong.");
+            strictEqual(err4?.stack, "Error: Something went wrong.\n    at <anonymous>:1:13");
+        }
     });
 });
