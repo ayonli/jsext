@@ -80,6 +80,16 @@ const importCache = new Map();
  * loading 3rd-party libraries dynamically in the browser.
  *
  * NOTE: This function is only available in the browser.
+ *
+ * @example
+ * ```ts
+ * import { importScript } from "@ayonli/jsext/module";
+ *
+ * await importScript("https://code.jquery.com/jquery-3.7.1.min.js");
+ *
+ * console.assert(typeof jQuery === "function");
+ * console.assert($ === jQuery);
+ * ```
  */
 function importScript(url, options = {}) {
     if (!isBrowserWindow) {
@@ -109,6 +119,13 @@ function importScript(url, options = {}) {
  * loading 3rd-party libraries dynamically in the browser.
  *
  * NOTE: This function is only available in the browser.
+ *
+ * @example
+ * ```ts
+ * import { importStylesheet } from "@ayonli/jsext/module";
+ *
+ * await importStylesheet("https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css");
+ * ```
  */
 function importStylesheet(url) {
     if (!isBrowserWindow) {

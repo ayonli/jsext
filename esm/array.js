@@ -6,17 +6,35 @@ import { count as count$1, equals as equals$1, includeSlice, startsWith as start
  * Functions for dealing with arrays.
  * @module
  */
-/** Returns the first element of the array, or `undefined` if the array is empty. */
+/**
+ * Returns the first element of the array, or `undefined` if the array is empty.
+ * This function is equivalent to `arr[0]` or `arr.at(0)`.
+ */
 function first(arr) {
     return arr[0];
 }
-/** Returns the last element of the array, or `undefined` if the array is empty. */
+/**
+ * Returns the last element of the array, or `undefined` if the array is empty.
+ * This function is equivalent to `arr[arr.length - 1]` or `arr.at(-1)`.
+ */
 function last(arr) {
     return arr.length > 0 ? arr[arr.length - 1] : undefined;
 }
 /**
  * Returns a random element of the array, or `undefined` if the array is empty.
  * @param remove If `true`, the element will be removed from the array.
+ *
+ * @example
+ * ```ts
+ * import { random } from "@ayonli/jsext/array";
+ *
+ * const arr = [1, 2, 3, 4, 5];
+ *
+ * console.log(random(arr)); // 3 for example
+ *
+ * console.log(random(arr, true)); // 3 for example
+ * console.log(arr); // [1, 2, 4, 5]
+ * ```
  */
 function random(arr, remove = false) {
     if (!arr.length) {
@@ -210,6 +228,16 @@ const uniqBy = uniqueBy;
  * Reorganizes the elements in the array in random order.
  *
  * This function mutates the array.
+ *
+ * @example
+ * ```ts
+ * import { shuffle } from "@ayonli/jsext/array";
+ *
+ * const arr = [1, 2, 3, 4, 5];
+ *
+ * console.log(shuffle(arr)); // [3, 1, 5, 2, 4] for example
+ * console.log(arr); // [3, 1, 5, 2, 4]
+ * ```
  */
 function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {

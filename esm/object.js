@@ -7,6 +7,16 @@ import { isClass } from './class.js';
 /**
  * Returns `true` if the specified object has the indicated property as its own property.
  * If the property is inherited, or does not exist, the function returns `false`.
+ *
+ * @example
+ * ```ts
+ * import { hasOwn } from "@ayonli/jsext/object";
+ *
+ * const obj = { foo: "hello" };
+ *
+ * console.log(hasOwn(obj, "foo")); // true
+ * console.log(hasOwn(obj, "toString")); // false
+ * ```
  */
 function hasOwn(obj, key) {
     return Object.prototype.hasOwnProperty.call(obj, key);
@@ -15,6 +25,25 @@ function hasOwn(obj, key) {
  * Returns `true` if the specified object has the indicated method as its own method (in its own
  * prototype). If the method is inherited, or is not in the prototype, or does not exist, this
  * function returns `false`.
+ *
+ * @example
+ * ```ts
+ * import { hasOwnMethod } from "@ayonli/jsext/object";
+ *
+ * class MyClass {
+ *     foo() {
+ *         return "Hello";
+ *     }
+ *
+ *     bar = () => "World";
+ * }
+ *
+ * const obj = new MyClass();
+ *
+ * console.log(hasOwnMethod(obj, "foo")); // true
+ * console.log(hasOwnMethod(obj, "bar")); // false
+ * console.log(hasOwnMethod(obj, "toString")); // false
+ * ```
  */
 function hasOwnMethod(obj, method) {
     var _a;
@@ -91,6 +120,25 @@ function as(value, type) {
  * **NOTE:** This function returns `"null"` for `null`.
  *
  * **NOTE:** This function returns `Object` for `Object.create(null)`.
+ *
+ * @example
+ * ```ts
+ * import { typeOf } from "@ayonli/jsext/object";
+ *
+ * console.log(typeOf("Hello")); // string
+ * console.log(typeOf(42)); // number
+ * console.log(typeOf(42n)); // bigint
+ * console.log(typeOf(true)); // boolean
+ * console.log(typeOf(Symbol("foo"))); // symbol
+ * console.log(typeOf(() => {})); // function
+ * console.log(typeOf(class Foo {})); // class
+ * console.log(typeOf(undefined)); // undefined
+ * console.log(typeOf(null)); // null
+ * console.log(typeOf({ foo: "bar" })); // [Function: Object]
+ * console.log(typeOf(Object.create(null))); // [Function: Object]
+ * console.log(typeOf([1, 2, 3])); // [Function: Array]
+ * console.log(typeOf(new Date())); // [Function: Date]
+ * ```
  */
 function typeOf(value) {
     var _a, _b;
@@ -128,6 +176,15 @@ function isValid(value) {
 /**
  * Returns `true` is the given value is a plain object, that is, an object created by
  * the `Object` constructor or one with a `[[Prototype]]` of `null`.
+ *
+ * @example
+ * ```ts
+ * import { isPlainObject } from "@ayonli/jsext/object";
+ *
+ * console.log(isPlainObject({ foo: "bar" })); // true
+ * console.log(isPlainObject(Object.create(null))); // true
+ * console.log(isPlainObject(new Map([["foo", "bar"]]))); // false
+ * ```
  */
 function isPlainObject(value) {
     if (typeof value !== "object" || value === null)
@@ -140,6 +197,20 @@ function isPlainObject(value) {
  * (except for `null`), and trims the value if it's a string.
  *
  * **NOTE:** This function only operates on plain objects and arrays.
+ *
+ * @example
+ * ```ts
+ * import { sanitize } from "@ayonli/jsext/object";
+ *
+ * const obj = sanitize({
+ *     foo: "Hello",
+ *     bar: "  World  ",
+ *     baz: undefined,
+ *     num: NaN,
+ * });
+ *
+ * console.log(obj); // { foo: "Hello", bar: "World" }
+ * ```
  */
 function sanitize(obj, deep = false, options = {}) {
     const { removeNulls, removeEmptyStrings, removeEmptyObjects, removeArrayItems } = options;
@@ -225,6 +296,15 @@ function sanitize(obj, deep = false, options = {}) {
  * **NOTE:** Symbol keys are not sorted and remain their original order.
  *
  * **NOTE:** This function only operates on plain objects and arrays.
+ *
+ * @example
+ * ```ts
+ * import { sortKeys } from "@ayonli/jsext/object";
+ *
+ * const obj = sortKeys({ foo: "Hello", bar: "World" });
+ *
+ * console.log(JSON.stringify(obj)); // { "bar": "World", "foo": "Hello" }
+ * ```
  */
 function sortKeys(obj, deep = false) {
     return (function process(target, depth) {
@@ -256,9 +336,9 @@ function sortKeys(obj, deep = false) {
  * ```ts
  * import { flatKeys } from "@ayonli/jsext/object";
  *
- * const obj = flatKeys({ foo: { bar: "hello", baz: "world" } });
- * console.log(obj);
- * // { "foo.bar": "hello", "foo.baz": "world" }
+ * const obj = flatKeys({ foo: { bar: "Hello", baz: "World" } });
+ *
+ * console.log(obj); // { "foo.bar": "Hello", "foo.baz": "World" }
  * ```
  */
 function flatKeys(obj, depth = 1, options = {}) {

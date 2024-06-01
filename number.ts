@@ -17,6 +17,19 @@ export function isFloat(value: unknown): boolean {
  * **NOTE:** `NaN` is not considered numeric.
  * 
  * @param strict Only returns `true` when the value is of type `number`.
+ * 
+ * @example
+ * ```ts
+ * import { isNumeric } from "@ayonli/jsext/number";
+ * 
+ * console.log(isNumeric(42)); // true
+ * console.log(isNumeric(42n)); // true
+ * console.log(isNumeric("42")); // true
+ * 
+ * console.log(isNumeric(NaN)); // false
+ * console.log(isNumeric(42n, true)); // false
+ * console.log(isNumeric("42", true)); // false
+ * ```
  */
 export function isNumeric(value: unknown, strict = false): boolean {
     const type = typeof value;
@@ -39,7 +52,11 @@ export function isNumeric(value: unknown, strict = false): boolean {
     return false;
 }
 
-/** Return `true` if a number is between the given range (inclusive). */
+/**
+ * Return `true` if a number is between the given range (inclusive).
+ * 
+ * This function is the same as `value >= min && value <= max`.
+ */
 export function isBetween(value: number, [min, max]: [number, number]): boolean {
     return value >= min && value <= max;
 }
@@ -49,7 +66,24 @@ export function random(min: number, max: number): number {
     return min + Math.floor(Math.random() * (max - min + 1));
 }
 
-/** Generates a sequence of numbers from `min` to `max` (inclusive). */
+/**
+ * Generates a sequence of numbers from `min` to `max` (inclusive).
+ * 
+ * @example
+ * ```ts
+ * import { range } from "@ayonli/jsext/number";
+ * 
+ * for (const i of range(1, 5)) {
+ *     console.log(i);
+ * }
+ * // output:
+ * // 1
+ * // 2
+ * // 3
+ * // 4
+ * // 5
+ * ```
+ */
 export function range(
     min: number,
     max: number,

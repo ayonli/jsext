@@ -35,15 +35,38 @@ export { _getObjectURL as getObjectURL };
  * always return the `default` object if it exists in `module`, which is the
  * target that Node.js uses to alias the `module.exports` object for CommonJS
  * modules.
+ * 
+ * @example
+ * ```ts
+ * import { interop } from "@ayonli/jsext/module";
+ * 
+ * const { decode } = await interop(() => import("iconv-lite"), false);
+ * ```
  */
 export function interop<T extends { [x: string]: any; }>(
     module: () => Promise<T>,
     strict?: boolean
 ): Promise<T>;
+/**
+ * @example
+ * ```ts
+ * import { interop } from "@ayonli/jsext/module";
+ * 
+ * const { decode } = await interop(import("iconv-lite"), false);
+ * ```
+ */
 export function interop<T extends { [x: string]: any; }>(
     module: Promise<T>,
     strict?: boolean
 ): Promise<T>;
+/**
+ * @example
+ * ```ts
+ * import { interop } from "@ayonli/jsext/module";
+ * 
+ * const { decode } = interop(await import("iconv-lite"), false);
+ * ```
+ */
 export function interop<T extends { [x: string]: any; }>(module: T, strict?: boolean): T;
 export function interop<T extends { [x: string]: any; }>(
     module: T | Promise<T> | (() => Promise<T>),
@@ -151,6 +174,16 @@ const importCache = new Map<string, Promise<void>>();
  * loading 3rd-party libraries dynamically in the browser.
  * 
  * NOTE: This function is only available in the browser.
+ * 
+ * @example
+ * ```ts
+ * import { importScript } from "@ayonli/jsext/module";
+ * 
+ * await importScript("https://code.jquery.com/jquery-3.7.1.min.js");
+ * 
+ * console.assert(typeof jQuery === "function");
+ * console.assert($ === jQuery);
+ * ```
  */
 export function importScript(url: string, options: {
     type?: "classic" | "module";
@@ -188,6 +221,13 @@ export function importScript(url: string, options: {
  * loading 3rd-party libraries dynamically in the browser.
  * 
  * NOTE: This function is only available in the browser.
+ * 
+ * @example
+ * ```ts
+ * import { importStylesheet } from "@ayonli/jsext/module";
+ * 
+ * await importStylesheet("https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css");
+ * ```
  */
 export function importStylesheet(url: string): Promise<void> {
     if (!isBrowserWindow) {

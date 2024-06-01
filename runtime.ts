@@ -65,6 +65,42 @@ export interface RuntimeInfo {
 /**
  * Returns the information of the runtime environment in which the program is
  * running.
+ * 
+ * @example
+ * ```ts
+ * import runtime from "@ayonli/jsext/runtime";
+ * 
+ * console.log(runtime());
+ * 
+ * // In Node.js
+ * // {
+ * //     identity: "node",
+ * //     version: "22.0.0",
+ * //     fsSupport: true,
+ * //     tsSupport: false,
+ * //     worker: undefined
+ * // }
+ * 
+ * // In Deno
+ * // {
+ * //     identity: "deno",
+ * //     version: "1.42.0",
+ * //     fsSupport: true,
+ * //     tsSupport: true,
+ * //     worker: undefined
+ * // }
+ * 
+ * // In the browser (Chrome)
+ * // {
+ * //     identity: "chrome",
+ * //     version: "125.0.0.0",
+ * //     fsSupport: true,
+ * //     tsSupport: false,
+ * //     worker: undefined
+ * // }
+ * 
+ * // ...
+ * ```
  */
 export default function runtime(): RuntimeInfo {
     if (isDeno) {
@@ -356,6 +392,17 @@ export function refTimer(timer: NodeJS.Timeout | number): void {
  * 
  * Only available in Node.js/Bun and Deno, in the browser, this function is a
  * no-op.
+ * 
+ * @example
+ * ```ts
+ * import { unrefTimer } from "@ayonli/jsext/runtime";
+ * 
+ * const timer = setTimeout(() => {
+ *     console.log("Hello, World!");
+ * }, 1000);
+ * 
+ * unrefTimer(timer);
+ * ```
  */
 export function unrefTimer(timer: NodeJS.Timeout | number): void {
     if (typeof timer === "object" && typeof timer.unref === "function") {
@@ -387,6 +434,24 @@ let shutdownListenerRegistered = false;
  * cause any subsequent listeners not to be executed.
  * 
  * In the browser or unsupported environments, this function is a no-op.
+ * 
+ * @example
+ * ```ts
+ * import { addShutdownListener } from "@ayonli/jsext/runtime";
+ * import * as http from "node:http";
+ * 
+ * const server = http.createServer((req, res) => {
+ *     res.end("Hello, World!");
+ * });
+ * 
+ * server.listen(3000);
+ * 
+ * addShutdownListener(async () => {
+ *     await new Promise<void>((resolve) => {
+ *         server.close(resolve);
+ *     });
+ * });
+ * ```
  */
 export function addShutdownListener(fn: () => (void | Promise<void>)): void {
     if (!isDeno && !isNodeLike) {
@@ -439,6 +504,21 @@ export function addShutdownListener(fn: () => (void | Promise<void>)): void {
 /**
  * A universal symbol that can be used to customize the inspection behavior of
  * an object, currently supports Node.js, Bun and Deno.
+ * 
+ * @example
+ * ```ts
+ * import { customInspect } from "@ayonli/jsext/runtime";
+ * 
+ * class Point {
+ *     constructor(public x: number, public y: number) {}
+ * 
+ *    [customInspect]() {
+ *        return `Point (${this.x}, ${this.y})`;
+ *    }
+ * }
+ * 
+ * console.log(new Point(1, 2)); // Point (1, 2)
+ * ```
  */
 export const customInspect: unique symbol = (() => {
     if (isDeno) {

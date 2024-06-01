@@ -411,6 +411,16 @@ function hasGeneratorSpecials(obj) {
 /**
  * Returns `true` if the specified object has the indicated property as its own property.
  * If the property is inherited, or does not exist, the function returns `false`.
+ *
+ * @example
+ * ```ts
+ * import { hasOwn } from "@ayonli/jsext/object";
+ *
+ * const obj = { foo: "hello" };
+ *
+ * console.log(hasOwn(obj, "foo")); // true
+ * console.log(hasOwn(obj, "toString")); // false
+ * ```
  */
 function hasOwn(obj, key) {
     return Object.prototype.hasOwnProperty.call(obj, key);
@@ -442,6 +452,15 @@ function omit(obj, keys) {
 /**
  * Returns `true` is the given value is a plain object, that is, an object created by
  * the `Object` constructor or one with a `[[Prototype]]` of `null`.
+ *
+ * @example
+ * ```ts
+ * import { isPlainObject } from "@ayonli/jsext/object";
+ *
+ * console.log(isPlainObject({ foo: "bar" })); // true
+ * console.log(isPlainObject(Object.create(null))); // true
+ * console.log(isPlainObject(new Map([["foo", "bar"]]))); // false
+ * ```
  */
 function isPlainObject(value) {
     if (typeof value !== "object" || value === null)
@@ -473,7 +492,17 @@ new TextDecoder();
 const _trim = String.prototype.trim;
 const _trimEnd = String.prototype.trimEnd;
 const _trimStart = String.prototype.trimStart;
-/** Removes leading and trailing spaces or custom characters of the string. */
+/**
+ * Removes leading and trailing spaces or custom characters of the string.
+ *
+ * @example
+ * ```ts
+ * import { trim } from "@ayonli/jsext/string";
+ *
+ * console.log(trim("  hello world  ")); // "hello world"
+ * console.log(trim("  hello world!  ", " !")); // "hello world"
+ * ```
+ */
 function trim(str, chars = "") {
     if (!chars) {
         return _trim.call(str);
@@ -482,7 +511,17 @@ function trim(str, chars = "") {
         return trimEnd(trimStart(str, chars), chars);
     }
 }
-/** Removes trailing spaces or custom characters of the string. */
+/**
+ * Removes trailing spaces or custom characters of the string.
+ *
+ * @example
+ * ```ts
+ * import { trimEnd } from "@ayonli/jsext/string";
+ *
+ * console.log(trimEnd("  hello world  ")); // "  hello world"
+ * console.log(trimEnd("  hello world!  ", " !")); // "  hello world"
+ * ```
+ */
 function trimEnd(str, chars = "") {
     if (!chars) {
         return _trimEnd.call(str);
@@ -493,7 +532,17 @@ function trimEnd(str, chars = "") {
         return str.substring(0, i + 1);
     }
 }
-/** Removes leading spaces or custom characters of the string. */
+/**
+ * Removes leading spaces or custom characters of the string.
+ *
+ * @example
+ * ```ts
+ * import { trimStart } from "@ayonli/jsext/string";
+ *
+ * console.log(trimStart("  hello world  ")); // "hello world  "
+ * console.log(trimStart("  !hello world!  ", " !")); // "hello world!  "
+ * ```
+ */
 function trimStart(str, chars = "") {
     if (!chars) {
         return _trimStart.call(str);
@@ -850,6 +899,14 @@ function resolve(...segments) {
 /**
  * Converts the given URL to a file system path if it's not one already.
  * @experimental
+ *
+ * @example
+ * ```ts
+ * import { toFsPath } from "@ayonli/jsext/path";
+ *
+ * console.log(toFsPath("file:///foo/bar")); // "/foo/bar"
+ * console.log(toFsPath("file:///c:/foo/bar")); // "c:\\foo\\bar"
+ * ```
  */
 function toFsPath(url) {
     if (isFsPath(url)) {

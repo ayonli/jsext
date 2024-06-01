@@ -20,6 +20,14 @@ function strHash(str: string): number {
  * 
  * This function uses the same algorithm as the [string-hash](https://www.npmjs.com/package/string-hash)
  * package, non-string data are converted to strings before hashing.
+ * 
+ * @example
+ * ```ts
+ * import hash from "@ayonli/jsext/hash";
+ * 
+ * console.log(hash("Hello, World!")); // 4010631688
+ * console.log(hash(new Uint8Array([1, 2, 3]))); // 193378021
+ * ```
  */
 export function hash(
     data: string | ArrayBuffer | ArrayBufferView

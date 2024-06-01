@@ -330,6 +330,14 @@ export function extname(path: string): string {
 /**
  * Converts the given path to a file URL if it's not one already.
  * @experimental
+ * 
+ * @example
+ * ```ts
+ * import { toFileUrl } from "@ayonli/jsext/path";
+ * 
+ * console.log(toFileUrl("foo/bar")); // "file:///foo/bar"
+ * console.log(toFileUrl("c:\\foo\\bar")); // "file:///c:/foo/bar"
+ * ```
  */
 export function toFileUrl(path: string): string {
     if (isFileUrl(path)) {
@@ -346,6 +354,14 @@ export function toFileUrl(path: string): string {
 /**
  * Converts the given URL to a file system path if it's not one already.
  * @experimental
+ * 
+ * @example
+ * ```ts
+ * import { toFsPath } from "@ayonli/jsext/path";
+ * 
+ * console.log(toFsPath("file:///foo/bar")); // "/foo/bar"
+ * console.log(toFsPath("file:///c:/foo/bar")); // "c:\\foo\\bar"
+ * ```
  */
 export function toFsPath(url: string): string {
     if (isFsPath(url)) {

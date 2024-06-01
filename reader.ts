@@ -204,10 +204,53 @@ export async function readAsJSON<T>(
 
 /**
  * Concatenates multiple async iterable objects into a single one.
+ * 
+ * @example
+ * ```ts
+ * import { concat } from "@ayonli/jsext/read";
+ * import { sleep } from "@ayonli/jsext/async";
+ * 
+ * async function* gen1() {
+ *     yield 1;
+ *     await sleep(100);
+ *     yield 2;
+ *     await sleep(100);
+ *     yield 3;
+ * }
+ * 
+ * async function* gen2() {
+ *     yield 4;
+ *     await sleep(100);
+ *     yield 5;
+ * }
+ * 
+ * const iter1 = gen1();
+ * const iter2 = gen2();
+ * 
+ * for await (const value of concat(iter1, iter2)) {
+ *     console.log(value);
+ * }
+ * // output:
+ * // 1
+ * // 2
+ * // 3
+ * // 4
+ * // 5
+ * ```
  */
 export function concat<T>(...sources: AsyncIterable<T>[]): AsyncIterable<T>;
 /**
  * Concatenates multiple readable streams into a single one.
+ * 
+ * @example
+ * ```ts
+ * import { concat } from "@ayonli/jsext/read";
+ * 
+ * const res1 = await fetch("https://example.com/data1");
+ * const res2 = await fetch("https://example.com/data2");
+ * 
+ * const mergedStream = concat(res1.body!, res2.body!);
+ * ```
  */
 export function concat<T>(...sources: ReadableStream<T>[]): ReadableStream<T>;
 export function concat<T>(
