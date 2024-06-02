@@ -59,7 +59,16 @@ function isNumeric(value, strict = false) {
 function isBetween(value, [min, max]) {
     return value >= min && value <= max;
 }
-/** Returns a random integer ranged from `min` to `max` (inclusive). */
+/**
+ * Returns a random integer ranged from `min` to `max` (inclusive).
+ *
+ * @example
+ * ```ts
+ * import { random } from "@ayonli/jsext/number";
+ *
+ * console.log(random(1, 5)); // 1, 2, 3, 4, or 5
+ * ```
+ */
 function random(min, max) {
     return min + Math.floor(Math.random() * (max - min + 1));
 }
@@ -89,6 +98,17 @@ function range(min, max, step = 1) {
  * `Number.MAX_SAFE_INTEGER`, useful for generating unique IDs.
  *
  * @param loop Repeat the sequence when the end is reached.
+ *
+ * @example
+ * ```ts
+ * import { serial } from "@ayonli/jsext/number";
+ *
+ * const idGenerator = serial();
+ *
+ * console.log(idGenerator.next().value); // 1
+ * console.log(idGenerator.next().value); // 2
+ * console.log(idGenerator.next().value); // 3
+ * ```
  */
 function serial(loop = false) {
     return sequence(1, Number.MAX_SAFE_INTEGER, 1, loop);

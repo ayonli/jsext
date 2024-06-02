@@ -30,6 +30,17 @@ const isMainThread = !isNodeWorkerThread
  * `Number.MAX_SAFE_INTEGER`, useful for generating unique IDs.
  *
  * @param loop Repeat the sequence when the end is reached.
+ *
+ * @example
+ * ```ts
+ * import { serial } from "@ayonli/jsext/number";
+ *
+ * const idGenerator = serial();
+ *
+ * console.log(idGenerator.next().value); // 1
+ * console.log(idGenerator.next().value); // 2
+ * console.log(idGenerator.next().value); // 3
+ * ```
  */
 function serial(loop = false) {
     return sequence(1, Number.MAX_SAFE_INTEGER, 1, loop);

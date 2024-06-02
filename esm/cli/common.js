@@ -27,6 +27,21 @@ const NonTypingKeys = [
  *
  * This variable is the same as `Deno.args` in Deno and `process.argv.slice(2)`
  * in Node.js or Bun.
+ *
+ * @example
+ * ```ts
+ * // main.ts
+ * // launch with `deno run main.ts --name=Bob --age=30`
+ * // or `node main.js --name=Bob --age=30`
+ * // or `bun run main.ts --name=Bob --age=30`
+ * import { args } from "@ayonli/jsext/cli";
+ *
+ * console.log(args);
+ * // [
+ * //     "--name=Bob",
+ * //     "--age=30"
+ * // ]
+ * ```
  */
 const args = (() => {
     if (isDeno) {

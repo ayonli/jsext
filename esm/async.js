@@ -143,7 +143,7 @@ async function sleep(ms) {
 /**
  * Blocks the current routine until the test returns a truthy value, which is
  * not `false`, `null` or `undefined`. If the test throws an error, it will be
- * treated as a falsy value and the loop continues.
+ * treated as a falsy value and the check continues.
  *
  * This functions returns the same result as the test function when passed.
  *

@@ -71,7 +71,7 @@ export function toReadableStream<T>(source: any, eventMap: {
  * 
  * @example
  * ```ts
- * import { readAsArray } from "@ayonli/jsext/read";
+ * import { readAsArray } from "@ayonli/jsext/reader";
  * import * as fs from "node:fs";
  * 
  * const file = fs.createReadStream("./package.json");
@@ -94,6 +94,15 @@ export async function readAsArray<T>(source: AsyncIterable<T> | ReadableStream<T
 
 /**
  * Reads all data from the given source to an `ArrayBuffer`.
+ * 
+ * @example
+ * ```ts
+ * import { readAsArrayBuffer } from "@ayonli/jsext/reader";
+ * import { createReadableStream } from "@ayonli/jsext/fs";
+ * 
+ * const stream = createReadableStream("./package.json");
+ * const buffer = await readAsArrayBuffer(stream);
+ * ```
  */
 export async function readAsArrayBuffer(
     source: Blob | ArrayBufferView | AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>
@@ -118,6 +127,15 @@ export async function readAsArrayBuffer(
 
 /**
  * Reads all data from the given source to a `Blob`.
+ * 
+ * @example
+ * ```ts
+ * import { readAsBlob } from "@ayonli/jsext/reader";
+ * import { createReadableStream } from "@ayonli/jsext/fs";
+ * 
+ * const stream = createReadableStream("./package.json");
+ * const blob = await readAsBlob(stream, "application/json");
+ * ```
  */
 export async function readAsBlob(
     source: ArrayBuffer | ArrayBufferView | AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>,
@@ -133,6 +151,16 @@ export async function readAsBlob(
 
 /**
  * Reads all data from the given source to a data URL.
+ * 
+ * @example
+ * ```ts
+ * import { readAsDataURL } from "@ayonli/jsext/reader";
+ * 
+ * const file = new File(["Hello, World!"], "hello.txt", { type: "text/plain" });
+ * const dataURL = await readAsDataURL(file, file.type);
+ * 
+ * console.log(dataURL); // data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==
+ * ```
  */
 export async function readAsDataURL(
     source: Blob | ArrayBuffer | ArrayBufferView | AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>,
@@ -158,6 +186,16 @@ export async function readAsDataURL(
 
 /**
  * Reads all data from the given source to an object URL.
+ * 
+ * @example
+ * ```ts
+ * import { readAsObjectURL } from "@ayonli/jsext/reader";
+ * 
+ * const file = new File(["Hello, World!"], "hello.txt", { type: "text/plain" });
+ * const objectURL = await readAsObjectURL(file, file.type);
+ * 
+ * console.log(objectURL); // e.g. blob:http://localhost:8080/7b8e7b7d-7b7d-7b7d-7b7d-7b7d7b7d7b7d
+ * ```
  */
 export async function readAsObjectURL(
     source: Blob | ArrayBuffer | ArrayBufferView | AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>,
@@ -177,6 +215,15 @@ export async function readAsObjectURL(
 
 /**
  * Reads all data from the given source to a string.
+ * 
+ * @example
+ * ```ts
+ * import { readAsText } from "@ayonli/jsext/reader";
+ * import { createReadableStream } from "@ayonli/jsext/fs";
+ * 
+ * const stream = createReadableStream("./package.json");
+ * const text = await readAsText(stream);
+ * ```
  */
 export async function readAsText(
     source: Blob | ArrayBuffer | ArrayBufferView | AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>,
@@ -194,6 +241,15 @@ export async function readAsText(
 
 /**
  * Reads all data from the given source to a JSON object.
+ * 
+ * @example
+ * ```ts
+ * import { readAsJSON } from "@ayonli/jsext/reader";
+ * import { createReadableStream } from "@ayonli/jsext/fs";
+ * 
+ * const stream = createReadableStream("./package.json");
+ * const pkg = await readAsJSON(stream);
+ * ```
  */
 export async function readAsJSON<T>(
     source: Blob | ArrayBuffer | ArrayBufferView | AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>,
