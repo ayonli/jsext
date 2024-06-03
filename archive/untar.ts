@@ -280,9 +280,9 @@ function createProgressEvent(
         });
 
         Object.defineProperties(event, {
-            lengthComputable: { value: lengthComputable },
-            loaded: { value: loaded },
-            total: { value: total },
+            lengthComputable: { value: lengthComputable ?? false },
+            loaded: { value: loaded ?? 0 },
+            total: { value: total ?? 0 },
         });
 
         return event as ProgressEvent;

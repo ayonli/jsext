@@ -193,9 +193,9 @@ function createProgressEvent(loaded, total, lengthComputable) {
             composed: false,
         });
         Object.defineProperties(event, {
-            lengthComputable: { value: lengthComputable },
-            loaded: { value: loaded },
-            total: { value: total },
+            lengthComputable: { value: lengthComputable !== null && lengthComputable !== void 0 ? lengthComputable : false },
+            loaded: { value: loaded !== null && loaded !== void 0 ? loaded : 0 },
+            total: { value: total !== null && total !== void 0 ? total : 0 },
         });
         return event;
     }
