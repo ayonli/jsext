@@ -73,15 +73,17 @@ describe("sse", () => {
         const myEventMessages: string[] = [];
         let lastEventId = "";
 
-        await until(() => sse);
+        await until(() => es.readyState === EventSource.OPEN);
 
         es.addEventListener("message", (ev) => {
+            console.log(ev);
             const data = ev.data;
             messages.push(data);
             lastEventId = ev.lastEventId;
         });
 
         es.addEventListener("my-event", (ev) => {
+            console.log(ev);
             const data = ev.data;
             myEventMessages.push(data);
             lastEventId = ev.lastEventId;
@@ -93,6 +95,7 @@ describe("sse", () => {
             data: "World",
             lastEventId: "2",
         }));
+        // await sleep(50);
         await sse!.sendEvent("my-event", "Hi", "3");
         // await sse!.sendEvent("my-event", "A-yon", "4");
         sse!.dispatchEvent(new MessageEvent("my-event", {
@@ -112,8 +115,8 @@ describe("sse", () => {
         strictEqual(es.readyState, EventSource.CLOSED);
     }));
 
-    it("EventsReader", async () => {
-        const { SSE, EventsReader } = await import("./sse.ts");
+    it("EventReader", async () => {
+        const { SSE, EventReader: EventReader } = await import("./sse.ts");
 
         const req = new Request("http://localhost:8080", {
             headers: {
@@ -124,7 +127,7 @@ describe("sse", () => {
         strictEqual(sse.closed, false);
         const { response } = sse;
 
-        const reader = new EventsReader(response);
+        const reader = new EventReader(response);
         const messages: string[] = [];
         const myEventMessages: string[] = [];
 
@@ -159,7 +162,7 @@ describe("sse", () => {
             this.skip();
         }
 
-        const { SSE, EventsReader } = await import("./sse.ts");
+        const { SSE, EventReader: EventReader } = await import("./sse.ts");
 
         let sse: InstanceType<typeof SSE> | undefined = undefined;
         const server = Deno.serve({ port: 8082 }, req => {
@@ -178,7 +181,7 @@ describe("sse", () => {
         strictEqual(es.readyState, EventSource.CONNECTING);
 
         const res = await fetch("http://localhost:8082");
-        const reader = new EventsReader(res);
+        const reader = new EventReader(res);
 
         strictEqual(sse!.closed, false);
         await sse!.close();
@@ -189,7 +192,7 @@ describe("sse", () => {
     }));
 
     it("listen close event", jsext.func(async function (defer) {
-        const { SSE, EventsReader } = await import("./sse.ts");
+        const { SSE, EventReader: EventReader } = await import("./sse.ts");
 
         if (isNode || isBun) {
             const req = new Request("http://localhost:8080", {
@@ -206,7 +209,7 @@ describe("sse", () => {
                 ev = _ev as CloseEvent;
             });
 
-            const reader = new EventsReader(response);
+            const reader = new EventReader(response);
             await reader.close();
             await until(() => sse!.closed);
             strictEqual(sse!.closed, true);
@@ -236,7 +239,7 @@ describe("sse", () => {
             strictEqual(ev!.type, "close");
 
             const res = await fetch("http://localhost:8082");
-            const reader = new EventsReader(res);
+            const reader = new EventReader(res);
             strictEqual(sse!.closed, false);
 
             await reader.close();

@@ -1,8 +1,11 @@
 /**
  * This module provides APIs for working with server-sent events. The {@link SSE}
  * class can be used to send messages to the client, while the
- * {@link EventsReader} class can be used to read messages from the server
+ * {@link EventReader} class can be used to read messages from the server
  * response.
+ * 
+ * NOTE: this module is based on the `Request` and `Response` interfaces, in
+ * Node.js, it requires version v18.0 or higher.
  * 
  * @example
  * ```ts
@@ -43,6 +46,7 @@
  * @module
  */
 import bytes from "./bytes.ts";
+import { Mutex } from "./lock.ts";
 
 const SSEMarkClosed = new Set<string>();
 const _lastEventId = Symbol.for("lastEventId");
@@ -51,6 +55,12 @@ const _response = Symbol.for("response");
 const _writer = Symbol.for("writer");
 const _reader = Symbol.for("reader");
 const _reconnectionTime = Symbol.for("reconnectionTime");
+const _mutex = Symbol.for("mutex");
+
+export interface SSEEventMap {
+    "error": ErrorEvent;
+    "close": CloseEvent;
+}
 
 /**
  * A server-sent events (SSE) implementation that can be used to send messages
@@ -82,6 +92,7 @@ export class SSE extends EventTarget {
     private [_lastEventId]: string;
     private [_reconnectionTime]: number;
     private [_closed]: boolean;
+    private [_mutex] = new Mutex(void 0);
 
     constructor(request: Request, options: { reconnectionTime?: number; } = {}) {
         super();
@@ -115,6 +126,11 @@ export class SSE extends EventTarget {
             async cancel(reason) {
                 await reader.cancel(reason);
                 _this[_closed] = true;
+
+                if (reason) {
+                    _this.dispatchEvent(createErrorEvent({ error: reason }));
+                }
+
                 _this.dispatchEvent(createCloseEvent());
             }
         });
@@ -135,29 +151,61 @@ export class SSE extends EventTarget {
      * The time in milliseconds that instructs the client to wait before
      * reconnecting.
      */
-    get retry() {
+    get retry(): number {
         return this[_reconnectionTime];
     }
 
     /**
      * The last event ID that the server has sent.
      */
-    get lastEventId() {
+    get lastEventId(): string {
         return this[_lastEventId];
     }
 
     /**
      * Indicates whether the connection has been closed.
      */
-    get closed() {
+    get closed(): boolean {
         return this[_closed];
     }
 
     /**
      * The response that will be sent to the client.
      */
-    get response() {
+    get response(): Response {
         return this[_response]!;
+    }
+
+    /**
+     * Adds an event listener that will be called when the connection is
+     * interrupted. After this event is dispatched, the connection will be
+     * closed and the `close` event will be dispatched.
+     */
+    override addEventListener(
+        type: "error",
+        listener: (this: EventReader, ev: ErrorEvent) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    /**
+     * Adds an event listener that will be called when the connection is closed.
+     * This event will be dispatched after the `error` event.
+     */
+    override addEventListener(
+        type: "close",
+        listener: (this: EventReader, ev: CloseEvent) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    override addEventListener(
+        type: string,
+        listener: (this: EventReader, event: Event) => any,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    override addEventListener(
+        event: string,
+        listener: any,
+        options?: boolean | AddEventListenerOptions
+    ): void {
+        return super.addEventListener(event, listener as EventListenerOrEventListenerObject, options);
     }
 
     /**
@@ -182,17 +230,7 @@ export class SSE extends EventTarget {
         }
     }
 
-    /**
-     * Sends a message to the client.
-     * 
-     * The client (`EventSource` or {@link EventsReader}) will receive the
-     * message as a `MessageEvent`, which can be listened to using the
-     * `message` event.
-     * 
-     * @param eventId If specified, the client will remember the value as the
-     * last event ID and will send it back to the server when reconnecting.
-     */
-    async send(data: string, eventId: string | undefined = undefined) {
+    private async _send(data: string, eventId: string | undefined = undefined): Promise<void> {
         const frames = data.split(/\r\n|\r/);
         this[_lastEventId] = eventId ?? "";
         const writer = this[_writer];
@@ -213,24 +251,52 @@ export class SSE extends EventTarget {
     }
 
     /**
+     * Sends a message to the client.
+     * 
+     * The client (`EventSource` or {@link EventReader}) will receive the
+     * message as a `MessageEvent`, which can be listened to using the
+     * `message` event.
+     * 
+     * @param eventId If specified, the client will remember the value as the
+     * last event ID and will send it back to the server when reconnecting.
+     */
+    async send(data: string, eventId: string | undefined = undefined): Promise<void> {
+        const lock = await this[_mutex].lock();
+        try {
+            await this._send(data, eventId);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
      * Sends a custom event to the client.
      * 
-     * The client (`EventSource` or {@link EventsReader}) will receive the
+     * The client (`EventSource` or {@link EventReader}) will receive the
      * event as a `MessageEvent`, which can be listened to using the custom
      * event name.
      * 
      * @param eventId If specified, the client will remember the value as the
      * last event ID and will send it back to the server when reconnecting.
      */
-    async sendEvent(event: string, data: string, eventId: string | undefined = undefined) {
-        await this[_writer].write(bytes(`event: ${event}\n`));
-        return this.send(data, eventId);
+    async sendEvent(
+        event: string,
+        data: string,
+        eventId: string | undefined = undefined
+    ): Promise<void> {
+        const lock = await this[_mutex].lock();
+        try {
+            await this[_writer].write(bytes(`event: ${event}\n`));
+            await this._send(data, eventId);
+        } finally {
+            lock.unlock();
+        }
     }
 
     /**
      * Closes the connection and instructs the client not to reconnect.
      */
-    async close() {
+    async close(): Promise<void> {
         if (this.lastEventId) {
             if (!SSEMarkClosed.has(this.lastEventId)) {
                 SSEMarkClosed.add(this.lastEventId);
@@ -243,12 +309,6 @@ export class SSE extends EventTarget {
         this[_closed] = true;
         this.dispatchEvent(createCloseEvent());
     }
-}
-
-export interface EventsReaderEventMap {
-    "error": ErrorEvent;
-    "close": CloseEvent;
-    "message": MessageEvent<string>;
 }
 
 /**
@@ -279,10 +339,10 @@ export interface EventsReaderEventMap {
  * });
  * ```
  */
-export class EventsReader extends EventTarget {
+export class EventReader extends EventTarget {
     private [_reader]: ReadableStreamDefaultReader<Uint8Array>;
-    private [_lastEventId]: string | undefined;
-    private [_reconnectionTime]: number | undefined;
+    private [_lastEventId]: string = "";
+    private [_reconnectionTime]: number = 0;
     private [_closed] = false;
 
     constructor(response: Response) {
@@ -302,19 +362,19 @@ export class EventsReader extends EventTarget {
         this.read();
     }
 
-    get retry() {
+    get retry(): number {
         return this[_reconnectionTime];
     }
 
-    get lastEventId() {
+    get lastEventId(): string {
         return this[_lastEventId];
     }
 
-    get closed() {
+    get closed(): boolean {
         return this[_closed];
     }
 
-    private async read() {
+    private async read(): Promise<void> {
         const reader = this[_reader];
         const decoder = new TextDecoder();
         let buffer: string = "";
@@ -357,14 +417,14 @@ export class EventsReader extends EventTarget {
                             this[_lastEventId] = line.slice(3).trim();
                         } else if (line.startsWith("retry:")) {
                             const time = parseInt(line.slice(6).trim());
-                            if (!isNaN(time)) {
+                            if (!isNaN(time) && time >= 0) {
                                 this[_reconnectionTime] = time;
                             }
                         }
                     }
 
                     this.dispatchEvent(new MessageEvent(type, {
-                        lastEventId: this[_lastEventId] ?? "",
+                        lastEventId: this[_lastEventId],
                         data,
                     }));
                 }
@@ -376,19 +436,51 @@ export class EventsReader extends EventTarget {
         }
     }
 
-    async close() {
+    async close(): Promise<void> {
         await this[_reader].cancel();
         this[_closed] = true;
     }
 
-    override addEventListener<K extends keyof EventsReaderEventMap>(
-        type: K,
-        listener: (this: EventsReader, ev: EventsReaderEventMap[K]) => any,
+    /**
+     * Adds an event listener that will be called when the connection is
+     * interrupted. After this event is dispatched, the connection will be
+     * closed and the `close` event will be dispatched.
+     */
+    override addEventListener(
+        type: "error",
+        listener: (this: EventReader, ev: ErrorEvent) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    /**
+     * Adds an event listener that will be called when the connection is closed.
+     * This event will be dispatched after the `error` event.
+     */
+    override addEventListener(
+        type: "close",
+        listener: (this: EventReader, ev: CloseEvent) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    /**
+     * Adds an event listener that will be called when a message with the
+     * default event type is received.
+     */
+    override addEventListener(
+        type: "message",
+        listener: (this: EventReader, ev: MessageEvent<string>) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    /**
+     * Adds an event listener that will be called when a message with a custom
+     * event type is received.
+     */
+    override addEventListener(
+        type: string,
+        listener: (this: EventReader, event: MessageEvent<string>) => void,
         options?: boolean | AddEventListenerOptions
     ): void;
     override addEventListener(
         type: string,
-        listener: (this: EventsReader, event: MessageEvent<string>) => any,
+        listener: (this: EventReader, event: Event) => any,
         options?: boolean | AddEventListenerOptions
     ): void;
     override addEventListener(

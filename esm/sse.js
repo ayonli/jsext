@@ -1,6 +1,7 @@
 import bytes from './bytes.js';
+import { Mutex } from './lock.js';
 
-var _a;
+var _a, _b, _c, _d;
 const SSEMarkClosed = new Set();
 const _lastEventId = Symbol.for("lastEventId");
 const _closed = Symbol.for("closed");
@@ -8,6 +9,7 @@ const _response = Symbol.for("response");
 const _writer = Symbol.for("writer");
 const _reader = Symbol.for("reader");
 const _reconnectionTime = Symbol.for("reconnectionTime");
+const _mutex = Symbol.for("mutex");
 /**
  * A server-sent events (SSE) implementation that can be used to send messages
  * to the client. This implementation is based on the `EventTarget` interface
@@ -34,10 +36,11 @@ const _reconnectionTime = Symbol.for("reconnectionTime");
  */
 class SSE extends EventTarget {
     constructor(request, options = {}) {
-        var _b, _c;
+        var _e, _f;
         super();
-        this[_lastEventId] = (_b = request.headers.get("Last-Event-ID")) !== null && _b !== void 0 ? _b : "";
-        this[_reconnectionTime] = (_c = options.reconnectionTime) !== null && _c !== void 0 ? _c : 0;
+        this[_a] = new Mutex(void 0);
+        this[_lastEventId] = (_e = request.headers.get("Last-Event-ID")) !== null && _e !== void 0 ? _e : "";
+        this[_reconnectionTime] = (_f = options.reconnectionTime) !== null && _f !== void 0 ? _f : 0;
         this[_closed] = this[_lastEventId]
             ? SSEMarkClosed.has(this[_lastEventId])
             : false;
@@ -62,6 +65,9 @@ class SSE extends EventTarget {
             async cancel(reason) {
                 await reader.cancel(reason);
                 _this[_closed] = true;
+                if (reason) {
+                    _this.dispatchEvent(createErrorEvent({ error: reason }));
+                }
                 _this.dispatchEvent(createCloseEvent());
             }
         });
@@ -100,6 +106,9 @@ class SSE extends EventTarget {
     get response() {
         return this[_response];
     }
+    addEventListener(event, listener, options) {
+        return super.addEventListener(event, listener, options);
+    }
     dispatchEvent(event) {
         if (event instanceof MessageEvent) {
             const _event = event;
@@ -116,17 +125,7 @@ class SSE extends EventTarget {
             return super.dispatchEvent(event);
         }
     }
-    /**
-     * Sends a message to the client.
-     *
-     * The client (`EventSource` or {@link EventsReader}) will receive the
-     * message as a `MessageEvent`, which can be listened to using the
-     * `message` event.
-     *
-     * @param eventId If specified, the client will remember the value as the
-     * last event ID and will send it back to the server when reconnecting.
-     */
-    async send(data, eventId = undefined) {
+    async _send(data, eventId = undefined) {
         const frames = data.split(/\r\n|\r/);
         this[_lastEventId] = eventId !== null && eventId !== void 0 ? eventId : "";
         const writer = this[_writer];
@@ -142,9 +141,28 @@ class SSE extends EventTarget {
         await writer.write(bytes("\n"));
     }
     /**
+     * Sends a message to the client.
+     *
+     * The client (`EventSource` or {@link EventReader}) will receive the
+     * message as a `MessageEvent`, which can be listened to using the
+     * `message` event.
+     *
+     * @param eventId If specified, the client will remember the value as the
+     * last event ID and will send it back to the server when reconnecting.
+     */
+    async send(data, eventId = undefined) {
+        const lock = await this[_mutex].lock();
+        try {
+            await this._send(data, eventId);
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+    /**
      * Sends a custom event to the client.
      *
-     * The client (`EventSource` or {@link EventsReader}) will receive the
+     * The client (`EventSource` or {@link EventReader}) will receive the
      * event as a `MessageEvent`, which can be listened to using the custom
      * event name.
      *
@@ -152,8 +170,14 @@ class SSE extends EventTarget {
      * last event ID and will send it back to the server when reconnecting.
      */
     async sendEvent(event, data, eventId = undefined) {
-        await this[_writer].write(bytes(`event: ${event}\n`));
-        return this.send(data, eventId);
+        const lock = await this[_mutex].lock();
+        try {
+            await this[_writer].write(bytes(`event: ${event}\n`));
+            await this._send(data, eventId);
+        }
+        finally {
+            lock.unlock();
+        }
     }
     /**
      * Closes the connection and instructs the client not to reconnect.
@@ -172,6 +196,7 @@ class SSE extends EventTarget {
         this.dispatchEvent(createCloseEvent());
     }
 }
+_a = _mutex;
 /**
  * An SSE (server-sent events) client that reads messages from the server
  * response. Unlike the `EventSource` API, which takes a URL and only supports
@@ -200,11 +225,13 @@ class SSE extends EventTarget {
  * });
  * ```
  */
-class EventsReader extends EventTarget {
+class EventReader extends EventTarget {
     constructor(response) {
-        var _b;
+        var _e;
         super();
-        this[_a] = false;
+        this[_b] = "";
+        this[_c] = 0;
+        this[_d] = false;
         if (!response.body) {
             throw new TypeError("The response does not have a body.");
         }
@@ -214,7 +241,7 @@ class EventsReader extends EventTarget {
         else if (response.body.locked) {
             throw new TypeError("The response body is locked.");
         }
-        else if (!((_b = response.headers.get("Content-Type")) === null || _b === void 0 ? void 0 : _b.startsWith("text/event-stream"))) {
+        else if (!((_e = response.headers.get("Content-Type")) === null || _e === void 0 ? void 0 : _e.startsWith("text/event-stream"))) {
             throw new TypeError("The response is not an event stream.");
         }
         this[_reader] = response.body.getReader();
@@ -230,7 +257,6 @@ class EventsReader extends EventTarget {
         return this[_closed];
     }
     async read() {
-        var _b;
         const reader = this[_reader];
         const decoder = new TextDecoder();
         let buffer = "";
@@ -271,13 +297,13 @@ class EventsReader extends EventTarget {
                         }
                         else if (line.startsWith("retry:")) {
                             const time = parseInt(line.slice(6).trim());
-                            if (!isNaN(time)) {
+                            if (!isNaN(time) && time >= 0) {
                                 this[_reconnectionTime] = time;
                             }
                         }
                     }
                     this.dispatchEvent(new MessageEvent(type, {
-                        lastEventId: (_b = this[_lastEventId]) !== null && _b !== void 0 ? _b : "",
+                        lastEventId: this[_lastEventId],
                         data,
                     }));
                 }
@@ -297,9 +323,9 @@ class EventsReader extends EventTarget {
         return super.addEventListener(event, listener, options);
     }
 }
-_a = _closed;
+_b = _lastEventId, _c = _reconnectionTime, _d = _closed;
 function createCloseEvent(options = {}) {
-    var _b, _c, _d;
+    var _e, _f, _g;
     if (typeof CloseEvent === "function") {
         return new CloseEvent("close", options);
     }
@@ -310,15 +336,15 @@ function createCloseEvent(options = {}) {
             composed: false,
         });
         Object.defineProperties(event, {
-            code: { value: (_b = options.code) !== null && _b !== void 0 ? _b : 0 },
-            reason: { value: (_c = options.reason) !== null && _c !== void 0 ? _c : "" },
-            wasClean: { value: (_d = options.wasClean) !== null && _d !== void 0 ? _d : false },
+            code: { value: (_e = options.code) !== null && _e !== void 0 ? _e : 0 },
+            reason: { value: (_f = options.reason) !== null && _f !== void 0 ? _f : "" },
+            wasClean: { value: (_g = options.wasClean) !== null && _g !== void 0 ? _g : false },
         });
         return event;
     }
 }
 function createErrorEvent(options = {}) {
-    var _b, _c, _d, _e, _f;
+    var _e, _f, _g, _h, _j;
     if (typeof ErrorEvent === "function") {
         return new ErrorEvent("error", options);
     }
@@ -329,15 +355,15 @@ function createErrorEvent(options = {}) {
             composed: false,
         });
         Object.defineProperties(event, {
-            message: { value: (_b = options === null || options === void 0 ? void 0 : options.message) !== null && _b !== void 0 ? _b : "" },
-            filename: { value: (_c = options === null || options === void 0 ? void 0 : options.filename) !== null && _c !== void 0 ? _c : "" },
-            lineno: { value: (_d = options === null || options === void 0 ? void 0 : options.lineno) !== null && _d !== void 0 ? _d : 0 },
-            colno: { value: (_e = options === null || options === void 0 ? void 0 : options.colno) !== null && _e !== void 0 ? _e : 0 },
-            error: { value: (_f = options === null || options === void 0 ? void 0 : options.error) !== null && _f !== void 0 ? _f : undefined },
+            message: { value: (_e = options === null || options === void 0 ? void 0 : options.message) !== null && _e !== void 0 ? _e : "" },
+            filename: { value: (_f = options === null || options === void 0 ? void 0 : options.filename) !== null && _f !== void 0 ? _f : "" },
+            lineno: { value: (_g = options === null || options === void 0 ? void 0 : options.lineno) !== null && _g !== void 0 ? _g : 0 },
+            colno: { value: (_h = options === null || options === void 0 ? void 0 : options.colno) !== null && _h !== void 0 ? _h : 0 },
+            error: { value: (_j = options === null || options === void 0 ? void 0 : options.error) !== null && _j !== void 0 ? _j : undefined },
         });
         return event;
     }
 }
 
-export { EventsReader, SSE };
+export { EventReader, SSE };
 //# sourceMappingURL=sse.js.map
