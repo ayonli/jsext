@@ -230,7 +230,7 @@ export class SSE extends EventTarget {
      * @param eventId If specified, the client will remember the value as the
      * last event ID and will send it back to the server when reconnecting.
      */
-    async send(data: string, eventId: string | undefined = undefined): Promise<void> {
+    private async send(data: string, eventId: string | undefined = undefined): Promise<void> {
         await this[_writer].write(this.buildMessage(data, { id: eventId }));
     }
 
@@ -244,7 +244,7 @@ export class SSE extends EventTarget {
      * @param eventId If specified, the client will remember the value as the
      * last event ID and will send it back to the server when reconnecting.
      */
-    async sendEvent(
+    private async sendEvent(
         event: string,
         data: string,
         eventId: string | undefined = undefined
@@ -255,7 +255,7 @@ export class SSE extends EventTarget {
     /**
      * Closes the connection and instructs the client not to reconnect.
      */
-    async close(): Promise<void> {
+    close(): void {
         if (this.lastEventId) {
             if (!SSEMarkClosed.has(this.lastEventId)) {
                 SSEMarkClosed.add(this.lastEventId);
@@ -264,9 +264,18 @@ export class SSE extends EventTarget {
             }
         }
 
-        await this[_writer].close();
-        this[_closed] = true;
-        this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
+        this[_writer].close()
+            .then(() => {
+                this[_closed] = true;
+                this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
+            })
+            .catch((err) => {
+                this[_closed] = true;
+                this.dispatchEvent(createCloseEvent("close", {
+                    reason: err instanceof Error ? err.message : String(err),
+                    wasClean: false,
+                }));
+            });
     }
 }
 
@@ -399,10 +408,16 @@ export class EventClient extends EventTarget {
 
                     for (const line of lines) {
                         if (line.startsWith("data:")) {
+                            let value = line.slice(5);
+
+                            if (value[0] === " ") {
+                                value = value.slice(1);
+                            }
+
                             if (data) {
-                                data += "\n" + line.slice(6).trim();
+                                data += "\n" + value;
                             } else {
-                                data = line.slice(6).trim();
+                                data = value;
                             }
                         } else if (line.startsWith("event:")) {
                             type = line.slice(6).trim();
@@ -435,9 +450,8 @@ export class EventClient extends EventTarget {
     /**
      * Closes the connection.
      */
-    async close(): Promise<void> {
-        await this[_reader].cancel();
-        this[_closed] = true;
+    close(): void {
+        this[_reader].cancel().catch(() => { });
     }
 
     /**

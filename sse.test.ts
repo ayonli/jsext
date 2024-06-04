@@ -25,8 +25,8 @@ describe("sse", () => {
             strictEqual(sse1.lastEventId, "");
             strictEqual(sse1.closed, false);
 
-            await sse1.close();
-            strictEqual(sse1.closed, true);
+            sse1.close();
+            await until(() => sse1.closed);
 
             const req2 = new Request("http://localhost:8080", {
                 headers: {
@@ -40,7 +40,8 @@ describe("sse", () => {
 
             const { response } = sse2;
             strictEqual(response.status, 200);
-            await sse2.close();
+            sse2.close();
+            await until(() => sse2.closed);
 
             const req3 = new Request("http://localhost:8080", {
                 headers: {
@@ -52,86 +53,6 @@ describe("sse", () => {
             strictEqual(sse3.lastEventId, "123");
             strictEqual(sse3.closed, true);
         });
-
-        it("send", jsext.func(async function (defer) {
-            if (!isDeno) {
-                this.skip();
-            }
-
-            const { SSE } = await import("./sse.ts");
-
-            let sse: InstanceType<typeof SSE> | undefined = undefined;
-            const server = Deno.serve({ port: 8081 }, req => {
-                sse = new SSE(req);
-                return sse.response;
-            });
-            defer(() => server.shutdown());
-
-            const es = new EventSource("http://localhost:8081");
-            const messages: string[] = [];
-            let lastEventId = "";
-
-            es.addEventListener("message", (ev) => {
-                const data = ev.data;
-                messages.push(data);
-                lastEventId = ev.lastEventId;
-            });
-
-            await until(() => es.readyState === EventSource.OPEN);
-
-            await sse!.send("Hello", "1");
-            await sse!.send("World", "2");
-
-            await until(() => messages.length === 2);
-            es.close();
-            await until(() => sse!.closed);
-
-            deepStrictEqual(messages, ["Hello", "World"]);
-            strictEqual(sse!.lastEventId, "2");
-            strictEqual(sse!.closed, true);
-            strictEqual(lastEventId, "2");
-            strictEqual(es.readyState, EventSource.CLOSED);
-        }));
-
-        it("sendEvent", jsext.func(async function (defer) {
-            if (!isDeno) {
-                this.skip();
-            }
-
-            const { SSE } = await import("./sse.ts");
-
-            let sse: InstanceType<typeof SSE> | undefined = undefined;
-            const server = Deno.serve({ port: 8081 }, req => {
-                sse = new SSE(req);
-                return sse.response;
-            });
-            defer(() => server.shutdown());
-
-            const es = new EventSource("http://localhost:8081");
-            const messages: string[] = [];
-            let lastEventId = "";
-
-            es.addEventListener("my-event", (ev) => {
-                const data = ev.data;
-                messages.push(data);
-                lastEventId = ev.lastEventId;
-            });
-
-            await until(() => es.readyState === EventSource.OPEN);
-
-            await sse!.sendEvent("my-event", "Hi", "3");
-            await sse!.sendEvent("my-event", "A-yon", "4");
-
-            await until(() => messages.length === 2);
-            es.close();
-            await until(() => sse!.closed);
-
-            deepStrictEqual(messages, ["Hi", "A-yon"]);
-            strictEqual(sse!.lastEventId, "4");
-            strictEqual(sse!.closed, true);
-            strictEqual(lastEventId, "4");
-            strictEqual(es.readyState, EventSource.CLOSED);
-        }));
 
         it("dispatchEvent", jsext.func(async function (defer) {
             if (!isDeno) {
@@ -151,7 +72,13 @@ describe("sse", () => {
             const messages: string[] = [];
             let lastEventId = "";
 
-            es.addEventListener("another-event", (ev) => {
+            es.addEventListener("message", (ev) => {
+                const data = ev.data;
+                messages.push(data);
+                lastEventId = ev.lastEventId;
+            });
+
+            es.addEventListener("my-event", (ev) => {
                 const data = ev.data;
                 messages.push(data);
                 lastEventId = ev.lastEventId;
@@ -159,90 +86,24 @@ describe("sse", () => {
 
             await until(() => es.readyState === EventSource.OPEN);
 
-            sse!.dispatchEvent(new MessageEvent("another-event", {
-                data: "Hi",
-                lastEventId: "5",
+            es.dispatchEvent(new MessageEvent("message", {
+                data: "Hello",
+                lastEventId: "1",
             }));
-            sse!.dispatchEvent(new MessageEvent("another-event", {
+
+            sse!.dispatchEvent(new MessageEvent("my-event", {
                 data: "World",
-                lastEventId: "6",
+                lastEventId: "2",
             }));
 
             await until(() => messages.length === 2);
             es.close();
             await until(() => sse!.closed);
 
-            deepStrictEqual(messages, ["Hi", "World"]);
-            strictEqual(sse!.lastEventId, "6");
+            deepStrictEqual(messages, ["Hello", "World"]);
+            strictEqual(sse!.lastEventId, "2");
             strictEqual(sse!.closed, true);
-            strictEqual(lastEventId, "6");
-            strictEqual(es.readyState, EventSource.CLOSED);
-        }));
-
-        it("send & sendEvent & dispatchEvent", jsext.func(async function (defer) {
-            if (!isDeno) {
-                this.skip();
-            }
-
-            const { SSE } = await import("./sse.ts");
-
-            let sse: InstanceType<typeof SSE> | undefined = undefined;
-            const server = Deno.serve({ port: 8081 }, req => {
-                sse = new SSE(req);
-                return sse.response;
-            });
-            defer(() => server.shutdown());
-
-            const es = new EventSource("http://localhost:8081");
-            const messages1: string[] = [];
-            const messages2: string[] = [];
-            const messages3: string[] = [];
-            let lastEventId = "";
-
-            es.addEventListener("message", (ev) => {
-                const data = ev.data;
-                messages1.push(data);
-                lastEventId = ev.lastEventId;
-            });
-
-            es.addEventListener("my-event", (ev) => {
-                const data = ev.data;
-                messages2.push(data);
-                lastEventId = ev.lastEventId;
-            });
-
-            es.addEventListener("another-event", (ev) => {
-                const data = ev.data;
-                messages3.push(data);
-                lastEventId = ev.lastEventId;
-            });
-
-            await until(() => es.readyState === EventSource.OPEN);
-
-            await sse!.send("Hello", "1");
-            await sse!.sendEvent("my-event", "World", "2");
-            sse!.dispatchEvent(new MessageEvent("another-event", {
-                data: "Hi",
-                lastEventId: "3",
-            }));
-
-            await sse!.send("A-yon", "4");
-            await sse!.sendEvent("my-event", "A-yon", "5");
-            sse!.dispatchEvent(new MessageEvent("another-event", {
-                data: "World",
-                lastEventId: "6",
-            }));
-
-            await until(() => messages1.length === 2 && messages2.length === 2 && messages3.length === 2);
-            es.close();
-            await until(() => sse!.closed);
-
-            deepStrictEqual(messages1, ["Hello", "A-yon"]);
-            deepStrictEqual(messages2, ["World", "A-yon"]);
-            deepStrictEqual(messages3, ["Hi", "World"]);
-            strictEqual(sse!.lastEventId, "6");
-            strictEqual(sse!.closed, true);
-            strictEqual(lastEventId, "6");
+            strictEqual(lastEventId, "2");
             strictEqual(es.readyState, EventSource.CLOSED);
         }));
 
@@ -263,7 +124,7 @@ describe("sse", () => {
             const es = new EventSource("http://localhost:8082");
 
             await until(() => es.readyState === EventSource.OPEN);
-            await sse!.close();
+            sse!.close();
             await until(() => es.readyState === EventSource.CONNECTING);
 
             strictEqual(sse!.closed, true);
@@ -325,11 +186,18 @@ describe("sse", () => {
                 lastEventId = ev.lastEventId;
             });
 
-            await sse.send("Hello", "1");
-            await sse.send("World", "2");
+            sse.dispatchEvent(new MessageEvent("message", {
+                data: "Hello",
+                lastEventId: "1",
+            }));
+            sse.dispatchEvent(new MessageEvent("message", {
+                data: "World",
+                lastEventId: "2",
+            }));
 
             await until(() => messages.length === 2);
-            await client.close();
+            client.close();
+            await until(() => sse.closed);
 
             deepStrictEqual(messages, ["Hello", "World"]);
             strictEqual(sse.lastEventId, "2");
@@ -361,11 +229,19 @@ describe("sse", () => {
                 lastEventId = ev.lastEventId;
             });
 
-            await sse.sendEvent("my-event", "Hi", "3");
-            await sse.sendEvent("my-event", "A-yon", "4");
+            sse.dispatchEvent(new MessageEvent("my-event", {
+                data: "Hi",
+                lastEventId: "3",
+            }));
+
+            sse.dispatchEvent(new MessageEvent("my-event", {
+                data: "A-yon",
+                lastEventId: "4",
+            }));
 
             await until(() => messages.length === 2);
-            await client.close();
+            client.close();
+            await until(() => sse.closed);
 
             deepStrictEqual(messages, ["Hi", "A-yon"]);
             strictEqual(sse.lastEventId, "4");
@@ -375,7 +251,7 @@ describe("sse", () => {
             strictEqual(lastEventId, "4");
         });
 
-        it("listen close event", async () => {
+        it("listen close event by the server", async () => {
             const { SSE, EventClient } = await import("./sse.ts");
 
             const req = new Request("http://localhost:8080", {
@@ -394,7 +270,35 @@ describe("sse", () => {
                 closeEvent = _ev as CloseEvent;
             });
 
-            await sse.close();
+            sse.close();
+            await until(() => client.closed);
+
+            strictEqual(sse.closed, true);
+            strictEqual(client.closed, true);
+            strictEqual(closeEvent!.type, "close");
+            strictEqual(closeEvent!.wasClean, true);
+        });
+
+        it("listen close event by the client", async () => {
+            const { SSE, EventClient } = await import("./sse.ts");
+
+            const req = new Request("http://localhost:8080", {
+                headers: {
+                    "Accept": "text/event-stream",
+                },
+            });
+            const sse = new SSE(req);
+            strictEqual(sse.closed, false);
+            const { response } = sse;
+
+            const client = new EventClient(response);
+            let closeEvent: CloseEvent | undefined = undefined;
+
+            client.addEventListener("close", _ev => {
+                closeEvent = _ev as CloseEvent;
+            });
+
+            client.close();
             await until(() => client.closed);
 
             strictEqual(sse.closed, true);
