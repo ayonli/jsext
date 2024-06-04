@@ -12,6 +12,8 @@
  * @experimental
  */
 
+import { createCloseEvent } from "./error.ts";
+
 const SSEMarkClosed = new Set<string>();
 const _lastEventId = Symbol.for("lastEventId");
 const _closed = Symbol.for("closed");
@@ -105,7 +107,7 @@ export class SSE extends EventTarget {
             async cancel(reason) {
                 await reader.cancel(reason);
                 _this[_closed] = true;
-                _this.dispatchEvent(createCloseEvent({
+                _this.dispatchEvent(createCloseEvent("close", {
                     reason: reason instanceof Error ? reason.message : String(reason ?? ""),
                     wasClean: true,
                 }));
@@ -164,7 +166,11 @@ export class SSE extends EventTarget {
         listener: any,
         options?: boolean | AddEventListenerOptions
     ): void {
-        return super.addEventListener(event, listener as EventListenerOrEventListenerObject, options);
+        return super.addEventListener(
+            event,
+            listener as EventListenerOrEventListenerObject,
+            options
+        );
     }
 
     /**
@@ -260,7 +266,7 @@ export class SSE extends EventTarget {
 
         await this[_writer].close();
         this[_closed] = true;
-        this.dispatchEvent(createCloseEvent({ wasClean: true }));
+        this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
     }
 }
 
@@ -372,7 +378,7 @@ export class EventClient extends EventTarget {
 
                 if (done) {
                     this[_closed] = true;
-                    this.dispatchEvent(createCloseEvent({ wasClean: true }));
+                    this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
                     break;
                 }
 
@@ -418,8 +424,8 @@ export class EventClient extends EventTarget {
             }
         } catch (error) {
             this[_closed] = true;
-            this.dispatchEvent(createErrorEvent({ error }));
-            this.dispatchEvent(createCloseEvent({
+            this.dispatchEvent(new Event("error"));
+            this.dispatchEvent(createCloseEvent("close", {
                 reason: error instanceof Error ? error.message : String(error),
                 wasClean: false,
             }));
@@ -436,13 +442,12 @@ export class EventClient extends EventTarget {
 
     /**
      * Adds an event listener that will be called when the connection is
-     * interrupted, the `error` property of the event contains the cause of the
-     * error. After this event is dispatched, the connection will be closed and
-     * the `close` event will be dispatched.
+     * interrupted. After this event is dispatched, the connection will be
+     * closed and the `close` event will be dispatched.
      */
     override addEventListener(
         type: "error",
-        listener: (this: EventClient, ev: ErrorEvent) => void,
+        listener: (this: EventClient, ev: Event) => void,
         options?: boolean | AddEventListenerOptions
     ): void;
     /**
@@ -484,48 +489,10 @@ export class EventClient extends EventTarget {
         listener: any,
         options?: boolean | AddEventListenerOptions
     ): void {
-        return super.addEventListener(event, listener as EventListenerOrEventListenerObject, options);
-    }
-}
-
-function createCloseEvent(options: CloseEventInit = {}) {
-    if (typeof CloseEvent === "function") {
-        return new CloseEvent("close", options);
-    } else {
-        const event = new Event("close", {
-            bubbles: false,
-            cancelable: false,
-            composed: false,
-        });
-
-        Object.defineProperties(event, {
-            code: { value: options.code ?? 0 },
-            reason: { value: options.reason ?? "" },
-            wasClean: { value: options.wasClean ?? false },
-        });
-
-        return event;
-    }
-}
-
-function createErrorEvent(options: ErrorEventInit = {}) {
-    if (typeof ErrorEvent === "function") {
-        return new ErrorEvent("error", options);
-    } else {
-        const event = new Event("error", {
-            bubbles: false,
-            cancelable: false,
-            composed: false,
-        });
-
-        Object.defineProperties(event, {
-            message: { value: options?.message ?? "" },
-            filename: { value: options?.filename ?? "" },
-            lineno: { value: options?.lineno ?? 0 },
-            colno: { value: options?.colno ?? 0 },
-            error: { value: options?.error ?? undefined },
-        });
-
-        return event;
+        return super.addEventListener(
+            event,
+            listener as EventListenerOrEventListenerObject,
+            options
+        );
     }
 }

@@ -1,5 +1,6 @@
 import { concat as concatBytes } from "../bytes.ts";
 import { isDeno, isNodeLike } from "../env.ts";
+import { createProgressEvent } from "../error.ts";
 import { chmod, createReadableStream, createWritableStream, ensureDir, stat, utimes } from "../fs.ts";
 import { makeTree } from "../fs/util.ts";
 import { basename, dirname, join, resolve } from "../path.ts";
@@ -166,11 +167,11 @@ export default async function untar(
                         totalWrittenBytes += chunk.byteLength;
 
                         if (options.onProgress) {
-                            options.onProgress(createProgressEvent(
-                                totalWrittenBytes,
-                                totalBytes,
-                                true
-                            ));
+                            options.onProgress(createProgressEvent("progress", {
+                                lengthComputable: true,
+                                loaded: totalWrittenBytes,
+                                total: totalBytes
+                            }));
                         }
                     }
                 } else if (entry.kind === "directory") {
@@ -221,11 +222,11 @@ export default async function untar(
             throw new Error("The archive is corrupted");
         } else if (totalBytes && totalWrittenBytes < totalBytes && options.onProgress) {
             totalWrittenBytes = totalBytes;
-            options.onProgress(createProgressEvent(
-                totalWrittenBytes,
-                totalBytes,
-                true
-            ));
+            options.onProgress(createProgressEvent("progress", {
+                lengthComputable: true,
+                loaded: totalWrittenBytes,
+                total: totalBytes,
+            }));
         }
     } finally {
         reader.releaseLock();
@@ -258,33 +259,5 @@ export default async function untar(
                 }
             }
         })(tree.children!);
-    }
-}
-
-function createProgressEvent(
-    loaded: number,
-    total: number,
-    lengthComputable: boolean
-): ProgressEvent {
-    if (typeof ProgressEvent === "function") {
-        return new ProgressEvent("progress", {
-            lengthComputable,
-            loaded,
-            total,
-        });
-    } else {
-        const event = new Event("progress", {
-            bubbles: false,
-            cancelable: false,
-            composed: false,
-        });
-
-        Object.defineProperties(event, {
-            lengthComputable: { value: lengthComputable ?? false },
-            loaded: { value: loaded ?? 0 },
-            total: { value: total ?? 0 },
-        });
-
-        return event as ProgressEvent;
     }
 }
