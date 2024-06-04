@@ -78,21 +78,16 @@ class SSE extends EventTarget {
                         try {
                             controller.close();
                         }
-                        catch (_d) {
-                            // ignore
-                        }
+                        catch (_d) { }
+                        _this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
                         break;
                     }
                     controller.enqueue(value);
                 }
             },
             async cancel(reason) {
-                await reader.cancel(reason);
                 _this[_closed] = true;
-                _this.dispatchEvent(createCloseEvent("close", {
-                    reason: reason instanceof Error ? reason.message : String(reason !== null && reason !== void 0 ? reason : ""),
-                    wasClean: true,
-                }));
+                await reader.cancel(reason);
             }
         });
         this[_response] = new Response(this.closed ? null : _readable, {
@@ -188,25 +183,16 @@ class SSE extends EventTarget {
      * Closes the connection and instructs the client not to reconnect.
      */
     close() {
-        if (this.lastEventId) {
-            if (!SSEMarkClosed.has(this.lastEventId)) {
-                SSEMarkClosed.add(this.lastEventId);
-            }
-            else {
-                SSEMarkClosed.delete(this.lastEventId);
-            }
-        }
-        this[_writer].close()
-            .then(() => {
+        this[_writer].close().catch(() => { }).finally(() => {
             this[_closed] = true;
-            this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
-        })
-            .catch((err) => {
-            this[_closed] = true;
-            this.dispatchEvent(createCloseEvent("close", {
-                reason: err instanceof Error ? err.message : String(err),
-                wasClean: false,
-            }));
+            if (this.lastEventId) {
+                if (!SSEMarkClosed.has(this.lastEventId)) {
+                    SSEMarkClosed.add(this.lastEventId);
+                }
+                else {
+                    SSEMarkClosed.delete(this.lastEventId);
+                }
+            }
         });
     }
 }
