@@ -1,5 +1,6 @@
 import { concat } from '../bytes.js';
 import { isDeno, isNodeLike } from '../env.js';
+import { createProgressEvent } from '../error.js';
 import { createReadableStream, ensureDir, stat, createWritableStream, chmod, utimes } from '../fs.js';
 import { makeTree } from '../fs/util.js';
 import { resolve, join, dirname, basename } from '../path.js';
@@ -96,7 +97,11 @@ async function untar(src, dest = {}, options = {}) {
                     if (totalBytes && chunk.byteLength) {
                         totalWrittenBytes += chunk.byteLength;
                         if (options.onProgress) {
-                            options.onProgress(createProgressEvent(totalWrittenBytes, totalBytes, true));
+                            options.onProgress(createProgressEvent("progress", {
+                                lengthComputable: true,
+                                loaded: totalWrittenBytes,
+                                total: totalBytes
+                            }));
                         }
                     }
                 }
@@ -145,7 +150,11 @@ async function untar(src, dest = {}, options = {}) {
         }
         else if (totalBytes && totalWrittenBytes < totalBytes && options.onProgress) {
             totalWrittenBytes = totalBytes;
-            options.onProgress(createProgressEvent(totalWrittenBytes, totalBytes, true));
+            options.onProgress(createProgressEvent("progress", {
+                lengthComputable: true,
+                loaded: totalWrittenBytes,
+                total: totalBytes,
+            }));
         }
     }
     finally {
@@ -176,28 +185,6 @@ async function untar(src, dest = {}, options = {}) {
                 }
             }
         })(tree.children);
-    }
-}
-function createProgressEvent(loaded, total, lengthComputable) {
-    if (typeof ProgressEvent === "function") {
-        return new ProgressEvent("progress", {
-            lengthComputable,
-            loaded,
-            total,
-        });
-    }
-    else {
-        const event = new Event("progress", {
-            bubbles: false,
-            cancelable: false,
-            composed: false,
-        });
-        Object.defineProperties(event, {
-            lengthComputable: { value: lengthComputable !== null && lengthComputable !== void 0 ? lengthComputable : false },
-            loaded: { value: loaded !== null && loaded !== void 0 ? loaded : 0 },
-            total: { value: total !== null && total !== void 0 ? total : 0 },
-        });
-        return event;
     }
 }
 

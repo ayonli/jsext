@@ -1,3 +1,5 @@
+import { createCloseEvent } from './error.js';
+
 /**
  * This module provides tools for working with server-sent events.
  *
@@ -87,7 +89,7 @@ class SSE extends EventTarget {
             async cancel(reason) {
                 await reader.cancel(reason);
                 _this[_closed] = true;
-                _this.dispatchEvent(createCloseEvent({
+                _this.dispatchEvent(createCloseEvent("close", {
                     reason: reason instanceof Error ? reason.message : String(reason !== null && reason !== void 0 ? reason : ""),
                     wasClean: true,
                 }));
@@ -185,7 +187,7 @@ class SSE extends EventTarget {
     /**
      * Closes the connection and instructs the client not to reconnect.
      */
-    async close() {
+    close() {
         if (this.lastEventId) {
             if (!SSEMarkClosed.has(this.lastEventId)) {
                 SSEMarkClosed.add(this.lastEventId);
@@ -194,9 +196,18 @@ class SSE extends EventTarget {
                 SSEMarkClosed.delete(this.lastEventId);
             }
         }
-        await this[_writer].close();
-        this[_closed] = true;
-        this.dispatchEvent(createCloseEvent({ wasClean: true }));
+        this[_writer].close()
+            .then(() => {
+            this[_closed] = true;
+            this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
+        })
+            .catch((err) => {
+            this[_closed] = true;
+            this.dispatchEvent(createCloseEvent("close", {
+                reason: err instanceof Error ? err.message : String(err),
+                wasClean: false,
+            }));
+        });
     }
 }
 /**
@@ -301,7 +312,7 @@ class EventClient extends EventTarget {
                 const { done, value } = await reader.read();
                 if (done) {
                     this[_closed] = true;
-                    this.dispatchEvent(createCloseEvent({ wasClean: true }));
+                    this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
                     break;
                 }
                 buffer += decoder.decode(value);
@@ -318,11 +329,15 @@ class EventClient extends EventTarget {
                     let type = "message";
                     for (const line of lines) {
                         if (line.startsWith("data:")) {
+                            let value = line.slice(5);
+                            if (value[0] === " ") {
+                                value = value.slice(1);
+                            }
                             if (data) {
-                                data += "\n" + line.slice(6).trim();
+                                data += "\n" + value;
                             }
                             else {
-                                data = line.slice(6).trim();
+                                data = value;
                             }
                         }
                         else if (line.startsWith("event:")) {
@@ -347,8 +362,8 @@ class EventClient extends EventTarget {
         }
         catch (error) {
             this[_closed] = true;
-            this.dispatchEvent(createErrorEvent({ error }));
-            this.dispatchEvent(createCloseEvent({
+            this.dispatchEvent(new Event("error"));
+            this.dispatchEvent(createCloseEvent("close", {
                 reason: error instanceof Error ? error.message : String(error),
                 wasClean: false,
             }));
@@ -357,55 +372,14 @@ class EventClient extends EventTarget {
     /**
      * Closes the connection.
      */
-    async close() {
-        await this[_reader].cancel();
-        this[_closed] = true;
+    close() {
+        this[_reader].cancel().catch(() => { });
     }
     addEventListener(event, listener, options) {
         return super.addEventListener(event, listener, options);
     }
 }
 _a = _lastEventId, _b = _reconnectionTime, _c = _closed;
-function createCloseEvent(options = {}) {
-    var _d, _e, _f;
-    if (typeof CloseEvent === "function") {
-        return new CloseEvent("close", options);
-    }
-    else {
-        const event = new Event("close", {
-            bubbles: false,
-            cancelable: false,
-            composed: false,
-        });
-        Object.defineProperties(event, {
-            code: { value: (_d = options.code) !== null && _d !== void 0 ? _d : 0 },
-            reason: { value: (_e = options.reason) !== null && _e !== void 0 ? _e : "" },
-            wasClean: { value: (_f = options.wasClean) !== null && _f !== void 0 ? _f : false },
-        });
-        return event;
-    }
-}
-function createErrorEvent(options = {}) {
-    var _d, _e, _f, _g, _h;
-    if (typeof ErrorEvent === "function") {
-        return new ErrorEvent("error", options);
-    }
-    else {
-        const event = new Event("error", {
-            bubbles: false,
-            cancelable: false,
-            composed: false,
-        });
-        Object.defineProperties(event, {
-            message: { value: (_d = options === null || options === void 0 ? void 0 : options.message) !== null && _d !== void 0 ? _d : "" },
-            filename: { value: (_e = options === null || options === void 0 ? void 0 : options.filename) !== null && _e !== void 0 ? _e : "" },
-            lineno: { value: (_f = options === null || options === void 0 ? void 0 : options.lineno) !== null && _f !== void 0 ? _f : 0 },
-            colno: { value: (_g = options === null || options === void 0 ? void 0 : options.colno) !== null && _g !== void 0 ? _g : 0 },
-            error: { value: (_h = options === null || options === void 0 ? void 0 : options.error) !== null && _h !== void 0 ? _h : undefined },
-        });
-        return event;
-    }
-}
 
 export { EventClient, SSE };
 //# sourceMappingURL=sse.js.map
