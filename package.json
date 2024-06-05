@@ -334,6 +334,13 @@
             "import": "./esm/runtime.js",
             "default": "./runtime.ts"
         },
+        "./sse": {
+            "types": "./types/sse.d.ts",
+            "bun": "./sse.ts",
+            "require": "./cjs/sse.js",
+            "import": "./esm/sse.js",
+            "default": "./sse.ts"
+        },
         "./string": {
             "types": "./types/string.d.ts",
             "bun": "./string.ts",
@@ -500,6 +507,7 @@
         "createReadableStream",
         "createWritableStream",
         "stream",
+        "sse",
         "bytes",
         "ByteArray",
         "pipe",

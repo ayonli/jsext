@@ -36,6 +36,7 @@
         "./reader": "./reader.ts",
         "./run": "./run.ts",
         "./runtime": "./runtime.ts",
+        "./sse": "./sse.ts",
         "./string": "./string.ts",
         "./throttle": "./throttle.ts",
         "./try": "./try.ts",
