@@ -1,6 +1,6 @@
 import { concat } from '../bytes.js';
 import { isDeno, isNodeLike } from '../env.js';
-import { createProgressEvent } from '../error.js';
+import { createProgressEvent } from '../event.js';
 import { createReadableStream, ensureDir, stat, createWritableStream, chmod, utimes } from '../fs.js';
 import { makeTree } from '../fs/util.js';
 import { resolve, join, dirname, basename } from '../path.js';

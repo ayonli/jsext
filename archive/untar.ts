@@ -1,6 +1,6 @@
 import { concat as concatBytes } from "../bytes.ts";
 import { isDeno, isNodeLike } from "../env.ts";
-import { createProgressEvent } from "../error.ts";
+import { createProgressEvent } from "../event.ts";
 import { chmod, createReadableStream, createWritableStream, ensureDir, stat, utimes } from "../fs.ts";
 import { makeTree } from "../fs/util.ts";
 import { basename, dirname, join, resolve } from "../path.ts";

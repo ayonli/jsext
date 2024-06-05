@@ -133,6 +133,13 @@
             "import": "./esm/augment/error.js",
             "default": "./augment/error.ts"
         },
+        "./event": {
+            "types": "./types/event.d.ts",
+            "bun": "./event.ts",
+            "require": "./cjs/event.js",
+            "import": "./esm/event.js",
+            "default": "./event.ts"
+        },
         "./example": {
             "types": "./types/example.d.ts",
             "bun": "./example.ts",

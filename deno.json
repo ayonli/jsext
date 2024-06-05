@@ -15,6 +15,7 @@
         "./deprecate": "./deprecate.ts",
         "./dialog": "./dialog.ts",
         "./error": "./error.ts",
+        "./event": "./event.ts",
         "./example": "./example.ts",
         "./filetype": "./filetype.ts",
         "./fs": "./fs.ts",

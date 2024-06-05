@@ -12,7 +12,7 @@
  * @experimental
  */
 
-import { createCloseEvent } from "./error.ts";
+import { createCloseEvent } from "./event.ts";
 
 const SSEMarkClosed = new Set<string>();
 const _lastEventId = Symbol.for("lastEventId");
