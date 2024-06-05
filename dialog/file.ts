@@ -36,7 +36,7 @@ import { createProgressEvent } from "../event.ts";
  */
 export interface FileDialogOptions {
     /**
-     * Custom the dialog's title. This option is ignored in the browser.
+     * Customize the dialog's title. This option is ignored in the browser.
      */
     title?: string | undefined;
     /**
@@ -481,12 +481,11 @@ export async function openDirectory(
 }
 
 /**
- * Options for the {@link saveFile} function and the {@link downloadFile}
- * function.
+ * Options for the {@link saveFile} function.
  */
 export interface SaveFileOptions {
     /**
-     * Custom the dialog's title. This option is ignored in the browser.
+     * Customize the dialog's title. This option is ignored in the browser.
      */
     title?: string;
     /** The suggested name of the file. */
@@ -601,6 +600,9 @@ export async function saveFile(
     }
 }
 
+/**
+ * Options for the {@link downloadFile} function.
+ */
 export interface DownloadFileOptions extends SaveFileOptions {
     /**
      * A callback function that will be called when the download progress

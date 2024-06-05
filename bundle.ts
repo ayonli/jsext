@@ -9,6 +9,7 @@ import * as cli from "./cli.ts";
 import * as collections from "./collections.ts";
 import * as dialog from "./dialog.ts";
 import * as error from "./error.ts";
+import * as event from "./event.ts";
 import * as filetype from "./filetype.ts";
 import * as fs from "./fs.ts";
 import * as hash from "./hash.ts";
@@ -20,6 +21,7 @@ import * as object from "./object.ts";
 import * as path from "./path.ts";
 import * as reader from "./reader.ts";
 import * as runtime from "./runtime.ts";
+import * as sse from "./sse.ts";
 import * as string from "./string.ts";
 import * as types from "./types.ts";
 import { Queue } from "./queue.ts";
@@ -44,6 +46,7 @@ export default {
     collections,
     dialog,
     error,
+    event,
     filetype,
     fs,
     hash: {
@@ -61,5 +64,6 @@ export default {
         ...object.omit(runtime, ["default"]),
         runtime: runtime.default,
     },
+    sse,
     string,
 };

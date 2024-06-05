@@ -171,7 +171,7 @@ export interface SudoOptions {
      */
     gui?: boolean;
     /**
-     * Custom the dialog's title when `gui` option is set.
+     * Customize the dialog's title when `gui` option is set.
      */
     title?: string;
 }
