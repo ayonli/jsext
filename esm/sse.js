@@ -8,7 +8,7 @@ import { createCloseEvent } from './error.js';
  * by the server.
  *
  * NOTE: this module is based on the `Request` and `Response` APIs, in Node.js,
- * it requires version v18.0 or higher.
+ * it requires version v18.3 or above.
  *
  * @module
  * @experimental
@@ -131,7 +131,7 @@ class SSE extends EventTarget {
                 this.sendEvent(_event.type, _event.data, _event.lastEventId)
                     .catch(() => { });
             }
-            return true;
+            return !event.cancelable || !event.defaultPrevented;
         }
         else {
             return super.dispatchEvent(event);
@@ -314,7 +314,7 @@ class EventClient extends EventTarget {
                     let data = "";
                     let type = "message";
                     for (const line of lines) {
-                        if (line.startsWith("data:")) {
+                        if (line.startsWith("data:") || line === "data") {
                             let value = line.slice(5);
                             if (value[0] === " ") {
                                 value = value.slice(1);
@@ -326,10 +326,10 @@ class EventClient extends EventTarget {
                                 data = value;
                             }
                         }
-                        else if (line.startsWith("event:")) {
+                        else if (line.startsWith("event:") || line === "event") {
                             type = line.slice(6).trim();
                         }
-                        else if (line.startsWith("id:")) {
+                        else if (line.startsWith("id:") || line === "id") {
                             this[_lastEventId] = line.slice(3).trim();
                         }
                         else if (line.startsWith("retry:")) {
@@ -339,7 +339,7 @@ class EventClient extends EventTarget {
                             }
                         }
                     }
-                    this.dispatchEvent(new MessageEvent(type, {
+                    this.dispatchEvent(new MessageEvent(type || "message", {
                         lastEventId: this[_lastEventId],
                         data,
                     }));

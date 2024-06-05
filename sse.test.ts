@@ -84,9 +84,15 @@ describe("sse", () => {
                 lastEventId = ev.lastEventId;
             });
 
+            es.addEventListener("another-event", (ev) => {
+                const data = ev.data;
+                messages.push(data);
+                lastEventId = ev.lastEventId;
+            });
+
             await until(() => es.readyState === EventSource.OPEN);
 
-            es.dispatchEvent(new MessageEvent("message", {
+            sse!.dispatchEvent(new MessageEvent("message", {
                 data: "Hello",
                 lastEventId: "1",
             }));
@@ -96,11 +102,15 @@ describe("sse", () => {
                 lastEventId: "2",
             }));
 
-            await until(() => messages.length === 2);
+            sse!.dispatchEvent(new MessageEvent("another-event", {
+                data: "This message has\ntwo lines.",
+            }));
+
+            await until(() => messages.length === 3);
             es.close();
             await until(() => sse!.closed);
 
-            deepStrictEqual(messages, ["Hello", "World"]);
+            deepStrictEqual(messages, ["Hello", "World", "This message has\ntwo lines."]);
             strictEqual(sse!.lastEventId, "2");
             strictEqual(sse!.closed, true);
             strictEqual(lastEventId, "2");
@@ -194,12 +204,15 @@ describe("sse", () => {
                 data: "World",
                 lastEventId: "2",
             }));
+            sse.dispatchEvent(new MessageEvent("message", {
+                data: "This message has\ntwo lines.",
+            }));
 
-            await until(() => messages.length === 2);
+            await until(() => messages.length === 3);
             client.close();
             await until(() => sse.closed);
 
-            deepStrictEqual(messages, ["Hello", "World"]);
+            deepStrictEqual(messages, ["Hello", "World", "This message has\ntwo lines."]);
             strictEqual(sse.lastEventId, "2");
             strictEqual(client.lastEventId, "2");
             strictEqual(sse.closed, true);
@@ -233,17 +246,19 @@ describe("sse", () => {
                 data: "Hi",
                 lastEventId: "3",
             }));
-
             sse.dispatchEvent(new MessageEvent("my-event", {
                 data: "A-yon",
                 lastEventId: "4",
             }));
+            sse.dispatchEvent(new MessageEvent("my-event", {
+                data: "This message has\ntwo lines.",
+            }));
 
-            await until(() => messages.length === 2);
+            await until(() => messages.length === 3);
             client.close();
             await until(() => sse.closed);
 
-            deepStrictEqual(messages, ["Hi", "A-yon"]);
+            deepStrictEqual(messages, ["Hi", "A-yon", "This message has\ntwo lines."]);
             strictEqual(sse.lastEventId, "4");
             strictEqual(client.lastEventId, "4");
             strictEqual(sse.closed, true);

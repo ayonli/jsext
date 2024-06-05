@@ -6,7 +6,7 @@
  * by the server.
  * 
  * NOTE: this module is based on the `Request` and `Response` APIs, in Node.js,
- * it requires version v18.0 or higher.
+ * it requires version v18.3 or above.
  * 
  * @module
  * @experimental
@@ -182,7 +182,7 @@ export class SSE extends EventTarget {
                     .catch(() => { });
             }
 
-            return true;
+            return !event.cancelable || !event.defaultPrevented;
         } else {
             return super.dispatchEvent(event);
         }
@@ -207,7 +207,7 @@ export class SSE extends EventTarget {
             message += `retry: ${this[_reconnectionTime]}\n`;
         }
 
-        message += data.split(/\r\n|\r/).map((line) => `data: ${line}\n`).join("");
+        message += data.split(/\r\n|\n/).map((line) => `data: ${line}\n`).join("");
         message += "\n";
 
         return encoder.encode(message);
@@ -391,7 +391,7 @@ export class EventClient extends EventTarget {
                     let type = "message";
 
                     for (const line of lines) {
-                        if (line.startsWith("data:")) {
+                        if (line.startsWith("data:") || line === "data") {
                             let value = line.slice(5);
 
                             if (value[0] === " ") {
@@ -403,9 +403,9 @@ export class EventClient extends EventTarget {
                             } else {
                                 data = value;
                             }
-                        } else if (line.startsWith("event:")) {
+                        } else if (line.startsWith("event:") || line === "event") {
                             type = line.slice(6).trim();
-                        } else if (line.startsWith("id:")) {
+                        } else if (line.startsWith("id:") || line === "id") {
                             this[_lastEventId] = line.slice(3).trim();
                         } else if (line.startsWith("retry:")) {
                             const time = parseInt(line.slice(6).trim());
@@ -415,7 +415,7 @@ export class EventClient extends EventTarget {
                         }
                     }
 
-                    this.dispatchEvent(new MessageEvent(type, {
+                    this.dispatchEvent(new MessageEvent(type || "message", {
                         lastEventId: this[_lastEventId],
                         data,
                     }));

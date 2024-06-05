@@ -123,8 +123,8 @@ categories:
     `readAsArray` function.
 - [runtime](https://jsr.io/@ayonli/jsext/doc/runtime/~) Utility functions to
   retrieve runtime information or modify runtime behaviors.
-- [sse](https://jsr.io/@ayonli/jsext/doc/sse/~) Tools for processing
-  Server-sent Events requests and handling message events.
+- [sse](https://jsr.io/@ayonli/jsext/doc/sse/~) (Experimental) Tools for
+  processing Server-sent Events requests and handling message events.
 - [string](https://jsr.io/@ayonli/jsext/doc/string/~) Functions for dealing with
   strings.
 - [types](https://jsr.io/@ayonli/jsext/doc/types/~) The missing builtin classes
