@@ -23,12 +23,12 @@ import {
     browserPickFiles,
 } from "./terminal/file/browser.ts";
 import { asyncTask } from "../async.ts";
-import { concat } from "../bytes.ts";
 import { getExtensions } from "../filetype.ts";
 import { readDir, readFileAsFile, writeFile } from "../fs.ts";
 import { fixFileType } from "../fs/util.ts";
 import { as } from "../object.ts";
 import { basename, join } from "../path.ts";
+import { createProgressEvent } from "../event.ts";
 
 /**
  * Options for file dialog functions, such as {@link pickFile} and
@@ -601,9 +601,16 @@ export async function saveFile(
     }
 }
 
+export interface DownloadFileOptions extends SaveFileOptions {
+    onProgress?: (event: ProgressEvent) => void;
+}
+
 /**
  * This function wraps the {@link saveFile} function, instead of taking a file
  * object, it takes a URL and downloads the file from the URL.
+ * 
+ * NOTE: This function relies on the `ReadableStream` API, in Node.js, it
+ * requires version v16.5 or above.
  * 
  * @example
  * ```ts
@@ -614,7 +621,7 @@ export async function saveFile(
  */
 export async function downloadFile(
     url: string | URL,
-    options: SaveFileOptions = {}
+    options: DownloadFileOptions = {}
 ): Promise<void> {
     let name = options.name;
 
@@ -623,6 +630,9 @@ export async function downloadFile(
         name = basename(src);
     }
 
+    let stream: ReadableStream<Uint8Array> | undefined;
+    let size: number | undefined;
+
     if (typeof fetch === "function") {
         const res = await fetch(url);
 
@@ -630,24 +640,30 @@ export async function downloadFile(
             throw new Error(`Failed to download: ${url}`);
         }
 
-        return await saveFile(res.body!, { ...options, name });
+        size = parseInt(res.headers.get("Content-Length") || "0", 10);
+        stream = res.body!;
     } else if (isNodeLike) {
         const _url = typeof url === "object" ? url.href : url;
-        const task = asyncTask<void>();
+        const task = asyncTask<{ stream: ReadableStream; size: number; }>();
         const handleHttpResponse = (res: import("http").IncomingMessage) => {
             if (res.statusCode !== 200) {
                 task.reject(new Error(`Failed to download: ${_url}`));
                 return;
             } else {
-                const chunks: Buffer[] = [];
+                const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+                const writer = writable.getWriter();
 
                 res.on("data", (chunk: Buffer) => {
-                    chunks.push(chunk);
+                    writer.write(chunk).catch(err => task.reject(err));
                 }).once("end", () => {
-                    const buf = concat(...chunks);
-                    task.resolve(saveFile(buf.buffer, { ...options, name }));
+                    writer.close().catch(err => task.reject(err));
                 }).once("error", err => {
-                    task.reject(err);
+                    writer.abort(err).catch(err => task.reject(err));
+                });
+
+                task.resolve({
+                    stream: readable,
+                    size: parseInt(res.headers["content-length"] as string || "0", 10),
                 });
             }
         };
@@ -660,8 +676,36 @@ export async function downloadFile(
             http.get(_url, handleHttpResponse);
         }
 
-        return await task;
-    } else {
+        ({ stream, size } = await task);
+    }
+
+    if (!stream) {
         throw new Error("Unsupported runtime");
     }
+
+    if (options.onProgress) {
+        const { onProgress } = options;
+        let loaded = 0;
+
+        const transform = new TransformStream<Uint8Array, Uint8Array>({
+            transform(chunk, controller) {
+                controller.enqueue(chunk);
+                loaded += chunk.byteLength;
+
+                try {
+                    onProgress(createProgressEvent("progress", {
+                        lengthComputable: !!size,
+                        loaded,
+                        total: size ?? 0,
+                    }));
+                } catch {
+                    // ignore
+                }
+            },
+        });
+
+        stream = stream.pipeThrough(transform);
+    }
+
+    return await saveFile(stream, { ...options, name });
 }

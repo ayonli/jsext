@@ -12,6 +12,7 @@ import {
     type FileDialogOptions,
     type PickFileOptions,
     type SaveFileOptions,
+    type DownloadFileOptions,
     openFile,
     openFiles,
     openDirectory,
@@ -27,7 +28,7 @@ import confirmInTerminal from "./dialog/terminal/confirm.ts";
 import promptInTerminal from "./dialog/terminal/prompt.ts";
 import { isBrowserWindow, isDeno, isNodeLike } from "./env.ts";
 
-export type { FileDialogOptions, PickFileOptions, SaveFileOptions };
+export type { FileDialogOptions, PickFileOptions, SaveFileOptions, DownloadFileOptions };
 export {
     openFile,
     openFiles,
