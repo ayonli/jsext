@@ -280,7 +280,8 @@ export class SSE extends EventTarget {
  *   event will be dispatched.
  * - `close` - Dispatched when the connection is closed. If the connection is
  *   closed due to some error, the `error` event will be dispatched before this
- *   event, and the close event will have the `wasClean` set to `false`.
+ *   event, and the close event will have the `wasClean` set to `false`, and the
+ *   `reason` property contains the error message, if any.
  * - `message` - Dispatched when a message with the default event type is
  *   received.
  * - custom events - Dispatched when a message with a custom event type is
@@ -332,7 +333,7 @@ export class EventClient extends EventTarget {
         }
 
         this[_reader] = response.body.getReader();
-        this.readMessages();
+        this.readMessages(response.url ? new URL(response.url).origin : "");
     }
 
     /**
@@ -360,7 +361,7 @@ export class EventClient extends EventTarget {
         return this[_reconnectionTime];
     }
 
-    private async readMessages(): Promise<void> {
+    private async readMessages(origin: string): Promise<void> {
         const reader = this[_reader];
         const decoder = new TextDecoder();
         let buffer: string = "";
@@ -418,6 +419,7 @@ export class EventClient extends EventTarget {
                     this.dispatchEvent(new MessageEvent(type || "message", {
                         lastEventId: this[_lastEventId],
                         data,
+                        origin,
                     }));
                 }
             }
@@ -452,7 +454,8 @@ export class EventClient extends EventTarget {
      * Adds an event listener that will be called when the connection is closed.
      * If the connection is closed due to some error, the `error` event will be
      * dispatched before this event, and the close event will have the `wasClean`
-     * set to `false`.
+     * set to `false`, and the `reason` property contains the error message, if
+     * any.
      */
     override addEventListener(
         type: "close",
