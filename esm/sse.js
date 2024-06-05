@@ -149,7 +149,7 @@ class SSE extends EventTarget {
         if (this[_reconnectionTime]) {
             message += `retry: ${this[_reconnectionTime]}\n`;
         }
-        message += data.split(/\r\n|\r/).map((line) => `data: ${line}\n`).join("");
+        message += data.split(/\r\n|\n/).map((line) => `data: ${line}\n`).join("");
         message += "\n";
         return encoder.encode(message);
     }
