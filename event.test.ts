@@ -1,5 +1,5 @@
 import { strictEqual } from "node:assert";
-import { createCloseEvent, createErrorEvent, createProgressEvent } from "./event.ts";
+import { createCloseEvent, createCustomEvent, createErrorEvent, createProgressEvent } from "./event.ts";
 
 describe("event", () => {
     if (typeof Event === "undefined")
@@ -44,5 +44,14 @@ describe("event", () => {
         strictEqual(event.lengthComputable, true);
         strictEqual(event.loaded, 50);
         strictEqual(event.total, 100);
+    });
+
+    it("createCustomEvent", () => {
+        const event = createCustomEvent("custom", {
+            detail: "Hello, world!",
+        });
+
+        strictEqual(event.type, "custom");
+        strictEqual(event.detail, "Hello, world!");
     });
 });

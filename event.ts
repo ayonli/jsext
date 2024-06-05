@@ -22,11 +22,11 @@ export function createErrorEvent(type: string, options: ErrorEventInit = {}): Er
         });
 
         Object.defineProperties(event, {
-            message: { value: options?.message ?? "" },
-            filename: { value: options?.filename ?? "" },
-            lineno: { value: options?.lineno ?? 0 },
-            colno: { value: options?.colno ?? 0 },
-            error: { value: options?.error ?? undefined },
+            message: { configurable: true, value: options?.message ?? "" },
+            filename: { configurable: true, value: options?.filename ?? "" },
+            lineno: { configurable: true, value: options?.lineno ?? 0 },
+            colno: { configurable: true, value: options?.colno ?? 0 },
+            error: { configurable: true, value: options?.error ?? undefined },
         });
 
         return event as ErrorEvent;
@@ -52,9 +52,9 @@ export function createCloseEvent(type: string, options: CloseEventInit = {}): Cl
         });
 
         Object.defineProperties(event, {
-            code: { value: options.code ?? 0 },
-            reason: { value: options.reason ?? "" },
-            wasClean: { value: options.wasClean ?? false },
+            code: { configurable: true, value: options.code ?? 0 },
+            reason: { configurable: true, value: options.reason ?? "" },
+            wasClean: { configurable: true, value: options.wasClean ?? false },
         });
 
         return event as CloseEvent;
@@ -80,11 +80,38 @@ export function createProgressEvent(type: string, options: ProgressEventInit = {
         });
 
         Object.defineProperties(event, {
-            lengthComputable: { value: options?.lengthComputable ?? false },
-            loaded: { value: options?.loaded ?? 0 },
-            total: { value: options?.total ?? 0 },
+            lengthComputable: { configurable: true, value: options?.lengthComputable ?? false },
+            loaded: { configurable: true, value: options?.loaded ?? 0 },
+            total: { configurable: true, value: options?.total ?? 0 },
         });
 
         return event as ProgressEvent;
+    }
+}
+
+/**
+ * Creates a `CustomEvent` instance based on the given options. If the
+ * `CustomEvent` constructor is not available, the generic `Event` constructor
+ * will be used instead, and the options will be attached to the event as its
+ * properties.
+ */
+export function createCustomEvent<T = any>(
+    type: string,
+    options: CustomEventInit<T> = {}
+): CustomEvent<T> {
+    if (typeof CustomEvent === "function") {
+        return new CustomEvent(type, options);
+    } else {
+        const event = new Event(type, {
+            bubbles: options?.bubbles ?? false,
+            cancelable: options?.cancelable ?? false,
+            composed: options?.composed ?? false,
+        });
+
+        Object.defineProperties(event, {
+            detail: { configurable: true, value: options?.detail ?? null },
+        });
+
+        return event as CustomEvent<T>;
     }
 }
