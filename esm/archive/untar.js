@@ -40,8 +40,8 @@ async function untar(src, dest = {}, options = {}) {
     }
     let totalWrittenBytes = 0;
     let totalBytes = (_a = options.size) !== null && _a !== void 0 ? _a : 0;
-    if (!totalBytes) {
-        if (src === "string") {
+    if (!totalBytes && options.onProgress) {
+        if (typeof src === "string") {
             const info = await stat(src, options);
             totalBytes = info.size;
         }
@@ -94,11 +94,11 @@ async function untar(src, dest = {}, options = {}) {
                     await writer.write(chunk);
                     lastChunk = lastChunk.subarray(fileSize - writtenBytes);
                     writtenBytes += chunk.byteLength;
-                    if (totalBytes && chunk.byteLength) {
+                    if (chunk.byteLength) {
                         totalWrittenBytes += chunk.byteLength;
                         if (options.onProgress) {
                             options.onProgress(createProgressEvent("progress", {
-                                lengthComputable: true,
+                                lengthComputable: !!totalBytes,
                                 loaded: totalWrittenBytes,
                                 total: totalBytes
                             }));

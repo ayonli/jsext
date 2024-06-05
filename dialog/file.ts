@@ -602,6 +602,10 @@ export async function saveFile(
 }
 
 export interface DownloadFileOptions extends SaveFileOptions {
+    /**
+     * A callback function that will be called when the download progress
+     * changes.
+     */
     onProgress?: (event: ProgressEvent) => void;
 }
 

@@ -1,4 +1,4 @@
-import { deepStrictEqual, strictEqual } from "node:assert";
+import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import tar from "./tar.ts";
 import { pick } from "../object.ts";
 import Tarball, { TarEntry } from "./Tarball.ts";
@@ -231,5 +231,25 @@ describe("archive/untar", () => {
         const stat2 = await stat("./tmp/foo/hello.txt");
         platform() === "windows" || strictEqual(stat2.mode & 0o777, 0o740);
         strictEqual(stat2.mtime?.getTime(), 0);
+    }));
+
+    it("listen to the progress event", func(async (defer) => {
+        const outDir = "./tmp";
+        defer(() => remove(outDir, { recursive: true }));
+        let messages: string[] = [];
+
+        await untar(filename1, outDir, {
+            onProgress(event) {
+                if (event.lengthComputable) {
+                    const percent = Math.round(event.loaded / event.total * 100);
+                    messages.push(`Extracting: ${percent}%`);
+                } else {
+                    messages.push(`Extracting: ${event.loaded} bytes`);
+                }
+            },
+        });
+
+        ok(messages.length > 0);
+        ok(messages.at(-1) === "Extracting: 100%");
     }));
 });

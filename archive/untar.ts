@@ -13,13 +13,17 @@ import { TarOptions } from "./tar.ts";
  */
 export interface UntarOptions extends TarOptions {
     /**
-     * The size of the tarball file in bytes. This option is only required when
-     * we need to emit the progress event while the source is a readable stream.
+     * The size of the tarball file in bytes. When specified, the progress event
+     * will be dispatched with the `lengthComputable` property set to `true` and
+     * the `total` property set to this value.
+     * 
+     * This option is optional when the source is a file path or a file handle,
+     * in which case the size will be determined by the file system.
      */
     size?: number;
     /**
-     * Listen to the progress event of the extraction operation, only functional
-     * when the size of the tarball file is known.
+     * A callback function that will be called when the extraction progress
+     * changes.
      */
     onProgress?: (event: ProgressEvent) => void;
 };
@@ -100,8 +104,8 @@ export default async function untar(
     let totalWrittenBytes = 0;
     let totalBytes = options.size ?? 0;
 
-    if (!totalBytes) {
-        if (src === "string") {
+    if (!totalBytes && options.onProgress) {
+        if (typeof src === "string") {
             const info = await stat(src, options);
             totalBytes = info.size;
         } else if (typeof FileSystemFileHandle === "function"
@@ -163,12 +167,12 @@ export default async function untar(
                     lastChunk = lastChunk.subarray(fileSize - writtenBytes);
                     writtenBytes += chunk.byteLength;
 
-                    if (totalBytes && chunk.byteLength) {
+                    if (chunk.byteLength) {
                         totalWrittenBytes += chunk.byteLength;
 
                         if (options.onProgress) {
                             options.onProgress(createProgressEvent("progress", {
-                                lengthComputable: true,
+                                lengthComputable: !!totalBytes,
                                 loaded: totalWrittenBytes,
                                 total: totalBytes
                             }));

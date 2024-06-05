@@ -168,16 +168,19 @@
 
             const downloadUrlBtn = document.getElementById('download-file-url');
             downloadUrlBtn.addEventListener('click', async () => {
-                await downloadFile("./", {
-                    name: 'index.html',
-                    onProgress: (event) => {
-                        if (event.lengthComputable) {
-                            const percent = Math.round((event.loaded / event.total) * 100);
-                            console.log(`Downloaded ${percent}%`);
-                        } else {
-                            console.log(`Downloaded ${event.loaded} bytes`);
-                        }
-                    },
+                await progress("Downloading...", async (update) => {
+                    await downloadFile("./", {
+                        name: 'index.html',
+                        onProgress: (event) => {
+                            if (event.lengthComputable) {
+                                const percent = Math.round((event.loaded / event.total) * 100);
+                                console.log(`Downloaded ${percent}%`);
+                                update({ percent });
+                            } else {
+                                console.log(`Downloaded ${event.loaded} bytes`);
+                            }
+                        },
+                    });
                 });
             });
 
@@ -228,20 +231,25 @@
                     dirName = dirName.slice(0, -4);
                 }
 
-                /** @type {FileSystemDirectoryHandle} */
+                /** @type {FileSystemDirectoryHandle | null} */
                 const root = await pickDirectory();
+
+                if (!root)
+                    return;
+
                 const dirHandle = await getDirHandle(dirName, { root, create: true });
 
                 await progress('Extracting...', async (update) => {
-                    update({ percent: 0 });
-
                     await untar(stream, dirHandle, {
                         size: tarball.size,
                         onProgress: (event) => {
-                            console.log(event);
-                            update({
-                                percent: Math.round((event.loaded / event.total) * 100),
-                            });
+                            if (event.lengthComputable) {
+                                const percent = Math.round((event.loaded / event.total) * 100);
+                                console.log(`Extracted ${percent}%`);
+                                update({ percent });
+                            } else {
+                                console.log(`Extracted ${event.loaded} bytes`);
+                            }
                         },
                     });
 
