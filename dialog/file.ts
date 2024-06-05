@@ -26,7 +26,7 @@ import { asyncTask } from "../async.ts";
 import { getExtensions } from "../filetype.ts";
 import { readDir, readFileAsFile, writeFile } from "../fs.ts";
 import { fixFileType } from "../fs/util.ts";
-import { as } from "../object.ts";
+import { as, pick } from "../object.ts";
 import { basename, join } from "../path.ts";
 import { createProgressEvent } from "../event.ts";
 
@@ -492,6 +492,7 @@ export interface SaveFileOptions {
     name?: string;
     /** The MIME type of the file. */
     type?: string;
+    signal?: AbortSignal;
 }
 
 /**
@@ -538,7 +539,7 @@ export async function saveFile(
             });
 
             if (handle) {
-                await writeFile(handle, file);
+                await writeFile(handle, file, pick(options, ["signal"]));
             }
 
             return;
@@ -593,7 +594,7 @@ export async function saveFile(
         }
 
         if (filename) {
-            await writeFile(filename, file);
+            await writeFile(filename, file, pick(options, ["signal"]));
         }
     } else {
         throw new Error("Unsupported runtime");
@@ -612,8 +613,11 @@ export interface DownloadFileOptions extends SaveFileOptions {
 }
 
 /**
- * This function wraps the {@link saveFile} function, instead of taking a file
- * object, it takes a URL and downloads the file from the URL.
+ * Downloads the file of the given URL to the file system.
+ * 
+ * In the CLI and chromium browsers, this function will open a dialog to let the
+ * user choose the location where the file will be saved. In others browsers,
+ * the file will be saved to the default download location.
  * 
  * NOTE: This function relies on the `ReadableStream` API, in Node.js, it
  * requires version v16.5 or above.
@@ -629,31 +633,67 @@ export async function downloadFile(
     url: string | URL,
     options: DownloadFileOptions = {}
 ): Promise<void> {
-    let name = options.name;
+    const src = typeof url === "object" ? url.href : url;
+    const name = options.name || basename(src);
+    let dest: string | FileSystemFileHandle | null = null;
 
-    if (!name) {
-        const src = typeof url === "object" ? url.href : url;
-        name = basename(src);
+    if (typeof (globalThis as any)["showSaveFilePicker"] === "function") {
+        try {
+            dest = await browserPickFile(options.type, {
+                forSave: true,
+                defaultName: name,
+            });
+
+            if (!dest) // user canceled
+                return;
+        } catch (err) {
+            // A `SecurityError` is typically thrown due to lack of user activation.
+            // We can ignore this error and fallback to the default download behavior.
+            if ((err as DOMException).name !== "SecurityError") {
+                throw err;
+            }
+        }
+    }
+
+    if (!dest) {
+        if (isBrowserWindow) {
+            const a = document.createElement("a");
+            a.href = src;
+            a.download = name;
+            a.click();
+            return;
+        } else if (isDeno || isNodeLike) {
+            dest = await pickFile({
+                title: options.title,
+                type: options.type,
+                forSave: true,
+                defaultName: name,
+            }) as string | null;
+
+            if (!dest) // user canceled
+                return;
+        } else {
+            throw new Error("Unsupported runtime");
+        }
     }
 
     let stream: ReadableStream<Uint8Array> | undefined;
     let size: number | undefined;
 
     if (typeof fetch === "function") {
-        const res = await fetch(url);
+        const res = await fetch(src);
 
         if (!res.ok) {
-            throw new Error(`Failed to download: ${url}`);
+            throw new Error(`Failed to download: ${src}`);
         }
 
         size = parseInt(res.headers.get("Content-Length") || "0", 10);
         stream = res.body!;
     } else if (isNodeLike) {
-        const _url = typeof url === "object" ? url.href : url;
         const task = asyncTask<{ stream: ReadableStream; size: number; }>();
         const handleHttpResponse = (res: import("http").IncomingMessage) => {
             if (res.statusCode !== 200) {
-                task.reject(new Error(`Failed to download: ${_url}`));
+                task.reject(new Error(`Failed to download: ${src}`));
                 return;
             } else {
                 const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
@@ -674,12 +714,12 @@ export async function downloadFile(
             }
         };
 
-        if (/https:\/\//i.test(_url)) {
+        if (/^https:\/\//i.test(src)) {
             const https = await import("https");
-            https.get(_url, handleHttpResponse);
+            https.get(src, handleHttpResponse);
         } else {
             const http = await import("http");
-            http.get(_url, handleHttpResponse);
+            http.get(src, handleHttpResponse);
         }
 
         ({ stream, size } = await task);
@@ -713,5 +753,5 @@ export async function downloadFile(
         stream = stream.pipeThrough(transform);
     }
 
-    return await saveFile(stream, { ...options, name });
+    return await writeFile(dest, stream, pick(options, ["signal"]));
 }
