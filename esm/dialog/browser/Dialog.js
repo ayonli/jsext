@@ -77,23 +77,25 @@ function Dialog(props, ...children) {
     return dialog;
 }
 function closeDialog(dialog, returnValue) {
-    if (typeof dialog.close === "function") {
-        dialog.close(returnValue);
-    }
-    else { // for testing with JSDOM
-        dialog.open = false;
-        dialog.returnValue = returnValue;
-        try {
-            dialog.dispatchEvent(new Event("close"));
+    requestAnimationFrame(() => {
+        if (typeof dialog.close === "function") {
+            dialog.close(returnValue);
         }
-        catch (_a) {
-            const close = CloseEventListeners.get(dialog);
-            if (close) {
-                close();
-                CloseEventListeners.delete(dialog);
+        else { // for testing with JSDOM
+            dialog.open = false;
+            dialog.returnValue = returnValue;
+            try {
+                dialog.dispatchEvent(new Event("close"));
+            }
+            catch (_a) {
+                const close = CloseEventListeners.get(dialog);
+                if (close) {
+                    close();
+                    CloseEventListeners.delete(dialog);
+                }
             }
         }
-    }
+    });
 }
 
 export { closeDialog, Dialog as default };

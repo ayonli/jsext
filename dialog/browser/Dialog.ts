@@ -89,21 +89,23 @@ export default function Dialog(props: {
 }
 
 export function closeDialog(dialog: HTMLDialogElement, returnValue: "OK" | "Cancel") {
-    if (typeof dialog.close === "function") {
-        dialog.close(returnValue);
-    } else { // for testing with JSDOM
-        dialog.open = false;
-        dialog.returnValue = returnValue;
+    requestAnimationFrame(() => {
+        if (typeof dialog.close === "function") {
+            dialog.close(returnValue);
+        } else { // for testing with JSDOM
+            dialog.open = false;
+            dialog.returnValue = returnValue;
 
-        try {
-            dialog.dispatchEvent(new Event("close"));
-        } catch {
-            const close = CloseEventListeners.get(dialog);
+            try {
+                dialog.dispatchEvent(new Event("close"));
+            } catch {
+                const close = CloseEventListeners.get(dialog);
 
-            if (close) {
-                close();
-                CloseEventListeners.delete(dialog);
+                if (close) {
+                    close();
+                    CloseEventListeners.delete(dialog);
+                }
             }
         }
-    }
+    });
 }
