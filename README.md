@@ -97,6 +97,8 @@ categories:
   Asynchronous dialog functions for both browsers and terminals.
 - [error](https://jsr.io/@ayonli/jsext/doc/error/~) Functions for converting
   errors to/from other types of objects.
+- [event](https://jsr.io/@ayonli/jsext/doc/event/~) Functions for working with
+  events.
 - [filetype](https://jsr.io/@ayonli/jsext/doc/filetype/~) Functions to get file
   types in different fashions.
 - [fs](https://jsr.io/@ayonli/jsext/doc/fs/~) (Experimental) Universal file

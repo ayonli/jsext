@@ -1,4 +1,9 @@
 /**
+ * Functions for working with events.
+ * @module
+ */
+
+/**
  * Creates an `ErrorEvent` instance based on the given options. If the
  * `ErrorEvent` constructor is not available, the generic `Event` constructor
  * will be used instead, and the options will be attached to the event as its
