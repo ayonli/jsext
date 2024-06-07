@@ -403,6 +403,17 @@
             "require": "./cjs/wrap.js",
             "import": "./esm/wrap.js",
             "default": "./wrap.ts"
+        },
+        "./ws": {
+            "types": "./types/ws.d.ts",
+            "bun": "./ws.ts",
+            "node": {
+                "require": "./cjs/ws/node.js",
+                "import": "./esm/ws/node.js"
+            },
+            "require": "./cjs/ws.js",
+            "import": "./esm/ws.js",
+            "default": "./ws.ts"
         }
     },
     "scripts": {
@@ -544,7 +555,7 @@
         "@types/eventsource": "^1.1.11",
         "@types/mocha": "^10.0.1",
         "@types/node": "^20.6.0",
-        "@types/ws": "^8.5.5",
+        "@types/ws": "^8.5.10",
         "eventsource": "1.1",
         "glob": "^10.3.10",
         "global-jsdom": "^24.0.0",
@@ -560,7 +571,7 @@
         "tslib": "^2.6.2",
         "tsx": "^4.7.1",
         "typescript": "^5.4.3",
-        "ws": "^8.14.1"
+        "ws": "^8.17.0"
     },
     "optionalDependencies": {
         "jsdom": "^24.0.0",

@@ -43,6 +43,7 @@
         "./try": "./try.ts",
         "./types": "./types.ts",
         "./wrap": "./wrap.ts",
+        "./ws": "./ws.ts",
         "./worker.ts": "./worker.ts"
     },
     "compilerOptions": {
