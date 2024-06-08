@@ -24,6 +24,7 @@ import * as runtime from "./runtime.ts";
 import * as sse from "./sse.ts";
 import * as string from "./string.ts";
 import * as types from "./types.ts";
+import * as ws from "./ws.ts";
 import { Queue } from "./queue.ts";
 import { Mutex } from "./lock.ts";
 import { Channel } from "./chan.ts";
@@ -66,4 +67,5 @@ export default {
     },
     sse,
     string,
+    ws,
 };

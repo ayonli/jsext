@@ -62,11 +62,6 @@ class WebSocketServer extends WebSocketServer$1 {
                         wasClean: code === 1000 || !code,
                     }));
                 });
-                setTimeout(() => {
-                    // Ensure the open event is dispatched in the next tick of
-                    // the event loop.
-                    client.dispatchEvent(new Event("open"));
-                });
                 listener === null || listener === void 0 ? void 0 : listener.call(this, client);
                 resolve({ socket: client });
             });
