@@ -15,6 +15,7 @@
       "npm:fast-string-truncated-width": "npm:fast-string-truncated-width@1.1.0",
       "npm:glob@^10.3.10": "npm:glob@10.3.10",
       "npm:global-jsdom@^24.0.0": "npm:global-jsdom@24.0.0_jsdom@24.0.0",
+      "npm:hono@^4.4.4": "npm:hono@4.4.4",
       "npm:iconv-lite": "npm:iconv-lite@0.6.3",
       "npm:iconv-lite@^0.6.3": "npm:iconv-lite@0.6.3",
       "npm:isomorphic-ws@^5.0.0": "npm:isomorphic-ws@5.0.0_ws@8.17.0",
@@ -669,6 +670,10 @@
       },
       "he@1.2.0": {
         "integrity": "sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==",
+        "dependencies": {}
+      },
+      "hono@4.4.4": {
+        "integrity": "sha512-zO5+4K8yf1iuKhBZhwmpZ/0LzPMr8Zt1RugEGM1xvOqgh9DyLb7tslOtoBks4bmm5bIcLtzLCXUpYpXOkwpABA==",
         "dependencies": {}
       },
       "html-encoding-sniffer@4.0.0": {
@@ -1436,6 +1441,7 @@
         "npm:eventsource@1.1",
         "npm:glob@^10.3.10",
         "npm:global-jsdom@^24.0.0",
+        "npm:hono@^4.4.4",
         "npm:iconv-lite@^0.6.3",
         "npm:isomorphic-ws@^5.0.0",
         "npm:jsdom@^24.0.0",

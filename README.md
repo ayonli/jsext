@@ -105,6 +105,8 @@ categories:
   system APIs for both server and browser applications.
 - [hash](https://jsr.io/@ayonli/jsext/doc/hash/~) Simplified hash functions for
   various data types.
+- [http](https://jsr.io/@ayonli/jsext/doc/http/~) Functions to transform Node.js
+  HTTP APIs to modern Web standards.
 - [json](https://jsr.io/@ayonli/jsext/doc/json/~) Functions for parsing JSONs to
   specific structures.
 - [math](https://jsr.io/@ayonli/jsext/doc/math/~) Functions for mathematical
@@ -131,8 +133,8 @@ categories:
   strings.
 - [types](https://jsr.io/@ayonli/jsext/doc/types/~) The missing builtin classes
   of JavaScript and utility types for TypeScript.
-- [ws](https://jsr.io/@ayonli/jsext/doc/ws/~) A universal WebSocket server
-  interface for Node.js, Deno, Bun and Cloudflare Workers.
+- [ws](https://jsr.io/@ayonli/jsext/doc/ws/~) (Experimental) A universal
+  WebSocket server interface for Node.js, Deno, Bun and Cloudflare Workers.
 
 ## Augmentation
 
