@@ -64,6 +64,53 @@ export class WebSocketConnection extends EventTarget {
     close(code?: number | undefined, reason?: string | undefined): void {
         this[_source].close(code, reason);
     }
+
+    /**
+     * Adds an event listener that will be called when the connection is
+     * interrupted. After this event is dispatched, the connection will be
+     * closed and the `close` event will be dispatched.
+     */
+    override addEventListener(
+        type: "error",
+        listener: (this: WebSocketConnection, ev: ErrorEvent) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    /**
+     * Adds an event listener that will be called when the connection is closed.
+     * If the connection is closed due to some error, the `error` event will be
+     * dispatched before this event, and the close event will have the `wasClean`
+     * set to `false`, and the `reason` property contains the error message, if
+     * any.
+     */
+    override addEventListener(
+        type: "close",
+        listener: (this: WebSocketConnection, ev: CloseEvent) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    /**
+     * Adds an event listener that will be called when a message is received.
+     */
+    override addEventListener(
+        type: "message",
+        listener: (this: WebSocketConnection, ev: MessageEvent<string | Uint8Array>) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    override addEventListener(
+        type: string,
+        listener: (this: WebSocketConnection, event: Event) => any,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    override addEventListener(
+        event: string,
+        listener: any,
+        options?: boolean | AddEventListenerOptions
+    ): void {
+        return super.addEventListener(
+            event,
+            listener as EventListenerOrEventListenerObject,
+            options
+        );
+    }
 }
 
 /**
@@ -171,8 +218,6 @@ export class WebSocketServer {
     /**
      * Upgrades the request to a WebSocket connection in Deno, Bun and Cloudflare
      * Workers.
-     * 
-     * @param context The context data to attach to the connection.
      */
     upgrade(request: Request): Promise<{ socket: WebSocketConnection; response: Response; }>;
     /**
@@ -183,7 +228,7 @@ export class WebSocketServer {
         socket: WebSocketConnection;
         response?: Response;
     }> {
-        if ("httpVersion" in request) {
+        if (!(request instanceof Request)) {
             throw new TypeError("Node.js support is not implemented");
         }
 
@@ -204,13 +249,6 @@ export class WebSocketServer {
 
             clients.set(request, socket);
             ws.binaryType = "arraybuffer";
-            ws.onopen = () => {
-                setTimeout(() => {
-                    // Ensure the open event is dispatched in the next tick of
-                    // the event loop.
-                    socket.dispatchEvent(new Event("open"));
-                });
-            };
             ws.onmessage = (ev) => {
                 if (typeof ev.data === "string") {
                     socket.dispatchEvent(new MessageEvent("message", {
@@ -248,13 +286,6 @@ export class WebSocketServer {
 
             clients.set(request, socket);
             server.accept();
-
-            setTimeout(() => {
-                // Cloudflare Workers does not support the open event, we call it
-                // manually here.
-                socket.dispatchEvent(new Event("open"));
-            });
-
             server.addEventListener("message", ev => {
                 if (typeof ev.data === "string") {
                     socket.dispatchEvent(new MessageEvent("message", {
@@ -325,7 +356,7 @@ export class WebSocketServer {
     /**
      * Used in Bun, to bind the WebSocket server to the Bun server instance.
      */
-    bunBind(server: BunServerType) {
+    bunBind(server: BunServerType): void {
         this[_server] = server;
     }
 
@@ -351,12 +382,6 @@ export class WebSocketServer {
                 const { request } = ws.data;
                 const client = new WebSocketConnection(ws);
                 clients.set(request, client);
-
-                setTimeout(() => {
-                    // Ensure the open event is dispatched in the next tick of
-                    // the event loop.
-                    client.dispatchEvent(new Event("open"));
-                });
 
                 const task = connTasks.get(request);
                 if (task) {

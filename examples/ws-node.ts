@@ -6,13 +6,10 @@ const httpServer = http.createServer(async (req, res) => {
     if (req.headers.upgrade === "websocket") {
         const { socket } = await wsServer.upgrade(req);
 
-        socket.addEventListener("open", () => {
-            console.log("client connected");
-            socket.send("hello from server");
-        });
+        console.log("client connected");
+        socket.send("hello from server");
 
-        // @ts-ignore
-        socket.addEventListener("message", (event: MessageEvent) => {
+        socket.addEventListener("message", (event) => {
             console.log(`received from client: ${event.data}`);
         });
     }

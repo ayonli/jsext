@@ -85,12 +85,6 @@ export class WebSocketServer extends BaseServer {
                     }));
                 });
 
-                setTimeout(() => {
-                    // Ensure the open event is dispatched in the next tick of
-                    // the event loop.
-                    client.dispatchEvent(new Event("open"));
-                });
-
                 listener?.call(this, client);
                 resolve({ socket: client });
             });

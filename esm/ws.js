@@ -42,6 +42,9 @@ class WebSocketConnection extends EventTarget {
     close(code, reason) {
         this[_source].close(code, reason);
     }
+    addEventListener(event, listener, options) {
+        return super.addEventListener(event, listener, options);
+    }
 }
 /**
  * A universal WebSocket server that works in Node.js, Deno, Bun and Cloudflare
@@ -121,7 +124,7 @@ let WebSocketServer$1 = class WebSocketServer {
         }
     }
     async upgrade(request) {
-        if ("httpVersion" in request) {
+        if (!(request instanceof Request)) {
             throw new TypeError("Node.js support is not implemented");
         }
         const upgradeHeader = request.headers.get("Upgrade");
@@ -138,13 +141,6 @@ let WebSocketServer$1 = class WebSocketServer {
             const socket = new WebSocketConnection(ws);
             clients.set(request, socket);
             ws.binaryType = "arraybuffer";
-            ws.onopen = () => {
-                setTimeout(() => {
-                    // Ensure the open event is dispatched in the next tick of
-                    // the event loop.
-                    socket.dispatchEvent(new Event("open"));
-                });
-            };
             ws.onmessage = (ev) => {
                 if (typeof ev.data === "string") {
                     socket.dispatchEvent(new MessageEvent("message", {
@@ -179,11 +175,6 @@ let WebSocketServer$1 = class WebSocketServer {
             const socket = new WebSocketConnection(server);
             clients.set(request, socket);
             server.accept();
-            setTimeout(() => {
-                // Cloudflare Workers does not support the open event, we call it
-                // manually here.
-                socket.dispatchEvent(new Event("open"));
-            });
             server.addEventListener("message", ev => {
                 if (typeof ev.data === "string") {
                     socket.dispatchEvent(new MessageEvent("message", {
@@ -267,11 +258,6 @@ let WebSocketServer$1 = class WebSocketServer {
                 const { request } = ws.data;
                 const client = new WebSocketConnection(ws);
                 clients.set(request, client);
-                setTimeout(() => {
-                    // Ensure the open event is dispatched in the next tick of
-                    // the event loop.
-                    client.dispatchEvent(new Event("open"));
-                });
                 const task = connTasks.get(request);
                 if (task) {
                     connTasks.delete(request);

@@ -6,13 +6,10 @@ Deno.serve({ port: 8000, }, async (req) => {
     if (req.headers.get("upgrade") === "websocket") {
         const { socket, response } = await wsServer.upgrade(req);
 
-        socket.addEventListener("open", () => {
-            console.log("client connected");
-            socket.send("hello from server");
-        });
+        console.log("client connected");
+        socket.send("hello from server");
 
-        // @ts-ignore
-        socket.addEventListener("message", (event: MessageEvent) => {
+        socket.addEventListener("message", (event) => {
             console.log(`received from client: ${event.data}`);
         });
 
