@@ -12,7 +12,7 @@
  * @experimental
  */
 
-import { createCloseEvent } from "./event.ts";
+import { createCloseEvent, createErrorEvent } from "./event.ts";
 
 const SSEMarkClosed = new Set<string>();
 const _lastEventId = Symbol.for("lastEventId");
@@ -425,7 +425,7 @@ export class EventClient extends EventTarget {
             }
         } catch (error) {
             this[_closed] = true;
-            this.dispatchEvent(new Event("error"));
+            this.dispatchEvent(createErrorEvent("error", { error }));
             this.dispatchEvent(createCloseEvent("close", {
                 reason: error instanceof Error ? error.message : String(error),
                 wasClean: false,
@@ -447,7 +447,7 @@ export class EventClient extends EventTarget {
      */
     override addEventListener(
         type: "error",
-        listener: (this: EventClient, ev: Event) => void,
+        listener: (this: EventClient, ev: ErrorEvent) => void,
         options?: boolean | AddEventListenerOptions
     ): void;
     /**

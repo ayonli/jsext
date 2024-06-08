@@ -1,4 +1,4 @@
-import { createCloseEvent } from './event.js';
+import { createCloseEvent, createErrorEvent } from './event.js';
 
 /**
  * This module provides tools for working with server-sent events.
@@ -350,7 +350,7 @@ class EventClient extends EventTarget {
         }
         catch (error) {
             this[_closed] = true;
-            this.dispatchEvent(new Event("error"));
+            this.dispatchEvent(createErrorEvent("error", { error }));
             this.dispatchEvent(createCloseEvent("close", {
                 reason: error instanceof Error ? error.message : String(error),
                 wasClean: false,
