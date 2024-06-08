@@ -131,6 +131,8 @@ categories:
   strings.
 - [types](https://jsr.io/@ayonli/jsext/doc/types/~) The missing builtin classes
   of JavaScript and utility types for TypeScript.
+- [ws](https://jsr.io/@ayonli/jsext/doc/ws/~) A universal WebSocket server
+  interface for Node.js, Deno, Bun and Cloudflare Workers.
 
 ## Augmentation
 

@@ -1,7 +1,7 @@
 /**
- * This module provides a universal WebSocket server interface that works in
- * Node.js, Deno, Bun and Cloudflare Workers. This module is based on the
- * `EventTarget` interface and conforms the web standard.
+ * This module provides a universal WebSocket server interface for Node.js, Deno,
+ * Bun and Cloudflare Workers. This module is based on the `EventTarget`
+ * interface and conforms the web standard.
  * 
  * NOTE: In order to work in Node.js, install the `@ayonli/jsext` library from
  * NPM instead of JSR.
@@ -141,8 +141,8 @@ export interface ServerOptions {
 }
 
 /**
- * A universal WebSocket server interface that works in Node.js, Deno, Bun and
- * Cloudflare Workers.
+ * A universal WebSocket server interface for Node.js, Deno, Bun and Cloudflare
+ * Workers.
  * 
  * There are two ways to handle WebSocket connections:
  * 
