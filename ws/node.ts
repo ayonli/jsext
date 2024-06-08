@@ -38,7 +38,7 @@ export class WebSocketServer extends BaseServer {
                 return reject(new TypeError("Expected an instance of http.IncomingMessage"));
             }
 
-            const { headers, socket } = request;
+            const { socket } = request;
             const upgradeHeader = request.headers.upgrade;
 
             if (!upgradeHeader || upgradeHeader !== "websocket") {
@@ -49,13 +49,6 @@ export class WebSocketServer extends BaseServer {
             const clients = this[_clients];
 
             this[_server].handleUpgrade(request, socket, Buffer.alloc(0), (ws) => {
-                let origin = headers.origin;
-
-                if (!origin) {
-                    const host = headers.host;
-                    origin = host ? `http://${host}` : "";
-                }
-
                 const client = new WebSocketConnection(ws as any);
 
                 clients.set(request, client);
@@ -64,18 +57,16 @@ export class WebSocketServer extends BaseServer {
                     let event: MessageEvent<string | Uint8Array>;
 
                     if (typeof data === "string") {
-                        event = new MessageEvent("message", { data, origin });
+                        event = new MessageEvent("message", { data });
                     } else {
                         if (isBinary) {
                             event = new MessageEvent("message", {
                                 data: new Uint8Array(data),
-                                origin: origin!,
                             });
                         } else {
                             const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
                             event = new MessageEvent("message", {
                                 data: text(bytes),
-                                origin: origin!,
                             });
                         }
                     }

@@ -22,7 +22,7 @@ httpServer.listen(8000, () => {
     const ws = new WebSocket("http://localhost:8000");
 
     ws.onopen = () => {
-        console.log("connected");
+        console.log("server connected");
     };
     ws.onmessage = (event) => {
         console.log(`received from server: ${event.data}`);

@@ -10,7 +10,6 @@
 import { AsyncTask, asyncTask } from "./async.ts";
 import { createCloseEvent, createErrorEvent } from "./event.ts";
 import runtime from "./runtime.ts";
-import { type Optional } from "./types.ts";
 
 const _source = Symbol.for("source");
 const _listener = Symbol.for("listener");
@@ -18,7 +17,7 @@ const _clients = Symbol.for("clients");
 const _server = Symbol.for("server");
 const _connTasks = Symbol.for("connTasks");
 
-export type WebSocketLike = Optional<Pick<WebSocket, "readyState" | "close" | "send">, "readyState">;
+export type WebSocketLike = Pick<WebSocket, "readyState" | "close" | "send">;
 
 export type BunServerType = {
     upgrade(req: Request, options: { data: any; }): boolean;
@@ -48,8 +47,8 @@ export class WebSocketConnection extends EventTarget {
     /**
      * The current state of the WebSocket connection.
      */
-    get readyState(): 0 | 1 | 2 | 3 {
-        return this[_source].readyState as 0 | 1 | 2 | 3 | undefined ?? 1;
+    get readyState(): number {
+        return this[_source].readyState;
     }
 
     /**
@@ -216,12 +215,10 @@ export class WebSocketServer {
                 if (typeof ev.data === "string") {
                     socket.dispatchEvent(new MessageEvent("message", {
                         data: ev.data,
-                        origin: ev.origin,
                     }));
                 } else {
                     socket.dispatchEvent(new MessageEvent("message", {
                         data: new Uint8Array(ev.data as ArrayBuffer),
-                        origin: ev.origin,
                     }));
                 }
             };
@@ -247,7 +244,7 @@ export class WebSocketServer {
             const [client, server] = Object.values(new WebSocketPair()) as [WebSocket, WebSocket & {
                 accept: () => void;
             }];
-            const socket = new WebSocketConnection(client);
+            const socket = new WebSocketConnection(server);
 
             clients.set(request, socket);
             server.accept();
@@ -262,18 +259,15 @@ export class WebSocketServer {
                 if (typeof ev.data === "string") {
                     socket.dispatchEvent(new MessageEvent("message", {
                         data: ev.data,
-                        origin: ev.origin,
                     }));
                 } else if (ev.data instanceof ArrayBuffer) {
                     socket.dispatchEvent(new MessageEvent("message", {
                         data: new Uint8Array(ev.data),
-                        origin: ev.origin,
                     }));
                 } else {
                     (ev.data as Blob).arrayBuffer().then(buffer => {
                         socket.dispatchEvent(new MessageEvent("message", {
                             data: new Uint8Array(buffer),
-                            origin: ev.origin,
                         }));
                     }).catch(() => { });
                 }
@@ -372,25 +366,16 @@ export class WebSocketServer {
             },
             message: (ws: ServerWebSocket, msg: string | ArrayBuffer | Uint8Array) => {
                 const { request } = ws.data;
-                let origin = request.headers.get("origin");
-
-                if (!origin) {
-                    const url = request.url || `http://${request.headers.get("host")}`;
-                    origin = new URL(url).origin;
-                }
-
                 const client = clients.get(request);
 
                 if (client) {
                     if (typeof msg === "string") {
                         client.dispatchEvent(new MessageEvent("message", {
                             data: msg,
-                            origin,
                         }));
                     } else {
                         client.dispatchEvent(new MessageEvent("message", {
                             data: new Uint8Array(msg),
-                            origin,
                         }));
                     }
                 }

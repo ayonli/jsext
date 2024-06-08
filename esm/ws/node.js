@@ -19,7 +19,7 @@ class WebSocketServer extends WebSocketServer$1 {
             if (!("httpVersion" in request)) {
                 return reject(new TypeError("Expected an instance of http.IncomingMessage"));
             }
-            const { headers, socket } = request;
+            const { socket } = request;
             const upgradeHeader = request.headers.upgrade;
             if (!upgradeHeader || upgradeHeader !== "websocket") {
                 return reject(new TypeError("Expected Upgrade: websocket"));
@@ -27,31 +27,24 @@ class WebSocketServer extends WebSocketServer$1 {
             const listener = this[_listener];
             const clients = this[_clients];
             this[_server].handleUpgrade(request, socket, Buffer.alloc(0), (ws) => {
-                let origin = headers.origin;
-                if (!origin) {
-                    const host = headers.host;
-                    origin = host ? `http://${host}` : "";
-                }
                 const client = new WebSocketConnection(ws);
                 clients.set(request, client);
                 ws.on("message", (data, isBinary) => {
                     data = Array.isArray(data) ? concat(...data) : data;
                     let event;
                     if (typeof data === "string") {
-                        event = new MessageEvent("message", { data, origin });
+                        event = new MessageEvent("message", { data });
                     }
                     else {
                         if (isBinary) {
                             event = new MessageEvent("message", {
                                 data: new Uint8Array(data),
-                                origin: origin,
                             });
                         }
                         else {
                             const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
                             event = new MessageEvent("message", {
                                 data: text(bytes),
-                                origin: origin,
                             });
                         }
                     }

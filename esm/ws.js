@@ -28,8 +28,7 @@ class WebSocketConnection extends EventTarget {
      * The current state of the WebSocket connection.
      */
     get readyState() {
-        var _d;
-        return (_d = this[_source].readyState) !== null && _d !== void 0 ? _d : 1;
+        return this[_source].readyState;
     }
     /**
      * Sends data to the WebSocket client.
@@ -150,13 +149,11 @@ let WebSocketServer$1 = class WebSocketServer {
                 if (typeof ev.data === "string") {
                     socket.dispatchEvent(new MessageEvent("message", {
                         data: ev.data,
-                        origin: ev.origin,
                     }));
                 }
                 else {
                     socket.dispatchEvent(new MessageEvent("message", {
                         data: new Uint8Array(ev.data),
-                        origin: ev.origin,
                     }));
                 }
             };
@@ -179,7 +176,7 @@ let WebSocketServer$1 = class WebSocketServer {
         else if (identity === "cloudflare-worker") {
             // @ts-ignore
             const [client, server] = Object.values(new WebSocketPair());
-            const socket = new WebSocketConnection(client);
+            const socket = new WebSocketConnection(server);
             clients.set(request, socket);
             server.accept();
             setTimeout(() => {
@@ -191,20 +188,17 @@ let WebSocketServer$1 = class WebSocketServer {
                 if (typeof ev.data === "string") {
                     socket.dispatchEvent(new MessageEvent("message", {
                         data: ev.data,
-                        origin: ev.origin,
                     }));
                 }
                 else if (ev.data instanceof ArrayBuffer) {
                     socket.dispatchEvent(new MessageEvent("message", {
                         data: new Uint8Array(ev.data),
-                        origin: ev.origin,
                     }));
                 }
                 else {
                     ev.data.arrayBuffer().then(buffer => {
                         socket.dispatchEvent(new MessageEvent("message", {
                             data: new Uint8Array(buffer),
-                            origin: ev.origin,
                         }));
                     }).catch(() => { });
                 }
@@ -286,23 +280,16 @@ let WebSocketServer$1 = class WebSocketServer {
             },
             message: (ws, msg) => {
                 const { request } = ws.data;
-                let origin = request.headers.get("origin");
-                if (!origin) {
-                    const url = request.url || `http://${request.headers.get("host")}`;
-                    origin = new URL(url).origin;
-                }
                 const client = clients.get(request);
                 if (client) {
                     if (typeof msg === "string") {
                         client.dispatchEvent(new MessageEvent("message", {
                             data: msg,
-                            origin,
                         }));
                     }
                     else {
                         client.dispatchEvent(new MessageEvent("message", {
                             data: new Uint8Array(msg),
-                            origin,
                         }));
                     }
                 }

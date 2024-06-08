@@ -10,14 +10,14 @@
       "npm:@types/eventsource@^1.1.11": "npm:@types/eventsource@1.1.11",
       "npm:@types/mocha@^10.0.1": "npm:@types/mocha@10.0.6",
       "npm:@types/node@^20.6.0": "npm:@types/node@20.10.7",
-      "npm:@types/ws@^8.5.5": "npm:@types/ws@8.5.5",
+      "npm:@types/ws@^8.5.10": "npm:@types/ws@8.5.10",
       "npm:eventsource@1.1": "npm:eventsource@1.1.2",
       "npm:fast-string-truncated-width": "npm:fast-string-truncated-width@1.1.0",
       "npm:glob@^10.3.10": "npm:glob@10.3.10",
       "npm:global-jsdom@^24.0.0": "npm:global-jsdom@24.0.0_jsdom@24.0.0",
       "npm:iconv-lite": "npm:iconv-lite@0.6.3",
       "npm:iconv-lite@^0.6.3": "npm:iconv-lite@0.6.3",
-      "npm:isomorphic-ws@^5.0.0": "npm:isomorphic-ws@5.0.0_ws@8.14.1",
+      "npm:isomorphic-ws@^5.0.0": "npm:isomorphic-ws@5.0.0_ws@8.17.0",
       "npm:jsdom@^24.0.0": "npm:jsdom@24.0.0",
       "npm:mocha@^10.2.0": "npm:mocha@10.2.0",
       "npm:node-pty@^1.0.0": "npm:node-pty@1.0.0",
@@ -31,7 +31,7 @@
       "npm:tslib@^2.6.2": "npm:tslib@2.6.2",
       "npm:tsx@^4.7.1": "npm:tsx@4.7.1",
       "npm:typescript@^5.4.3": "npm:typescript@5.4.3",
-      "npm:ws@^8.14.1": "npm:ws@8.14.1"
+      "npm:ws@^8.17.0": "npm:ws@8.17.0"
     },
     "npm": {
       "@ayonli/sse@0.4.0": {
@@ -281,8 +281,8 @@
         "integrity": "sha512-60BCwRFOZCQhDncwQdxxeOEEkbc5dIMccYLwbxsS4TUNeVECQ/pBJ0j09mrHOl/JJvpRPGwO9SvE4nR2Nb/a4Q==",
         "dependencies": {}
       },
-      "@types/ws@8.5.5": {
-        "integrity": "sha512-lwhs8hktwxSjf9UaZ9tG5M03PGogvFaH8gUgLNbN9HKIg0dvv6q+gkSuJ8HN4/VbyxkuLzCjlN7GquQ0gUJfIg==",
+      "@types/ws@8.5.10": {
+        "integrity": "sha512-vmQSUcfalpIq0R9q7uTo2lXs6eGIpt9wtnLdMv9LVpIjCA/+ufZRozlVoVelIYixx1ugCBKDhn89vnsEGOCx9A==",
         "dependencies": {
           "@types/node": "@types/node@18.16.19"
         }
@@ -770,10 +770,10 @@
         "integrity": "sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==",
         "dependencies": {}
       },
-      "isomorphic-ws@5.0.0_ws@8.14.1": {
+      "isomorphic-ws@5.0.0_ws@8.17.0": {
         "integrity": "sha512-muId7Zzn9ywDsyXgTIafTry2sV3nySZeUDe6YedVd1Hvuuep5AsIlqK+XefWpYTyJG5e503F2xIuT2lcU6rCSw==",
         "dependencies": {
-          "ws": "ws@8.14.1"
+          "ws": "ws@8.17.0"
         }
       },
       "jackspeak@2.3.6": {
@@ -1300,12 +1300,12 @@
         "integrity": "sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==",
         "dependencies": {}
       },
-      "ws@8.14.1": {
-        "integrity": "sha512-4OOseMUq8AzRBI/7SLMUwO+FEDnguetSk7KMb1sHwvF2w2Wv5Hoj0nlifx8vtGsftE/jWHojPy8sMMzYLJ2G/A==",
-        "dependencies": {}
-      },
       "ws@8.16.0": {
         "integrity": "sha512-HS0c//TP7Ina87TfiPUz1rQzMhHrl/SG2guqRcTOIUYD2q8uhUdNHZYJUaQ8aTGPzCh+c6oawMKW35nFl1dxyQ==",
+        "dependencies": {}
+      },
+      "ws@8.17.0": {
+        "integrity": "sha512-uJq6108EgZMAl20KagGkzCKfMEjxmKvZHG7Tlq0Z6nOky7YF7aq4mOx6xK8TJ/i1LeK4Qus7INktacctDgY8Ow==",
         "dependencies": {}
       },
       "xml-name-validator@5.0.0": {
@@ -1432,7 +1432,7 @@
         "npm:@types/eventsource@^1.1.11",
         "npm:@types/mocha@^10.0.1",
         "npm:@types/node@^20.6.0",
-        "npm:@types/ws@^8.5.5",
+        "npm:@types/ws@^8.5.10",
         "npm:eventsource@1.1",
         "npm:glob@^10.3.10",
         "npm:global-jsdom@^24.0.0",
@@ -1450,7 +1450,7 @@
         "npm:tslib@^2.6.2",
         "npm:tsx@^4.7.1",
         "npm:typescript@^5.4.3",
-        "npm:ws@^8.14.1"
+        "npm:ws@^8.17.0"
       ]
     }
   }
