@@ -3,7 +3,8 @@ import cluster from "node:cluster";
 import { isMainThread, Worker, workerData } from "node:worker_threads";
 import { fileURLToPath } from "node:url";
 import { parallel, chan } from "../../esm/index.js";
-import { readChannel, wireChannel, incomingMessageToRequest, pipeResponse } from "./util.js";
+import { useWeb } from "../../esm/http.js";
+import { readChannel, wireChannel } from "./util.js";
 import { default as handle } from "./handler.js";
 import { availableParallelism } from "node:os";
 const { parallelHandle } = parallel(() => import("./worker.js"));
@@ -23,11 +24,9 @@ if (cluster.isPrimary && isMainThread) {
         // This version is the best, it performs the same as `cluster` module, and consume much less
         // system memory (same as parallel-handle).
 
-        const server = http.createServer(async (_req, _res) => {
-            const req = incomingMessageToRequest(_req);
-            const res = await handle(req);
-            pipeResponse(res, _res);
-        });
+        const server = http.createServer(useWeb(async (req) => {
+            return await handle(req);
+        }));
 
         server.listen(8000, () => {
             console.log(`Listening on http://localhost:${8000}/`);
@@ -47,8 +46,7 @@ if (cluster.isPrimary && isMainThread) {
         // both versions can only handle about 1/2 req/sec compared to the single-threaded version.
 
         if (process.argv.includes("--stream-body")) {
-            http.createServer(async (nReq, nRes) => {
-                const req = incomingMessageToRequest(nReq);
+            http.createServer(useWeb(async (req) => {
                 /**
                  * @type {import("../../index.ts").Channel<{ value: Uint8Array | undefined; done: boolean; }>}
                  */
@@ -74,15 +72,13 @@ if (cluster.isPrimary && isMainThread) {
                 req.body && wireChannel(req.body, channel);
 
                 const { streamBody, ...init } = await getResMsg;
-                const res = new Response(streamBody ? readChannel(channel, true) : null, init);
 
-                pipeResponse(res, nRes);
-            }).listen(8000, "localhost", () => {
+                return new Response(streamBody ? readChannel(channel, true) : null, init);
+            })).listen(8000, "localhost", () => {
                 console.log(`Listening on http://localhost:${8000}/`);
             });
         } else {
-            http.createServer(async (nReq, nRes) => {
-                const req = incomingMessageToRequest(nReq);
+            http.createServer(useWeb(async (req) => {
                 const { body, ...init } = await parallelHandle({
                     url: req.url,
                     method: req.method,
@@ -102,37 +98,30 @@ if (cluster.isPrimary && isMainThread) {
                     referrerPolicy: req.referrerPolicy,
                 });
 
-                const res = new Response(body, init);
-                pipeResponse(res, nRes);
-            }).listen(8000, "localhost", () => {
+                return new Response(body, init);
+            })).listen(8000, "localhost", () => {
                 console.log(`Listening on http://localhost:${8000}/`);
             });
         }
     } else {
         // For a simple web application, this single-threaded version performs between the
         // builtin-cluster version and the parallel-handle version.
-        http.createServer(async (_req, _res) => {
-            const req = incomingMessageToRequest(_req);
-            const res = await handle(req);
-            pipeResponse(res, _res);
-        }).listen(8000, "localhost", () => {
+        http.createServer(useWeb(async (req) => {
+            return await handle(req);
+        })).listen(8000, "localhost", () => {
             console.log(`Listening on http://localhost:${8000}/`);
         });
     }
 } else if (cluster.isPrimary && !isMainThread) {
-    http.createServer(async (_req, _res) => {
-        const req = incomingMessageToRequest(_req);
-        const res = await handle(req);
-        pipeResponse(res, _res);
-    }).listen(workerData.handle, () => {
+    http.createServer(useWeb(async (req) => {
+        return await handle(req);
+    })).listen(workerData.handle, () => {
         console.log(`Listening on http://localhost:${8000}/`);
     });
 } else { // cluster.isWorker
-    http.createServer(async (_req, _res) => {
-        const req = incomingMessageToRequest(_req);
-        const res = await handle(req);
-        pipeResponse(res, _res);
-    }).listen(8000, "localhost", () => {
+    http.createServer(useWeb(async (req) => {
+        return await handle(req);
+    })).listen(8000, "localhost", () => {
         console.log(`Listening on http://localhost:${8000}/`);
     });
 }

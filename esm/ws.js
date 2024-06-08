@@ -104,6 +104,13 @@ class WebSocketConnection extends EventTarget {
  * });
  * httpServer.listen(3000);
  *
+ * // Node.js with useWeb
+ * import { useWeb } from "@ayonli/jsext/http";
+ * const httpServer2 = http.createServer(useWeb(async (req) => {
+ *      await wsServer.upgrade(req);
+ * }));
+ * httpServer2.listen(3001);
+ *
  * // Bun
  * const bunServer = Bun.serve({
  *     async fetch(req) {
@@ -265,6 +272,11 @@ let WebSocketServer$1 = class WebSocketServer {
                 socket,
                 response: new Response(null, {
                     status: 101,
+                    statusText: "Switching Protocols",
+                    headers: new Headers({
+                        "Upgrade": "websocket",
+                        "Connection": "Upgrade",
+                    }),
                     // @ts-ignore
                     webSocket: client,
                 }),
@@ -285,7 +297,14 @@ let WebSocketServer$1 = class WebSocketServer {
             listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
             return {
                 socket,
-                response: new Response(null, { status: 101 }),
+                response: new Response(null, {
+                    status: 101,
+                    statusText: "Switching Protocols",
+                    headers: new Headers({
+                        "Upgrade": "websocket",
+                        "Connection": "Upgrade",
+                    }),
+                }),
             };
         }
         else {

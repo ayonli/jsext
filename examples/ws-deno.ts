@@ -16,7 +16,7 @@ Deno.serve({ port: 8000, }, async (req) => {
         return response;
     }
 
-    return new Response("Not a WebSocket request", { status: 400 });
+    return new Response("Hello, World!", { status: 200 });
 });
 
 const ws = new WebSocket("ws://localhost:8000");

@@ -1,3 +1,4 @@
+import { type IncomingMessage } from "node:http";
 import { WebSocketServer as WSServer } from "ws";
 import { concat, text } from "../bytes.ts";
 import { createCloseEvent, createErrorEvent } from "../event.ts";
@@ -5,6 +6,7 @@ import { type ServerOptions, WebSocketConnection, WebSocketServer as BaseServer 
 
 export { WebSocketConnection };
 
+const _upgraded = Symbol.for("upgraded");
 const _erred = Symbol.for("erred");
 const _listener = Symbol.for("listener");
 const _clients = Symbol.for("clients");
@@ -29,12 +31,18 @@ export class WebSocketServer extends BaseServer {
         request: Request,
         server: { upgrade(req: Request, options: { data: any; }): boolean; }
     ): Promise<{ socket: WebSocketConnection; }>;
-    override  upgrade(request: import("http").IncomingMessage,): Promise<{ socket: WebSocketConnection; }>;
+    override  upgrade(request: IncomingMessage,): Promise<{ socket: WebSocketConnection; }>;
     override async upgrade(request: Request | import("http").IncomingMessage): Promise<{
         socket: WebSocketConnection;
         response?: Response;
     }> {
         return new Promise((resolve, reject) => {
+            const isWebRequest = typeof Request === "function" && request instanceof Request;
+
+            if (isWebRequest && Reflect.has(request, Symbol.for("incomingMessage"))) {
+                request = Reflect.get(request, Symbol.for("incomingMessage"));
+            }
+
             if (!("httpVersion" in request)) {
                 return reject(new TypeError("Expected an instance of http.IncomingMessage"));
             }
@@ -50,9 +58,13 @@ export class WebSocketServer extends BaseServer {
             const clients = this[_clients];
 
             this[_server].handleUpgrade(request, socket, Buffer.alloc(0), (ws) => {
+                // Mark the request as upgraded, so that it will not be used
+                // for sending a response.
+                Object.assign(request, { [_upgraded]: true });
+
                 const client = new WebSocketConnection(ws as any);
 
-                clients.set(request, client);
+                clients.set(request as IncomingMessage, client);
                 ws.on("message", (data, isBinary) => {
                     data = Array.isArray(data) ? concat(...data) : data;
                     let event: MessageEvent<string | Uint8Array>;
@@ -79,7 +91,7 @@ export class WebSocketServer extends BaseServer {
                     client.dispatchEvent(createErrorEvent("error", { error }));
                 });
                 ws.on("close", (code, reason) => {
-                    clients.delete(request);
+                    clients.delete(request as IncomingMessage);
                     client.dispatchEvent(createCloseEvent("close", {
                         code: code ?? 1000,
                         reason: reason?.toString("utf8") ?? "",
@@ -88,7 +100,29 @@ export class WebSocketServer extends BaseServer {
                 });
 
                 listener?.call(this, client);
-                resolve({ socket: client });
+
+                if (isWebRequest && typeof Response === "function") {
+                    const response = new Response(null, {
+                        status: 200,
+                        statusText: "Switching Protocols",
+                        headers: new Headers({
+                            "Upgrade": "websocket",
+                            "Connection": "Upgrade",
+                        }),
+                    });
+
+                    // HACK: Node.js currently does not support setting the
+                    // status code to outside the range of 200 to 599. This
+                    // is a workaround to set the status code to 101.
+                    Object.defineProperty(response, "status", {
+                        configurable: true,
+                        value: 101,
+                    });
+
+                    resolve({ socket: client, response });
+                } else {
+                    resolve({ socket: client });
+                }
             });
         });
     }

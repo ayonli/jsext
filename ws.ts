@@ -182,6 +182,13 @@ export interface ServerOptions {
  * });
  * httpServer.listen(3000);
  * 
+ * // Node.js with useWeb
+ * import { useWeb } from "@ayonli/jsext/http";
+ * const httpServer2 = http.createServer(useWeb(async (req) => {
+ *      await wsServer.upgrade(req);
+ * }));
+ * httpServer2.listen(3001);
+ * 
  * // Bun
  * const bunServer = Bun.serve({
  *     async fetch(req) {
@@ -260,6 +267,9 @@ export class WebSocketServer {
     /**
      * Upgrades the request to a WebSocket connection in Deno, Bun and Cloudflare
      * Workers.
+     * 
+     * This function can also be used in Node.js if the HTTP request listener is
+     * created using the `useWeb` function from `@ayonli/jsext/http` module.
      * 
      * NOTE: This function fails if the request is not a WebSocket upgrade request.
      */
@@ -373,6 +383,11 @@ export class WebSocketServer {
                 socket,
                 response: new Response(null, {
                     status: 101,
+                    statusText: "Switching Protocols",
+                    headers: new Headers({
+                        "Upgrade": "websocket",
+                        "Connection": "Upgrade",
+                    }),
                     // @ts-ignore
                     webSocket: client,
                 }),
@@ -396,7 +411,14 @@ export class WebSocketServer {
             listener?.call(this, socket);
             return {
                 socket,
-                response: new Response(null, { status: 101 }),
+                response: new Response(null, {
+                    status: 101,
+                    statusText: "Switching Protocols",
+                    headers: new Headers({
+                        "Upgrade": "websocket",
+                        "Connection": "Upgrade",
+                    }),
+                }),
             };
         } else {
             throw new TypeError("Unsupported runtime");

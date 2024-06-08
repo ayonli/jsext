@@ -1,9 +1,10 @@
-import * as http from "node:http";
+import * as http from "http";
 import { WebSocketServer } from "../ws/node.ts";
+import { useWeb } from "../http.ts";
 
 const wsServer = new WebSocketServer();
-const httpServer = http.createServer(async (req, res) => {
-    if (req.headers.upgrade === "websocket") {
+const httpServer = http.createServer(useWeb(async (req) => {
+    if (req.headers.get("upgrade") === "websocket") {
         const { socket } = await wsServer.upgrade(req);
 
         console.log("client connected");
@@ -12,8 +13,10 @@ const httpServer = http.createServer(async (req, res) => {
         socket.addEventListener("message", (event) => {
             console.log(`received from client: ${event.data}`);
         });
+    } else {
+        return new Response("Hello, World!", { status: 200 });
     }
-});
+}));
 
 httpServer.listen(8000, () => {
     const ws = new WebSocket("http://localhost:8000");

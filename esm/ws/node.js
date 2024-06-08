@@ -4,6 +4,7 @@ import { createErrorEvent, createCloseEvent } from '../event.js';
 import { WebSocketServer as WebSocketServer$1, WebSocketConnection } from '../ws.js';
 
 var _a;
+const _upgraded = Symbol.for("upgraded");
 const _erred = Symbol.for("erred");
 const _listener = Symbol.for("listener");
 const _clients = Symbol.for("clients");
@@ -17,6 +18,10 @@ class WebSocketServer extends WebSocketServer$1 {
     }
     async upgrade(request) {
         return new Promise((resolve, reject) => {
+            const isWebRequest = typeof Request === "function" && request instanceof Request;
+            if (isWebRequest && Reflect.has(request, Symbol.for("incomingMessage"))) {
+                request = Reflect.get(request, Symbol.for("incomingMessage"));
+            }
             if (!("httpVersion" in request)) {
                 return reject(new TypeError("Expected an instance of http.IncomingMessage"));
             }
@@ -28,6 +33,9 @@ class WebSocketServer extends WebSocketServer$1 {
             const listener = this[_listener];
             const clients = this[_clients];
             this[_server].handleUpgrade(request, socket, Buffer.alloc(0), (ws) => {
+                // Mark the request as upgraded, so that it will not be used
+                // for sending a response.
+                Object.assign(request, { [_upgraded]: true });
                 const client = new WebSocketConnection(ws);
                 clients.set(request, client);
                 ws.on("message", (data, isBinary) => {
@@ -65,7 +73,27 @@ class WebSocketServer extends WebSocketServer$1 {
                     }));
                 });
                 listener === null || listener === void 0 ? void 0 : listener.call(this, client);
-                resolve({ socket: client });
+                if (isWebRequest && typeof Response === "function") {
+                    const response = new Response(null, {
+                        status: 200,
+                        statusText: "Switching Protocols",
+                        headers: new Headers({
+                            "Upgrade": "websocket",
+                            "Connection": "Upgrade",
+                        }),
+                    });
+                    // HACK: Node.js currently does not support setting the
+                    // status code to outside the range of 200 to 599. This
+                    // is a workaround to set the status code to 101.
+                    Object.defineProperty(response, "status", {
+                        configurable: true,
+                        value: 101,
+                    });
+                    resolve({ socket: client, response });
+                }
+                else {
+                    resolve({ socket: client });
+                }
             });
         });
     }
