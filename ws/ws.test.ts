@@ -2,16 +2,18 @@ import { strictEqual } from "node:assert";
 import * as http from "node:http";
 import { isNode } from "../env.ts";
 import func from "../func.ts";
-import { WebSocketConnection, WebSocketServer } from "../ws/node.ts";
+import { type WebSocketConnection } from "./node.ts";
 import bytes, { concat, text } from "../bytes.ts";
 import { until } from "../async.ts";
 
 describe("ws:node", () => {
-    if (!isNode) {
+    if (!isNode || typeof EventTarget === "undefined") {
         return;
     }
 
     it("handle connection in constructor", func(async (defer) => {
+        const { WebSocketServer } = await import("../ws/node.ts");
+
         let errorEvent: ErrorEvent | undefined;
         let closeEvent: CloseEvent | undefined;
         const serverMessages: (string | Uint8Array)[] = [];
@@ -75,6 +77,7 @@ describe("ws:node", () => {
 
         strictEqual(errorEvent, undefined);
         strictEqual(closeEvent?.type, "close");
+        strictEqual(closeEvent?.wasClean, true);
         strictEqual(serverMessages[0], "text");
         strictEqual(text(serverMessages[1] as Uint8Array), "binary");
         strictEqual(clientMessages[0], "client sent: text");
@@ -82,6 +85,8 @@ describe("ws:node", () => {
     }));
 
     it("handle connection in upgrade", func(async (defer) => {
+        const { WebSocketServer } = await import("../ws/node.ts");
+
         let errorEvent: ErrorEvent | undefined;
         let closeEvent: CloseEvent | undefined;
         const serverMessages: (string | Uint8Array)[] = [];
@@ -147,6 +152,7 @@ describe("ws:node", () => {
 
         strictEqual(errorEvent, undefined);
         strictEqual(closeEvent?.type, "close");
+        strictEqual(closeEvent?.wasClean, true);
         strictEqual(serverMessages[0], "text");
         strictEqual(text(serverMessages[1] as Uint8Array), "binary");
         strictEqual(clientMessages[0], "client sent: text");

@@ -1,10 +1,11 @@
 /**
- * This module provides a universal WebSocket server that works in Node.js, Deno,
- * Bun and Cloudflare Workers.
+ * This module provides a universal WebSocket server interface that works in
+ * Node.js, Deno, Bun and Cloudflare Workers. This module is based on the
+ * `EventTarget` interface and conforms the web standard.
  * 
  * NOTE: In order to work in Node.js, install the `@ayonli/jsext` library from
  * NPM instead of JSR.
- * @example
+ * @experimental
  */
 
 import { AsyncTask, asyncTask } from "./async.ts";
@@ -12,6 +13,7 @@ import { createCloseEvent, createErrorEvent } from "./event.ts";
 import runtime from "./runtime.ts";
 
 const _source = Symbol.for("source");
+const _erred = Symbol.for("erred");
 const _listener = Symbol.for("listener");
 const _clients = Symbol.for("clients");
 const _server = Symbol.for("server");
@@ -24,24 +26,28 @@ export type BunServerType = {
 };
 
 /**
- * Options for the {@link WebSocketConnection} constructor.
- */
-export interface ConnectionOptions {
-    /**
-     * The URL of the WebSocket connection.
-     */
-    url: string;
-}
-
-/**
  * This class represents a WebSocket connection on the server side.
+ * Normally we don't create instances of this class directly, but rather use
+ * the {@link WebSocketServer} to handle WebSocket connections, which will
+ * create the instance for us.
+ * 
+ * **Events:**
+ * 
+ * - `error` - Dispatched when an error occurs, such as network failure. After
+ *   this event is dispatched, the connection will be closed and the `close`
+ *   event will be dispatched.
+ * - `close` - Dispatched when the connection is closed. If the connection is
+ *   closed due to some error, the `error` event will be dispatched before this
+ *   event, and the close event will have the `wasClean` set to `false`, and the
+ *   `reason` property contains the error message, if any.
+ * - `message` - Dispatched when a message is received.
  */
 export class WebSocketConnection extends EventTarget {
     private [_source]: WebSocketLike;
 
-    constructor(socket: WebSocketLike) {
+    constructor(source: WebSocketLike) {
         super();
-        this[_source] = socket;
+        this[_source] = source;
     }
 
     /**
@@ -121,32 +127,40 @@ export interface ServerOptions {
      * The idle timeout in seconds. The server will close the connection if no
      * messages are received within this time.
      * 
-     * NOTE: This option may not be supported in some runtime.
+     * NOTE: Currently, this option is only supported in Deno and Bun, in other
+     * environments, the option is ignored.
      */
     idleTimeout?: number;
     /**
      * Whether to enable per-message deflate compression.
      * 
-     * NOTE: This option may not be supported in some runtime.
+     * NOTE: Currently, this option is only supported in Node.js and Bun, in
+     * other environments, the option is ignored.
      */
     perMessageDeflate?: boolean;
 }
 
 /**
- * A universal WebSocket server that works in Node.js, Deno, Bun and Cloudflare
- * Workers.
+ * A universal WebSocket server interface that works in Node.js, Deno, Bun and
+ * Cloudflare Workers.
+ * 
+ * There are two ways to handle WebSocket connections:
+ * 
+ * 1. By passing a listener function to the constructor, handle all connections
+ *    in a central place.
+ * 2. By using the `socket` object returned from the `upgrade` method to handle
+ *    each connection in a more flexible way.
  * 
  * NOTE: In order to work in Node.js, install the `@ayonli/jsext` library from
  * NPM instead of JSR.
  * 
  * @example
  * ```ts
+ * // centralized connection handler
  * import { WebSocketServer } from "@ayonli/jsext/ws";
  * 
  * const wsServer = new WebSocketServer(socket => {
- *     socket.addEventListener("open", () => {
- *         console.log(`WebSocket connection established.`);
- *     });
+ *     console.log(`WebSocket connection established.`);
  * 
  *     socket.addEventListener("message", (event) => {
  *         socket.send("received: " + event.data);
@@ -191,6 +205,34 @@ export interface ServerOptions {
  *     },
  * };
  * ```
+ * 
+ * @example
+ * ```ts
+ * // per-request connection handler (e.g. for Deno)
+ * import { WebSocketServer } from "@ayonli/jsext/ws";
+ * 
+ * const wsServer = new WebSocketServer();
+ * 
+ * Deno.serve(async req => {
+ *     const { socket, response } = await wsServer.upgrade(req);
+ * 
+ *     console.log(`WebSocket connection established.`);
+ * 
+ *     socket.addEventListener("message", (event) => {
+ *         socket.send("received: " + event.data);
+ *     });
+ * 
+ *     socket.addEventListener("error", (event) => {
+ *         console.error("WebSocket connection error:", event.error);
+ *     });
+ * 
+ *     socket.addEventListener("close", (event) => {
+ *         console.log(`WebSocket connection closed, reason: ${event.reason}, code: ${event.code}`);
+ *     });
+ * 
+ *     return response;
+ * });
+ * ```
  */
 export class WebSocketServer {
     protected idleTimeout: number;
@@ -218,10 +260,14 @@ export class WebSocketServer {
     /**
      * Upgrades the request to a WebSocket connection in Deno, Bun and Cloudflare
      * Workers.
+     * 
+     * NOTE: This function fails if the request is not a WebSocket upgrade request.
      */
     upgrade(request: Request): Promise<{ socket: WebSocketConnection; response: Response; }>;
     /**
      * Upgrades the request to a WebSocket connection in Node.js.
+     * 
+     * NOTE: This function fails if the request is not a WebSocket upgrade request.
      */
     upgrade(request: import("http").IncomingMessage,): Promise<{ socket: WebSocketConnection; }>;
     async upgrade(request: Request | import("http").IncomingMessage,): Promise<{
@@ -274,6 +320,10 @@ export class WebSocketServer {
                     wasClean: ev.wasClean,
                 }));
             };
+
+            await new Promise<any>((resolve) => {
+                ws.onopen = resolve;
+            });
 
             listener?.call(this, socket);
             return { socket, response };
@@ -406,6 +456,7 @@ export class WebSocketServer {
                 }
             },
             error: (ws: ServerWebSocket, error: Error) => {
+                Object.assign(ws, { [_erred]: true });
                 const { request } = ws.data;
                 const client = clients.get(request);
                 client && client.dispatchEvent(createErrorEvent("error", { error }));
@@ -419,13 +470,17 @@ export class WebSocketServer {
                     client.dispatchEvent(createCloseEvent("close", {
                         code,
                         reason,
-                        wasClean: code === 1000,
+                        wasClean: Reflect.get(ws, _erred) !== true,
                     }));
                 }
             },
         };
     }
 
+    /**
+     * An iterator that yields all connected WebSocket clients, can be used to
+     * broadcast messages to all clients.
+     */
     get clients(): IterableIterator<WebSocketConnection> {
         return this[_clients].values();
     }

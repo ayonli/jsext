@@ -4,6 +4,7 @@ import { createErrorEvent, createCloseEvent } from '../event.js';
 import { WebSocketServer as WebSocketServer$1, WebSocketConnection } from '../ws.js';
 
 var _a;
+const _erred = Symbol.for("erred");
 const _listener = Symbol.for("listener");
 const _clients = Symbol.for("clients");
 const _server = Symbol.for("server");
@@ -51,6 +52,7 @@ class WebSocketServer extends WebSocketServer$1 {
                     client.dispatchEvent(event);
                 });
                 ws.on("error", error => {
+                    Object.assign(error, { [_erred]: true });
                     client.dispatchEvent(createErrorEvent("error", { error }));
                 });
                 ws.on("close", (code, reason) => {
@@ -59,7 +61,7 @@ class WebSocketServer extends WebSocketServer$1 {
                     client.dispatchEvent(createCloseEvent("close", {
                         code: code !== null && code !== void 0 ? code : 1000,
                         reason: (_b = reason === null || reason === void 0 ? void 0 : reason.toString("utf8")) !== null && _b !== void 0 ? _b : "",
-                        wasClean: code === 1000 || !code,
+                        wasClean: Reflect.get(ws, _erred) !== false,
                     }));
                 });
                 listener === null || listener === void 0 ? void 0 : listener.call(this, client);

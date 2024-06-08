@@ -5,6 +5,7 @@ import { type ServerOptions, WebSocketConnection, WebSocketServer as BaseServer 
 
 export { WebSocketConnection };
 
+const _erred = Symbol.for("erred");
 const _listener = Symbol.for("listener");
 const _clients = Symbol.for("clients");
 const _server = Symbol.for("server");
@@ -74,6 +75,7 @@ export class WebSocketServer extends BaseServer {
                     client.dispatchEvent(event);
                 });
                 ws.on("error", error => {
+                    Object.assign(error, { [_erred]: true });
                     client.dispatchEvent(createErrorEvent("error", { error }));
                 });
                 ws.on("close", (code, reason) => {
@@ -81,7 +83,7 @@ export class WebSocketServer extends BaseServer {
                     client.dispatchEvent(createCloseEvent("close", {
                         code: code ?? 1000,
                         reason: reason?.toString("utf8") ?? "",
-                        wasClean: code === 1000 || !code,
+                        wasClean: Reflect.get(ws, _erred) !== false,
                     }));
                 });
 
