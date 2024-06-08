@@ -1,53 +1,35 @@
+import { asyncTask } from './async.js';
+import { createErrorEvent, createCloseEvent } from './event.js';
 import runtime from './runtime.js';
 
 /**
  * This module provides a universal WebSocket server that works in Node.js, Deno,
  * Bun and Cloudflare Workers.
+ *
+ * NOTE: In order to work in Node.js, install the `@ayonli/jsext` library from
+ * NPM instead of JSR.
  * @example
  */
-var _a;
+var _a, _b, _c;
 const _source = Symbol.for("source");
-const _url = Symbol.for("url");
-const _context = Symbol.for("context");
-const _listeners = Symbol.for("listeners");
+const _listener = Symbol.for("listener");
 const _clients = Symbol.for("clients");
+const _server = Symbol.for("server");
+const _connTasks = Symbol.for("connTasks");
 /**
- * The state of a WebSocket connection.
+ * This class represents a WebSocket connection on the server side.
  */
-var ConnectionState;
-(function (ConnectionState) {
-    ConnectionState[ConnectionState["CONNECTING"] = 0] = "CONNECTING";
-    ConnectionState[ConnectionState["OPEN"] = 1] = "OPEN";
-    ConnectionState[ConnectionState["CLOSING"] = 2] = "CLOSING";
-    ConnectionState[ConnectionState["CLOSED"] = 3] = "CLOSED";
-})(ConnectionState || (ConnectionState = {}));
-/**
- * Represents a WebSocket connection on the server side.
- */
-class WebSocketConnection {
-    constructor(socket, options) {
+class WebSocketConnection extends EventTarget {
+    constructor(socket) {
+        super();
         this[_source] = socket;
-        this[_url] = options.url;
-        this[_context] = options.context;
     }
     /**
      * The current state of the WebSocket connection.
      */
     get readyState() {
-        var _b;
-        return (_b = this[_source].readyState) !== null && _b !== void 0 ? _b : ConnectionState.OPEN;
-    }
-    /**
-     * The URL of the WebSocket connection.
-     */
-    get url() {
-        return this[_url];
-    }
-    /**
-     * The context data attached to the connection.
-     */
-    get context() {
-        return this[_context];
+        var _d;
+        return (_d = this[_source].readyState) !== null && _d !== void 0 ? _d : 1;
     }
     /**
      * Sends data to the WebSocket client.
@@ -66,47 +48,51 @@ class WebSocketConnection {
  * A universal WebSocket server that works in Node.js, Deno, Bun and Cloudflare
  * Workers.
  *
+ * NOTE: In order to work in Node.js, install the `@ayonli/jsext` library from
+ * NPM instead of JSR.
+ *
  * @example
  * ```ts
- * const wsServer = new WebSocketServer({
- *     message(ws, event) {
- *         ws.send("received: " + event.data);
- *     },
- *     open(ws, event) {
+ * import { WebSocketServer } from "@ayonli/jsext/ws";
+ *
+ * const wsServer = new WebSocketServer(socket => {
+ *     socket.addEventListener("open", () => {
  *         console.log(`WebSocket connection established.`);
- *     },
- *     close(ws, event) {
- *         console.log("WebSocket connection closed, reason: ${event.reason}, code: ${event.code}");
- *     },
- *     error(ws, event) {
- *         console.error("WebSocket connection error:", event);
- *     },
+ *     });
+ *
+ *     socket.addEventListener("message", (event) => {
+ *         socket.send("received: " + event.data);
+ *     });
+ *
+ *     socket.addEventListener("error", (event) => {
+ *         console.error("WebSocket connection error:", event.error);
+ *     });
+ *
+ *     socket.addEventListener("close", (event) => {
+ *         console.log(`WebSocket connection closed, reason: ${event.reason}, code: ${event.code}`);
+ *     });
  * });
  *
  * // Node.js
- * const httpServer = http.createServer((req, res) => {});
- * httpServer.on("upgrade", (req, socket, head) => {
- *     wsServer.upgrade(req, socket, head);
+ * import * as http from "node:http";
+ * const httpServer = http.createServer(async (req) => {
+ *      await wsServer.upgrade(req);
  * });
  * httpServer.listen(3000);
  *
- * // Deno
- * Deno.serve(req => {
- *     const { response } = wsServer.upgrade(req);
- *     return response;
- * });
- *
  * // Bun
- * Bun.serve({
- *     fetch(req, server) {
- *         const { ok, response } = wsServer.upgrade(req, server);
- *         if (ok) {
- *             return undefined;
- *         } else {
- *             return response;
- *         }
+ * const bunServer = Bun.serve({
+ *     async fetch(req) {
+ *         await wsServer.upgrade(req);
  *     },
  *     websocket: wsServer.bunListener,
+ * });
+ * wsServer.bunBind(bunServer);
+ *
+ * // Deno
+ * Deno.serve(async req => {
+ *     const { response } = await wsServer.upgrade(req);
+ *     return response;
  * });
  *
  * // Cloudflare Workers
@@ -118,114 +104,127 @@ class WebSocketConnection {
  * };
  * ```
  */
-class WebSocketServer {
-    constructor(listeners, options) {
-        var _b;
+let WebSocketServer$1 = class WebSocketServer {
+    constructor(...args) {
+        var _d, _e, _f;
         this[_a] = new Map();
-        this[_listeners] = listeners;
-        this.idleTimeout = (options === null || options === void 0 ? void 0 : options.idleTimeout) || 30;
-        this.perMessageDeflate = (_b = options === null || options === void 0 ? void 0 : options.perMessageDeflate) !== null && _b !== void 0 ? _b : false;
+        this[_b] = undefined;
+        this[_c] = new Map();
+        if (args.length === 2) {
+            this.idleTimeout = ((_d = args[0]) === null || _d === void 0 ? void 0 : _d.idleTimeout) || 30;
+            this.perMessageDeflate = (_f = (_e = args[0]) === null || _e === void 0 ? void 0 : _e.perMessageDeflate) !== null && _f !== void 0 ? _f : false;
+            this[_listener] = args[1];
+        }
+        else {
+            this.idleTimeout = 30;
+            this.perMessageDeflate = false;
+            this[_listener] = args[0];
+        }
     }
-    upgrade(request, ...args) {
-        var _b;
+    async upgrade(request) {
         if ("httpVersion" in request) {
             throw new TypeError("Node.js support is not implemented");
         }
         const upgradeHeader = request.headers.get("Upgrade");
         if (!upgradeHeader || upgradeHeader !== "websocket") {
-            return {
-                ok: false,
-                response: new Response("Expected Upgrade: websocket", {
-                    status: 426,
-                }),
-            };
+            throw new TypeError("Expected Upgrade: websocket");
         }
-        const listeners = this[_listeners];
+        const listener = this[_listener];
         const clients = this[_clients];
         const { identity } = runtime();
         if (identity === "deno") {
-            try {
-                const context = args[0];
-                const { socket, response } = Deno.upgradeWebSocket(request, {
-                    idleTimeout: this.idleTimeout,
+            const { socket: ws, response } = Deno.upgradeWebSocket(request, {
+                idleTimeout: this.idleTimeout,
+            });
+            const socket = new WebSocketConnection(ws);
+            clients.set(request, socket);
+            ws.binaryType = "arraybuffer";
+            ws.onopen = () => {
+                setTimeout(() => {
+                    // Ensure the open event is dispatched in the next tick of
+                    // the event loop.
+                    socket.dispatchEvent(new Event("open"));
                 });
-                const ws = new WebSocketConnection(socket, { url: socket.url, context });
-                clients.set(socket, ws);
-                socket.binaryType = "arraybuffer";
-                socket.onmessage = (_event) => {
-                    let event;
-                    if (typeof _event.data === "string") {
-                        event = new MessageEvent("message", {
-                            data: _event.data,
-                            origin: _event.origin,
-                        });
-                    }
-                    else {
-                        event = new MessageEvent("message", {
-                            data: new Uint8Array(_event.data),
-                            origin: _event.origin,
-                        });
-                    }
-                    listeners.message(ws, event);
-                };
-                socket.onopen = (event) => { var _b; return (_b = listeners.open) === null || _b === void 0 ? void 0 : _b.call(listeners, ws, event); };
-                socket.onerror = (event) => { var _b; return (_b = listeners.error) === null || _b === void 0 ? void 0 : _b.call(listeners, ws, event); };
-                socket.onclose = (event) => {
-                    var _b;
-                    (_b = listeners.close) === null || _b === void 0 ? void 0 : _b.call(listeners, ws, event);
-                    clients.delete(socket);
-                };
-                return { ok: true, response };
-            }
-            catch (err) {
-                const msg = err instanceof Error ? err.message : String(err);
-                return { ok: false, response: new Response(msg, { status: 426 }) };
-            }
-        }
-        else if (identity === "cloudflare-worker") {
-            const context = args[0];
-            // @ts-ignore
-            const [client, server] = Object.values(new WebSocketPair());
-            const ws = new WebSocketConnection(client, { url: request.url, context });
-            clients.set(client, ws);
-            server.accept();
-            server.addEventListener("message", _event => {
-                let event;
-                if (typeof _event.data === "string") {
-                    event = new MessageEvent("message", {
-                        data: _event.data,
-                        origin: _event.origin,
-                    });
-                    listeners.message(ws, event);
-                }
-                else if (_event.data instanceof ArrayBuffer) {
-                    event = new MessageEvent("message", {
-                        data: new Uint8Array(_event.data),
-                        origin: _event.origin,
-                    });
-                    listeners.message(ws, event);
+            };
+            ws.onmessage = (ev) => {
+                if (typeof ev.data === "string") {
+                    socket.dispatchEvent(new MessageEvent("message", {
+                        data: ev.data,
+                        origin: ev.origin,
+                    }));
                 }
                 else {
-                    _event.data.arrayBuffer().then(buffer => {
-                        event = new MessageEvent("message", {
+                    socket.dispatchEvent(new MessageEvent("message", {
+                        data: new Uint8Array(ev.data),
+                        origin: ev.origin,
+                    }));
+                }
+            };
+            ws.onclose = (ev) => {
+                if (!ev.wasClean) {
+                    socket.dispatchEvent(createErrorEvent("error", {
+                        error: new Error(`WebSocket connection closed: ${ev.reason} (${ev.code})`),
+                    }));
+                }
+                clients.delete(request);
+                socket.dispatchEvent(createCloseEvent("close", {
+                    code: ev.code,
+                    reason: ev.reason,
+                    wasClean: ev.wasClean,
+                }));
+            };
+            listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
+            return { socket, response };
+        }
+        else if (identity === "cloudflare-worker") {
+            // @ts-ignore
+            const [client, server] = Object.values(new WebSocketPair());
+            const socket = new WebSocketConnection(client);
+            clients.set(request, socket);
+            server.accept();
+            setTimeout(() => {
+                // Cloudflare Workers does not support the open event, we call it
+                // manually here.
+                socket.dispatchEvent(new Event("open"));
+            });
+            server.addEventListener("message", ev => {
+                if (typeof ev.data === "string") {
+                    socket.dispatchEvent(new MessageEvent("message", {
+                        data: ev.data,
+                        origin: ev.origin,
+                    }));
+                }
+                else if (ev.data instanceof ArrayBuffer) {
+                    socket.dispatchEvent(new MessageEvent("message", {
+                        data: new Uint8Array(ev.data),
+                        origin: ev.origin,
+                    }));
+                }
+                else {
+                    ev.data.arrayBuffer().then(buffer => {
+                        socket.dispatchEvent(new MessageEvent("message", {
                             data: new Uint8Array(buffer),
-                            origin: _event.origin,
-                        });
-                        listeners.message(ws, event);
+                            origin: ev.origin,
+                        }));
                     }).catch(() => { });
                 }
             });
-            server.addEventListener("error", event => { var _b; return (_b = listeners.error) === null || _b === void 0 ? void 0 : _b.call(listeners, ws, event); });
-            server.addEventListener("close", event => {
-                var _b;
-                (_b = listeners.close) === null || _b === void 0 ? void 0 : _b.call(listeners, ws, event);
-                clients.delete(client);
+            server.addEventListener("close", ev => {
+                if (!ev.wasClean) {
+                    socket.dispatchEvent(createErrorEvent("error", {
+                        error: new Error(`WebSocket connection closed: ${ev.reason} (${ev.code})`),
+                    }));
+                }
+                clients.delete(request);
+                socket.dispatchEvent(createCloseEvent("close", {
+                    code: ev.code,
+                    reason: ev.reason,
+                    wasClean: ev.wasClean,
+                }));
             });
-            // Cloudflare Workers does not support the open event, we call it
-            // manually here.
-            (_b = listeners.open) === null || _b === void 0 ? void 0 : _b.call(listeners, ws, new Event("open"));
+            listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
             return {
-                ok: true,
+                socket,
                 response: new Response(null, {
                     status: 101,
                     // @ts-ignore
@@ -234,60 +233,104 @@ class WebSocketServer {
             };
         }
         else if (identity === "bun") {
-            const server = args[0];
-            const context = args[1];
-            const ok = server.upgrade(request, {
-                data: {
-                    url: request.url,
-                    context,
-                },
-            });
-            const response = new Response(ok ? null : "Upgrade to WebSocket failed", {
-                status: ok ? 101 : 426,
-            });
-            return { ok, response };
+            const server = this[_server];
+            if (!server) {
+                throw new Error("WebSocket server is not bound to a Bun server instance.");
+            }
+            const task = asyncTask();
+            this[_connTasks].set(request, task);
+            const ok = server.upgrade(request, { data: { request } });
+            if (!ok) {
+                throw new Error("Failed to upgrade to WebSocket");
+            }
+            const socket = await task;
+            listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
+            return {
+                socket,
+                response: new Response(null, { status: 101 }),
+            };
         }
         else {
             throw new TypeError("Unsupported runtime");
         }
     }
     /**
+     * Used in Bun, to bind the WebSocket server to the Bun server instance.
+     */
+    bunBind(server) {
+        this[_server] = server;
+    }
+    /**
      * A WebSocket listener for `Bun.serve()`.
      */
     get bunListener() {
-        const listeners = this[_listeners];
         const clients = this[_clients];
+        const connTasks = this[_connTasks];
         return {
             idleTimeout: this.idleTimeout,
             perMessageDeflate: this.perMessageDeflate,
-            message(_ws, message) {
-                const ws = clients.get(_ws);
-                ws && listeners.message(ws, message);
+            open: (ws) => {
+                const { request } = ws.data;
+                const client = new WebSocketConnection(ws);
+                clients.set(request, client);
+                setTimeout(() => {
+                    // Ensure the open event is dispatched in the next tick of
+                    // the event loop.
+                    client.dispatchEvent(new Event("open"));
+                });
+                const task = connTasks.get(request);
+                if (task) {
+                    connTasks.delete(request);
+                    task.resolve(client);
+                }
             },
-            open(_ws) {
-                var _b;
-                const ws = new WebSocketConnection(_ws, _ws.data);
-                clients.set(_ws, ws);
-                (_b = listeners.open) === null || _b === void 0 ? void 0 : _b.call(listeners, ws, new Event("open"));
+            message: (ws, msg) => {
+                const { request } = ws.data;
+                let origin = request.headers.get("origin");
+                if (!origin) {
+                    const url = request.url || `http://${request.headers.get("host")}`;
+                    origin = new URL(url).origin;
+                }
+                const client = clients.get(request);
+                if (client) {
+                    if (typeof msg === "string") {
+                        client.dispatchEvent(new MessageEvent("message", {
+                            data: msg,
+                            origin,
+                        }));
+                    }
+                    else {
+                        client.dispatchEvent(new MessageEvent("message", {
+                            data: new Uint8Array(msg),
+                            origin,
+                        }));
+                    }
+                }
             },
-            error(_ws) {
-                var _b;
-                const ws = clients.get(_ws);
-                ws && ((_b = listeners.error) === null || _b === void 0 ? void 0 : _b.call(listeners, ws, new Event("error")));
+            error: (ws, error) => {
+                const { request } = ws.data;
+                const client = clients.get(request);
+                client && client.dispatchEvent(createErrorEvent("error", { error }));
             },
-            close(_ws, code, reason) {
-                var _b;
-                const ws = clients.get(_ws);
-                ws && ((_b = listeners.close) === null || _b === void 0 ? void 0 : _b.call(listeners, ws, new CloseEvent("close", { code, reason })));
-                clients.delete(_ws);
+            close: (ws, code, reason) => {
+                const { request } = ws.data;
+                const client = clients.get(request);
+                if (client) {
+                    clients.delete(request);
+                    client.dispatchEvent(createCloseEvent("close", {
+                        code,
+                        reason,
+                        wasClean: code === 1000,
+                    }));
+                }
             },
         };
     }
     get clients() {
         return this[_clients].values();
     }
-}
-_a = _clients;
+};
+_a = _clients, _b = _server, _c = _connTasks;
 
-export { ConnectionState, WebSocketConnection, WebSocketServer };
+export { WebSocketConnection, WebSocketServer$1 as WebSocketServer };
 //# sourceMappingURL=ws.js.map
