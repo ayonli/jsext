@@ -109,6 +109,7 @@ export class SSE extends EventTarget {
 
         this[_response] = new Response(this.closed ? null : _readable, {
             status: this.closed ? 204 : 200,
+            statusText: this.closed ? "No Content" : "OK",
             headers: {
                 "Content-Type": "text/event-stream",
                 "Cache-Control": "no-cache",

@@ -1,3 +1,9 @@
+import bytes from './bytes.js';
+import { stat, readFile, createReadableStream } from './fs.js';
+import { sha256 } from './hash.js';
+import { join } from './path.js';
+import { startsWith } from './path/util.js';
+
 /**
  * Utility functions for handling HTTP related tasks, such as parsing headers.
  * @module
@@ -106,6 +112,85 @@ function stringifyCookie(cookie) {
     if (cookie.sameSize)
         str += `; SameSite=${cookie.sameSize}`;
     return str;
+}
+/**
+ * Parses the `Range` header.
+ */
+function parseRange(str) {
+    if (!str.includes("=")) {
+        throw new TypeError("Invalid Range header");
+    }
+    const [unit, ...ranges] = str.split("=").map((part) => part.trim());
+    const parsed = { unit: unit, ranges: [] };
+    for (const range of ranges) {
+        if (!range || !range.includes("-"))
+            continue;
+        const [start, end] = range.split("-").map((part) => part.trim());
+        if (!start && !end) {
+            continue;
+        }
+        else if (!start) {
+            parsed.ranges.push({ start: 0, end: parseInt(end) });
+        }
+        else if (!end) {
+            parsed.ranges.push({ start: parseInt(start) });
+        }
+        else {
+            parsed.ranges.push({ start: parseInt(start), end: parseInt(end) });
+        }
+    }
+    if (!parsed.ranges.length ||
+        parsed.ranges.some((range) => range.start < 0 || (range.end && range.end <= range.start))) {
+        throw new TypeError("Invalid Range header");
+    }
+    return parsed;
+}
+/**
+ * Checks if the value from the `If-Match` header matches the given ETag.
+ */
+function ifMatch(value, etag) {
+    // Weak tags cannot be matched and return false.
+    if (!value || etag.startsWith("W/")) {
+        return false;
+    }
+    if (value.trim() === "*") {
+        return true;
+    }
+    const tags = value.split(/\s*,\s*/);
+    return tags.includes(etag);
+}
+/**
+ * Checks if the value from the `If-None-Match` header matches the given ETag.
+ */
+function ifNoneMatch(value, etag) {
+    if (!value) {
+        return true;
+    }
+    if (value.trim() === "*") {
+        return false;
+    }
+    const tags = value.split(/\s*,\s*/).map((tag) => tag.startsWith("W/") ? tag.slice(2) : tag);
+    return !tags.includes(etag);
+}
+/**
+ * Calculates the ETag for a given entity.
+ */
+async function etag(data) {
+    var _a;
+    if (typeof data === "string" || data instanceof Uint8Array) {
+        if (!data.length) {
+            // a short circuit for zero length entities
+            return `0-47DEQpj8HBSa+/TImW+5JCeuQeR`;
+        }
+        if (typeof data === "string") {
+            data = bytes(data);
+        }
+        const hash = await sha256(data, "base64");
+        return `${data.length.toString(16)}-${hash.slice(0, 27)}`;
+    }
+    const mtime = (_a = data.mtime) !== null && _a !== void 0 ? _a : new Date();
+    const hash = await sha256(mtime.toISOString(), "base64");
+    return `${data.size.toString(16)}-${hash.slice(0, 27)}`;
 }
 /**
  * Creates a Node.js HTTP request listener with modern Web APIs.
@@ -223,6 +308,126 @@ function toNodeResponse(res, nodeRes) {
         }));
     }
 }
+/**
+ * Serves static files from a file system directory.
+ *
+ * @example
+ * ```ts
+ * import { serveStatic } from "@ayonli/jsext/http";
+ *
+ * export default {
+ *     async fetch(req: Request) {
+ *         const { pathname } = new URL(req.url);
+ *
+ *         if (pathname.startsWith("/assets")) {
+ *             return await serveStatic(req, {
+ *                 fsDir: "./public",
+ *                 urlPrefix: "/assets",
+ *             });
+ *         }
+ *
+ *         return new Response("Hello, World!");
+ *     }
+ * };
+ * ```
+ */
+async function serveStatic(req, options) {
+    var _a, _b;
+    const url = new URL(req.url);
+    if (!startsWith(url.pathname, options.urlPrefix)) {
+        return new Response("Not Found", { status: 404, statusText: "Not Found" });
+    }
+    const prefix = join(options.urlPrefix);
+    const filename = join(options.fsDir, url.pathname.slice(prefix.length + 1));
+    const info = await stat(filename);
+    if (info.kind === "directory") {
+        if (!options.index) {
+            return new Response("Forbidden", { status: 403, statusText: "Forbidden" });
+        }
+        else {
+            return serveStatic(req, {
+                ...options,
+                urlPrefix: join(prefix, options.index),
+            });
+        }
+    }
+    else if (info.kind !== "file") {
+        return new Response("Forbidden", { status: 403, statusText: "Forbidden" });
+    }
+    const mtime = (_a = info.mtime) !== null && _a !== void 0 ? _a : new Date();
+    const _etag = await etag(info);
+    const headers = new Headers({
+        "Accept-Ranges": "bytes",
+        "Last-Modified": mtime.toUTCString(),
+        "Etag": _etag,
+    });
+    const ifModifiedSinceValue = req.headers.get("If-Modified-Since");
+    const ifNoneMatchValue = req.headers.get("If-None-Match");
+    let modified = false;
+    if (ifModifiedSinceValue) {
+        const ifModifiedSince = new Date(ifModifiedSinceValue);
+        modified = mtime > ifModifiedSince;
+    }
+    else if (ifNoneMatchValue) {
+        modified = ifNoneMatch(ifNoneMatchValue, _etag);
+    }
+    if (!modified) {
+        return new Response(null, {
+            status: 304,
+            statusText: "Not Modified",
+            headers,
+        });
+    }
+    headers.set("Content-Disposition", `inline; filename="${info.name}"`);
+    headers.set("Content-Type", info.type + "; charset=utf-8");
+    if (info.atime) {
+        headers.set("Date", info.atime.toUTCString());
+    }
+    if (options.maxAge) {
+        headers.set("Cache-Control", `public, max-age=${options.maxAge}`);
+    }
+    const rangeValue = req.headers.get("Range");
+    if (rangeValue && info.size) {
+        let range;
+        try {
+            range = parseRange(rangeValue);
+        }
+        catch (_c) {
+            return new Response("Invalid Range header", {
+                status: 416,
+                statusText: "Range Not Satisfiable",
+            });
+        }
+        const { ranges } = range;
+        const { start } = ranges[0];
+        const end = Math.min((_b = ranges[0].end) !== null && _b !== void 0 ? _b : info.size - 1, info.size - 1);
+        const data = await readFile(filename);
+        const slice = data.subarray(start, end + 1);
+        headers.set("Content-Range", `bytes ${start}-${end}/${info.size}`);
+        headers.set("Content-Length", String(end - start + 1));
+        return new Response(slice, {
+            status: 206,
+            statusText: "Partial Content",
+            headers,
+        });
+    }
+    else if (!info.size) {
+        headers.set("Content-Length", "0");
+        return new Response("", {
+            status: 200,
+            statusText: "OK",
+            headers,
+        });
+    }
+    else {
+        headers.set("Content-Length", String(info.size));
+        return new Response(createReadableStream(filename), {
+            status: 200,
+            statusText: "OK",
+            headers,
+        });
+    }
+}
 
-export { parseAccepts, parseContentType, parseCookie, stringifyCookie, withWeb };
+export { etag, ifMatch, ifNoneMatch, parseAccepts, parseContentType, parseCookie, parseRange, serveStatic, stringifyCookie, withWeb };
 //# sourceMappingURL=http.js.map
