@@ -1,6 +1,3 @@
-import bytes from '../bytes.js';
-import { sha256 } from '../hash/web.js';
-
 /**
  * Utility functions for handling HTTP related tasks, such as parsing headers.
  * @module
@@ -274,40 +271,6 @@ function ifNoneMatch(value, etag) {
     const tags = value.split(/\s*,\s*/).map((tag) => tag.startsWith("W/") ? tag.slice(2) : tag);
     return !tags.includes(etag);
 }
-/**
- * Calculates the ETag for a given entity.
- *
- * @example
- * ```ts
- * import { stat } from "@ayonli/jsext/fs";
- * import { etag } from "@ayonli/jsext/http";
- *
- * const etag1 = await etag("Hello, World!");
- *
- * const data = new Uint8Array([1, 2, 3, 4, 5]);
- * const etag2 = await etag(data);
- *
- * const info = await stat("file.txt");
- * const etag3 = await etag(info);
- * ```
- */
-async function etag(data) {
-    var _a;
-    if (typeof data === "string" || data instanceof Uint8Array) {
-        if (!data.length) {
-            // a short circuit for zero length entities
-            return `0-47DEQpj8HBSa+/TImW+5JCeuQeR`;
-        }
-        if (typeof data === "string") {
-            data = bytes(data);
-        }
-        const hash = await sha256(data, "base64");
-        return `${data.length.toString(16)}-${hash.slice(0, 27)}`;
-    }
-    const mtime = (_a = data.mtime) !== null && _a !== void 0 ? _a : new Date();
-    const hash = await sha256(mtime.toISOString(), "base64");
-    return `${data.size.toString(16)}-${hash.slice(0, 27)}`;
-}
 
-export { etag, ifMatch, ifNoneMatch, parseAccepts, parseContentType, parseCookie, parseRange, stringifyCookie };
+export { ifMatch, ifNoneMatch, parseAccepts, parseContentType, parseCookie, parseRange, stringifyCookie };
 //# sourceMappingURL=util.js.map

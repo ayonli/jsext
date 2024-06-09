@@ -446,13 +446,13 @@ describe("http", () => {
                     return new Response("Hello, World!");
                 }
             }));
-            server.listen(8001);
+            server.listen(8003);
             defer(() => server.close());
 
-            const res = await fetch(`http://localhost:8001/hello/`, { redirect: "manual" });
+            const res = await fetch(`http://localhost:8003/hello/`, { redirect: "manual" });
 
             strictEqual(res.status, 301);
-            strictEqual(res.headers.get("Location"), "http://localhost:8001/hello");
+            strictEqual(res.headers.get("Location"), "http://localhost:8003/hello");
         }));
     });
 
@@ -466,36 +466,44 @@ describe("http", () => {
 
         it("default", func(async (defer) => {
             if (isDeno) {
-                const server = Deno.serve({ port: 8003 }, async (req) => {
+                // @ts-ignore
+                const server = Deno.serve({ port: 8004 }, async (req) => {
                     return serveStatic(req);
                 });
-                defer(() => server.shutdown());
+                // Unable to close the server here, don't know why.
+                // defer(() => server.shutdown());
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req);
                 }));
-                server.listen(8003);
+                server.listen(8004);
                 defer(() => server.close());
             }
 
             const content = await readFileAsText("./examples/index.html");
-            const res = await fetch(`http://localhost:8003/examples/index.html`);
+            const res = await fetch(`http://localhost:8004/examples/index.html`);
             const text = await res.text();
 
             strictEqual(res.status, 200);
             strictEqual(res.statusText, "OK");
             strictEqual(text, content);
 
-            const res2 = await fetch(`http://localhost:8003/examples`);
+            const res1 = await fetch(`http://localhost:8004/examples`, { redirect: "manual" });
+
+            strictEqual(res1.status, 301);
+            strictEqual(res1.headers.get("Location"), "http://localhost:8004/examples/");
+
+            const res2 = await fetch(`http://localhost:8004/examples/`);
             const text2 = await res2.text();
 
-            strictEqual(res2.status, 403);
-            strictEqual(text2, "Forbidden");
+            strictEqual(res2.status, 200);
+            strictEqual(res2.statusText, "OK");
+            strictEqual(text2, content);
         }));
 
         it("with fsDir", func(async (defer) => {
             if (isDeno) {
-                const server = Deno.serve({ port: 8004 }, async (req) => {
+                const server = Deno.serve({ port: 8005 }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                     });
@@ -507,67 +515,24 @@ describe("http", () => {
                         fsDir: "./examples",
                     });
                 }));
-                server.listen(8004);
-                defer(() => server.close());
-            }
-
-            const content = await readFileAsText("./examples/index.html");
-            const res = await fetch(`http://localhost:8004/index.html`);
-            const text = await res.text();
-
-            // strictEqual(text, "OK");
-            strictEqual(res.status, 200);
-            strictEqual(text, content);
-
-            const res2 = await fetch(`http://localhost:8004/`);
-            const text2 = await res2.text();
-
-            strictEqual(res2.status, 403);
-            strictEqual(text2, "Forbidden");
-        }));
-
-        it("with urlPrefix", func(async (defer) => {
-            if (isDeno) {
-                const server = Deno.serve({ port: 8005 }, async (req) => {
-                    return serveStatic(req, {
-                        fsDir: "./examples",
-                        urlPrefix: "/assets",
-                    });
-                });
-                defer(() => server.shutdown());
-            } else {
-                const server = http.createServer(withWeb(async (req) => {
-                    return serveStatic(req, {
-                        fsDir: "./examples",
-                        urlPrefix: "/assets",
-                    });
-                }));
                 server.listen(8005);
                 defer(() => server.close());
             }
 
             const content = await readFileAsText("./examples/index.html");
-            const res = await fetch(`http://localhost:8005/assets/index.html`);
+            const res = await fetch(`http://localhost:8005/index.html`);
             const text = await res.text();
 
             strictEqual(res.status, 200);
-            strictEqual(res.statusText, "OK");
             strictEqual(text, content);
-
-            const res2 = await fetch(`http://localhost:8005/assets`);
-            const text2 = await res2.text();
-
-            strictEqual(res2.status, 403);
-            strictEqual(text2, "Forbidden");
         }));
 
-        it("with index", func(async (defer) => {
+        it("with urlPrefix", func(async (defer) => {
             if (isDeno) {
                 const server = Deno.serve({ port: 8006 }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
-                        index: "index.html",
                     });
                 });
                 defer(() => server.shutdown());
@@ -576,7 +541,6 @@ describe("http", () => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
-                        index: "index.html",
                     });
                 }));
                 server.listen(8006);
@@ -584,17 +548,12 @@ describe("http", () => {
             }
 
             const content = await readFileAsText("./examples/index.html");
-            const res = await fetch(`http://localhost:8006/assets`, { redirect: "manual" });
+            const res = await fetch(`http://localhost:8006/assets/index.html`);
+            const text = await res.text();
 
-            strictEqual(res.status, 301);
-            strictEqual(res.headers.get("Location"), "http://localhost:8006/assets/");
-
-            const res2 = await fetch(res.headers.get("Location") as string);
-            const text2 = await res2.text();
-
-            strictEqual(res2.status, 200);
-            strictEqual(res2.statusText, "OK");
-            strictEqual(text2, content);
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(text, content);
         }));
 
         it("with maxAge", func(async (defer) => {
@@ -603,7 +562,6 @@ describe("http", () => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
-                        index: "index.html",
                         maxAge: 3600,
                     });
                 });
@@ -613,7 +571,6 @@ describe("http", () => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
-                        index: "index.html",
                         maxAge: 3600,
                     });
                 }));
@@ -622,18 +579,13 @@ describe("http", () => {
             }
 
             const content = await readFileAsText("./examples/index.html");
-            const res = await fetch(`http://localhost:8007/assets`, { redirect: "manual" });
+            const res = await fetch(`http://localhost:8007/assets/`, { redirect: "manual" });
+            const text = await res.text();
 
-            strictEqual(res.status, 301);
-            strictEqual(res.headers.get("Location"), "http://localhost:8007/assets/");
-
-            const res2 = await fetch(res.headers.get("Location") as string);
-            const text2 = await res2.text();
-
-            strictEqual(res2.status, 200);
-            strictEqual(res2.statusText, "OK");
-            strictEqual(res2.headers.get("Cache-Control"), "public, max-age=3600");
-            strictEqual(text2, content);
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(res.headers.get("Cache-Control"), "public, max-age=3600");
+            strictEqual(text, content);
         }));
 
         it("with If-Modified-Since", func(async (defer) => {
@@ -642,7 +594,6 @@ describe("http", () => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
-                        index: "index.html",
                         maxAge: 3600,
                     });
                 });
@@ -652,7 +603,6 @@ describe("http", () => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
-                        index: "index.html",
                         maxAge: 3600,
                     });
                 }));
@@ -685,7 +635,6 @@ describe("http", () => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
-                        index: "index.html",
                         maxAge: 3600,
                     });
                 });
@@ -695,7 +644,6 @@ describe("http", () => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
-                        index: "index.html",
                         maxAge: 3600,
                     });
                 }));
@@ -728,7 +676,6 @@ describe("http", () => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
-                        index: "index.html",
                         maxAge: 3600,
                     });
                 });
@@ -738,7 +685,6 @@ describe("http", () => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
-                        index: "index.html",
                         maxAge: 3600,
                     });
                 }));
@@ -790,6 +736,76 @@ describe("http", () => {
             strictEqual(res4.status, 206);
             strictEqual(text4, content.slice(-500));
             strictEqual(res4.headers.get("Content-Range"), `bytes ${content.length - 500}-${content.length - 1}/${content.length}`);
+        }));
+
+        it("with headers", func(async (defer) => {
+            if (isDeno) {
+                const server = Deno.serve({ port: 8011 }, async (req) => {
+                    return serveStatic(req, {
+                        fsDir: "./examples",
+                        urlPrefix: "/assets",
+                        headers: {
+                            "server": "Deno",
+                        },
+                    });
+                });
+                defer(() => server.shutdown());
+            } else {
+                const server = http.createServer(withWeb(async (req) => {
+                    return serveStatic(req, {
+                        fsDir: "./examples",
+                        urlPrefix: "/assets",
+                        headers: {
+                            "server": "Node.js",
+                        },
+                    });
+                }));
+                server.listen(8011);
+                defer(() => server.close());
+            }
+
+            const content = await readFileAsText("./examples/index.html");
+            const res = await fetch(`http://localhost:8011/assets/index.html`);
+            const text = await res.text();
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(text, content);
+
+            if (isDeno) {
+                strictEqual(res.headers.get("Server"), "Deno");
+            } else {
+                strictEqual(res.headers.get("Server"), "Node.js");
+            }
+        }));
+
+        it("with listDir", func(async (defer) => {
+            if (isDeno) {
+                const server = Deno.serve({ port: 8012 }, async (req) => {
+                    return serveStatic(req, {
+                        fsDir: "./examples",
+                        urlPrefix: "/assets",
+                        listDir: true,
+                    });
+                });
+                defer(() => server.shutdown());
+            } else {
+                const server = http.createServer(withWeb(async (req) => {
+                    return serveStatic(req, {
+                        fsDir: "./examples",
+                        urlPrefix: "/assets",
+                        listDir: true,
+                    });
+                }));
+                server.listen(8012);
+                defer(() => server.close());
+            }
+
+            const res = await fetch(`http://localhost:8012/assets/`);
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            ok(res.headers.get("Content-Type")?.includes("text/html"));
         }));
     });
 });

@@ -1,11 +1,15 @@
+import { orderBy } from './array.js';
+import bytes from './bytes.js';
 import { isDeno, isBun, isNode } from './env.js';
-import { stat, exists, readFile, createReadableStream } from './fs.js';
-import { etag, ifNoneMatch, parseRange } from './http/util.js';
+import { stat, exists, readDir, readFile, createReadableStream } from './fs.js';
+import { sha256 } from './hash.js';
+import { ifNoneMatch, parseRange } from './http/util.js';
 export { ifMatch, parseAccepts, parseContentType, parseCookie, stringifyCookie } from './http/util.js';
 import { isMain } from './module.js';
 import { as } from './object.js';
 import { join } from './path.js';
-import { stripStart } from './string.js';
+import { readAsArray } from './reader.js';
+import { stripStart, dedent } from './string.js';
 import { startsWith } from './path/util.js';
 
 /**
@@ -13,6 +17,40 @@ import { startsWith } from './path/util.js';
  * @module
  * @experimental
  */
+/**
+ * Calculates the ETag for a given entity.
+ *
+ * @example
+ * ```ts
+ * import { stat } from "@ayonli/jsext/fs";
+ * import { etag } from "@ayonli/jsext/http";
+ *
+ * const etag1 = await etag("Hello, World!");
+ *
+ * const data = new Uint8Array([1, 2, 3, 4, 5]);
+ * const etag2 = await etag(data);
+ *
+ * const info = await stat("file.txt");
+ * const etag3 = await etag(info);
+ * ```
+ */
+async function etag(data) {
+    var _a;
+    if (typeof data === "string" || data instanceof Uint8Array) {
+        if (!data.length) {
+            // a short circuit for zero length entities
+            return `0-47DEQpj8HBSa+/TImW+5JCeuQeR`;
+        }
+        if (typeof data === "string") {
+            data = bytes(data);
+        }
+        const hash = await sha256(data, "base64");
+        return `${data.length.toString(16)}-${hash.slice(0, 27)}`;
+    }
+    const mtime = (_a = data.mtime) !== null && _a !== void 0 ? _a : new Date();
+    const hash = await sha256(mtime.toISOString(), "base64");
+    return `${data.size.toString(16)}-${hash.slice(0, 27)}`;
+}
 /**
  * Creates a Node.js HTTP request listener with modern Web APIs.
  *
@@ -186,19 +224,72 @@ async function serveStatic(req, options = {}) {
         }
     }
     if (info.kind === "directory") {
-        if (!options.index) {
-            return new Response("Forbidden", { status: 403, statusText: "Forbidden" });
-        }
-        else if (!req.url.endsWith("/")) {
+        if (!req.url.endsWith("/")) {
             return Response.redirect(req.url + "/", 301);
         }
         else {
-            const _filename = join(filename, options.index);
-            if (!(await exists(_filename))) {
+            if (await exists(join(filename, "index.html"))) {
+                return serveStatic(new Request(join(req.url, "index.html"), req), options);
+            }
+            else if (await exists(join(filename, "index.htm"))) {
+                return serveStatic(new Request(join(req.url, "index.htm"), req), options);
+            }
+            else if (!options.listDir) {
                 return new Response("Forbidden", { status: 403, statusText: "Forbidden" });
             }
             else {
-                return serveStatic(new Request(req.url + "" + options.index, { ...req }), options);
+                const entries = await readAsArray(readDir(filename));
+                const list = [
+                    ...orderBy(entries.filter(e => e.kind === "directory"), e => e.name, "asc"),
+                    ...orderBy(entries.filter(e => e.kind === "file"), e => e.name, "asc"),
+                ];
+                const { pathname } = url;
+                if (pathname !== "/") {
+                    list.unshift({
+                        kind: "directory",
+                        name: "..",
+                        relativePath: "..",
+                    });
+                }
+                const listHtml = list.map((entry) => {
+                    const name = entry.kind === "directory" ? entry.name + "/" : entry.name;
+                    let url = join(pathname, entry.name);
+                    if (entry.kind === "directory" && url !== "/") {
+                        url += "/";
+                    }
+                    return dedent `
+                        <li>
+                            <a href="${url}">${name}</a>
+                        </li>
+                        `;
+                });
+                return new Response(dedent `
+                <!DOCTYPE HTML>
+                <html lang="en">
+                <head>
+                    <meta charset="utf-8">
+                    <title>Directory listing for ${pathname}</title>
+                    <style>
+                    body {
+                        font-family: system-ui;
+                    }
+                    </style>
+                </head>
+                <body>
+                    <h1>Directory listing for ${pathname}</h1>
+                    <hr>
+                    <ul>
+                        ${listHtml.join("")}
+                    </ul>
+                </body>
+                </html>
+                `, {
+                    status: 200,
+                    statusText: "OK",
+                    headers: {
+                        "Content-Type": "text/html; charset=utf-8",
+                    },
+                });
             }
         }
     }
@@ -295,19 +386,19 @@ async function serveStatic(req, options = {}) {
 }
 if (isMain(import.meta)) {
     if (isDeno) {
-        Deno.serve({ port: 8000 }, req => serveStatic(req, { index: "index.html" }));
+        Deno.serve({ port: 8000 }, req => serveStatic(req, { listDir: true }));
     }
     else if (isBun) {
         Bun.serve({
             port: 8000,
-            fetch: (req) => serveStatic(req, { index: "index.html" }),
+            fetch: (req) => serveStatic(req, { listDir: true }),
         });
         console.log("Listening on http://localhost:8000/");
     }
     else if (isNode) {
         import('node:http').then(async ({ createServer }) => {
             const server = createServer(withWeb(async (req) => {
-                return serveStatic(req, { index: "index.html" });
+                return serveStatic(req, { listDir: true });
             }));
             server.listen(8000);
             console.log("Listening on http://localhost:8000/");

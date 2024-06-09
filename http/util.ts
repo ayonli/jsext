@@ -4,10 +4,6 @@
  * @experimental
  */
 
-import bytes from "../bytes.ts";
-import { type FileInfo } from "../fs/types.ts";
-import { sha256 } from "../hash/web.ts";
-
 /**
  * Represents the HTTP request `Accept`, `Accept-Encoding` and `Accept-Language`
  * headers.
@@ -358,43 +354,6 @@ export function ifNoneMatch(value: string | null, etag: string): boolean {
 }
 
 /**
- * Calculates the ETag for a given entity.
- * 
- * @example
- * ```ts
- * import { stat } from "@ayonli/jsext/fs";
- * import { etag } from "@ayonli/jsext/http";
- * 
- * const etag1 = await etag("Hello, World!");
- * 
- * const data = new Uint8Array([1, 2, 3, 4, 5]);
- * const etag2 = await etag(data);
- * 
- * const info = await stat("file.txt");
- * const etag3 = await etag(info);
- * ```
- */
-export async function etag(data: string | Uint8Array | FileInfo): Promise<string> {
-    if (typeof data === "string" || data instanceof Uint8Array) {
-        if (!data.length) {
-            // a short circuit for zero length entities
-            return `0-47DEQpj8HBSa+/TImW+5JCeuQeR`;
-        }
-
-        if (typeof data === "string") {
-            data = bytes(data);
-        }
-
-        const hash = await sha256(data, "base64");
-        return `${data.length.toString(16)}-${hash.slice(0, 27)}`;
-    }
-
-    const mtime = data.mtime ?? new Date();
-    const hash = await sha256(mtime.toISOString(), "base64");
-    return `${data.size.toString(16)}-${hash.slice(0, 27)}`;
-}
-
-/**
  * Options for serving static files, used by {@link serveStatic}.
  */
 export interface ServeStaticOptions {
@@ -408,10 +367,10 @@ export interface ServeStaticOptions {
      */
     urlPrefix?: string;
     /**
-     * The default file to serve when the URL pathname is a directory, usually
-     * "index.html". If not set, a 403 Forbidden response will be returned.
+     * Whether to list the directory entries when the URL pathname is a
+     * directory. If not set, a 403 Forbidden response will be returned.
      */
-    index?: string;
+    listDir?: boolean;
     /**
      * The maximum age in seconds for the "Cache-Control" header.
      */
