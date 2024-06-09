@@ -21,6 +21,7 @@
         "./fs": "./fs.ts",
         "./func": "./func.ts",
         "./hash": "./hash.ts",
+        "./http": "./http.ts",
         "./json": "./json.ts",
         "./lock": "./lock.ts",
         "./math": "./math.ts",

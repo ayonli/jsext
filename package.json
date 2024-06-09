@@ -178,6 +178,14 @@
             "import": "./esm/hash.js",
             "default": "./hash.ts"
         },
+        "./http": {
+            "types": "./types/http.d.ts",
+            "bun": "./http.ts",
+            "workerd": "./esm/workerd/http.js",
+            "require": "./cjs/http.js",
+            "import": "./esm/http.js",
+            "default": "./http.ts"
+        },
         "./json": {
             "types": "./types/json.d.ts",
             "bun": "./json.ts",

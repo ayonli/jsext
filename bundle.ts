@@ -13,6 +13,7 @@ import * as event from "./event.ts";
 import * as filetype from "./filetype.ts";
 import * as fs from "./fs.ts";
 import * as hash from "./hash.ts";
+import * as http from "./http.ts";
 import * as json from "./json.ts";
 import * as math from "./math.ts";
 import * as module from "./module.ts";
@@ -54,6 +55,7 @@ export default {
         ...object.omit(hash, ["default"]),
         hash: hash.default,
     },
+    http,
     json,
     math,
     module,
