@@ -41,14 +41,14 @@ describe("ws", () => {
         });
 
         if (isDeno) {
-            const server = Deno.serve({ port: 8000 }, async req => {
+            const server = Deno.serve({ port: 8020 }, async req => {
                 const { response } = await wsServer.upgrade(req);
                 return response;
             });
             defer(() => server.shutdown());
         } else {
             const server = Bun.serve({
-                port: 8000,
+                port: 8020,
                 fetch: async (req: Request) => {
                     const { response } = await wsServer.upgrade(req);
                     return response;
@@ -59,7 +59,7 @@ describe("ws", () => {
             defer(() => server.stop(true));
         }
 
-        const ws = new WebSocket("ws://localhost:8000");
+        const ws = new WebSocket("ws://localhost:8020");
 
         ws.binaryType = "arraybuffer";
         ws.onopen = () => {
@@ -126,7 +126,7 @@ describe("ws", () => {
         };
 
         if (isDeno) {
-            const server = Deno.serve({ port: 8000 }, async req => {
+            const server = Deno.serve({ port: 8021 }, async req => {
                 const { socket, response } = await wsServer.upgrade(req);
                 handle(socket);
                 return response;
@@ -134,7 +134,7 @@ describe("ws", () => {
             defer(() => server.shutdown());
         } else {
             const server = Bun.serve({
-                port: 8000,
+                port: 8021,
                 fetch: async (req: Request) => {
                     const { socket, response } = await wsServer.upgrade(req);
                     handle(socket);
@@ -146,7 +146,7 @@ describe("ws", () => {
             defer(() => server.stop(true));
         }
 
-        const ws = new WebSocket("ws://localhost:8000");
+        const ws = new WebSocket("ws://localhost:8021");
 
         ws.binaryType = "arraybuffer";
         ws.onopen = () => {
@@ -219,11 +219,11 @@ describe("ws", () => {
             });
 
         if (isDeno) {
-            const server = Deno.serve({ port: 8000 }, app.fetch);
+            const server = Deno.serve({ port: 8022 }, app.fetch);
             defer(() => server.shutdown());
         } else {
             const server = Bun.serve({
-                port: 8000,
+                port: 8022,
                 fetch: app.fetch,
                 websocket: wsServer.bunListener,
             });
@@ -231,7 +231,7 @@ describe("ws", () => {
             defer(() => server.stop(true));
         }
 
-        const ws = new WebSocket("ws://localhost:8000");
+        const ws = new WebSocket("ws://localhost:8022");
 
         ws.binaryType = "arraybuffer";
         ws.onopen = () => {
