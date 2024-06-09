@@ -1,13 +1,26 @@
 /**
  * Utility functions for handling HTTP related tasks, such as parsing headers.
  * @module
+ * @experimental
  */
 
 import bytes from "./bytes.ts";
-import { FileInfo, createReadableStream, readFile, stat } from "./fs.ts";
+import { isBun, isDeno, isNode } from "./env.ts";
+import { FileInfo, createReadableStream, exists, readFile, stat } from "./fs.ts";
 import { sha256 } from "./hash.ts";
+import { isMain } from "./module.ts";
+import { as } from "./object.ts";
 import { join, startsWith } from "./path.ts";
+import { stripStart } from "./string.ts";
 
+/**
+ * Represents the HTTP request `Accept`, `Accept-Encoding` and `Accept-Language`
+ * headers.
+ * 
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Encoding
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Language
+ */
 export interface Accept {
     type: string;
     weight: number;
@@ -20,11 +33,26 @@ export interface Accept {
  * ```ts
  * import { parseAccepts } from "@ayonli/jsext/http";
  * 
- * const accept = parseAccepts("text/html,application/xhtml+xml;q=0.9");
- * console.log(accept);
+ * const accepts = parseAccepts("text/html,application/xhtml+xml;q=0.9");
+ * console.log(accepts);
  * // [
  * //     { value: "text/html", weight: 1 },
  * //     { value: "application/xhtml+xml", weight: 0.9 }
+ * // ]
+ * 
+ * const acceptEncodings = parseAccepts("gzip, deflate, br;q=0.8");
+ * console.log(acceptEncodings);
+ * // [
+ * //     { value: "gzip", weight: 1 },
+ * //     { value: "deflate", weight: 1 },
+ * //     { value: "br", weight: 0.8 }
+ * // ]
+ * 
+ * const acceptLanguages = parseAccepts("en-US,en;q=0.9");
+ * console.log(acceptLanguages);
+ * // [
+ * //     { value: "en-US", weight: 1 },
+ * //     { value: "en", weight: 0.9 }
  * // ]
  * ```
  */
@@ -38,6 +66,11 @@ export function parseAccepts(str: string): Accept[] {
     }).sort((a, b) => b.weight - a.weight);
 }
 
+/**
+ * Represents the HTTP request or response `Content-Type` header.
+ * 
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
+ */
 export interface ContentType {
     type: string;
     charset?: string;
@@ -46,6 +79,19 @@ export interface ContentType {
 
 /**
  * Parses the `Content-Type` header.
+ * 
+ * @example
+ * ```ts
+ * import { parseContentType } from "@ayonli/jsext/http";
+ * 
+ * const type = parseContentType("text/html; charset=utf-8");
+ * console.log(type);
+ * // { type: "text/html", charset: "utf-8" }
+ * 
+ * const type2 = parseContentType("multipart/form-data; boundary=----WebKitFormBoundaryzjK4sVZ2QeZvz5zB");
+ * console.log(type2);
+ * // { type: "multipart/form-data", boundary: "----WebKitFormBoundaryzjK4sVZ2QeZvz5zB" }
+ * ```
  */
 export function parseContentType(str: string): ContentType {
     const [type, ...params] = str.split(";").map((part) => part.trim());
@@ -71,6 +117,12 @@ export function parseContentType(str: string): ContentType {
     return parsed;
 }
 
+/**
+ * Represents an HTTP Cookie.
+ * 
+ * @sse https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cookie
+ */
 export interface Cookie {
     name: string;
     value: string;
@@ -78,13 +130,31 @@ export interface Cookie {
     path?: string;
     expires?: Date;
     maxAge?: number;
-    sameSize?: "Strict" | "Lax";
+    sameSite?: "Strict" | "Lax";
     httpOnly?: boolean;
     secure?: boolean;
 }
 
 /**
  * Parses the `Set-Cookie` header.
+ * 
+ * @example
+ * ```ts
+ * import { parseCookie } from "@ayonli/jsext/http";
+ * 
+ * const cookie = parseCookie("foo=bar; Domain=example.com; Path=/; Expires=Wed, 09 Jun 2021 10:18:14 GMT; HttpOnly; Secure; SameSite=Strict");
+ * console.log(cookie);
+ * // {
+ * //     name: "foo",
+ * //     value: "bar",
+ * //     domain: "example.com",
+ * //     path: "/",
+ * //     expires: Wed Jun 09 2021 10:18:14 GMT+0000 (Coordinated Universal Time),
+ * //     httpOnly: true,
+ * //     secure: true,
+ * //     sameSite: "Strict"
+ * // }
+ * ```
  */
 export function parseCookie(str: string): Cookie {
     const [nameValue, ...params] = str.split(";").map((part) => part.trim());
@@ -113,7 +183,7 @@ export function parseCookie(str: string): Cookie {
             } else if (key === "Path") {
                 cookie.path = value;
             } else if (key === "SameSite") {
-                cookie.sameSize = value as "Strict" | "Lax";
+                cookie.sameSite = value as "Strict" | "Lax";
             }
         }
     }
@@ -123,6 +193,23 @@ export function parseCookie(str: string): Cookie {
 
 /**
  * Converts a {@link Cookie} object to a string.
+ * 
+ * @example
+ * ```ts
+ * import { stringifyCookie } from "@ayonli/jsext/http";
+ * 
+ * const cookie = stringifyCookie({
+ *     name: "foo",
+ *     value: "bar",
+ *     domain: "example.com",
+ *     path: "/",
+ *     expires: new Date("2021-06-09T10:18:14Z"),
+ *     httpOnly: true,
+ *     secure: true,
+ *     sameSite: "Strict"
+ * });
+ * console.log(cookie);
+ * // foo=bar; Domain=example.com; Path=/; Expires=Wed, 09 Jun 2021 10:18:14 GMT; HttpOnly; Secure; SameSite=Strict
  */
 export function stringifyCookie(cookie: Cookie): string {
     let str = `${cookie.name}=${cookie.value}`;
@@ -145,29 +232,56 @@ export function stringifyCookie(cookie: Cookie): string {
     if (cookie.secure)
         str += "; Secure";
 
-    if (cookie.sameSize)
-        str += `; SameSite=${cookie.sameSize}`;
+    if (cookie.sameSite)
+        str += `; SameSite=${cookie.sameSite}`;
 
     return str;
 }
 
+/**
+ * Represents the HTTP request `Range` header.
+ * 
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range
+ */
 export interface Range {
     unit: string;
     ranges: { start: number; end?: number; }[];
+    suffix?: number;
 }
 
 /**
  * Parses the `Range` header.
+ * 
+ * @example
+ * ```ts
+ * import { parseRange } from "@ayonli/jsext/http";
+ * 
+ * const range = parseRange("bytes=0-499");
+ * console.log(range);
+ * // { unit: "bytes", ranges: [{ start: 0, end: 499 }] }
+ * 
+ * const range2 = parseRange("bytes=0-499,1000-1499");
+ * console.log(range2);
+ * // { unit: "bytes", ranges: [{ start: 0, end: 499 }, { start: 1000, end: 1499 }] }
+ * 
+ * const range3 = parseRange("bytes=2000-");
+ * console.log(range3);
+ * // { unit: "bytes", ranges: [{ start: 2000 }] }
+ * 
+ * const range4 = parseRange("bytes=-500");
+ * console.log(range4);
+ * // { unit: "bytes", ranges: [], suffix: 500 }
+ * ```
  */
 export function parseRange(str: string): Range {
     if (!str.includes("=")) {
         throw new TypeError("Invalid Range header");
     }
 
-    const [unit, ...ranges] = str.split("=").map((part) => part.trim());
+    const [unit, ranges] = str.split("=").map((part) => part.trim());
     const parsed: Range = { unit: unit!, ranges: [] };
 
-    for (const range of ranges) {
+    for (const range of ranges!.split(",")) {
         if (!range || !range.includes("-"))
             continue;
 
@@ -176,7 +290,7 @@ export function parseRange(str: string): Range {
         if (!start && !end) {
             continue;
         } else if (!start) {
-            parsed.ranges.push({ start: 0, end: parseInt(end!) });
+            parsed.suffix = parseInt(end!);
         } else if (!end) {
             parsed.ranges.push({ start: parseInt(start) });
         } else {
@@ -184,7 +298,7 @@ export function parseRange(str: string): Range {
         }
     }
 
-    if (!parsed.ranges.length ||
+    if ((!parsed.ranges.length && !parsed.suffix) ||
         parsed.ranges.some((range) => range.start < 0 || (range.end && range.end <= range.start))
     ) {
         throw new TypeError("Invalid Range header");
@@ -195,6 +309,17 @@ export function parseRange(str: string): Range {
 
 /**
  * Checks if the value from the `If-Match` header matches the given ETag.
+ * 
+ * NOTE: Weak tags cannot be matched and will return `false`.
+ * 
+ * @example
+ * ```ts
+ * import { etag, ifMatch } from "@ayonli/jsext/http";
+ * 
+ * const _etag = await etag("Hello, World!");
+ * const match = ifMatch("d-3/1gIbsr1bCvZ2KQgJ7DpTGR3YH", _etag);
+ * console.log(match); // true
+ * ```
  */
 export function ifMatch(value: string | null, etag: string): boolean {
     // Weak tags cannot be matched and return false.
@@ -212,6 +337,15 @@ export function ifMatch(value: string | null, etag: string): boolean {
 
 /**
  * Checks if the value from the `If-None-Match` header matches the given ETag.
+ * 
+ * @example
+ * ```ts
+ * import { etag, ifNoneMatch } from "@ayonli/jsext/http";
+ * 
+ * const _etag = await etag("Hello, World!");
+ * const match = ifNoneMatch("d-3/1gIbsr1bCvZ2KQgJ7DpTGR3YH", _etag);
+ * console.log(match); // false
+ * ```
  */
 export function ifNoneMatch(value: string | null, etag: string): boolean {
     if (!value) {
@@ -230,6 +364,20 @@ export function ifNoneMatch(value: string | null, etag: string): boolean {
 
 /**
  * Calculates the ETag for a given entity.
+ * 
+ * @example
+ * ```ts
+ * import { stat } from "@ayonli/jsext/fs";
+ * import { etag } from "@ayonli/jsext/http";
+ * 
+ * const etag1 = await etag("Hello, World!");
+ * 
+ * const data = new Uint8Array([1, 2, 3, 4, 5]);
+ * const etag2 = await etag(data);
+ * 
+ * const info = await stat("file.txt");
+ * const etag3 = await etag(info);
+ * ```
  */
 export async function etag(data: string | Uint8Array | FileInfo): Promise<string> {
     if (typeof data === "string" || data instanceof Uint8Array) {
@@ -360,7 +508,14 @@ function toWebRequest(req: import("http").IncomingMessage): Request {
 function toNodeResponse(res: Response, nodeRes: import("http").ServerResponse): void {
     const { status, statusText, headers } = res;
 
-    nodeRes.writeHead(status, statusText, Object.fromEntries(headers.entries()));
+    for (const [key, value] of headers) {
+        // Use `setHeader` to set headers instead of passing them to `writeHead`,
+        // it seems in Deno, the headers are not written to the response if they
+        // are passed to `writeHead`.
+        nodeRes.setHeader(key, value);
+    }
+
+    nodeRes.writeHead(status, statusText);
 
     if (!res.body) {
         nodeRes.end();
@@ -384,13 +539,14 @@ function toNodeResponse(res: Response, nodeRes: import("http").ServerResponse): 
  */
 export interface ServeStaticOptions {
     /**
-     * The file system directory to serve files from.
+     * The file system directory to serve files from. If not set, the current
+     * working directory will be used.
      */
-    fsDir: string;
+    fsDir?: string;
     /**
-     * The URL pathname prefix for matching the filename.
+     * The prefix that will be stripped from the URL pathname.
      */
-    urlPrefix: string;
+    urlPrefix?: string;
     /**
      * The default file to serve when the URL pathname is a directory, usually
      * "index.html". If not set, a 403 Forbidden response will be returned.
@@ -400,6 +556,10 @@ export interface ServeStaticOptions {
      * The maximum age in seconds for the "Cache-Control" header.
      */
     maxAge?: number;
+    /**
+     * Extra headers to be set in the response.
+     */
+    headers?: HeadersInit;
 }
 
 /**
@@ -425,25 +585,46 @@ export interface ServeStaticOptions {
  * };
  * ```
  */
-export async function serveStatic(req: Request, options: ServeStaticOptions): Promise<Response> {
+export async function serveStatic(req: Request, options: ServeStaticOptions = {}): Promise<Response> {
+    const dir = options.fsDir ?? ".";
+    const prefix = options.urlPrefix ? join(options.urlPrefix) : "";
     const url = new URL(req.url);
 
-    if (!startsWith(url.pathname, options.urlPrefix)) {
+    if (prefix && !startsWith(url.pathname, prefix)) {
         return new Response("Not Found", { status: 404, statusText: "Not Found" });
     }
 
-    const prefix = join(options.urlPrefix);
-    const filename = join(options.fsDir, url.pathname.slice(prefix.length + 1));
-    const info = await stat(filename);
+    const filename = join(dir, stripStart(url.pathname.slice(prefix.length), "/"));
+    let info: FileInfo;
+
+    try {
+        info = await stat(filename);
+    } catch (err) {
+        if (as(err, Error)?.name === "NotFoundError") {
+            return new Response(`Not Found`, { status: 404, statusText: "Not Found" });
+        } else if (as(err, Error)?.name === "NotAllowedError") {
+            return new Response("Forbidden", { status: 403, statusText: "Forbidden" });
+        } else {
+            return new Response("Internal Server Error", {
+                status: 500,
+                statusText: "Internal Server Error",
+            });
+        }
+    }
 
     if (info.kind === "directory") {
         if (!options.index) {
             return new Response("Forbidden", { status: 403, statusText: "Forbidden" });
+        } else if (!req.url.endsWith("/")) {
+            return Response.redirect(req.url + "/", 301);
         } else {
-            return serveStatic(req, {
-                ...options,
-                urlPrefix: join(prefix, options.index),
-            });
+            const _filename = join(filename, options.index);
+
+            if (!(await exists(_filename))) {
+                return new Response("Forbidden", { status: 403, statusText: "Forbidden" });
+            } else {
+                return serveStatic(new Request(req.url + "" + options.index, { ...req }), options);
+            }
         }
     } else if (info.kind !== "file") {
         return new Response("Forbidden", { status: 403, statusText: "Forbidden" });
@@ -452,6 +633,7 @@ export async function serveStatic(req: Request, options: ServeStaticOptions): Pr
     const mtime = info.mtime ?? new Date();
     const _etag = await etag(info);
     const headers = new Headers({
+        ...(options.headers ?? {}),
         "Accept-Ranges": "bytes",
         "Last-Modified": mtime.toUTCString(),
         "Etag": _etag,
@@ -459,11 +641,11 @@ export async function serveStatic(req: Request, options: ServeStaticOptions): Pr
 
     const ifModifiedSinceValue = req.headers.get("If-Modified-Since");
     const ifNoneMatchValue = req.headers.get("If-None-Match");
-    let modified = false;
+    let modified = true;
 
     if (ifModifiedSinceValue) {
-        const ifModifiedSince = new Date(ifModifiedSinceValue);
-        modified = mtime > ifModifiedSince;
+        const date = new Date(ifModifiedSinceValue);
+        modified = Math.floor(mtime.valueOf() / 1000) > Math.floor(date.valueOf() / 1000);
     } else if (ifNoneMatchValue) {
         modified = ifNoneMatch(ifNoneMatchValue, _etag);
     }
@@ -477,7 +659,12 @@ export async function serveStatic(req: Request, options: ServeStaticOptions): Pr
     }
 
     headers.set("Content-Disposition", `inline; filename="${info.name}"`);
-    headers.set("Content-Type", info.type + "; charset=utf-8");
+
+    if (/^text\/|^application\/(json|yaml|toml|xml|javascript)$/.test(info.type)) {
+        headers.set("Content-Type", info.type + "; charset=utf-8");
+    } else {
+        headers.set("Content-Type", info.type || "application/octet-stream");
+    }
 
     if (info.atime) {
         headers.set("Date", info.atime.toUTCString());
@@ -501,9 +688,18 @@ export async function serveStatic(req: Request, options: ServeStaticOptions): Pr
             });
         }
 
-        const { ranges } = range;
-        const { start } = ranges[0]!;
-        const end = Math.min(ranges[0]!.end ?? info.size - 1, info.size - 1);
+        const { ranges, suffix: suffixLength } = range;
+        let start: number;
+        let end: number;
+
+        if (ranges.length) {
+            ({ start } = ranges[0]!);
+            end = Math.min(ranges[0]!.end ?? info.size - 1, info.size - 1);
+        } else {
+            start = Math.max(info.size - suffixLength!, 0);
+            end = info.size - 1;
+        }
+
         const data = await readFile(filename);
         const slice = data.subarray(start, end + 1);
 
@@ -530,6 +726,28 @@ export async function serveStatic(req: Request, options: ServeStaticOptions): Pr
             status: 200,
             statusText: "OK",
             headers,
+        });
+    }
+}
+
+declare const Bun: any;
+
+if (isMain(import.meta)) {
+    if (isDeno) {
+        Deno.serve({ port: 8000 }, req => serveStatic(req, { index: "index.html" }));
+    } else if (isBun) {
+        Bun.serve({
+            port: 8000,
+            fetch: (req: Request) => serveStatic(req, { index: "index.html" }),
+        });
+        console.log("Listening on http://localhost:8000/");
+    } else if (isNode) {
+        import("node:http").then(async ({ createServer }) => {
+            const server = createServer(withWeb(async (req) => {
+                return serveStatic(req, { index: "index.html" });
+            }));
+            server.listen(8000);
+            console.log("Listening on http://localhost:8000/");
         });
     }
 }
