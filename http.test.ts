@@ -1,6 +1,6 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import * as http from "node:http";
-import { parseAccepts, parseContentType, parseCookie, stringifyCookie, useWeb } from "./http.ts";
+import { parseAccepts, parseContentType, parseCookie, stringifyCookie, withWeb } from "./http.ts";
 import func from "./func.ts";
 
 describe("http", () => {
@@ -272,7 +272,7 @@ describe("http", () => {
         strictEqual(cookie10, "foo=bar; Domain=example.com; Path=/; Expires=Wed, 09 Jun 2021 10:18:14 GMT; Max-Age=3600; HttpOnly; Secure; SameSite=Lax");
     });
 
-    describe("useWeb", () => {
+    describe("withWeb", () => {
         if (typeof fetch !== "function" ||
             typeof Request !== "function" ||
             typeof Response !== "function"
@@ -281,7 +281,7 @@ describe("http", () => {
         }
 
         it("with http module", func(async (defer) => {
-            const server = http.createServer(useWeb(async (req) => {
+            const server = http.createServer(withWeb(async (req) => {
                 return new Response(JSON.stringify({
                     method: req.method,
                     url: req.url,
@@ -333,7 +333,7 @@ describe("http", () => {
                     });
                 });
 
-            const server = http.createServer(useWeb(app.fetch));
+            const server = http.createServer(withWeb(app.fetch));
             server.listen(8002);
             defer(() => server.close());
 

@@ -1,9 +1,9 @@
 import * as http from "http";
 import { WebSocketServer } from "../ws/node.ts";
-import { useWeb } from "../http.ts";
+import { withWeb } from "../http.ts";
 
 const wsServer = new WebSocketServer();
-const httpServer = http.createServer(useWeb(async (req) => {
+const httpServer = http.createServer(withWeb(async (req) => {
     if (req.headers.get("upgrade") === "websocket") {
         const { socket } = await wsServer.upgrade(req);
 

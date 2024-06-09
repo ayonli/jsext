@@ -5,7 +5,7 @@ import func from "../func.ts";
 import { type WebSocketConnection } from "./node.ts";
 import bytes, { concat, text } from "../bytes.ts";
 import { until } from "../async.ts";
-import { useWeb } from "../http.ts";
+import { withWeb } from "../http.ts";
 import type { HttpBindings } from "@hono/node-server";
 
 describe("ws:node", () => {
@@ -203,7 +203,7 @@ describe("ws:node", () => {
             });
         });
 
-        const server = http.createServer(useWeb(async (req) => {
+        const server = http.createServer(withWeb(async (req) => {
             const { response } = await wsServer.upgrade(req);
             return response;
         }));
@@ -293,7 +293,7 @@ describe("ws:node", () => {
                 return response;
             });
 
-        const server = http.createServer(useWeb(app.fetch));
+        const server = http.createServer(withWeb(app.fetch));
         server.listen(8000);
         defer(() => server.close());
 

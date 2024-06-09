@@ -147,23 +147,23 @@ export function stringifyCookie(cookie: Cookie): string {
 }
 
 /**
- * Creates a Node.js HTTP request listener using modern Web APIs.
+ * Creates a Node.js HTTP request listener with modern Web APIs.
  * 
  * NOTE: This function requires Node.js v18.4.1 or above.
  * 
  * @example
  * ```ts
  * import * as http from "node:http";
- * import { useWeb } from "@ayonli/jsext/http";
+ * import { withWeb } from "@ayonli/jsext/http";
  * 
- * const server = http.createServer(useWeb(async (req) => {
+ * const server = http.createServer(withWeb(async (req) => {
  *     return new Response("Hello, World!");
  * }));
  * 
  * server.listen(8000);
  * ```
  */
-export function useWeb(
+export function withWeb(
     listener: (req: Request) => void | Response | Promise<void | Response>
 ): import("http").RequestListener {
     return async (nReq, nRes) => {

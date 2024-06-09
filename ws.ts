@@ -182,17 +182,19 @@ export interface ServerOptions {
  * });
  * httpServer.listen(3000);
  * 
- * // Node.js with useWeb
- * import { useWeb } from "@ayonli/jsext/http";
- * const httpServer2 = http.createServer(useWeb(async (req) => {
- *      await wsServer.upgrade(req);
+ * // Node.js (withWeb)
+ * import { withWeb } from "@ayonli/jsext/http";
+ * const httpServer2 = http.createServer(withWeb(async (req) => {
+ *      const { response } = await wsServer.upgrade(req);
+ *      return response;
  * }));
  * httpServer2.listen(3001);
  * 
  * // Bun
  * const bunServer = Bun.serve({
  *     async fetch(req) {
- *         await wsServer.upgrade(req);
+ *         const { response } = await wsServer.upgrade(req);
+ *         return response;
  *     },
  *     websocket: wsServer.bunListener,
  * });
@@ -269,7 +271,7 @@ export class WebSocketServer {
      * Workers.
      * 
      * This function can also be used in Node.js if the HTTP request listener is
-     * created using the `useWeb` function from `@ayonli/jsext/http` module.
+     * created using the `withWeb` function from `@ayonli/jsext/http` module.
      * 
      * NOTE: This function fails if the request is not a WebSocket upgrade request.
      */
