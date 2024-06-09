@@ -19,6 +19,9 @@ async function etag(data) {
     const hash = await sha256(mtime.toISOString(), "base64");
     return `${data.size.toString(16)}-${hash.slice(0, 27)}`;
 }
+async function randomPort(prefer = undefined) {
+    throw new Error("Unsupported runtime");
+}
 function withWeb(listener) {
     throw new Error("Unsupported runtime");
 }
@@ -26,5 +29,5 @@ async function serveStatic(req, options = {}) {
     throw new Error("Unsupported runtime");
 }
 
-export { etag, serveStatic, withWeb };
+export { etag, randomPort, serveStatic, withWeb };
 //# sourceMappingURL=http.js.map

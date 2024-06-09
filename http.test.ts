@@ -8,13 +8,16 @@ import {
     parseContentType,
     parseCookie,
     parseRange,
+    randomPort,
     serveStatic,
     stringifyCookie,
     withWeb,
 } from "./http.ts";
 import func from "./func.ts";
 import { readFileAsText } from "./fs.ts";
-import { isDeno } from "./env.ts";
+import { isBun, isDeno } from "./env.ts";
+
+declare const Bun: any;
 
 describe("http", () => {
     describe("parseAccepts", () => {
@@ -350,6 +353,70 @@ describe("http", () => {
 
         const _etag2 = await etag("");
         strictEqual(_etag2, "0-47DEQpj8HBSa+/TImW+5JCeuQeR");
+    });
+
+    describe("randomPort", () => {
+        it("random port", func(async (defer) => {
+            const port = await randomPort();
+            ok(port > 0 && port <= 65535);
+
+            if (isDeno) {
+                const server = Deno.serve({ port }, async () => {
+                    return new Response("Hello, World!");
+                });
+                defer(() => server.shutdown());
+            } else if (isBun) {
+                const server = Bun.serve({
+                    port,
+                    fetch: async () => {
+                        return new Response("Hello, World!");
+                    },
+                });
+                defer(() => server.stop(true));
+            } else {
+                const server = http.createServer(withWeb(async () => {
+                    return new Response("Hello, World!");
+                })).listen(port);
+                defer(() => server.close());
+            }
+
+            const res = await fetch(`http://localhost:${port}`);
+            const text = await res.text();
+
+            strictEqual(res.status, 200);
+            strictEqual(text, "Hello, World!");
+        }));
+
+        it("prefer port", func(async (defer) => {
+            const port = await randomPort(32145);
+            strictEqual(port, 32145);
+
+            if (isDeno) {
+                const server = Deno.serve({ port }, async () => {
+                    return new Response("Hello, World!");
+                });
+                defer(() => server.shutdown());
+            } else if (isBun) {
+                const server = Bun.serve({
+                    port,
+                    fetch: async () => {
+                        return new Response("Hello, World!");
+                    },
+                });
+                defer(() => server.stop(true));
+            } else {
+                const server = http.createServer(withWeb(async () => {
+                    return new Response("Hello, World!");
+                })).listen(port);
+                defer(() => server.close());
+            }
+
+            const res = await fetch(`http://localhost:${port}`);
+            const text = await res.text();
+
+            strictEqual(res.status, 200);
+            strictEqual(text, "Hello, World!");
+        }));
     });
 
     describe("withWeb", () => {

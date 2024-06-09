@@ -52,6 +52,40 @@ async function etag(data) {
     return `${data.size.toString(16)}-${hash.slice(0, 27)}`;
 }
 /**
+ * Returns a random port number that is available for listening.
+ */
+async function randomPort(prefer = undefined) {
+    if (isDeno) {
+        const listener = Deno.listen({ port: prefer !== null && prefer !== void 0 ? prefer : 0 });
+        const { port } = listener.addr;
+        listener.close();
+        return Promise.resolve(port);
+    }
+    else if (isBun) {
+        const listener = Bun.listen({
+            hostname: "0.0.0.0",
+            port: prefer !== null && prefer !== void 0 ? prefer : 0,
+            socket: {
+                data: () => { },
+            },
+        });
+        const { port } = listener;
+        listener.stop(true);
+        return Promise.resolve(port);
+    }
+    else if (isNode) {
+        const { createServer } = await import('net');
+        const server = createServer();
+        server.listen(prefer !== null && prefer !== void 0 ? prefer : 0);
+        const port = server.address().port;
+        server.close();
+        return port;
+    }
+    else {
+        throw new Error("Unsupported runtime");
+    }
+}
+/**
  * Creates a Node.js HTTP request listener with modern Web APIs.
  *
  * NOTE: This function requires Node.js v18.4.1 or above.
@@ -406,5 +440,5 @@ if (isMain(import.meta)) {
     }
 }
 
-export { etag, ifNoneMatch, parseRange, serveStatic, withWeb };
+export { etag, ifNoneMatch, parseRange, randomPort, serveStatic, withWeb };
 //# sourceMappingURL=http.js.map

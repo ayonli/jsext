@@ -25,6 +25,11 @@ export async function etag(data: string | Uint8Array | FileInfo): Promise<string
     return `${data.size.toString(16)}-${hash.slice(0, 27)}`;
 }
 
+export async function randomPort(prefer: number | undefined = undefined): Promise<number> {
+    void prefer;
+    throw new Error("Unsupported runtime");
+}
+
 export function withWeb(
     listener: (req: Request) => void | Response | Promise<void | Response>
 ): import("http").RequestListener {
