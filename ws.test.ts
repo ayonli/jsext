@@ -85,6 +85,11 @@ describe("ws", () => {
         strictEqual(errorEvent, undefined);
         strictEqual(closeEvent?.type, "close");
         strictEqual(closeEvent?.wasClean, true);
+        try {
+            strictEqual(closeEvent?.code, 1000);
+        } catch {
+            strictEqual(closeEvent?.code, 1005);
+        }
         strictEqual(serverMessages[0], "text");
         strictEqual(text(serverMessages[1] as Uint8Array), "binary");
         strictEqual(clientMessages[0], "client sent: text");
@@ -167,6 +172,11 @@ describe("ws", () => {
         strictEqual(errorEvent, undefined);
         strictEqual(closeEvent?.type, "close");
         strictEqual(closeEvent?.wasClean, true);
+        try {
+            strictEqual(closeEvent?.code, 1000);
+        } catch {
+            strictEqual(closeEvent?.code, 1005);
+        }
         strictEqual(serverMessages[0], "text");
         strictEqual(text(serverMessages[1] as Uint8Array), "binary");
         strictEqual(clientMessages[0], "client sent: text");
@@ -247,6 +257,11 @@ describe("ws", () => {
         strictEqual(errorEvent, undefined);
         strictEqual(closeEvent?.type, "close");
         strictEqual(closeEvent?.wasClean, true);
+        try {
+            strictEqual(closeEvent?.code, 1000);
+        } catch {
+            strictEqual(closeEvent?.code, 1005);
+        }
         strictEqual(serverMessages[0], "text");
         strictEqual(text(serverMessages[1] as Uint8Array), "binary");
         strictEqual(clientMessages[0], "client sent: text");

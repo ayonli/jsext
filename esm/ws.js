@@ -13,7 +13,7 @@ import runtime from './runtime.js';
  */
 var _a, _b, _c;
 const _source = Symbol.for("source");
-const _erred = Symbol.for("erred");
+const _errored = Symbol.for("errored");
 const _listener = Symbol.for("listener");
 const _clients = Symbol.for("clients");
 const _server = Symbol.for("server");
@@ -353,7 +353,7 @@ let WebSocketServer$1 = class WebSocketServer {
                 }
             },
             error: (ws, error) => {
-                Object.assign(ws, { [_erred]: true });
+                Object.assign(ws, { [_errored]: true });
                 const { request } = ws.data;
                 const client = clients.get(request);
                 client && client.dispatchEvent(createErrorEvent("error", { error }));
@@ -366,7 +366,7 @@ let WebSocketServer$1 = class WebSocketServer {
                     client.dispatchEvent(createCloseEvent("close", {
                         code,
                         reason,
-                        wasClean: Reflect.get(ws, _erred) !== true,
+                        wasClean: Reflect.get(ws, _errored) !== true,
                     }));
                 }
             },

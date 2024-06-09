@@ -115,9 +115,16 @@ export function useWeb(
         const req = toWebRequest(nReq);
         const res = await listener(req);
 
-        if (res && !nRes.headersSent &&
-            Reflect.get(nReq, Symbol.for("upgraded")) !== true // Skip if the request is upgraded
-        ) {
+        if (res && !nRes.headersSent) {
+            if (res.status === 101) {
+                // When the status code is 101, it means the server is upgrading
+                // the connection to a different protocol, usually to WebSocket.
+                // In this case, the response shall be and may have already been
+                // written by the request socket. So we should not write the
+                // response again.
+                return;
+            }
+
             toNodeResponse(res, nRes);
         }
     };

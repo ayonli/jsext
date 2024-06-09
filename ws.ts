@@ -13,7 +13,7 @@ import { createCloseEvent, createErrorEvent } from "./event.ts";
 import runtime from "./runtime.ts";
 
 const _source = Symbol.for("source");
-const _erred = Symbol.for("erred");
+const _errored = Symbol.for("errored");
 const _listener = Symbol.for("listener");
 const _clients = Symbol.for("clients");
 const _server = Symbol.for("server");
@@ -478,7 +478,7 @@ export class WebSocketServer {
                 }
             },
             error: (ws: ServerWebSocket, error: Error) => {
-                Object.assign(ws, { [_erred]: true });
+                Object.assign(ws, { [_errored]: true });
                 const { request } = ws.data;
                 const client = clients.get(request);
                 client && client.dispatchEvent(createErrorEvent("error", { error }));
@@ -492,7 +492,7 @@ export class WebSocketServer {
                     client.dispatchEvent(createCloseEvent("close", {
                         code,
                         reason,
-                        wasClean: Reflect.get(ws, _erred) !== true,
+                        wasClean: Reflect.get(ws, _errored) !== true,
                     }));
                 }
             },

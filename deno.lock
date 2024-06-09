@@ -3,6 +3,7 @@
   "packages": {
     "specifiers": {
       "npm:@ayonli/sse@^0.4.0": "npm:@ayonli/sse@0.4.0",
+      "npm:@hono/node-server@^1.11.2": "npm:@hono/node-server@1.11.2",
       "npm:@rollup/plugin-commonjs@^25.0.4": "npm:@rollup/plugin-commonjs@25.0.7_rollup@3.29.4",
       "npm:@rollup/plugin-node-resolve@^15.2.1": "npm:@rollup/plugin-node-resolve@15.2.3_rollup@3.29.4",
       "npm:@rollup/plugin-terser@^0.4.3": "npm:@rollup/plugin-terser@0.4.4_rollup@3.29.4",
@@ -137,6 +138,10 @@
       },
       "@esbuild/win32-x64@0.19.12": {
         "integrity": "sha512-T1QyPSDCyMXaO3pzBkF96E8xMkiRYbUEZADd29SyPGabqxMViNoii+NcK7eWJAEoU6RZyEm5lVSIjTmcdoB9HA==",
+        "dependencies": {}
+      },
+      "@hono/node-server@1.11.2": {
+        "integrity": "sha512-JhX0nUC66GeDxpIdMKWDRMEwtQBa64CY907iAF1sYqb4m2p2PdSU7zkbnNhAZLg/6IjSlTuj6CF307JlBXVvpg==",
         "dependencies": {}
       },
       "@isaacs/cliui@8.0.2": {
@@ -1430,6 +1435,7 @@
     "packageJson": {
       "dependencies": [
         "npm:@ayonli/sse@^0.4.0",
+        "npm:@hono/node-server@^1.11.2",
         "npm:@rollup/plugin-commonjs@^25.0.4",
         "npm:@rollup/plugin-node-resolve@^15.2.1",
         "npm:@rollup/plugin-terser@^0.4.3",

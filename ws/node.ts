@@ -6,8 +6,7 @@ import { type ServerOptions, WebSocketConnection, WebSocketServer as BaseServer 
 
 export { WebSocketConnection };
 
-const _upgraded = Symbol.for("upgraded");
-const _erred = Symbol.for("erred");
+const _errored = Symbol.for("errored");
 const _listener = Symbol.for("listener");
 const _clients = Symbol.for("clients");
 const _server = Symbol.for("server");
@@ -58,10 +57,6 @@ export class WebSocketServer extends BaseServer {
             const clients = this[_clients];
 
             this[_server].handleUpgrade(request, socket, Buffer.alloc(0), (ws) => {
-                // Mark the request as upgraded, so that it will not be used
-                // for sending a response.
-                Object.assign(request, { [_upgraded]: true });
-
                 const client = new WebSocketConnection(ws as any);
 
                 clients.set(request as IncomingMessage, client);
@@ -87,15 +82,15 @@ export class WebSocketServer extends BaseServer {
                     client.dispatchEvent(event);
                 });
                 ws.on("error", error => {
-                    Object.assign(error, { [_erred]: true });
+                    Object.assign(ws, { [_errored]: true });
                     client.dispatchEvent(createErrorEvent("error", { error }));
                 });
                 ws.on("close", (code, reason) => {
                     clients.delete(request as IncomingMessage);
                     client.dispatchEvent(createCloseEvent("close", {
-                        code: code ?? 1000,
+                        code,
                         reason: reason?.toString("utf8") ?? "",
-                        wasClean: Reflect.get(ws, _erred) !== false,
+                        wasClean: Reflect.get(ws, _errored) !== false,
                     }));
                 });
 
