@@ -105,8 +105,8 @@ categories:
   system APIs for both server and browser applications.
 - [hash](https://jsr.io/@ayonli/jsext/doc/hash/~) Simplified hash functions for
   various data types.
-- [http](https://jsr.io/@ayonli/jsext/doc/http/~) Functions to transform Node.js
-  HTTP APIs to modern Web standards.
+- [http](https://jsr.io/@ayonli/jsext/doc/http/~) Utility functions for handling
+  HTTP related tasks, such as parsing headers.
 - [json](https://jsr.io/@ayonli/jsext/doc/json/~) Functions for parsing JSONs to
   specific structures.
 - [math](https://jsr.io/@ayonli/jsext/doc/math/~) Functions for mathematical
