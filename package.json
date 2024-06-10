@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.9.30",
+    "version": "0.9.31",
     "description": "A JavaScript extension package for building strong and modern applications.",
     "exports": {
         ".": {
@@ -552,7 +552,8 @@
     ],
     "dependencies": {
         "iconv-lite": "^0.6.3",
-        "sudo-prompt": "^9.2.1"
+        "sudo-prompt": "^9.2.1",
+        "ws": "^8.17.0"
     },
     "devDependencies": {
         "@ayonli/sse": "^0.4.0",
@@ -582,8 +583,7 @@
         "ts-node": "^10.9.1",
         "tslib": "^2.6.2",
         "tsx": "^4.7.1",
-        "typescript": "^5.4.3",
-        "ws": "^8.17.0"
+        "typescript": "^5.4.3"
     },
     "optionalDependencies": {
         "jsdom": "^24.0.0",
