@@ -62,30 +62,73 @@ export async function etag(data: string | Uint8Array | FileInfo): Promise<string
  */
 export async function randomPort(prefer: number | undefined = undefined): Promise<number> {
     if (isDeno) {
-        const listener = Deno.listen({ port: prefer ?? 0 });
-        const { port } = listener.addr as Deno.NetAddr;
-        listener.close();
-        return Promise.resolve(port);
+        try {
+            const listener = Deno.listen({ port: prefer ?? 0 });
+            const { port } = listener.addr as Deno.NetAddr;
+            listener.close();
+            return Promise.resolve(port);
+        } catch (err) {
+            if (prefer) {
+                return randomPort(0);
+            } else {
+                throw err;
+            }
+        }
     } else if (isBun) {
-        const listener = Bun.listen({
-            hostname: "0.0.0.0",
-            port: prefer ?? 0,
-            socket: {
-                data: () => { },
-            },
-        }) as { port: number; stop: (force?: boolean) => void; };
-        const { port } = listener;
-        listener.stop(true);
-        return Promise.resolve(port);
+        try {
+            const listener = Bun.listen({
+                hostname: "0.0.0.0",
+                port: prefer ?? 0,
+                socket: {
+                    data: () => { },
+                },
+            }) as { port: number; stop: (force?: boolean) => void; };
+            const { port } = listener;
+            listener.stop(true);
+            return Promise.resolve(port);
+        } catch (err) {
+            if (prefer) {
+                return randomPort(0);
+            } else {
+                throw err;
+            }
+        }
     } else if (isNode) {
-        const { createServer } = await import("net");
-        const server = createServer();
-        server.listen(prefer ?? 0);
-        const port = (server.address() as any).port as number;
+        const { createServer, connect } = await import("net");
 
-        return new Promise<number>((resolve, reject) => {
-            server.close(err => err ? reject(err) : resolve(port));
-        });
+        if (prefer) {
+            // In Node.js listening on a port used by another process may work,
+            // so we don't use `listen` method to check if the port is available.
+            // Instead, we use the `connect` method to check if the port can be
+            // reached, if so, the port is open and we don't use it.
+            const isOpen = await new Promise<boolean>((resolve, reject) => {
+                const conn = connect(prefer);
+                conn.once("connect", () => {
+                    conn.end();
+                    resolve(true);
+                }).once("error", (err) => {
+                    if ((err as any)["code"] === "ECONNREFUSED") {
+                        resolve(false);
+                    } else {
+                        reject(err);
+                    }
+                });
+            });
+
+            if (isOpen) {
+                return randomPort(0);
+            } else {
+                return prefer;
+            }
+        } else {
+            const server = createServer();
+            server.listen({ port: 0, exclusive: true });
+            const port = (server.address() as any).port as number;
+
+            return new Promise<number>((resolve, reject) => {
+                server.close(err => err ? reject(err) : resolve(port));
+            });
+        }
     } else {
         throw new Error("Unsupported runtime");
     }
@@ -264,12 +307,17 @@ export async function serveStatic(
     req: Request,
     options: ServeStaticOptions = {}
 ): Promise<Response> {
+    const extraHeaders = options.headers ?? {};
     const dir = options.fsDir ?? ".";
     const prefix = options.urlPrefix ? join(options.urlPrefix) : "";
     const url = new URL(req.url);
 
     if (prefix && !startsWith(url.pathname, prefix)) {
-        return new Response("Not Found", { status: 404, statusText: "Not Found" });
+        return new Response("Not Found", {
+            status: 404,
+            statusText: "Not Found",
+            headers: extraHeaders,
+        });
     }
 
     const filename = join(dir, stripStart(url.pathname.slice(prefix.length), "/"));
@@ -279,13 +327,22 @@ export async function serveStatic(
         info = await stat(filename);
     } catch (err) {
         if (as(err, Error)?.name === "NotFoundError") {
-            return new Response(`Not Found`, { status: 404, statusText: "Not Found" });
+            return new Response(`Not Found`, {
+                status: 404,
+                statusText: "Not Found",
+                headers: extraHeaders,
+            });
         } else if (as(err, Error)?.name === "NotAllowedError") {
-            return new Response("Forbidden", { status: 403, statusText: "Forbidden" });
+            return new Response("Forbidden", {
+                status: 403,
+                statusText: "Forbidden",
+                headers: extraHeaders,
+            });
         } else {
             return new Response("Internal Server Error", {
                 status: 500,
                 statusText: "Internal Server Error",
+                headers: extraHeaders,
             });
         }
     }
@@ -299,7 +356,11 @@ export async function serveStatic(
             } else if (await exists(join(filename, "index.htm"))) {
                 return serveStatic(new Request(join(req.url, "index.htm"), req), options);
             } else if (!options.listDir) {
-                return new Response("Forbidden", { status: 403, statusText: "Forbidden" });
+                return new Response("Forbidden", {
+                    status: 403,
+                    statusText: "Forbidden",
+                    headers: extraHeaders,
+                });
             } else {
                 const entries = await readAsArray(readDir(filename));
                 const list = [
@@ -355,19 +416,39 @@ export async function serveStatic(
                     status: 200,
                     statusText: "OK",
                     headers: {
+                        ...extraHeaders,
                         "Content-Type": "text/html; charset=utf-8",
                     },
                 });
             }
         }
     } else if (info.kind !== "file") {
-        return new Response("Forbidden", { status: 403, statusText: "Forbidden" });
+        return new Response("Forbidden", {
+            status: 403,
+            statusText: "Forbidden",
+            headers: extraHeaders,
+        });
+    }
+
+    const rangeValue = req.headers.get("Range");
+    let range: Range | undefined;
+
+    if (rangeValue && info.size) {
+        try {
+            range = parseRange(rangeValue);
+        } catch {
+            return new Response("Invalid Range header", {
+                status: 416,
+                statusText: "Range Not Satisfiable",
+                headers: extraHeaders,
+            });
+        }
     }
 
     const mtime = info.mtime ?? new Date();
     const _etag = await etag(info);
     const headers = new Headers({
-        ...(options.headers ?? {}),
+        ...extraHeaders,
         "Accept-Ranges": "bytes",
         "Last-Modified": mtime.toUTCString(),
         "Etag": _etag,
@@ -408,20 +489,7 @@ export async function serveStatic(
         headers.set("Cache-Control", `public, max-age=${options.maxAge}`);
     }
 
-    const rangeValue = req.headers.get("Range");
-
-    if (rangeValue && info.size) {
-        let range: Range;
-
-        try {
-            range = parseRange(rangeValue);
-        } catch {
-            return new Response("Invalid Range header", {
-                status: 416,
-                statusText: "Range Not Satisfiable",
-            });
-        }
-
+    if (range) {
         const { ranges, suffix: suffixLength } = range;
         let start: number;
         let end: number;
@@ -468,20 +536,40 @@ declare const Bun: any;
 
 if (isMain(import.meta)) {
     if (isDeno) {
-        Deno.serve({ port: 8000 }, req => serveStatic(req, { listDir: true }));
-    } else if (isBun) {
-        Bun.serve({
-            port: 8000,
-            fetch: (req: Request) => serveStatic(req, { listDir: true }),
+        randomPort(8000).then((port) => {
+            Deno.serve({ port }, req => serveStatic(req, {
+                listDir: true,
+                headers: {
+                    "Server": navigator.userAgent,
+                },
+            }));
         });
-        console.log("Listening on http://localhost:8000/");
+    } else if (isBun) {
+        randomPort(8000).then((port) => {
+            Bun.serve({
+                port,
+                fetch: (req: Request) => serveStatic(req, {
+                    listDir: true,
+                    headers: {
+                        "Server": navigator.userAgent,
+                    },
+                }),
+            });
+            console.log(`Listening on http://localhost:${port}/`);
+        });
     } else if (isNode) {
         import("node:http").then(async ({ createServer }) => {
             const server = createServer(withWeb(async (req) => {
-                return serveStatic(req, { listDir: true });
+                return serveStatic(req, {
+                    listDir: true,
+                    headers: {
+                        "Server": `Node.js/${process.version}`,
+                    },
+                });
             }));
-            server.listen(8000);
-            console.log("Listening on http://localhost:8000/");
+            const port = await randomPort(8000);
+            server.listen(port);
+            console.log(`Listening on http://localhost:${port}/`);
         });
     }
 }

@@ -427,6 +427,45 @@ describe("http", () => {
             strictEqual(res.status, 200);
             strictEqual(text, "Hello, World!");
         }));
+
+        it("prefer port used", func(async (defer) => {
+            const server = http.createServer(() => { });
+            await new Promise<void>((resolve) => server.listen(32146, () => resolve()));
+            defer(() => server.close());
+
+            const port = await randomPort(32146);
+            ok(port > 0 && port <= 65535 && port !== 32146);
+
+            if (typeof fetch !== "function") {
+                return;
+            }
+
+            if (isDeno) {
+                const server = Deno.serve({ port }, async () => {
+                    return new Response("Hello, World!");
+                });
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+            } else if (isBun) {
+                const server = Bun.serve({
+                    port,
+                    fetch: async () => {
+                        return new Response("Hello, World!");
+                    },
+                });
+                defer(() => server.stop(true));
+            } else {
+                const server = http.createServer(withWeb(async () => {
+                    return new Response("Hello, World!");
+                })).listen(port);
+                defer(() => server.close());
+            }
+
+            const res = await fetch(`http://localhost:${port}`);
+            const text = await res.text();
+
+            strictEqual(res.status, 200);
+            strictEqual(text, "Hello, World!");
+        }));
     });
 
     describe("withWeb", () => {
