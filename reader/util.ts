@@ -332,13 +332,24 @@ export function toAsyncIterable<T>(source: any, eventMap: {
             // automatically closed.
             const es = source as EventSource;
             const _close = es.close;
-            es.close = function close() {
-                _close.call(es);
-                handleClose();
-                es.close = _close;
-                errDesc?.set?.call(source, null);
-                cleanup?.();
-            };
+
+            Object.defineProperty(es, "close", {
+                configurable: true,
+                writable: true,
+                value: function close() {
+                    _close.call(es);
+                    handleClose();
+
+                    Object.defineProperty(es, "close", {
+                        configurable: true,
+                        writable: true,
+                        value: _close,
+                    });
+
+                    errDesc?.set?.call(source, null);
+                    cleanup?.();
+                }
+            });
         }
     } else if (isFunction(source["send"]) && isFunction(source["close"])) {
         // non-standard WebSocket implementation

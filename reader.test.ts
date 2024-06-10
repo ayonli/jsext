@@ -325,6 +325,7 @@ describe("reader", () => {
         });
 
         it("EventSource", jsext.func(async (defer) => {
+            const port = await randomPort();
             const server = await new Promise<http.Server>((resolve) => {
                 const server = http.createServer((req, res) => {
                     if (!SSE.isEventSource(req)) {
@@ -343,7 +344,7 @@ describe("reader", () => {
                     } else {
                         res.end();
                     }
-                }).listen(12345, () => resolve(server));
+                }).listen(port, () => resolve(server));
             });
             defer(() => new Promise(resolve => {
                 server.closeAllConnections?.();
@@ -353,7 +354,7 @@ describe("reader", () => {
             const dEventSource = typeof EventSource === "function"
                 ? EventSource
                 : (await import("eventsource")).default;
-            const es1 = new dEventSource("http://localhost:12345/message") as EventSource;
+            const es1 = new dEventSource(`http://localhost:${port}/message`) as EventSource;
             const messages: string[] = [];
 
             for await (const msg of toAsyncIterable(es1)) {
@@ -366,7 +367,7 @@ describe("reader", () => {
 
             deepStrictEqual(messages, ["hello", "world"]);
 
-            const es2 = new dEventSource("http://localhost:12345/event") as EventSource;
+            const es2 = new dEventSource(`http://localhost:${port}/event`) as EventSource;
             const replies: string[] = [];
 
             for await (const reply of toAsyncIterable(es2, { event: "reply" })) {
@@ -556,6 +557,7 @@ describe("reader", () => {
         });
 
         it("EventSource", jsext.func(async (defer) => {
+            const port = await randomPort();
             const server = await new Promise<http.Server>((resolve) => {
                 const server = http.createServer((req, res) => {
                     if (!SSE.isEventSource(req)) {
@@ -574,7 +576,7 @@ describe("reader", () => {
                     } else {
                         res.end();
                     }
-                }).listen(12345, () => resolve(server));
+                }).listen(port, () => resolve(server));
             });
             defer(() => new Promise(resolve => {
                 server.closeAllConnections?.();
@@ -584,7 +586,7 @@ describe("reader", () => {
             const dEventSource = typeof EventSource === "function"
                 ? EventSource
                 : (await import("eventsource")).default;
-            const es1 = new dEventSource("http://localhost:12345/message") as EventSource;
+            const es1 = new dEventSource(`http://localhost:${port}/message`) as EventSource;
             const messages: string[] = [];
 
             const reader1 = toReadableStream(es1).getReader();
@@ -601,7 +603,7 @@ describe("reader", () => {
 
             deepStrictEqual(messages, ["hello", "world"]);
 
-            const es2 = new dEventSource("http://localhost:12345/event") as EventSource;
+            const es2 = new dEventSource(`http://localhost:${port}/event`) as EventSource;
             const replies: string[] = [];
 
             const reader2 = toReadableStream(es2, { event: "reply" }).getReader();

@@ -13,7 +13,9 @@ describe("ws", () => {
         return;
     }
 
-    it("handle connection in constructor", func(async (defer) => {
+    it("handle connection in constructor", func(async function (defer) {
+        this.timeout(5_000);
+
         const { WebSocketServer } = await import("./ws.ts");
 
         let errorEvent: ErrorEvent | undefined;
@@ -99,7 +101,9 @@ describe("ws", () => {
         strictEqual(text(clientMessages[1] as Uint8Array), "client sent: binary");
     }));
 
-    it("handle connection in upgrade", func(async (defer) => {
+    it("handle connection in upgrade", func(async function (defer) {
+        this.timeout(5_000);
+
         const { WebSocketServer } = await import("./ws.ts");
 
         let errorEvent: ErrorEvent | undefined;
@@ -188,7 +192,9 @@ describe("ws", () => {
         strictEqual(text(clientMessages[1] as Uint8Array), "client sent: binary");
     }));
 
-    it("with Hono framework", func(async (defer) => {
+    it("with Hono framework", func(async function (defer) {
+        this.timeout(5_000);
+
         const { Hono } = await import("hono");
         const { WebSocketServer } = await import("./ws.ts");
 

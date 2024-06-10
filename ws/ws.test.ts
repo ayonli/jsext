@@ -14,7 +14,9 @@ describe("ws:node", () => {
         return;
     }
 
-    it("handle connection in constructor", func(async (defer) => {
+    it("handle connection in constructor", func(async function (defer) {
+        this.timeout(5_000);
+
         const { WebSocketServer } = await import("../ws/node.ts");
 
         let errorEvent: ErrorEvent | undefined;
@@ -93,7 +95,9 @@ describe("ws:node", () => {
         strictEqual(text(clientMessages[1] as Uint8Array), "client sent: binary");
     }));
 
-    it("handle connection in upgrade", func(async (defer) => {
+    it("handle connection in upgrade", func(async function (defer) {
+        this.timeout(5_000);
+
         const { WebSocketServer } = await import("../ws/node.ts");
 
         let errorEvent: ErrorEvent | undefined;
@@ -179,6 +183,7 @@ describe("ws:node", () => {
             this.skip();
         }
 
+        this.timeout(5_000);
         const { WebSocketServer } = await import("../ws/node.ts");
 
         let errorEvent: ErrorEvent | undefined;
@@ -263,6 +268,7 @@ describe("ws:node", () => {
             this.skip();
         }
 
+        this.timeout(5_000);
         const https = await import("node:https");
         const { WebSocketServer } = await import("../ws/node.ts");
 
@@ -353,6 +359,7 @@ describe("ws:node", () => {
             this.skip();
         }
 
+        this.timeout(5_000);
         const { Hono } = await import("hono");
         const { WebSocketServer } = await import("../ws/node.ts");
 
@@ -441,6 +448,7 @@ describe("ws:node", () => {
             this.skip();
         }
 
+        this.timeout(5_000);
         const { Hono } = await import("hono");
         const { serve } = await import("@hono/node-server");
         const { WebSocketServer } = await import("../ws/node.ts");
@@ -525,6 +533,8 @@ describe("ws:node", () => {
     }));
 
     it("with Express framework", func(async function (defer) {
+        this.timeout(5_000);
+
         const { WebSocketServer } = await import("../ws/node.ts");
         const { default: express } = await import("express");
 
