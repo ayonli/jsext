@@ -1,8 +1,9 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
-import { until } from "./async.ts";
+import { sleep, until } from "./async.ts";
 import { isDeno } from "./env.ts";
 import "./index.ts";
 import jsext from "./index.ts";
+import { randomPort } from "./http.ts";
 
 describe("sse", () => {
     if (typeof EventTarget === "undefined" ||
@@ -60,15 +61,16 @@ describe("sse", () => {
             }
 
             const { SSE } = await import("./sse.ts");
+            const port = await randomPort();
 
             let sse: InstanceType<typeof SSE> | undefined = undefined;
-            const server = Deno.serve({ port: 8081 }, req => {
+            const server = Deno.serve({ port }, req => {
                 sse = new SSE(req);
                 return sse.response;
             });
-            defer(() => server.shutdown());
+            defer(() => Promise.race([server.shutdown(), sleep(100)]));
 
-            const es = new EventSource("http://localhost:8081");
+            const es = new EventSource(`http://localhost:${port}`);
             const messages: string[] = [];
             let lastEventId = "";
 
@@ -123,15 +125,16 @@ describe("sse", () => {
             }
 
             const { SSE } = await import("./sse.ts");
+            const port = await randomPort();
 
             let sse: InstanceType<typeof SSE> | undefined = undefined;
-            const server = Deno.serve({ port: 8082 }, req => {
+            const server = Deno.serve({ port }, req => {
                 sse = new SSE(req);
                 return sse.response;
             });
-            defer(() => server.shutdown());
+            defer(() => Promise.race([server.shutdown(), sleep(100)]));
 
-            const es = new EventSource("http://localhost:8082");
+            const es = new EventSource(`http://localhost:${port}`);
 
             await until(() => es.readyState === EventSource.OPEN);
             sse!.close();
@@ -147,10 +150,11 @@ describe("sse", () => {
             }
 
             const { SSE } = await import("./sse.ts");
+            const port = await randomPort();
 
             let sse: InstanceType<typeof SSE> | undefined = undefined;
             let closeEvent: CloseEvent | undefined = undefined;
-            const server = Deno.serve({ port: 8082 }, req => {
+            const server = Deno.serve({ port }, req => {
                 sse = new SSE(req);
 
                 sse.addEventListener("close", _ev => {
@@ -159,9 +163,9 @@ describe("sse", () => {
 
                 return sse.response;
             });
-            defer(() => server.shutdown());
+            defer(() => Promise.race([server.shutdown(), sleep(100)]));
 
-            const es = new EventSource("http://localhost:8082");
+            const es = new EventSource(`http://localhost:${port}`);
 
             await until(() => es.readyState === EventSource.OPEN);
             es.close();

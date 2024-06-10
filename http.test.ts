@@ -16,6 +16,7 @@ import {
 import func from "./func.ts";
 import { readFileAsText } from "./fs.ts";
 import { isBun, isDeno } from "./env.ts";
+import { sleep } from "./async.ts";
 
 declare const Bun: any;
 
@@ -360,11 +361,15 @@ describe("http", () => {
             const port = await randomPort();
             ok(port > 0 && port <= 65535);
 
+            if (typeof fetch !== "function") {
+                return;
+            }
+
             if (isDeno) {
                 const server = Deno.serve({ port }, async () => {
                     return new Response("Hello, World!");
                 });
-                defer(() => server.shutdown());
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
             } else if (isBun) {
                 const server = Bun.serve({
                     port,
@@ -391,11 +396,15 @@ describe("http", () => {
             const port = await randomPort(32145);
             strictEqual(port, 32145);
 
+            if (typeof fetch !== "function") {
+                return;
+            }
+
             if (isDeno) {
                 const server = Deno.serve({ port }, async () => {
                     return new Response("Hello, World!");
                 });
-                defer(() => server.shutdown());
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
             } else if (isBun) {
                 const server = Bun.serve({
                     port,
@@ -442,10 +451,11 @@ describe("http", () => {
                     statusText: "OK",
                 });
             }));
-            server.listen(8001);
+            const port = await randomPort();
+            server.listen(port);
             defer(() => server.close());
 
-            const res = await fetch(`http://localhost:8001/hello`, {
+            const res = await fetch(`http://localhost:${port}/hello`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -457,7 +467,7 @@ describe("http", () => {
             strictEqual(res.status, 200);
             strictEqual(res.statusText, "OK");
             strictEqual(data.method, "POST");
-            strictEqual(data.url, "http://localhost:8001/hello");
+            strictEqual(data.url, `http://localhost:${port}/hello`);
             strictEqual(data.headers["content-type"], "application/json");
             deepStrictEqual(data.body, { hello: "world" });
         }));
@@ -481,10 +491,11 @@ describe("http", () => {
                 });
 
             const server = http.createServer(withWeb(app.fetch));
-            server.listen(8002);
+            const port = await randomPort();
+            server.listen(port);
             defer(() => server.close());
 
-            const res = await fetch(`http://localhost:8002/hello`, {
+            const res = await fetch(`http://localhost:${port}/hello`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -496,7 +507,7 @@ describe("http", () => {
             strictEqual(res.status, 200);
             // strictEqual(res.statusText, "OK");
             strictEqual(data.method, "POST");
-            strictEqual(data.url, "http://localhost:8002/hello");
+            strictEqual(data.url, `http://localhost:${port}/hello`);
             strictEqual(data.headers["content-type"], "application/json");
             deepStrictEqual(data.body, { hello: "world" });
         }));
@@ -513,13 +524,14 @@ describe("http", () => {
                     return new Response("Hello, World!");
                 }
             }));
-            server.listen(8003);
+            const port = await randomPort();
+            server.listen(port);
             defer(() => server.close());
 
-            const res = await fetch(`http://localhost:8003/hello/`, { redirect: "manual" });
+            const res = await fetch(`http://localhost:${port}/hello/`, { redirect: "manual" });
 
             strictEqual(res.status, 301);
-            strictEqual(res.headers.get("Location"), "http://localhost:8003/hello");
+            strictEqual(res.headers.get("Location"), `http://localhost:${port}/hello`);
         }));
     });
 
@@ -532,35 +544,36 @@ describe("http", () => {
         }
 
         it("default", func(async (defer) => {
+            const port = await randomPort();
+
             if (isDeno) {
                 // @ts-ignore
-                const server = Deno.serve({ port: 8004 }, async (req) => {
+                const server = Deno.serve({ port }, async (req) => {
                     return serveStatic(req);
                 });
-                // Unable to close the server here, don't know why.
-                // defer(() => server.shutdown());
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req);
                 }));
-                server.listen(8004);
+                server.listen(port);
                 defer(() => server.close());
             }
 
             const content = await readFileAsText("./examples/index.html");
-            const res = await fetch(`http://localhost:8004/examples/index.html`);
+            const res = await fetch(`http://localhost:${port}/examples/index.html`);
             const text = await res.text();
 
             strictEqual(res.status, 200);
             strictEqual(res.statusText, "OK");
             strictEqual(text, content);
 
-            const res1 = await fetch(`http://localhost:8004/examples`, { redirect: "manual" });
+            const res1 = await fetch(`http://localhost:${port}/examples`, { redirect: "manual" });
 
             strictEqual(res1.status, 301);
-            strictEqual(res1.headers.get("Location"), "http://localhost:8004/examples/");
+            strictEqual(res1.headers.get("Location"), `http://localhost:${port}/examples/`);
 
-            const res2 = await fetch(`http://localhost:8004/examples/`);
+            const res2 = await fetch(res1.headers.get("Location")!);
             const text2 = await res2.text();
 
             strictEqual(res2.status, 200);
@@ -569,25 +582,27 @@ describe("http", () => {
         }));
 
         it("with fsDir", func(async (defer) => {
+            const port = await randomPort();
+
             if (isDeno) {
-                const server = Deno.serve({ port: 8005 }, async (req) => {
+                const server = Deno.serve({ port }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                     });
                 });
-                defer(() => server.shutdown());
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return await serveStatic(req, {
                         fsDir: "./examples",
                     });
                 }));
-                server.listen(8005);
+                server.listen(port);
                 defer(() => server.close());
             }
 
             const content = await readFileAsText("./examples/index.html");
-            const res = await fetch(`http://localhost:8005/index.html`);
+            const res = await fetch(`http://localhost:${port}/index.html`);
             const text = await res.text();
 
             strictEqual(res.status, 200);
@@ -595,14 +610,16 @@ describe("http", () => {
         }));
 
         it("with urlPrefix", func(async (defer) => {
+            const port = await randomPort();
+
             if (isDeno) {
-                const server = Deno.serve({ port: 8006 }, async (req) => {
+                const server = Deno.serve({ port }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
                     });
                 });
-                defer(() => server.shutdown());
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req, {
@@ -610,12 +627,12 @@ describe("http", () => {
                         urlPrefix: "/assets",
                     });
                 }));
-                server.listen(8006);
+                server.listen(port);
                 defer(() => server.close());
             }
 
             const content = await readFileAsText("./examples/index.html");
-            const res = await fetch(`http://localhost:8006/assets/index.html`);
+            const res = await fetch(`http://localhost:${port}/assets/index.html`);
             const text = await res.text();
 
             strictEqual(res.status, 200);
@@ -624,15 +641,17 @@ describe("http", () => {
         }));
 
         it("with maxAge", func(async (defer) => {
+            const port = await randomPort();
+
             if (isDeno) {
-                const server = Deno.serve({ port: 8007 }, async (req) => {
+                const server = Deno.serve({ port }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
                         maxAge: 3600,
                     });
                 });
-                defer(() => server.shutdown());
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req, {
@@ -641,12 +660,12 @@ describe("http", () => {
                         maxAge: 3600,
                     });
                 }));
-                server.listen(8007);
+                server.listen(port);
                 defer(() => server.close());
             }
 
             const content = await readFileAsText("./examples/index.html");
-            const res = await fetch(`http://localhost:8007/assets/`, { redirect: "manual" });
+            const res = await fetch(`http://localhost:${port}/assets/`, { redirect: "manual" });
             const text = await res.text();
 
             strictEqual(res.status, 200);
@@ -656,15 +675,17 @@ describe("http", () => {
         }));
 
         it("with If-Modified-Since", func(async (defer) => {
+            const port = await randomPort();
+
             if (isDeno) {
-                const server = Deno.serve({ port: 8008 }, async (req) => {
+                const server = Deno.serve({ port }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
                         maxAge: 3600,
                     });
                 });
-                defer(() => server.shutdown());
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req, {
@@ -673,12 +694,12 @@ describe("http", () => {
                         maxAge: 3600,
                     });
                 }));
-                server.listen(8008);
+                server.listen(port);
                 defer(() => server.close());
             }
 
             const content = await readFileAsText("./examples/index.html");
-            const res = await fetch(`http://localhost:8008/assets/index.html`);
+            const res = await fetch(`http://localhost:${port}/assets/index.html`);
             const text = await res.text();
 
             strictEqual(res.status, 200);
@@ -697,15 +718,18 @@ describe("http", () => {
         }));
 
         it("with If-None-Match", func(async (defer) => {
+            const port = await randomPort();
+
             if (isDeno) {
-                const server = Deno.serve({ port: 8009 }, async (req) => {
+                // @ts-ignore
+                const server = Deno.serve({ port }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
                         maxAge: 3600,
                     });
                 });
-                defer(() => server.shutdown());
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req, {
@@ -714,12 +738,12 @@ describe("http", () => {
                         maxAge: 3600,
                     });
                 }));
-                server.listen(8009);
+                server.listen(port);
                 defer(() => server.close());
             }
 
             const content = await readFileAsText("./examples/index.html");
-            const res = await fetch(`http://localhost:8009/assets/index.html`);
+            const res = await fetch(`http://localhost:${port}/assets/index.html`);
             const text = await res.text();
 
             strictEqual(res.status, 200);
@@ -738,15 +762,17 @@ describe("http", () => {
         }));
 
         it("with Range", func(async (defer) => {
+            const port = await randomPort();
+
             if (isDeno) {
-                const server = Deno.serve({ port: 8010 }, async (req) => {
+                const server = Deno.serve({ port }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
                         maxAge: 3600,
                     });
                 });
-                defer(() => server.shutdown());
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req, {
@@ -755,12 +781,12 @@ describe("http", () => {
                         maxAge: 3600,
                     });
                 }));
-                server.listen(8010);
+                server.listen(port);
                 defer(() => server.close());
             }
 
             const content = await readFileAsText("./examples/index.html");
-            const res = await fetch(`http://localhost:8010/assets/index.html`, {
+            const res = await fetch(`http://localhost:${port}/assets/index.html`, {
                 headers: {
                     "Range": "bytes=0-499",
                 }
@@ -806,8 +832,10 @@ describe("http", () => {
         }));
 
         it("with headers", func(async (defer) => {
+            const port = await randomPort();
+
             if (isDeno) {
-                const server = Deno.serve({ port: 8011 }, async (req) => {
+                const server = Deno.serve({ port }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
@@ -816,7 +844,7 @@ describe("http", () => {
                         },
                     });
                 });
-                defer(() => server.shutdown());
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req, {
@@ -827,12 +855,12 @@ describe("http", () => {
                         },
                     });
                 }));
-                server.listen(8011);
+                server.listen(port);
                 defer(() => server.close());
             }
 
             const content = await readFileAsText("./examples/index.html");
-            const res = await fetch(`http://localhost:8011/assets/index.html`);
+            const res = await fetch(`http://localhost:${port}/assets/index.html`);
             const text = await res.text();
 
             strictEqual(res.status, 200);
@@ -847,15 +875,17 @@ describe("http", () => {
         }));
 
         it("with listDir", func(async (defer) => {
+            const port = await randomPort();
+
             if (isDeno) {
-                const server = Deno.serve({ port: 8012 }, async (req) => {
+                const server = Deno.serve({ port }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
                         listDir: true,
                     });
                 });
-                defer(() => server.shutdown());
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req, {
@@ -864,11 +894,11 @@ describe("http", () => {
                         listDir: true,
                     });
                 }));
-                server.listen(8012);
+                server.listen(port);
                 defer(() => server.close());
             }
 
-            const res = await fetch(`http://localhost:8012/assets/`);
+            const res = await fetch(`http://localhost:${port}/assets/`);
 
             strictEqual(res.status, 200);
             strictEqual(res.statusText, "OK");

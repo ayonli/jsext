@@ -20,6 +20,8 @@ import {
     toReadableStream,
     concat,
 } from "./reader.ts";
+import { sleep } from "./async.ts";
+import { randomPort } from "./http.ts";
 
 describe("reader", () => {
     describe("readAsArray", () => {
@@ -380,9 +382,10 @@ describe("reader", () => {
 
         it("WebSocket", jsext.func(async function (defer) {
             this.timeout(5000);
+            const port = await randomPort();
 
             if (typeof Deno === "object") {
-                const server = Deno.serve({ port: 12345 }, req => {
+                const server = Deno.serve({ port }, req => {
                     if (req.headers.get("upgrade") != "websocket") {
                         return new Response(null, { status: 501 });
                     }
@@ -394,10 +397,10 @@ describe("reader", () => {
                     });
                     return response;
                 });
-                defer(() => server.shutdown());
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
             } else {
                 const { WebSocketServer } = await import("ws");
-                const server = http.createServer().listen(12345);
+                const server = http.createServer().listen(port);
                 const wsServer = new WebSocketServer({ server });
                 defer(() => new Promise(resolve => {
                     server.closeAllConnections?.();
@@ -414,10 +417,10 @@ describe("reader", () => {
             let ws: WebSocket;
 
             if (typeof WebSocket === "function") {
-                ws = new WebSocket("ws://localhost:12345", "echo-protocol");
+                ws = new WebSocket(`ws://localhost:${port}`, "echo-protocol");
             } else {
                 const dWebSocket = (await import("isomorphic-ws")).default;
-                ws = new dWebSocket("ws://localhost:12345", "echo-protocol") as unknown as WebSocket;
+                ws = new dWebSocket(`ws://localhost:${port}`, "echo-protocol") as unknown as WebSocket;
             }
 
             const messages: string[] = [];
@@ -618,9 +621,10 @@ describe("reader", () => {
 
         it("WebSocket", jsext.func(async function (defer) {
             this.timeout(5000);
+            const port = await randomPort();
 
             if (typeof Deno === "object") {
-                const server = Deno.serve({ port: 12345 }, req => {
+                const server = Deno.serve({ port }, req => {
                     if (req.headers.get("upgrade") != "websocket") {
                         return new Response(null, { status: 501 });
                     }
@@ -632,10 +636,10 @@ describe("reader", () => {
                     });
                     return response;
                 });
-                defer(() => server.shutdown());
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
             } else {
                 const { WebSocketServer } = await import("ws");
-                const server = http.createServer().listen(12345);
+                const server = http.createServer().listen(port);
                 const wsServer = new WebSocketServer({ server });
                 defer(() => new Promise(resolve => {
                     server.closeAllConnections?.();
@@ -652,10 +656,10 @@ describe("reader", () => {
             let ws: WebSocket;
 
             if (typeof WebSocket === "function") {
-                ws = new WebSocket("ws://localhost:12345", "echo-protocol");
+                ws = new WebSocket(`ws://localhost:${port}`, "echo-protocol");
             } else {
                 const dWebSocket = (await import("isomorphic-ws")).default;
-                ws = new dWebSocket("ws://localhost:12345", "echo-protocol") as unknown as WebSocket;
+                ws = new dWebSocket(`ws://localhost:${port}`, "echo-protocol") as unknown as WebSocket;
             }
 
             const messages: string[] = [];

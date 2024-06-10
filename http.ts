@@ -80,8 +80,10 @@ export async function randomPort(prefer: number | undefined = undefined): Promis
         const server = createServer();
         server.listen(prefer ?? 0);
         const port = (server.address() as any).port as number;
-        server.close();
-        return port;
+
+        return new Promise<number>((resolve, reject) => {
+            server.close(err => err ? reject(err) : resolve(port));
+        });
     } else {
         throw new Error("Unsupported runtime");
     }

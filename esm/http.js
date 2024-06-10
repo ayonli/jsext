@@ -78,8 +78,9 @@ async function randomPort(prefer = undefined) {
         const server = createServer();
         server.listen(prefer !== null && prefer !== void 0 ? prefer : 0);
         const port = server.address().port;
-        server.close();
-        return port;
+        return new Promise((resolve, reject) => {
+            server.close(err => err ? reject(err) : resolve(port));
+        });
     }
     else {
         throw new Error("Unsupported runtime");

@@ -5,7 +5,7 @@ import func from "../func.ts";
 import { type WebSocketConnection } from "./node.ts";
 import bytes, { concat, text } from "../bytes.ts";
 import { until } from "../async.ts";
-import { withWeb } from "../http.ts";
+import { randomPort, withWeb } from "../http.ts";
 import type { HttpBindings } from "@hono/node-server";
 
 describe("ws:node", () => {
@@ -44,16 +44,17 @@ describe("ws:node", () => {
         const server = http.createServer(async (req) => {
             await wsServer.upgrade(req);
         });
-        server.listen(8030);
+        const port = await randomPort();
+        server.listen(port);
         defer(() => server.close());
 
         let ws: WebSocket;
 
         if (typeof WebSocket === "function") {
-            ws = new WebSocket("ws://localhost:8030");
+            ws = new WebSocket(`ws://localhost:${port}`);
         } else {
             const dWebSocket = (await import("isomorphic-ws")).default;
-            ws = new dWebSocket("ws://localhost:8030") as unknown as WebSocket;
+            ws = new dWebSocket(`ws://localhost:${port}`) as unknown as WebSocket;
         }
 
         ws.binaryType = "arraybuffer";
@@ -124,16 +125,17 @@ describe("ws:node", () => {
             const { socket } = await wsServer.upgrade(req);
             handle(socket);
         });
-        server.listen(8031);
+        const port = await randomPort();
+        server.listen(port);
         defer(() => server.close());
 
         let ws: WebSocket;
 
         if (typeof WebSocket === "function") {
-            ws = new WebSocket("ws://localhost:8031");
+            ws = new WebSocket(`ws://localhost:${port}`);
         } else {
             const dWebSocket = (await import("isomorphic-ws")).default;
-            ws = new dWebSocket("ws://localhost:8031") as unknown as WebSocket;
+            ws = new dWebSocket(`ws://localhost:${port}`) as unknown as WebSocket;
         }
 
         ws.binaryType = "arraybuffer";
@@ -207,16 +209,17 @@ describe("ws:node", () => {
             const { response } = await wsServer.upgrade(req);
             return response;
         }));
-        server.listen(8032);
+        const port = await randomPort();
+        server.listen(port);
         defer(() => server.close());
 
         let ws: WebSocket;
 
         if (typeof WebSocket === "function") {
-            ws = new WebSocket("ws://localhost:8032");
+            ws = new WebSocket(`ws://localhost:${port}`);
         } else {
             const dWebSocket = (await import("isomorphic-ws")).default;
-            ws = new dWebSocket("ws://localhost:8032") as unknown as WebSocket;
+            ws = new dWebSocket(`ws://localhost:${port}`) as unknown as WebSocket;
         }
 
         ws.binaryType = "arraybuffer";
@@ -294,16 +297,17 @@ describe("ws:node", () => {
             });
 
         const server = http.createServer(withWeb(app.fetch));
-        server.listen(8033);
+        const port = await randomPort();
+        server.listen(port);
         defer(() => server.close());
 
         let ws: WebSocket;
 
         if (typeof WebSocket === "function") {
-            ws = new WebSocket("ws://localhost:8033");
+            ws = new WebSocket(`ws://localhost:${port}`);
         } else {
             const dWebSocket = (await import("isomorphic-ws")).default;
-            ws = new dWebSocket("ws://localhost:8033") as unknown as WebSocket;
+            ws = new dWebSocket(`ws://localhost:${port}`) as unknown as WebSocket;
         }
 
         ws.binaryType = "arraybuffer";
@@ -381,19 +385,17 @@ describe("ws:node", () => {
                 return new Response(null, { status: 101 });
             });
 
-        const server = serve({
-            port: 8034,
-            fetch: app.fetch,
-        });
+        const port = await randomPort();
+        const server = serve({ port, fetch: app.fetch });
         defer(() => server.close());
 
         let ws: WebSocket;
 
         if (typeof WebSocket === "function") {
-            ws = new WebSocket("ws://localhost:8034");
+            ws = new WebSocket(`ws://localhost:${port}`);
         } else {
             const dWebSocket = (await import("isomorphic-ws")).default;
-            ws = new dWebSocket("ws://localhost:8034") as unknown as WebSocket;
+            ws = new dWebSocket(`ws://localhost:${port}`) as unknown as WebSocket;
         }
 
         ws.binaryType = "arraybuffer";

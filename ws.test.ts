@@ -3,7 +3,8 @@ import { isBun, isDeno } from "./env.ts";
 import func from "./func.ts";
 import { type WebSocketConnection } from "./ws.ts";
 import bytes, { concat, text } from "./bytes.ts";
-import { until } from "./async.ts";
+import { sleep, until } from "./async.ts";
+import { randomPort } from "./http.ts";
 
 declare const Bun: any;
 
@@ -40,15 +41,17 @@ describe("ws", () => {
             });
         });
 
+        const port = await randomPort();
+
         if (isDeno) {
-            const server = Deno.serve({ port: 8020 }, async req => {
+            const server = Deno.serve({ port }, async req => {
                 const { response } = await wsServer.upgrade(req);
                 return response;
             });
-            defer(() => server.shutdown());
+            defer(() => Promise.race([server.shutdown(), sleep(100)]));
         } else {
             const server = Bun.serve({
-                port: 8020,
+                port,
                 fetch: async (req: Request) => {
                     const { response } = await wsServer.upgrade(req);
                     return response;
@@ -59,7 +62,7 @@ describe("ws", () => {
             defer(() => server.stop(true));
         }
 
-        const ws = new WebSocket("ws://localhost:8020");
+        const ws = new WebSocket(`ws://localhost:${port}`);
 
         ws.binaryType = "arraybuffer";
         ws.onopen = () => {
@@ -125,16 +128,18 @@ describe("ws", () => {
             });
         };
 
+        const port = await randomPort();
+
         if (isDeno) {
-            const server = Deno.serve({ port: 8021 }, async req => {
+            const server = Deno.serve({ port }, async req => {
                 const { socket, response } = await wsServer.upgrade(req);
                 handle(socket);
                 return response;
             });
-            defer(() => server.shutdown());
+            defer(() => Promise.race([server.shutdown(), sleep(100)]));
         } else {
             const server = Bun.serve({
-                port: 8021,
+                port,
                 fetch: async (req: Request) => {
                     const { socket, response } = await wsServer.upgrade(req);
                     handle(socket);
@@ -146,7 +151,7 @@ describe("ws", () => {
             defer(() => server.stop(true));
         }
 
-        const ws = new WebSocket("ws://localhost:8021");
+        const ws = new WebSocket(`ws://localhost:${port}`);
 
         ws.binaryType = "arraybuffer";
         ws.onopen = () => {
@@ -212,6 +217,7 @@ describe("ws", () => {
             });
         });
 
+        const port = await randomPort();
         const app = new Hono()
             .get("/", async (ctx) => {
                 const { response } = await wsServer.upgrade(ctx.req.raw);
@@ -219,11 +225,11 @@ describe("ws", () => {
             });
 
         if (isDeno) {
-            const server = Deno.serve({ port: 8022 }, app.fetch);
-            defer(() => server.shutdown());
+            const server = Deno.serve({ port }, app.fetch);
+            defer(() => Promise.race([server.shutdown(), sleep(100)]));
         } else {
             const server = Bun.serve({
-                port: 8022,
+                port,
                 fetch: app.fetch,
                 websocket: wsServer.bunListener,
             });
@@ -231,7 +237,7 @@ describe("ws", () => {
             defer(() => server.stop(true));
         }
 
-        const ws = new WebSocket("ws://localhost:8022");
+        const ws = new WebSocket(`ws://localhost:${port}`);
 
         ws.binaryType = "arraybuffer";
         ws.onopen = () => {
