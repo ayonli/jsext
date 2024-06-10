@@ -251,9 +251,9 @@ export class WebSocketServer {
     protected idleTimeout: number;
     protected perMessageDeflate: boolean;
     protected [_listener]: ((socket: WebSocketConnection) => void) | undefined;
-    protected [_clients] = new Map<Request, WebSocketConnection>();
+    protected [_clients]: Map<Request, WebSocketConnection> = new Map();
     private [_server]: BunServerType | undefined = undefined;
-    private [_connTasks] = new Map<Request, AsyncTask<WebSocketConnection>>();
+    private [_connTasks]: Map<Request, AsyncTask<WebSocketConnection>> = new Map();
 
     constructor();
     constructor(listener: (socket: WebSocketConnection) => void);
