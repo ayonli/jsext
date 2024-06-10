@@ -29,6 +29,7 @@ import { fixFileType } from "../fs/util.ts";
 import { as, pick } from "../object.ts";
 import { basename, join } from "../path.ts";
 import { createProgressEvent } from "../event.ts";
+import progress, { ProgressState } from "./progress.ts";
 
 /**
  * Options for file dialog functions, such as {@link pickFile} and
@@ -610,6 +611,12 @@ export interface DownloadFileOptions extends SaveFileOptions {
      * changes.
      */
     onProgress?: (event: ProgressEvent) => void;
+    /**
+     * Displays a progress bar during the download process. This option shadows
+     * the `signal` option if provided, as the progress bar has its own
+     * cancellation mechanism.
+     */
+    showProgress?: boolean;
 }
 
 /**
@@ -677,11 +684,30 @@ export async function downloadFile(
         }
     }
 
+    const task = asyncTask<void>();
+    let signal = options.signal ?? null;
+    let result: Promise<void | null>;
+    let updateProgress: ((state: ProgressState) => void) | undefined;
     let stream: ReadableStream<Uint8Array> | undefined;
     let size: number | undefined;
 
+    if (options.showProgress) {
+        const ctrl = new AbortController();
+        signal = ctrl.signal;
+
+        result = progress("Downloading...", async (set) => {
+            updateProgress = set;
+            return await task;
+        }, () => {
+            ctrl.abort();
+            throw new Error("Download canceled");
+        });
+    } else {
+        result = task;
+    }
+
     if (typeof fetch === "function") {
-        const res = await fetch(src);
+        const res = await fetch(src, { signal });
 
         if (!res.ok) {
             throw new Error(`Failed to download: ${src}`);
@@ -714,12 +740,24 @@ export async function downloadFile(
             }
         };
 
+        const { hostname, port, pathname, search } = new URL(src);
+
         if (/^https:\/\//i.test(src)) {
             const https = await import("https");
-            https.get(src, handleHttpResponse);
+            https.get({
+                hostname,
+                port,
+                path: pathname + search,
+                signal: signal ?? undefined,
+            }, handleHttpResponse);
         } else {
             const http = await import("http");
-            http.get(src, handleHttpResponse);
+            http.get({
+                hostname,
+                port,
+                path: pathname + search,
+                signal: signal ?? undefined,
+            }, handleHttpResponse);
         }
 
         ({ stream, size } = await task);
@@ -729,7 +767,7 @@ export async function downloadFile(
         throw new Error("Unsupported runtime");
     }
 
-    if (options.onProgress) {
+    if (options.onProgress || options.showProgress) {
         const { onProgress } = options;
         let loaded = 0;
 
@@ -738,14 +776,22 @@ export async function downloadFile(
                 controller.enqueue(chunk);
                 loaded += chunk.byteLength;
 
-                try {
-                    onProgress(createProgressEvent("progress", {
-                        lengthComputable: !!size,
-                        loaded,
-                        total: size ?? 0,
-                    }));
-                } catch {
-                    // ignore
+                if (onProgress) {
+                    try {
+                        onProgress?.(createProgressEvent("progress", {
+                            lengthComputable: !!size,
+                            loaded,
+                            total: size ?? 0,
+                        }));
+                    } catch {
+                        // ignore
+                    }
+                }
+
+                if (updateProgress && size) {
+                    updateProgress({
+                        percent: loaded / size,
+                    });
                 }
             },
         });
@@ -753,5 +799,11 @@ export async function downloadFile(
         stream = stream.pipeThrough(transform);
     }
 
-    return await writeFile(dest, stream, pick(options, ["signal"]));
+    writeFile(dest, stream, { signal: signal! }).then(() => {
+        task.resolve();
+    }).catch(err => {
+        task.reject(err);
+    });
+
+    await result;
 }

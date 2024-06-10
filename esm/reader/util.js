@@ -227,14 +227,22 @@ function toAsyncIterable(source, eventMap = undefined) {
             // automatically closed.
             const es = source;
             const _close = es.close;
-            es.close = function close() {
-                var _a;
-                _close.call(es);
-                handleClose();
-                es.close = _close;
-                (_a = errDesc === null || errDesc === void 0 ? void 0 : errDesc.set) === null || _a === void 0 ? void 0 : _a.call(source, null);
-                cleanup === null || cleanup === void 0 ? void 0 : cleanup();
-            };
+            Object.defineProperty(es, "close", {
+                configurable: true,
+                writable: true,
+                value: function close() {
+                    var _a;
+                    _close.call(es);
+                    handleClose();
+                    Object.defineProperty(es, "close", {
+                        configurable: true,
+                        writable: true,
+                        value: _close,
+                    });
+                    (_a = errDesc === null || errDesc === void 0 ? void 0 : errDesc.set) === null || _a === void 0 ? void 0 : _a.call(source, null);
+                    cleanup === null || cleanup === void 0 ? void 0 : cleanup();
+                }
+            });
         }
     }
     else if (isFunction(source["send"]) && isFunction(source["close"])) {

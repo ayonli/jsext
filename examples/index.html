@@ -170,19 +170,17 @@
 
             const downloadUrlBtn = document.getElementById('download-file-url');
             downloadUrlBtn.addEventListener('click', async () => {
-                await progress("Downloading...", async (update) => {
-                    await downloadFile("./", {
-                        name: 'index.html',
-                        onProgress: (event) => {
-                            if (event.lengthComputable) {
-                                const percent = Math.round((event.loaded / event.total) * 100);
-                                console.log(`Downloaded ${percent}%`);
-                                update({ percent });
-                            } else {
-                                console.log(`Downloaded ${event.loaded} bytes`);
-                            }
-                        },
-                    });
+                await downloadFile("./", {
+                    name: 'index.html',
+                    showProgress: true,
+                    onProgress: (event) => {
+                        if (event.lengthComputable) {
+                            const percent = Math.round((event.loaded / event.total) * 100);
+                            console.log(`Downloaded ${percent}%`);
+                        } else {
+                            console.log(`Downloaded ${event.loaded} bytes`);
+                        }
+                    },
                 });
             });
 

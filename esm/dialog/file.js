@@ -13,6 +13,7 @@ import { fixFileType } from '../fs/util.js';
 import { as, pick } from '../object.js';
 import { join, basename } from '../path.js';
 import { createProgressEvent } from '../event.js';
+import progress from './progress.js';
 import { isWSL } from '../cli/common.js';
 
 /**
@@ -464,6 +465,7 @@ async function saveFile(file, options = {}) {
  * ```
  */
 async function downloadFile(url, options = {}) {
+    var _a;
     const src = typeof url === "object" ? url.href : url;
     const name = options.name || basename(src);
     let dest = null;
@@ -506,10 +508,28 @@ async function downloadFile(url, options = {}) {
             throw new Error("Unsupported runtime");
         }
     }
+    const task = asyncTask();
+    let signal = (_a = options.signal) !== null && _a !== void 0 ? _a : null;
+    let result;
+    let updateProgress;
     let stream;
     let size;
+    if (options.showProgress) {
+        const ctrl = new AbortController();
+        signal = ctrl.signal;
+        result = progress("Downloading...", async (set) => {
+            updateProgress = set;
+            return await task;
+        }, () => {
+            ctrl.abort();
+            throw new Error("Download canceled");
+        });
+    }
+    else {
+        result = task;
+    }
     if (typeof fetch === "function") {
-        const res = await fetch(src);
+        const res = await fetch(src, { signal });
         if (!res.ok) {
             throw new Error(`Failed to download: ${src}`);
         }
@@ -539,41 +559,64 @@ async function downloadFile(url, options = {}) {
                 });
             }
         };
+        const { hostname, port, pathname, search } = new URL(src);
         if (/^https:\/\//i.test(src)) {
             const https = await import('https');
-            https.get(src, handleHttpResponse);
+            https.get({
+                hostname,
+                port,
+                path: pathname + search,
+                signal: signal !== null && signal !== void 0 ? signal : undefined,
+            }, handleHttpResponse);
         }
         else {
             const http = await import('http');
-            http.get(src, handleHttpResponse);
+            http.get({
+                hostname,
+                port,
+                path: pathname + search,
+                signal: signal !== null && signal !== void 0 ? signal : undefined,
+            }, handleHttpResponse);
         }
         ({ stream, size } = await task);
     }
     if (!stream) {
         throw new Error("Unsupported runtime");
     }
-    if (options.onProgress) {
+    if (options.onProgress || options.showProgress) {
         const { onProgress } = options;
         let loaded = 0;
         const transform = new TransformStream({
             transform(chunk, controller) {
                 controller.enqueue(chunk);
                 loaded += chunk.byteLength;
-                try {
-                    onProgress(createProgressEvent("progress", {
-                        lengthComputable: !!size,
-                        loaded,
-                        total: size !== null && size !== void 0 ? size : 0,
-                    }));
+                if (onProgress) {
+                    try {
+                        onProgress === null || onProgress === void 0 ? void 0 : onProgress(createProgressEvent("progress", {
+                            lengthComputable: !!size,
+                            loaded,
+                            total: size !== null && size !== void 0 ? size : 0,
+                        }));
+                    }
+                    catch (_a) {
+                        // ignore
+                    }
                 }
-                catch (_a) {
-                    // ignore
+                if (updateProgress && size) {
+                    updateProgress({
+                        percent: loaded / size,
+                    });
                 }
             },
         });
         stream = stream.pipeThrough(transform);
     }
-    return await writeFile(dest, stream, pick(options, ["signal"]));
+    writeFile(dest, stream, { signal: signal }).then(() => {
+        task.resolve();
+    }).catch(err => {
+        task.reject(err);
+    });
+    await result;
 }
 
 export { downloadFile, openDirectory, openFile, openFiles, pickDirectory, pickFile, pickFiles, saveFile };
