@@ -620,7 +620,7 @@ export interface DownloadFileOptions extends SaveFileOptions {
  * the file will be saved to the default download location.
  * 
  * NOTE: This function relies on the `ReadableStream` API, in Node.js, it
- * requires version v16.5 or above.
+ * requires Node.js v16.5 or above.
  * 
  * @example
  * ```ts

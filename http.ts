@@ -4,6 +4,8 @@
  * @experimental
  */
 
+import type { IncomingMessage, ServerResponse } from "node:http";
+import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
 import { orderBy } from "./array.ts";
 import bytes from "./bytes.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
@@ -108,7 +110,7 @@ export async function randomPort(prefer: number | undefined = undefined): Promis
  */
 export function withWeb(
     listener: (req: Request) => void | Response | Promise<void | Response>
-): import("http").RequestListener {
+): (req: IncomingMessage | Http2ServerRequest, res: ServerResponse | Http2ServerResponse) => void {
     return async (nReq, nRes) => {
         const req = toWebRequest(nReq);
         const res = await listener(req);
@@ -132,10 +134,19 @@ export function withWeb(
 /**
  * Transforms a Node.js HTTP request to a modern `Request` object.
  */
-function toWebRequest(req: import("http").IncomingMessage): Request {
-    const protocol = (req.socket as any)["encrypted"] ? "https" : "http";
-    const url = new URL(req.url ?? "/", `${protocol}://${req.headers.host}`);
-    const headers = new Headers(req.headers as Record<string, string>);
+function toWebRequest(req: IncomingMessage | Http2ServerRequest): Request {
+    const protocol = (req.socket as any)["encrypted"] || req.headers[":scheme"] === "https"
+        ? "https" : "http";
+    const host = req.headers[":authority"] ?? req.headers["host"];
+    const url = new URL(req.url ?? "/", `${protocol}://${host}`);
+    const headers = new Headers(Object.fromEntries(Object.entries(req.headers).filter(([key]) => {
+        return typeof key === "string" && !key.startsWith(":");
+    })) as Record<string, string>);
+
+    if (req.headers[":authority"]) {
+        headers.set("Host", req.headers[":authority"] as string);
+    }
+
     const init: RequestInit = {
         method: req.method!,
         headers,
@@ -185,9 +196,11 @@ function toWebRequest(req: import("http").IncomingMessage): Request {
 
     const request = new Request(url, init);
 
-    Object.assign(request, {
-        [Symbol.for("incomingMessage")]: req,
-    });
+    if (!req.headers[":authority"]) {
+        Object.assign(request, {
+            [Symbol.for("incomingMessage")]: req,
+        });
+    }
 
     return request;
 }
@@ -195,7 +208,7 @@ function toWebRequest(req: import("http").IncomingMessage): Request {
 /**
  * Pipes a modern `Response` object to a Node.js HTTP response.
  */
-function toNodeResponse(res: Response, nodeRes: import("http").ServerResponse): void {
+function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResponse): void {
     const { status, statusText, headers } = res;
 
     for (const [key, value] of headers) {
@@ -212,13 +225,13 @@ function toNodeResponse(res: Response, nodeRes: import("http").ServerResponse): 
     } else {
         res.body.pipeTo(new WritableStream({
             write(chunk) {
-                nodeRes.write(chunk);
+                (nodeRes as ServerResponse).write(chunk);
             },
             close() {
-                nodeRes.end();
+                (nodeRes as ServerResponse).end();
             },
             abort(err) {
-                nodeRes.destroy(err);
+                (nodeRes as ServerResponse).destroy(err);
             },
         }));
     }

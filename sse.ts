@@ -6,7 +6,7 @@
  * by the server.
  * 
  * NOTE: this module is based on the `Request` and `Response` APIs, in Node.js,
- * it requires version v18.3 or above.
+ * it requires Node.js v18.3 or above.
  * 
  * @module
  * @experimental

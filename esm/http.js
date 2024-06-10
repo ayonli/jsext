@@ -124,10 +124,17 @@ function withWeb(listener) {
  * Transforms a Node.js HTTP request to a modern `Request` object.
  */
 function toWebRequest(req) {
-    var _a;
-    const protocol = req.socket["encrypted"] ? "https" : "http";
-    const url = new URL((_a = req.url) !== null && _a !== void 0 ? _a : "/", `${protocol}://${req.headers.host}`);
-    const headers = new Headers(req.headers);
+    var _a, _b;
+    const protocol = req.socket["encrypted"] || req.headers[":scheme"] === "https"
+        ? "https" : "http";
+    const host = (_a = req.headers[":authority"]) !== null && _a !== void 0 ? _a : req.headers["host"];
+    const url = new URL((_b = req.url) !== null && _b !== void 0 ? _b : "/", `${protocol}://${host}`);
+    const headers = new Headers(Object.fromEntries(Object.entries(req.headers).filter(([key]) => {
+        return typeof key === "string" && !key.startsWith(":");
+    })));
+    if (req.headers[":authority"]) {
+        headers.set("Host", req.headers[":authority"]);
+    }
     const init = {
         method: req.method,
         headers,
@@ -174,9 +181,11 @@ function toWebRequest(req) {
         init.duplex = "half";
     }
     const request = new Request(url, init);
-    Object.assign(request, {
-        [Symbol.for("incomingMessage")]: req,
-    });
+    if (!req.headers[":authority"]) {
+        Object.assign(request, {
+            [Symbol.for("incomingMessage")]: req,
+        });
+    }
     return request;
 }
 /**

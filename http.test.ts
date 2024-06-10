@@ -15,8 +15,9 @@ import {
 } from "./http.ts";
 import func from "./func.ts";
 import { readFileAsText } from "./fs.ts";
-import { isBun, isDeno } from "./env.ts";
+import { isBun, isDeno, isNode } from "./env.ts";
 import { sleep } from "./async.ts";
+import { readAsJSON } from "./reader.ts";
 
 declare const Bun: any;
 
@@ -468,6 +469,162 @@ describe("http", () => {
             strictEqual(res.statusText, "OK");
             strictEqual(data.method, "POST");
             strictEqual(data.url, `http://localhost:${port}/hello`);
+            strictEqual(data.headers["content-type"], "application/json");
+            deepStrictEqual(data.body, { hello: "world" });
+        }));
+
+        it("with https module", func(async function (defer) {
+            if (!isNode) {
+                this.skip();
+            }
+
+            const https = await import("node:https");
+            const server = https.createServer({
+                key: await readFileAsText("./examples/certs/key.pem"),
+                cert: await readFileAsText("./examples/certs/cert.pem"),
+                passphrase: "alartest",
+            }, withWeb(async (req) => {
+                return new Response(JSON.stringify({
+                    method: req.method,
+                    url: req.url,
+                    headers: [...req.headers.entries()].reduce((acc, [key, value]) => {
+                        acc[key.toLowerCase()] = value;
+                        return acc;
+                    }, {} as Record<string, string>),
+                    body: await req.json(),
+                }), {
+                    status: 200,
+                    statusText: "OK",
+                });
+            }));
+            const port = await randomPort();
+            server.listen(port);
+            defer(() => server.close());
+
+            const res = await new Promise<{
+                url: string;
+                status: number;
+                statusText: string;
+                headers: Record<string, string>;
+                body?: any;
+            }>(async (resolve, reject) => {
+                const req = https.request({
+                    key: await readFileAsText("./examples/certs/key.pem"),
+                    cert: await readFileAsText("./examples/certs/cert.pem"),
+                    ca: [await readFileAsText("./examples/certs/cert.pem")],
+                    passphrase: "alartest",
+                    method: "POST",
+                    host: "localhost",
+                    port,
+                    path: "/hello",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                }, async (res) => {
+                    try {
+                        const json = await readAsJSON(res);
+                        resolve({
+                            url: res.url!,
+                            status: res.statusCode!,
+                            statusText: res.statusMessage!,
+                            headers: res.headers as Record<string, string>,
+                            body: json
+                        });
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+
+                req.write(JSON.stringify({ hello: "world" }));
+                req.end();
+            });
+
+            const data = res.body;
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(data.method, "POST");
+            strictEqual(data.url, `https://localhost:${port}/hello`);
+            strictEqual(data.headers["content-type"], "application/json");
+            deepStrictEqual(data.body, { hello: "world" });
+        }));
+
+        it("with http2 module", func(async function (defer) {
+            if (!isNode) {
+                this.skip();
+            }
+
+            const http2 = await import("node:http2");
+            const server = http2.createSecureServer({
+                key: await readFileAsText("./examples/certs/key.pem"),
+                cert: await readFileAsText("./examples/certs/cert.pem"),
+                passphrase: "alartest",
+            }, withWeb(async (req) => {
+                return new Response(JSON.stringify({
+                    method: req.method,
+                    url: req.url,
+                    headers: [...req.headers.entries()].reduce((acc, [key, value]) => {
+                        acc[key.toLowerCase()] = value;
+                        return acc;
+                    }, {} as Record<string, string>),
+                    body: req.body ? await req.json() : null,
+                }), {
+                    status: 200,
+                    statusText: "OK",
+                });
+            }));
+            const port = await randomPort();
+            server.listen(port);
+            defer(() => server.close());
+
+            const client = http2.connect(`https://localhost:${port}`, {
+                key: await readFileAsText("./examples/certs/key.pem"),
+                cert: await readFileAsText("./examples/certs/cert.pem"),
+                ca: [await readFileAsText("./examples/certs/cert.pem")],
+                passphrase: "alartest",
+            });
+            defer(() => client.close());
+
+            const res = await new Promise<{
+                url: string;
+                status: number;
+                statusText: string;
+                headers: Record<string, string>;
+                body?: any;
+            }>(async (resolve, reject) => {
+                const req = client.request({
+                    ":method": "POST",
+                    ":path": "/hello",
+                    "Content-Type": "application/json",
+                }, {
+                    endStream: false,
+                });
+
+                req.once("response", async (headers) => {
+                    try {
+                        const json = await readAsJSON(req);
+                        resolve({
+                            url: `https://localhost:${port}/hello`,
+                            status: headers[":status"]!,
+                            statusText: "",
+                            headers: Object.fromEntries(Object.entries(headers).filter(([key]) => {
+                                return key.startsWith(":") === false;
+                            })) as Record<string, string>,
+                            body: json
+                        });
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+
+                req.write(JSON.stringify({ hello: "world" }));
+                req.end();
+            });
+
+            const data = res.body;
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "");
+            strictEqual(data.method, "POST");
+            strictEqual(data.url, `https://localhost:${port}/hello`);
             strictEqual(data.headers["content-type"], "application/json");
             deepStrictEqual(data.body, { hello: "world" });
         }));

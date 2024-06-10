@@ -5,6 +5,10 @@
  * 
  * NOTE: In order to work in Node.js, install the `@ayonli/jsext` library from
  * NPM instead of JSR.
+ * 
+ * NOTE: In Node.js, this module requires Node.js v15 or above, and is only
+ * available in with the `http` and `https` modules, `http2` is not supported.
+ * @module
  * @experimental
  */
 
