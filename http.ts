@@ -11,7 +11,7 @@ import bytes from "./bytes.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 import { FileInfo, createReadableStream, exists, readDir, readFile, stat } from "./fs.ts";
 import { sha256 } from "./hash.ts";
-import { Range, ServeStaticOptions, ifNoneMatch, parseRange } from "./http/util.ts";
+import { Range, ServeStaticOptions, ifMatch, ifNoneMatch, parseRange } from "./http/util.ts";
 import { isMain } from "./module.ts";
 import { as } from "./object.ts";
 import { join, startsWith } from "./path.ts";
@@ -456,6 +456,7 @@ export async function serveStatic(
 
     const ifModifiedSinceValue = req.headers.get("If-Modified-Since");
     const ifNoneMatchValue = req.headers.get("If-None-Match");
+    const ifMatchValue = req.headers.get("If-Match");
     let modified = true;
 
     if (ifModifiedSinceValue) {
@@ -469,6 +470,12 @@ export async function serveStatic(
         return new Response(null, {
             status: 304,
             statusText: "Not Modified",
+            headers,
+        });
+    } else if (ifMatchValue && range && !ifMatch(ifMatchValue, _etag)) {
+        return new Response("Precondition Failed", {
+            status: 412,
+            statusText: "Precondition Failed",
             headers,
         });
     }

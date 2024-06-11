@@ -3,8 +3,8 @@ import bytes from './bytes.js';
 import { isDeno, isBun, isNode } from './env.js';
 import { stat, exists, readDir, readFile, createReadableStream } from './fs.js';
 import { sha256 } from './hash.js';
-import { parseRange, ifNoneMatch } from './http/util.js';
-export { ifMatch, parseAccepts, parseBasicAuth, parseContentType, parseCookie, stringifyCookie, verifyBasicAuth } from './http/util.js';
+import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
+export { parseAccepts, parseBasicAuth, parseContentType, parseCookie, stringifyCookie, verifyBasicAuth } from './http/util.js';
 import { isMain } from './module.js';
 import { as } from './object.js';
 import { join } from './path.js';
@@ -435,6 +435,7 @@ async function serveStatic(req, options = {}) {
     });
     const ifModifiedSinceValue = req.headers.get("If-Modified-Since");
     const ifNoneMatchValue = req.headers.get("If-None-Match");
+    const ifMatchValue = req.headers.get("If-Match");
     let modified = true;
     if (ifModifiedSinceValue) {
         const date = new Date(ifModifiedSinceValue);
@@ -447,6 +448,13 @@ async function serveStatic(req, options = {}) {
         return new Response(null, {
             status: 304,
             statusText: "Not Modified",
+            headers,
+        });
+    }
+    else if (ifMatchValue && range && !ifMatch(ifMatchValue, _etag)) {
+        return new Response("Precondition Failed", {
+            status: 412,
+            statusText: "Precondition Failed",
             headers,
         });
     }
@@ -543,5 +551,5 @@ if (isMain(import.meta)) {
     }
 }
 
-export { etag, ifNoneMatch, parseRange, randomPort, serveStatic, withWeb };
+export { etag, ifMatch, ifNoneMatch, parseRange, randomPort, serveStatic, withWeb };
 //# sourceMappingURL=http.js.map
