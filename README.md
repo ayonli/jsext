@@ -95,6 +95,8 @@ categories:
   collection data types.
 - [dialog](https://jsr.io/@ayonli/jsext/doc/dialog/~) (Experimental)
   Asynchronous dialog functions for both browsers and terminals.
+- [encoding](https://jsr.io/@ayonli/jsext/doc/encoding/~) Utilities for encoding
+  and decoding binary representations like hex and base64 strings.
 - [error](https://jsr.io/@ayonli/jsext/doc/error/~) Functions for converting
   errors to/from other types of objects.
 - [event](https://jsr.io/@ayonli/jsext/doc/event/~) Functions for working with
