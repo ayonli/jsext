@@ -1,16 +1,19 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import * as http from "node:http";
 import {
+    BasicAuthorization,
     etag,
     ifMatch,
     ifNoneMatch,
     parseAccepts,
+    parseBasicAuth,
     parseContentType,
     parseCookie,
     parseRange,
     randomPort,
     serveStatic,
     stringifyCookie,
+    verifyBasicAuth,
     withWeb,
 } from "./http.ts";
 import func from "./func.ts";
@@ -347,6 +350,43 @@ describe("http", () => {
 
         const match3 = ifNoneMatch("d-3/1gIbsr1bCvZ2KQgJ7DpTGR3Yh,d-3/1gIbsr1bCvZ2KQgJ7DpTGR3YH", _etag);
         strictEqual(match3, false);
+    });
+
+    it("parseBasicAuth", async () => {
+        const auth = parseBasicAuth("Basic cm9vdDpwYSQkdzByZA==");
+        deepStrictEqual(auth, { username: "root", password: "pa$$w0rd" });
+    });
+
+    it("verifyBasicAuth", async () => {
+        const users = new Map([
+            ["root", "pa$$w0rd"]
+        ]);
+        const verify = async (auth: BasicAuthorization) => {
+            const password = users.get(auth.username);
+            return !!password && password === auth.password;
+        };
+
+        const req = new Request("http://localhost", {
+            headers: {
+                "Authorization": "Basic cm9vdDpwYSQkdzByZA==",
+            },
+        });
+        const res = await verifyBasicAuth(req, verify);
+        strictEqual(res, undefined);
+
+        const req2 = new Request("http://localhost", {
+            headers: {
+                "Authorization": "Basic CM9vdDpwYSQkdzByZA==",
+            },
+        });
+        const res2 = await verifyBasicAuth(req2, verify);
+        strictEqual(res2?.status, 401);
+        strictEqual(res2?.headers.get("WWW-Authenticate"), `Basic realm=\"localhost\"`);
+
+        const req3 = new Request("http://localhost");
+        const res3 = await verifyBasicAuth(req3, verify);
+        strictEqual(res3?.status, 401);
+        strictEqual(res3?.headers.get("WWW-Authenticate"), `Basic realm=\"localhost\"`);
     });
 
     it("etag", async () => {

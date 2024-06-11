@@ -4,7 +4,7 @@ import { isDeno, isBun, isNode } from './env.js';
 import { stat, exists, readDir, readFile, createReadableStream } from './fs.js';
 import { sha256 } from './hash.js';
 import { parseRange, ifNoneMatch } from './http/util.js';
-export { ifMatch, parseAccepts, parseContentType, parseCookie, stringifyCookie } from './http/util.js';
+export { ifMatch, parseAccepts, parseBasicAuth, parseContentType, parseCookie, stringifyCookie, verifyBasicAuth } from './http/util.js';
 import { isMain } from './module.js';
 import { as } from './object.js';
 import { join } from './path.js';
@@ -450,7 +450,6 @@ async function serveStatic(req, options = {}) {
             headers,
         });
     }
-    headers.set("Content-Disposition", `inline; filename="${info.name}"`);
     if (/^text\/|^application\/(json|yaml|toml|xml|javascript)$/.test(info.type)) {
         headers.set("Content-Type", info.type + "; charset=utf-8");
     }

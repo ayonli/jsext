@@ -473,8 +473,6 @@ export async function serveStatic(
         });
     }
 
-    headers.set("Content-Disposition", `inline; filename="${info.name}"`);
-
     if (/^text\/|^application\/(json|yaml|toml|xml|javascript)$/.test(info.type)) {
         headers.set("Content-Type", info.type + "; charset=utf-8");
     } else {

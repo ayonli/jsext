@@ -354,6 +354,98 @@ export function ifNoneMatch(value: string | null, etag: string): boolean {
 }
 
 /**
+ * Represents the HTTP request `Authorization` header with the `Basic` scheme.
+ */
+export interface BasicAuthorization {
+    username: string;
+    password: string;
+}
+
+/**
+ * Parses the `Authorization` header with the `Basic` scheme.
+ * 
+ * @example
+ * ```ts
+ * import { parseBasicAuth } from "@ayonli/jsext/http";
+ * 
+ * const auth = parseBasicAuth("Basic cm9vdDpwYSQkdzByZA==");
+ * console.log(auth);
+ * // { username: "root", password: "pa$$w0rd" }
+ * ```
+ */
+export function parseBasicAuth(str: string): BasicAuthorization {
+    const parts = str.split(" ");
+    const scheme = parts[0]!.toLowerCase();
+    const credentials = parts.slice(1).join(" ");
+
+    if (!scheme || !credentials) {
+        throw new TypeError("Invalid Authorization header");
+    } else if (scheme !== "basic") {
+        throw new TypeError("Authorization scheme is not 'Basic'");
+    } else {
+        const [username, password] = atob(credentials).split(":");
+        return { username: username!, password: password! };
+    }
+}
+
+/**
+ * Performs basic authentication verification for the request. When passed, this
+ * function returns nothing (`undefined`), otherwise it returns a `Response`
+ * with status `401 Unauthorized`, which should be responded to the client.
+ * 
+ * @example
+ * ```ts
+ * import { verifyBasicAuth, type BasicAuthorization } from "@ayonli/jsext/http";
+ * 
+ * const users = new Map([
+ *    ["root", "pa$$w0rd"]
+ * ]);
+ * 
+ * async function verify(auth: BasicAuthorization) {
+ *     const password = users.get(auth.username);
+ *     return !!password && password === auth.password;
+ * }
+ * 
+ * export default {
+ *     async fetch(req) {
+ *         const res = await verifyBasicAuth(req, verify);
+ * 
+ *         if (res) {
+ *             return res;
+ *         }
+ * 
+ *         // continue with the request
+ *     },
+ * };
+ * ```
+ */
+export async function verifyBasicAuth(
+    req: Request,
+    verify: (auth: BasicAuthorization) => boolean | Promise<boolean>
+): Promise<void | Response> {
+    const auth = req.headers.get("Authorization");
+
+    if (auth?.startsWith("Basic ")) {
+        try {
+            const credentials = parseBasicAuth(auth);
+            const ok = await verify(credentials);
+
+            if (ok) {
+                return;
+            }
+        } catch { }
+    }
+
+    const { host } = new URL(req.url);
+    return new Response("Unauthorized", {
+        status: 401,
+        headers: {
+            "WWW-Authenticate": `Basic realm="${host}"`,
+        },
+    });
+}
+
+/**
  * Options for serving static files, used by {@link serveStatic}.
  */
 export interface ServeStaticOptions {
