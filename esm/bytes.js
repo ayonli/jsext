@@ -1,5 +1,5 @@
 import { equals as equals$1, includeSlice, startsWith as startsWith$1, endsWith as endsWith$1, split as split$1, chunk as chunk$1 } from './array/base.js';
-import { as } from './object.js';
+import { decodeHex, decodeBase64, encodeHex, encodeBase64 } from './encoding.js';
 import { sum } from './math.js';
 
 /**
@@ -8,35 +8,6 @@ import { sum } from './math.js';
  */
 const defaultEncoder = new TextEncoder();
 const defaultDecoder = new TextDecoder();
-const base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-function base64(bytes) {
-    let result = "";
-    let i;
-    const l = bytes.length;
-    for (i = 2; i < l; i += 3) {
-        result += base64Chars[(bytes[i - 2]) >> 2];
-        result += base64Chars[(((bytes[i - 2]) & 0x03) << 4) |
-            ((bytes[i - 1]) >> 4)];
-        result += base64Chars[(((bytes[i - 1]) & 0x0f) << 2) |
-            ((bytes[i]) >> 6)];
-        result += base64Chars[(bytes[i]) & 0x3f];
-    }
-    if (i === l + 1) {
-        // 1 octet yet to write
-        result += base64Chars[(bytes[i - 2]) >> 2];
-        result += base64Chars[((bytes[i - 2]) & 0x03) << 4];
-        result += "==";
-    }
-    if (i === l) {
-        // 2 octets yet to write
-        result += base64Chars[(bytes[i - 2]) >> 2];
-        result += base64Chars[(((bytes[i - 2]) & 0x03) << 4) |
-            ((bytes[i - 1]) >> 4)];
-        result += base64Chars[((bytes[i - 1]) & 0x0f) << 2];
-        result += "=";
-    }
-    return result;
-}
 /**
  * A byte array is a `Uint8Array` that can be coerced to a string with `utf8`
  * encoding.
@@ -52,12 +23,22 @@ class ByteArray extends Uint8Array {
         };
     }
 }
-function bytes(data) {
+function bytes(data, encoding = "utf8") {
     if (typeof data === "number") {
         return new ByteArray(data);
     }
     else if (typeof data === "string") {
-        return new ByteArray(defaultEncoder.encode(data).buffer);
+        let _data;
+        if (encoding === "hex") {
+            _data = decodeHex(data);
+        }
+        else if (encoding === "base64") {
+            _data = decodeBase64(data);
+        }
+        else {
+            _data = defaultEncoder.encode(data);
+        }
+        return new ByteArray(_data.buffer, _data.byteOffset, _data.byteLength);
     }
     else if (ArrayBuffer.isView(data)) {
         return new ByteArray(data.buffer, data.byteOffset, data.byteLength);
@@ -82,24 +63,11 @@ function bytes(data) {
  * ```
  */
 function text(bytes, encoding = "utf8") {
-    var _a, _b;
     if (encoding === "hex") {
-        if (typeof Buffer === "function") {
-            return ((_a = as(bytes, Buffer)) !== null && _a !== void 0 ? _a : Buffer.from(bytes)).toString("hex");
-        }
-        else {
-            return bytes.reduce((str, byte) => {
-                return str + byte.toString(16).padStart(2, "0");
-            }, "");
-        }
+        return encodeHex(bytes);
     }
     else if (encoding === "base64") {
-        if (typeof Buffer === "function") {
-            return ((_b = as(bytes, Buffer)) !== null && _b !== void 0 ? _b : Buffer.from(bytes)).toString("base64");
-        }
-        else {
-            return base64(bytes);
-        }
+        return encodeBase64(bytes);
     }
     else if (typeof Buffer === "function" && bytes instanceof Buffer) {
         return bytes.toString("utf8");

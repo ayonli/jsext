@@ -11,52 +11,12 @@ import {
     split as _split,
     chunk as _chunk,
 } from "./array/base.ts";
-import { as } from "./object.ts";
+import { decodeBase64, decodeHex, encodeBase64, encodeHex } from "./encoding.ts";
 import { sum } from "./math.ts";
 import { Constructor } from "./types.ts";
 
 const defaultEncoder = new TextEncoder();
 const defaultDecoder = new TextDecoder();
-const base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-function base64(bytes: Uint8Array): string {
-    let result = "";
-    let i: number;
-    const l = bytes.length;
-
-    for (i = 2; i < l; i += 3) {
-        result += base64Chars[(bytes[i - 2]!) >> 2];
-        result += base64Chars[
-            (((bytes[i - 2]!) & 0x03) << 4) |
-            ((bytes[i - 1]!) >> 4)
-        ];
-        result += base64Chars[
-            (((bytes[i - 1]!) & 0x0f) << 2) |
-            ((bytes[i]!) >> 6)
-        ];
-        result += base64Chars[(bytes[i]!) & 0x3f];
-    }
-
-    if (i === l + 1) {
-        // 1 octet yet to write
-        result += base64Chars[(bytes[i - 2]!) >> 2];
-        result += base64Chars[((bytes[i - 2]!) & 0x03) << 4];
-        result += "==";
-    }
-
-    if (i === l) {
-        // 2 octets yet to write
-        result += base64Chars[(bytes[i - 2]!) >> 2];
-        result += base64Chars[
-            (((bytes[i - 2]!) & 0x03) << 4) |
-            ((bytes[i - 1]!) >> 4)
-        ];
-        result += base64Chars[((bytes[i - 1]!) & 0x0f) << 2];
-        result += "=";
-    }
-
-    return result;
-}
 
 /**
  * A byte array is a `Uint8Array` that can be coerced to a string with `utf8`
@@ -88,9 +48,15 @@ export class ByteArray extends Uint8Array {
  * // ByteArray(13) [Uint8Array] [ 72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33 ]
  * 
  * console.log(String(arr)); // "Hello, World!"
+ * 
+ * // from hex
+ * const arr2 = bytes("48656c6c6f2c20576f726c6421", "hex");
+ * 
+ * // from base64
+ * const arr3 = bytes("SGVsbG8sIFdvcmxkIQ==", "base64");
  * ```
  */
-export default function bytes(str: string): ByteArray;
+export default function bytes(str: string, encoding?: "utf8" | "hex" | "base64"): ByteArray;
 export default function bytes(arr: ArrayLike<number>): ByteArray;
 export default function bytes(buf: ArrayBufferLike): ByteArray;
 export default function bytes(view: ArrayBufferView): ByteArray;
@@ -109,12 +75,23 @@ export default function bytes(view: ArrayBufferView): ByteArray;
  */
 export default function bytes(length: number): ByteArray;
 export default function bytes(
-    data: number | string | ArrayLike<number> | ArrayBufferLike | ArrayBufferView
+    data: number | string | ArrayLike<number> | ArrayBufferLike | ArrayBufferView,
+    encoding: "utf8" | "hex" | "base64" = "utf8"
 ): ByteArray {
     if (typeof data === "number") {
         return new ByteArray(data);
     } else if (typeof data === "string") {
-        return new ByteArray(defaultEncoder.encode(data).buffer);
+        let _data: Uint8Array;
+
+        if (encoding === "hex") {
+            _data = decodeHex(data);
+        } else if (encoding === "base64") {
+            _data = decodeBase64(data);
+        } else {
+            _data = defaultEncoder.encode(data);
+        }
+
+        return new ByteArray(_data.buffer, _data.byteOffset, _data.byteLength);
     } else if (ArrayBuffer.isView(data)) {
         return new ByteArray(data.buffer, data.byteOffset, data.byteLength);
     } else {
@@ -142,19 +119,9 @@ export function text(
     encoding: "utf8" | "hex" | "base64" = "utf8"
 ): string {
     if (encoding === "hex") {
-        if (typeof Buffer === "function") {
-            return (as(bytes, Buffer) as Buffer ?? Buffer.from(bytes)).toString("hex");
-        } else {
-            return bytes.reduce((str, byte) => {
-                return str + byte.toString(16).padStart(2, "0");
-            }, "");
-        };
+        return encodeHex(bytes);
     } else if (encoding === "base64") {
-        if (typeof Buffer === "function") {
-            return (as(bytes, Buffer) as Buffer ?? Buffer.from(bytes)).toString("base64");
-        } else {
-            return base64(bytes);
-        }
+        return encodeBase64(bytes);
     } else if (typeof Buffer === "function" && bytes instanceof Buffer) {
         return bytes.toString("utf8");
     } else {

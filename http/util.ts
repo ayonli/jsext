@@ -4,6 +4,8 @@
  * @experimental
  */
 
+import bytes, { text } from "../bytes.ts";
+
 /**
  * Represents the HTTP request `Accept`, `Accept-Encoding` and `Accept-Language`
  * headers.
@@ -383,7 +385,7 @@ export function parseBasicAuth(str: string): BasicAuthorization {
     } else if (scheme !== "basic") {
         throw new TypeError("Authorization scheme is not 'Basic'");
     } else {
-        const [username, password] = atob(credentials).split(":");
+        const [username, password] = text(bytes(credentials, "base64")).split(":");
         return { username: username!, password: password! };
     }
 }

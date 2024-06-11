@@ -416,69 +416,11 @@ function hasGeneratorSpecials(obj) {
 }
 
 /**
- * Functions for dealing with objects.
+ * Utilities for encoding and decoding binary representations like hex and
+ * base64 strings.
  * @module
  */
-/**
- * Returns `true` if the specified object has the indicated property as its own property.
- * If the property is inherited, or does not exist, the function returns `false`.
- *
- * @example
- * ```ts
- * import { hasOwn } from "@ayonli/jsext/object";
- *
- * const obj = { foo: "hello" };
- *
- * console.log(hasOwn(obj, "foo")); // true
- * console.log(hasOwn(obj, "toString")); // false
- * ```
- */
-function hasOwn(obj, key) {
-    return Object.prototype.hasOwnProperty.call(obj, key);
-}
-function pick(obj, keys) {
-    return keys.reduce((result, key) => {
-        if (key in obj && obj[key] !== undefined) {
-            result[key] = obj[key];
-        }
-        return result;
-    }, {});
-}
-function omit(obj, keys) {
-    const allKeys = Reflect.ownKeys(obj);
-    const keptKeys = allKeys.filter(key => !keys.includes(key));
-    const result = pick(obj, keptKeys);
-    // special treatment for Error types
-    if (obj instanceof Error) {
-        ["name", "message", "stack", "cause"].forEach(key => {
-            if (!keys.includes(key) &&
-                obj[key] !== undefined &&
-                !hasOwn(result, key)) {
-                result[key] = obj[key];
-            }
-        });
-    }
-    return result;
-}
-/**
- * Returns `true` is the given value is a plain object, that is, an object created by
- * the `Object` constructor or one with a `[[Prototype]]` of `null`.
- *
- * @example
- * ```ts
- * import { isPlainObject } from "@ayonli/jsext/object";
- *
- * console.log(isPlainObject({ foo: "bar" })); // true
- * console.log(isPlainObject(Object.create(null))); // true
- * console.log(isPlainObject(new Map([["foo", "bar"]]))); // false
- * ```
- */
-function isPlainObject(value) {
-    if (typeof value !== "object" || value === null)
-        return false;
-    const proto = Object.getPrototypeOf(value);
-    return proto === null || proto.constructor === Object;
-}
+new TextEncoder();
 
 /**
  * Functions for dealing with byte arrays (`Uint8Array`).
@@ -563,6 +505,71 @@ function trimStart(str, chars = "") {
         do { } while (chars.indexOf(str[i]) !== -1 && ++i);
         return str.substring(i);
     }
+}
+
+/**
+ * Functions for dealing with objects.
+ * @module
+ */
+/**
+ * Returns `true` if the specified object has the indicated property as its own property.
+ * If the property is inherited, or does not exist, the function returns `false`.
+ *
+ * @example
+ * ```ts
+ * import { hasOwn } from "@ayonli/jsext/object";
+ *
+ * const obj = { foo: "hello" };
+ *
+ * console.log(hasOwn(obj, "foo")); // true
+ * console.log(hasOwn(obj, "toString")); // false
+ * ```
+ */
+function hasOwn(obj, key) {
+    return Object.prototype.hasOwnProperty.call(obj, key);
+}
+function pick(obj, keys) {
+    return keys.reduce((result, key) => {
+        if (key in obj && obj[key] !== undefined) {
+            result[key] = obj[key];
+        }
+        return result;
+    }, {});
+}
+function omit(obj, keys) {
+    const allKeys = Reflect.ownKeys(obj);
+    const keptKeys = allKeys.filter(key => !keys.includes(key));
+    const result = pick(obj, keptKeys);
+    // special treatment for Error types
+    if (obj instanceof Error) {
+        ["name", "message", "stack", "cause"].forEach(key => {
+            if (!keys.includes(key) &&
+                obj[key] !== undefined &&
+                !hasOwn(result, key)) {
+                result[key] = obj[key];
+            }
+        });
+    }
+    return result;
+}
+/**
+ * Returns `true` is the given value is a plain object, that is, an object created by
+ * the `Object` constructor or one with a `[[Prototype]]` of `null`.
+ *
+ * @example
+ * ```ts
+ * import { isPlainObject } from "@ayonli/jsext/object";
+ *
+ * console.log(isPlainObject({ foo: "bar" })); // true
+ * console.log(isPlainObject(Object.create(null))); // true
+ * console.log(isPlainObject(new Map([["foo", "bar"]]))); // false
+ * ```
+ */
+function isPlainObject(value) {
+    if (typeof value !== "object" || value === null)
+        return false;
+    const proto = Object.getPrototypeOf(value);
+    return proto === null || proto.constructor === Object;
 }
 
 function isVolume(path, strict = false) {

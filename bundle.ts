@@ -8,6 +8,7 @@ import * as _class from "./class.ts";
 import * as cli from "./cli.ts";
 import * as collections from "./collections.ts";
 import * as dialog from "./dialog.ts";
+import * as encoding from "./encoding.ts";
 import * as error from "./error.ts";
 import * as event from "./event.ts";
 import * as filetype from "./filetype.ts";
@@ -47,6 +48,7 @@ export default {
     cli,
     collections,
     dialog,
+    encoding,
     error,
     event,
     filetype,

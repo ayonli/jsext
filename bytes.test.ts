@@ -44,6 +44,41 @@ describe("bytes", () => {
                 new Uint8Array(bytes("Hello, World!")),
                 new TextEncoder().encode("Hello, World!")
             );
+
+            deepStrictEqual(
+                new Uint8Array(bytes("你好，世界！")),
+                new TextEncoder().encode("你好，世界！")
+            );
+
+            deepStrictEqual(
+                bytes("Hello, World!", "utf8"),
+                bytes("Hello, World!"),
+            );
+
+            deepStrictEqual(
+                bytes("你好，世界！", "utf8"),
+                bytes("你好，世界！"),
+            );
+
+            deepStrictEqual(
+                bytes("48656c6c6f2c20576f726c6421", "hex"),
+                bytes("Hello, World!")
+            );
+
+            deepStrictEqual(
+                bytes("SGVsbG8sIFdvcmxkIQ==", "base64"),
+                bytes("Hello, World!")
+            );
+
+            deepStrictEqual(
+                bytes("e4bda0e5a5bdefbc8ce4b896e7958cefbc81", "hex"),
+                bytes("你好，世界！")
+            );
+
+            deepStrictEqual(
+                bytes("5L2g5aW977yM5LiW55WM77yB", "base64"),
+                bytes("你好，世界！")
+            );
         });
 
         it("ArrayLike<number>", () => {
