@@ -111,6 +111,27 @@ async function sha512(data, encoding = undefined) {
         return hash;
     }
 }
+async function hmac(algorithm, key, data, encoding = undefined) {
+    const keyBuffer = await crypto.subtle.importKey("raw", bytes(key), {
+        name: "HMAC",
+        hash: {
+            "sha1": "SHA-1",
+            "sha256": "SHA-256",
+            "sha512": "SHA-512",
+        }[algorithm],
+    }, false, ["sign"]);
+    const dataBytes = await toBytes(data);
+    const hash = await crypto.subtle.sign("HMAC", keyBuffer, dataBytes);
+    if (encoding === "hex") {
+        return text(new Uint8Array(hash), "hex");
+    }
+    else if (encoding === "base64") {
+        return text(new Uint8Array(hash), "base64");
+    }
+    else {
+        return hash;
+    }
+}
 
-export { hash, sha1, sha256, sha512, toBytes };
+export { hash, hmac, sha1, sha256, sha512, toBytes };
 //# sourceMappingURL=web.js.map

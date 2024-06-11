@@ -1,6 +1,6 @@
 import { text } from '../bytes.js';
 import { hash, toBytes } from '../hash/web.js';
-export { sha1, sha256, sha512 } from '../hash/web.js';
+export { hmac, sha1, sha256, sha512 } from '../hash/web.js';
 
 async function md5(data, encoding = undefined) {
     let bytes = await toBytes(data);

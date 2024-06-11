@@ -1,16 +1,29 @@
 /**
- * Simplified hash functions for various data types.
+ * Simplified hash functions for various data types, based on the Web Crypto API
+ * and `crypto` package in Node.js.
  * @module
  */
 
+import bytes from "./bytes.ts";
 import { isDeno, isNodeLike } from "./env.ts";
-import { hash, toBytes, sha1 as _sha1, sha256 as _sha256, sha512 as _sha512 } from "./hash/web.ts";
+import {
+    type BufferSource,
+    type DataSource,
+    hash,
+    hmac as _hmac,
+    toBytes,
+    sha1 as _sha1,
+    sha256 as _sha256,
+    sha512 as _sha512
+} from "./hash/web.ts";
+
+export type { BufferSource, DataSource };
 
 export default hash;
 
 async function nodeHash(
     algorithm: "sha1" | "sha256" | "sha512" | "md5",
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
+    data: DataSource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<ArrayBuffer | string> {
     const crypto = await import("node:crypto");
@@ -24,7 +37,7 @@ async function nodeHash(
     } else {
         const result = hash.digest();
         // Truncate the buffer to the actual byte length so it's consistent with the web API.
-        return result.buffer.slice(0, result.byteLength);
+        return result.buffer.slice(result.byteOffset, result.byteOffset + result.byteLength);
     }
 }
 
@@ -39,9 +52,7 @@ async function nodeHash(
  * console.log(buffer); // ArrayBuffer(20) { ... }
  * ```
  */
-export function sha1(
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob
-): Promise<ArrayBuffer>;
+export function sha1(data: DataSource): Promise<ArrayBuffer>;
 /**
  * @example
  * ```ts
@@ -54,12 +65,9 @@ export function sha1(
  * console.log(base64); // CgqfKmdylCVXq1NV12r0Qvj2XgE=
  * ```
  */
-export function sha1(
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
-    encoding: "hex" | "base64"
-): Promise<string>;
+export function sha1(data: DataSource, encoding: "hex" | "base64"): Promise<string>;
 export async function sha1(
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
+    data: DataSource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
     if (typeof crypto === "object") {
@@ -82,9 +90,7 @@ export async function sha1(
  * console.log(buffer); // ArrayBuffer(32) { ... }
  * ```
  */
-export async function sha256(
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob
-): Promise<ArrayBuffer>;
+export async function sha256(data: DataSource): Promise<ArrayBuffer>;
 /**
  * @example
  * ```ts
@@ -97,12 +103,9 @@ export async function sha256(
  * console.log(base64); // 3/1gIbsr1bCvZ2KQgJ7DpTGR3YHH9wpLKGiKNiGCmG8=
  * ```
  */
+export async function sha256(data: DataSource, encoding: "hex" | "base64"): Promise<string>;
 export async function sha256(
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
-    encoding: "hex" | "base64"
-): Promise<string>;
-export async function sha256(
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
+    data: DataSource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
     if (typeof crypto === "object") {
@@ -125,9 +128,7 @@ export async function sha256(
  * console.log(buffer); // ArrayBuffer(64) { ... }
  * ```
  */
-export async function sha512(
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob
-): Promise<ArrayBuffer>;
+export async function sha512(data: DataSource): Promise<ArrayBuffer>;
 /**
  * @example
  * ```ts
@@ -142,12 +143,9 @@ export async function sha512(
  * // N015SpXNz9izWZMYX++bo2jxYNja9DLQi6nx7R5avmzGkpHg+i/gAGpSVw7xjBne9OYXwzzlLvCm5fvjGMsDhw==
  * ``` 
  */
+export async function sha512(data: DataSource, encoding: "hex" | "base64"): Promise<string>;
 export async function sha512(
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
-    encoding: "hex" | "base64"
-): Promise<string>;
-export async function sha512(
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
+    data: DataSource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
     if (typeof crypto === "object") {
@@ -172,9 +170,7 @@ export async function sha512(
  * console.log(buffer); // ArrayBuffer(16) { ... }
  * ```
  */
-export async function md5(
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob
-): Promise<ArrayBuffer>;
+export async function md5(data: DataSource): Promise<ArrayBuffer>;
 /**
  * @example
  * ```ts
@@ -187,16 +183,51 @@ export async function md5(
  * console.log(base64); // ZajifYh5KDgxtmS9i38K1A==
  * ```
  */
+export async function md5(data: DataSource, encoding: "hex" | "base64"): Promise<string>;
 export async function md5(
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
-    encoding: "hex" | "base64"
-): Promise<string>;
-export async function md5(
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
+    data: DataSource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
     if (isDeno || isNodeLike) {
         return nodeHash("md5", data, encoding);
+    } else {
+        throw new Error("Unsupported runtime");
+    }
+}
+
+export async function hmac(
+    algorithm: "sha1" | "sha256" | "sha512",
+    key: BufferSource,
+    data: DataSource
+): Promise<ArrayBuffer>;
+export async function hmac(
+    algorithm: "sha1" | "sha256" | "sha512",
+    key: BufferSource,
+    data: DataSource,
+    encoding: "hex" | "base64"
+): Promise<string>;
+export async function hmac(
+    algorithm: "sha1" | "sha256" | "sha512",
+    key: BufferSource,
+    data: DataSource,
+    encoding: "hex" | "base64" | undefined = undefined
+): Promise<string | ArrayBuffer> {
+    if (typeof crypto === "object") {
+        return encoding ? _hmac(algorithm, key, data, encoding) : _hmac(algorithm, key, data);
+    } else if (isDeno || isNodeLike) {
+        const crypto = await import("node:crypto");
+        const binary = await toBytes(data);
+        const hash = crypto.createHmac(algorithm, bytes(key));
+
+        hash.update(binary);
+
+        if (encoding) {
+            return hash.digest(encoding);
+        } else {
+            const result = hash.digest();
+            // Truncate the buffer to the actual byte length so it's consistent with the web API.
+            return result.buffer.slice(result.byteOffset, result.byteOffset + result.byteLength);
+        }
     } else {
         throw new Error("Unsupported runtime");
     }

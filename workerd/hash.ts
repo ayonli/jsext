@@ -1,18 +1,24 @@
 import { text } from "../bytes.ts";
-import { hash, toBytes, sha1, sha256, sha512 } from "../hash/web.ts";
+import {
+    type BufferSource,
+    type DataSource,
+    hash,
+    hmac,
+    toBytes,
+    sha1,
+    sha256,
+    sha512,
+} from "../hash/web.ts";
+
+export type { BufferSource, DataSource };
 
 export default hash;
-export { sha1, sha256, sha512 };
+export { hmac, sha1, sha256, sha512 };
 
-export function md5(
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob
-): Promise<ArrayBuffer>;
-export function md5(
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
-    encoding: "hex" | "base64"
-): Promise<string>;
+export function md5(data: DataSource): Promise<ArrayBuffer>;
+export function md5(data: DataSource, encoding: "hex" | "base64"): Promise<string>;
 export async function md5(
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
+    data: DataSource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
     let bytes = await toBytes(data);

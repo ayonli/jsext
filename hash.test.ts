@@ -1,7 +1,8 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { Buffer } from "node:buffer";
+import { createHmac } from "node:crypto";
 import bytes from "./bytes.ts";
-import hash, { sha1, sha256, sha512, md5 } from "./hash.ts";
+import hash, { sha1, sha256, sha512, md5, hmac } from "./hash.ts";
 
 describe("hash", () => {
     describe("hash", () => {
@@ -243,6 +244,278 @@ describe("hash", () => {
             deepStrictEqual(await md5(blob), buffer);
             strictEqual(await md5(blob, "hex"), hex);
             strictEqual(await md5(blob, "base64"), base64);
+        });
+    });
+
+    describe("hmac", () => {
+        describe("hmac:sha1", () => {
+            const buf = createHmac("sha1", bytes("key")).update(bytes("hello world")).digest();
+            const buffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+            const hex = buf.toString("hex");
+            const base64 = buf.toString("base64");
+
+            it("string", async () => {
+                const hash1 = await hmac("sha1", "key", "hello world");
+                deepStrictEqual(hash1, buffer);
+
+                const hash2 = await hmac("sha1", "key", "hello world", "hex");
+                strictEqual(hash2, hex);
+
+                const hash3 = await hmac("sha1", "key", "hello world", "base64");
+                strictEqual(hash3, base64);
+            });
+
+            it("ArrayBuffer", async () => {
+                const key = bytes("key").buffer;
+                const data = bytes("hello world").buffer;
+
+                const hash1 = await hmac("sha1", key, data);
+                deepStrictEqual(hash1, buffer);
+
+                const hash2 = await hmac("sha1", key, data, "hex");
+                strictEqual(hash2, hex);
+
+                const hash3 = await hmac("sha1", key, data, "base64");
+                strictEqual(hash3, base64);
+            });
+
+            it("Uint8Array", async () => {
+                const key = bytes("key");
+                const data = bytes("hello world");
+
+                const hash1 = await hmac("sha1", key, data);
+                deepStrictEqual(hash1, buffer);
+
+                const hash2 = await hmac("sha1", key, data, "hex");
+                strictEqual(hash2, hex);
+
+                const hash3 = await hmac("sha1", key, data, "base64");
+                strictEqual(hash3, base64);
+            });
+
+            it("ReadableStream", async function () {
+                if (typeof ReadableStream === "undefined") {
+                    this.skip();
+                }
+
+                const stream = new ReadableStream({
+                    start(controller) {
+                        controller.enqueue(bytes("hello world"));
+                        controller.close();
+                    }
+                });
+                const [copy1, copy2] = stream.tee();
+                const [copy3, copy4] = copy2.tee();
+
+                const key = bytes("key");
+
+                const hash1 = await hmac("sha1", key, copy1);
+                deepStrictEqual(hash1, buffer);
+
+                const hash2 = await hmac("sha1", key, copy3, "hex");
+                strictEqual(hash2, hex);
+
+                const hash3 = await hmac("sha1", key, copy4, "base64");
+                strictEqual(hash3, base64);
+            });
+
+            it("Blob", async function () {
+                if (typeof Blob === "undefined") {
+                    this.skip();
+                }
+
+                const key = bytes("key");
+                const data = new Blob([bytes("hello world")]);
+
+                const hash1 = await hmac("sha1", key, data);
+                deepStrictEqual(hash1, buffer);
+
+                const hash2 = await hmac("sha1", key, data, "hex");
+                strictEqual(hash2, hex);
+
+                const hash3 = await hmac("sha1", key, data, "base64");
+                strictEqual(hash3, base64);
+            });
+        });
+
+        describe("hmac:sha256", () => {
+            const buf = createHmac("sha256", bytes("key")).update(bytes("hello world")).digest();
+            const buffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+            const hex = buf.toString("hex");
+            const base64 = buf.toString("base64");
+
+            it("string", async () => {
+                const hash1 = await hmac("sha256", "key", "hello world");
+                deepStrictEqual(hash1, buffer);
+
+                const hash2 = await hmac("sha256", "key", "hello world", "hex");
+                strictEqual(hash2, hex);
+
+                const hash3 = await hmac("sha256", "key", "hello world", "base64");
+                strictEqual(hash3, base64);
+            });
+
+            it("ArrayBuffer", async () => {
+                const key = bytes("key").buffer;
+                const data = bytes("hello world").buffer;
+
+                const hash1 = await hmac("sha256", key, data);
+                deepStrictEqual(hash1, buffer);
+
+                const hash2 = await hmac("sha256", key, data, "hex");
+                strictEqual(hash2, hex);
+
+                const hash3 = await hmac("sha256", key, data, "base64");
+                strictEqual(hash3, base64);
+            });
+
+            it("Uint8Array", async () => {
+                const key = bytes("key");
+                const data = bytes("hello world");
+
+                const hash1 = await hmac("sha256", key, data);
+                deepStrictEqual(hash1, buffer);
+
+                const hash2 = await hmac("sha256", key, data, "hex");
+                strictEqual(hash2, hex);
+
+                const hash3 = await hmac("sha256", key, data, "base64");
+                strictEqual(hash3, base64);
+            });
+
+            it("ReadableStream", async function () {
+                if (typeof ReadableStream === "undefined") {
+                    this.skip();
+                }
+
+                const stream = new ReadableStream({
+                    start(controller) {
+                        controller.enqueue(bytes("hello world"));
+                        controller.close();
+                    }
+                });
+                const [copy1, copy2] = stream.tee();
+                const [copy3, copy4] = copy2.tee();
+
+                const key = bytes("key");
+
+                const hash1 = await hmac("sha256", key, copy1);
+                deepStrictEqual(hash1, buffer);
+
+                const hash2 = await hmac("sha256", key, copy3, "hex");
+                strictEqual(hash2, hex);
+
+                const hash3 = await hmac("sha256", key, copy4, "base64");
+                strictEqual(hash3, base64);
+            });
+
+            it("Blob", async function () {
+                if (typeof Blob === "undefined") {
+                    this.skip();
+                }
+
+                const key = bytes("key");
+                const data = new Blob([bytes("hello world")]);
+
+                const hash1 = await hmac("sha256", key, data);
+                deepStrictEqual(hash1, buffer);
+
+                const hash2 = await hmac("sha256", key, data, "hex");
+                strictEqual(hash2, hex);
+
+                const hash3 = await hmac("sha256", key, data, "base64");
+                strictEqual(hash3, base64);
+            });
+        });
+
+        describe("hmac:sha512", () => {
+            const buf = createHmac("sha512", bytes("key")).update(bytes("hello world")).digest();
+            const buffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+            const hex = buf.toString("hex");
+            const base64 = buf.toString("base64");
+
+            it("string", async () => {
+                const hash1 = await hmac("sha512", "key", "hello world");
+                deepStrictEqual(hash1, buffer);
+
+                const hash2 = await hmac("sha512", "key", "hello world", "hex");
+                strictEqual(hash2, hex);
+
+                const hash3 = await hmac("sha512", "key", "hello world", "base64");
+                strictEqual(hash3, base64);
+            });
+
+            it("ArrayBuffer", async () => {
+                const key = bytes("key").buffer;
+                const data = bytes("hello world").buffer;
+
+                const hash1 = await hmac("sha512", key, data);
+                deepStrictEqual(hash1, buffer);
+
+                const hash2 = await hmac("sha512", key, data, "hex");
+                strictEqual(hash2, hex);
+
+                const hash3 = await hmac("sha512", key, data, "base64");
+                strictEqual(hash3, base64);
+            });
+
+            it("Uint8Array", async () => {
+                const key = bytes("key");
+                const data = bytes("hello world");
+
+                const hash1 = await hmac("sha512", key, data);
+                deepStrictEqual(hash1, buffer);
+
+                const hash2 = await hmac("sha512", key, data, "hex");
+                strictEqual(hash2, hex);
+
+                const hash3 = await hmac("sha512", key, data, "base64");
+                strictEqual(hash3, base64);
+            });
+
+            it("ReadableStream", async function () {
+                if (typeof ReadableStream === "undefined") {
+                    this.skip();
+                }
+
+                const stream = new ReadableStream({
+                    start(controller) {
+                        controller.enqueue(bytes("hello world"));
+                        controller.close();
+                    }
+                });
+                const [copy1, copy2] = stream.tee();
+                const [copy3, copy4] = copy2.tee();
+
+                const key = bytes("key");
+
+                const hash1 = await hmac("sha512", key, copy1);
+                deepStrictEqual(hash1, buffer);
+
+                const hash2 = await hmac("sha512", key, copy3, "hex");
+                strictEqual(hash2, hex);
+
+                const hash3 = await hmac("sha512", key, copy4, "base64");
+                strictEqual(hash3, base64);
+            });
+
+            it("Blob", async function () {
+                if (typeof Blob === "undefined") {
+                    this.skip();
+                }
+
+                const key = bytes("key");
+                const data = new Blob([bytes("hello world")]);
+
+                const hash1 = await hmac("sha512", key, data);
+                deepStrictEqual(hash1, buffer);
+
+                const hash2 = await hmac("sha512", key, data, "hex");
+                strictEqual(hash2, hex);
+
+                const hash3 = await hmac("sha512", key, data, "base64");
+                strictEqual(hash3, base64);
+            });
         });
     });
 });

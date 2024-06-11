@@ -57,9 +57,7 @@ export class ByteArray extends Uint8Array {
  * ```
  */
 export default function bytes(str: string, encoding?: "utf8" | "hex" | "base64"): ByteArray;
-export default function bytes(arr: ArrayLike<number>): ByteArray;
-export default function bytes(buf: ArrayBufferLike): ByteArray;
-export default function bytes(view: ArrayBufferView): ByteArray;
+export default function bytes(arr: string | ArrayBufferLike | ArrayBufferView | ArrayLike<number>): ByteArray;
 /**
  * Creates a byte array with the specified length.
  * 
@@ -75,7 +73,7 @@ export default function bytes(view: ArrayBufferView): ByteArray;
  */
 export default function bytes(length: number): ByteArray;
 export default function bytes(
-    data: number | string | ArrayLike<number> | ArrayBufferLike | ArrayBufferView,
+    data: number | string | ArrayBufferLike | ArrayBufferView | ArrayLike<number>,
     encoding: "utf8" | "hex" | "base64" = "utf8"
 ): ByteArray {
     if (typeof data === "number") {
