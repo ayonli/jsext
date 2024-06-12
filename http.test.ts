@@ -357,7 +357,11 @@ describe("http", () => {
         deepStrictEqual(auth, { username: "root", password: "pa$$w0rd" });
     });
 
-    it("verifyBasicAuth", async () => {
+    it("verifyBasicAuth", async function () {
+        if (typeof Request === "undefined") {
+            this.skip();
+        }
+
         const users = new Map([
             ["root", "pa$$w0rd"]
         ]);
