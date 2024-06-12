@@ -1,4 +1,4 @@
-import { hasOwn, hasOwnMethod, patch, pick, omit, as, typeOf, isValid, isPlainObject, sanitize, sortKeys, flatKeys } from '../object.js';
+import { hasOwn, hasOwnMethod, patch, pick, omit, as, typeOf, isValid, isPlainObject, sanitize, sortKeys, flatKeys, filterEntries, mapEntries, partitionEntries, invert } from '../object.js';
 
 if (!Object.hasOwn) {
     Object.hasOwn = hasOwn;
@@ -16,4 +16,8 @@ Object.isPlainObject = isPlainObject;
 Object.sanitize = sanitize;
 Object.sortKeys = sortKeys;
 Object.flatKeys = flatKeys;
+Object.filterEntries = filterEntries;
+Object.mapEntries = mapEntries;
+Object.partitionEntries = partitionEntries;
+Object.invert = invert;
 //# sourceMappingURL=object.js.map

@@ -479,4 +479,28 @@ describe("Object", () => {
             strictEqual(Object.flatKeys(date), date);
         });
     });
+
+    it("filterEntries", () => {
+        const obj = { foo: "Hello", bar: "World" } as const;
+        const result = Object.filterEntries(obj, ([key]) => key === "foo");
+        deepStrictEqual(result, { foo: "Hello" });
+    });
+
+    it("mapEntries", () => {
+        const obj = { foo: "Hello", bar: "World" } as const;
+        const result = Object.mapEntries(obj, ([key, value]) => [key, value.toUpperCase()]);
+        deepStrictEqual(result, { foo: "HELLO", bar: "WORLD" });
+    });
+
+    it("partitionEntries", () => {
+        const obj = { foo: "Hello", bar: "World" };
+        const result = Object.partitionEntries(obj, ([key]) => key === "foo");
+        deepStrictEqual(result, [{ foo: "Hello" }, { bar: "World" }]);
+    });
+
+    it("invert", () => {
+        const obj = { foo: "Hello", bar: "World" };
+        const result = Object.invert(obj);
+        deepStrictEqual(result, { Hello: "foo", World: "bar" });
+    });
 });

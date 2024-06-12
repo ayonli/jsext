@@ -382,6 +382,95 @@ function flatKeys(obj, depth = 1, options = {}) {
     })(obj, "", 0);
     return carrier;
 }
+/**
+ * Returns a new record with all entries of the given record except the ones
+ * that do not match the given predicate.
+ *
+ * This function is effectively as
+ * `Object.fromEntries(Object.entries(obj).filter(predicate))`.
+ *
+ * @example
+ * ```ts
+ * import { filterEntries } from "@ayonli/jsext/object";
+ *
+ * const obj = { foo: "Hello", bar: "World" };
+ * const result = filterEntries(obj, ([key]) => key === "foo");
+ *
+ * console.log(result); // { foo: "Hello" }
+ * ```
+ */
+function filterEntries(obj, predicate) {
+    return Object.fromEntries(Object.entries(obj).filter(predicate));
+}
+/**
+ * Applies the given transformer to all entries in the given record and returns
+ * a new record containing the results.
+ *
+ * This function is effectively as
+ * `Object.fromEntries(Object.entries(obj).map(transformer))`.
+ *
+ * @example
+ * ```ts
+ * import { mapEntries } from "@ayonli/jsext/object";
+ *
+ * const obj = { foo: "Hello", bar: "World" };
+ * const result = mapEntries(obj, ([key, value]) => [key, value.toUpperCase()]);
+ *
+ * console.log(result); // { foo: "HELLO", bar: "WORLD" }
+ * ```
+ */
+function mapEntries(obj, transformer) {
+    return Object.fromEntries(Object.entries(obj).map(transformer));
+}
+/**
+ * Returns a tuple of two records with the first one containing all entries of
+ * the given record that match the given predicate and the second one containing
+ * all that do not.
+ *
+ * @example
+ * ```ts
+ * import { partitionEntries } from "@ayonli/jsext/object";
+ *
+ * const obj = { foo: "Hello", bar: "World" };
+ * const [match, rest] = partitionEntries(obj, ([key]) => key === "foo");
+ *
+ * console.log(match); // { foo: "Hello" }
+ * console.log(rest); // { bar: "World" }
+ * ```
+ */
+function partitionEntries(record, predicate) {
+    const match = {};
+    const rest = {};
+    const entries = Object.entries(record);
+    for (const [key, value] of entries) {
+        if (predicate([key, value])) {
+            match[key] = value;
+        }
+        else {
+            rest[key] = value;
+        }
+    }
+    return [match, rest];
+}
+/**
+ * Composes a new record with all keys and values inverted.
+ *
+ * This function is effectively as
+ * `Object.fromEntries(Object.entries(record).map(([key, value]) => [value, key]))`.
+ *
+ * @example
+ * ```ts
+ * import { invert } from "@ayonli/jsext/object";
+ *
+ * const obj = { foo: "Hello", bar: "World" };
+ * const result = invert(obj);
+ *
+ * console.log(result); // { Hello: "foo", World: "bar" }
+ * ```
+ */
+function invert(record) {
+    return Object.fromEntries(Object.entries(record).map(([key, value]) => [value, key]));
+}
 
-export { as, flatKeys, hasOwn, hasOwnMethod, isPlainObject, isValid, omit, patch, pick, sanitize, sortKeys, typeOf };
+export { as, filterEntries, flatKeys, hasOwn, hasOwnMethod, invert, isPlainObject, isValid, mapEntries, omit, partitionEntries, patch, pick, sanitize, sortKeys, typeOf };
 //# sourceMappingURL=object.js.map

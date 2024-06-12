@@ -135,6 +135,10 @@ _These types are augmented to the global scope._
   - `sanitize<T extends object>(obj: T, deep?: boolean, options?: { removeNulls?: boolean; removeEmptyStrings?: boolean; removeEmptyObjects?: boolean; removeArrayItems?: boolean; }): T`
   - `sortKeys<T extends object>(obj: T, deep?: boolean): T`
   - `flatKeys<T extends object>(obj: T, depth = 1, options?: { flatArrayIndices?: boolean; }): OmitChildrenNodes<T> & Record<string | number | symbol, any>`
+  - `filterEntries<T>(obj: Record<string, T>, predicate: (entry: [string, T]) => boolean): Record<string, T>`
+  - `mapEntries<T, O>(obj: Record<string, T>, transformer: (entry: [string, T]) => [string, O]): Record<string, O`
+  - `partitionEntries<T>(record: Record<string, T>, predicate: (entry: [string, T]) => boolean): [Record<string, T>, Record<string, T>]`
+  - `invert<T extends Record<PropertyKey, PropertyKey>>(record: Readonly<T>,): { [P in keyof T as T[P]]: P; }`
 
 ### Augment Promise
 

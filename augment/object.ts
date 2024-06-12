@@ -13,6 +13,10 @@ import {
     sortKeys,
     flatKeys,
     OmitChildrenNodes,
+    filterEntries,
+    mapEntries,
+    partitionEntries,
+    invert,
 } from "../object.ts";
 
 declare global {
@@ -123,6 +127,46 @@ declare global {
             depth?: number,
             options?: { flatArrayIndices?: boolean; }
         ): OmitChildrenNodes<T> & Record<string | number | symbol, any>;
+        /**
+         * Returns a new record with all entries of the given record except the ones
+         * that do not match the given predicate.
+         * 
+         * This function is effectively as
+         * `Object.fromEntries(Object.entries(obj).filter(predicate))`.
+         */
+        filterEntries<T>(
+            obj: Record<string, T>,
+            predicate: (entry: [string, T]) => boolean
+        ): Record<string, T>;
+        /**
+         * Applies the given transformer to all entries in the given record and returns
+         * a new record containing the results.
+         * 
+         * This function is effectively as
+         * `Object.fromEntries(Object.entries(obj).map(transformer))`.
+         */
+        mapEntries<T, O>(
+            obj: Record<string, T>,
+            transformer: (entry: [string, T]) => [string, O]
+        ): Record<string, O>;
+        /**
+         * Returns a tuple of two records with the first one containing all entries of
+         * the given record that match the given predicate and the second one containing
+         * all that do not.
+         */
+        partitionEntries<T>(
+            record: Record<string, T>,
+            predicate: (entry: [string, T]) => boolean
+        ): [Record<string, T>, Record<string, T>];
+        /**
+         * Composes a new record with all keys and values inverted.
+         * 
+         * This function is effectively as
+         * `Object.fromEntries(Object.entries(record).map(([key, value]) => [value, key]))`.
+         */
+        invert<T extends Record<PropertyKey, PropertyKey>>(
+            record: Readonly<T>,
+        ): { [P in keyof T as T[P]]: P; };
     }
 }
 
@@ -144,3 +188,7 @@ Object.isPlainObject = isPlainObject;
 Object.sanitize = sanitize;
 Object.sortKeys = sortKeys;
 Object.flatKeys = flatKeys;
+Object.filterEntries = filterEntries;
+Object.mapEntries = mapEntries;
+Object.partitionEntries = partitionEntries;
+Object.invert = invert;

@@ -490,3 +490,110 @@ export function flatKeys<T extends object>(
 
     return carrier;
 }
+
+/**
+ * Returns a new record with all entries of the given record except the ones
+ * that do not match the given predicate.
+ * 
+ * This function is effectively as
+ * `Object.fromEntries(Object.entries(obj).filter(predicate))`.
+ * 
+ * @example
+ * ```ts
+ * import { filterEntries } from "@ayonli/jsext/object";
+ * 
+ * const obj = { foo: "Hello", bar: "World" };
+ * const result = filterEntries(obj, ([key]) => key === "foo");
+ * 
+ * console.log(result); // { foo: "Hello" }
+ * ```
+ */
+export function filterEntries<T>(
+    obj: Record<string, T>,
+    predicate: (entry: [string, T]) => boolean
+): Record<string, T> {
+    return Object.fromEntries(Object.entries(obj).filter(predicate));
+}
+
+/**
+ * Applies the given transformer to all entries in the given record and returns
+ * a new record containing the results.
+ * 
+ * This function is effectively as
+ * `Object.fromEntries(Object.entries(obj).map(transformer))`.
+ * 
+ * @example
+ * ```ts
+ * import { mapEntries } from "@ayonli/jsext/object";
+ * 
+ * const obj = { foo: "Hello", bar: "World" };
+ * const result = mapEntries(obj, ([key, value]) => [key, value.toUpperCase()]);
+ * 
+ * console.log(result); // { foo: "HELLO", bar: "WORLD" }
+ * ```
+ */
+export function mapEntries<T, O>(
+    obj: Record<string, T>,
+    transformer: (entry: [string, T]) => [string, O]
+): Record<string, O> {
+    return Object.fromEntries(Object.entries(obj).map(transformer));
+}
+
+/**
+ * Returns a tuple of two records with the first one containing all entries of
+ * the given record that match the given predicate and the second one containing
+ * all that do not.
+ * 
+ * @example
+ * ```ts
+ * import { partitionEntries } from "@ayonli/jsext/object";
+ * 
+ * const obj = { foo: "Hello", bar: "World" };
+ * const [match, rest] = partitionEntries(obj, ([key]) => key === "foo");
+ * 
+ * console.log(match); // { foo: "Hello" }
+ * console.log(rest); // { bar: "World" }
+ * ```
+ */
+export function partitionEntries<T>(
+    record: Record<string, T>,
+    predicate: (entry: [string, T]) => boolean
+): [Record<string, T>, Record<string, T>] {
+    const match: Record<string, T> = {};
+    const rest: Record<string, T> = {};
+    const entries = Object.entries(record);
+
+    for (const [key, value] of entries) {
+        if (predicate([key, value])) {
+            match[key] = value;
+        } else {
+            rest[key] = value;
+        }
+    }
+
+    return [match, rest];
+}
+
+/**
+ * Composes a new record with all keys and values inverted.
+ * 
+ * This function is effectively as
+ * `Object.fromEntries(Object.entries(record).map(([key, value]) => [value, key]))`.
+ * 
+ * @example
+ * ```ts
+ * import { invert } from "@ayonli/jsext/object";
+ * 
+ * const obj = { foo: "Hello", bar: "World" };
+ * const result = invert(obj);
+ * 
+ * console.log(result); // { Hello: "foo", World: "bar" }
+ * ```
+ */
+export function invert<T extends Record<PropertyKey, PropertyKey>>(
+    record: Readonly<T>,
+): { [P in keyof T as T[P]]: P; } {
+    return Object.fromEntries(
+        Object.entries(record).map(([key, value]) => [value, key]),
+    );
+}
