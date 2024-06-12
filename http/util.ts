@@ -5,6 +5,7 @@
  */
 
 import bytes, { text } from "../bytes.ts";
+import { capitalize } from "../string.ts";
 
 /**
  * Represents the HTTP request `Accept`, `Accept-Encoding` and `Accept-Language`
@@ -15,7 +16,15 @@ import bytes, { text } from "../bytes.ts";
  * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Language
  */
 export interface Accept {
+    /**
+     * The MIME type of the `Accept` header, the encoding of the
+     * `Accept-Encoding` header, or the language of the `Accept-Language` header.
+     */
     type: string;
+    /**
+     * q-factor value, which represents the relative quality factor of the media
+     * type, encoding or language.
+     */
     weight: number;
 }
 
@@ -65,8 +74,17 @@ export function parseAccepts(str: string): Accept[] {
  * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
  */
 export interface ContentType {
+    /**
+     * The MIME type of the resource.
+     */
     type: string;
+    /**
+     * The character encoding of the resource.
+     */
     charset?: string;
+    /**
+     * The boundary string used in `multipart/*` types.
+     */
     boundary?: string;
 }
 
@@ -117,15 +135,64 @@ export function parseContentType(str: string): ContentType {
  * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cookie
  */
 export interface Cookie {
+    /**
+     * The name of the cookie.
+     */
     name: string;
+    /**
+     * The value of the cookie.
+     */
     value: string;
+    /**
+     * Defines the host to which the cookie will be sent.
+     */
     domain?: string;
+    /**
+     * Indicates the path that must exist in the requested URL for the browser
+     * to send the Cookie header.
+     */
     path?: string;
-    expires?: Date;
+    /**
+     * The expiration time of the cookie in milliseconds since the Unix epoch.
+     * If the value is equal to or less than the current time, the cookie will
+     * be expired immediately.
+     */
+    expires?: number;
+    /**
+     * The number of seconds until the cookie expires. A zero or negative number
+     * will expire the cookie immediately. If both `expires` and `maxAge` are
+     * present, `maxAge` has precedence.
+     */
     maxAge?: number;
-    sameSite?: "Strict" | "Lax";
+    /**
+     * Controls whether or not a cookie is sent with cross-site requests,
+     * providing some protection against cross-site request forgery attacks
+     * (CSRF).
+     * 
+     * - `strict`: The cookie will only be sent in a first-party context and not
+     *   be sent with requests initiated by third party websites.
+     * - `lax`: The cookie is not sent on normal cross-site sub-requests (for
+     *   example to load images or frames into a third party site), but is sent
+     *   when a user is navigating within the origin site (i.e. when following a
+     *   link). When `sameSite` is not specified, this is the default behavior.
+     * - `none`: The cookie will be sent in all contexts.
+     */
+    sameSite?: "strict" | "lax" | "none";
+    /**
+     * Forbids JavaScript from accessing the cookie, for example, through the
+     * `document.cookie` property.
+     */
     httpOnly?: boolean;
+    /**
+     * Whether the cookie is to be used in secure contexts only, that is over
+     * HTTPS.
+     */
     secure?: boolean;
+    /**
+     * Indicates that the cookie should be stored using partitioned storage.
+     * @see https://developer.mozilla.org/en-US/docs/Web/Privacy/Privacy_sandbox/Partitioned_cookies
+     */
+    partitioned?: boolean;
 }
 
 /**
@@ -142,10 +209,10 @@ export interface Cookie {
  * //     value: "bar",
  * //     domain: "example.com",
  * //     path: "/",
- * //     expires: Wed Jun 09 2021 10:18:14 GMT+0000 (Coordinated Universal Time),
+ * //     expires: 1623233894000,
  * //     httpOnly: true,
  * //     secure: true,
- * //     sameSite: "Strict"
+ * //     sameSite: "strict"
  * // }
  * ```
  */
@@ -166,7 +233,7 @@ export function parseCookie(str: string): Cookie {
             if (key === "Domain") {
                 cookie.domain = value;
             } else if (key === "Expires") {
-                cookie.expires = new Date(value);
+                cookie.expires = new Date(value).valueOf();
             } else if (key === "Max-Age") {
                 cookie.maxAge = parseInt(value);
             } else if (key === "HttpOnly") {
@@ -174,9 +241,11 @@ export function parseCookie(str: string): Cookie {
             } else if (key === "Secure") {
                 cookie.secure = true;
             } else if (key === "Path") {
-                cookie.path = value;
-            } else if (key === "SameSite") {
-                cookie.sameSite = value as "Strict" | "Lax";
+                cookie.path = value || "/";
+            } else if (key === "SameSite" && value) {
+                cookie.sameSite = value.toLowerCase() as "strict" | "lax" | "none";
+            } else if (key === "Partitioned") {
+                cookie.partitioned = true;
             }
         }
     }
@@ -214,7 +283,7 @@ export function stringifyCookie(cookie: Cookie): string {
         str += `; Path=${cookie.path}`;
 
     if (cookie.expires)
-        str += `; Expires=${cookie.expires.toUTCString()}`;
+        str += `; Expires=${new Date(cookie.expires).toUTCString()}`;
 
     if (cookie.maxAge)
         str += `; Max-Age=${cookie.maxAge}`;
@@ -226,9 +295,35 @@ export function stringifyCookie(cookie: Cookie): string {
         str += "; Secure";
 
     if (cookie.sameSite)
-        str += `; SameSite=${cookie.sameSite}`;
+        str += `; SameSite=${capitalize(cookie.sameSite)}`;
+
+    if (cookie.partitioned)
+        str += "; Partitioned";
 
     return str;
+}
+
+/**
+ * Parses the `Cookie` header or the `document.cookie` property.
+ */
+export function parseCookies(str: string): Cookie[] {
+    return str.split(/;\s*/g).reduce((cookies, part) => {
+        const [name, value] = part.split("=") as [string, string?];
+
+        if (name && value !== undefined) {
+            cookies.push({ name, value });
+        }
+
+        return cookies;
+    }, [] as Cookie[]);
+}
+
+/**
+ * Converts a list of cookies to a string that can be used in the `Cookie`
+ * header.
+ */
+export function stringifyCookies(cookies: Cookie[]): string {
+    return cookies.map(({ name, value }) => `${name}=${value}`).join("; ");
 }
 
 /**
@@ -237,8 +332,17 @@ export function stringifyCookie(cookie: Cookie): string {
  * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range
  */
 export interface Range {
+    /**
+     * The unit in which ranges are specified, usually `bytes`.
+     */
     unit: string;
+    /**
+     * The ranges of units requested.
+     */
     ranges: { start: number; end?: number; }[];
+    /**
+     * The number of units at the end of the resource requested.
+     */
     suffix?: number;
 }
 

@@ -4,7 +4,7 @@ import { isDeno, isBun, isNode } from './env.js';
 import { stat, exists, readDir, readFile, createReadableStream } from './fs.js';
 import { sha256 } from './hash.js';
 import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
-export { parseAccepts, parseBasicAuth, parseContentType, parseCookie, stringifyCookie, verifyBasicAuth } from './http/util.js';
+export { parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, stringifyCookie, stringifyCookies, verifyBasicAuth } from './http/util.js';
 import { isMain } from './module.js';
 import { as } from './object.js';
 import { join } from './path.js';

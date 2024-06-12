@@ -2,6 +2,7 @@ import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import * as http from "node:http";
 import {
     BasicAuthorization,
+    Cookie,
     etag,
     ifMatch,
     ifNoneMatch,
@@ -9,10 +10,12 @@ import {
     parseBasicAuth,
     parseContentType,
     parseCookie,
+    parseCookies,
     parseRange,
     randomPort,
     serveStatic,
     stringifyCookie,
+    stringifyCookies,
     verifyBasicAuth,
     withWeb,
 } from "./http.ts";
@@ -98,14 +101,14 @@ describe("http", () => {
         deepStrictEqual(cookies, {
             name: "foo",
             value: "bar",
-        });
+        } satisfies Cookie);
 
         const cookies2 = parseCookie("foo=bar; Domain=example.com");
         deepStrictEqual(cookies2, {
             name: "foo",
             value: "bar",
             domain: "example.com",
-        });
+        } satisfies Cookie);
 
         const cookies3 = parseCookie("foo=bar; Domain=example.com; Secure");
         deepStrictEqual(cookies3, {
@@ -113,7 +116,7 @@ describe("http", () => {
             value: "bar",
             domain: "example.com",
             secure: true,
-        });
+        } satisfies Cookie);
 
         const cookies4 = parseCookie("foo=bar; Domain=example.com; Secure; HttpOnly");
         deepStrictEqual(cookies4, {
@@ -122,7 +125,7 @@ describe("http", () => {
             domain: "example.com",
             secure: true,
             httpOnly: true,
-        });
+        } satisfies Cookie);
 
         const cookies5 = parseCookie("foo=bar; Domain=example.com; Secure; HttpOnly; SameSite=Strict");
         deepStrictEqual(cookies5, {
@@ -131,8 +134,8 @@ describe("http", () => {
             domain: "example.com",
             secure: true,
             httpOnly: true,
-            sameSite: "Strict",
-        });
+            sameSite: "strict",
+        } satisfies Cookie);
 
         const cookies6 = parseCookie("foo=bar; Domain=example.com; Secure; HttpOnly; SameSite=Lax");
         deepStrictEqual(cookies6, {
@@ -141,8 +144,8 @@ describe("http", () => {
             domain: "example.com",
             secure: true,
             httpOnly: true,
-            sameSite: "Lax",
-        });
+            sameSite: "lax",
+        } satisfies Cookie);
 
         const cookies7 = parseCookie("foo=bar; Domain=example.com; Secure; HttpOnly; SameSite=Lax; Path=/");
         deepStrictEqual(cookies7, {
@@ -151,9 +154,9 @@ describe("http", () => {
             domain: "example.com",
             secure: true,
             httpOnly: true,
-            sameSite: "Lax",
+            sameSite: "lax",
             path: "/",
-        });
+        } satisfies Cookie);
 
         const cookies8 = parseCookie("foo=bar; Domain=example.com; Secure; HttpOnly; SameSite=Lax; Path=/; Expires=Wed, 09 Jun 2021 10:18:14 GMT");
         deepStrictEqual(cookies8, {
@@ -162,10 +165,10 @@ describe("http", () => {
             domain: "example.com",
             secure: true,
             httpOnly: true,
-            sameSite: "Lax",
+            sameSite: "lax",
             path: "/",
-            expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT"),
-        });
+            expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT").valueOf(),
+        } satisfies Cookie);
 
         const cookies9 = parseCookie("foo=bar; Domain=example.com; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600");
         deepStrictEqual(cookies9, {
@@ -174,10 +177,10 @@ describe("http", () => {
             domain: "example.com",
             secure: true,
             httpOnly: true,
-            sameSite: "Lax",
+            sameSite: "lax",
             path: "/",
             maxAge: 3600,
-        });
+        } satisfies Cookie);
 
         const cookies10 = parseCookie("foo=bar; Domain=example.com; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600; Expires=Wed, 09 Jun 2021 10:18:14 GMT");
         deepStrictEqual(cookies10, {
@@ -186,11 +189,25 @@ describe("http", () => {
             domain: "example.com",
             secure: true,
             httpOnly: true,
-            sameSite: "Lax",
+            sameSite: "lax",
             path: "/",
             maxAge: 3600,
-            expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT"),
-        });
+            expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT").valueOf(),
+        } satisfies Cookie);
+
+        const cookies11 = parseCookie("foo=bar; Domain=example.com; Secure; HttpOnly; SameSite=None; Path=/; Max-Age=3600; Expires=Wed, 09 Jun 2021 10:18:14 GMT; Partitioned");
+        deepStrictEqual(cookies11, {
+            name: "foo",
+            value: "bar",
+            domain: "example.com",
+            secure: true,
+            httpOnly: true,
+            sameSite: "none",
+            path: "/",
+            maxAge: 3600,
+            expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT").valueOf(),
+            partitioned: true,
+        } satisfies Cookie);
     });
 
     it("stringifyCookie", () => {
@@ -230,7 +247,7 @@ describe("http", () => {
             domain: "example.com",
             secure: true,
             httpOnly: true,
-            sameSite: "Strict",
+            sameSite: "strict",
         });
         strictEqual(cookie5, "foo=bar; Domain=example.com; HttpOnly; Secure; SameSite=Strict");
 
@@ -240,7 +257,7 @@ describe("http", () => {
             domain: "example.com",
             secure: true,
             httpOnly: true,
-            sameSite: "Lax",
+            sameSite: "lax",
         });
         strictEqual(cookie6, "foo=bar; Domain=example.com; HttpOnly; Secure; SameSite=Lax");
 
@@ -250,7 +267,7 @@ describe("http", () => {
             domain: "example.com",
             secure: true,
             httpOnly: true,
-            sameSite: "Lax",
+            sameSite: "lax",
             path: "/",
         });
         strictEqual(cookie7, "foo=bar; Domain=example.com; Path=/; HttpOnly; Secure; SameSite=Lax");
@@ -261,9 +278,9 @@ describe("http", () => {
             domain: "example.com",
             secure: true,
             httpOnly: true,
-            sameSite: "Lax",
+            sameSite: "lax",
             path: "/",
-            expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT"),
+            expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT").valueOf(),
         });
         strictEqual(cookie8, "foo=bar; Domain=example.com; Path=/; Expires=Wed, 09 Jun 2021 10:18:14 GMT; HttpOnly; Secure; SameSite=Lax");
 
@@ -273,7 +290,7 @@ describe("http", () => {
             domain: "example.com",
             secure: true,
             httpOnly: true,
-            sameSite: "Lax",
+            sameSite: "lax",
             path: "/",
             maxAge: 3600,
         });
@@ -285,12 +302,70 @@ describe("http", () => {
             domain: "example.com",
             secure: true,
             httpOnly: true,
-            sameSite: "Lax",
+            sameSite: "lax",
             path: "/",
             maxAge: 3600,
-            expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT"),
+            expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT").valueOf(),
         });
         strictEqual(cookie10, "foo=bar; Domain=example.com; Path=/; Expires=Wed, 09 Jun 2021 10:18:14 GMT; Max-Age=3600; HttpOnly; Secure; SameSite=Lax");
+
+        const cookie11 = stringifyCookie({
+            name: "foo",
+            value: "bar",
+            domain: "example.com",
+            secure: true,
+            httpOnly: true,
+            sameSite: "none",
+            path: "/",
+            maxAge: 3600,
+            expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT").valueOf(),
+            partitioned: true,
+        });
+        strictEqual(cookie11, "foo=bar; Domain=example.com; Path=/; Expires=Wed, 09 Jun 2021 10:18:14 GMT; Max-Age=3600; HttpOnly; Secure; SameSite=None; Partitioned");
+    });
+
+    it("parseCookies", () => {
+        const cookies = parseCookies("foo=bar");
+        deepStrictEqual(cookies, [
+            { name: "foo", value: "bar" },
+        ]);
+
+        const cookies1 = parseCookies("foo=bar; baz=qux");
+        deepStrictEqual(cookies1, [
+            { name: "foo", value: "bar" },
+            { name: "baz", value: "qux" },
+        ]);
+
+        const cookies2 = parseCookies("foo=bar; baz=qux; quux=corge");
+        deepStrictEqual(cookies2, [
+            { name: "foo", value: "bar" },
+            { name: "baz", value: "qux" },
+            { name: "quux", value: "corge" },
+        ]);
+    });
+
+    it("stringifyCookies", () => {
+        const cookies = stringifyCookies([
+            { name: "foo", value: "bar" },
+        ]);
+        strictEqual(cookies, "foo=bar");
+
+        const cookies1 = stringifyCookies([
+            { name: "foo", value: "bar" },
+            { name: "baz", value: "qux" },
+        ]);
+        strictEqual(cookies1, "foo=bar; baz=qux");
+
+        const cookies2 = stringifyCookies([
+            { name: "foo", value: "bar" },
+            { name: "baz", value: "qux" },
+            { name: "quux", value: "corge" },
+        ]);
+        strictEqual(cookies2, "foo=bar; baz=qux; quux=corge");
+
+        const cookie: Cookie = { name: "foo", value: "bar" };
+        const cookies3 = stringifyCookies([cookie]);
+        strictEqual(cookies3, "foo=bar");
     });
 
     it("parseRange", () => {

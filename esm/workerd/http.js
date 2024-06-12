@@ -1,6 +1,6 @@
 import bytes from '../bytes.js';
 import { sha256 } from '../hash/web.js';
-export { ifMatch, ifNoneMatch, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseRange, stringifyCookie, verifyBasicAuth } from '../http/util.js';
+export { ifMatch, ifNoneMatch, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRange, stringifyCookie, stringifyCookies, verifyBasicAuth } from '../http/util.js';
 
 async function etag(data) {
     var _a;

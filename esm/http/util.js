@@ -1,4 +1,5 @@
 import bytes, { text } from '../bytes.js';
+import { capitalize } from '../string.js';
 
 /**
  * Utility functions for handling HTTP related tasks, such as parsing headers.
@@ -93,10 +94,10 @@ function parseContentType(str) {
  * //     value: "bar",
  * //     domain: "example.com",
  * //     path: "/",
- * //     expires: Wed Jun 09 2021 10:18:14 GMT+0000 (Coordinated Universal Time),
+ * //     expires: 1623233894000,
  * //     httpOnly: true,
  * //     secure: true,
- * //     sameSite: "Strict"
+ * //     sameSite: "strict"
  * // }
  * ```
  */
@@ -114,7 +115,7 @@ function parseCookie(str) {
                 cookie.domain = value;
             }
             else if (key === "Expires") {
-                cookie.expires = new Date(value);
+                cookie.expires = new Date(value).valueOf();
             }
             else if (key === "Max-Age") {
                 cookie.maxAge = parseInt(value);
@@ -126,10 +127,13 @@ function parseCookie(str) {
                 cookie.secure = true;
             }
             else if (key === "Path") {
-                cookie.path = value;
+                cookie.path = value || "/";
             }
-            else if (key === "SameSite") {
-                cookie.sameSite = value;
+            else if (key === "SameSite" && value) {
+                cookie.sameSite = value.toLowerCase();
+            }
+            else if (key === "Partitioned") {
+                cookie.partitioned = true;
             }
         }
     }
@@ -162,7 +166,7 @@ function stringifyCookie(cookie) {
     if (cookie.path)
         str += `; Path=${cookie.path}`;
     if (cookie.expires)
-        str += `; Expires=${cookie.expires.toUTCString()}`;
+        str += `; Expires=${new Date(cookie.expires).toUTCString()}`;
     if (cookie.maxAge)
         str += `; Max-Age=${cookie.maxAge}`;
     if (cookie.httpOnly)
@@ -170,8 +174,29 @@ function stringifyCookie(cookie) {
     if (cookie.secure)
         str += "; Secure";
     if (cookie.sameSite)
-        str += `; SameSite=${cookie.sameSite}`;
+        str += `; SameSite=${capitalize(cookie.sameSite)}`;
+    if (cookie.partitioned)
+        str += "; Partitioned";
     return str;
+}
+/**
+ * Parses the `Cookie` header or the `document.cookie` property.
+ */
+function parseCookies(str) {
+    return str.split(/;\s*/g).reduce((cookies, part) => {
+        const [name, value] = part.split("=");
+        if (name && value !== undefined) {
+            cookies.push({ name, value });
+        }
+        return cookies;
+    }, []);
+}
+/**
+ * Converts a list of cookies to a string that can be used in the `Cookie`
+ * header.
+ */
+function stringifyCookies(cookies) {
+    return cookies.map(({ name, value }) => `${name}=${value}`).join("; ");
 }
 /**
  * Parses the `Range` header.
@@ -352,5 +377,5 @@ async function verifyBasicAuth(req, verify) {
     });
 }
 
-export { ifMatch, ifNoneMatch, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseRange, stringifyCookie, verifyBasicAuth };
+export { ifMatch, ifNoneMatch, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRange, stringifyCookie, stringifyCookies, verifyBasicAuth };
 //# sourceMappingURL=util.js.map
