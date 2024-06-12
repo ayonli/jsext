@@ -51,6 +51,7 @@ import "@ayonli/jsext/augment/types";
     - `groupBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T[]>`
     - `keyBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>`
     - `keyBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>`
+    - `partition(predicate: (item: T, i: number) => boolean): [T[], T[]]`
 
 ### Augment Collections
 

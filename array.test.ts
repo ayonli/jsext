@@ -436,4 +436,11 @@ describe("Array", () => {
             ]));
         });
     });
+
+    it("partition", () => {
+        const arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+        const [even, odd] = arr.partition(n => n % 2 === 0);
+        deepStrictEqual(even, [0, 2, 4, 6, 8]);
+        deepStrictEqual(odd, [1, 3, 5, 7, 9]);
+    });
 });

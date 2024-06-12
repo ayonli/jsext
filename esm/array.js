@@ -341,6 +341,31 @@ function keyBy(arr, fn, type = Object) {
         return record;
     }
 }
+/**
+ * Returns a tuple of two arrays with the first one containing all elements in
+ * the given array that match the given predicate and the second one containing
+ * all that do not.
+ *
+ * @example
+ * ```ts
+ * import { partition } from "@ayonli/jsext/array";
+ *
+ * const arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+ * const [even, odd] = partition(arr, item => item % 2 === 0);
+ *
+ * console.log(even); // [0, 2, 4, 6, 8]
+ * console.log(odd); // [1, 3, 5, 7, 9]
+ * ```
+ */
+function partition(arr, predicate) {
+    const match = [];
+    const rest = [];
+    for (let i = 0; i < arr.length; i++) {
+        const item = arr[i];
+        (predicate(item, i) ? match : rest).push(item);
+    }
+    return [match, rest];
+}
 
-export { chunk, count, endsWith, equals, first, groupBy, includesSlice, keyBy, last, orderBy, random, shuffle, split, startsWith, uniq, uniqBy, unique, uniqueBy };
+export { chunk, count, endsWith, equals, first, groupBy, includesSlice, keyBy, last, orderBy, partition, random, shuffle, split, startsWith, uniq, uniqBy, unique, uniqueBy };
 //# sourceMappingURL=array.js.map

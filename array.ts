@@ -567,3 +567,34 @@ export function keyBy<T, K>(
         return record;
     }
 }
+
+/**
+ * Returns a tuple of two arrays with the first one containing all elements in
+ * the given array that match the given predicate and the second one containing
+ * all that do not.
+ * 
+ * @example
+ * ```ts
+ * import { partition } from "@ayonli/jsext/array";
+ * 
+ * const arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+ * const [even, odd] = partition(arr, item => item % 2 === 0);
+ * 
+ * console.log(even); // [0, 2, 4, 6, 8]
+ * console.log(odd); // [1, 3, 5, 7, 9]
+ * ```
+ */
+export function partition<T>(
+    arr: T[],
+    predicate: (item: T, i: number) => boolean
+): [T[], T[]] {
+    const match: T[] = [];
+    const rest: T[] = [];
+
+    for (let i = 0; i < arr.length; i++) {
+        const item = arr[i] as T;
+        (predicate(item, i) ? match : rest).push(item);
+    }
+
+    return [match, rest];
+}

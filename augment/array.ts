@@ -15,6 +15,7 @@ import {
     split as _split,
     unique as _unique,
     uniqueBy as _uniqueBy,
+    partition as _partition,
 } from "../array.ts";
 
 declare global {
@@ -94,6 +95,12 @@ declare global {
          */
         keyBy<K extends string | number | symbol>(fn: (item: T, i: number) => K, type?: ObjectConstructor): Record<K, T>;
         keyBy<K>(fn: (item: T, i: number) => K, type: MapConstructor): Map<K, T>;
+        /**
+         * Returns a tuple of two arrays with the first one containing all elements in
+         * the given array that match the given predicate and the second one containing
+         * all that do not.
+         */
+        partition(predicate: (item: T, i: number) => boolean): [T[], T[]];
     }
 }
 
@@ -181,4 +188,8 @@ Array.prototype.keyBy = function keyBy(
     type: ObjectConstructor | MapConstructor = Object
 ): any {
     return _keyBy(this, fn, type as any);
+};
+
+Array.prototype.partition = function partition(predicate) {
+    return _partition(this, predicate);
 };

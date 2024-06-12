@@ -1,4 +1,4 @@
-import { first, last, random, count, equals, includesSlice, startsWith, endsWith, split, chunk, unique, uniqueBy, shuffle, orderBy, groupBy, keyBy } from '../array.js';
+import { first, last, random, count, equals, includesSlice, startsWith, endsWith, split, chunk, unique, uniqueBy, shuffle, orderBy, groupBy, keyBy, partition } from '../array.js';
 
 Array.prototype.first = function first$1() {
     return first(this);
@@ -60,5 +60,8 @@ Array.prototype.groupBy = function groupBy$1(fn, type = Object) {
 };
 Array.prototype.keyBy = function keyBy$1(fn, type = Object) {
     return keyBy(this, fn, type);
+};
+Array.prototype.partition = function partition$1(predicate) {
+    return partition(this, predicate);
 };
 //# sourceMappingURL=array.js.map
