@@ -1,5 +1,3 @@
-import { hasOwn } from './object.js';
-
 /**
  * Declares a class that combines all methods from the base classes.
  * @module
@@ -20,7 +18,7 @@ function mergeIfNotExists(proto, source, mergeSuper = false) {
                 setProp(proto, source, prop);
             }
         }
-        else if (!hasOwn(proto, prop)) {
+        else if (!Object.prototype.hasOwnProperty.call(proto, prop)) {
             setProp(proto, source, prop);
         }
     }

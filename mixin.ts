@@ -3,8 +3,7 @@
  * @module
  */
 
-import { Constructor } from "./types.ts";
-import { hasOwn } from "./object.ts";
+import type { Constructor } from "./types.ts";
 
 export type UnionToIntersection<U> = (
     U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
@@ -24,7 +23,7 @@ function mergeIfNotExists(proto: object, source: object, mergeSuper = false) {
             if (!(prop in proto)) {
                 setProp(proto, source, <string | symbol>prop);
             }
-        } else if (!hasOwn(proto, prop)) {
+        } else if (!Object.prototype.hasOwnProperty.call(proto, prop)) {
             setProp(proto, source, <string | symbol>prop);
         }
     }
