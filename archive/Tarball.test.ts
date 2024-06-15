@@ -4,6 +4,7 @@ import Tarball, { type TarEntry, _entries, TarTree } from "../archive/Tarball.ts
 import { readAsText } from "../reader.ts";
 import { omit } from "../object.ts";
 import { platform } from "../runtime.ts";
+import _try from "../try.ts";
 
 describe("archive/Tarball", () => {
     if (typeof ReadableStream !== "function") {
@@ -163,6 +164,10 @@ describe("archive/Tarball", () => {
         const output = createWritableStream(filename1);
         await tarball1.stream().pipeTo(output);
         ok(await exists(filename1));
+        ok(tarball1.bodyUsed);
+
+        const [err] = _try(() => tarball1.stream());
+        ok(err instanceof Error);
     });
 
     it("stream with gzip", async function () {
@@ -174,6 +179,10 @@ describe("archive/Tarball", () => {
         const output = createWritableStream(filename2);
         await tarball2.stream({ gzip: true }).pipeTo(output);
         ok(await exists(filename2));
+        ok(tarball2.bodyUsed);
+
+        const [err] = _try(() => tarball2.stream());
+        ok(err instanceof Error);
     });
 
     it("load", async () => {
@@ -323,7 +332,7 @@ describe("archive/Tarball", () => {
         } as Omit<TarTree, "mtime">);
     });
 
-    it("retrieve", () => {
+    it("retrieve", async () => {
         const tarball = new Tarball();
         const now = new Date();
 
@@ -331,10 +340,10 @@ describe("archive/Tarball", () => {
         tarball.append("Hello, World!", { kind: "file", relativePath: "foo/hello.txt", mtime: now });
 
         const entry1 = tarball.retrieve("foo/hello.txt");
-        const entry2 = tarball.retrieve("foo/hello.txt", true);
+        const entry2 = tarball.retrieve("foo/hello.txt");
         const entry3 = tarball.retrieve("bar/hello.txt");
 
-        deepStrictEqual(entry1, {
+        deepStrictEqual(entry1, omit({
             name: "hello.txt",
             kind: "file",
             relativePath: "foo/hello.txt",
@@ -345,11 +354,11 @@ describe("archive/Tarball", () => {
             gid: 0,
             owner: "",
             group: "",
-        } as TarEntry);
-        ok(!!entry2);
-        deepStrictEqual(omit(entry2, ["header", "body"]), entry1);
-        ok(entry2.header instanceof Uint8Array);
-        ok(entry2.body instanceof ReadableStream);
+        }, ["stream"]) as TarEntry);
+        strictEqual(await readAsText(entry1!.stream), "Hello, World!");
+        strictEqual(await readAsText(entry2!.stream), "Hello, World!");
+        strictEqual(await readAsText(entry1!.stream), "");
+        strictEqual(await readAsText(entry2!.stream), "");
         strictEqual(entry3, null);
     });
 
@@ -380,8 +389,8 @@ describe("archive/Tarball", () => {
         const res1 = tarball.replace("foo/hello.txt", "Hello, Deno!");
         strictEqual(res1, true);
 
-        const entry = tarball.retrieve("foo/hello.txt", true)!;
-        strictEqual(await readAsText(entry.body), "Hello, Deno!");
+        const entry = tarball.retrieve("foo/hello.txt")!;
+        strictEqual(await readAsText(entry.stream), "Hello, Deno!");
 
         const res2 = tarball.replace("foo/bar.txt", "Hello, Deno!");
         strictEqual(res2, false);

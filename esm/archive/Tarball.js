@@ -6,7 +6,9 @@ import { basename, dirname } from '../path.js';
 import { toReadableStream, concat } from '../reader.js';
 import { stripEnd } from '../string.js';
 
-var _a;
+var _a, _b;
+const _stream = Symbol.for("stream");
+const _bodyUsed = Symbol.for("bodyUsed");
 var FileTypes;
 (function (FileTypes) {
     FileTypes[FileTypes["file"] = 0] = "file";
@@ -103,12 +105,12 @@ function getChecksum(header) {
     return sum;
 }
 function createEntry(headerInfo) {
-    var _b;
+    var _c;
     const relativePath = (headerInfo.prefix ? headerInfo.prefix + "/" : "")
         + stripEnd(headerInfo.name, "/");
     return {
         name: basename(relativePath),
-        kind: ((_b = FileTypes[parseInt(headerInfo.typeflag)]) !== null && _b !== void 0 ? _b : "file"),
+        kind: ((_c = FileTypes[parseInt(headerInfo.typeflag)]) !== null && _c !== void 0 ? _c : "file"),
         relativePath,
         size: parseInt(headerInfo.size, 8),
         mtime: new Date(parseInt(headerInfo.mtime, 8) * 1000),
@@ -160,12 +162,13 @@ const _entries = Symbol.for("entries");
 class Tarball {
     constructor() {
         this[_a] = [];
+        this[_b] = false;
         if (typeof ReadableStream === "undefined") {
             throw new TypeError("ReadableStream is not supported in this environment");
         }
     }
     constructEntry(relativePath, data, info) {
-        var _b, _c, _d, _e, _f;
+        var _c, _d, _e, _f, _g;
         // UStar format has a limitation of file name length. Specifically:
         // 
         // 1. File names can contain at most 255 bytes.
@@ -230,17 +233,17 @@ class Tarball {
         else {
             throw new TypeError("data must be a string, Uint8Array, ArrayBuffer, ArrayBufferView, Blob, or ReadableStream");
         }
-        const kind = (_b = info.kind) !== null && _b !== void 0 ? _b : "file";
-        const mode = (_c = info.mode) !== null && _c !== void 0 ? _c : (kind === "directory" ? 0o755 : 0o666);
-        const mtime = (_d = info.mtime) !== null && _d !== void 0 ? _d : new Date();
+        const kind = (_c = info.kind) !== null && _c !== void 0 ? _c : "file";
+        const mode = (_d = info.mode) !== null && _d !== void 0 ? _d : (kind === "directory" ? 0o755 : 0o666);
+        const mtime = (_e = info.mtime) !== null && _e !== void 0 ? _e : new Date();
         if (kind === "directory") {
             size = 0; // ensure size is 0 for directories
         }
         const headerInfo = {
             name,
             mode: toFixedOctal(mode, USTarFileHeaderFieldLengths.mode),
-            uid: toFixedOctal((_e = info.uid) !== null && _e !== void 0 ? _e : 0, USTarFileHeaderFieldLengths.uid),
-            gid: toFixedOctal((_f = info.gid) !== null && _f !== void 0 ? _f : 0, USTarFileHeaderFieldLengths.gid),
+            uid: toFixedOctal((_f = info.uid) !== null && _f !== void 0 ? _f : 0, USTarFileHeaderFieldLengths.uid),
+            gid: toFixedOctal((_g = info.gid) !== null && _g !== void 0 ? _g : 0, USTarFileHeaderFieldLengths.gid),
             size: toFixedOctal(size, USTarFileHeaderFieldLengths.size),
             mtime: toFixedOctal(Math.floor((mtime.getTime()) / 1000), USTarFileHeaderFieldLengths.mtime),
             checksum: "        ",
@@ -311,17 +314,38 @@ class Tarball {
         const entry = this.constructEntry(relativePath, data, info);
         this[_entries].push(entry);
     }
-    retrieve(relativePath, withData = false) {
-        const entry = this[_entries].find((entry) => entry.relativePath === relativePath);
-        if (!entry) {
+    /**
+     * Retrieves an entry in the archive by its relative path.
+     *
+     * The returned entry object contains a `stream` property which is a copy of
+     * the entry's data, and since it's a copy, the data in the archive is still
+     * available even after the `stream` property is consumed.
+     *
+     * However, due to the nature of the `ReadableStream.tee()` API, if the copy
+     * is consumed, the data will be loaded and cached in memory until the
+     * tarball's stream is consumed or dropped. This may cause memory issues for
+     * large files, so it is recommended not to use the `stream` property unless
+     * necessary.
+     */
+    retrieve(relativePath) {
+        const _entry = this[_entries].find((entry) => entry.relativePath === relativePath);
+        if (!_entry) {
             return null;
         }
-        else if (withData) {
-            return entry;
-        }
-        else {
-            return omit(entry, ["header", "body"]);
-        }
+        const entry = omit(_entry, ["header", "body"]);
+        Object.defineProperty(entry, "stream", {
+            get() {
+                if (entry[_stream]) {
+                    return entry[_stream];
+                }
+                else {
+                    const [copy1, copy2] = _entry.body.tee();
+                    _entry.body = copy1;
+                    return (entry[_stream] = copy2);
+                }
+            },
+        });
+        return entry;
     }
     /**
      * Removes an entry from the archive by its relative path.
@@ -369,7 +393,7 @@ class Tarball {
         this[_entries][index] = newEntry;
         return true;
     }
-    [(_a = _entries, Symbol.iterator)]() {
+    [(_a = _entries, _b = _bodyUsed, Symbol.iterator)]() {
         return this.entries();
     }
     /**
@@ -421,10 +445,29 @@ class Tarball {
         }, 0);
     }
     /**
+     * Indicates whether the body of the tarball has been used. This property
+     * will be set to `true` after the `stream()` method is called.
+     */
+    get bodyUsed() {
+        return this[_bodyUsed];
+    }
+    /**
      * Returns a readable stream of the archive that can be piped to a writable
      * target.
+     *
+     * This method can only be called once per instance, as after the stream
+     * has been consumed, the underlying data of the archive's entries will no
+     * longer be available, and subsequent calls to this method will throw an
+     * error.
+     *
+     * To reuse the stream, use the `tee()` method of the stream to create a
+     * copy of the stream instead.
      */
     stream(options = {}) {
+        if (this[_bodyUsed]) {
+            throw new TypeError("The body of the tarball has been used");
+        }
+        this[_bodyUsed] = true;
         const streams = [];
         for (const { size, header, body } of this[_entries]) {
             streams.push(toReadableStream([header]));

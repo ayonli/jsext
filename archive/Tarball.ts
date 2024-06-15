@@ -7,6 +7,9 @@ import { concat as concatStreams, toReadableStream } from "../reader.ts";
 import { stripEnd } from "../string.ts";
 import { Ensured } from "../types.ts";
 
+const _stream = Symbol.for("stream");
+const _bodyUsed = Symbol.for("bodyUsed");
+
 /**
  * Information about a file in a tar archive.
  */
@@ -66,7 +69,7 @@ export interface TarTree extends TarEntry {
     children?: TarTree[];
 }
 
-export interface TarEntryWithData extends TarEntry {
+interface TarEntryWithData extends TarEntry {
     header: Uint8Array;
     body: ReadableStream<Uint8Array>;
 }
@@ -262,6 +265,7 @@ export const _entries = Symbol.for("entries");
  */
 export default class Tarball {
     private [_entries]: TarEntryWithData[] = [];
+    private [_bodyUsed]: boolean = false;
 
     constructor() {
         if (typeof ReadableStream === "undefined") {
@@ -443,19 +447,41 @@ export default class Tarball {
 
     /**
      * Retrieves an entry in the archive by its relative path.
+     * 
+     * The returned entry object contains a `stream` property which is a copy of
+     * the entry's data, and since it's a copy, the data in the archive is still
+     * available even after the `stream` property is consumed.
+     * 
+     * However, due to the nature of the `ReadableStream.tee()` API, if the copy
+     * is consumed, the data will be loaded and cached in memory until the
+     * tarball's stream is consumed or dropped. This may cause memory issues for
+     * large files, so it is recommended not to use the `stream` property unless
+     * necessary.
      */
-    retrieve(relativePath: string): TarEntry | null;
-    retrieve(relativePath: string, withData: true): TarEntryWithData | null;
-    retrieve(relativePath: string, withData = false): TarEntry | TarEntryWithData | null {
-        const entry = this[_entries].find((entry) => entry.relativePath === relativePath);
+    retrieve(relativePath: string): (TarEntry & {
+        readonly stream: ReadableStream<Uint8Array>;
+    }) | null {
+        const _entry = this[_entries].find((entry) => entry.relativePath === relativePath);
 
-        if (!entry) {
+        if (!_entry) {
             return null;
-        } else if (withData) {
-            return entry;
-        } else {
-            return omit(entry, ["header", "body"]);
         }
+
+        const entry = omit(_entry, ["header", "body"]) as any;
+
+        Object.defineProperty(entry, "stream", {
+            get() {
+                if (entry[_stream]) {
+                    return entry[_stream];
+                } else {
+                    const [copy1, copy2] = _entry.body.tee();
+                    _entry.body = copy1;
+                    return (entry[_stream] = copy2);
+                }
+            },
+        });
+
+        return entry;
     }
 
     /**
@@ -568,8 +594,24 @@ export default class Tarball {
     }
 
     /**
+     * Indicates whether the body of the tarball has been used. This property
+     * will be set to `true` after the `stream()` method is called.
+     */
+    get bodyUsed(): boolean {
+        return this[_bodyUsed];
+    }
+
+    /**
      * Returns a readable stream of the archive that can be piped to a writable
      * target.
+     * 
+     * This method can only be called once per instance, as after the stream
+     * has been consumed, the underlying data of the archive's entries will no
+     * longer be available, and subsequent calls to this method will throw an
+     * error.
+     * 
+     * To reuse the stream, use the `tee()` method of the stream to create a
+     * copy of the stream instead.
      */
     stream(options: {
         /**
@@ -577,6 +619,11 @@ export default class Tarball {
          */
         gzip?: boolean;
     } = {}): ReadableStream<Uint8Array> {
+        if (this[_bodyUsed]) {
+            throw new TypeError("The body of the tarball has been used");
+        }
+
+        this[_bodyUsed] = true;
         const streams: ReadableStream<Uint8Array>[] = [];
 
         for (const { size, header, body } of this[_entries]) {
