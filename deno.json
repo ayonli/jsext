@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.9.32",
+    "version": "0.9.33",
     "exports": {
         ".": "./index.ts",
         "./archive": "./archive.ts",
@@ -14,6 +14,7 @@
         "./debounce": "./debounce.ts",
         "./deprecate": "./deprecate.ts",
         "./dialog": "./dialog.ts",
+        "./encoding": "./encoding.ts",
         "./error": "./error.ts",
         "./event": "./event.ts",
         "./example": "./example.ts",

@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.9.32",
+    "version": "0.9.33",
     "description": "A JavaScript extension package for building strong and modern applications.",
     "exports": {
         ".": {
@@ -118,6 +118,13 @@
             "require": "./cjs/dialog.js",
             "import": "./esm/dialog.js",
             "default": "./dialog.ts"
+        },
+        "./encoding": {
+            "types": "./types/encoding.d.ts",
+            "bun": "./encoding.ts",
+            "require": "./cjs/encoding.js",
+            "import": "./esm/encoding.js",
+            "default": "./encoding.ts"
         },
         "./error": {
             "types": "./types/error.d.ts",
