@@ -33,11 +33,37 @@ const encoder = new TextEncoder();
  *
  * @example
  * ```ts
- * // server.ts (Deno)
+ * // with Web APIs
  * import { SSE } from "@ayonli/jsext/sse";
  *
- * Deno.serve(async req => {
- *     const sse = new SSE(req);
+ * export default {
+ *     async fetch(req: Request) {
+ *         const sse = new SSE(req);
+ *
+ *         sse.addEventListener("close", (ev) => {
+ *             console.log(`The connection is closed, reason: ${ev.reason}`);
+ *         });
+ *
+ *         setTimeout(() => {
+ *             sse.dispatchEvent(new MessageEvent("my-event", {
+ *                 data: "Hello, World!",
+ *                 lastEventId: "1",
+ *             }));
+ *         }, 1_000);
+ *
+ *         return sse.response;
+ *     }
+ * }
+ * ```
+ *
+ * @example
+ * ```ts
+ * // with Node.js APIs
+ * import * as http from "node:http";
+ * import { SSE } from "@ayonli/jsext/sse";
+ *
+ * const server = http.createServer((req, res) => {
+ *     const sse = new SSE(req, res);
  *
  *     sse.addEventListener("close", (ev) => {
  *         console.log(`The connection is closed, reason: ${ev.reason}`);
@@ -49,48 +75,31 @@ const encoder = new TextEncoder();
  *             lastEventId: "1",
  *         }));
  *     }, 1_000);
- *
- *     return sse.response;
  * });
+ *
+ * server.listen(3000);
  * ```
  */
 class SSE extends EventTarget {
-    constructor(request, options = {}) {
-        var _d, _e;
+    constructor(request, ...args) {
+        var _d, _e, _f, _g, _h;
         super();
-        this[_lastEventId] = (_d = request.headers.get("Last-Event-ID")) !== null && _d !== void 0 ? _d : "";
-        this[_reconnectionTime] = (_e = options.reconnectionTime) !== null && _e !== void 0 ? _e : 0;
+        const isNodeRequest = "socket" in request && "socket" in args[0];
+        let options;
+        if (isNodeRequest) {
+            const req = request;
+            this[_lastEventId] = String((_d = req.headers["last-event-id"]) !== null && _d !== void 0 ? _d : "");
+            options = (_e = args[1]) !== null && _e !== void 0 ? _e : {};
+        }
+        else {
+            this[_lastEventId] = (_f = request.headers.get("Last-Event-ID")) !== null && _f !== void 0 ? _f : "";
+            options = (_g = args[0]) !== null && _g !== void 0 ? _g : {};
+        }
+        this[_reconnectionTime] = (_h = options.reconnectionTime) !== null && _h !== void 0 ? _h : 0;
         this[_closed] = this[_lastEventId]
             ? SSEMarkClosed.has(this[_lastEventId])
             : false;
-        const _this = this;
-        const { writable, readable } = new TransformStream();
-        this[_writer] = writable.getWriter();
-        const reader = readable.getReader();
-        const _readable = new ReadableStream({
-            async start(controller) {
-                controller.enqueue(new Uint8Array(0));
-            },
-            async pull(controller) {
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) {
-                        try {
-                            controller.close();
-                        }
-                        catch (_d) { }
-                        _this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
-                        break;
-                    }
-                    controller.enqueue(value);
-                }
-            },
-            async cancel(reason) {
-                _this[_closed] = true;
-                await reader.cancel(reason);
-            }
-        });
-        this[_response] = new Response(this.closed ? null : _readable, {
+        const resInit = {
             status: this.closed ? 204 : 200,
             statusText: this.closed ? "No Content" : "OK",
             headers: {
@@ -98,7 +107,61 @@ class SSE extends EventTarget {
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
             },
-        });
+        };
+        const _this = this;
+        if (isNodeRequest) {
+            this[_response] = null;
+            const res = args[0];
+            const writable = new WritableStream({
+                write(chunk) {
+                    res.write(chunk);
+                },
+                close() {
+                    res.end();
+                    _this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
+                },
+                abort(err) {
+                    res.destroy(err);
+                },
+            });
+            this[_writer] = writable.getWriter();
+            for (const [name, value] of Object.entries(resInit.headers)) {
+                // Use `setHeader` to set headers instead of passing them to `writeHead`,
+                // it seems in Deno, the headers are not written to the response if they
+                // are passed to `writeHead`.
+                res.setHeader(name, value);
+            }
+            res.writeHead(resInit.status, resInit.statusText);
+        }
+        else {
+            const { writable, readable } = new TransformStream();
+            const reader = readable.getReader();
+            const _readable = new ReadableStream({
+                async start(controller) {
+                    controller.enqueue(new Uint8Array(0));
+                },
+                async pull(controller) {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) {
+                            try {
+                                controller.close();
+                            }
+                            catch (_d) { }
+                            _this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
+                            break;
+                        }
+                        controller.enqueue(value);
+                    }
+                },
+                async cancel(reason) {
+                    _this[_closed] = true;
+                    await reader.cancel(reason);
+                }
+            });
+            this[_writer] = writable.getWriter();
+            this[_response] = new Response(this.closed ? null : _readable, resInit);
+        }
         this.closed && this.close();
     }
     /**
@@ -114,7 +177,8 @@ class SSE extends EventTarget {
         return this[_closed];
     }
     /**
-     * The response that will be sent to the client.
+     * The response that will be sent to the client, only available when the
+     * instance is created with the `Request` API.
      */
     get response() {
         return this[_response];
@@ -223,7 +287,6 @@ class SSE extends EventTarget {
  *
  * @example
  * ```ts
- * // client.ts
  * import { EventClient } from "@ayonli/jsext/sse";
  *
  * const response = await fetch("http://localhost:3000", {

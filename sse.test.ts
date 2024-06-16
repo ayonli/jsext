@@ -1,19 +1,19 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { sleep, until } from "./async.ts";
-import { isDeno } from "./env.ts";
+import { isDeno, isNode } from "./env.ts";
 import "./index.ts";
 import jsext from "./index.ts";
 import { randomPort } from "./http.ts";
 
 describe("sse", () => {
-    if (typeof EventTarget === "undefined" ||
-        typeof Request === "undefined" ||
-        typeof Response === "undefined"
-    ) {
-        return;
-    }
+    describe("SSE (Web APIs)", () => {
+        if (typeof EventTarget === "undefined" ||
+            typeof Request === "undefined" ||
+            typeof Response === "undefined"
+        ) {
+            return;
+        }
 
-    describe("SSE", () => {
         it("constructor", async () => {
             const { SSE } = await import("./sse.ts");
 
@@ -40,7 +40,7 @@ describe("sse", () => {
             strictEqual(sse2.closed, false);
 
             const { response } = sse2;
-            strictEqual(response.status, 200);
+            strictEqual(response!.status, 200);
             sse2.close();
             await until(() => sse2.closed);
 
@@ -66,7 +66,7 @@ describe("sse", () => {
             let sse: InstanceType<typeof SSE> | undefined = undefined;
             const server = Deno.serve({ port }, req => {
                 sse = new SSE(req);
-                return sse.response;
+                return sse.response!;
             });
             defer(() => Promise.race([server.shutdown(), sleep(100)]));
 
@@ -130,7 +130,7 @@ describe("sse", () => {
             let sse: InstanceType<typeof SSE> | undefined = undefined;
             const server = Deno.serve({ port }, req => {
                 sse = new SSE(req);
-                return sse.response;
+                return sse.response!;
             });
             defer(() => Promise.race([server.shutdown(), sleep(100)]));
 
@@ -161,7 +161,7 @@ describe("sse", () => {
                     closeEvent = _ev as CloseEvent;
                 });
 
-                return sse.response;
+                return sse.response!;
             });
             defer(() => Promise.race([server.shutdown(), sleep(100)]));
 
@@ -177,6 +177,14 @@ describe("sse", () => {
         }));
     });
 
+    describe("SSW (Node.js APIs)", () => {
+        if (!isNode) {
+            return;
+        }
+
+        // TODO
+    });
+
     describe("EventClient", () => {
         it("listen message event", async () => {
             const { SSE, EventClient } = await import("./sse.ts");
@@ -190,7 +198,7 @@ describe("sse", () => {
             strictEqual(sse.closed, false);
             const { response } = sse;
 
-            const client = new EventClient(response);
+            const client = new EventClient(response!);
             const messages: string[] = [];
             let lastEventId = "";
 
@@ -236,7 +244,7 @@ describe("sse", () => {
             strictEqual(sse.closed, false);
             const { response } = sse;
 
-            const client = new EventClient(response);
+            const client = new EventClient(response!);
             const messages: string[] = [];
             let lastEventId = "";
 
@@ -282,7 +290,7 @@ describe("sse", () => {
             strictEqual(sse.closed, false);
             const { response } = sse;
 
-            const client = new EventClient(response);
+            const client = new EventClient(response!);
             let closeEvent: CloseEvent | undefined = undefined;
 
             client.addEventListener("close", _ev => {
@@ -310,7 +318,7 @@ describe("sse", () => {
             strictEqual(sse.closed, false);
             const { response } = sse;
 
-            const client = new EventClient(response);
+            const client = new EventClient(response!);
             let closeEvent: CloseEvent | undefined = undefined;
 
             client.addEventListener("close", _ev => {
