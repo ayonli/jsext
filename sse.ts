@@ -15,6 +15,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
 import { createCloseEvent, createErrorEvent } from "./event.ts";
+import { isBun } from "./env.ts";
 
 const SSEMarkClosed = new Set<string>();
 const _lastEventId = Symbol.for("lastEventId");
@@ -183,7 +184,14 @@ export class SSE extends EventTarget {
 
             const _readable = new ReadableStream<Uint8Array>({
                 async start(controller) {
-                    controller.enqueue(new Uint8Array(0));
+                    if (isBun) {
+                        // In Bun, the response will not be sent to the client
+                        // until the first non-empty chunk is written. May be a
+                        // bug, but we need to work around it now.
+                        controller.enqueue(encoder.encode(":ok\n\n"));
+                    } else {
+                        controller.enqueue(new Uint8Array(0));
+                    }
                 },
                 async pull(controller) {
                     while (true) {
@@ -494,6 +502,7 @@ export class EventClient extends EventTarget {
                     const lines = chunk.split(/\r\n|\n/);
                     let data = "";
                     let type = "message";
+                    let isMessage = false;
 
                     for (const line of lines) {
                         if (line.startsWith("data:") || line === "data") {
@@ -508,23 +517,30 @@ export class EventClient extends EventTarget {
                             } else {
                                 data = value;
                             }
+
+                            isMessage = true;
                         } else if (line.startsWith("event:") || line === "event") {
                             type = line.slice(6).trim();
+                            isMessage = true;
                         } else if (line.startsWith("id:") || line === "id") {
                             this[_lastEventId] = line.slice(3).trim();
+                            isMessage = true;
                         } else if (line.startsWith("retry:")) {
                             const time = parseInt(line.slice(6).trim());
                             if (!isNaN(time) && time >= 0) {
                                 this[_reconnectionTime] = time;
+                                isMessage = true;
                             }
                         }
                     }
 
-                    this.dispatchEvent(new MessageEvent(type || "message", {
-                        lastEventId: this[_lastEventId],
-                        data,
-                        origin,
-                    }));
+                    if (isMessage) {
+                        this.dispatchEvent(new MessageEvent(type || "message", {
+                            lastEventId: this[_lastEventId],
+                            data,
+                            origin,
+                        }));
+                    }
                 }
             }
         } catch (error) {

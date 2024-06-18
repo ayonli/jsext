@@ -137,11 +137,21 @@ describe("sse", () => {
 
             await until(() => messages.length === 3);
             es.close();
-            await until(() => sse.closed);
+
+            if (isBun) {
+                // Bun has a bug that the readable stream is not closed when
+                // when the connection is closed, so the program won't be able
+                // to set the `sse.closed` to be `true`. We just wait for the
+                // EventSource to be closed here instead.
+                // See https://github.com/oven-sh/bun/issues/6758
+                await until(() => es.readyState === EventSource.CLOSED);
+            } else {
+                await until(() => sse.closed);
+            }
 
             deepStrictEqual(messages, ["Hello", "World", "This message has\ntwo lines."]);
             strictEqual(sse.lastEventId, "2");
-            strictEqual(sse.closed, true);
+            isBun || strictEqual(sse.closed, true);
             strictEqual(lastEventId, "2");
             strictEqual(es.readyState, EventSource.CLOSED);
         }));
@@ -199,6 +209,13 @@ describe("sse", () => {
         }));
 
         it("listen close event", jsext.func(async function (defer) {
+            if (isBun) {
+                // Bun has a bug that the readable stream is not closed when
+                // when the connection is closed, so the program won't be able
+                // to dispatch the `close` event. We just skip this test for now.
+                this.skip();
+            }
+
             const { SSE } = await import("./sse.ts");
 
             let closeEvent: CloseEvent | undefined = undefined;
