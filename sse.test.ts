@@ -1,5 +1,5 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
-import { sleep, until } from "./async.ts";
+import { asyncTask, sleep, until } from "./async.ts";
 import { isDeno, isNode } from "./env.ts";
 import "./index.ts";
 import jsext from "./index.ts";
@@ -41,7 +41,7 @@ describe("sse", () => {
 
             const { response } = sse2;
             strictEqual(response!.status, 200);
-            sse2.close();
+            sse2.close(true);
             await until(() => sse2.closed);
 
             const req3 = new Request("http://localhost:8080", {
@@ -135,6 +135,7 @@ describe("sse", () => {
             defer(() => Promise.race([server.shutdown(), sleep(100)]));
 
             const es = new EventSource(`http://localhost:${port}`);
+            defer(() => es.close());
 
             await until(() => es.readyState === EventSource.OPEN);
             sse!.close();
@@ -177,15 +178,219 @@ describe("sse", () => {
         }));
     });
 
-    describe("SSW (Node.js APIs)", () => {
-        if (!isNode) {
+    describe("SSE (Node.js APIs)", () => {
+        if (!isNode ||
+            typeof EventTarget === "undefined" ||
+            typeof WritableStream === "undefined"
+        ) {
             return;
         }
 
-        // TODO
+        it("constructor", async () => {
+            const http = await import("node:http");
+            const { SSE } = await import("./sse.ts");
+
+            const task1 = asyncTask<InstanceType<typeof SSE>>();
+            const server1 = http.createServer((req, res) => {
+                const sse = new SSE(req, res);
+                task1.resolve(sse);
+            });
+            const port1 = await randomPort();
+            await new Promise<void>(resolve => server1.listen(port1, resolve));
+
+            await fetch(`http://localhost:${port1}`, {
+                headers: {
+                    "Accept": "text/event-stream",
+                },
+            });
+
+            const sse1 = await task1;
+            strictEqual(sse1.lastEventId, "");
+            strictEqual(sse1.closed, false);
+
+            sse1.close();
+            await until(() => sse1.closed);
+            server1.close();
+
+            const task2 = asyncTask<InstanceType<typeof SSE>>();
+            const server2 = http.createServer((req, res) => {
+                const sse = new SSE(req, res, { reconnectionTime: 1000 });
+                task2.resolve(sse);
+            });
+            const port2 = await randomPort();
+            server2.listen(port2);
+
+            await fetch(`http://localhost:${port2}`, {
+                headers: {
+                    "Accept": "text/event-stream",
+                    "Last-Event-ID": "123",
+                },
+            });
+
+            const sse2 = await task2;
+            strictEqual(sse2.lastEventId, "123");
+            strictEqual(sse2.closed, false);
+
+            sse2.close(true);
+            await until(() => sse2.closed);
+            server2.close();
+
+
+            const task3 = asyncTask<InstanceType<typeof SSE>>();
+            const server3 = http.createServer((req, res) => {
+                const sse = new SSE(req, res);
+                task3.resolve(sse);
+            });
+            const port3 = await randomPort();
+            server3.listen(port3);
+
+            await fetch(`http://localhost:${port3}`, {
+                headers: {
+                    "Accept": "text/event-stream",
+                    "Last-Event-ID": "123",
+                },
+            });
+
+            const sse3 = await task3;
+            strictEqual(sse3.lastEventId, "123");
+            strictEqual(sse3.closed, true);
+
+            server3.close();
+        });
+
+        it("dispatchEvent", jsext.func(async function (defer) {
+            const http = await import("node:http");
+            const { default: EventSource } = await import("eventsource");
+            const { SSE } = await import("./sse.ts");
+
+            const task = asyncTask<InstanceType<typeof SSE>>();
+            const server = http.createServer((req, res) => {
+                const sse = new SSE(req, res);
+                task.resolve(sse);
+            });
+            const port = await randomPort();
+            server.listen(port);
+            defer(() => Promise.race([server.close(), sleep(100)]));
+
+            const es = new EventSource(`http://localhost:${port}`);
+            const messages: string[] = [];
+            let lastEventId = "";
+
+            es.addEventListener("message", (ev) => {
+                const data = ev.data;
+                messages.push(data);
+                lastEventId = ev.lastEventId;
+            });
+
+            es.addEventListener("my-event", (ev) => {
+                const data = ev.data;
+                messages.push(data);
+                lastEventId = ev.lastEventId;
+            });
+
+            es.addEventListener("another-event", (ev) => {
+                const data = ev.data;
+                messages.push(data);
+                lastEventId = ev.lastEventId;
+            });
+
+            await until(() => es.readyState === EventSource.OPEN);
+
+            const sse = await task;
+            sse.dispatchEvent(new MessageEvent("message", {
+                data: "Hello",
+                lastEventId: "1",
+            }));
+
+            sse.dispatchEvent(new MessageEvent("my-event", {
+                data: "World",
+                lastEventId: "2",
+            }));
+
+            sse.dispatchEvent(new MessageEvent("another-event", {
+                data: "This message has\ntwo lines.",
+            }));
+
+            await until(() => messages.length === 3);
+            console.log("close");
+            es.close();
+            await until(() => sse.closed);
+
+            deepStrictEqual(messages, ["Hello", "World", "This message has\ntwo lines."]);
+            strictEqual(sse.lastEventId, "2");
+            strictEqual(sse.closed, true);
+            strictEqual(lastEventId, "2");
+            strictEqual(es.readyState, EventSource.CLOSED);
+        }));
+
+        it("close", jsext.func(async function (defer) {
+            const http = await import("node:http");
+            const { default: EventSource } = await import("eventsource");
+            const { SSE } = await import("./sse.ts");
+
+            const task = asyncTask<InstanceType<typeof SSE>>();
+            const server = http.createServer((req, res) => {
+                const sse = new SSE(req, res);
+                task.resolve(sse);
+            });
+            const port = await randomPort();
+            server.listen(port);
+            defer(() => Promise.race([server.close(), sleep(100)]));
+
+            const es = new EventSource(`http://localhost:${port}`);
+            defer(() => es.close());
+
+            await until(() => es.readyState === EventSource.OPEN);
+
+            const sse = await task;
+            sse.close();
+            await until(() => es.readyState === EventSource.CONNECTING);
+
+            strictEqual(sse.closed, true);
+            strictEqual(es.readyState, EventSource.CONNECTING);
+        }));
+
+        it("listen close event", jsext.func(async function (defer) {
+            const http = await import("node:http");
+            const { default: EventSource } = await import("eventsource");
+            const { SSE } = await import("./sse.ts");
+
+            let closeEvent: CloseEvent | undefined = undefined;
+            const task = asyncTask<InstanceType<typeof SSE>>();
+            const server = http.createServer((req, res) => {
+                const sse = new SSE(req, res);
+
+                sse.addEventListener("close", _ev => {
+                    closeEvent = _ev as CloseEvent;
+                });
+
+                task.resolve(sse);
+            });
+            const port = await randomPort();
+            server.listen(port);
+            defer(() => Promise.race([server.close(), sleep(100)]));
+
+            const es = new EventSource(`http://localhost:${port}`);
+            const sse = await task;
+
+            await until(() => es.readyState === EventSource.OPEN);
+            es.close();
+            await until(() => sse.closed);
+            strictEqual(sse.closed, true);
+            strictEqual(es.readyState, EventSource.CLOSED);
+            strictEqual(closeEvent!.type, "close");
+            strictEqual(closeEvent!.wasClean, true);
+        }));
     });
 
     describe("EventClient", () => {
+        if (typeof EventTarget === "undefined" ||
+            typeof Request === "undefined" ||
+            typeof Response === "undefined"
+        ) {
+            return;
+        }
+
         it("listen message event", async () => {
             const { SSE, EventClient } = await import("./sse.ts");
 
