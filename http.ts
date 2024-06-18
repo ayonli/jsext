@@ -267,14 +267,21 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
         nodeRes.end();
     } else {
         res.body.pipeTo(new WritableStream({
+            start(controller) {
+                nodeRes.once("close", () => {
+                    controller.error();
+                }).once("error", (err) => {
+                    controller.error(err);
+                });
+            },
             write(chunk) {
                 (nodeRes as ServerResponse).write(chunk);
             },
             close() {
-                (nodeRes as ServerResponse).end();
+                nodeRes.end();
             },
             abort(err) {
-                (nodeRes as ServerResponse).destroy(err);
+                nodeRes.destroy(err);
             },
         }));
     }

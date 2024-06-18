@@ -1,9 +1,11 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { asyncTask, sleep, until } from "./async.ts";
-import { isDeno, isNode } from "./env.ts";
+import { isBun, isDeno, isNode } from "./env.ts";
 import "./index.ts";
 import jsext from "./index.ts";
-import { randomPort } from "./http.ts";
+import { randomPort, withWeb } from "./http.ts";
+
+declare const Bun: any;
 
 describe("sse", () => {
     describe("SSE (Web APIs)", () => {
@@ -56,19 +58,43 @@ describe("sse", () => {
         });
 
         it("dispatchEvent", jsext.func(async function (defer) {
-            if (!isDeno) {
-                this.skip();
+            const { SSE } = await import("./sse.ts");
+
+            const port = await randomPort();
+            const task = asyncTask<InstanceType<typeof SSE>>();
+
+            if (isDeno) {
+                const server = Deno.serve({ port }, req => {
+                    const sse = new SSE(req);
+                    task.resolve(sse);
+                    return sse.response!;
+                });
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+            } else if (isBun) {
+                const server = Bun.serve({
+                    port,
+                    fetch: async (req: Request) => {
+                        const sse = new SSE(req);
+                        task.resolve(sse);
+                        return sse.response!;
+                    },
+                });
+                defer(() => server.stop(true));
+            } else {
+                const http = await import("node:http");
+                const server = http.createServer(withWeb(async (req) => {
+                    const sse = new SSE(req);
+                    task.resolve(sse);
+                    return sse.response!;
+                }));
+                server.listen(port);
+                defer(() => server.close());
             }
 
-            const { SSE } = await import("./sse.ts");
-            const port = await randomPort();
-
-            let sse: InstanceType<typeof SSE> | undefined = undefined;
-            const server = Deno.serve({ port }, req => {
-                sse = new SSE(req);
-                return sse.response!;
-            });
-            defer(() => Promise.race([server.shutdown(), sleep(100)]));
+            if (typeof EventSource === "undefined") {
+                const { default: dEventSource } = await import("eventsource");
+                globalThis.EventSource = dEventSource as any;
+            }
 
             const es = new EventSource(`http://localhost:${port}`);
             const messages: string[] = [];
@@ -94,84 +120,147 @@ describe("sse", () => {
 
             await until(() => es.readyState === EventSource.OPEN);
 
-            sse!.dispatchEvent(new MessageEvent("message", {
+            const sse = await task;
+            sse.dispatchEvent(new MessageEvent("message", {
                 data: "Hello",
                 lastEventId: "1",
             }));
 
-            sse!.dispatchEvent(new MessageEvent("my-event", {
+            sse.dispatchEvent(new MessageEvent("my-event", {
                 data: "World",
                 lastEventId: "2",
             }));
 
-            sse!.dispatchEvent(new MessageEvent("another-event", {
+            sse.dispatchEvent(new MessageEvent("another-event", {
                 data: "This message has\ntwo lines.",
             }));
 
             await until(() => messages.length === 3);
             es.close();
-            await until(() => sse!.closed);
+            await until(() => sse.closed);
 
             deepStrictEqual(messages, ["Hello", "World", "This message has\ntwo lines."]);
-            strictEqual(sse!.lastEventId, "2");
-            strictEqual(sse!.closed, true);
+            strictEqual(sse.lastEventId, "2");
+            strictEqual(sse.closed, true);
             strictEqual(lastEventId, "2");
             strictEqual(es.readyState, EventSource.CLOSED);
         }));
 
         it("close", jsext.func(async function (defer) {
-            if (!isDeno) {
-                this.skip();
+            const { SSE } = await import("./sse.ts");
+
+            const port = await randomPort();
+            const task = asyncTask<InstanceType<typeof SSE>>();
+
+            if (isDeno) {
+                const server = Deno.serve({ port }, req => {
+                    const sse = new SSE(req);
+                    task.resolve(sse);
+                    return sse.response!;
+                });
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+            } else if (isBun) {
+                const server = Bun.serve({
+                    port,
+                    fetch: async (req: Request) => {
+                        const sse = new SSE(req);
+                        task.resolve(sse);
+                        return sse.response!;
+                    },
+                });
+                defer(() => server.stop(true));
+            } else {
+                const http = await import("node:http");
+                const server = http.createServer(withWeb(async (req) => {
+                    const sse = new SSE(req);
+                    task.resolve(sse);
+                    return sse.response!;
+                }));
+                server.listen(port);
+                defer(() => server.close());
             }
 
-            const { SSE } = await import("./sse.ts");
-            const port = await randomPort();
-
-            let sse: InstanceType<typeof SSE> | undefined = undefined;
-            const server = Deno.serve({ port }, req => {
-                sse = new SSE(req);
-                return sse.response!;
-            });
-            defer(() => Promise.race([server.shutdown(), sleep(100)]));
+            if (typeof EventSource === "undefined") {
+                const { default: dEventSource } = await import("eventsource");
+                globalThis.EventSource = dEventSource as any;
+            }
 
             const es = new EventSource(`http://localhost:${port}`);
             defer(() => es.close());
 
             await until(() => es.readyState === EventSource.OPEN);
-            sse!.close();
+
+            const sse = await task;
+            sse.close();
             await until(() => es.readyState === EventSource.CONNECTING);
 
-            strictEqual(sse!.closed, true);
+            strictEqual(sse.closed, true);
             strictEqual(es.readyState, EventSource.CONNECTING);
         }));
 
         it("listen close event", jsext.func(async function (defer) {
-            if (!isDeno) {
-                this.skip();
-            }
-
             const { SSE } = await import("./sse.ts");
+
+            let closeEvent: CloseEvent | undefined = undefined;
+            const task = asyncTask<InstanceType<typeof SSE>>();
             const port = await randomPort();
 
-            let sse: InstanceType<typeof SSE> | undefined = undefined;
-            let closeEvent: CloseEvent | undefined = undefined;
-            const server = Deno.serve({ port }, req => {
-                sse = new SSE(req);
+            if (isDeno) {
+                const server = Deno.serve({ port }, req => {
+                    const sse = new SSE(req);
 
-                sse.addEventListener("close", _ev => {
-                    closeEvent = _ev as CloseEvent;
+                    sse.addEventListener("close", _ev => {
+                        closeEvent = _ev as CloseEvent;
+                    });
+
+                    task.resolve(sse);
+                    return sse.response!;
                 });
+                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+            } else if (isBun) {
+                const server = Bun.serve({
+                    port,
+                    fetch: async (req: Request) => {
+                        const sse = new SSE(req);
 
-                return sse.response!;
-            });
-            defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                        sse.addEventListener("close", _ev => {
+                            closeEvent = _ev as CloseEvent;
+                        });
+
+                        task.resolve(sse);
+                        return sse.response!;
+                    },
+                });
+                defer(() => server.stop(true));
+            } else {
+                const http = await import("node:http");
+                const server = http.createServer(withWeb(async (req) => {
+                    const sse = new SSE(req);
+
+                    sse.addEventListener("close", _ev => {
+                        closeEvent = _ev as CloseEvent;
+                    });
+
+                    task.resolve(sse);
+                    return sse.response!;
+                }));
+                server.listen(port);
+                defer(() => server.close());
+            }
+
+            if (typeof EventSource === "undefined") {
+                const { default: dEventSource } = await import("eventsource");
+                globalThis.EventSource = dEventSource as any;
+            }
 
             const es = new EventSource(`http://localhost:${port}`);
 
             await until(() => es.readyState === EventSource.OPEN);
             es.close();
-            await until(() => sse!.closed);
-            strictEqual(sse!.closed, true);
+
+            const sse = await task;
+            await until(() => sse.closed);
+            strictEqual(sse.closed, true);
             strictEqual(es.readyState, EventSource.CLOSED);
             strictEqual(closeEvent!.type, "close");
             strictEqual(closeEvent!.wasClean, true);
@@ -312,7 +401,6 @@ describe("sse", () => {
             }));
 
             await until(() => messages.length === 3);
-            console.log("close");
             es.close();
             await until(() => sse.closed);
 

@@ -164,8 +164,8 @@ export class SSE extends EventTarget {
             this[_writer] = writable.getWriter();
             res.once("close", () => {
                 this[_writer].close().catch(() => { });
-            }).once("error", (error) => {
-                this[_writer].abort(error).catch(() => { });
+            }).once("error", (err) => {
+                this[_writer].abort(err).catch(() => { });
             });
 
             for (const [name, value] of Object.entries(resInit.headers!)) {

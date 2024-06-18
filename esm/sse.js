@@ -7,8 +7,8 @@ import { createCloseEvent, createErrorEvent } from './event.js';
  * client, while the {@link EventClient} class is used to process messages sent
  * by the server.
  *
- * NOTE: this module is based on the `Request` and `Response` APIs, in Node.js,
- * it requires Node.js v18.3 or above.
+ * NOTE: This module depends on the Web Streams API, in Node.js, it requires
+ * Node.js v16.5 or higher.
  *
  * @module
  * @experimental
@@ -106,6 +106,7 @@ class SSE extends EventTarget {
                 "Content-Type": "text/event-stream",
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
+                "Transfer-Encoding": "chunked",
             },
         };
         const _this = this;
@@ -117,14 +118,21 @@ class SSE extends EventTarget {
                     res.write(chunk);
                 },
                 close() {
-                    res.end();
+                    _this[_closed] = true;
+                    res.closed || res.end();
                     _this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
                 },
                 abort(err) {
-                    res.destroy(err);
+                    _this[_closed] = true;
+                    res.closed || res.destroy(err);
                 },
             });
             this[_writer] = writable.getWriter();
+            res.once("close", () => {
+                this[_writer].close().catch(() => { });
+            }).once("error", (err) => {
+                this[_writer].abort(err).catch(() => { });
+            });
             for (const [name, value] of Object.entries(resInit.headers)) {
                 // Use `setHeader` to set headers instead of passing them to `writeHead`,
                 // it seems in Deno, the headers are not written to the response if they
@@ -132,6 +140,7 @@ class SSE extends EventTarget {
                 res.setHeader(name, value);
             }
             res.writeHead(resInit.status, resInit.statusText);
+            res.write(new Uint8Array(0));
         }
         else {
             const { writable, readable } = new TransformStream();
@@ -245,14 +254,27 @@ class SSE extends EventTarget {
         await this[_writer].write(this.buildMessage(data, { id: eventId, event }));
     }
     /**
-     * Closes the connection and instructs the client not to reconnect.
+     * Closes the connection.
+     *
+     * By default, when the connection is closed, the client will try to
+     * reconnect after a certain period of time, which is specified by the
+     * `reconnectionTime` option when creating the instance.
+     *
+     * However, if the `noReconnect` parameter is set, this method will mark
+     * the client as closed based on the last event ID. When the client
+     * reconnects, the server will send a `204 No Content` response to the
+     * client to instruct it to terminate the connection.
+     *
+     * It is important to note that the server relies on the last event ID to
+     * identify the client for this purpose, so the server must send a globally
+     * unique `lastEventId` to the client when sending messages.
      */
-    close() {
+    close(noReconnect = false) {
         this[_writer].close().catch(() => { }).finally(() => {
             this[_closed] = true;
             if (this.lastEventId) {
                 if (!SSEMarkClosed.has(this.lastEventId)) {
-                    SSEMarkClosed.add(this.lastEventId);
+                    noReconnect && SSEMarkClosed.add(this.lastEventId);
                 }
                 else {
                     SSEMarkClosed.delete(this.lastEventId);

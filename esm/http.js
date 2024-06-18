@@ -253,6 +253,13 @@ function toNodeResponse(res, nodeRes) {
     }
     else {
         res.body.pipeTo(new WritableStream({
+            start(controller) {
+                nodeRes.once("close", () => {
+                    controller.error();
+                }).once("error", (err) => {
+                    controller.error(err);
+                });
+            },
             write(chunk) {
                 nodeRes.write(chunk);
             },
