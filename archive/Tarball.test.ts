@@ -250,7 +250,7 @@ describe("archive/Tarball", () => {
     });
 
     it("load from another tarball", async () => {
-        const gzip = typeof CompressionStream === "undefined";
+        const gzip = typeof DecompressionStream !== "undefined";
         const input = createReadableStream(gzip ? filename2 : filename1);
         const _tarball = await Tarball.load(input, { gzip });
         const tarball = await Tarball.load(_tarball.stream());
