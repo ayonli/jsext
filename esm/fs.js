@@ -1750,8 +1750,8 @@ function createNodeWritableStream(filename, options) {
             });
         },
         close() {
-            return new Promise((resolve, reject) => {
-                dest.close((err) => err ? reject(err) : resolve());
+            return new Promise((resolve) => {
+                dest.end(() => resolve());
             });
         },
         abort(reason) {
