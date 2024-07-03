@@ -638,9 +638,8 @@ describe("http", () => {
 
             const https = await import("node:https");
             const server = https.createServer({
-                key: await readFileAsText("./examples/certs/key.pem"),
+                key: await readFileAsText("./examples/certs/cert.key"),
                 cert: await readFileAsText("./examples/certs/cert.pem"),
-                passphrase: "alartest",
             }, withWeb(async (req) => {
                 return new Response(JSON.stringify({
                     method: req.method,
@@ -667,10 +666,10 @@ describe("http", () => {
                 body?: any;
             }>(async (resolve, reject) => {
                 const req = https.request({
-                    key: await readFileAsText("./examples/certs/key.pem"),
+                    key: await readFileAsText("./examples/certs/cert.key"),
                     cert: await readFileAsText("./examples/certs/cert.pem"),
                     ca: [await readFileAsText("./examples/certs/cert.pem")],
-                    passphrase: "alartest",
+                    rejectUnauthorized: false,
                     method: "POST",
                     host: "localhost",
                     port,
@@ -713,9 +712,8 @@ describe("http", () => {
 
             const http2 = await import("node:http2");
             const server = http2.createSecureServer({
-                key: await readFileAsText("./examples/certs/key.pem"),
+                key: await readFileAsText("./examples/certs/cert.key"),
                 cert: await readFileAsText("./examples/certs/cert.pem"),
-                passphrase: "alartest",
             }, withWeb(async (req) => {
                 return new Response(JSON.stringify({
                     method: req.method,
@@ -735,10 +733,10 @@ describe("http", () => {
             defer(() => server.close());
 
             const client = http2.connect(`https://localhost:${port}`, {
-                key: await readFileAsText("./examples/certs/key.pem"),
+                key: await readFileAsText("./examples/certs/cert.key"),
                 cert: await readFileAsText("./examples/certs/cert.pem"),
                 ca: [await readFileAsText("./examples/certs/cert.pem")],
-                passphrase: "alartest",
+                rejectUnauthorized: false,
             });
             defer(() => client.close());
 

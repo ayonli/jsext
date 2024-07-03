@@ -370,9 +370,8 @@ describe("ws:node", () => {
         });
 
         const server = https.createServer({
-            key: await readFileAsText("./examples/certs/key.pem"),
+            key: await readFileAsText("./examples/certs/cert.key"),
             cert: await readFileAsText("./examples/certs/cert.pem"),
-            passphrase: "alartest",
         }, withWeb(async (req) => {
             const { response } = await wsServer.upgrade(req);
             return response;
@@ -385,10 +384,10 @@ describe("ws:node", () => {
 
         const dWebSocket = (await import("isomorphic-ws")).default;
         ws = new dWebSocket(`wss://localhost:${port}`, {
-            key: await readFileAsText("./examples/certs/key.pem"),
+            key: await readFileAsText("./examples/certs/cert.key"),
             cert: await readFileAsText("./examples/certs/cert.pem"),
             ca: [await readFileAsText("./examples/certs/cert.pem")],
-            passphrase: "alartest",
+            rejectUnauthorized: false,
         }) as unknown as WebSocket;
 
         ws.binaryType = "arraybuffer";

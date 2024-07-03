@@ -2,12 +2,14 @@ import { orderBy } from './array.js';
 import bytes from './bytes.js';
 import { stripStart, dedent } from './string.js';
 import { isDeno, isBun, isNode } from './env.js';
+import runtime from './runtime.js';
 import { isMain } from './module.js';
-import { join } from './path.js';
+import { extname, resolve, join } from './path.js';
 import './cli/constants.js';
 import { parseArgs, args } from './cli/common.js';
 import { stat, exists, readDir, readFile, createReadableStream } from './fs.js';
 import { sha256 } from './hash.js';
+import { Server } from './http/server.js';
 import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
 export { parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, stringifyCookie, stringifyCookies, verifyBasicAuth } from './http/util.js';
 import { as } from './object.js';
@@ -182,6 +184,9 @@ function withWeb(listener) {
     return async (nReq, nRes) => {
         const req = toWebRequest(nReq);
         const res = await listener(req);
+        if (!nRes.req) { // fix for Deno and Node.js below v15.7.0
+            Object.assign(nRes, { req: nReq });
+        }
         if (res && !nRes.headersSent) {
             if (res.status === 101) {
                 // When the status code is 101, it means the server is upgrading
@@ -274,7 +279,12 @@ function toNodeResponse(res, nodeRes) {
         // are passed to `writeHead`.
         nodeRes.setHeader(key, value);
     }
-    nodeRes.writeHead(status, statusText);
+    if (nodeRes.req.httpVersion === "2.0") {
+        nodeRes.writeHead(status);
+    }
+    else {
+        nodeRes.writeHead(status, statusText);
+    }
     if (!res.body) {
         nodeRes.end();
     }
@@ -297,6 +307,185 @@ function toNodeResponse(res, nodeRes) {
                 nodeRes.destroy(err);
             },
         }));
+    }
+}
+/**
+ * Serves HTTP requests with a given options.
+ *
+ * This function provides a universal way to serve HTTP requests in Deno, Bun,
+ * and Node.js with modern Web APIs. It's similar to the `Deno.serve` and
+ * `Bun.serve` functions, in fact, it calls them internally when running in Deno
+ * and Bun. When running in Node.js, it uses the built-in `http` or `http2`
+ * modules to create a server.
+ *
+ * This function also provides a simplified way to handle WebSocket connections.
+ * The request handler can easily upgrade the request to a WebSocket connection
+ * without dealing with low-level APIs. It's similar to the
+ * `Deno.upgradeWebSocket` function, which allows us handling the WebSocket
+ * right in the request handler itself.
+ *
+ * @example
+ * ```ts
+ * // simple http server
+ * import { serve } from "@ayonli/jsext/http";
+ *
+ * const server = await serve({
+ *     async fetch(req) {
+ *         return new Response("Hello, World!");
+ *     },
+ * });
+ * ```
+ *
+ * @example
+ * ```ts
+ * // set the hostname and port
+ * import { serve } from "@ayonli/jsext/http";
+ *
+ * const server = await serve({
+ *     hostname: "localhost",
+ *     port: 4000,
+ *     async fetch(req) {
+ *         return new Response("Hello, World!");
+ *     },
+ * });
+ * ```
+ *
+ * @example
+ * ```ts
+ * // serve HTTPS/HTTP2 requests
+ * import { readFileAsText } from "@ayonli/jsext/fs";
+ * import { serve } from "@ayonli/jsext/http";
+ *
+ * const server = await serve({
+ *     key: await readFileAsText("./cert.key"),
+ *     cert: await readFileAsText("./cert.pem"),
+ *     async fetch(req) {
+ *         return new Response("Hello, World!");
+ *    },
+ * });
+ * ```
+ *
+ * @example
+ * ```ts
+ * // upgrade to WebSocket
+ * import { serve } from "@ayonli/jsext/http";
+ *
+ * const server = await serve({
+ *     async fetch(req, ctx) {
+ *         const { socket, response } = await ctx.upgrade(req);
+ *
+ *         socket.ready.then(() => {
+ *             socket.addEventListener("message", (event) => {
+ *                console.log(event.data);
+ *                socket.send("Hello, Client!");
+ *             });
+ *         });
+ *
+ *         return response;
+ *     },
+ * });
+ * ```
+ */
+async function serve(options) {
+    var _a;
+    const hostname = (_a = options.hostname) !== null && _a !== void 0 ? _a : "0.0.0.0";
+    const port = options.port || await randomPort(8000);
+    const { key, cert } = options;
+    const _runtime = runtime();
+    const _hostname = hostname && hostname !== "0.0.0.0" ? hostname : "localhost";
+    let ws;
+    let WsServer;
+    if (_runtime.identity === "node") {
+        let moduleId;
+        if (_runtime.tsSupport) {
+            moduleId = "./ws/node.ts";
+        }
+        else {
+            moduleId = "./ws/node.js";
+        }
+        WsServer = (await import(moduleId)).WebSocketServer;
+    }
+    else {
+        WsServer = (await import('./ws.js')).WebSocketServer;
+    }
+    if (typeof options.ws === "function") {
+        ws = new WsServer(options.ws);
+    }
+    else {
+        ws = new WsServer();
+    }
+    if (typeof Deno === "object") {
+        const impl = Deno.serve({
+            hostname,
+            port,
+            key,
+            cert,
+        }, (req, info) => options.fetch(req, {
+            remoteAddr: {
+                family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
+                address: info.remoteAddr.hostname,
+                port: info.remoteAddr.port,
+            },
+            upgrade: ws.upgrade.bind(ws),
+        }));
+        return new Server({ hostname, port }, impl);
+    }
+    else if (typeof Bun === "object") {
+        const tls = key && cert ? { key, cert } : undefined;
+        const impl = Bun.serve({
+            hostname,
+            port,
+            tls,
+            fetch: (req, server) => {
+                const remoteAddr = server.requestIP(req);
+                return options.fetch(req, {
+                    remoteAddr,
+                    upgrade: ws.upgrade.bind(ws),
+                });
+            },
+            websocket: ws === null || ws === void 0 ? void 0 : ws.bunListener,
+        });
+        console.log(`Listening on http://${_hostname}:${port}/`);
+        ws === null || ws === void 0 ? void 0 : ws.bunBind(impl);
+        return new Server({ hostname, port }, impl);
+    }
+    else if (key && cert) {
+        const { createSecureServer } = await import('node:http2');
+        const impl = createSecureServer({ key, cert, allowHTTP1: true }, (req, res) => {
+            const remoteAddr = {
+                family: req.socket.remoteFamily,
+                address: req.socket.remoteAddress,
+                port: req.socket.remotePort,
+            };
+            return withWeb(async (req) => options.fetch(req, {
+                remoteAddr,
+                upgrade: ws.upgrade.bind(ws),
+            }))(req, res);
+        });
+        await new Promise((resolve) => {
+            impl.listen(port, hostname, resolve);
+        });
+        console.log(`Listening on http://${_hostname}:${port}/`);
+        return new Server({ hostname, port }, impl);
+    }
+    else {
+        const { createServer } = await import('node:http');
+        const impl = createServer((req, res) => {
+            const remoteAddr = {
+                family: req.socket.remoteFamily,
+                address: req.socket.remoteAddress,
+                port: req.socket.remotePort,
+            };
+            return withWeb(async (req) => options.fetch(req, {
+                remoteAddr,
+                upgrade: ws.upgrade.bind(ws),
+            }))(req, res);
+        });
+        await new Promise((resolve) => {
+            impl.listen(port, hostname, resolve);
+        });
+        console.log(`Listening on http://${_hostname}:${port}/`);
+        return new Server({ hostname, port }, impl);
     }
 }
 /**
@@ -547,48 +736,46 @@ if (isMain(import.meta)) {
     const options = parseArgs(args, {
         alias: { p: "port" }
     });
+    let fetch;
+    let hostname = "0.0.0.0";
     let port = Number.isFinite(options["port"]) ? options["port"] : undefined;
-    const fsDir = String(options[0] || ".");
-    (async () => {
-        port !== null && port !== void 0 ? port : (port = await randomPort(8000));
-        if (isDeno) {
-            Deno.serve({ port }, req => serveStatic(req, {
-                fsDir,
+    let cert;
+    let key;
+    let filename = String(options[0] || ".");
+    const ext = extname(filename);
+    if (isDeno || isBun || isNode) {
+        (async () => {
+            if (/^\.m?(js|ts)x?/.test(ext)) { // custom entry file
+                filename = resolve(filename);
+                const mod = await import(filename);
+                if (typeof mod.default === "object" && typeof mod.default.fetch === "function") {
+                    const config = mod.default;
+                    fetch = config.fetch;
+                    port || (port = config.port);
+                    config.hostname && (hostname = config.hostname);
+                    config.cert && (cert = config.cert);
+                    config.key && (key = config.key);
+                }
+                else {
+                    throw new Error("Invalid entry file");
+                }
+            }
+            port || (port = await randomPort(8000));
+            fetch || (fetch = (req) => serveStatic(req, {
+                fsDir: filename,
                 listDir: true,
                 headers: {
-                    "Server": navigator.userAgent,
+                    "Server": typeof navigator === "object"
+                        ? navigator.userAgent
+                        : typeof process === "object"
+                            ? `Node.js/${process.version}`
+                            : "Unknown",
                 },
             }));
-        }
-        else if (isBun) {
-            Bun.serve({
-                port,
-                fetch: (req) => serveStatic(req, {
-                    fsDir,
-                    listDir: true,
-                    headers: {
-                        "Server": navigator.userAgent,
-                    },
-                }),
-            });
-            console.log(`Listening on http://localhost:${port}/`);
-        }
-        else if (isNode) {
-            const { createServer } = await import('node:http');
-            const server = createServer(withWeb(async (req) => {
-                return serveStatic(req, {
-                    fsDir,
-                    listDir: true,
-                    headers: {
-                        "Server": `Node.js/${process.version}`,
-                    },
-                });
-            }));
-            server.listen(port);
-            console.log(`Listening on http://localhost:${port}/`);
-        }
-    })();
+            await serve({ hostname, port, fetch, key, cert });
+        })();
+    }
 }
 
-export { etag, ifMatch, ifNoneMatch, parseRange, randomPort, serveStatic, withWeb };
+export { etag, ifMatch, ifNoneMatch, parseRange, randomPort, serve, serveStatic, withWeb };
 //# sourceMappingURL=http.js.map

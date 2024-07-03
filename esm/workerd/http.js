@@ -25,9 +25,12 @@ async function randomPort(prefer = undefined) {
 function withWeb(listener) {
     throw new Error("Unsupported runtime");
 }
+async function serve(options) {
+    throw new Error("Unsupported runtime");
+}
 async function serveStatic(req, options = {}) {
     throw new Error("Unsupported runtime");
 }
 
-export { etag, randomPort, serveStatic, withWeb };
+export { etag, randomPort, serve, serveStatic, withWeb };
 //# sourceMappingURL=http.js.map

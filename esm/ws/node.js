@@ -5,7 +5,7 @@ import { WebSocketServer as WebSocketServer$1, WebSocketConnection } from '../ws
 
 var _a;
 const _errored = Symbol.for("errored");
-const _listener = Symbol.for("listener");
+const _handler = Symbol.for("handler");
 const _clients = Symbol.for("clients");
 const _server = Symbol.for("server");
 class WebSocketServer extends WebSocketServer$1 {
@@ -29,7 +29,7 @@ class WebSocketServer extends WebSocketServer$1 {
             if (!upgradeHeader || upgradeHeader !== "websocket") {
                 return reject(new TypeError("Expected Upgrade: websocket"));
             }
-            const listener = this[_listener];
+            const handler = this[_handler];
             const clients = this[_clients];
             this[_server].handleUpgrade(request, socket, Buffer.alloc(0), (ws) => {
                 const client = new WebSocketConnection(ws);
@@ -68,7 +68,7 @@ class WebSocketServer extends WebSocketServer$1 {
                         wasClean: Reflect.get(ws, _errored) !== false,
                     }));
                 });
-                listener === null || listener === void 0 ? void 0 : listener.call(this, client);
+                handler === null || handler === void 0 ? void 0 : handler.call(this, client);
                 if (isWebRequest && typeof Response === "function") {
                     const response = new Response(null, {
                         status: 200,

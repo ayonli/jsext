@@ -20,7 +20,7 @@ import runtime from './runtime.js';
 var _a, _b, _c;
 const _source = Symbol.for("source");
 const _errored = Symbol.for("errored");
-const _listener = Symbol.for("listener");
+const _handler = Symbol.for("handler");
 const _clients = Symbol.for("clients");
 const _server = Symbol.for("server");
 const _connTasks = Symbol.for("connTasks");
@@ -253,12 +253,12 @@ let WebSocketServer$1 = class WebSocketServer {
         if (args.length === 2) {
             this.idleTimeout = ((_d = args[0]) === null || _d === void 0 ? void 0 : _d.idleTimeout) || 30;
             this.perMessageDeflate = (_f = (_e = args[0]) === null || _e === void 0 ? void 0 : _e.perMessageDeflate) !== null && _f !== void 0 ? _f : false;
-            this[_listener] = args[1];
+            this[_handler] = args[1];
         }
         else {
             this.idleTimeout = 30;
             this.perMessageDeflate = false;
-            this[_listener] = args[0];
+            this[_handler] = args[0];
         }
     }
     async upgrade(request) {
@@ -269,7 +269,7 @@ let WebSocketServer$1 = class WebSocketServer {
         if (!upgradeHeader || upgradeHeader !== "websocket") {
             throw new TypeError("Expected Upgrade: websocket");
         }
-        const listener = this[_listener];
+        const handler = this[_handler];
         const clients = this[_clients];
         const { identity } = runtime();
         if (identity === "deno") {
@@ -305,11 +305,11 @@ let WebSocketServer$1 = class WebSocketServer {
                 }));
             };
             if (socket.readyState === 1) {
-                listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
+                handler === null || handler === void 0 ? void 0 : handler.call(this, socket);
             }
             else {
                 ws.onopen = () => {
-                    listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
+                    handler === null || handler === void 0 ? void 0 : handler.call(this, socket);
                 };
             }
             return { socket, response };
@@ -353,11 +353,11 @@ let WebSocketServer$1 = class WebSocketServer {
                 }));
             });
             if (socket.readyState === 1) {
-                listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
+                handler === null || handler === void 0 ? void 0 : handler.call(this, socket);
             }
             else {
                 server.addEventListener("open", () => {
-                    listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
+                    handler === null || handler === void 0 ? void 0 : handler.call(this, socket);
                 });
             }
             return {
@@ -381,7 +381,7 @@ let WebSocketServer$1 = class WebSocketServer {
                 throw new Error("Failed to upgrade to WebSocket");
             }
             const socket = await task;
-            listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
+            handler === null || handler === void 0 ? void 0 : handler.call(this, socket);
             return {
                 socket,
                 response: new Response(null, {

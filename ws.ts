@@ -17,21 +17,18 @@ import chan from "./chan.ts";
 import { fromErrorEvent } from "./error.ts";
 import { createCloseEvent, createErrorEvent } from "./event.ts";
 import runtime from "./runtime.ts";
-import { Ensured } from "./types.ts";
+import type { BunServer } from "./http/server.ts";
+import type { Ensured } from "./types.ts";
 
 const _source = Symbol.for("source");
 const _errored = Symbol.for("errored");
-const _listener = Symbol.for("listener");
+const _handler = Symbol.for("handler");
 const _clients = Symbol.for("clients");
 const _server = Symbol.for("server");
 const _connTasks = Symbol.for("connTasks");
 const _readyTask = Symbol.for("readyTask");
 
 export type WebSocketLike = Ensured<Partial<WebSocket>, "readyState" | "close" | "send">;
-
-export type BunServerType = {
-    upgrade(req: Request, options: { data: any; }): boolean;
-};
 
 /**
  * This class represents a WebSocket connection on the server side.
@@ -170,6 +167,11 @@ export class WebSocketConnection extends EventTarget implements AsyncIterable<st
         }
     }
 }
+
+/**
+ * WebSocket handler function for the {@link WebSocketServer} constructor.
+ */
+export type WebSocketHandler = (socket: WebSocketConnection) => void;
 
 /**
  * Options for the {@link WebSocketServer} constructor.
@@ -330,23 +332,23 @@ export interface ServerOptions {
 export class WebSocketServer {
     protected idleTimeout: number;
     protected perMessageDeflate: boolean;
-    protected [_listener]: ((socket: WebSocketConnection) => void) | undefined;
+    protected [_handler]: WebSocketHandler | undefined;
     protected [_clients]: Map<Request, WebSocketConnection> = new Map();
-    private [_server]: BunServerType | undefined = undefined;
+    private [_server]: BunServer | undefined = undefined;
     private [_connTasks]: Map<Request, AsyncTask<WebSocketConnection>> = new Map();
 
     constructor();
-    constructor(listener: (socket: WebSocketConnection) => void);
-    constructor(options: ServerOptions, listener: (socket: WebSocketConnection) => void);
+    constructor(handler: WebSocketHandler);
+    constructor(options: ServerOptions, handler: WebSocketHandler);
     constructor(...args: any[]) {
         if (args.length === 2) {
             this.idleTimeout = args[0]?.idleTimeout || 30;
             this.perMessageDeflate = args[0]?.perMessageDeflate ?? false;
-            this[_listener] = args[1];
+            this[_handler] = args[1];
         } else {
             this.idleTimeout = 30;
             this.perMessageDeflate = false;
-            this[_listener] = args[0];
+            this[_handler] = args[0];
         }
     }
 
@@ -379,7 +381,7 @@ export class WebSocketServer {
             throw new TypeError("Expected Upgrade: websocket");
         }
 
-        const listener = this[_listener];
+        const handler = this[_handler];
         const clients = this[_clients];
         const { identity } = runtime();
 
@@ -418,10 +420,10 @@ export class WebSocketServer {
             };
 
             if (socket.readyState === 1) {
-                listener?.call(this, socket);
+                handler?.call(this, socket);
             } else {
                 ws.onopen = () => {
-                    listener?.call(this, socket);
+                    handler?.call(this, socket);
                 };
             }
 
@@ -468,10 +470,10 @@ export class WebSocketServer {
             });
 
             if (socket.readyState === 1) {
-                listener?.call(this, socket);
+                handler?.call(this, socket);
             } else {
                 server.addEventListener("open", () => {
-                    listener?.call(this, socket);
+                    handler?.call(this, socket);
                 });
             }
 
@@ -499,7 +501,7 @@ export class WebSocketServer {
 
             const socket = await task;
 
-            listener?.call(this, socket);
+            handler?.call(this, socket);
             return {
                 socket,
                 response: new Response(null, {
@@ -519,7 +521,7 @@ export class WebSocketServer {
     /**
      * Used in Bun, to bind the WebSocket server to the Bun server instance.
      */
-    bunBind(server: BunServerType): void {
+    bunBind(server: BunServer): void {
         this[_server] = server;
     }
 

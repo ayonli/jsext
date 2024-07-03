@@ -1,9 +1,11 @@
 import bytes from "../bytes.ts";
 import { type FileInfo } from "./fs.ts";
 import { sha256 } from "./hash.ts";
-import { type ServeStaticOptions } from "../http/util.ts";
+import type { NetAddr, RequestHandler, ServeOptions, Server } from "../http/server.ts";
+import type { ServeStaticOptions } from "../http/util.ts";
 
 export * from "../http/util.ts";
+export type { NetAddr, RequestHandler, ServeOptions, Server };
 
 export async function etag(data: string | Uint8Array | FileInfo): Promise<string> {
     if (typeof data === "string" || data instanceof Uint8Array) {
@@ -34,6 +36,11 @@ export function withWeb(
     listener: (req: Request) => void | Response | Promise<void | Response>
 ): import("http").RequestListener {
     void listener;
+    throw new Error("Unsupported runtime");
+}
+
+export async function serve(options: ServeOptions): Promise<Server> {
+    void options;
     throw new Error("Unsupported runtime");
 }
 

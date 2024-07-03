@@ -2,23 +2,23 @@ import { type IncomingMessage } from "node:http";
 import { WebSocketServer as WSServer } from "ws";
 import { concat, text } from "../bytes.ts";
 import { createCloseEvent, createErrorEvent } from "../event.ts";
-import { type ServerOptions, WebSocketConnection, WebSocketServer as BaseServer } from "../ws.ts";
+import { type ServerOptions, WebSocketConnection, WebSocketServer as BaseServer, WebSocketHandler } from "../ws.ts";
 
 export { WebSocketConnection };
 
 const _errored = Symbol.for("errored");
-const _listener = Symbol.for("listener");
+const _handler = Symbol.for("handler");
 const _clients = Symbol.for("clients");
 const _server = Symbol.for("server");
 
 export class WebSocketServer extends BaseServer {
-    private [_listener]: ((socket: WebSocketConnection) => void) | undefined;
+    private [_handler]: WebSocketHandler | undefined;
     private [_clients] = new Map<import("http").IncomingMessage, WebSocketConnection>();
     private [_server]: WSServer;
 
     constructor();
-    constructor(listener: (socket: WebSocketConnection) => void);
-    constructor(options: ServerOptions, listener: (socket: WebSocketConnection) => void);
+    constructor(handler: WebSocketHandler);
+    constructor(options: ServerOptions, handler: WebSocketHandler);
     constructor(...args: any[]) {
         // @ts-ignore
         super(...args);
@@ -53,7 +53,7 @@ export class WebSocketServer extends BaseServer {
                 return reject(new TypeError("Expected Upgrade: websocket"));
             }
 
-            const listener = this[_listener];
+            const handler = this[_handler];
             const clients = this[_clients];
 
             this[_server].handleUpgrade(request, socket, Buffer.alloc(0), (ws) => {
@@ -94,7 +94,7 @@ export class WebSocketServer extends BaseServer {
                     }));
                 });
 
-                listener?.call(this, client);
+                handler?.call(this, client);
 
                 if (isWebRequest && typeof Response === "function") {
                     const response = new Response(null, {
