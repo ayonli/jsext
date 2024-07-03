@@ -178,6 +178,78 @@ describe("ws:node", () => {
         strictEqual(text(clientMessages[1] as Uint8Array), "client sent: binary");
     }));
 
+    it("handle connection as async iterable", func(async function (defer) {
+        this.timeout(5_000);
+
+        const { WebSocketServer } = await import("../ws/node.ts");
+
+        let error: Error | null = null;
+        let closed = false;
+        const serverMessages: (string | Uint8Array)[] = [];
+        const clientMessages: (string | Uint8Array)[] = [];
+
+        const wsServer = new WebSocketServer(async socket => {
+            try {
+                for await (const data of socket) {
+                    if (typeof data === "string") {
+                        serverMessages.push(data);
+                        socket.send("client sent: " + data);
+                    } else {
+                        serverMessages.push(data);
+                        socket.send(concat(bytes("client sent: "), data));
+                    }
+                }
+            } catch (err) {
+                error = err as Error;
+            }
+
+            closed = true;
+        });
+        const server = http.createServer(async (req) => {
+            await wsServer.upgrade(req);
+        });
+        const port = await randomPort();
+        server.listen(port);
+        defer(() => server.close());
+
+        let ws: WebSocket;
+
+        if (typeof WebSocket === "function") {
+            ws = new WebSocket(`ws://localhost:${port}`);
+        } else {
+            const dWebSocket = (await import("isomorphic-ws")).default;
+            ws = new dWebSocket(`ws://localhost:${port}`) as unknown as WebSocket;
+        }
+
+        ws.binaryType = "arraybuffer";
+        ws.onopen = () => {
+            ws.send("text");
+        };
+
+        ws.onmessage = (event) => {
+            if (typeof event.data === "string") {
+                clientMessages.push(event.data);
+            } else {
+                clientMessages.push(new Uint8Array(event.data as ArrayBuffer));
+            }
+
+            if (clientMessages.length === 2) {
+                ws.close();
+            } else {
+                ws.send(bytes("binary"));
+            }
+        };
+
+        await until(() => serverMessages.length === 2 && clientMessages.length === 2 && closed);
+
+        strictEqual(error, null);
+        strictEqual(closed, true);
+        strictEqual(serverMessages[0], "text");
+        strictEqual(text(serverMessages[1] as Uint8Array), "binary");
+        strictEqual(clientMessages[0], "client sent: text");
+        strictEqual(text(clientMessages[1] as Uint8Array), "client sent: binary");
+    }));
+
     it("with web standard", func(async function (defer) {
         if (typeof Request !== "function" || typeof Response !== "function") {
             this.skip();

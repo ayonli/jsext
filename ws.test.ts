@@ -192,6 +192,86 @@ describe("ws", () => {
         strictEqual(text(clientMessages[1] as Uint8Array), "client sent: binary");
     }));
 
+    it("handle connection as async iterable", func(async function (defer) {
+        this.timeout(5_000);
+
+        const { WebSocketServer } = await import("./ws.ts");
+
+        let error: Error | null = null;
+        let closed = false;
+        const serverMessages: (string | Uint8Array)[] = [];
+        const clientMessages: (string | Uint8Array)[] = [];
+
+        const wsServer = new WebSocketServer(async socket => {
+            try {
+                for await (const data of socket) {
+                    if (typeof data === "string") {
+                        serverMessages.push(data);
+                        socket.send("client sent: " + data);
+                    } else {
+                        serverMessages.push(data);
+                        socket.send(concat(bytes("client sent: "), data));
+                    }
+                }
+            } catch (err) {
+                error = err as Error;
+            }
+
+            closed = true;
+        });
+
+        const port = await randomPort();
+
+        if (isDeno) {
+            const server = Deno.serve({ port }, async req => {
+                const { response } = await wsServer.upgrade(req);
+                return response;
+            });
+            defer(() => Promise.race([server.shutdown(), sleep(100)]));
+        } else {
+            const server = Bun.serve({
+                port,
+                fetch: async (req: Request) => {
+                    const { response } = await wsServer.upgrade(req);
+                    return response;
+                },
+                websocket: wsServer.bunListener,
+            });
+            wsServer.bunBind(server);
+            defer(() => server.stop(true));
+        }
+
+        const ws = new WebSocket(`ws://localhost:${port}`);
+
+        ws.binaryType = "arraybuffer";
+        ws.onopen = () => {
+            ws.send("text");
+        };
+
+        ws.onmessage = (event) => {
+            if (typeof event.data === "string") {
+                clientMessages.push(event.data);
+            } else {
+                clientMessages.push(new Uint8Array(event.data as ArrayBuffer));
+            }
+
+            if (clientMessages.length === 2) {
+                ws.close();
+            } else {
+                ws.send(bytes("binary"));
+            }
+        };
+
+        await until(() => serverMessages.length === 2 && clientMessages.length === 2 && closed);
+
+        strictEqual(error, null);
+        strictEqual(closed, true);
+        strictEqual(serverMessages[0], "text");
+        strictEqual(text(serverMessages[1] as Uint8Array), "binary");
+        strictEqual(clientMessages[0], "client sent: text");
+        strictEqual(text(clientMessages[1] as Uint8Array), "client sent: binary");
+    }));
+
     it("with Hono framework", func(async function (defer) {
         this.timeout(5_000);
 

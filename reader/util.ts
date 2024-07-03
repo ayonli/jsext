@@ -1,4 +1,5 @@
 import chan from "../chan.ts";
+import { fromErrorEvent } from "../error.ts";
 
 function isFunction(val: unknown): val is (...args: any[]) => any {
     return typeof val === "function";
@@ -277,7 +278,7 @@ export function toAsyncIterable<T>(source: any, eventMap: {
         let err: Error;
 
         if (typeof ErrorEvent === "function" && ev instanceof ErrorEvent) {
-            err = ev.error || new Error(ev.message);
+            err = ev.error || fromErrorEvent(ev);
         } else {
             // @ts-ignore
             err = new Error("something went wrong", { cause: ev });
@@ -352,18 +353,32 @@ export function toAsyncIterable<T>(source: any, eventMap: {
             });
         }
     } else if (isFunction(source["send"]) && isFunction(source["close"])) {
-        // non-standard WebSocket implementation
+        // non-standard WebSocket implementation or WebSocket-like object
         const ws = source as WebSocket;
-        ws.onmessage = (ev: MessageEvent<T>) => {
-            handleMessage(ev.data);
-        };
-        ws.onerror = handleBrowserErrorEvent;
-        ws.onclose = () => {
-            handleClose();
-            ws.onclose = null;
-            ws.onerror = null;
-            ws.onmessage = null;
-        };
+
+        if (typeof ws.addEventListener === "function") {
+            const msgListener = (ev: MessageEvent<T>) => {
+                handleMessage(ev.data);
+            };
+            ws.addEventListener("message", msgListener);
+            ws.addEventListener("error", handleBrowserErrorEvent);
+            ws.addEventListener("close", () => {
+                handleClose();
+                ws.removeEventListener("message", msgListener);
+                ws.removeEventListener("error", handleBrowserErrorEvent);
+            });
+        } else {
+            ws.onmessage = (ev: MessageEvent<T>) => {
+                handleMessage(ev.data);
+            };
+            ws.onerror = handleBrowserErrorEvent;
+            ws.onclose = () => {
+                handleClose();
+                ws.onclose = null;
+                ws.onerror = null;
+                ws.onmessage = null;
+            };
+        }
     } else if (isFunction(source["addEventListener"])) { // EventTarget
         const target = source as EventTarget;
         const msgEvent = eventMap?.message || "message";

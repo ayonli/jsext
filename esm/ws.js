@@ -1,4 +1,6 @@
 import { asyncTask } from './async.js';
+import chan from './chan.js';
+import { fromErrorEvent } from './error.js';
 import { createErrorEvent, createCloseEvent } from './event.js';
 import runtime from './runtime.js';
 
@@ -65,6 +67,21 @@ class WebSocketConnection extends EventTarget {
     addEventListener(event, listener, options) {
         return super.addEventListener(event, listener, options);
     }
+    async *[Symbol.asyncIterator]() {
+        const channel = chan(Infinity);
+        this.addEventListener("message", ev => {
+            channel.send(ev.data);
+        });
+        this.addEventListener("close", ev => {
+            ev.wasClean && channel.close();
+        });
+        this.addEventListener("error", ev => {
+            channel.close(fromErrorEvent(ev));
+        });
+        for await (const data of channel) {
+            yield data;
+        }
+    }
 }
 /**
  * A universal WebSocket server interface for Node.js, Deno, Bun and Cloudflare
@@ -77,6 +94,9 @@ class WebSocketConnection extends EventTarget {
  * 2. By using the `socket` object returned from the `upgrade` method to handle
  *    each connection in a more flexible way.
  *
+ * Also, the `socket` object is an async iterable object, which can be used in
+ * the `for await...of` loop to read messages with backpressure support.
+ *
  * NOTE: In order to work in Node.js, install the `@ayonli/jsext` library from
  * NPM instead of JSR.
  *
@@ -86,7 +106,7 @@ class WebSocketConnection extends EventTarget {
  * import { WebSocketServer } from "@ayonli/jsext/ws";
  *
  * const wsServer = new WebSocketServer(socket => {
- *     console.log(`WebSocket connection established.`);
+ *     console.log("WebSocket connection established.");
  *
  *     socket.addEventListener("message", (event) => {
  *         socket.send("received: " + event.data);
@@ -151,7 +171,7 @@ class WebSocketConnection extends EventTarget {
  * Deno.serve(async req => {
  *     const { socket, response } = await wsServer.upgrade(req);
  *
- *     console.log(`WebSocket connection established.`);
+ *     console.log("WebSocket connection established.");
  *
  *     socket.addEventListener("message", (event) => {
  *         socket.send("received: " + event.data);
@@ -165,6 +185,29 @@ class WebSocketConnection extends EventTarget {
  *         console.log(`WebSocket connection closed, reason: ${event.reason}, code: ${event.code}`);
  *     });
  *
+ *     return response;
+ * });
+ * ```
+ *
+ * @example
+ * ```ts
+ * // async iterable (e.g. for Deno)
+ * const wsServer = new WebSocketServer(async socket => {
+ *     console.log("WebSocket connection established.");
+ *
+ *     try {
+ *         for await (const message of socket) {
+ *             socket.send("received: " + event.data);
+ *         }
+ *     } catch (error) {
+ *         console.error("WebSocket connection error:", error);
+ *     }
+ *
+ *     console.log("WebSocket connection closed");
+ * });
+ *
+ * Deno.serve(async req => {
+ *     const { response } = await wsServer.upgrade(req);
  *     return response;
  * });
  * ```

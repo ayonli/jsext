@@ -1,4 +1,5 @@
 import chan from '../chan.js';
+import { fromErrorEvent } from '../error.js';
 
 function isFunction(val) {
     return typeof val === "function";
@@ -175,7 +176,7 @@ function toAsyncIterable(source, eventMap = undefined) {
     const handleBrowserErrorEvent = (ev) => {
         let err;
         if (typeof ErrorEvent === "function" && ev instanceof ErrorEvent) {
-            err = ev.error || new Error(ev.message);
+            err = ev.error || fromErrorEvent(ev);
         }
         else {
             // @ts-ignore
@@ -246,18 +247,32 @@ function toAsyncIterable(source, eventMap = undefined) {
         }
     }
     else if (isFunction(source["send"]) && isFunction(source["close"])) {
-        // non-standard WebSocket implementation
+        // non-standard WebSocket implementation or WebSocket-like object
         const ws = source;
-        ws.onmessage = (ev) => {
-            handleMessage(ev.data);
-        };
-        ws.onerror = handleBrowserErrorEvent;
-        ws.onclose = () => {
-            handleClose();
-            ws.onclose = null;
-            ws.onerror = null;
-            ws.onmessage = null;
-        };
+        if (typeof ws.addEventListener === "function") {
+            const msgListener = (ev) => {
+                handleMessage(ev.data);
+            };
+            ws.addEventListener("message", msgListener);
+            ws.addEventListener("error", handleBrowserErrorEvent);
+            ws.addEventListener("close", () => {
+                handleClose();
+                ws.removeEventListener("message", msgListener);
+                ws.removeEventListener("error", handleBrowserErrorEvent);
+            });
+        }
+        else {
+            ws.onmessage = (ev) => {
+                handleMessage(ev.data);
+            };
+            ws.onerror = handleBrowserErrorEvent;
+            ws.onclose = () => {
+                handleClose();
+                ws.onclose = null;
+                ws.onerror = null;
+                ws.onmessage = null;
+            };
+        }
     }
     else if (isFunction(source["addEventListener"])) { // EventTarget
         const target = source;
