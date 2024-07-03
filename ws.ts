@@ -17,6 +17,7 @@ import chan from "./chan.ts";
 import { fromErrorEvent } from "./error.ts";
 import { createCloseEvent, createErrorEvent } from "./event.ts";
 import runtime from "./runtime.ts";
+import { Ensured } from "./types.ts";
 
 const _source = Symbol.for("source");
 const _errored = Symbol.for("errored");
@@ -26,7 +27,7 @@ const _server = Symbol.for("server");
 const _connTasks = Symbol.for("connTasks");
 const _readyTask = Symbol.for("readyTask");
 
-export type WebSocketLike = Pick<WebSocket, "readyState" | "close" | "send">;
+export type WebSocketLike = Ensured<Partial<WebSocket>, "readyState" | "close" | "send">;
 
 export type BunServerType = {
     upgrade(req: Request, options: { data: any; }): boolean;
@@ -48,6 +49,10 @@ export type BunServerType = {
  *   event, and the close event will have the `wasClean` set to `false`, and the
  *   `reason` property contains the error message, if any.
  * - `message` - Dispatched when a message is received.
+ * 
+ * There is no `open` event, because when an connection instance is created, the
+ * connection may already be open. However, there is a `ready` promise that can
+ * be used to ensure that the connection is ready before sending messages.
  */
 export class WebSocketConnection extends EventTarget implements AsyncIterable<string | Uint8Array> {
     private [_source]: WebSocketLike;
@@ -60,6 +65,14 @@ export class WebSocketConnection extends EventTarget implements AsyncIterable<st
 
         if (source.readyState === WebSocket.OPEN) {
             this[_readyTask].resolve();
+        } else if (typeof source.addEventListener === "function") {
+            source.addEventListener("open", () => {
+                this[_readyTask].resolve();
+            });
+        } else {
+            source.onopen = () => {
+                this[_readyTask].resolve();
+            };
         }
     }
 
@@ -408,7 +421,6 @@ export class WebSocketServer {
                 listener?.call(this, socket);
             } else {
                 ws.onopen = () => {
-                    socket[_readyTask].resolve();
                     listener?.call(this, socket);
                 };
             }
@@ -459,7 +471,6 @@ export class WebSocketServer {
                 listener?.call(this, socket);
             } else {
                 server.addEventListener("open", () => {
-                    socket[_readyTask].resolve();
                     listener?.call(this, socket);
                 });
             }

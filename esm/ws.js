@@ -41,6 +41,10 @@ const _readyTask = Symbol.for("readyTask");
  *   event, and the close event will have the `wasClean` set to `false`, and the
  *   `reason` property contains the error message, if any.
  * - `message` - Dispatched when a message is received.
+ *
+ * There is no `open` event, because when an connection instance is created, the
+ * connection may already be open. However, there is a `ready` promise that can
+ * be used to ensure that the connection is ready before sending messages.
  */
 class WebSocketConnection extends EventTarget {
     constructor(source) {
@@ -49,6 +53,16 @@ class WebSocketConnection extends EventTarget {
         this[_readyTask] = asyncTask();
         if (source.readyState === WebSocket.OPEN) {
             this[_readyTask].resolve();
+        }
+        else if (typeof source.addEventListener === "function") {
+            source.addEventListener("open", () => {
+                this[_readyTask].resolve();
+            });
+        }
+        else {
+            source.onopen = () => {
+                this[_readyTask].resolve();
+            };
         }
     }
     /**
@@ -295,7 +309,6 @@ let WebSocketServer$1 = class WebSocketServer {
             }
             else {
                 ws.onopen = () => {
-                    socket[_readyTask].resolve();
                     listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
                 };
             }
@@ -344,7 +357,6 @@ let WebSocketServer$1 = class WebSocketServer {
             }
             else {
                 server.addEventListener("open", () => {
-                    socket[_readyTask].resolve();
                     listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
                 });
             }
