@@ -13,7 +13,32 @@ import { stripStart, dedent } from './string.js';
 import { startsWith } from './path/util.js';
 
 /**
- * Utility functions for handling HTTP related tasks, such as parsing headers.
+ * Utility functions for handling HTTP related tasks, such as parsing headers,
+ * serving static files, and calculating ETags.
+ *
+ * This module itself is a executable script that can be used to serve static
+ * files in the current working directory. It can be run directly with Deno, Bun,
+ * or Node.js.
+ *
+ * Deno:
+ * ```sh
+ * deno run --allow-net --allow-read jsr:@ayonli/jsext/http
+ * ```
+ *
+ * Bun:
+ * ```sh
+ * bun run node_modules/@ayonli/jsext/http.ts
+ * ```
+ *
+ * Node.js:
+ * ```sh
+ * node node_modules/@ayonli/jsext/esm/http.js
+ * ```
+ *
+ * Node.js (tsx):
+ * ```sh
+ * tsx node_modules/@ayonli/jsext/http.ts
+ * ```
  * @module
  * @experimental
  */
