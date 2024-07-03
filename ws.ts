@@ -383,10 +383,6 @@ export class WebSocketServer {
                 }));
             };
 
-            await new Promise<any>((resolve) => {
-                ws.onopen = resolve;
-            });
-
             listener?.call(this, socket);
             return { socket, response };
         } else if (identity === "cloudflare-worker") {
@@ -435,11 +431,6 @@ export class WebSocketServer {
                 socket,
                 response: new Response(null, {
                     status: 101,
-                    statusText: "Switching Protocols",
-                    headers: new Headers({
-                        "Upgrade": "websocket",
-                        "Connection": "Upgrade",
-                    }),
                     // @ts-ignore
                     webSocket: client,
                 }),
