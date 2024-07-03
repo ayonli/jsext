@@ -63,7 +63,7 @@ export class WebSocketConnection extends EventTarget implements AsyncIterable<st
         this[_source] = source;
         this[_readyTask] = asyncTask<void>();
 
-        if (source.readyState === WebSocket.OPEN) {
+        if (source.readyState === 1) {
             this[_readyTask].resolve();
         } else if (typeof source.addEventListener === "function") {
             source.addEventListener("open", () => {
@@ -417,7 +417,7 @@ export class WebSocketServer {
                 }));
             };
 
-            if (socket.readyState === WebSocket.OPEN) {
+            if (socket.readyState === 1) {
                 listener?.call(this, socket);
             } else {
                 ws.onopen = () => {
@@ -467,7 +467,7 @@ export class WebSocketServer {
                 }));
             });
 
-            if (socket.readyState === WebSocket.OPEN) {
+            if (socket.readyState === 1) {
                 listener?.call(this, socket);
             } else {
                 server.addEventListener("open", () => {

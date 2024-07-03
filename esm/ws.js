@@ -51,7 +51,7 @@ class WebSocketConnection extends EventTarget {
         super();
         this[_source] = source;
         this[_readyTask] = asyncTask();
-        if (source.readyState === WebSocket.OPEN) {
+        if (source.readyState === 1) {
             this[_readyTask].resolve();
         }
         else if (typeof source.addEventListener === "function") {
@@ -304,7 +304,7 @@ let WebSocketServer$1 = class WebSocketServer {
                     wasClean: ev.wasClean,
                 }));
             };
-            if (socket.readyState === WebSocket.OPEN) {
+            if (socket.readyState === 1) {
                 listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
             }
             else {
@@ -352,7 +352,7 @@ let WebSocketServer$1 = class WebSocketServer {
                     wasClean: ev.wasClean,
                 }));
             });
-            if (socket.readyState === WebSocket.OPEN) {
+            if (socket.readyState === 1) {
                 listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
             }
             else {
