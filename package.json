@@ -1,433 +1,434 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.9.35",
+    "version": "0.9.36",
     "description": "A JavaScript extension package for building strong and modern applications.",
+    "type": "module",
     "exports": {
         ".": {
             "types": "./types/index.d.ts",
             "bun": "./index.ts",
             "workerd": "./esm/workerd/index.js",
-            "require": "./cjs/index.js",
             "import": "./esm/index.js",
+            "require": "./cjs/index.js",
             "default": "./index.ts"
         },
         "./archive": {
             "types": "./types/archive.d.ts",
             "bun": "./archive.ts",
             "workerd": "./esm/workerd/archive.js",
-            "require": "./cjs/archive.js",
             "import": "./esm/archive.js",
+            "require": "./cjs/archive.js",
             "default": "./archive.ts"
         },
         "./array": {
             "types": "./types/array.d.ts",
             "bun": "./array.ts",
-            "require": "./cjs/array.js",
             "import": "./esm/array.js",
+            "require": "./cjs/array.js",
             "default": "./array.ts"
         },
         "./array/augment": {
             "types": "./types/augment/array.d.ts",
             "bun": "./augment/array.ts",
-            "require": "./cjs/augment/array.js",
             "import": "./esm/augment/array.js",
+            "require": "./cjs/augment/array.js",
             "default": "./augment/array.ts"
         },
         "./async": {
             "types": "./types/async.d.ts",
             "bun": "./async.ts",
-            "require": "./cjs/async.js",
             "import": "./esm/async.js",
+            "require": "./cjs/async.js",
             "default": "./async.ts"
         },
         "./augment": {
             "types": "./types/augment.d.ts",
             "bun": "./augment.ts",
-            "require": "./cjs/augment.js",
             "import": "./esm/augment.js",
+            "require": "./cjs/augment.js",
             "default": "./augment.ts"
         },
         "./augment/*": {
             "types": "./types/augment/*.d.ts",
             "bun": "./augment/*.ts",
-            "require": "./cjs/augment/*.js",
             "import": "./esm/augment/*.js",
+            "require": "./cjs/augment/*.js",
             "default": "./augment/*.ts"
         },
         "./bytes": {
             "types": "./types/bytes.d.ts",
             "bun": "./bytes.ts",
-            "require": "./cjs/bytes.js",
             "import": "./esm/bytes.js",
+            "require": "./cjs/bytes.js",
             "default": "./bytes.ts"
         },
         "./chan": {
             "types": "./types/chan.d.ts",
             "bun": "./chan.ts",
-            "require": "./cjs/chan.js",
             "import": "./esm/chan.js",
+            "require": "./cjs/chan.js",
             "default": "./chan.ts"
         },
         "./class": {
             "types": "./types/class.d.ts",
             "bun": "./class.ts",
-            "require": "./cjs/class.js",
             "import": "./esm/class.js",
+            "require": "./cjs/class.js",
             "default": "./class.ts"
         },
         "./cli": {
             "types": "./types/cli.d.ts",
             "bun": "./cli.ts",
             "workerd": "./esm/workerd/cli.js",
-            "require": "./cjs/cli.js",
             "import": "./esm/cli.js",
+            "require": "./cjs/cli.js",
             "default": "./cli.ts"
         },
         "./collections": {
             "types": "./types/collections.d.ts",
             "bun": "./collections.ts",
-            "require": "./cjs/collections.js",
             "import": "./esm/collections.js",
+            "require": "./cjs/collections.js",
             "default": "./collections.ts"
         },
         "./collections/augment": {
             "types": "./types/augment/collections.d.ts",
             "bun": "./augment/collections.ts",
-            "require": "./cjs/augment/collections.js",
             "import": "./esm/augment/collections.js",
+            "require": "./cjs/augment/collections.js",
             "default": "./augment/collections.ts"
         },
         "./debounce": {
             "types": "./types/debounce.d.ts",
             "bun": "./debounce.ts",
-            "require": "./cjs/debounce.js",
             "import": "./esm/debounce.js",
+            "require": "./cjs/debounce.js",
             "default": "./debounce.ts"
         },
         "./deprecate": {
             "types": "./types/deprecate.d.ts",
             "bun": "./deprecate.ts",
-            "require": "./cjs/deprecate.js",
             "import": "./esm/deprecate.js",
+            "require": "./cjs/deprecate.js",
             "default": "./deprecate.ts"
         },
         "./dialog": {
             "types": "./types/dialog.d.ts",
             "bun": "./dialog.ts",
             "workerd": "./esm/workerd/dialog.js",
-            "require": "./cjs/dialog.js",
             "import": "./esm/dialog.js",
+            "require": "./cjs/dialog.js",
             "default": "./dialog.ts"
         },
         "./encoding": {
             "types": "./types/encoding.d.ts",
             "bun": "./encoding.ts",
-            "require": "./cjs/encoding.js",
             "import": "./esm/encoding.js",
+            "require": "./cjs/encoding.js",
             "default": "./encoding.ts"
         },
         "./error": {
             "types": "./types/error.d.ts",
             "bun": "./error.ts",
-            "require": "./cjs/error.js",
             "import": "./esm/error.js",
+            "require": "./cjs/error.js",
             "default": "./error.ts"
         },
         "./error/augment": {
             "types": "./types/augment/error.d.ts",
             "bun": "./augment/error.ts",
-            "require": "./cjs/augment/error.js",
             "import": "./esm/augment/error.js",
+            "require": "./cjs/augment/error.js",
             "default": "./augment/error.ts"
         },
         "./event": {
             "types": "./types/event.d.ts",
             "bun": "./event.ts",
-            "require": "./cjs/event.js",
             "import": "./esm/event.js",
+            "require": "./cjs/event.js",
             "default": "./event.ts"
         },
         "./example": {
             "types": "./types/example.d.ts",
             "bun": "./example.ts",
             "workerd": "./esm/workerd/example.js",
-            "require": "./cjs/example.js",
             "import": "./esm/example.js",
+            "require": "./cjs/example.js",
             "default": "./example.ts"
         },
         "./filetype": {
             "types": "./types/filetype.d.ts",
             "bun": "./filetype.ts",
-            "require": "./cjs/filetype.js",
             "import": "./esm/filetype.js",
+            "require": "./cjs/filetype.js",
             "default": "./filetype.ts"
         },
         "./fs": {
             "types": "./types/fs.d.ts",
             "bun": "./fs.ts",
             "workerd": "./esm/workerd/fs.js",
-            "require": "./cjs/fs.js",
             "import": "./esm/fs.js",
+            "require": "./cjs/fs.js",
             "default": "./fs.ts"
         },
         "./func": {
             "types": "./types/func.d.ts",
             "bun": "./func.ts",
-            "require": "./cjs/func.js",
             "import": "./esm/func.js",
+            "require": "./cjs/func.js",
             "default": "./func.ts"
         },
         "./hash": {
             "types": "./types/hash.d.ts",
             "bun": "./hash.ts",
             "workerd": "./esm/workerd/hash.js",
-            "require": "./cjs/hash.js",
             "import": "./esm/hash.js",
+            "require": "./cjs/hash.js",
             "default": "./hash.ts"
         },
         "./http": {
             "types": "./types/http.d.ts",
             "bun": "./http.ts",
             "workerd": "./esm/workerd/http.js",
-            "require": "./cjs/http.js",
             "import": "./esm/http.js",
+            "require": "./cjs/http.js",
             "default": "./http.ts"
         },
         "./json": {
             "types": "./types/json.d.ts",
             "bun": "./json.ts",
-            "require": "./cjs/json.js",
             "import": "./esm/json.js",
+            "require": "./cjs/json.js",
             "default": "./json.ts"
         },
         "./json/augment": {
             "types": "./types/augment/json.d.ts",
             "bun": "./augment/json.ts",
-            "require": "./cjs/augment/json.js",
             "import": "./esm/augment/json.js",
+            "require": "./cjs/augment/json.js",
             "default": "./augment/json.ts"
         },
         "./lock": {
             "types": "./types/lock.d.ts",
             "bun": "./lock.ts",
-            "require": "./cjs/lock.js",
             "import": "./esm/lock.js",
+            "require": "./cjs/lock.js",
             "default": "./lock.ts"
         },
         "./math": {
             "types": "./types/math.d.ts",
             "bun": "./math.ts",
-            "require": "./cjs/math.js",
             "import": "./esm/math.js",
+            "require": "./cjs/math.js",
             "default": "./math.ts"
         },
         "./math/augment": {
             "types": "./types/augment/math.d.ts",
             "bun": "./augment/math.ts",
-            "require": "./cjs/augment/math.js",
             "import": "./esm/augment/math.js",
+            "require": "./cjs/augment/math.js",
             "default": "./augment/math.ts"
         },
         "./mixin": {
             "types": "./types/mixin.d.ts",
             "bun": "./mixin.ts",
-            "require": "./cjs/mixin.js",
             "import": "./esm/mixin.js",
+            "require": "./cjs/mixin.js",
             "default": "./mixin.ts"
         },
         "./mixins": {
             "types": "./types/mixins.d.ts",
             "bun": "./mixins.ts",
-            "require": "./cjs/mixins.js",
             "import": "./esm/mixins.js",
+            "require": "./cjs/mixins.js",
             "default": "./mixins.ts"
         },
         "./module": {
             "types": "./types/module.d.ts",
             "bun": "./module.ts",
-            "require": "./cjs/module.js",
             "import": "./esm/module.js",
+            "require": "./cjs/module.js",
             "default": "./module.ts"
         },
         "./number": {
             "types": "./types/number.d.ts",
             "bun": "./number.ts",
-            "require": "./cjs/number.js",
             "import": "./esm/number.js",
+            "require": "./cjs/number.js",
             "default": "./number.ts"
         },
         "./number/augment": {
             "types": "./types/augment/number.d.ts",
             "bun": "./augment/number.ts",
-            "require": "./cjs/augment/number.js",
             "import": "./esm/augment/number.js",
+            "require": "./cjs/augment/number.js",
             "default": "./augment/number.ts"
         },
         "./object": {
             "types": "./types/object.d.ts",
             "bun": "./object.ts",
-            "require": "./cjs/object.js",
             "import": "./esm/object.js",
+            "require": "./cjs/object.js",
             "default": "./object.ts"
         },
         "./object/augment": {
             "types": "./types/augment/object.d.ts",
             "bun": "./augment/object.ts",
-            "require": "./cjs/augment/object.js",
             "import": "./esm/augment/object.js",
+            "require": "./cjs/augment/object.js",
             "default": "./augment/object.ts"
         },
         "./parallel": {
             "types": "./types/parallel.d.ts",
             "bun": "./parallel.ts",
             "workerd": "./esm/workerd/parallel.js",
-            "require": "./cjs/parallel.js",
             "import": "./esm/parallel.js",
+            "require": "./cjs/parallel.js",
             "default": "./parallel.ts"
         },
         "./path": {
             "types": "./types/path.d.ts",
             "bun": "./path.ts",
-            "require": "./cjs/path.js",
             "import": "./esm/path.js",
+            "require": "./cjs/path.js",
             "default": "./path.ts"
         },
         "./pipe": {
             "types": "./types/pipe.d.ts",
             "bun": "./pipe.ts",
-            "require": "./cjs/pipe.js",
             "import": "./esm/pipe.js",
+            "require": "./cjs/pipe.js",
             "default": "./pipe.ts"
         },
         "./promise": {
             "types": "./types/async.d.ts",
             "bun": "./async.ts",
-            "require": "./cjs/async.js",
             "import": "./esm/async.js",
+            "require": "./cjs/async.js",
             "default": "./async.ts"
         },
         "./promise/augment": {
             "types": "./types/augment/promise.d.ts",
             "bun": "./augment/promise.ts",
-            "require": "./cjs/augment/promise.js",
             "import": "./esm/augment/promise.js",
+            "require": "./cjs/augment/promise.js",
             "default": "./augment/promise.ts"
         },
         "./queue": {
             "types": "./types/queue.d.ts",
             "bun": "./queue.ts",
-            "require": "./cjs/queue.js",
             "import": "./esm/queue.js",
+            "require": "./cjs/queue.js",
             "default": "./queue.ts"
         },
         "./read": {
             "types": "./types/read.d.ts",
             "bun": "./read.ts",
-            "require": "./cjs/read.js",
             "import": "./esm/read.js",
+            "require": "./cjs/read.js",
             "default": "./read.ts"
         },
         "./readAll": {
             "types": "./types/readAll.d.ts",
             "bun": "./readAll.ts",
-            "require": "./cjs/readAll.js",
             "import": "./esm/readAll.js",
+            "require": "./cjs/readAll.js",
             "default": "./readAll.ts"
         },
         "./reader": {
             "types": "./types/reader.d.ts",
             "bun": "./reader.ts",
-            "require": "./cjs/reader.js",
             "import": "./esm/reader.js",
+            "require": "./cjs/reader.js",
             "default": "./reader.ts"
         },
         "./run": {
             "types": "./types/run.d.ts",
             "bun": "./run.ts",
             "workerd": "./esm/workerd/run.js",
-            "require": "./cjs/run.js",
             "import": "./esm/run.js",
+            "require": "./cjs/run.js",
             "default": "./run.ts"
         },
         "./runtime": {
             "types": "./types/runtime.d.ts",
             "bun": "./runtime.ts",
-            "require": "./cjs/runtime.js",
             "import": "./esm/runtime.js",
+            "require": "./cjs/runtime.js",
             "default": "./runtime.ts"
         },
         "./sse": {
             "types": "./types/sse.d.ts",
             "bun": "./sse.ts",
-            "require": "./cjs/sse.js",
             "import": "./esm/sse.js",
+            "require": "./cjs/sse.js",
             "default": "./sse.ts"
         },
         "./string": {
             "types": "./types/string.d.ts",
             "bun": "./string.ts",
-            "require": "./cjs/string.js",
             "import": "./esm/string.js",
+            "require": "./cjs/string.js",
             "default": "./string.ts"
         },
         "./string/augment": {
             "types": "./types/augment/string.d.ts",
             "bun": "./augment/string.ts",
-            "require": "./cjs/augment/string.js",
             "import": "./esm/augment/string.js",
+            "require": "./cjs/augment/string.js",
             "default": "./augment/string.ts"
         },
         "./throttle": {
             "types": "./types/throttle.d.ts",
             "bun": "./throttle.ts",
-            "require": "./cjs/throttle.js",
             "import": "./esm/throttle.js",
+            "require": "./cjs/throttle.js",
             "default": "./throttle.ts"
         },
         "./try": {
             "types": "./types/try.d.ts",
             "bun": "./try.ts",
-            "require": "./cjs/try.js",
             "import": "./esm/try.js",
+            "require": "./cjs/try.js",
             "default": "./try.ts"
         },
         "./types": {
             "types": "./types/types.d.ts",
             "bun": "./types.ts",
-            "require": "./cjs/types.js",
             "import": "./esm/types.js",
+            "require": "./cjs/types.js",
             "default": "./types.ts"
         },
         "./uint8array": {
             "types": "./types/bytes.d.ts",
             "bun": "./bytes.ts",
-            "require": "./cjs/bytes.js",
             "import": "./esm/bytes.js",
+            "require": "./cjs/bytes.js",
             "default": "./bytes.ts"
         },
         "./uint8array/augment": {
             "types": "./types/augment/uint8array.d.ts",
             "bun": "./augment/uint8array.ts",
-            "require": "./cjs/augment/uint8array.js",
             "import": "./esm/augment/uint8array.js",
+            "require": "./cjs/augment/uint8array.js",
             "default": "./augment/uint8array.ts"
         },
         "./wrap": {
             "types": "./types/wrap.d.ts",
             "bun": "./wrap.ts",
-            "require": "./cjs/wrap.js",
             "import": "./esm/wrap.js",
+            "require": "./cjs/wrap.js",
             "default": "./wrap.ts"
         },
         "./ws": {
             "types": "./types/ws.d.ts",
             "bun": "./ws.ts",
             "node": {
-                "require": "./cjs/ws/node.js",
-                "import": "./esm/ws/node.js"
+                "import": "./esm/ws/node.js",
+                "require": "./cjs/ws/node.js"
             },
-            "require": "./cjs/ws.js",
             "import": "./esm/ws.js",
+            "require": "./cjs/ws.js",
             "default": "./ws.ts"
         }
     },
@@ -443,8 +444,7 @@
         "test:pty": "npm run test:pty:node && npm run test:pty:deno && npm run test:pty:bun",
         "build": "rollup -c rollup.config.js && tsc -p tsconfig.types.json",
         "typing": "tsc --noEmit --watch",
-        "prepublishOnly": "npm run build && node prepublish.mjs",
-        "postpublish": "node postpublish.mjs"
+        "prepublishOnly": "npm run build"
     },
     "author": "A-yon Lee <the@ayon.li>",
     "license": "MIT",
@@ -598,6 +598,5 @@
     },
     "engines": {
         "node": ">=12.20"
-    },
-    "type": "module"
+    }
 }
