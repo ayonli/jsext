@@ -137,7 +137,7 @@ describe("ws", () => {
         if (isDeno) {
             const server = Deno.serve({ port }, async req => {
                 const { socket, response } = await wsServer.upgrade(req);
-                handle(socket);
+                socket.ready.then(handle);
                 return response;
             });
             defer(() => Promise.race([server.shutdown(), sleep(100)]));
@@ -146,7 +146,7 @@ describe("ws", () => {
                 port,
                 fetch: async (req: Request) => {
                     const { socket, response } = await wsServer.upgrade(req);
-                    handle(socket);
+                    socket.ready.then(handle);
                     return response;
                 },
                 websocket: wsServer.bunListener,

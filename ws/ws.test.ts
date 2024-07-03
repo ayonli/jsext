@@ -128,7 +128,7 @@ describe("ws:node", () => {
 
         const server = http.createServer(async (req) => {
             const { socket } = await wsServer.upgrade(req);
-            handle(socket);
+            socket.ready.then(handle);
         });
         const port = await randomPort();
         server.listen(port);

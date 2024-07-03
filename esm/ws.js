@@ -24,6 +24,7 @@ const _listener = Symbol.for("listener");
 const _clients = Symbol.for("clients");
 const _server = Symbol.for("server");
 const _connTasks = Symbol.for("connTasks");
+const _readyTask = Symbol.for("readyTask");
 /**
  * This class represents a WebSocket connection on the server side.
  * Normally we don't create instances of this class directly, but rather use
@@ -45,6 +46,17 @@ class WebSocketConnection extends EventTarget {
     constructor(source) {
         super();
         this[_source] = source;
+        this[_readyTask] = asyncTask();
+        if (source.readyState === WebSocket.OPEN) {
+            this[_readyTask].resolve();
+        }
+    }
+    /**
+     * A promise that resolves when the connection is ready to send and receive
+     * messages.
+     */
+    get ready() {
+        return this[_readyTask].then(() => this);
     }
     /**
      * The current state of the WebSocket connection.
@@ -92,10 +104,12 @@ class WebSocketConnection extends EventTarget {
  * 1. By passing a listener function to the constructor, handle all connections
  *    in a central place.
  * 2. By using the `socket` object returned from the `upgrade` method to handle
- *    each connection in a more flexible way.
+ *    each connection in a more flexible way. However, at this stage, the
+ *    connection may not be ready yet, and we need to wait for the `ready`
+ *    promise to resolve before we can start sending messages.
  *
- * Also, the `socket` object is an async iterable object, which can be used in
- * the `for await...of` loop to read messages with backpressure support.
+ * The `socket` object is an async iterable object, which can be used in the
+ * `for await...of` loop to read messages with backpressure support.
  *
  * NOTE: In order to work in Node.js, install the `@ayonli/jsext` library from
  * NPM instead of JSR.
@@ -171,20 +185,24 @@ class WebSocketConnection extends EventTarget {
  * Deno.serve(async req => {
  *     const { socket, response } = await wsServer.upgrade(req);
  *
- *     console.log("WebSocket connection established.");
+ *     socket.ready.then(() => {
+ *         console.log("WebSocket connection established.");
  *
- *     socket.addEventListener("message", (event) => {
- *         socket.send("received: " + event.data);
+ *         socket.addEventListener("message", (event) => {
+ *             socket.send("received: " + event.data);
+ *         });
+ *
+ *         socket.addEventListener("error", (event) => {
+ *             console.error("WebSocket connection error:", event.error);
+ *         });
+ *
+ *         socket.addEventListener("close", (event) => {
+ *             console.log(`WebSocket connection closed, reason: ${event.reason}, code: ${event.code}`);
+ *         });
  *     });
  *
- *     socket.addEventListener("error", (event) => {
- *         console.error("WebSocket connection error:", event.error);
- *     });
- *
- *     socket.addEventListener("close", (event) => {
- *         console.log(`WebSocket connection closed, reason: ${event.reason}, code: ${event.code}`);
- *     });
- *
+ *     // The response should be returned immediately, otherwise the web socket
+ *     // will not be ready.
  *     return response;
  * });
  * ```
@@ -272,7 +290,15 @@ let WebSocketServer$1 = class WebSocketServer {
                     wasClean: ev.wasClean,
                 }));
             };
-            listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
+            if (socket.readyState === WebSocket.OPEN) {
+                listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
+            }
+            else {
+                ws.onopen = () => {
+                    socket[_readyTask].resolve();
+                    listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
+                };
+            }
             return { socket, response };
         }
         else if (identity === "cloudflare-worker") {
@@ -313,7 +339,15 @@ let WebSocketServer$1 = class WebSocketServer {
                     wasClean: ev.wasClean,
                 }));
             });
-            listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
+            if (socket.readyState === WebSocket.OPEN) {
+                listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
+            }
+            else {
+                server.addEventListener("open", () => {
+                    socket[_readyTask].resolve();
+                    listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
+                });
+            }
             return {
                 socket,
                 response: new Response(null, {
