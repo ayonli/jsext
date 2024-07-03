@@ -272,9 +272,6 @@ let WebSocketServer$1 = class WebSocketServer {
                     wasClean: ev.wasClean,
                 }));
             };
-            await new Promise((resolve) => {
-                ws.onopen = resolve;
-            });
             listener === null || listener === void 0 ? void 0 : listener.call(this, socket);
             return { socket, response };
         }
@@ -321,11 +318,6 @@ let WebSocketServer$1 = class WebSocketServer {
                 socket,
                 response: new Response(null, {
                     status: 101,
-                    statusText: "Switching Protocols",
-                    headers: new Headers({
-                        "Upgrade": "websocket",
-                        "Connection": "Upgrade",
-                    }),
                     // @ts-ignore
                     webSocket: client,
                 }),
