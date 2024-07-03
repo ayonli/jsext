@@ -8,22 +8,22 @@
  * 
  * Deno:
  * ```sh
- * deno run --allow-net --allow-read jsr:@ayonli/jsext/http
+ * deno run --allow-net --allow-read jsr:@ayonli/jsext/http [--port PORT] [DIR]
  * ```
  * 
  * Bun:
  * ```sh
- * bun run node_modules/@ayonli/jsext/http.ts
+ * bun run node_modules/@ayonli/jsext/http.ts [--port PORT] [DIR]
  * ```
  * 
  * Node.js:
  * ```sh
- * node node_modules/@ayonli/jsext/esm/http.js
+ * node node_modules/@ayonli/jsext/esm/http.js [--port PORT] [DIR]
  * ```
  * 
  * Node.js (tsx):
  * ```sh
- * tsx node_modules/@ayonli/jsext/http.ts
+ * tsx node_modules/@ayonli/jsext/http.ts [--port PORT] [DIR]
  * ```
  * @module
  * @experimental
@@ -33,6 +33,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
 import { orderBy } from "./array.ts";
 import bytes from "./bytes.ts";
+import { args, parseArgs } from "./cli.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 import { FileInfo, createReadableStream, exists, readDir, readFile, stat } from "./fs.ts";
 import { sha256 } from "./hash.ts";
@@ -572,20 +573,28 @@ export async function serveStatic(
 declare const Bun: any;
 
 if (isMain(import.meta)) {
-    if (isDeno) {
-        randomPort(8000).then((port) => {
+    const options = parseArgs(args, {
+        alias: { p: "port" }
+    });
+    let port = Number.isFinite(options["port"]) ? options["port"] as number : undefined;
+    const fsDir = String(options[0] || ".");
+
+    (async () => {
+        port ??= await randomPort(8000);
+
+        if (isDeno) {
             Deno.serve({ port }, req => serveStatic(req, {
+                fsDir,
                 listDir: true,
                 headers: {
                     "Server": navigator.userAgent,
                 },
             }));
-        });
-    } else if (isBun) {
-        randomPort(8000).then((port) => {
+        } else if (isBun) {
             Bun.serve({
                 port,
                 fetch: (req: Request) => serveStatic(req, {
+                    fsDir,
                     listDir: true,
                     headers: {
                         "Server": navigator.userAgent,
@@ -593,20 +602,19 @@ if (isMain(import.meta)) {
                 }),
             });
             console.log(`Listening on http://localhost:${port}/`);
-        });
-    } else if (isNode) {
-        import("node:http").then(async ({ createServer }) => {
+        } else if (isNode) {
+            const { createServer } = await import("node:http");
             const server = createServer(withWeb(async (req) => {
                 return serveStatic(req, {
+                    fsDir,
                     listDir: true,
                     headers: {
                         "Server": `Node.js/${process.version}`,
                     },
                 });
             }));
-            const port = await randomPort(8000);
             server.listen(port);
             console.log(`Listening on http://localhost:${port}/`);
-        });
-    }
+        }
+    })();
 }

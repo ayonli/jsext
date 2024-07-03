@@ -1,15 +1,17 @@
 import { orderBy } from './array.js';
 import bytes from './bytes.js';
+import { stripStart, dedent } from './string.js';
 import { isDeno, isBun, isNode } from './env.js';
+import { isMain } from './module.js';
+import { join } from './path.js';
+import './cli/constants.js';
+import { parseArgs, args } from './cli/common.js';
 import { stat, exists, readDir, readFile, createReadableStream } from './fs.js';
 import { sha256 } from './hash.js';
 import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
 export { parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, stringifyCookie, stringifyCookies, verifyBasicAuth } from './http/util.js';
-import { isMain } from './module.js';
 import { as } from './object.js';
-import { join } from './path.js';
 import { readAsArray } from './reader.js';
-import { stripStart, dedent } from './string.js';
 import { startsWith } from './path/util.js';
 
 /**
@@ -22,22 +24,22 @@ import { startsWith } from './path/util.js';
  *
  * Deno:
  * ```sh
- * deno run --allow-net --allow-read jsr:@ayonli/jsext/http
+ * deno run --allow-net --allow-read jsr:@ayonli/jsext/http [--port PORT] [DIR]
  * ```
  *
  * Bun:
  * ```sh
- * bun run node_modules/@ayonli/jsext/http.ts
+ * bun run node_modules/@ayonli/jsext/http.ts [--port PORT] [DIR]
  * ```
  *
  * Node.js:
  * ```sh
- * node node_modules/@ayonli/jsext/esm/http.js
+ * node node_modules/@ayonli/jsext/esm/http.js [--port PORT] [DIR]
  * ```
  *
  * Node.js (tsx):
  * ```sh
- * tsx node_modules/@ayonli/jsext/http.ts
+ * tsx node_modules/@ayonli/jsext/http.ts [--port PORT] [DIR]
  * ```
  * @module
  * @experimental
@@ -542,21 +544,27 @@ async function serveStatic(req, options = {}) {
     }
 }
 if (isMain(import.meta)) {
-    if (isDeno) {
-        randomPort(8000).then((port) => {
+    const options = parseArgs(args, {
+        alias: { p: "port" }
+    });
+    let port = Number.isFinite(options["port"]) ? options["port"] : undefined;
+    const fsDir = String(options[0] || ".");
+    (async () => {
+        port !== null && port !== void 0 ? port : (port = await randomPort(8000));
+        if (isDeno) {
             Deno.serve({ port }, req => serveStatic(req, {
+                fsDir,
                 listDir: true,
                 headers: {
                     "Server": navigator.userAgent,
                 },
             }));
-        });
-    }
-    else if (isBun) {
-        randomPort(8000).then((port) => {
+        }
+        else if (isBun) {
             Bun.serve({
                 port,
                 fetch: (req) => serveStatic(req, {
+                    fsDir,
                     listDir: true,
                     headers: {
                         "Server": navigator.userAgent,
@@ -564,23 +572,22 @@ if (isMain(import.meta)) {
                 }),
             });
             console.log(`Listening on http://localhost:${port}/`);
-        });
-    }
-    else if (isNode) {
-        import('node:http').then(async ({ createServer }) => {
+        }
+        else if (isNode) {
+            const { createServer } = await import('node:http');
             const server = createServer(withWeb(async (req) => {
                 return serveStatic(req, {
+                    fsDir,
                     listDir: true,
                     headers: {
                         "Server": `Node.js/${process.version}`,
                     },
                 });
             }));
-            const port = await randomPort(8000);
             server.listen(port);
             console.log(`Listening on http://localhost:${port}/`);
-        });
-    }
+        }
+    })();
 }
 
 export { etag, ifMatch, ifNoneMatch, parseRange, randomPort, serveStatic, withWeb };
