@@ -1,5 +1,7 @@
 import bytes from '../bytes.js';
 import { sha256 } from '../hash/web.js';
+import { Server } from '../http/server.js';
+import { WebSocketServer as WebSocketServer$1 } from '../ws.js';
 export { ifMatch, ifNoneMatch, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRange, stringifyCookie, stringifyCookies, verifyBasicAuth } from '../http/util.js';
 
 async function etag(data) {
@@ -25,8 +27,17 @@ async function randomPort(prefer = undefined) {
 function withWeb(listener) {
     throw new Error("Unsupported runtime");
 }
-async function serve(options) {
-    throw new Error("Unsupported runtime");
+function serve(options) {
+    return new Server(async () => {
+        const ws = new WebSocketServer$1(options.ws);
+        return {
+            http: null,
+            ws,
+            hostname: "",
+            port: 0,
+            fetch: options.fetch,
+        };
+    });
 }
 async function serveStatic(req, options = {}) {
     throw new Error("Unsupported runtime");

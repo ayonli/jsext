@@ -337,8 +337,7 @@ export class WebSocketServer {
     private [_server]: BunServer | undefined = undefined;
     private [_connTasks]: Map<Request, AsyncTask<WebSocketConnection>> = new Map();
 
-    constructor();
-    constructor(handler: WebSocketHandler);
+    constructor(handler?: WebSocketHandler | undefined);
     constructor(options: ServerOptions, handler: WebSocketHandler);
     constructor(...args: any[]) {
         if (args.length === 2) {

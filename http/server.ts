@@ -1,6 +1,6 @@
 import type { Server as HttpServer } from "node:http";
-import type { Http2SecureServer, Http2Server } from "node:http2";
-import type { WebSocketConnection, WebSocketHandler } from "../ws.ts";
+import type { Http2SecureServer } from "node:http2";
+import type { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
 
 export interface BunServer {
     fetch(request: Request | string): Response | Promise<Response>;
@@ -34,13 +34,30 @@ export interface NetAddr {
     port: number;
 }
 
+export interface RequestContext {
+    /**
+     * The remote address of the client. Only available in Node.js, Deno and Bun.
+     */
+    remoteAddr: NetAddr | null;
+    /**
+     * Upgrades the request to a WebSocket connection.
+     */
+    upgrade(request: Request): Promise<{ socket: WebSocketConnection; response: Response; }>;
+    /**
+     * Prolongs the request's lifetime until the promise is resolved. Only
+     * available in Cloudflare Workers.
+     */
+    waitUntil?(promise: Promise<unknown>): void;
+    /**
+     * The bindings of the request. Only available in Cloudflare Workers.
+     */
+    bindings?: Record<string, any>;
+}
+
 /**
  * The handler for processing HTTP requests.
  */
-export type RequestHandler = (request: Request, ctx: {
-    remoteAddr: NetAddr;
-    upgrade: (request: Request) => Promise<{ socket: WebSocketConnection; response: Response; }>;
-}) => Response | Promise<Response>;
+export type RequestHandler = (request: Request, ctx: RequestContext) => Response | Promise<Response>;
 
 /**
  * Options for serving HTTP requests, used by {@link serve}.
@@ -70,29 +87,102 @@ export interface ServeOptions {
     ws?: WebSocketHandler | undefined;
 }
 
-const _impl = Symbol.for("impl");
+const _hostname = Symbol.for("hostname");
+const _port = Symbol.for("port");
+const _http = Symbol.for("http");
+const _ws = Symbol.for("ws");
+const _handler = Symbol.for("handler");
 
 /**
  * A unified server interface for HTTP servers.
  */
 export class Server {
-    /**
-     * The hostname of which the server is listening on.
-     */
-    readonly hostname: string;
-    /**
-     * The port of which the server is listening on.
-     */
-    readonly port: number;
-    private [_impl]: HttpServer | Http2Server | Http2SecureServer | Deno.HttpServer | BunServer;
+    private [_hostname] = "";
+    private [_port] = 0;
+    private [_http]: Promise<HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null>;
+    private [_ws]: WebSocketServer | null = null;
+    private [_handler]: RequestHandler | null = null;
 
-    constructor(options: {
+    /**
+     * A request handler for using the server instance as an ES module worker in
+     * Cloudflare Workers.
+     * 
+     * NOTE: This method is only available in Cloudflare Workers.
+     * 
+     * @example
+     * ```ts
+     * import { serve } from "@ayonli/jsext/http";
+     * 
+     * const server = serve({
+     *      fetch(req) {
+     *          return new Response("Hello, World!");
+     *      }
+     * });
+     * 
+     * export default {
+     *     fetch: server.fetch,
+     * };
+     * ```
+     */
+    readonly fetch: (req: Request, bindings: any, ctx: any) => Response | Promise<Response>;
+
+    constructor(impl: () => Promise<{
+        http: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null;
+        ws: WebSocketServer;
         hostname: string;
         port: number;
-    }, impl: HttpServer | Http2Server | Deno.HttpServer | BunServer) {
-        this.hostname = options.hostname;
-        this.port = options.port;
-        this[_impl] = impl;
+        fetch: RequestHandler;
+    }>) {
+        this[_http] = impl().then(({ http, ws, hostname, port, fetch }) => {
+            this[_ws] = ws;
+            this[_hostname] = hostname;
+            this[_port] = port;
+            this[_handler] = fetch;
+
+            return http;
+        });
+
+        const _this = this;
+        this.fetch = (req, bindings, ctx) => {
+            if (!_this[_handler])
+                return new Response("Service Unavailable", { status: 503 });
+
+            const ws = _this[_ws]!;
+
+            if (typeof ctx === "object") { // Cloudflare Worker
+                return _this[_handler](req, {
+                    remoteAddr: null,
+                    upgrade: ws.upgrade.bind(ws),
+                    waitUntil: ctx.waitUntil,
+                    bindings,
+                });
+            } else { // Unsupported environment
+                return new Response("Service Unavailable", { status: 503 });
+            }
+        };
+    }
+
+    /**
+     * The hostname of which the server is listening on, only available after
+     * the server is ready.
+     */
+    get hostname(): string {
+        return this[_hostname];
+    }
+
+    /**
+     * The port of which the server is listening on, only available after the
+     * server is ready.
+     */
+    get port(): number {
+        return this[_port];
+    }
+
+    /**
+     * A promise that resolves when the server is ready to accept connections.
+     */
+    get ready(): Promise<this> {
+        return this[_http].then(() => this);
     }
 
     /**
@@ -100,7 +190,10 @@ export class Server {
      * @param force Terminate all active connections immediately.
      */
     async close(force = false): Promise<void> {
-        const server = this[_impl] as any;
+        const server = await this[_http] as any;
+
+        if (!server)
+            return;
 
         if (typeof server.stop === "function") {
             (server as BunServer).stop(force);
@@ -128,7 +221,7 @@ export class Server {
      * effect.
      */
     ref(): void {
-        this[_impl].ref?.();
+        this[_http].then(server => server?.ref?.());
     }
 
     /**
@@ -137,6 +230,6 @@ export class Server {
      * `unref`ed calling`unref()` again will have no effect.
      */
     unref(): void {
-        this[_impl].unref?.();
+        this[_http].then(server => server?.unref?.());
     }
 }

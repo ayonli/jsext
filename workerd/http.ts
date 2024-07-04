@@ -1,8 +1,9 @@
 import bytes from "../bytes.ts";
 import { type FileInfo } from "./fs.ts";
 import { sha256 } from "./hash.ts";
-import type { NetAddr, RequestHandler, ServeOptions, Server } from "../http/server.ts";
+import { NetAddr, RequestHandler, ServeOptions, Server } from "../http/server.ts";
 import type { ServeStaticOptions } from "../http/util.ts";
+import { WebSocketServer } from "../ws.ts";
 
 export * from "../http/util.ts";
 export type { NetAddr, RequestHandler, ServeOptions, Server };
@@ -39,9 +40,17 @@ export function withWeb(
     throw new Error("Unsupported runtime");
 }
 
-export async function serve(options: ServeOptions): Promise<Server> {
-    void options;
-    throw new Error("Unsupported runtime");
+export function serve(options: ServeOptions): Server {
+    return new Server(async () => {
+        const ws = new WebSocketServer(options.ws);
+        return {
+            http: null,
+            ws,
+            hostname: "",
+            port: 0,
+            fetch: options.fetch,
+        };
+    });
 }
 
 export async function serveStatic(

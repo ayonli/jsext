@@ -1,19 +1,71 @@
-const _impl = Symbol.for("impl");
+var _a, _b, _c, _d;
+const _hostname = Symbol.for("hostname");
+const _port = Symbol.for("port");
+const _http = Symbol.for("http");
+const _ws = Symbol.for("ws");
+const _handler = Symbol.for("handler");
 /**
  * A unified server interface for HTTP servers.
  */
 class Server {
-    constructor(options, impl) {
-        this.hostname = options.hostname;
-        this.port = options.port;
-        this[_impl] = impl;
+    constructor(impl) {
+        this[_a] = "";
+        this[_b] = 0;
+        this[_c] = null;
+        this[_d] = null;
+        this[_http] = impl().then(({ http, ws, hostname, port, fetch }) => {
+            this[_ws] = ws;
+            this[_hostname] = hostname;
+            this[_port] = port;
+            this[_handler] = fetch;
+            return http;
+        });
+        const _this = this;
+        this.fetch = (req, bindings, ctx) => {
+            if (!_this[_handler])
+                return new Response("Service Unavailable", { status: 503 });
+            const ws = _this[_ws];
+            if (typeof ctx === "object") { // Cloudflare Worker
+                return _this[_handler](req, {
+                    remoteAddr: null,
+                    upgrade: ws.upgrade.bind(ws),
+                    waitUntil: ctx.waitUntil,
+                    bindings,
+                });
+            }
+            else { // Unsupported environment
+                return new Response("Service Unavailable", { status: 503 });
+            }
+        };
+    }
+    /**
+     * The hostname of which the server is listening on, only available after
+     * the server is ready.
+     */
+    get hostname() {
+        return this[_hostname];
+    }
+    /**
+     * The port of which the server is listening on, only available after the
+     * server is ready.
+     */
+    get port() {
+        return this[_port];
+    }
+    /**
+     * A promise that resolves when the server is ready to accept connections.
+     */
+    get ready() {
+        return this[_http].then(() => this);
     }
     /**
      * Closes the server and stops it from accepting new connections.
      * @param force Terminate all active connections immediately.
      */
     async close(force = false) {
-        const server = this[_impl];
+        const server = await this[_http];
+        if (!server)
+            return;
         if (typeof server.stop === "function") {
             server.stop(force);
         }
@@ -39,8 +91,7 @@ class Server {
      * effect.
      */
     ref() {
-        var _a, _b;
-        (_b = (_a = this[_impl]).ref) === null || _b === void 0 ? void 0 : _b.call(_a);
+        this[_http].then(server => { var _e; return (_e = server === null || server === void 0 ? void 0 : server.ref) === null || _e === void 0 ? void 0 : _e.call(server); });
     }
     /**
      * Calling `unref()` on a server will allow the program to exit if this is
@@ -48,10 +99,10 @@ class Server {
      * `unref`ed calling`unref()` again will have no effect.
      */
     unref() {
-        var _a, _b;
-        (_b = (_a = this[_impl]).unref) === null || _b === void 0 ? void 0 : _b.call(_a);
+        this[_http].then(server => { var _e; return (_e = server === null || server === void 0 ? void 0 : server.unref) === null || _e === void 0 ? void 0 : _e.call(server); });
     }
 }
+_a = _hostname, _b = _port, _c = _ws, _d = _handler;
 
 export { Server };
 //# sourceMappingURL=server.js.map

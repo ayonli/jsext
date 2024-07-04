@@ -14,6 +14,7 @@ import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
 export { parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, stringifyCookie, stringifyCookies, verifyBasicAuth } from './http/util.js';
 import { as } from './object.js';
 import { readAsArray } from './reader.js';
+import { asyncTask } from './async.js';
 import { startsWith } from './path/util.js';
 
 /**
@@ -21,27 +22,34 @@ import { startsWith } from './path/util.js';
  * serving static files, and calculating ETags.
  *
  * This module itself is a executable script that can be used to serve static
- * files in the current working directory. It can be run directly with Deno, Bun,
- * or Node.js.
+ * files in the current working directory, or we can provide an entry module
+ * which has an default export that satisfies the {@link ServeOptions} to start
+ * a custom HTTP server.
+ *
+ * The script can be run directly with Deno, Bun, or Node.js.
  *
  * Deno:
  * ```sh
  * deno run --allow-net --allow-read jsr:@ayonli/jsext/http [--port PORT] [DIR]
+ * deno run --allow-net --allow-read jsr:@ayonli/jsext/http <entry.ts>
  * ```
  *
  * Bun:
  * ```sh
  * bun run node_modules/@ayonli/jsext/http.ts [--port PORT] [DIR]
+ * bun run node_modules/@ayonli/jsext/http.ts <entry.ts>
  * ```
  *
  * Node.js:
  * ```sh
  * node node_modules/@ayonli/jsext/esm/http.js [--port PORT] [DIR]
+ * node node_modules/@ayonli/jsext/esm/http.js <entry.js>
  * ```
  *
  * Node.js (tsx):
  * ```sh
  * tsx node_modules/@ayonli/jsext/http.ts [--port PORT] [DIR]
+ * tsx node_modules/@ayonli/jsext/http.ts <entry.ts>
  * ```
  * @module
  * @experimental
@@ -324,12 +332,16 @@ function toNodeResponse(res, nodeRes) {
  * `Deno.upgradeWebSocket` function, which allows us handling the WebSocket
  * right in the request handler itself.
  *
+ * This function can also be used in Cloudflare Workers, but it will not start
+ * the server in the Worker environment. Instead, we need to export the returned
+ * server object as the default export in the Worker script.
+ *
  * @example
  * ```ts
  * // simple http server
  * import { serve } from "@ayonli/jsext/http";
  *
- * const server = await serve({
+ * const server = serve({
  *     async fetch(req) {
  *         return new Response("Hello, World!");
  *     },
@@ -341,7 +353,7 @@ function toNodeResponse(res, nodeRes) {
  * // set the hostname and port
  * import { serve } from "@ayonli/jsext/http";
  *
- * const server = await serve({
+ * const server = serve({
  *     hostname: "localhost",
  *     port: 4000,
  *     async fetch(req) {
@@ -356,7 +368,7 @@ function toNodeResponse(res, nodeRes) {
  * import { readFileAsText } from "@ayonli/jsext/fs";
  * import { serve } from "@ayonli/jsext/http";
  *
- * const server = await serve({
+ * const server = serve({
  *     key: await readFileAsText("./cert.key"),
  *     cert: await readFileAsText("./cert.pem"),
  *     async fetch(req) {
@@ -370,7 +382,7 @@ function toNodeResponse(res, nodeRes) {
  * // upgrade to WebSocket
  * import { serve } from "@ayonli/jsext/http";
  *
- * const server = await serve({
+ * const server = serve({
  *     async fetch(req, ctx) {
  *         const { socket, response } = await ctx.upgrade(req);
  *
@@ -386,107 +398,100 @@ function toNodeResponse(res, nodeRes) {
  * });
  * ```
  */
-async function serve(options) {
-    var _a;
-    const hostname = (_a = options.hostname) !== null && _a !== void 0 ? _a : "0.0.0.0";
-    const port = options.port || await randomPort(8000);
-    const { key, cert } = options;
-    const _runtime = runtime();
-    const _hostname = hostname && hostname !== "0.0.0.0" ? hostname : "localhost";
-    let ws;
-    let WsServer;
-    if (_runtime.identity === "node") {
-        let moduleId;
-        if (_runtime.tsSupport) {
-            moduleId = "./ws/node.ts";
+function serve(options) {
+    return new Server(async () => {
+        var _a;
+        const _runtime = runtime();
+        let WsServer;
+        if (_runtime.identity === "node") {
+            let moduleId;
+            if (_runtime.tsSupport) {
+                moduleId = "./ws/node.ts";
+            }
+            else {
+                moduleId = "./ws/node.js";
+            }
+            WsServer = (await import(moduleId)).WebSocketServer;
         }
         else {
-            moduleId = "./ws/node.js";
+            WsServer = (await import('./ws.js')).WebSocketServer;
         }
-        WsServer = (await import(moduleId)).WebSocketServer;
-    }
-    else {
-        WsServer = (await import('./ws.js')).WebSocketServer;
-    }
-    if (typeof options.ws === "function") {
-        ws = new WsServer(options.ws);
-    }
-    else {
-        ws = new WsServer();
-    }
-    if (typeof Deno === "object") {
-        const impl = Deno.serve({
-            hostname,
-            port,
-            key,
-            cert,
-        }, (req, info) => options.fetch(req, {
-            remoteAddr: {
-                family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                address: info.remoteAddr.hostname,
-                port: info.remoteAddr.port,
-            },
-            upgrade: ws.upgrade.bind(ws),
-        }));
-        return new Server({ hostname, port }, impl);
-    }
-    else if (typeof Bun === "object") {
-        const tls = key && cert ? { key, cert } : undefined;
-        const impl = Bun.serve({
-            hostname,
-            port,
-            tls,
-            fetch: (req, server) => {
-                const remoteAddr = server.requestIP(req);
-                return options.fetch(req, {
+        const ws = new WsServer(options.ws);
+        const hostname = (_a = options.hostname) !== null && _a !== void 0 ? _a : "0.0.0.0";
+        const port = options.port || await randomPort(8000);
+        const { key, cert } = options;
+        let server;
+        if (isDeno) {
+            const task = asyncTask();
+            server = Deno.serve({
+                hostname,
+                port,
+                key,
+                cert,
+                onListen: () => task.resolve(),
+            }, (req, info) => options.fetch(req, {
+                remoteAddr: {
+                    family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
+                    address: info.remoteAddr.hostname,
+                    port: info.remoteAddr.port,
+                },
+                upgrade: ws.upgrade.bind(ws),
+            }));
+            await task;
+        }
+        else if (isBun) {
+            const tls = key && cert ? { key, cert } : undefined;
+            server = Bun.serve({
+                hostname,
+                port,
+                tls,
+                fetch: (req, server) => {
+                    const remoteAddr = server.requestIP(req);
+                    return options.fetch(req, {
+                        remoteAddr,
+                        upgrade: ws.upgrade.bind(ws),
+                    });
+                },
+                websocket: ws === null || ws === void 0 ? void 0 : ws.bunListener,
+            });
+            ws.bunBind(server);
+        }
+        else if (key && cert) {
+            const { createSecureServer } = await import('node:http2');
+            server = createSecureServer({ key, cert, allowHTTP1: true }, (req, res) => {
+                const remoteAddr = {
+                    family: req.socket.remoteFamily,
+                    address: req.socket.remoteAddress,
+                    port: req.socket.remotePort,
+                };
+                return withWeb(async (req) => options.fetch(req, {
                     remoteAddr,
                     upgrade: ws.upgrade.bind(ws),
-                });
-            },
-            websocket: ws === null || ws === void 0 ? void 0 : ws.bunListener,
-        });
-        console.log(`Listening on http://${_hostname}:${port}/`);
-        ws === null || ws === void 0 ? void 0 : ws.bunBind(impl);
-        return new Server({ hostname, port }, impl);
-    }
-    else if (key && cert) {
-        const { createSecureServer } = await import('node:http2');
-        const impl = createSecureServer({ key, cert, allowHTTP1: true }, (req, res) => {
-            const remoteAddr = {
-                family: req.socket.remoteFamily,
-                address: req.socket.remoteAddress,
-                port: req.socket.remotePort,
-            };
-            return withWeb(async (req) => options.fetch(req, {
-                remoteAddr,
-                upgrade: ws.upgrade.bind(ws),
-            }))(req, res);
-        });
-        await new Promise((resolve) => {
-            impl.listen(port, hostname, resolve);
-        });
-        console.log(`Listening on http://${_hostname}:${port}/`);
-        return new Server({ hostname, port }, impl);
-    }
-    else {
-        const { createServer } = await import('node:http');
-        const impl = createServer((req, res) => {
-            const remoteAddr = {
-                family: req.socket.remoteFamily,
-                address: req.socket.remoteAddress,
-                port: req.socket.remotePort,
-            };
-            return withWeb(async (req) => options.fetch(req, {
-                remoteAddr,
-                upgrade: ws.upgrade.bind(ws),
-            }))(req, res);
-        });
-        await new Promise((resolve) => {
-            impl.listen(port, hostname, resolve);
-        });
-        console.log(`Listening on http://${_hostname}:${port}/`);
-        return new Server({ hostname, port }, impl);
-    }
+                }))(req, res);
+            });
+            await new Promise((resolve) => {
+                server.listen(port, hostname, resolve);
+            });
+        }
+        else {
+            const { createServer } = await import('node:http');
+            server = createServer((req, res) => {
+                const remoteAddr = {
+                    family: req.socket.remoteFamily,
+                    address: req.socket.remoteAddress,
+                    port: req.socket.remotePort,
+                };
+                return withWeb(async (req) => options.fetch(req, {
+                    remoteAddr,
+                    upgrade: ws.upgrade.bind(ws),
+                }))(req, res);
+            });
+            await new Promise((resolve) => {
+                server.listen(port, hostname, resolve);
+            });
+        }
+        return { http: server, ws, hostname, port, fetch: options.fetch };
+    });
 }
 /**
  * Serves static files from a file system directory.
@@ -760,7 +765,6 @@ if (isMain(import.meta)) {
                     throw new Error("Invalid entry file");
                 }
             }
-            port || (port = await randomPort(8000));
             fetch || (fetch = (req) => serveStatic(req, {
                 fsDir: filename,
                 listDir: true,
@@ -772,7 +776,11 @@ if (isMain(import.meta)) {
                             : "Unknown",
                 },
             }));
-            await serve({ hostname, port, fetch, key, cert });
+            const server = serve({ hostname, port, fetch, key, cert });
+            server.ready.then(({ hostname, port }) => {
+                hostname = hostname === "0.0.0.0" ? "localhost" : hostname;
+                console.log(`Listening on http://${hostname}:${port}/`);
+            });
         })();
     }
 }
