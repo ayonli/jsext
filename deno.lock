@@ -35,7 +35,8 @@
       "npm:tslib@^2.6.2": "npm:tslib@2.6.2",
       "npm:tsx@^4.7.1": "npm:tsx@4.7.1",
       "npm:typescript@^5.4.3": "npm:typescript@5.4.3",
-      "npm:ws@^8.17.0": "npm:ws@8.17.0"
+      "npm:ws@^8.17.0": "npm:ws@8.17.0",
+      "npm:ws@^8.18.0": "npm:ws@8.18.0"
     },
     "npm": {
       "@ayonli/sse@0.4.0": {
@@ -1742,6 +1743,10 @@
         "integrity": "sha512-uJq6108EgZMAl20KagGkzCKfMEjxmKvZHG7Tlq0Z6nOky7YF7aq4mOx6xK8TJ/i1LeK4Qus7INktacctDgY8Ow==",
         "dependencies": {}
       },
+      "ws@8.18.0": {
+        "integrity": "sha512-8VbfWfHLbbwu3+N6OKsOMpBdT4kXPDDB9cJk2bJ6mh9ucxdlnNvH1e+roYkKmN9Nxw2yjz7VzeO9oOz2zJ04Pw==",
+        "dependencies": {}
+      },
       "xml-name-validator@5.0.0": {
         "integrity": "sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==",
         "dependencies": {}
@@ -1854,7 +1859,8 @@
   "workspace": {
     "dependencies": [
       "npm:iconv-lite@^0.6.3",
-      "npm:sudo-prompt@^9.2.1"
+      "npm:sudo-prompt@^9.2.1",
+      "npm:ws@^8.18.0"
     ],
     "packageJson": {
       "dependencies": [

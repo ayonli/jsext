@@ -1,7 +1,7 @@
 import bytes from '../bytes.js';
 import { sha256 } from '../hash/web.js';
 import { Server } from '../http/server.js';
-import { WebSocketServer as WebSocketServer$1 } from '../ws.js';
+import { WebSocketServer } from '../ws.js';
 export { ifMatch, ifNoneMatch, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRange, stringifyCookie, stringifyCookies, verifyBasicAuth } from '../http/util.js';
 
 async function etag(data) {
@@ -29,7 +29,7 @@ function withWeb(listener) {
 }
 function serve(options) {
     return new Server(async () => {
-        const ws = new WebSocketServer$1(options.ws);
+        const ws = new WebSocketServer(options.ws);
         return {
             http: null,
             ws,

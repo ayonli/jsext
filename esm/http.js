@@ -1,8 +1,8 @@
 import { orderBy } from './array.js';
+import { asyncTask } from './async.js';
 import bytes from './bytes.js';
 import { stripStart, dedent } from './string.js';
 import { isDeno, isBun, isNode } from './env.js';
-import runtime from './runtime.js';
 import { isMain } from './module.js';
 import { extname, resolve, join } from './path.js';
 import './cli/constants.js';
@@ -14,7 +14,7 @@ import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
 export { parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, stringifyCookie, stringifyCookies, verifyBasicAuth } from './http/util.js';
 import { as } from './object.js';
 import { readAsArray } from './reader.js';
-import { asyncTask } from './async.js';
+import { WebSocketServer } from './ws.js';
 import { startsWith } from './path/util.js';
 
 /**
@@ -401,22 +401,7 @@ function toNodeResponse(res, nodeRes) {
 function serve(options) {
     return new Server(async () => {
         var _a;
-        const _runtime = runtime();
-        let WsServer;
-        if (_runtime.identity === "node") {
-            let moduleId;
-            if (_runtime.tsSupport) {
-                moduleId = "./ws/node.ts";
-            }
-            else {
-                moduleId = "./ws/node.js";
-            }
-            WsServer = (await import(moduleId)).WebSocketServer;
-        }
-        else {
-            WsServer = (await import('./ws.js')).WebSocketServer;
-        }
-        const ws = new WsServer(options.ws);
+        const ws = new WebSocketServer(options.ws);
         const hostname = (_a = options.hostname) !== null && _a !== void 0 ? _a : "0.0.0.0";
         const port = options.port || await randomPort(8000);
         const { key, cert } = options;

@@ -1,15 +1,16 @@
 import { strictEqual } from "node:assert";
+import * as http from "node:http";
 import { isBun, isDeno } from "./env.ts";
 import func from "./func.ts";
 import { type WebSocketConnection } from "./ws.ts";
 import bytes, { concat, text } from "./bytes.ts";
 import { sleep, until } from "./async.ts";
-import { randomPort } from "./http.ts";
+import { randomPort, withWeb } from "./http.ts";
 
 declare const Bun: any;
 
 describe("ws", () => {
-    if (!isDeno && !isBun) {
+    if (typeof EventTarget === "undefined") {
         return;
     }
 
@@ -51,7 +52,7 @@ describe("ws", () => {
                 return response;
             });
             defer(() => Promise.race([server.shutdown(), sleep(100)]));
-        } else {
+        } else if (isBun) {
             const server = Bun.serve({
                 port,
                 fetch: async (req: Request) => {
@@ -62,9 +63,22 @@ describe("ws", () => {
             });
             wsServer.bunBind(server);
             defer(() => server.stop(true));
+        } else {
+            const server = http.createServer(async (req) => {
+                await wsServer.upgrade(req);
+            });
+            server.listen(port);
+            defer(() => server.close());
         }
 
-        const ws = new WebSocket(`ws://localhost:${port}`);
+        let ws: WebSocket;
+
+        if (typeof WebSocket === "function") {
+            ws = new WebSocket(`ws://localhost:${port}`);
+        } else {
+            const dWebSocket = (await import("isomorphic-ws")).default;
+            ws = new dWebSocket(`ws://localhost:${port}`) as unknown as WebSocket;
+        }
 
         ws.binaryType = "arraybuffer";
         ws.onopen = () => {
@@ -141,7 +155,7 @@ describe("ws", () => {
                 return response;
             });
             defer(() => Promise.race([server.shutdown(), sleep(100)]));
-        } else {
+        } else if (isBun) {
             const server = Bun.serve({
                 port,
                 fetch: async (req: Request) => {
@@ -153,9 +167,34 @@ describe("ws", () => {
             });
             wsServer.bunBind(server);
             defer(() => server.stop(true));
+        } else {
+            let server: http.Server;
+
+            if (typeof Request === "function" && typeof Response === "function") {
+                server = http.createServer(withWeb(async (req) => {
+                    const { socket, response } = await wsServer.upgrade(req);
+                    socket.ready.then(handle);
+                    return response;
+                }));
+            } else {
+                server = http.createServer(async (req) => {
+                    const { socket } = await wsServer.upgrade(req);
+                    socket.ready.then(handle);
+                });
+            }
+
+            server.listen(port);
+            defer(() => server.close());
         }
 
-        const ws = new WebSocket(`ws://localhost:${port}`);
+        let ws: WebSocket;
+
+        if (typeof WebSocket === "function") {
+            ws = new WebSocket(`ws://localhost:${port}`);
+        } else {
+            const dWebSocket = (await import("isomorphic-ws")).default;
+            ws = new dWebSocket(`ws://localhost:${port}`) as unknown as WebSocket;
+        }
 
         ws.binaryType = "arraybuffer";
         ws.onopen = () => {
@@ -228,7 +267,7 @@ describe("ws", () => {
                 return response;
             });
             defer(() => Promise.race([server.shutdown(), sleep(100)]));
-        } else {
+        } else if (isBun) {
             const server = Bun.serve({
                 port,
                 fetch: async (req: Request) => {
@@ -239,9 +278,32 @@ describe("ws", () => {
             });
             wsServer.bunBind(server);
             defer(() => server.stop(true));
+        } else {
+            let server: http.Server;
+
+            if (typeof Request === "function" && typeof Response === "function") {
+                server = http.createServer(withWeb(async (req) => {
+                    const { response } = await wsServer.upgrade(req);
+                    return response;
+                }));
+            } else {
+                server = http.createServer(async (req) => {
+                    await wsServer.upgrade(req);
+                });
+            }
+
+            server.listen(port);
+            defer(() => server.close());
         }
 
-        const ws = new WebSocket(`ws://localhost:${port}`);
+        let ws: WebSocket;
+
+        if (typeof WebSocket === "function") {
+            ws = new WebSocket(`ws://localhost:${port}`);
+        } else {
+            const dWebSocket = (await import("isomorphic-ws")).default;
+            ws = new dWebSocket(`ws://localhost:${port}`) as unknown as WebSocket;
+        }
 
         ws.binaryType = "arraybuffer";
         ws.onopen = () => {
@@ -273,6 +335,10 @@ describe("ws", () => {
     }));
 
     it("with Hono framework", func(async function (defer) {
+        if (typeof Request !== "function" || typeof Response !== "function") {
+            this.skip();
+        }
+
         this.timeout(5_000);
 
         const { Hono } = await import("hono");
@@ -313,7 +379,7 @@ describe("ws", () => {
         if (isDeno) {
             const server = Deno.serve({ port }, app.fetch);
             defer(() => Promise.race([server.shutdown(), sleep(100)]));
-        } else {
+        } else if (isBun) {
             const server = Bun.serve({
                 port,
                 fetch: app.fetch,
@@ -321,9 +387,20 @@ describe("ws", () => {
             });
             wsServer.bunBind(server);
             defer(() => server.stop(true));
+        } else {
+            const server = http.createServer(withWeb(app.fetch));
+            server.listen(port);
+            defer(() => server.close());
         }
 
-        const ws = new WebSocket(`ws://localhost:${port}`);
+        let ws: WebSocket;
+
+        if (typeof WebSocket === "function") {
+            ws = new WebSocket(`ws://localhost:${port}`);
+        } else {
+            const dWebSocket = (await import("isomorphic-ws")).default;
+            ws = new dWebSocket(`ws://localhost:${port}`) as unknown as WebSocket;
+        }
 
         ws.binaryType = "arraybuffer";
         ws.onopen = () => {

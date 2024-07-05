@@ -550,31 +550,3 @@ export async function verifyBasicAuth(
         },
     });
 }
-
-/**
- * Options for serving static files, used by {@link serveStatic}.
- */
-export interface ServeStaticOptions {
-    /**
-     * The file system directory to serve files from. If not set, the current
-     * working directory will be used.
-     */
-    fsDir?: string;
-    /**
-     * The prefix that will be stripped from the URL pathname.
-     */
-    urlPrefix?: string;
-    /**
-     * Whether to list the directory entries when the URL pathname is a
-     * directory. If not set, a 403 Forbidden response will be returned.
-     */
-    listDir?: boolean;
-    /**
-     * The maximum age in seconds for the "Cache-Control" header.
-     */
-    maxAge?: number;
-    /**
-     * Extra headers to be set in the response.
-     */
-    headers?: HeadersInit;
-}

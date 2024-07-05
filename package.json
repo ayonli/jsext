@@ -423,10 +423,7 @@
         "./ws": {
             "types": "./types/ws.d.ts",
             "bun": "./ws.ts",
-            "node": {
-                "import": "./esm/ws/node.js",
-                "require": "./cjs/ws/node.js"
-            },
+            "workerd": "./esm/workerd/ws.js",
             "import": "./esm/ws.js",
             "require": "./cjs/ws.js",
             "default": "./ws.ts"

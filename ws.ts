@@ -3,196 +3,28 @@
  * Bun and Cloudflare Workers. This module is based on the `EventTarget`
  * interface and conforms the web standard.
  * 
- * NOTE: In order to work in Node.js, install the `@ayonli/jsext` library from
- * NPM instead of JSR.
- * 
- * NOTE: In Node.js, this module requires Node.js v15 or above, and is only
- * available in with the `http` and `https` modules, `http2` is not supported.
+ * NOTE: In Node.js, this module requires Node.js v15 or above.
  * @module
  * @experimental
  */
 
 import { AsyncTask, asyncTask } from "./async.ts";
-import chan from "./chan.ts";
-import { fromErrorEvent } from "./error.ts";
+import { concat, text } from "./bytes.ts";
 import { createCloseEvent, createErrorEvent } from "./event.ts";
 import runtime from "./runtime.ts";
 import type { BunServer } from "./http/server.ts";
-import type { Ensured } from "./types.ts";
+import { ServerOptions, WebSocketConnection, WebSocketHandler } from "./ws/base.ts";
+import type { WebSocketServer as WsServer } from "ws";
+import type { IncomingMessage } from "node:http";
 
-const _source = Symbol.for("source");
+export * from "./ws/base.ts";
+
 const _errored = Symbol.for("errored");
 const _handler = Symbol.for("handler");
 const _clients = Symbol.for("clients");
-const _server = Symbol.for("server");
+const _httpServer = Symbol.for("httpServer");
+const _wsServer = Symbol.for("wsServer");
 const _connTasks = Symbol.for("connTasks");
-const _readyTask = Symbol.for("readyTask");
-
-export type WebSocketLike = Ensured<Partial<WebSocket>, "readyState" | "close" | "send">;
-
-/**
- * This class represents a WebSocket connection on the server side.
- * Normally we don't create instances of this class directly, but rather use
- * the {@link WebSocketServer} to handle WebSocket connections, which will
- * create the instance for us.
- * 
- * **Events:**
- * 
- * - `error` - Dispatched when an error occurs, such as network failure. After
- *   this event is dispatched, the connection will be closed and the `close`
- *   event will be dispatched.
- * - `close` - Dispatched when the connection is closed. If the connection is
- *   closed due to some error, the `error` event will be dispatched before this
- *   event, and the close event will have the `wasClean` set to `false`, and the
- *   `reason` property contains the error message, if any.
- * - `message` - Dispatched when a message is received.
- * 
- * There is no `open` event, because when an connection instance is created, the
- * connection may already be open. However, there is a `ready` promise that can
- * be used to ensure that the connection is ready before sending messages.
- */
-export class WebSocketConnection extends EventTarget implements AsyncIterable<string | Uint8Array> {
-    private [_source]: WebSocketLike;
-    private [_readyTask]: AsyncTask<void>;
-
-    constructor(source: WebSocketLike) {
-        super();
-        this[_source] = source;
-        this[_readyTask] = asyncTask<void>();
-
-        if (source.readyState === 1) {
-            this[_readyTask].resolve();
-        } else if (typeof source.addEventListener === "function") {
-            source.addEventListener("open", () => {
-                this[_readyTask].resolve();
-            });
-        } else {
-            source.onopen = () => {
-                this[_readyTask].resolve();
-            };
-        }
-    }
-
-    /**
-     * A promise that resolves when the connection is ready to send and receive
-     * messages.
-     */
-    get ready(): Promise<this> {
-        return this[_readyTask].then(() => this);
-    }
-
-    /**
-     * The current state of the WebSocket connection.
-     */
-    get readyState(): number {
-        return this[_source].readyState;
-    }
-
-    /**
-     * Sends data to the WebSocket client.
-     */
-    send(data: string | ArrayBufferLike | ArrayBufferView): void {
-        this[_source].send(data);
-    }
-
-    /**
-     * Closes the WebSocket connection.
-     */
-    close(code?: number | undefined, reason?: string | undefined): void {
-        this[_source].close(code, reason);
-    }
-
-    /**
-     * Adds an event listener that will be called when the connection is
-     * interrupted. After this event is dispatched, the connection will be
-     * closed and the `close` event will be dispatched.
-     */
-    override addEventListener(
-        type: "error",
-        listener: (this: WebSocketConnection, ev: ErrorEvent) => void,
-        options?: boolean | AddEventListenerOptions
-    ): void;
-    /**
-     * Adds an event listener that will be called when the connection is closed.
-     * If the connection is closed due to some error, the `error` event will be
-     * dispatched before this event, and the close event will have the `wasClean`
-     * set to `false`, and the `reason` property contains the error message, if
-     * any.
-     */
-    override addEventListener(
-        type: "close",
-        listener: (this: WebSocketConnection, ev: CloseEvent) => void,
-        options?: boolean | AddEventListenerOptions
-    ): void;
-    /**
-     * Adds an event listener that will be called when a message is received.
-     */
-    override addEventListener(
-        type: "message",
-        listener: (this: WebSocketConnection, ev: MessageEvent<string | Uint8Array>) => void,
-        options?: boolean | AddEventListenerOptions
-    ): void;
-    override addEventListener(
-        type: string,
-        listener: (this: WebSocketConnection, event: Event) => any,
-        options?: boolean | AddEventListenerOptions
-    ): void;
-    override addEventListener(
-        event: string,
-        listener: any,
-        options?: boolean | AddEventListenerOptions
-    ): void {
-        return super.addEventListener(
-            event,
-            listener as EventListenerOrEventListenerObject,
-            options
-        );
-    }
-
-    async *[Symbol.asyncIterator](): AsyncIterableIterator<string | Uint8Array> {
-        const channel = chan<string | Uint8Array>(Infinity);
-
-        this.addEventListener("message", ev => {
-            channel.send(ev.data);
-        });
-        this.addEventListener("close", ev => {
-            ev.wasClean && channel.close();
-        });
-        this.addEventListener("error", ev => {
-            channel.close(fromErrorEvent(ev));
-        });
-
-        for await (const data of channel) {
-            yield data;
-        }
-    }
-}
-
-/**
- * WebSocket handler function for the {@link WebSocketServer} constructor.
- */
-export type WebSocketHandler = (socket: WebSocketConnection) => void;
-
-/**
- * Options for the {@link WebSocketServer} constructor.
- */
-export interface ServerOptions {
-    /**
-     * The idle timeout in seconds. The server will close the connection if no
-     * messages are received within this time.
-     * 
-     * NOTE: Currently, this option is only supported in Deno and Bun, in other
-     * environments, the option is ignored.
-     */
-    idleTimeout?: number;
-    /**
-     * Whether to enable per-message deflate compression.
-     * 
-     * NOTE: Currently, this option is only supported in Node.js and Bun, in
-     * other environments, the option is ignored.
-     */
-    perMessageDeflate?: boolean;
-}
 
 /**
  * A universal WebSocket server interface for Node.js, Deno, Bun and Cloudflare
@@ -333,8 +165,9 @@ export class WebSocketServer {
     protected idleTimeout: number;
     protected perMessageDeflate: boolean;
     protected [_handler]: WebSocketHandler | undefined;
-    protected [_clients]: Map<Request, WebSocketConnection> = new Map();
-    private [_server]: BunServer | undefined = undefined;
+    protected [_clients]: Map<Request | IncomingMessage, WebSocketConnection> = new Map();
+    private [_httpServer]: BunServer | undefined = undefined;
+    private [_wsServer]: Promise<WsServer> | null = null;
     private [_connTasks]: Map<Request, AsyncTask<WebSocketConnection>> = new Map();
 
     constructor(handler?: WebSocketHandler | undefined);
@@ -371,11 +204,9 @@ export class WebSocketServer {
         socket: WebSocketConnection;
         response?: Response;
     }> {
-        if (!(request instanceof Request)) {
-            throw new TypeError("Node.js support is not implemented");
-        }
-
-        const upgradeHeader = request.headers.get("Upgrade");
+        const upgradeHeader = "httpVersion" in request
+            ? request.headers["upgrade"]
+            : request.headers.get("Upgrade");
         if (!upgradeHeader || upgradeHeader !== "websocket") {
             throw new TypeError("Expected Upgrade: websocket");
         }
@@ -385,6 +216,10 @@ export class WebSocketServer {
         const { identity } = runtime();
 
         if (identity === "deno") {
+            if ("httpVersion" in request) {
+                throw new TypeError("Node.js support is not implemented outside Node.js runtime.");
+            }
+
             const { socket: ws, response } = Deno.upgradeWebSocket(request, {
                 idleTimeout: this.idleTimeout,
             });
@@ -427,65 +262,12 @@ export class WebSocketServer {
             }
 
             return { socket, response };
-        } else if (identity === "cloudflare-worker") {
-            // @ts-ignore
-            const [client, server] = Object.values(new WebSocketPair()) as [WebSocket, WebSocket & {
-                accept: () => void;
-            }];
-            const socket = new WebSocketConnection(server);
-
-            clients.set(request, socket);
-            server.accept();
-            server.addEventListener("message", ev => {
-                if (typeof ev.data === "string") {
-                    socket.dispatchEvent(new MessageEvent("message", {
-                        data: ev.data,
-                    }));
-                } else if (ev.data instanceof ArrayBuffer) {
-                    socket.dispatchEvent(new MessageEvent("message", {
-                        data: new Uint8Array(ev.data),
-                    }));
-                } else {
-                    (ev.data as Blob).arrayBuffer().then(buffer => {
-                        socket.dispatchEvent(new MessageEvent("message", {
-                            data: new Uint8Array(buffer),
-                        }));
-                    }).catch(() => { });
-                }
-            });
-            server.addEventListener("close", ev => {
-                if (!ev.wasClean) {
-                    socket.dispatchEvent(createErrorEvent("error", {
-                        error: new Error(`WebSocket connection closed: ${ev.reason} (${ev.code})`),
-                    }));
-                }
-
-                clients.delete(request);
-                socket.dispatchEvent(createCloseEvent("close", {
-                    code: ev.code,
-                    reason: ev.reason,
-                    wasClean: ev.wasClean,
-                }));
-            });
-
-            if (socket.readyState === 1) {
-                handler?.call(this, socket);
-            } else {
-                server.addEventListener("open", () => {
-                    handler?.call(this, socket);
-                });
+        } else if (identity === "bun") {
+            if ("httpVersion" in request) {
+                throw new TypeError("Node.js support is not implemented outside Node.js runtime.");
             }
 
-            return {
-                socket,
-                response: new Response(null, {
-                    status: 101,
-                    // @ts-ignore
-                    webSocket: client,
-                }),
-            };
-        } else if (identity === "bun") {
-            const server = this[_server];
+            const server = this[_httpServer];
             if (!server) {
                 throw new Error("WebSocket server is not bound to a Bun server instance.");
             }
@@ -512,6 +294,104 @@ export class WebSocketServer {
                     }),
                 }),
             };
+        } else if (identity === "node") {
+            if (!this[_wsServer]) {
+                this[_wsServer] = import("ws").then(({ WebSocketServer: WsServer }) => {
+                    return new WsServer({
+                        noServer: true,
+                        perMessageDeflate: this.perMessageDeflate,
+                    });
+                });
+            }
+
+            const wsServer = await this[_wsServer];
+            return new Promise((resolve, reject) => {
+                const isNodeRequest = "httpVersion" in request;
+
+                if (!isNodeRequest && Reflect.has(request, Symbol.for("incomingMessage"))) {
+                    request = Reflect.get(request, Symbol.for("incomingMessage"));
+                }
+
+                if (!("httpVersion" in request)) {
+                    return reject(new TypeError("Expected an instance of http.IncomingMessage"));
+                }
+
+                const { socket } = request;
+                const upgradeHeader = request.headers.upgrade;
+
+                if (!upgradeHeader || upgradeHeader !== "websocket") {
+                    return reject(new TypeError("Expected Upgrade: websocket"));
+                }
+
+                const handler = this[_handler];
+                const clients = this[_clients];
+
+                wsServer.handleUpgrade(request, socket, Buffer.alloc(0), (ws) => {
+                    const client = new WebSocketConnection(ws as any);
+
+                    clients.set(request as IncomingMessage, client);
+                    ws.on("message", (data, isBinary) => {
+                        data = Array.isArray(data) ? concat(...data) : data;
+                        let event: MessageEvent<string | Uint8Array>;
+
+                        if (typeof data === "string") {
+                            event = new MessageEvent("message", { data });
+                        } else {
+                            if (isBinary) {
+                                event = new MessageEvent("message", {
+                                    data: new Uint8Array(data),
+                                });
+                            } else {
+                                const bytes = data instanceof ArrayBuffer
+                                    ? new Uint8Array(data)
+                                    : data;
+                                event = new MessageEvent("message", {
+                                    data: text(bytes),
+                                });
+                            }
+                        }
+
+                        client.dispatchEvent(event);
+                    });
+                    ws.on("error", error => {
+                        Object.assign(ws, { [_errored]: true });
+                        client.dispatchEvent(createErrorEvent("error", { error }));
+                    });
+                    ws.on("close", (code, reason) => {
+                        clients.delete(request as IncomingMessage);
+                        client.dispatchEvent(createCloseEvent("close", {
+                            code,
+                            reason: reason?.toString("utf8") ?? "",
+                            wasClean: Reflect.get(ws, _errored) !== false,
+                        }));
+                    });
+
+                    handler?.call(this, client);
+
+                    if (!isNodeRequest && typeof Response === "function") {
+                        const response = new Response(null, {
+                            status: 200,
+                            statusText: "Switching Protocols",
+                            headers: new Headers({
+                                "Upgrade": "websocket",
+                                "Connection": "Upgrade",
+                            }),
+                        });
+
+                        // HACK: Node.js currently does not support setting the
+                        // status code to outside the range of 200 to 599. This
+                        // is a workaround to set the status code to 101.
+                        Object.defineProperty(response, "status", {
+                            configurable: true,
+                            value: 101,
+                        });
+
+                        resolve({ socket: client, response });
+                    } else {
+                        resolve({ socket: client });
+                    }
+                });
+            });
         } else {
             throw new TypeError("Unsupported runtime");
         }
@@ -521,7 +401,7 @@ export class WebSocketServer {
      * Used in Bun, to bind the WebSocket server to the Bun server instance.
      */
     bunBind(server: BunServer): void {
-        this[_server] = server;
+        this[_httpServer] = server;
     }
 
     /**

@@ -1,5 +1,6 @@
 import type { Server as HttpServer } from "node:http";
 import type { Http2SecureServer } from "node:http2";
+import type { serve, serveStatic } from "../http.ts";
 import type { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
 
 export interface BunServer {
@@ -85,6 +86,35 @@ export interface ServeOptions {
      * The WebSocket handler for processing WebSocket connections.
      */
     ws?: WebSocketHandler | undefined;
+}
+
+
+/**
+ * Options for serving static files, used by {@link serveStatic}.
+ */
+export interface ServeStaticOptions {
+    /**
+     * The file system directory to serve files from. If not set, the current
+     * working directory will be used.
+     */
+    fsDir?: string;
+    /**
+     * The prefix that will be stripped from the URL pathname.
+     */
+    urlPrefix?: string;
+    /**
+     * Whether to list the directory entries when the URL pathname is a
+     * directory. If not set, a 403 Forbidden response will be returned.
+     */
+    listDir?: boolean;
+    /**
+     * The maximum age in seconds for the "Cache-Control" header.
+     */
+    maxAge?: number;
+    /**
+     * Extra headers to be set in the response.
+     */
+    headers?: HeadersInit;
 }
 
 const _hostname = Symbol.for("hostname");

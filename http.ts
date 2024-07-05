@@ -39,24 +39,23 @@
 import type { IncomingMessage, ServerResponse, Server as HttpServer } from "node:http";
 import type { Http2SecureServer, Http2ServerRequest, Http2ServerResponse } from "node:http2";
 import { orderBy } from "./array.ts";
+import { asyncTask } from "./async.ts";
 import bytes from "./bytes.ts";
 import { args, parseArgs } from "./cli.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 import { FileInfo, createReadableStream, exists, readDir, readFile, stat } from "./fs.ts";
 import { sha256 } from "./hash.ts";
-import { BunServer, NetAddr, RequestHandler, ServeOptions, Server } from "./http/server.ts";
-import { Range, ServeStaticOptions, ifMatch, ifNoneMatch, parseRange } from "./http/util.ts";
+import { BunServer, NetAddr, RequestHandler, ServeOptions, ServeStaticOptions, Server } from "./http/server.ts";
+import { Range, ifMatch, ifNoneMatch, parseRange } from "./http/util.ts";
 import { isMain } from "./module.ts";
 import { as } from "./object.ts";
 import { extname, join, resolve, startsWith } from "./path.ts";
 import { readAsArray } from "./reader.ts";
 import { dedent, stripStart } from "./string.ts";
 import { WebSocketServer } from "./ws.ts";
-import { asyncTask } from "./async.ts";
-import runtime from "./runtime.ts";
 
 export * from "./http/util.ts";
-export type { NetAddr, RequestHandler, ServeOptions, Server };
+export type { NetAddr, RequestHandler, ServeOptions, ServeStaticOptions, Server };
 
 /**
  * Calculates the ETag for a given entity.
@@ -416,23 +415,7 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  */
 export function serve(options: ServeOptions): Server {
     return new Server(async () => {
-        const _runtime = runtime();
-        let WsServer: typeof WebSocketServer;
-
-        if (_runtime.identity === "node") {
-            let moduleId: string;
-            if (_runtime.tsSupport) {
-                moduleId = "./ws/node.ts";
-            } else {
-                moduleId = "./ws/node.js";
-            }
-
-            WsServer = (await import(moduleId)).WebSocketServer;
-        } else {
-            WsServer = (await import("./ws.ts")).WebSocketServer;
-        }
-
-        const ws = new WsServer(options.ws);
+        const ws = new WebSocketServer(options.ws);
         const hostname = options.hostname ?? "0.0.0.0";
         const port = options.port || await randomPort(8000);
         const { key, cert } = options;
