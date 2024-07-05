@@ -872,6 +872,7 @@ describe("http", () => {
                 }
             });
             defer(() => server.close(true));
+            await server.ready;
 
             const res = await fetch(`http://localhost:${port}`);
             const text = await res.text();
@@ -900,6 +901,7 @@ describe("http", () => {
                 }
             });
             defer(() => server.close(true));
+            await server.ready;
 
             const https = await import("node:https");
             const res = await new Promise<{
@@ -957,6 +959,7 @@ describe("http", () => {
                 }
             });
             defer(() => server.close(true));
+            await server.ready;
 
             const http2 = await import("node:http2");
             const client = http2.connect(`https://localhost:${port}`, {
@@ -1020,6 +1023,7 @@ describe("http", () => {
                 }
             });
             defer(() => server.close(true));
+            await server.ready;
 
             let ws: WebSocket;
 

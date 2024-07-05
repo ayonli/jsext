@@ -409,7 +409,7 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
 export function serve(options: ServeOptions): Server {
     return new Server(async () => {
         const ws = new WebSocketServer(options.ws);
-        const hostname = options.hostname ?? "0.0.0.0";
+        const hostname = options.hostname || "0.0.0.0";
         const port = options.port || await randomPort(8000);
         const { key, cert } = options;
         let server: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null = null;
@@ -468,7 +468,11 @@ export function serve(options: ServeOptions): Server {
             });
 
             await new Promise<void>((resolve) => {
-                (server as Http2SecureServer).listen(port, hostname, resolve);
+                if (hostname && hostname !== "0.0.0.0") {
+                    (server as HttpServer).listen(port, hostname, resolve);
+                } else {
+                    (server as HttpServer).listen(port, resolve);
+                }
             });
         } else {
             const { createServer } = await import("node:http");
@@ -485,7 +489,11 @@ export function serve(options: ServeOptions): Server {
             });
 
             await new Promise<void>((resolve) => {
-                (server as HttpServer).listen(port, hostname, resolve);
+                if (hostname && hostname !== "0.0.0.0") {
+                    (server as HttpServer).listen(port, hostname, resolve);
+                } else {
+                    (server as HttpServer).listen(port, resolve);
+                }
             });
         }
 

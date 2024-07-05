@@ -13,11 +13,11 @@ import { concat, text } from "./bytes.ts";
 import { createCloseEvent, createErrorEvent } from "./event.ts";
 import runtime from "./runtime.ts";
 import type { BunServer } from "./http/server.ts";
-import { ServerOptions, WebSocketConnection, WebSocketHandler } from "./ws/base.ts";
+import type { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike } from "./ws/base.ts";
 import type { WebSocketServer as WsServer } from "ws";
 import type { IncomingMessage } from "node:http";
 
-export * from "./ws/base.ts";
+export type { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike };
 
 const _errored = Symbol.for("errored");
 const _handler = Symbol.for("handler");
@@ -211,6 +211,7 @@ export class WebSocketServer {
             throw new TypeError("Expected Upgrade: websocket");
         }
 
+        const { WebSocketConnection } = await import("./ws/base.ts");
         const handler = this[_handler];
         const clients = this[_clients];
         const { identity } = runtime();
@@ -422,8 +423,9 @@ export class WebSocketServer {
         return {
             idleTimeout: this.idleTimeout,
             perMessageDeflate: this.perMessageDeflate,
-            open: (ws: ServerWebSocket) => {
+            open: async (ws: ServerWebSocket) => {
                 const { request } = ws.data;
+                const { WebSocketConnection } = await import("./ws/base.ts");
                 const client = new WebSocketConnection(ws);
                 clients.set(request, client);
 

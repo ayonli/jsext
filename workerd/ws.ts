@@ -1,9 +1,9 @@
 import { createCloseEvent, createErrorEvent } from "../event";
-import { ServerOptions, WebSocketConnection, WebSocketHandler } from "../ws/base.ts";
-import type { IncomingMessage } from "node:http";
 import type { BunServer } from "../http/server.ts";
+import type { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike } from "../ws/base.ts";
+import type { IncomingMessage } from "node:http";
 
-export * from "../ws/base.ts";
+export type { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike };
 
 const _handler = Symbol.for("handler");
 const _clients = Symbol.for("clients");
@@ -44,6 +44,7 @@ export class WebSocketServer {
             throw new TypeError("Expected Upgrade: websocket");
         }
 
+        const { WebSocketConnection } = await import("../ws/base.ts");
         const handler = this[_handler];
         const clients = this[_clients];
 
