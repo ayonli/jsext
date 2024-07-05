@@ -2,6 +2,7 @@ import type { Server as HttpServer } from "node:http";
 import type { Http2SecureServer } from "node:http2";
 import type { serve, serveStatic } from "../http.ts";
 import type { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
+import runtime from "../runtime.ts";
 
 export interface BunServer {
     fetch(request: Request | string): Response | Promise<Response>;
@@ -29,7 +30,7 @@ export interface BunServer {
 /**
  * Represents the network address of a connection peer.
  */
-export interface NetAddr {
+export interface NetAddress {
     family: "IPv4" | "IPv6";
     address: string;
     port: number;
@@ -37,13 +38,14 @@ export interface NetAddr {
 
 export interface RequestContext {
     /**
-     * The remote address of the client. Only available in Node.js, Deno and Bun.
+     * The remote address of the client. This options is not available in
+     * Cloudflare Workers or when the server is started with `deno serve`.
      */
-    remoteAddr: NetAddr | null;
+    remoteAddress: NetAddress | null;
     /**
      * Upgrades the request to a WebSocket connection.
      */
-    upgrade(request: Request): Promise<{ socket: WebSocketConnection; response: Response; }>;
+    upgradeWebSocket(): Promise<{ socket: WebSocketConnection; response: Response; }>;
     /**
      * Prolongs the request's lifetime until the promise is resolved. Only
      * available in Cloudflare Workers.
@@ -64,6 +66,9 @@ export type RequestHandler = (request: Request, ctx: RequestContext) => Response
  * Options for serving HTTP requests, used by {@link serve}.
  */
 export interface ServeOptions {
+    /**
+     * The handler for processing HTTP requests.
+     */
     fetch: RequestHandler;
     /**
      * The hostname to listen on. Default is `0.0.0.0`.
@@ -124,7 +129,7 @@ const _ws = Symbol.for("ws");
 const _handler = Symbol.for("handler");
 
 /**
- * A unified server interface for HTTP servers.
+ * A unified HTTP server interface.
  */
 export class Server {
     private [_hostname] = "";
@@ -136,25 +141,8 @@ export class Server {
     /**
      * A request handler for using the server instance as an ES module worker in
      * Cloudflare Workers.
-     * 
-     * NOTE: This method is only available in Cloudflare Workers.
-     * 
-     * @example
-     * ```ts
-     * import { serve } from "@ayonli/jsext/http";
-     * 
-     * const server = serve({
-     *      fetch(req) {
-     *          return new Response("Hello, World!");
-     *      }
-     * });
-     * 
-     * export default {
-     *     fetch: server.fetch,
-     * };
-     * ```
      */
-    readonly fetch: (req: Request, bindings: any, ctx: any) => Response | Promise<Response>;
+    readonly fetch: ((req: Request, env?: any, ctx?: any) => Response | Promise<Response>) | undefined;
 
     constructor(impl: () => Promise<{
         http: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null;
@@ -173,23 +161,41 @@ export class Server {
         });
 
         const _this = this;
-        this.fetch = (req, bindings, ctx) => {
-            if (!_this[_handler])
-                return new Response("Service Unavailable", { status: 503 });
+        const { identity } = runtime();
 
-            const ws = _this[_ws]!;
+        if (identity === "cloudflare-worker") {
+            this.fetch = (req, bindings, ctx) => {
+                if (!_this[_handler]) {
+                    return new Response("Service Unavailable", {
+                        status: 503,
+                        statusText: "Service Unavailable",
+                    });
+                }
 
-            if (typeof ctx === "object") { // Cloudflare Worker
+                const ws = _this[_ws]!;
                 return _this[_handler](req, {
-                    remoteAddr: null,
-                    upgrade: ws.upgrade.bind(ws),
+                    remoteAddress: null,
+                    upgradeWebSocket: () => ws.upgrade(req),
                     waitUntil: ctx.waitUntil,
                     bindings,
                 });
-            } else { // Unsupported environment
-                return new Response("Service Unavailable", { status: 503 });
-            }
-        };
+            };
+        } else if (identity === "deno") {
+            this.fetch = (req) => {
+                if (!_this[_handler]) {
+                    return new Response("Service Unavailable", {
+                        status: 503,
+                        statusText: "Service Unavailable",
+                    });
+                }
+
+                const ws = _this[_ws]!;
+                return _this[_handler](req, {
+                    remoteAddress: null,
+                    upgradeWebSocket: () => ws.upgrade(req),
+                });
+            };
+        }
     }
 
     /**

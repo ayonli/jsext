@@ -1,7 +1,7 @@
 import bytes from '../bytes.js';
 import { sha256 } from '../hash/web.js';
 import { Server } from '../http/server.js';
-import { WebSocketServer } from '../ws.js';
+import { WebSocketServer } from './ws.js';
 export { ifMatch, ifNoneMatch, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRange, stringifyCookie, stringifyCookies, verifyBasicAuth } from '../http/util.js';
 
 async function etag(data) {
@@ -28,6 +28,7 @@ function withWeb(listener) {
     throw new Error("Unsupported runtime");
 }
 function serve(options) {
+    // @ts-ignore
     return new Server(async () => {
         const ws = new WebSocketServer(options.ws);
         return {

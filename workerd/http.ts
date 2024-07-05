@@ -1,11 +1,11 @@
 import bytes from "../bytes.ts";
 import { type FileInfo } from "./fs.ts";
 import { sha256 } from "./hash.ts";
-import { NetAddr, RequestHandler, ServeOptions, ServeStaticOptions, Server } from "../http/server.ts";
-import { WebSocketServer } from "../ws.ts";
+import { NetAddress, RequestHandler, ServeOptions, ServeStaticOptions, Server } from "../http/server.ts";
+import { WebSocketServer } from "./ws.ts";
 
 export * from "../http/util.ts";
-export type { NetAddr, RequestHandler, ServeOptions, Server };
+export type { NetAddress, RequestHandler, ServeOptions, Server };
 
 export async function etag(data: string | Uint8Array | FileInfo): Promise<string> {
     if (typeof data === "string" || data instanceof Uint8Array) {
@@ -40,6 +40,7 @@ export function withWeb(
 }
 
 export function serve(options: ServeOptions): Server {
+    // @ts-ignore
     return new Server(async () => {
         const ws = new WebSocketServer(options.ws);
         return {

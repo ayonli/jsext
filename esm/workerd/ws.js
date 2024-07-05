@@ -20,6 +20,9 @@ class WebSocketServer {
         }
     }
     async upgrade(request) {
+        if ("httpVersion" in request) {
+            throw new TypeError("Expected an Request instance");
+        }
         const upgradeHeader = request.headers.get("Upgrade");
         if (!upgradeHeader || upgradeHeader !== "websocket") {
             throw new TypeError("Expected Upgrade: websocket");
@@ -74,13 +77,30 @@ class WebSocketServer {
             socket,
             response: new Response(null, {
                 status: 101,
+                statusText: "Switching Protocols",
+                headers: new Headers({
+                    "Upgrade": "websocket",
+                    "Connection": "Upgrade",
+                }),
                 // @ts-ignore
                 webSocket: client,
             }),
         };
     }
+    bunBind(server) {
+    }
+    get bunListener() {
+        return {
+            idleTimeout: this.idleTimeout,
+            perMessageDeflate: this.perMessageDeflate,
+            message: () => void 0,
+            open: () => void 0,
+            error: () => void 0,
+            close: () => void 0,
+        };
+    }
 }
 _a = _clients;
 
-export { WebSocketServer };
+export { WebSocketConnection, WebSocketServer };
 //# sourceMappingURL=ws.js.map

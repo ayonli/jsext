@@ -1,5 +1,5 @@
 import { orderBy } from './array.js';
-import { asyncTask } from './async.js';
+import { sleep, asyncTask } from './async.js';
 import bytes from './bytes.js';
 import { stripStart, dedent } from './string.js';
 import { isDeno, isBun, isNode } from './env.js';
@@ -318,30 +318,23 @@ function toNodeResponse(res, nodeRes) {
     }
 }
 /**
- * Serves HTTP requests with a given options.
+ * Serves HTTP requests with the given options.
  *
- * This function provides a universal way to serve HTTP requests in Deno, Bun,
- * and Node.js with modern Web APIs. It's similar to the `Deno.serve` and
- * `Bun.serve` functions, in fact, it calls them internally when running in Deno
- * and Bun. When running in Node.js, it uses the built-in `http` or `http2`
- * modules to create a server.
+ * This function provides a universal way to serve HTTP requests in Node.js,
+ * Deno, Bun and Cloudflare Workers. It's similar to the `Deno.serve` and
+ * `Bun.serve` functions, in fact, it calls them internally when running in the
+ * corresponding runtime. When running in Node.js, it uses the built-in `http`
+ * or `http2` modules to create the server.
  *
- * This function also provides a simplified way to handle WebSocket connections.
- * The request handler can easily upgrade the request to a WebSocket connection
- * without dealing with low-level APIs. It's similar to the
- * `Deno.upgradeWebSocket` function, which allows us handling the WebSocket
- * right in the request handler itself.
- *
- * This function can also be used in Cloudflare Workers, but it will not start
- * the server in the Worker environment. Instead, we need to export the returned
- * server object as the default export in the Worker script.
+ * This function also provides a simplified way to handle WebSocket, the request
+ * can easily be upgraded to a WebSocket connection within the fetch handler.
  *
  * @example
  * ```ts
  * // simple http server
  * import { serve } from "@ayonli/jsext/http";
  *
- * const server = serve({
+ * export default serve({
  *     async fetch(req) {
  *         return new Response("Hello, World!");
  *     },
@@ -353,7 +346,7 @@ function toNodeResponse(res, nodeRes) {
  * // set the hostname and port
  * import { serve } from "@ayonli/jsext/http";
  *
- * const server = serve({
+ * export default serve({
  *     hostname: "localhost",
  *     port: 4000,
  *     async fetch(req) {
@@ -368,7 +361,7 @@ function toNodeResponse(res, nodeRes) {
  * import { readFileAsText } from "@ayonli/jsext/fs";
  * import { serve } from "@ayonli/jsext/http";
  *
- * const server = serve({
+ * export default serve({
  *     key: await readFileAsText("./cert.key"),
  *     cert: await readFileAsText("./cert.pem"),
  *     async fetch(req) {
@@ -382,9 +375,9 @@ function toNodeResponse(res, nodeRes) {
  * // upgrade to WebSocket
  * import { serve } from "@ayonli/jsext/http";
  *
- * const server = serve({
+ * export default serve({
  *     async fetch(req, ctx) {
- *         const { socket, response } = await ctx.upgrade(req);
+ *         const { socket, response } = await ctx.upgradeWebSocket();
  *
  *         socket.ready.then(() => {
  *             socket.addEventListener("message", (event) => {
@@ -405,24 +398,30 @@ function serve(options) {
         const hostname = (_a = options.hostname) !== null && _a !== void 0 ? _a : "0.0.0.0";
         const port = options.port || await randomPort(8000);
         const { key, cert } = options;
-        let server;
+        let server = null;
         if (isDeno) {
+            await sleep(0); // This will make sure `deno serve` works for the same port
             const task = asyncTask();
-            server = Deno.serve({
-                hostname,
-                port,
-                key,
-                cert,
-                onListen: () => task.resolve(),
-            }, (req, info) => options.fetch(req, {
-                remoteAddr: {
-                    family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                    address: info.remoteAddr.hostname,
-                    port: info.remoteAddr.port,
-                },
-                upgrade: ws.upgrade.bind(ws),
-            }));
-            await task;
+            try {
+                server = Deno.serve({
+                    hostname,
+                    port,
+                    key,
+                    cert,
+                    onListen: () => task.resolve(),
+                }, (req, info) => options.fetch(req, {
+                    remoteAddress: {
+                        family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
+                        address: info.remoteAddr.hostname,
+                        port: info.remoteAddr.port,
+                    },
+                    upgradeWebSocket: () => ws.upgrade(req),
+                }));
+                await task;
+            }
+            catch (_b) {
+                server = null;
+            }
         }
         else if (isBun) {
             const tls = key && cert ? { key, cert } : undefined;
@@ -433,8 +432,8 @@ function serve(options) {
                 fetch: (req, server) => {
                     const remoteAddr = server.requestIP(req);
                     return options.fetch(req, {
-                        remoteAddr,
-                        upgrade: ws.upgrade.bind(ws),
+                        remoteAddress: remoteAddr,
+                        upgradeWebSocket: () => ws.upgrade(req),
                     });
                 },
                 websocket: ws === null || ws === void 0 ? void 0 : ws.bunListener,
@@ -450,8 +449,8 @@ function serve(options) {
                     port: req.socket.remotePort,
                 };
                 return withWeb(async (req) => options.fetch(req, {
-                    remoteAddr,
-                    upgrade: ws.upgrade.bind(ws),
+                    remoteAddress: remoteAddr,
+                    upgradeWebSocket: () => ws.upgrade(req),
                 }))(req, res);
             });
             await new Promise((resolve) => {
@@ -467,8 +466,8 @@ function serve(options) {
                     port: req.socket.remotePort,
                 };
                 return withWeb(async (req) => options.fetch(req, {
-                    remoteAddr,
-                    upgrade: ws.upgrade.bind(ws),
+                    remoteAddress: remoteAddr,
+                    upgradeWebSocket: () => ws.upgrade(req),
                 }))(req, res);
             });
             await new Promise((resolve) => {

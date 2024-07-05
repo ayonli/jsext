@@ -1,5 +1,9 @@
 import { createCloseEvent, createErrorEvent } from "../event";
 import { ServerOptions, WebSocketConnection, WebSocketHandler } from "../ws/base.ts";
+import type { IncomingMessage } from "node:http";
+import type { BunServer } from "../http/server.ts";
+
+export * from "../ws/base.ts";
 
 const _handler = Symbol.for("handler");
 const _clients = Symbol.for("clients");
@@ -28,7 +32,13 @@ export class WebSocketServer {
         }
     }
 
-    async upgrade(request: Request): Promise<{ socket: WebSocketConnection; response: Response; }> {
+    upgrade(request: Request): Promise<{ socket: WebSocketConnection; response: Response; }>;
+    upgrade(request: IncomingMessage): Promise<{ socket: WebSocketConnection; }>;
+    async upgrade(request: Request | IncomingMessage): Promise<{ socket: WebSocketConnection; response: Response; }> {
+        if ("httpVersion" in request) {
+            throw new TypeError("Expected an Request instance");
+        }
+
         const upgradeHeader = request.headers.get("Upgrade");
         if (!upgradeHeader || upgradeHeader !== "websocket") {
             throw new TypeError("Expected Upgrade: websocket");
@@ -88,9 +98,36 @@ export class WebSocketServer {
             socket,
             response: new Response(null, {
                 status: 101,
+                statusText: "Switching Protocols",
+                headers: new Headers({
+                    "Upgrade": "websocket",
+                    "Connection": "Upgrade",
+                }),
                 // @ts-ignore
                 webSocket: client,
             }),
+        };
+    }
+
+    bunBind(server: BunServer): void {
+        void server;
+    }
+
+    get bunListener(): {
+        idleTimeout: number;
+        perMessageDeflate: boolean;
+        message: (ws: any, message: string | ArrayBuffer | Uint8Array) => void;
+        open: (ws: any) => void;
+        error: (ws: any, error: Error) => void;
+        close: (ws: any, code: number, reason: string) => void;
+    } {
+        return {
+            idleTimeout: this.idleTimeout,
+            perMessageDeflate: this.perMessageDeflate,
+            message: () => void 0,
+            open: () => void 0,
+            error: () => void 0,
+            close: () => void 0,
         };
     }
 }

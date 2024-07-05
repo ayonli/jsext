@@ -199,8 +199,8 @@ export class WebSocketServer {
      * 
      * NOTE: This function fails if the request is not a WebSocket upgrade request.
      */
-    upgrade(request: import("http").IncomingMessage,): Promise<{ socket: WebSocketConnection; }>;
-    async upgrade(request: Request | import("http").IncomingMessage,): Promise<{
+    upgrade(request: IncomingMessage): Promise<{ socket: WebSocketConnection; }>;
+    async upgrade(request: Request | IncomingMessage,): Promise<{
         socket: WebSocketConnection;
         response?: Response;
     }> {

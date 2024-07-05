@@ -1,3 +1,5 @@
+import runtime from '../runtime.js';
+
 var _a, _b, _c, _d;
 const _hostname = Symbol.for("hostname");
 const _port = Symbol.for("port");
@@ -5,7 +7,7 @@ const _http = Symbol.for("http");
 const _ws = Symbol.for("ws");
 const _handler = Symbol.for("handler");
 /**
- * A unified server interface for HTTP servers.
+ * A unified HTTP server interface.
  */
 class Server {
     constructor(impl) {
@@ -21,22 +23,39 @@ class Server {
             return http;
         });
         const _this = this;
-        this.fetch = (req, bindings, ctx) => {
-            if (!_this[_handler])
-                return new Response("Service Unavailable", { status: 503 });
-            const ws = _this[_ws];
-            if (typeof ctx === "object") { // Cloudflare Worker
+        const { identity } = runtime();
+        if (identity === "cloudflare-worker") {
+            this.fetch = (req, bindings, ctx) => {
+                if (!_this[_handler]) {
+                    return new Response("Service Unavailable", {
+                        status: 503,
+                        statusText: "Service Unavailable",
+                    });
+                }
+                const ws = _this[_ws];
                 return _this[_handler](req, {
-                    remoteAddr: null,
-                    upgrade: ws.upgrade.bind(ws),
+                    remoteAddress: null,
+                    upgradeWebSocket: () => ws.upgrade(req),
                     waitUntil: ctx.waitUntil,
                     bindings,
                 });
-            }
-            else { // Unsupported environment
-                return new Response("Service Unavailable", { status: 503 });
-            }
-        };
+            };
+        }
+        else if (identity === "deno") {
+            this.fetch = (req) => {
+                if (!_this[_handler]) {
+                    return new Response("Service Unavailable", {
+                        status: 503,
+                        statusText: "Service Unavailable",
+                    });
+                }
+                const ws = _this[_ws];
+                return _this[_handler](req, {
+                    remoteAddress: null,
+                    upgradeWebSocket: () => ws.upgrade(req),
+                });
+            };
+        }
     }
     /**
      * The hostname of which the server is listening on, only available after

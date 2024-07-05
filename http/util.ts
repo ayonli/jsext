@@ -545,6 +545,7 @@ export async function verifyBasicAuth(
     const { host } = new URL(req.url);
     return new Response("Unauthorized", {
         status: 401,
+        statusText: "Unauthorized",
         headers: {
             "WWW-Authenticate": `Basic realm="${host}"`,
         },

@@ -39,13 +39,13 @@
 import type { IncomingMessage, ServerResponse, Server as HttpServer } from "node:http";
 import type { Http2SecureServer, Http2ServerRequest, Http2ServerResponse } from "node:http2";
 import { orderBy } from "./array.ts";
-import { asyncTask } from "./async.ts";
+import { asyncTask, sleep } from "./async.ts";
 import bytes from "./bytes.ts";
 import { args, parseArgs } from "./cli.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 import { FileInfo, createReadableStream, exists, readDir, readFile, stat } from "./fs.ts";
 import { sha256 } from "./hash.ts";
-import { BunServer, NetAddr, RequestHandler, ServeOptions, ServeStaticOptions, Server } from "./http/server.ts";
+import { BunServer, NetAddress, RequestHandler, ServeOptions, ServeStaticOptions, Server } from "./http/server.ts";
 import { Range, ifMatch, ifNoneMatch, parseRange } from "./http/util.ts";
 import { isMain } from "./module.ts";
 import { as } from "./object.ts";
@@ -55,7 +55,7 @@ import { dedent, stripStart } from "./string.ts";
 import { WebSocketServer } from "./ws.ts";
 
 export * from "./http/util.ts";
-export type { NetAddr, RequestHandler, ServeOptions, ServeStaticOptions, Server };
+export type { NetAddress, RequestHandler, ServeOptions, ServeStaticOptions, Server };
 
 /**
  * Calculates the ETag for a given entity.
@@ -333,30 +333,23 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
 }
 
 /**
- * Serves HTTP requests with a given options.
+ * Serves HTTP requests with the given options.
  * 
- * This function provides a universal way to serve HTTP requests in Deno, Bun,
- * and Node.js with modern Web APIs. It's similar to the `Deno.serve` and
- * `Bun.serve` functions, in fact, it calls them internally when running in Deno
- * and Bun. When running in Node.js, it uses the built-in `http` or `http2`
- * modules to create a server.
+ * This function provides a universal way to serve HTTP requests in Node.js,
+ * Deno, Bun and Cloudflare Workers. It's similar to the `Deno.serve` and
+ * `Bun.serve` functions, in fact, it calls them internally when running in the
+ * corresponding runtime. When running in Node.js, it uses the built-in `http`
+ * or `http2` modules to create the server.
  * 
- * This function also provides a simplified way to handle WebSocket connections.
- * The request handler can easily upgrade the request to a WebSocket connection
- * without dealing with low-level APIs. It's similar to the
- * `Deno.upgradeWebSocket` function, which allows us handling the WebSocket
- * right in the request handler itself.
- * 
- * This function can also be used in Cloudflare Workers, but it will not start
- * the server in the Worker environment. Instead, we need to export the returned
- * server object as the default export in the Worker script.
+ * This function also provides a simplified way to handle WebSocket, the request
+ * can easily be upgraded to a WebSocket connection within the fetch handler.
  * 
  * @example
  * ```ts
  * // simple http server
  * import { serve } from "@ayonli/jsext/http";
  * 
- * const server = serve({
+ * export default serve({
  *     async fetch(req) {
  *         return new Response("Hello, World!");
  *     },
@@ -368,7 +361,7 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * // set the hostname and port
  * import { serve } from "@ayonli/jsext/http";
  * 
- * const server = serve({
+ * export default serve({
  *     hostname: "localhost",
  *     port: 4000,
  *     async fetch(req) {
@@ -383,7 +376,7 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * import { readFileAsText } from "@ayonli/jsext/fs";
  * import { serve } from "@ayonli/jsext/http";
  * 
- * const server = serve({
+ * export default serve({
  *     key: await readFileAsText("./cert.key"),
  *     cert: await readFileAsText("./cert.pem"),
  *     async fetch(req) {
@@ -397,9 +390,9 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * // upgrade to WebSocket
  * import { serve } from "@ayonli/jsext/http";
  * 
- * const server = serve({
+ * export default serve({
  *     async fetch(req, ctx) {
- *         const { socket, response } = await ctx.upgrade(req);
+ *         const { socket, response } = await ctx.upgradeWebSocket();
  * 
  *         socket.ready.then(() => {
  *             socket.addEventListener("message", (event) => {
@@ -419,25 +412,30 @@ export function serve(options: ServeOptions): Server {
         const hostname = options.hostname ?? "0.0.0.0";
         const port = options.port || await randomPort(8000);
         const { key, cert } = options;
-        let server: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer;
+        let server: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null = null;
 
         if (isDeno) {
+            await sleep(0); // This will make sure `deno serve` works for the same port
             const task = asyncTask<void>();
-            server = Deno.serve({
-                hostname,
-                port,
-                key,
-                cert,
-                onListen: () => task.resolve(),
-            }, (req, info) => options.fetch(req, {
-                remoteAddr: {
-                    family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                    address: info.remoteAddr.hostname,
-                    port: info.remoteAddr.port,
-                },
-                upgrade: ws.upgrade.bind(ws),
-            }));
-            await task;
+            try {
+                server = Deno.serve({
+                    hostname,
+                    port,
+                    key,
+                    cert,
+                    onListen: () => task.resolve(),
+                }, (req, info) => options.fetch(req, {
+                    remoteAddress: {
+                        family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
+                        address: info.remoteAddr.hostname,
+                        port: info.remoteAddr.port,
+                    },
+                    upgradeWebSocket: () => ws.upgrade(req),
+                }));
+                await task;
+            } catch {
+                server = null;
+            }
         } else if (isBun) {
             const tls = key && cert ? { key, cert } : undefined;
             server = Bun.serve({
@@ -447,8 +445,8 @@ export function serve(options: ServeOptions): Server {
                 fetch: (req: Request, server: BunServer) => {
                     const remoteAddr = server.requestIP(req)!;
                     return options.fetch(req, {
-                        remoteAddr,
-                        upgrade: ws.upgrade.bind(ws),
+                        remoteAddress: remoteAddr,
+                        upgradeWebSocket: () => ws.upgrade(req),
                     });
                 },
                 websocket: ws?.bunListener,
@@ -464,8 +462,8 @@ export function serve(options: ServeOptions): Server {
                     port: req.socket.remotePort!,
                 };
                 return withWeb(async (req) => options.fetch(req, {
-                    remoteAddr,
-                    upgrade: ws!.upgrade.bind(ws),
+                    remoteAddress: remoteAddr,
+                    upgradeWebSocket: () => ws.upgrade(req),
                 }))(req, res);
             });
 
@@ -481,8 +479,8 @@ export function serve(options: ServeOptions): Server {
                     port: req.socket.remotePort!,
                 };
                 return withWeb(async (req) => options.fetch(req, {
-                    remoteAddr,
-                    upgrade: ws!.upgrade.bind(ws),
+                    remoteAddress: remoteAddr,
+                    upgradeWebSocket: () => ws.upgrade(req),
                 }))(req, res);
             });
 

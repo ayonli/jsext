@@ -13,6 +13,7 @@ import {
     parseCookies,
     parseRange,
     randomPort,
+    serve,
     serveStatic,
     stringifyCookie,
     stringifyCookies,
@@ -23,7 +24,7 @@ import func from "./func.ts";
 import { readFileAsText } from "./fs.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 import { sleep } from "./async.ts";
-import { readAsJSON } from "./reader.ts";
+import { readAsJSON, readAsText } from "./reader.ts";
 
 declare const Bun: any;
 
@@ -845,6 +846,203 @@ describe("http", () => {
 
             strictEqual(res.status, 301);
             strictEqual(res.headers.get("Location"), `http://localhost:${port}/hello`);
+        }));
+    });
+
+    describe("serve", () => {
+        if (typeof fetch !== "function" ||
+            typeof Request !== "function" ||
+            typeof Response !== "function"
+        ) {
+            return;
+        }
+
+        it("default", func(async (defer) => {
+            const port = await randomPort();
+            const server = serve({
+                port,
+                async fetch(_req, ctx) {
+                    return new Response("Hello, World!", {
+                        status: 200,
+                        statusText: "OK",
+                        headers: {
+                            "X-Client-IP": ctx.remoteAddress?.address || "",
+                        },
+                    });
+                }
+            });
+            defer(() => server.close(true));
+
+            const res = await fetch(`http://localhost:${port}`);
+            const text = await res.text();
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(text, "Hello, World!");
+            ok(!!res.headers.get("X-Client-IP"));
+        }));
+
+        it("HTTPS", func(async function (defer) {
+            if (!isNode) {
+                this.skip();
+            }
+
+            const port = await randomPort();
+            const server = serve({
+                port,
+                key: await readFileAsText("./examples/certs/cert.key"),
+                cert: await readFileAsText("./examples/certs/cert.pem"),
+                async fetch(_req) {
+                    return new Response("Hello, World!", {
+                        status: 200,
+                        statusText: "OK",
+                    });
+                }
+            });
+            defer(() => server.close(true));
+
+            const https = await import("node:https");
+            const res = await new Promise<{
+                url: string;
+                status: number;
+                statusText: string;
+                headers: Record<string, string>;
+                body?: any;
+            }>(async (resolve, reject) => {
+                const req = https.request({
+                    key: await readFileAsText("./examples/certs/cert.key"),
+                    cert: await readFileAsText("./examples/certs/cert.pem"),
+                    ca: [await readFileAsText("./examples/certs/cert.pem")],
+                    rejectUnauthorized: false,
+                    method: "GET",
+                    host: "localhost",
+                    port,
+                }, async (res) => {
+                    try {
+                        const text = await readAsText(res);
+                        resolve({
+                            url: res.url!,
+                            status: res.statusCode!,
+                            statusText: res.statusMessage!,
+                            headers: res.headers as Record<string, string>,
+                            body: text,
+                        });
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+                req.end();
+            });
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(res.body, "Hello, World!");
+        }));
+
+        it("HTTP2", func(async function (defer) {
+            if (!isNode) {
+                this.skip();
+            }
+
+            const port = await randomPort();
+            const server = serve({
+                port,
+                key: await readFileAsText("./examples/certs/cert.key"),
+                cert: await readFileAsText("./examples/certs/cert.pem"),
+                async fetch(_req) {
+                    return new Response("Hello, World!", {
+                        status: 200,
+                        statusText: "OK",
+                    });
+                }
+            });
+            defer(() => server.close(true));
+
+            const http2 = await import("node:http2");
+            const client = http2.connect(`https://localhost:${port}`, {
+                key: await readFileAsText("./examples/certs/cert.key"),
+                cert: await readFileAsText("./examples/certs/cert.pem"),
+                ca: [await readFileAsText("./examples/certs/cert.pem")],
+                rejectUnauthorized: false,
+            });
+            defer(() => client.close());
+
+            const res = await new Promise<{
+                url: string;
+                status: number;
+                statusText: string;
+                headers: Record<string, string>;
+                body?: any;
+            }>(async (resolve, reject) => {
+                const req = client.request({
+                    ":method": "GET",
+                    ":path": "/",
+                }, {
+                    endStream: false,
+                });
+
+                req.once("response", async (headers) => {
+                    try {
+                        const text = await readAsText(req);
+                        resolve({
+                            url: `https://localhost:${port}/`,
+                            status: headers[":status"]!,
+                            statusText: "",
+                            headers: Object.fromEntries(Object.entries(headers).filter(([key]) => {
+                                return key.startsWith(":") === false;
+                            })) as Record<string, string>,
+                            body: text
+                        });
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+                req.end();
+            });
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "");
+            strictEqual(res.body, "Hello, World!");
+        }));
+
+        it("WebSocket", func(async function (defer) {
+            const port = await randomPort();
+            const server = serve({
+                port,
+                async fetch(_req, ctx) {
+                    const { socket, response } = await ctx.upgradeWebSocket();
+
+                    socket.ready.then(() => {
+                        socket.send("Hello, World!");
+                    });
+
+                    return response;
+                }
+            });
+            defer(() => server.close(true));
+
+            let ws: WebSocket;
+
+            if (typeof WebSocket === "function") {
+                ws = new WebSocket(`ws://localhost:${port}`);
+            } else {
+                const dWebSocket = (await import("isomorphic-ws")).default;
+                ws = new dWebSocket(`ws://localhost:${port}`) as unknown as WebSocket;
+            }
+
+            const text = await new Promise<string>((resolve, reject) => {
+                ws.binaryType = "arraybuffer";
+                ws.onopen = () => {
+                    ws.send("text");
+                };
+                ws.onmessage = (event) => {
+                    resolve(event.data as string);
+                };
+                ws.onerror = () => reject(new Error("WebSocket error"));
+            });
+
+            ws.close();
+            strictEqual(text, "Hello, World!");
         }));
     });
 
