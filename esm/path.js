@@ -33,7 +33,7 @@ const sep = (() => {
 /**
  * Returns the current working directory.
  *
- * **NOTE**: In the browser, this function returns the current origin and pathname.
+ * **NOTE:** In the browser, this function returns the current origin and pathname.
  *
  * This function may fail in unsupported environments or being rejected by the
  * permission system of the runtime.

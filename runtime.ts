@@ -279,7 +279,7 @@ export function env(name: string): string | undefined;
 /**
  * Sets the value of a specific environment variable.
  * 
- * NOTE: this is a temporary change and will not persist when the program exits.
+ * NOTE: This is a temporary change and will not persist when the program exits.
  */
 export function env(name: string, value: string): undefined;
 /**

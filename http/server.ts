@@ -3,6 +3,7 @@ import type { Http2SecureServer } from "node:http2";
 import type { serve, serveStatic } from "../http.ts";
 import type { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
 import runtime from "../runtime.ts";
+import { until } from "../async.ts";
 
 export interface BunServer {
     fetch(request: Request | string): Response | Promise<Response>;
@@ -36,6 +37,10 @@ export interface NetAddress {
     port: number;
 }
 
+/**
+ * Represents the context of an HTTP request. It provides additional information
+ * about the request and allows for upgrading the connection to a WebSocket.
+ */
 export interface RequestContext {
     /**
      * The remote address of the client. This options is not available in
@@ -127,6 +132,7 @@ const _port = Symbol.for("port");
 const _http = Symbol.for("http");
 const _ws = Symbol.for("ws");
 const _handler = Symbol.for("handler");
+const _controller = Symbol.for("controller");
 
 /**
  * A unified HTTP server interface.
@@ -137,6 +143,7 @@ export class Server {
     private [_http]: Promise<HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null>;
     private [_ws]: WebSocketServer | null = null;
     private [_handler]: RequestHandler | null = null;
+    private [_controller]: AbortController | null = null;
 
     /**
      * A request handler for using the server instance as an ES module worker in
@@ -150,12 +157,14 @@ export class Server {
         hostname: string;
         port: number;
         fetch: RequestHandler;
+        controller: AbortController | null;
     }>) {
-        this[_http] = impl().then(({ http, ws, hostname, port, fetch }) => {
+        this[_http] = impl().then(({ http, ws, hostname, port, fetch, controller }) => {
             this[_ws] = ws;
             this[_hostname] = hostname;
             this[_port] = port;
             this[_handler] = fetch;
+            this[_controller] = controller;
 
             return http;
         });
@@ -222,8 +231,14 @@ export class Server {
     }
 
     /**
-     * Closes the server and stops it from accepting new connections.
-     * @param force Terminate all active connections immediately.
+     * Closes the server and stops it from accepting new connections. By default,
+     * this function will wait until all active connections to close before
+     * shutting down the server. However, we can force the server to close all
+     * active connections and shutdown immediately by setting the `force`
+     * parameter to `true`.
+     * 
+     * NOTE: In Node.js, the `force` parameter is only available for HTTP
+     * servers, it has no effect on HTTP2 servers.
      */
     async close(force = false): Promise<void> {
         const server = await this[_http] as any;
@@ -232,20 +247,31 @@ export class Server {
             return;
 
         if (typeof server.stop === "function") {
-            (server as BunServer).stop(force);
+            const _server = server as BunServer;
+
+            _server.stop(force);
+            if (!force) {
+                await until(() => !_server.pendingRequests && !_server.pendingWebSockets);
+            }
         } else if (typeof server.shutdown === "function") {
             const _server = server as Deno.HttpServer;
-            _server.shutdown();
+
+            if (force && this[_controller]) {
+                this[_controller].abort();
+            } else {
+                _server.shutdown();
+            }
+
             await _server.finished;
         } else if (typeof server.close === "function") {
-            const _server = server as HttpServer;
+            const _server = server as HttpServer | Http2SecureServer;
 
             await new Promise<void>((resolve, reject) => {
-                if (force && typeof _server.closeAllConnections === "function") {
+                _server.close((err) => err ? reject(err) : resolve());
+
+                if (force && "closeAllConnections" in _server) {
                     _server.closeAllConnections();
                 }
-
-                _server.close((err) => err ? reject(err) : resolve());
             });
         }
     }

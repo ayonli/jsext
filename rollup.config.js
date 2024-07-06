@@ -101,6 +101,7 @@ const config = [
             format: "umd",
             name: "jsext",
             sourcemap: true,
+            inlineDynamicImports: true,
         },
         plugins: [
             typescript(),

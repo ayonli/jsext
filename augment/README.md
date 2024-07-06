@@ -4,7 +4,7 @@ This package supports augmenting some functions to the corresponding built-in
 types/namespaces, but they should only be used for application development,
 don't use them when developing libraries.
 
-_NOTE: this feature is only available by the NPM package, they don't work by_
+_NOTE: This feature is only available by the NPM package, they don't work by_
 _the JSR package._
 
 ```js

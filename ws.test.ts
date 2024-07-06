@@ -4,7 +4,7 @@ import { isBun, isDeno } from "./env.ts";
 import func from "./func.ts";
 import { type WebSocketConnection } from "./ws.ts";
 import bytes, { concat, text } from "./bytes.ts";
-import { sleep, until } from "./async.ts";
+import { until } from "./async.ts";
 import { randomPort, withWeb } from "./http.ts";
 
 declare const Bun: any;
@@ -47,11 +47,12 @@ describe("ws", () => {
         const port = await randomPort();
 
         if (isDeno) {
-            const server = Deno.serve({ port }, async req => {
+            const controller = new AbortController();
+            Deno.serve({ port, signal: controller.signal }, async req => {
                 const { response } = await wsServer.upgrade(req);
                 return response;
             });
-            defer(() => Promise.race([server.shutdown(), sleep(100)]));
+            defer(() => controller.abort());
         } else if (isBun) {
             const server = Bun.serve({
                 port,
@@ -149,12 +150,13 @@ describe("ws", () => {
         const port = await randomPort();
 
         if (isDeno) {
-            const server = Deno.serve({ port }, async req => {
+            const controller = new AbortController();
+            Deno.serve({ port, signal: controller.signal }, async req => {
                 const { socket, response } = await wsServer.upgrade(req);
                 socket.ready.then(handle);
                 return response;
             });
-            defer(() => Promise.race([server.shutdown(), sleep(100)]));
+            defer(() => controller.abort());
         } else if (isBun) {
             const server = Bun.serve({
                 port,
@@ -262,11 +264,12 @@ describe("ws", () => {
         const port = await randomPort();
 
         if (isDeno) {
-            const server = Deno.serve({ port }, async req => {
+            const controller = new AbortController();
+            Deno.serve({ port, signal: controller.signal }, async req => {
                 const { response } = await wsServer.upgrade(req);
                 return response;
             });
-            defer(() => Promise.race([server.shutdown(), sleep(100)]));
+            defer(() => controller.abort());
         } else if (isBun) {
             const server = Bun.serve({
                 port,
@@ -377,8 +380,9 @@ describe("ws", () => {
             });
 
         if (isDeno) {
-            const server = Deno.serve({ port }, app.fetch);
-            defer(() => Promise.race([server.shutdown(), sleep(100)]));
+            const controller = new AbortController();
+            Deno.serve({ port, signal: controller.signal }, app.fetch);
+            defer(() => controller.abort());
         } else if (isBun) {
             const server = Bun.serve({
                 port,

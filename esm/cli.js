@@ -12,7 +12,7 @@ export { args, charWidth, getWindowSize, isTTY, isTypingInput, lockStdin, moveLe
 /**
  * Useful utility functions for interacting with the terminal.
  *
- * NOTE: despite the name of this module, many of its functions can also be used
+ * NOTE: Despite the name of this module, many of its functions can also be used
  * in the browser environment.
  * @module
  * @experimental

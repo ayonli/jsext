@@ -20,7 +20,6 @@ import {
     toReadableStream,
     concat,
 } from "./reader.ts";
-import { sleep } from "./async.ts";
 import { randomPort } from "./http.ts";
 
 describe("reader", () => {
@@ -386,7 +385,8 @@ describe("reader", () => {
             const port = await randomPort();
 
             if (typeof Deno === "object") {
-                const server = Deno.serve({ port }, req => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, req => {
                     if (req.headers.get("upgrade") != "websocket") {
                         return new Response(null, { status: 501 });
                     }
@@ -398,7 +398,7 @@ describe("reader", () => {
                     });
                     return response;
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else {
                 const { WebSocketServer } = await import("ws");
                 const server = http.createServer().listen(port);
@@ -626,7 +626,8 @@ describe("reader", () => {
             const port = await randomPort();
 
             if (typeof Deno === "object") {
-                const server = Deno.serve({ port }, req => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, req => {
                     if (req.headers.get("upgrade") != "websocket") {
                         return new Response(null, { status: 501 });
                     }
@@ -638,7 +639,7 @@ describe("reader", () => {
                     });
                     return response;
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else {
                 const { WebSocketServer } = await import("ws");
                 const server = http.createServer().listen(port);

@@ -1,8 +1,10 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import * as http from "node:http";
+import type { Hono as HonoType } from "hono";
 import {
     BasicAuthorization,
     Cookie,
+    RequestContext,
     etag,
     ifMatch,
     ifNoneMatch,
@@ -487,10 +489,11 @@ describe("http", () => {
             }
 
             if (isDeno) {
-                const server = Deno.serve({ port }, async () => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async () => {
                     return new Response("Hello, World!");
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else if (isBun) {
                 const server = Bun.serve({
                     port,
@@ -522,10 +525,11 @@ describe("http", () => {
             }
 
             if (isDeno) {
-                const server = Deno.serve({ port }, async () => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async () => {
                     return new Response("Hello, World!");
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else if (isBun) {
                 const server = Bun.serve({
                     port,
@@ -561,10 +565,11 @@ describe("http", () => {
             }
 
             if (isDeno) {
-                const server = Deno.serve({ port }, async () => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async () => {
                     return new Response("Hello, World!");
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else if (isBun) {
                 const server = Bun.serve({
                     port,
@@ -900,7 +905,14 @@ describe("http", () => {
                     });
                 }
             });
-            defer(() => server.close(true));
+            defer(() => {
+                if (typeof process === "object" && parseInt(process.version.slice(1)) === 20) {
+                    // Cannot close the server in Node.js v20, reason unknown.
+                    return Promise.race([server.close(true), sleep(100)]);
+                } else {
+                    return server.close(true);
+                }
+            });
             await server.ready;
 
             const https = await import("node:https");
@@ -1009,6 +1021,8 @@ describe("http", () => {
         }));
 
         it("WebSocket", func(async function (defer) {
+            this.timeout(5_000);
+
             const port = await randomPort();
             const server = serve({
                 port,
@@ -1048,6 +1062,67 @@ describe("http", () => {
             ws.close();
             strictEqual(text, "Hello, World!");
         }));
+
+        it("with Hono framework", func(async function (defer) {
+            this.timeout(5_000);
+
+            const Hono = (await import("hono")).Hono as typeof HonoType;
+
+            const app = new Hono<{
+                Bindings: Pick<RequestContext, "remoteAddress" | "upgradeWebSocket">;
+            }>()
+                .get("/", async (ctx) => {
+                    return new Response("Hello, World!", {
+                        status: 200,
+                        statusText: "OK",
+                        headers: {
+                            "X-Client-IP": ctx.env.remoteAddress?.address || "",
+                        },
+                    });
+                }).get("/ws", async (ctx) => {
+                    const { socket, response } = await ctx.env.upgradeWebSocket();
+                    socket.ready.then(() => {
+                        socket.send("Hello, World!");
+                    });
+                    return response;
+                });
+
+            const port = await randomPort();
+            const server = serve({ port, fetch: app.fetch });
+            defer(() => server.close(true));
+            await server.ready;
+
+            const res = await fetch(`http://localhost:${port}`);
+            const text = await res.text();
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(text, "Hello, World!");
+            ok(!!res.headers.get("X-Client-IP"));
+
+            let ws: WebSocket;
+
+            if (typeof WebSocket === "function") {
+                ws = new WebSocket(`ws://localhost:${port}/ws`);
+            } else {
+                const dWebSocket = (await import("isomorphic-ws")).default;
+                ws = new dWebSocket(`ws://localhost:${port}/ws`) as unknown as WebSocket;
+            }
+
+            const text2 = await new Promise<string>((resolve, reject) => {
+                ws.binaryType = "arraybuffer";
+                ws.onopen = () => {
+                    ws.send("text");
+                };
+                ws.onmessage = (event) => {
+                    resolve(event.data as string);
+                };
+                ws.onerror = () => reject(new Error("WebSocket error"));
+            });
+
+            ws.close();
+            strictEqual(text2, "Hello, World!");
+        }));
     });
 
     describe("serveStatic", () => {
@@ -1062,11 +1137,11 @@ describe("http", () => {
             const port = await randomPort();
 
             if (isDeno) {
-                // @ts-ignore
-                const server = Deno.serve({ port }, async (req) => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async (req) => {
                     return serveStatic(req);
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req);
@@ -1100,12 +1175,13 @@ describe("http", () => {
             const port = await randomPort();
 
             if (isDeno) {
-                const server = Deno.serve({ port }, async (req) => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                     });
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return await serveStatic(req, {
@@ -1128,13 +1204,14 @@ describe("http", () => {
             const port = await randomPort();
 
             if (isDeno) {
-                const server = Deno.serve({ port }, async (req) => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
                     });
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req, {
@@ -1159,14 +1236,15 @@ describe("http", () => {
             const port = await randomPort();
 
             if (isDeno) {
-                const server = Deno.serve({ port }, async (req) => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
                         maxAge: 3600,
                     });
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req, {
@@ -1193,14 +1271,15 @@ describe("http", () => {
             const port = await randomPort();
 
             if (isDeno) {
-                const server = Deno.serve({ port }, async (req) => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
                         maxAge: 3600,
                     });
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req, {
@@ -1236,15 +1315,15 @@ describe("http", () => {
             const port = await randomPort();
 
             if (isDeno) {
-                // @ts-ignore
-                const server = Deno.serve({ port }, async (req) => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
                         maxAge: 3600,
                     });
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req, {
@@ -1280,14 +1359,15 @@ describe("http", () => {
             const port = await randomPort();
 
             if (isDeno) {
-                const server = Deno.serve({ port }, async (req) => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
                         maxAge: 3600,
                     });
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req, {
@@ -1350,7 +1430,8 @@ describe("http", () => {
             const port = await randomPort();
 
             if (isDeno) {
-                const server = Deno.serve({ port }, async (req) => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
@@ -1359,7 +1440,7 @@ describe("http", () => {
                         },
                     });
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req, {
@@ -1393,14 +1474,15 @@ describe("http", () => {
             const port = await randomPort();
 
             if (isDeno) {
-                const server = Deno.serve({ port }, async (req) => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async (req) => {
                     return serveStatic(req, {
                         fsDir: "./examples",
                         urlPrefix: "/assets",
                         listDir: true,
                     });
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else {
                 const server = http.createServer(withWeb(async (req) => {
                     return serveStatic(req, {

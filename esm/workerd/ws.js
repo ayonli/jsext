@@ -1,5 +1,4 @@
 import { createErrorEvent, createCloseEvent } from '../event.js';
-import { WebSocketConnection } from '../ws/base.js';
 
 var _a;
 const _handler = Symbol.for("handler");
@@ -27,6 +26,7 @@ class WebSocketServer {
         if (!upgradeHeader || upgradeHeader !== "websocket") {
             throw new TypeError("Expected Upgrade: websocket");
         }
+        const { WebSocketConnection } = await import('../ws/base.js');
         const handler = this[_handler];
         const clients = this[_clients];
         const [client, server] = Object.values(new WebSocketPair());
@@ -102,5 +102,5 @@ class WebSocketServer {
 }
 _a = _clients;
 
-export { WebSocketConnection, WebSocketServer };
+export { WebSocketServer };
 //# sourceMappingURL=ws.js.map

@@ -329,6 +329,8 @@ function toNodeResponse(res, nodeRes) {
  * This function also provides a simplified way to handle WebSocket, the request
  * can easily be upgraded to a WebSocket connection within the fetch handler.
  *
+ * NOTE: In Node.js, this function requires Node.js v18.4.1 or above.
+ *
  * @example
  * ```ts
  * // simple http server
@@ -393,14 +395,15 @@ function toNodeResponse(res, nodeRes) {
  */
 function serve(options) {
     return new Server(async () => {
-        var _a;
+        let controller = null;
         const ws = new WebSocketServer(options.ws);
-        const hostname = (_a = options.hostname) !== null && _a !== void 0 ? _a : "0.0.0.0";
+        const hostname = options.hostname || "0.0.0.0";
         const port = options.port || await randomPort(8000);
         const { key, cert } = options;
         let server = null;
         if (isDeno) {
             await sleep(0); // This will make sure `deno serve` works for the same port
+            controller = new AbortController();
             const task = asyncTask();
             try {
                 server = Deno.serve({
@@ -408,6 +411,7 @@ function serve(options) {
                     port,
                     key,
                     cert,
+                    signal: controller.signal,
                     onListen: () => task.resolve(),
                 }, (req, info) => options.fetch(req, {
                     remoteAddress: {
@@ -419,7 +423,7 @@ function serve(options) {
                 }));
                 await task;
             }
-            catch (_b) {
+            catch (_a) {
                 server = null;
             }
         }
@@ -454,7 +458,12 @@ function serve(options) {
                 }))(req, res);
             });
             await new Promise((resolve) => {
-                server.listen(port, hostname, resolve);
+                if (hostname && hostname !== "0.0.0.0") {
+                    server.listen(port, hostname, resolve);
+                }
+                else {
+                    server.listen(port, resolve);
+                }
             });
         }
         else {
@@ -471,14 +480,21 @@ function serve(options) {
                 }))(req, res);
             });
             await new Promise((resolve) => {
-                server.listen(port, hostname, resolve);
+                if (hostname && hostname !== "0.0.0.0") {
+                    server.listen(port, hostname, resolve);
+                }
+                else {
+                    server.listen(port, resolve);
+                }
             });
         }
-        return { http: server, ws, hostname, port, fetch: options.fetch };
+        return { http: server, ws, hostname, port, fetch: options.fetch, controller };
     });
 }
 /**
  * Serves static files from a file system directory.
+ *
+ * NOTE: In Node.js, this function requires Node.js v18.4.1 or above.
  *
  * @example
  * ```ts

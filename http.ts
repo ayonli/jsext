@@ -45,7 +45,15 @@ import { args, parseArgs } from "./cli.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 import { FileInfo, createReadableStream, exists, readDir, readFile, stat } from "./fs.ts";
 import { sha256 } from "./hash.ts";
-import { BunServer, NetAddress, RequestHandler, ServeOptions, ServeStaticOptions, Server } from "./http/server.ts";
+import {
+    BunServer,
+    NetAddress,
+    RequestContext,
+    RequestHandler,
+    ServeOptions,
+    ServeStaticOptions,
+    Server
+} from "./http/server.ts";
 import { Range, ifMatch, ifNoneMatch, parseRange } from "./http/util.ts";
 import { isMain } from "./module.ts";
 import { as } from "./object.ts";
@@ -55,7 +63,14 @@ import { dedent, stripStart } from "./string.ts";
 import { WebSocketServer } from "./ws.ts";
 
 export * from "./http/util.ts";
-export type { NetAddress, RequestHandler, ServeOptions, ServeStaticOptions, Server };
+export type {
+    NetAddress,
+    RequestContext,
+    RequestHandler,
+    ServeOptions,
+    ServeStaticOptions,
+    Server,
+};
 
 /**
  * Calculates the ETag for a given entity.
@@ -344,6 +359,8 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * This function also provides a simplified way to handle WebSocket, the request
  * can easily be upgraded to a WebSocket connection within the fetch handler.
  * 
+ * NOTE: In Node.js, this function requires Node.js v18.4.1 or above.
+ * 
  * @example
  * ```ts
  * // simple http server
@@ -408,6 +425,7 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  */
 export function serve(options: ServeOptions): Server {
     return new Server(async () => {
+        let controller: AbortController | null = null;
         const ws = new WebSocketServer(options.ws);
         const hostname = options.hostname || "0.0.0.0";
         const port = options.port || await randomPort(8000);
@@ -416,6 +434,8 @@ export function serve(options: ServeOptions): Server {
 
         if (isDeno) {
             await sleep(0); // This will make sure `deno serve` works for the same port
+
+            controller = new AbortController();
             const task = asyncTask<void>();
             try {
                 server = Deno.serve({
@@ -423,6 +443,7 @@ export function serve(options: ServeOptions): Server {
                     port,
                     key,
                     cert,
+                    signal: controller.signal,
                     onListen: () => task.resolve(),
                 }, (req, info) => options.fetch(req, {
                     remoteAddress: {
@@ -497,12 +518,14 @@ export function serve(options: ServeOptions): Server {
             });
         }
 
-        return { http: server, ws, hostname, port, fetch: options.fetch };
+        return { http: server, ws, hostname, port, fetch: options.fetch, controller };
     });
 }
 
 /**
  * Serves static files from a file system directory.
+ * 
+ * NOTE: In Node.js, this function requires Node.js v18.4.1 or above.
  * 
  * @example
  * ```ts

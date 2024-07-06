@@ -64,12 +64,13 @@ describe("sse", () => {
             const task = asyncTask<InstanceType<typeof SSE>>();
 
             if (isDeno) {
-                const server = Deno.serve({ port }, req => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, req => {
                     const sse = new SSE(req);
                     task.resolve(sse);
                     return sse.response!;
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else if (isBun) {
                 const server = Bun.serve({
                     port,
@@ -163,12 +164,13 @@ describe("sse", () => {
             const task = asyncTask<InstanceType<typeof SSE>>();
 
             if (isDeno) {
-                const server = Deno.serve({ port }, req => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, req => {
                     const sse = new SSE(req);
                     task.resolve(sse);
                     return sse.response!;
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else if (isBun) {
                 const server = Bun.serve({
                     port,
@@ -223,7 +225,8 @@ describe("sse", () => {
             const port = await randomPort();
 
             if (isDeno) {
-                const server = Deno.serve({ port }, req => {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, req => {
                     const sse = new SSE(req);
 
                     sse.addEventListener("close", _ev => {
@@ -233,7 +236,7 @@ describe("sse", () => {
                     task.resolve(sse);
                     return sse.response!;
                 });
-                defer(() => Promise.race([server.shutdown(), sleep(100)]));
+                defer(() => controller.abort());
             } else if (isBun) {
                 const server = Bun.serve({
                     port,

@@ -2,7 +2,6 @@ import { asyncTask } from './async.js';
 import { concat, text } from './bytes.js';
 import { createErrorEvent, createCloseEvent } from './event.js';
 import runtime from './runtime.js';
-import { WebSocketConnection } from './ws/base.js';
 
 /**
  * This module provides a universal WebSocket server interface for Node.js, Deno,
@@ -180,6 +179,7 @@ class WebSocketServer {
         if (!upgradeHeader || upgradeHeader !== "websocket") {
             throw new TypeError("Expected Upgrade: websocket");
         }
+        const { WebSocketConnection } = await import('./ws/base.js');
         const handler = this[_handler];
         const clients = this[_clients];
         const { identity } = runtime();
@@ -364,8 +364,9 @@ class WebSocketServer {
         return {
             idleTimeout: this.idleTimeout,
             perMessageDeflate: this.perMessageDeflate,
-            open: (ws) => {
+            open: async (ws) => {
                 const { request } = ws.data;
+                const { WebSocketConnection } = await import('./ws/base.js');
                 const client = new WebSocketConnection(ws);
                 clients.set(request, client);
                 const task = connTasks.get(request);
@@ -420,5 +421,5 @@ class WebSocketServer {
 }
 _a = _clients, _b = _httpServer, _c = _wsServer, _d = _connTasks;
 
-export { WebSocketConnection, WebSocketServer };
+export { WebSocketServer };
 //# sourceMappingURL=ws.js.map

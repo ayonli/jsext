@@ -1,7 +1,7 @@
 /**
  * Useful utility functions for interacting with the terminal.
  * 
- * NOTE: despite the name of this module, many of its functions can also be used
+ * NOTE: Despite the name of this module, many of its functions can also be used
  * in the browser environment.
  * @module
  * @experimental
@@ -232,7 +232,7 @@ export async function lockStdin<T>(task: () => Promise<T>): Promise<T | null> {
  * Reads a chunk of data from the standard input. This could be a single key
  * stroke, or a multi-byte sequence for input from an IME.
  * 
- * NOTE: this function should be used within the task function of {@link lockStdin}.
+ * NOTE: This function should be used within the task function of {@link lockStdin}.
  */
 export async function readStdin(): Promise<ByteArray> {
     if (isDeno) {
@@ -283,7 +283,7 @@ export async function writeStdout(data: ByteArray): Promise<void> {
 /**
  * Writes a chunk of data to the standard output synchronously.
  * 
- * NOTE: despite the function name, the synchronous behavior is only guaranteed
+ * NOTE: Despite the function name, the synchronous behavior is only guaranteed
  * in Deno, in Node.js, it may still be asynchronous.
  * 
  * Since the behavior is not guaranteed, it is recommended to use the asynchronous
