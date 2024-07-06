@@ -1,6 +1,10 @@
 /**
- * Utility functions for handling HTTP related tasks, such as parsing headers,
- * serving static files, and calculating ETags.
+ * Functions for handling HTTP related tasks, such as parsing headers and
+ * serving HTTP requests.
+ * 
+ * Many functions in this module are designed to work in all environments, but
+ * some of them are only available in server runtimes such as Node.js, Deno,
+ * Bun and Cloudflare Workers.
  * 
  * This module itself is a executable script that can be used to serve static
  * files in the current working directory, or we can provide an entry module
@@ -54,14 +58,15 @@ import {
     ServeStaticOptions,
     Server
 } from "./http/server.ts";
+import { respondDir } from "./http/internal.ts";
 import { Range, ifMatch, ifNoneMatch, parseRange } from "./http/util.ts";
 import { isMain } from "./module.ts";
 import { as } from "./object.ts";
 import { extname, join, resolve, startsWith } from "./path.ts";
 import { readAsArray } from "./reader.ts";
 import { stripStart } from "./string.ts";
+import { EventEndpoint } from "./sse.ts";
 import { WebSocketServer } from "./ws.ts";
-import { respondDir } from "./http/internal.ts";
 
 export * from "./http/util.ts";
 export type {
@@ -112,6 +117,8 @@ export async function etag(data: string | Uint8Array | FileInfo): Promise<string
 
 /**
  * Returns a random port number that is available for listening.
+ * 
+ * NOTE: This function is not available in Cloudflare Workers and the browser.
  */
 export async function randomPort(prefer: number | undefined = undefined): Promise<number> {
     if (isDeno) {
@@ -190,7 +197,8 @@ export async function randomPort(prefer: number | undefined = undefined): Promis
 /**
  * Creates a Node.js HTTP request listener with modern Web APIs.
  * 
- * NOTE: This function requires Node.js v18.4.1 or above.
+ * NOTE: This function is only available in Node.js and requires Node.js v18.4.1
+ * or above.
  * 
  * @example
  * ```ts
@@ -205,11 +213,18 @@ export async function randomPort(prefer: number | undefined = undefined): Promis
  * ```
  */
 export function withWeb(
-    listener: (req: Request) => void | Response | Promise<void | Response>
+    listener: (req: Request, info: {
+        remoteAddress: NetAddress;
+    }) => void | Response | Promise<void | Response>
 ): (req: IncomingMessage | Http2ServerRequest, res: ServerResponse | Http2ServerResponse) => void {
     return async (nReq, nRes) => {
+        const remoteAddress: NetAddress = {
+            family: nReq.socket.remoteFamily as "IPv4" | "IPv6",
+            address: nReq.socket.remoteAddress!,
+            port: nReq.socket.remotePort!,
+        };
         const req = toWebRequest(nReq);
-        const res = await listener(req);
+        const res = await listener(req, { remoteAddress });
 
         if (!nRes.req) { // fix for Deno and Node.js below v15.7.0
             Object.assign(nRes, { req: nReq });
@@ -357,8 +372,9 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * corresponding runtime. When running in Node.js, it uses the built-in `http`
  * or `http2` modules to create the server.
  * 
- * This function also provides a simplified way to handle WebSocket, the request
- * can easily be upgraded to a WebSocket connection within the fetch handler.
+ * This function also provides easy ways to handle Server-sent Events and
+ * WebSockets inside the fetch handler without touching the underlying verbose
+ * APIs.
  * 
  * NOTE: In Node.js, this function requires Node.js v18.4.1 or above.
  * 
@@ -381,7 +397,7 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * 
  * export default serve({
  *     hostname: "localhost",
- *     port: 4000,
+ *     port: 8787, // same port as Wrangler dev
  *     async fetch(req) {
  *         return new Response("Hello, World!");
  *     },
@@ -400,6 +416,29 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  *     async fetch(req) {
  *         return new Response("Hello, World!");
  *    },
+ * });
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // respond Server-sent Events
+ * import { serve } from "@ayonli/jsext/http";
+ * 
+ * export default serve({
+ *     async fetch(req, ctx) {
+ *         const { events, response } = ctx.createEventEndpoint();
+ *         let count = events.lastEventId ? Number(events.lastEventId) : 0;
+ * 
+ *         setInterval(() => {
+ *             const lastEventId = String(++count);
+ *             events.dispatchEvent(new MessageEvent("ping", {
+ *                 data: lastEventId,
+ *                 lastEventId,
+ *             }));
+ *         }, 5_000);
+ * 
+ *         return response;
+ *     },
  * });
  * ```
  * 
@@ -432,6 +471,14 @@ export function serve(options: ServeOptions): Server {
         const port = options.port || await randomPort(8000);
         const { key, cert } = options;
         let server: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null = null;
+        const createContext = (req: Request, remoteAddress: NetAddress): RequestContext => ({
+            remoteAddress,
+            createEventEndpoint: () => {
+                const endpoint = new EventEndpoint(req);
+                return { events: endpoint, response: endpoint.response! };
+            },
+            upgradeWebSocket: () => ws.upgrade(req),
+        });
 
         if (isDeno) {
             await sleep(0); // This will make sure `deno serve` works for the same port
@@ -446,14 +493,11 @@ export function serve(options: ServeOptions): Server {
                     cert,
                     signal: controller.signal,
                     onListen: () => task.resolve(),
-                }, (req, info) => options.fetch(req, {
-                    remoteAddress: {
-                        family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                        address: info.remoteAddr.hostname,
-                        port: info.remoteAddr.port,
-                    },
-                    upgradeWebSocket: () => ws.upgrade(req),
-                }));
+                }, (req, info) => options.fetch(req, createContext(req, {
+                    family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
+                    address: info.remoteAddr.hostname,
+                    port: info.remoteAddr.port,
+                })));
                 await task;
             } catch {
                 server = null;
@@ -466,10 +510,7 @@ export function serve(options: ServeOptions): Server {
                 tls,
                 fetch: (req: Request, server: BunServer) => {
                     const remoteAddr = server.requestIP(req)!;
-                    return options.fetch(req, {
-                        remoteAddress: remoteAddr,
-                        upgradeWebSocket: () => ws.upgrade(req),
-                    });
+                    return options.fetch(req, createContext(req, remoteAddr));
                 },
                 websocket: ws?.bunListener,
             }) as BunServer;
@@ -477,17 +518,9 @@ export function serve(options: ServeOptions): Server {
             ws.bunBind(server);
         } else if (key && cert) {
             const { createSecureServer } = await import("node:http2");
-            server = createSecureServer({ key, cert, allowHTTP1: true }, (req, res) => {
-                const remoteAddr = {
-                    family: req.socket.remoteFamily as "IPv4" | "IPv6",
-                    address: req.socket.remoteAddress!,
-                    port: req.socket.remotePort!,
-                };
-                return withWeb(async (req) => options.fetch(req, {
-                    remoteAddress: remoteAddr,
-                    upgradeWebSocket: () => ws.upgrade(req),
-                }))(req, res);
-            });
+            server = createSecureServer({ key, cert, allowHTTP1: true }, withWeb((req, info) => {
+                return options.fetch(req, createContext(req, info.remoteAddress));
+            }));
 
             await new Promise<void>((resolve) => {
                 if (hostname && hostname !== "0.0.0.0") {
@@ -498,17 +531,9 @@ export function serve(options: ServeOptions): Server {
             });
         } else {
             const { createServer } = await import("node:http");
-            server = createServer((req, res) => {
-                const remoteAddr = {
-                    family: req.socket.remoteFamily as "IPv4" | "IPv6",
-                    address: req.socket.remoteAddress!,
-                    port: req.socket.remotePort!,
-                };
-                return withWeb(async (req) => options.fetch(req, {
-                    remoteAddress: remoteAddr,
-                    upgradeWebSocket: () => ws.upgrade(req),
-                }))(req, res);
-            });
+            server = createServer(withWeb((req, info) => {
+                return options.fetch(req, createContext(req, info.remoteAddress));
+            }));
 
             await new Promise<void>((resolve) => {
                 if (hostname && hostname !== "0.0.0.0") {
@@ -524,28 +549,40 @@ export function serve(options: ServeOptions): Server {
 }
 
 /**
- * Serves static files from a file system directory.
+ * Serves static files from a file system directory or KV namespace (in
+ * Cloudflare Workers).
  * 
  * NOTE: In Node.js, this function requires Node.js v18.4.1 or above.
  * 
+ * NOTE: In Cloudflare Workers, this function requires setting the
+ * `[site].bucket` option in the `wrangler.toml` file.
+ * 
  * @example
  * ```ts
- * import { serveStatic } from "@ayonli/jsext/http";
+ * import { serve, serveStatic } from "@ayonli/jsext/http";
  * 
- * export default {
- *     async fetch(req: Request) {
+ * export default serve({ // use `serve()` so this program runs in all environments
+ *     async fetch(req: Request, ctx) {
  *         const { pathname } = new URL(req.url);
  * 
  *         if (pathname.startsWith("/assets")) {
  *             return await serveStatic(req, {
- *                 fsDir: "./public",
+ *                 fsDir: "./assets",
+ *                 kv: ctx.bindings?.__STATIC_CONTENT,
  *                 urlPrefix: "/assets",
  *             });
  *         }
  * 
  *         return new Response("Hello, World!");
  *     }
- * };
+ * });
+ * ```
+ * 
+ * @example
+ * ```toml
+ * // wrangler.toml
+ * [site]
+ * bucket = "./assets"
  * ```
  */
 export async function serveStatic(

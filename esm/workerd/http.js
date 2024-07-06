@@ -47,7 +47,7 @@ function serve(options) {
     });
 }
 async function serveStatic(req, options = {}) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e;
     // @ts-ignore
     const kv = (_a = options.kv) !== null && _a !== void 0 ? _a : globalThis["__STATIC_CONTENT"];
     if (!kv) {
@@ -57,7 +57,6 @@ async function serveStatic(req, options = {}) {
         });
     }
     const extraHeaders = (_b = options.headers) !== null && _b !== void 0 ? _b : {};
-    const dir = (_c = options.fsDir) !== null && _c !== void 0 ? _c : ".";
     const prefix = options.urlPrefix ? join(options.urlPrefix) : "";
     const url = new URL(req.url);
     const { pathname } = url;
@@ -68,7 +67,7 @@ async function serveStatic(req, options = {}) {
             headers: extraHeaders,
         });
     }
-    let filename = join(dir, stripStart(pathname.slice(prefix.length), "/"));
+    let filename = stripStart(pathname.slice(prefix.length), "/");
     if (filename === "/" || filename === ".") {
         filename = "";
     }
@@ -81,7 +80,7 @@ async function serveStatic(req, options = {}) {
                 filename: indexHtml,
                 reqHeaders: req.headers,
                 extraHeaders,
-                maxAge: (_d = options.maxAge) !== null && _d !== void 0 ? _d : 0,
+                maxAge: (_c = options.maxAge) !== null && _c !== void 0 ? _c : 0,
             });
         }
         else if ((indexPage = await kv.get(indexHtm, { type: "arrayBuffer" }))) {
@@ -89,7 +88,7 @@ async function serveStatic(req, options = {}) {
                 filename: indexHtm,
                 reqHeaders: req.headers,
                 extraHeaders,
-                maxAge: (_e = options.maxAge) !== null && _e !== void 0 ? _e : 0,
+                maxAge: (_d = options.maxAge) !== null && _d !== void 0 ? _d : 0,
             });
         }
         else if (!options.listDir) {
@@ -145,7 +144,7 @@ async function serveStatic(req, options = {}) {
             filename,
             reqHeaders: req.headers,
             extraHeaders,
-            maxAge: (_f = options.maxAge) !== null && _f !== void 0 ? _f : 0,
+            maxAge: (_e = options.maxAge) !== null && _e !== void 0 ? _e : 0,
         });
     }
     else {

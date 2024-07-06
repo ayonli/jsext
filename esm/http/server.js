@@ -1,5 +1,6 @@
 import runtime from '../runtime.js';
 import { until } from '../async.js';
+import { EventEndpoint } from '../sse.js';
 
 var _a, _b, _c, _d, _e;
 const _hostname = Symbol.for("hostname");
@@ -39,6 +40,10 @@ class Server {
                 const ws = _this[_ws];
                 return _this[_handler](req, {
                     remoteAddress: null,
+                    createEventEndpoint: () => {
+                        const events = new EventEndpoint(req);
+                        return { events, response: events.response };
+                    },
                     upgradeWebSocket: () => ws.upgrade(req),
                     waitUntil: ctx.waitUntil,
                     bindings,
@@ -56,6 +61,10 @@ class Server {
                 const ws = _this[_ws];
                 return _this[_handler](req, {
                     remoteAddress: null,
+                    createEventEndpoint: () => {
+                        const events = new EventEndpoint(req);
+                        return { events, response: events.response };
+                    },
                     upgradeWebSocket: () => ws.upgrade(req),
                 });
             };

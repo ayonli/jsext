@@ -357,13 +357,6 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * - [x] Deno v1.0+
  * - [x] Bun v1.0+
  * - [x] Modern browsers
- * 
- * The following environments are not supported:
- * 
- * - [ ] Cloudflare Workers
- * - [ ] Fastly Compute
- * - [ ] WinterJS
- * - [ ] Any other runtime that doesn't support the `Worker` constructor
  */
 function parallel<M extends { [x: string]: any; }>(
     module: string | (() => Promise<M>)

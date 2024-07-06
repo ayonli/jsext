@@ -1,5 +1,5 @@
 import { join } from "../path.ts";
-import { dedent } from "../string";
+import { dedent } from "../string.ts";
 
 export function respondDir(filenames: string[], pathname: string, extraHeaders: HeadersInit = {}) {
     const listHtml = filenames.map((name) => {

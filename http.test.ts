@@ -27,6 +27,7 @@ import { readFileAsText } from "./fs.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 import { sleep } from "./async.ts";
 import { readAsJSON, readAsText } from "./reader.ts";
+import { EventClient } from "./sse.ts";
 
 declare const Bun: any;
 
@@ -1018,6 +1019,38 @@ describe("http", () => {
             strictEqual(res.status, 200);
             strictEqual(res.statusText, "");
             strictEqual(res.body, "Hello, World!");
+        }));
+
+        it("SSE", func(async function (defer) {
+            const port = await randomPort();
+            const server = serve({
+                port,
+                async fetch(_req, ctx) {
+                    const { events, response } = ctx.createEventEndpoint();
+
+                    setTimeout(() => {
+                        events.dispatchEvent(new MessageEvent("message", {
+                            data: "Hello, World!",
+                        }));
+                    }, 1000);
+
+                    return response;
+                }
+            });
+            defer(() => server.close(true));
+            await server.ready;
+
+            const res = await fetch(`http://localhost:${port}`);
+            const client = new EventClient(res);
+
+            const text = await new Promise<string>((resolve) => {
+                client.addEventListener("message", (event) => {
+                    resolve(event.data as string);
+                });
+            });
+
+            client.close();
+            strictEqual(text, "Hello, World!");
         }));
 
         it("WebSocket", func(async function (defer) {

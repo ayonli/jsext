@@ -107,8 +107,8 @@ categories:
   system APIs for both server and browser applications.
 - [hash](https://jsr.io/@ayonli/jsext/doc/hash/~) Simplified hash functions for
   various data types.
-- [http](https://jsr.io/@ayonli/jsext/doc/http/~) (Experimental) Utility
-  functions for handling HTTP related tasks, such as parsing headers.
+- [http](https://jsr.io/@ayonli/jsext/doc/http/~) (Experimental) functions for
+  handling HTTP related tasks, such as parsing headers and serving HTTP requests.
 - [json](https://jsr.io/@ayonli/jsext/doc/json/~) Functions for parsing JSONs to
   specific structures.
 - [math](https://jsr.io/@ayonli/jsext/doc/math/~) Functions for mathematical
@@ -1014,13 +1014,6 @@ The following environments are guaranteed to work:
 - [x] Deno v1.0+
 - [x] Bun v1.0+
 - [x] Modern browsers
-
-The following environments are not supported:
-
-- [ ] Cloudflare Workers
-- [ ] Fastly Compute
-- [ ] WinterJS
-- [ ] Any other runtime that doesn't support the `Worker` constructor
 
 ---
 

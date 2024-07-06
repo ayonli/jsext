@@ -5,6 +5,9 @@
  * and send messages to the client, while the {@link EventClient} class is
  * used to process messages sent by the server.
  * 
+ * Despite their names, these classes can be used in both the browser/client
+ * and the server environments.
+ * 
  * NOTE: This module depends on the Web Streams API, in Node.js, it requires
  * Node.js v16.5 or higher.
  * 

@@ -4,6 +4,7 @@ import type { serve, serveStatic } from "../http.ts";
 import type { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
 import runtime from "../runtime.ts";
 import { until } from "../async.ts";
+import { EventEndpoint } from "../sse.ts";
 
 export interface BunServer {
     fetch(request: Request | string): Response | Promise<Response>;
@@ -65,6 +66,11 @@ export interface RequestContext {
      * Cloudflare Workers or when the server is started with `deno serve`.
      */
     remoteAddress: NetAddress | null;
+    /**
+     * Creates an SSE (server-sent events) endpoint for sending events to the
+     * client.
+     */
+    createEventEndpoint(): { events: EventEndpoint; response: Response; };
     /**
      * Upgrades the request to a WebSocket connection.
      */
@@ -209,6 +215,10 @@ export class Server {
                 const ws = _this[_ws]!;
                 return _this[_handler](req, {
                     remoteAddress: null,
+                    createEventEndpoint: () => {
+                        const events = new EventEndpoint(req);
+                        return { events, response: events.response! };
+                    },
                     upgradeWebSocket: () => ws.upgrade(req),
                     waitUntil: ctx.waitUntil,
                     bindings,
@@ -226,6 +236,10 @@ export class Server {
                 const ws = _this[_ws]!;
                 return _this[_handler](req, {
                     remoteAddress: null,
+                    createEventEndpoint: () => {
+                        const events = new EventEndpoint(req);
+                        return { events, response: events.response! };
+                    },
                     upgradeWebSocket: () => ws.upgrade(req),
                 });
             };

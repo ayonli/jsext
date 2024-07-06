@@ -80,7 +80,6 @@ export async function serveStatic(
     }
 
     const extraHeaders = options.headers ?? {};
-    const dir = options.fsDir ?? ".";
     const prefix = options.urlPrefix ? join(options.urlPrefix) : "";
     const url = new URL(req.url);
     const { pathname } = url;
@@ -93,7 +92,7 @@ export async function serveStatic(
         });
     }
 
-    let filename = join(dir, stripStart(pathname.slice(prefix.length), "/"));
+    let filename = stripStart(pathname.slice(prefix.length), "/");
     if (filename === "/" || filename === ".") {
         filename = "";
     }
