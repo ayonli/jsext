@@ -26,7 +26,7 @@ describe("dialog", () => {
 
     it("alert", async () => {
         const job = alert("Hello, World!");
-        const dialog = document.body.querySelector("dialog")!;
+        const dialog = await until(() => document.body.querySelector("dialog"));
         ok(dialog !== null);
 
         const p = dialog.querySelector("p")!;
@@ -47,7 +47,7 @@ describe("dialog", () => {
     describe("confirm", () => {
         it("click OK", async () => {
             const job = confirm("Are you sure?");
-            const dialog = document.body.querySelector("dialog")!;
+            const dialog = await until(() => document.body.querySelector("dialog"));
             ok(dialog !== null);
 
             const p = dialog.querySelector("p")!;
@@ -70,7 +70,7 @@ describe("dialog", () => {
 
         it("click Cancel", async () => {
             const job = confirm("Are you sure?");
-            const dialog = document.body.querySelector("dialog")!;
+            const dialog = await until(() => document.body.querySelector("dialog"));
             ok(dialog !== null);
 
             const p = dialog.querySelector("p")!;
@@ -93,7 +93,7 @@ describe("dialog", () => {
 
         it("press Enter", async () => {
             const job = confirm("Are you sure?");
-            const dialog = document.body.querySelector("dialog")!;
+            const dialog = await until(() => document.body.querySelector("dialog"));
             ok(dialog !== null);
 
             const p = dialog.querySelector("p")!;
@@ -119,7 +119,7 @@ describe("dialog", () => {
     describe("prompt", () => {
         it("input text", async () => {
             const job = prompt("What's your name?");
-            const dialog = document.body.querySelector("dialog")!;
+            const dialog = await until(() => document.body.querySelector("dialog"));
             ok(dialog !== null);
 
             const p = dialog.querySelector("p")!;
@@ -148,7 +148,7 @@ describe("dialog", () => {
 
         it("input password", async () => {
             const job = prompt("What's your password?", { type: "password" });
-            const dialog = document.body.querySelector("dialog")!;
+            const dialog = await until(() => document.body.querySelector("dialog"));
             ok(dialog !== null);
 
             const p = dialog.querySelector("p")!;
@@ -177,7 +177,7 @@ describe("dialog", () => {
 
         it("click OK", async () => {
             const job = prompt("What's your name?");
-            const dialog = document.body.querySelector("dialog")!;
+            const dialog = await until(() => document.body.querySelector("dialog"));
             ok(dialog !== null);
 
             const p = dialog.querySelector("p")!;
@@ -204,7 +204,7 @@ describe("dialog", () => {
 
         it("click Cancel", async () => {
             const job = prompt("What's your name?");
-            const dialog = document.body.querySelector("dialog")!;
+            const dialog = await until(() => document.body.querySelector("dialog"));
             ok(dialog !== null);
 
             const p = dialog.querySelector("p")!;
@@ -231,7 +231,7 @@ describe("dialog", () => {
 
         it("press Enter", async () => {
             const job = prompt("What's your name?");
-            const dialog = document.body.querySelector("dialog")!;
+            const dialog = await until(() => document.body.querySelector("dialog"));
             ok(dialog !== null);
 
             const p = dialog.querySelector("p")!;
@@ -264,7 +264,7 @@ describe("dialog", () => {
                 await sleep(1000);
                 return "Success!";
             });
-            const dialog = document.body.querySelector("dialog")!;
+            const dialog = await until(() => document.body.querySelector("dialog"));
             ok(dialog !== null);
 
             await until(() => dialog.open);
@@ -292,7 +292,7 @@ describe("dialog", () => {
                 await sleep(500);
                 return "Success!";
             });
-            const dialog = document.body.querySelector("dialog")!;
+            const dialog = await until(() => document.body.querySelector("dialog"));
             ok(dialog !== null);
 
             await until(() => dialog.open);
@@ -325,7 +325,7 @@ describe("dialog", () => {
             }, async () => {
                 return "Failed!";
             });
-            const dialog = document.body.querySelector("dialog")!;
+            const dialog = await until(() => document.body.querySelector("dialog"));
             ok(dialog !== null);
 
             await until(() => dialog.open);
@@ -359,7 +359,7 @@ describe("dialog", () => {
             }, async () => {
                 throw new Error("Canceled");
             });
-            const dialog = document.body.querySelector("dialog")!;
+            const dialog = await until(() => document.body.querySelector("dialog"));
             ok(dialog !== null);
 
             await until(() => dialog.open);
