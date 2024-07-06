@@ -1,13 +1,13 @@
 import bytes from '../bytes.js';
+import { getMIME } from '../filetype.js';
 import { sha256 } from '../hash/web.js';
+import { respondDir } from '../http/internal.js';
 import { Server } from '../http/server.js';
 import { parseRange, ifNoneMatch, ifMatch } from '../http/util.js';
 export { parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, stringifyCookie, stringifyCookies, verifyBasicAuth } from '../http/util.js';
-import { WebSocketServer } from './ws.js';
 import { join, extname } from '../path.js';
 import { stripStart } from '../string.js';
-import { getMIME } from '../filetype.js';
-import { respondDir } from '../http/internal.js';
+import { WebSocketServer } from './ws.js';
 import { startsWith } from '../path/util.js';
 
 async function etag(data) {

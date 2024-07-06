@@ -1,8 +1,9 @@
 import bytes from "../bytes.ts";
-import { type FileInfo } from "./fs.ts";
+import { getMIME } from "../filetype.ts";
+import { FileInfo } from "./fs.ts";
 import { sha256 } from "./hash.ts";
+import { respondDir } from "../http/internal.ts";
 import {
-    KVNamespace,
     NetAddress,
     RequestHandler,
     ServeOptions,
@@ -10,11 +11,10 @@ import {
     Server,
 } from "../http/server.ts";
 import { ifMatch, ifNoneMatch, parseRange, Range } from "../http/util.ts";
-import { WebSocketServer } from "./ws.ts";
 import { extname, join, startsWith } from "../path.ts";
 import { stripStart } from "../string.ts";
-import { getMIME } from "../filetype.ts";
-import { respondDir } from "../http/internal.ts";
+import { KVNamespace } from "./types.ts";
+import { WebSocketServer } from "./ws.ts";
 
 export * from "../http/util.ts";
 export type { NetAddress, RequestHandler, ServeOptions, Server };

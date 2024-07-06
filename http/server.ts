@@ -5,6 +5,7 @@ import type { EventEndpoint } from "../sse.ts";
 import type { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
 import runtime from "../runtime.ts";
 import { until } from "../async.ts";
+import { KVNamespace } from "../workerd/types.ts";
 
 export interface BunServer {
     fetch(request: Request | string): Response | Promise<Response>;
@@ -27,24 +28,6 @@ export interface BunServer {
     readonly pendingWebSockets: number;
     readonly port: number;
     readonly url: URL;
-}
-
-export interface KVNamespace {
-    get(key: string, options?: { type?: "text"; }): Promise<string | null>;
-    get(key: string, options: { type: "json"; }): Promise<any | null>;
-    get(key: string, options: { type: "arrayBuffer"; }): Promise<ArrayBuffer | null>;
-    get(key: string, options: { type?: "stream"; }): Promise<ReadableStream | null>;
-    put(key: string, value: string | ArrayBuffer | ReadableStream): Promise<void>;
-    delete(key: string): Promise<void>;
-    list(options?: {
-        prefix?: string;
-        limit?: number;
-        cursor?: string;
-    }): Promise<{
-        keys: { name: string; expiration?: number; }[];
-        list_complete: boolean;
-        cursor: string | null;
-    }>;
 }
 
 /**
@@ -83,7 +66,10 @@ export interface RequestContext {
     /**
      * The bindings of the request. Only available in Cloudflare Workers.
      */
-    bindings?: Record<string, any>;
+    bindings?: {
+        [x: string]: any;
+        __STATIC_CONTENT?: KVNamespace;
+    };
 }
 
 /**
@@ -101,19 +87,27 @@ export interface ServeOptions {
     fetch: RequestHandler;
     /**
      * The hostname to listen on. Default is `0.0.0.0`.
+     * 
+     * NOTE: This option is ignored in Cloudflare Workers and `deno serve`.
      */
     hostname?: string | undefined;
     /**
      * The port to listen on. If not set, the server will first try to use the
      * `8000` port, and if it's not available, it will use a random port.
+     * 
+     * NOTE: This option is ignored in Cloudflare Workers and `deno serve`.
      */
     port?: number | undefined;
     /**
      * The certificate key for serving HTTPS/HTTP2 requests.
+     * 
+     * NOTE: This option is ignored in Cloudflare Workers and `deno serve`.
      */
     key?: string | undefined;
     /**
      * The certificate for serving HTTPS/HTTP2 requests.
+     * 
+     * NOTE: This option is ignored in Cloudflare Workers and `deno serve`.
      */
     cert?: string | undefined;
     /**
