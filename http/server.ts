@@ -215,7 +215,7 @@ export class Server {
                         return { events, response: events.response! };
                     },
                     upgradeWebSocket: () => ws.upgrade(req),
-                    waitUntil: ctx.waitUntil,
+                    waitUntil: ctx.waitUntil.bind(ctx),
                     bindings,
                 });
             };
