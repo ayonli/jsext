@@ -1,9 +1,5 @@
 export { default as progress } from './dialog/progress.js';
 export { downloadFile, openDirectory, openFile, openFiles, pickDirectory, pickFile, pickFiles, saveFile } from './dialog/file.js';
-import { alertInBrowser, confirmInBrowser, promptInBrowser } from './dialog/browser/index.js';
-import alertInTerminal from './dialog/terminal/alert.js';
-import confirmInTerminal from './dialog/terminal/confirm.js';
-import promptInTerminal from './dialog/terminal/prompt.js';
 import { isBrowserWindow, isDeno, isNodeLike } from './env.js';
 
 /**
@@ -26,9 +22,11 @@ import { isBrowserWindow, isDeno, isNodeLike } from './env.js';
  */
 async function alert(message, options = {}) {
     if (isBrowserWindow) {
+        const { alertInBrowser } = await import('./dialog/browser/index.js');
         await alertInBrowser(message);
     }
     else if (isDeno || isNodeLike) {
+        const { default: alertInTerminal } = await import('./dialog/terminal/alert.js');
         await alertInTerminal(message, options);
     }
     else {
@@ -52,9 +50,11 @@ async function alert(message, options = {}) {
  */
 async function confirm(message, options = {}) {
     if (isBrowserWindow) {
+        const { confirmInBrowser } = await import('./dialog/browser/index.js');
         return await confirmInBrowser(message);
     }
     else if (isDeno || isNodeLike) {
+        const { default: confirmInTerminal } = await import('./dialog/terminal/confirm.js');
         return await confirmInTerminal(message, options);
     }
     else {
@@ -74,9 +74,11 @@ async function prompt(message, options = "") {
         : undefined;
     const gui = typeof options === "object" ? ((_c = options.gui) !== null && _c !== void 0 ? _c : false) : false;
     if (isBrowserWindow) {
+        const { promptInBrowser } = await import('./dialog/browser/index.js');
         return await promptInBrowser(message, { type, defaultValue });
     }
     else if (isDeno || isNodeLike) {
+        const { default: promptInTerminal } = await import('./dialog/terminal/prompt.js');
         return await promptInTerminal(message, { defaultValue, type, mask, gui });
     }
     else {

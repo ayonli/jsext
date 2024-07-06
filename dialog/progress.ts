@@ -1,7 +1,4 @@
 import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
-import { progressInBrowser } from "./browser/index.ts";
-import { handleTerminalProgress } from "./terminal/progress.ts";
-import { lockStdin } from "../cli.ts";
 
 export type ProgressState = {
     /**
@@ -113,8 +110,11 @@ export default async function progress<T>(
     });
 
     if (isBrowserWindow) {
+        const { progressInBrowser } = await import("./browser/index.ts");
         return await progressInBrowser(message, fn, { signal, abort, listenForAbort });
     } else if (isDeno || isNodeLike) {
+        const { lockStdin } = await import("../cli.ts");
+        const { handleTerminalProgress } = await import("./terminal/progress.ts");
         return await lockStdin(() => handleTerminalProgress(message, fn, {
             signal,
             abort,

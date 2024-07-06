@@ -1,11 +1,4 @@
 import { isBrowserWindow, isDeno, isNodeLike } from '../env.js';
-import { progressInBrowser } from './browser/index.js';
-import { handleTerminalProgress } from './terminal/progress.js';
-import '../bytes.js';
-import '../string/constants.js';
-import '../path.js';
-import '../cli/constants.js';
-import { lockStdin } from '../cli/common.js';
 
 /**
  * Displays a dialog with a progress bar indicating the ongoing state of the
@@ -99,9 +92,12 @@ async function progress(message, fn, onAbort = undefined) {
         });
     });
     if (isBrowserWindow) {
+        const { progressInBrowser } = await import('./browser/index.js');
         return await progressInBrowser(message, fn, { signal, abort, listenForAbort });
     }
     else if (isDeno || isNodeLike) {
+        const { lockStdin } = await import('../cli.js');
+        const { handleTerminalProgress } = await import('./terminal/progress.js');
         return await lockStdin(() => handleTerminalProgress(message, fn, {
             signal,
             abort,

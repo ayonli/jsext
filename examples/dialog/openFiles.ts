@@ -1,6 +1,6 @@
-import { openFile } from "../../dialog.ts";
+import { openFiles } from "../../dialog.ts";
 
-const files = await openFile({ title: "Open Folder", directory: true });
+const files = await openFiles({ type: "*.png,*.jpg,image/*,*/*" });
 
 console.log(files.map(file => ({
     name: file.name,

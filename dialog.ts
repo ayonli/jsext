@@ -22,10 +22,6 @@ import {
     saveFile,
     downloadFile,
 } from "./dialog/file.ts";
-import { alertInBrowser, confirmInBrowser, promptInBrowser } from "./dialog/browser/index.ts";
-import alertInTerminal from "./dialog/terminal/alert.ts";
-import confirmInTerminal from "./dialog/terminal/confirm.ts";
-import promptInTerminal from "./dialog/terminal/prompt.ts";
 import { isBrowserWindow, isDeno, isNodeLike } from "./env.ts";
 
 export type { FileDialogOptions, PickFileOptions, SaveFileOptions, DownloadFileOptions };
@@ -73,8 +69,10 @@ export interface DialogOptions {
  */
 export async function alert(message: string, options: DialogOptions = {}): Promise<void> {
     if (isBrowserWindow) {
+        const { alertInBrowser } = await import("./dialog/browser/index.ts");
         await alertInBrowser(message);
     } else if (isDeno || isNodeLike) {
+        const { default: alertInTerminal } = await import("./dialog/terminal/alert.ts");
         await alertInTerminal(message, options);
     } else {
         throw new Error("Unsupported runtime");
@@ -98,8 +96,10 @@ export async function alert(message: string, options: DialogOptions = {}): Promi
  */
 export async function confirm(message: string, options: DialogOptions = {}): Promise<boolean> {
     if (isBrowserWindow) {
+        const { confirmInBrowser } = await import("./dialog/browser/index.ts");
         return await confirmInBrowser(message);
     } else if (isDeno || isNodeLike) {
+        const { default: confirmInTerminal } = await import("./dialog/terminal/confirm.ts");
         return await confirmInTerminal(message, options);
     } else {
         throw new Error("Unsupported runtime");
@@ -189,8 +189,10 @@ export async function prompt(
     const gui = typeof options === "object" ? (options.gui ?? false) : false;
 
     if (isBrowserWindow) {
+        const { promptInBrowser } = await import("./dialog/browser/index.ts");
         return await promptInBrowser(message, { type, defaultValue });
     } else if (isDeno || isNodeLike) {
+        const { default: promptInTerminal } = await import("./dialog/terminal/prompt.ts");
         return await promptInTerminal(message, { defaultValue, type, mask, gui });
     } else {
         throw new Error("Unsupported runtime");

@@ -1,27 +1,6 @@
 import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
 import { platform } from "../runtime.ts";
-import { isWSL, which } from "../cli.ts";
 import { readAsObjectURL } from "../reader.ts";
-import {
-    macPickFolder,
-    macPickFiles,
-    macPickFile,
-} from "./terminal/file/mac.ts";
-import {
-    linuxPickFolder,
-    linuxPickFiles,
-    linuxPickFile,
-} from "./terminal/file/linux.ts";
-import {
-    windowsPickFolder,
-    windowsPickFiles,
-    windowsPickFile,
-} from "./terminal/file/windows.ts";
-import {
-    browserPickFolder,
-    browserPickFile,
-    browserPickFiles,
-} from "./terminal/file/browser.ts";
 import { asyncTask } from "../async.ts";
 import { getExtensions } from "../filetype.ts";
 import { readDir, readFileAsFile, writeFile } from "../fs.ts";
@@ -109,26 +88,31 @@ export async function pickFile(
     options: PickFileOptions = {}
 ): Promise<string | FileSystemFileHandle | null> {
     if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
+        const { browserPickFile } = await import("./browser/file.ts");
         return await browserPickFile(options.type, {
             forSave: options.forSave,
             defaultName: options.defaultName,
         });
     } else if (isDeno || isNodeLike) {
+        const { isWSL, which } = await import("../cli.ts");
         const _platform = platform();
 
         if (_platform === "darwin") {
+            const { macPickFile } = await import("./terminal/file/mac.ts");
             return await macPickFile(options.title, {
                 type: options.type,
                 forSave: options?.forSave,
                 defaultName: options?.defaultName,
             });
         } else if (_platform === "windows" || isWSL()) {
+            const { windowsPickFile } = await import("./terminal/file/windows.ts");
             return await windowsPickFile(options.title, {
                 type: options.type,
                 forSave: options?.forSave,
                 defaultName: options?.defaultName,
             });
         } else if (_platform === "linux" || await which("zenity")) {
+            const { linuxPickFile } = await import("./terminal/file/linux.ts");
             return await linuxPickFile(options.title, {
                 type: options.type,
                 forSave: options?.forSave,
@@ -175,15 +159,20 @@ export async function pickFiles(
     options: FileDialogOptions = {}
 ): Promise<string[] | FileSystemFileHandle[]> {
     if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
+        const { browserPickFiles } = await import("./browser/file.ts");
         return await browserPickFiles(options.type);
     } else if (isDeno || isNodeLike) {
+        const { isWSL, which } = await import("../cli.ts");
         const _platform = platform();
 
         if (_platform === "darwin") {
+            const { macPickFiles } = await import("./terminal/file/mac.ts");
             return await macPickFiles(options.title, options.type);
         } else if (_platform === "windows" || isWSL()) {
+            const { windowsPickFiles } = await import("./terminal/file/windows");
             return await windowsPickFiles(options.title, options.type);
         } else if (_platform === "linux" || await which("zenity")) {
+            const { linuxPickFiles } = await import("./terminal/file/linux.ts");
             return await linuxPickFiles(options.title, options.type);
         }
     }
@@ -212,15 +201,20 @@ export async function pickDirectory(
     options: Pick<FileDialogOptions, "title"> = {}
 ): Promise<string | FileSystemDirectoryHandle | null> {
     if (typeof (globalThis as any)["showDirectoryPicker"] === "function") {
+        const { browserPickFolder } = await import("./browser/file.ts");
         return await browserPickFolder();
     } else if (isDeno || isNodeLike) {
+        const { isWSL, which } = await import("../cli.ts");
         const _platform = platform();
 
         if (_platform === "darwin") {
+            const { macPickFolder } = await import("./terminal/file/mac.ts");
             return await macPickFolder(options.title);
         } else if (_platform === "windows" || isWSL()) {
+            const { windowsPickFolder } = await import("./terminal/file/windows.ts");
             return await windowsPickFolder(options.title);
         } else if (_platform === "linux" || await which("zenity")) {
+            const { linuxPickFolder } = await import("./terminal/file/linux.ts");
             return await linuxPickFolder(options.title);
         }
     }
@@ -286,6 +280,7 @@ export async function openFile(options: FileDialogOptions & {
     }
 
     if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
+        const { browserPickFile } = await import("./browser/file.ts");
         const handle = await browserPickFile(type);
         return handle ? await handle.getFile().then(fixFileType) : null;
     } else if (isBrowserWindow) {
@@ -351,6 +346,7 @@ export async function openFile(options: FileDialogOptions & {
  */
 export async function openFiles(options: FileDialogOptions = {}): Promise<File[]> {
     if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
+        const { browserPickFiles } = await import("./browser/file.ts");
         const handles = await browserPickFiles(options.type);
         const files: File[] = [];
 
@@ -407,8 +403,9 @@ export async function openDirectory(
     options: Pick<FileDialogOptions, "title"> = {}
 ): Promise<File[]> {
     if (typeof (globalThis as any)["showDirectoryPicker"] === "function") {
-        const files: File[] = [];
+        const { browserPickFolder } = await import("./browser/file.ts");
         const dir = await browserPickFolder();
+        const files: File[] = [];
 
         if (!dir) {
             return files;
@@ -534,6 +531,7 @@ export async function saveFile(
 ): Promise<void> {
     if (typeof (globalThis as any)["showSaveFilePicker"] === "function") {
         try {
+            const { browserPickFile } = await import("./browser/file.ts");
             const handle = await browserPickFile(options.type, {
                 forSave: true,
                 defaultName: options.name || as(file, File)?.name,
@@ -646,6 +644,7 @@ export async function downloadFile(
 
     if (typeof (globalThis as any)["showSaveFilePicker"] === "function") {
         try {
+            const { browserPickFile } = await import("./browser/file.ts");
             dest = await browserPickFile(options.type, {
                 forSave: true,
                 defaultName: name,

@@ -957,7 +957,16 @@ export async function readFileAsFile(
     if (isDeno || isNodeLike) {
         const bytes = await readFile(filename, options);
         const type = getMIME(extname(filename)) ?? "";
-        return new File([bytes], basename(filename), { type });
+        const file = new File([bytes], basename(filename), { type });
+
+        Object.defineProperty(file, "webkitRelativePath", {
+            configurable: true,
+            enumerable: true,
+            writable: false,
+            value: "",
+        });
+
+        return file;
     } else {
         const handle = await getFileHandle(target, { root: options.root });
         return await readFileHandleAsFile(handle);
