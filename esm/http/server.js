@@ -1,6 +1,5 @@
 import runtime from '../runtime.js';
 import { until } from '../async.js';
-import { EventEndpoint } from '../sse.js';
 
 var _a, _b, _c, _d, _e;
 const _hostname = Symbol.for("hostname");
@@ -30,13 +29,14 @@ class Server {
         const _this = this;
         const { identity } = runtime();
         if (identity === "cloudflare-worker") {
-            this.fetch = (req, bindings, ctx) => {
+            this.fetch = async (req, bindings, ctx) => {
                 if (!_this[_handler]) {
                     return new Response("Service Unavailable", {
                         status: 503,
                         statusText: "Service Unavailable",
                     });
                 }
+                const { EventEndpoint } = await import('../sse.js');
                 const ws = _this[_ws];
                 return _this[_handler](req, {
                     remoteAddress: null,
@@ -51,13 +51,14 @@ class Server {
             };
         }
         else if (identity === "deno") {
-            this.fetch = (req) => {
+            this.fetch = async (req) => {
                 if (!_this[_handler]) {
                     return new Response("Service Unavailable", {
                         status: 503,
                         statusText: "Service Unavailable",
                     });
                 }
+                const { EventEndpoint } = await import('../sse.js');
                 const ws = _this[_ws];
                 return _this[_handler](req, {
                     remoteAddress: null,

@@ -1,10 +1,10 @@
 import type { Server as HttpServer } from "node:http";
 import type { Http2SecureServer } from "node:http2";
 import type { serve, serveStatic } from "../http.ts";
+import type { EventEndpoint } from "../sse.ts";
 import type { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
 import runtime from "../runtime.ts";
 import { until } from "../async.ts";
-import { EventEndpoint } from "../sse.ts";
 
 export interface BunServer {
     fetch(request: Request | string): Response | Promise<Response>;
@@ -204,7 +204,7 @@ export class Server {
         const { identity } = runtime();
 
         if (identity === "cloudflare-worker") {
-            this.fetch = (req, bindings, ctx) => {
+            this.fetch = async (req, bindings, ctx) => {
                 if (!_this[_handler]) {
                     return new Response("Service Unavailable", {
                         status: 503,
@@ -212,6 +212,7 @@ export class Server {
                     });
                 }
 
+                const { EventEndpoint } = await import("../sse.ts");
                 const ws = _this[_ws]!;
                 return _this[_handler](req, {
                     remoteAddress: null,
@@ -225,7 +226,7 @@ export class Server {
                 });
             };
         } else if (identity === "deno") {
-            this.fetch = (req) => {
+            this.fetch = async (req) => {
                 if (!_this[_handler]) {
                     return new Response("Service Unavailable", {
                         status: 503,
@@ -233,6 +234,7 @@ export class Server {
                     });
                 }
 
+                const { EventEndpoint } = await import("../sse.ts");
                 const ws = _this[_ws]!;
                 return _this[_handler](req, {
                     remoteAddress: null,

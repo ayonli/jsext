@@ -27,7 +27,6 @@ import { readFileAsText } from "./fs.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 import { sleep } from "./async.ts";
 import { readAsJSON, readAsText } from "./reader.ts";
-import { EventClient } from "./sse.ts";
 
 declare const Bun: any;
 
@@ -1022,6 +1021,8 @@ describe("http", () => {
         }));
 
         it("SSE", func(async function (defer) {
+            const { EventClient } = await import("./sse.ts");
+
             const port = await randomPort();
             const server = serve({
                 port,

@@ -65,7 +65,6 @@ import { as } from "./object.ts";
 import { extname, join, resolve, startsWith } from "./path.ts";
 import { readAsArray } from "./reader.ts";
 import { stripStart } from "./string.ts";
-import { EventEndpoint } from "./sse.ts";
 import { WebSocketServer } from "./ws.ts";
 
 export * from "./http/util.ts";
@@ -469,6 +468,7 @@ export function serve(options: ServeOptions): Server {
         const ws = new WebSocketServer(options.ws);
         const hostname = options.hostname || "0.0.0.0";
         const port = options.port || await randomPort(8000);
+        const { EventEndpoint } = await import("./sse.ts");
         const { key, cert } = options;
         let server: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null = null;
         const createContext = (req: Request, remoteAddress: NetAddress): RequestContext => ({

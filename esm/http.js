@@ -15,7 +15,6 @@ import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
 export { parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, stringifyCookie, stringifyCookies, verifyBasicAuth } from './http/util.js';
 import { as } from './object.js';
 import { readAsArray } from './reader.js';
-import { EventEndpoint } from './sse.js';
 import { WebSocketServer } from './ws.js';
 import { startsWith } from './path/util.js';
 
@@ -437,6 +436,7 @@ function serve(options) {
         const ws = new WebSocketServer(options.ws);
         const hostname = options.hostname || "0.0.0.0";
         const port = options.port || await randomPort(8000);
+        const { EventEndpoint } = await import('./sse.js');
         const { key, cert } = options;
         let server = null;
         const createContext = (req, remoteAddress) => ({
