@@ -1,7 +1,7 @@
 import { orderBy } from './array.js';
 import { sleep, asyncTask } from './async.js';
 import bytes from './bytes.js';
-import { stripStart, dedent } from './string.js';
+import { stripStart } from './string.js';
 import { isDeno, isBun, isNode } from './env.js';
 import { isMain } from './module.js';
 import { extname, resolve, join } from './path.js';
@@ -15,6 +15,7 @@ export { parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCooki
 import { as } from './object.js';
 import { readAsArray } from './reader.js';
 import { WebSocketServer } from './ws.js';
+import { respondDir } from './http/internal.js';
 import { startsWith } from './path/util.js';
 
 /**
@@ -522,14 +523,15 @@ async function serveStatic(req, options = {}) {
     const dir = (_b = options.fsDir) !== null && _b !== void 0 ? _b : ".";
     const prefix = options.urlPrefix ? join(options.urlPrefix) : "";
     const url = new URL(req.url);
-    if (prefix && !startsWith(url.pathname, prefix)) {
+    const { pathname } = url;
+    if (prefix && !startsWith(pathname, prefix)) {
         return new Response("Not Found", {
             status: 404,
             statusText: "Not Found",
             headers: extraHeaders,
         });
     }
-    const filename = join(dir, stripStart(url.pathname.slice(prefix.length), "/"));
+    const filename = join(dir, stripStart(pathname.slice(prefix.length), "/"));
     let info;
     try {
         info = await stat(filename);
@@ -578,57 +580,13 @@ async function serveStatic(req, options = {}) {
             else {
                 const entries = await readAsArray(readDir(filename));
                 const list = [
-                    ...orderBy(entries.filter(e => e.kind === "directory"), e => e.name, "asc"),
-                    ...orderBy(entries.filter(e => e.kind === "file"), e => e.name, "asc"),
+                    ...orderBy(entries.filter(e => e.kind === "directory"), e => e.name).map(e => e.name + "/"),
+                    ...orderBy(entries.filter(e => e.kind === "file"), e => e.name).map(e => e.name),
                 ];
-                const { pathname } = url;
                 if (pathname !== "/") {
-                    list.unshift({
-                        kind: "directory",
-                        name: "..",
-                        relativePath: "..",
-                    });
+                    list.unshift("../");
                 }
-                const listHtml = list.map((entry) => {
-                    const name = entry.kind === "directory" ? entry.name + "/" : entry.name;
-                    let url = join(pathname, entry.name);
-                    if (entry.kind === "directory" && url !== "/") {
-                        url += "/";
-                    }
-                    return dedent `
-                        <li>
-                            <a href="${url}">${name}</a>
-                        </li>
-                        `;
-                });
-                return new Response(dedent `
-                <!DOCTYPE HTML>
-                <html lang="en">
-                <head>
-                    <meta charset="utf-8">
-                    <title>Directory listing for ${pathname}</title>
-                    <style>
-                    body {
-                        font-family: system-ui;
-                    }
-                    </style>
-                </head>
-                <body>
-                    <h1>Directory listing for ${pathname}</h1>
-                    <hr>
-                    <ul>
-                        ${listHtml.join("")}
-                    </ul>
-                </body>
-                </html>
-                `, {
-                    status: 200,
-                    statusText: "OK",
-                    headers: {
-                        ...extraHeaders,
-                        "Content-Type": "text/html; charset=utf-8",
-                    },
-                });
+                return respondDir(list, pathname, extraHeaders);
             }
         }
     }

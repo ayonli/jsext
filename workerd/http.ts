@@ -1,8 +1,20 @@
 import bytes from "../bytes.ts";
 import { type FileInfo } from "./fs.ts";
 import { sha256 } from "./hash.ts";
-import { NetAddress, RequestHandler, ServeOptions, ServeStaticOptions, Server } from "../http/server.ts";
+import {
+    KVNamespace,
+    NetAddress,
+    RequestHandler,
+    ServeOptions,
+    ServeStaticOptions,
+    Server,
+} from "../http/server.ts";
+import { ifMatch, ifNoneMatch, parseRange, Range } from "../http/util.ts";
 import { WebSocketServer } from "./ws.ts";
+import { extname, join, startsWith } from "../path.ts";
+import { stripStart } from "../string.ts";
+import { getMIME } from "../filetype.ts";
+import { respondDir } from "../http/internal.ts";
 
 export * from "../http/util.ts";
 export type { NetAddress, RequestHandler, ServeOptions, Server };
@@ -57,6 +69,224 @@ export async function serveStatic(
     req: Request,
     options: ServeStaticOptions = {}
 ): Promise<Response> {
-    void req, options;
-    throw new Error("Unsupported runtime");
+    // @ts-ignore
+    const kv = options.kv ?? (globalThis["__STATIC_CONTENT"] as KVNamespace | undefined);
+
+    if (!kv) {
+        return new Response("Service Unavailable", {
+            status: 503,
+            statusText: "Service Unavailable",
+        });
+    }
+
+    const extraHeaders = options.headers ?? {};
+    const dir = options.fsDir ?? ".";
+    const prefix = options.urlPrefix ? join(options.urlPrefix) : "";
+    const url = new URL(req.url);
+    const { pathname } = url;
+
+    if (prefix && !startsWith(pathname, prefix)) {
+        return new Response("Not Found", {
+            status: 404,
+            statusText: "Not Found",
+            headers: extraHeaders,
+        });
+    }
+
+    let filename = join(dir, stripStart(pathname.slice(prefix.length), "/"));
+    if (filename === "/" || filename === ".") {
+        filename = "";
+    }
+
+    if (pathname.endsWith("/")) {
+        const indexHtml = filename ? join(filename, "index.html") : "index.html";
+        const indexHtm = filename ? join(filename, "index.htm") : "index.htm";
+        let indexPage = await kv.get(indexHtml, { type: "arrayBuffer" });
+
+        if (indexPage) {
+            return await serveFile(new Uint8Array(indexPage), {
+                filename: indexHtml,
+                reqHeaders: req.headers,
+                extraHeaders,
+                maxAge: options.maxAge ?? 0,
+            });
+        } else if ((indexPage = await kv.get(indexHtm, { type: "arrayBuffer" }))) {
+            return await serveFile(new Uint8Array(indexPage), {
+                filename: indexHtm,
+                reqHeaders: req.headers,
+                extraHeaders,
+                maxAge: options.maxAge ?? 0,
+            });
+        } else if (!options.listDir) {
+            return new Response("Forbidden", {
+                status: 403,
+                statusText: "Forbidden",
+                headers: extraHeaders,
+            });
+        } else {
+            const prefix = "$__MINIFLARE_SITES__$/";
+            const dir = prefix + (filename ? encodeURIComponent(filename + "/") : "");
+            const dirEntries = new Set<string>();
+            const fileEntries = new Set<string>();
+            let result: Awaited<ReturnType<KVNamespace["list"]>> = {
+                keys: [],
+                list_complete: false,
+                cursor: null,
+            };
+
+            while (!result.list_complete) {
+                result = await kv.list({ prefix: dir });
+
+                for (const { name } of result.keys) {
+                    const relativePath = decodeURIComponent(name.slice(dir.length));
+                    const parts = relativePath.split("/");
+
+                    if (parts.length === 2) { // direct folder
+                        dirEntries.add(parts[0]! + "/");
+                    } else if (parts.length === 1) { // direct file
+                        fileEntries.add(parts[0]!);
+                    }
+                }
+            }
+
+            const list = [
+                ...[...dirEntries].sort(),
+                ...[...fileEntries].sort(),
+            ];
+
+            if (pathname !== "/") {
+                list.unshift("../");
+            }
+
+            return respondDir(list, pathname, extraHeaders);
+        }
+    } else if (filename) {
+        const buffer = await kv.get(filename, { type: "arrayBuffer" });
+
+        if (!buffer) {
+            return new Response("Not Found", {
+                status: 404,
+                statusText: "Not Found",
+                headers: extraHeaders,
+            });
+        }
+
+        return await serveFile(new Uint8Array(buffer), {
+            filename,
+            reqHeaders: req.headers,
+            extraHeaders,
+            maxAge: options.maxAge ?? 0,
+        });
+    } else {
+        return Response.redirect(req.url + "/", 301);
+    }
+}
+
+async function serveFile(data: Uint8Array, options: {
+    filename: string;
+    reqHeaders: Headers;
+    extraHeaders: HeadersInit;
+    maxAge: number;
+}) {
+    const { filename, reqHeaders, extraHeaders } = options;
+    const ext = extname(filename);
+    const type = getMIME(ext) ?? "";
+    const rangeValue = reqHeaders.get("Range");
+    let range: Range | undefined;
+
+    if (rangeValue && data.byteLength) {
+        try {
+            range = parseRange(rangeValue);
+        } catch {
+            return new Response("Invalid Range header", {
+                status: 416,
+                statusText: "Range Not Satisfiable",
+                headers: extraHeaders,
+            });
+        }
+    }
+
+    const _etag = await etag(data);
+    const headers = new Headers({
+        ...extraHeaders,
+        "Accept-Ranges": "bytes",
+        "Etag": _etag,
+    });
+
+    const ifNoneMatchValue = reqHeaders.get("If-None-Match");
+    const ifMatchValue = reqHeaders.get("If-Match");
+    let modified = true;
+
+    if (ifNoneMatchValue) {
+        modified = ifNoneMatch(ifNoneMatchValue, _etag);
+    }
+
+    if (!modified) {
+        return new Response(null, {
+            status: 304,
+            statusText: "Not Modified",
+            headers,
+        });
+    } else if (ifMatchValue && range && !ifMatch(ifMatchValue, _etag)) {
+        return new Response("Precondition Failed", {
+            status: 412,
+            statusText: "Precondition Failed",
+            headers,
+        });
+    }
+
+    if (type) {
+        if (/^text\/|^application\/(json|yaml|toml|xml|javascript)$/.test(type)) {
+            headers.set("Content-Type", type + "; charset=utf-8");
+        } else {
+            headers.set("Content-Type", type);
+        }
+    } else {
+        headers.set("Content-Type", "application/octet-stream");
+    }
+
+    if (options.maxAge) {
+        headers.set("Cache-Control", `public, max-age=${options.maxAge}`);
+    }
+
+    if (range) {
+        const { ranges, suffix: suffixLength } = range;
+        let start: number;
+        let end: number;
+
+        if (ranges.length) {
+            ({ start } = ranges[0]!);
+            end = Math.min(ranges[0]!.end ?? data.byteLength - 1, data.byteLength - 1);
+        } else {
+            start = Math.max(data.byteLength - suffixLength!, 0);
+            end = data.byteLength - 1;
+        }
+
+        const slice = data.subarray(start, end + 1);
+
+        headers.set("Content-Range", `bytes ${start}-${end}/${data.byteLength}`);
+        headers.set("Content-Length", String(end - start + 1));
+
+        return new Response(slice, {
+            status: 206,
+            statusText: "Partial Content",
+            headers,
+        });
+    } else if (!data.byteLength) {
+        headers.set("Content-Length", "0");
+
+        return new Response("", {
+            status: 200,
+            statusText: "OK",
+            headers,
+        });
+    } else {
+        headers.set("Content-Length", String(data.byteLength));
+
+        return new Response(data, {
+            status: 200,
+            statusText: "OK",
+            headers,
+        });
+    }
 }
