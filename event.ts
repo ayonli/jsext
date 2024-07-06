@@ -9,7 +9,7 @@
  * will be used instead, and the options will be attached to the event as its
  * properties.
  */
-export function createErrorEvent(type: "close", options?: ErrorEventInit): ErrorEvent;
+export function createErrorEvent(type: "error", options?: ErrorEventInit): ErrorEvent;
 export function createErrorEvent(type: string, options?: ErrorEventInit): ErrorEvent;
 export function createErrorEvent(type: string, options: ErrorEventInit = {}): ErrorEvent {
     if (typeof ErrorEvent === "function") {

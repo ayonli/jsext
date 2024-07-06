@@ -1,9 +1,9 @@
 /**
  * This module provides tools for working with server-sent events.
  * 
- * The {@link SSE} class is used to handle SSE requests and send messages to the
- * client, while the {@link EventClient} class is used to process messages sent
- * by the server.
+ * The {@link EventEndpoint} class is used to handle SSE requests on the server
+ * and send messages to the client, while the {@link EventClient} class is
+ * used to process messages sent by the server.
  * 
  * NOTE: This module depends on the Web Streams API, in Node.js, it requires
  * Node.js v16.5 or higher.
@@ -16,6 +16,44 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
 import { createCloseEvent, createErrorEvent } from "./event.ts";
 import { isBun } from "./env.ts";
+import runtime from "./runtime.ts";
+
+if (runtime().identity === "cloudflare-worker") {
+    // Cloudflare Workers does not fully implement the MessageEvent, so we need
+    // to implement it ourselves.
+    globalThis.MessageEvent = class MessageEvent<T = any> extends Event implements MessageEvent<T> {
+        readonly data: T = undefined as T;
+        readonly lastEventId: string = "";
+        readonly origin: string = "";
+        readonly ports: ReadonlyArray<MessagePort> = [];
+        readonly source: MessageEventSource | null = null;
+
+        constructor(type: string, eventInitDict?: MessageEventInit<T> | undefined) {
+            super(type, eventInitDict);
+
+            if (eventInitDict) {
+                this.data = eventInitDict.data as T;
+                this.lastEventId = eventInitDict.lastEventId ?? "";
+                this.origin = eventInitDict.origin ?? "";
+                this.ports = eventInitDict.ports ?? [];
+            }
+        }
+
+        initMessageEvent(
+            type: string,
+            bubbles?: boolean,
+            cancelable?: boolean,
+            data?: any,
+            origin?: string,
+            lastEventId?: string,
+            source?: MessageEventSource | null,
+            ports?: MessagePort[]
+        ): void {
+            this.initEvent(type, bubbles ?? false, cancelable ?? false);
+            Object.assign(this, { data, origin, lastEventId, source, ports });
+        }
+    };
+}
 
 const SSEMarkClosed = new Set<string>();
 const _lastEventId = Symbol.for("lastEventId");
@@ -28,9 +66,9 @@ const _reconnectionTime = Symbol.for("reconnectionTime");
 const encoder = new TextEncoder();
 
 /**
- * The options for the {@link SSE} constructor.
+ * The options for the {@link EventEndpoint} constructor.
  */
-export interface SSEOptions {
+export interface EventEndpointOptions {
     /**
      * The time in milliseconds that instructs the client to wait before
      * reconnecting.
@@ -39,7 +77,7 @@ export interface SSEOptions {
 }
 
 /**
- * A server-sent events (SSE) implementation that can be used to send messages
+ * An SSE (server-sent events) implementation that can be used to send messages
  * to the client. This implementation is based on the `EventTarget` interface
  * and conforms the web standard.
  * 
@@ -50,24 +88,24 @@ export interface SSEOptions {
  * @example
  * ```ts
  * // with Web APIs
- * import { SSE } from "@ayonli/jsext/sse";
+ * import { EventEndpoint } from "@ayonli/jsext/sse";
  * 
  * export default {
  *     async fetch(req: Request) {
- *         const sse = new SSE(req);
+ *         const events = new EventEndpoint(req);
  * 
- *         sse.addEventListener("close", (ev) => {
+ *         events.addEventListener("close", (ev) => {
  *             console.log(`The connection is closed, reason: ${ev.reason}`);
  *         });
  * 
  *         setTimeout(() => {
- *             sse.dispatchEvent(new MessageEvent("my-event", {
+ *             events.dispatchEvent(new MessageEvent("my-event", {
  *                 data: "Hello, World!",
  *                 lastEventId: "1",
  *             }));
  *         }, 1_000);
  * 
- *         return sse.response;
+ *         return events.response;
  *     }
  * }
  * ```
@@ -76,17 +114,17 @@ export interface SSEOptions {
  * ```ts
  * // with Node.js APIs
  * import * as http from "node:http";
- * import { SSE } from "@ayonli/jsext/sse";
+ * import { EventEndpoint } from "@ayonli/jsext/sse";
  * 
  * const server = http.createServer((req, res) => {
- *     const sse = new SSE(req, res);
+ *     const events = new EventEndpoint(req, res);
  * 
- *     sse.addEventListener("close", (ev) => {
+ *     events.addEventListener("close", (ev) => {
  *         console.log(`The connection is closed, reason: ${ev.reason}`);
  *     });
  * 
  *     setTimeout(() => {
- *         sse.dispatchEvent(new MessageEvent("my-event", {
+ *         events.dispatchEvent(new MessageEvent("my-event", {
  *             data: "Hello, World!",
  *             lastEventId: "1",
  *         }));
@@ -96,18 +134,18 @@ export interface SSEOptions {
  * server.listen(3000);
  * ```
  */
-export class SSE extends EventTarget {
+export class EventEndpoint extends EventTarget {
     private [_writer]: WritableStreamDefaultWriter<Uint8Array>;
     private [_response]: Response | null;
     private [_lastEventId]: string;
     private [_reconnectionTime]: number;
     private [_closed]: boolean;
 
-    constructor(request: Request, options?: SSEOptions);
+    constructor(request: Request, options?: EventEndpointOptions);
     constructor(
         request: IncomingMessage | Http2ServerRequest,
         response: ServerResponse | Http2ServerResponse,
-        options?: SSEOptions
+        options?: EventEndpointOptions
     );
     constructor(
         request: Request | IncomingMessage | Http2ServerRequest,
@@ -116,7 +154,7 @@ export class SSE extends EventTarget {
         super();
 
         const isNodeRequest = "socket" in request && "socket" in args[0];
-        let options: SSEOptions;
+        let options: EventEndpointOptions;
 
         if (isNodeRequest) {
             const req = request as IncomingMessage | Http2ServerRequest;
@@ -246,12 +284,12 @@ export class SSE extends EventTarget {
      */
     override addEventListener(
         type: "close",
-        listener: (this: SSE, ev: CloseEvent) => void,
+        listener: (this: EventEndpoint, ev: CloseEvent) => void,
         options?: boolean | AddEventListenerOptions
     ): void;
     override addEventListener(
         type: string,
-        listener: (this: SSE, event: Event) => any,
+        listener: (this: EventEndpoint, event: Event) => any,
         options?: boolean | AddEventListenerOptions
     ): void;
     override addEventListener(
@@ -273,12 +311,10 @@ export class SSE extends EventTarget {
     override dispatchEvent(event: CloseEvent | ErrorEvent | Event): boolean;
     override dispatchEvent(event: MessageEvent | CloseEvent | ErrorEvent | Event): boolean {
         if (event instanceof MessageEvent) {
-            const _event = event as MessageEvent;
-
             if (event.type === "message") {
-                this.send(_event.data, _event.lastEventId).catch(() => { });
+                this.send(event.data, event.lastEventId).catch(() => { });
             } else {
-                this.sendEvent(_event.type, _event.data, _event.lastEventId)
+                this.sendEvent(event.type, event.data, event.lastEventId)
                     .catch(() => { });
             }
 
@@ -323,7 +359,7 @@ export class SSE extends EventTarget {
      * @param eventId If specified, the client will remember the value as the
      * last event ID and will send it back to the server when reconnecting.
      */
-    private async send(data: string, eventId: string | undefined = undefined): Promise<void> {
+    async send(data: string, eventId: string | undefined = undefined): Promise<void> {
         await this[_writer].write(this.buildMessage(data, { id: eventId }));
     }
 
@@ -337,7 +373,7 @@ export class SSE extends EventTarget {
      * @param eventId If specified, the client will remember the value as the
      * last event ID and will send it back to the server when reconnecting.
      */
-    private async sendEvent(
+    async sendEvent(
         event: string,
         data: string,
         eventId: string | undefined = undefined
@@ -375,6 +411,16 @@ export class SSE extends EventTarget {
         });
     }
 }
+
+/**
+ * @deprecated Use {@link EventEndpoint} instead.
+ */
+export const SSE = EventEndpoint;
+
+/**
+ * @deprecated Use {@link EventEndpointOptions} instead.
+ */
+export type SSEOptions = EventEndpointOptions;
 
 /**
  * An SSE (server-sent events) client that consumes event messages sent by the

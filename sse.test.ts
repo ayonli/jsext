@@ -8,7 +8,7 @@ import { randomPort, withWeb } from "./http.ts";
 declare const Bun: any;
 
 describe("sse", () => {
-    describe("SSE (Web APIs)", () => {
+    describe("EventEndpoint (Web APIs)", () => {
         if (typeof EventTarget === "undefined" ||
             typeof Request === "undefined" ||
             typeof Response === "undefined"
@@ -17,14 +17,14 @@ describe("sse", () => {
         }
 
         it("constructor", async () => {
-            const { SSE } = await import("./sse.ts");
+            const { EventEndpoint } = await import("./sse.ts");
 
             const req1 = new Request("http://localhost:8080", {
                 headers: {
                     "Accept": "text/event-stream",
                 },
             });
-            const sse1 = new SSE(req1);
+            const sse1 = new EventEndpoint(req1);
             strictEqual(sse1.lastEventId, "");
             strictEqual(sse1.closed, false);
 
@@ -37,7 +37,7 @@ describe("sse", () => {
                     "Last-Event-ID": "123",
                 },
             });
-            const sse2 = new SSE(req2, { reconnectionTime: 1000 });
+            const sse2 = new EventEndpoint(req2, { reconnectionTime: 1000 });
             strictEqual(sse2.lastEventId, "123");
             strictEqual(sse2.closed, false);
 
@@ -52,21 +52,21 @@ describe("sse", () => {
                     "Last-Event-ID": "123",
                 },
             });
-            const sse3 = new SSE(req3);
+            const sse3 = new EventEndpoint(req3);
             strictEqual(sse3.lastEventId, "123");
             strictEqual(sse3.closed, true);
         });
 
         it("dispatchEvent", jsext.func(async function (defer) {
-            const { SSE } = await import("./sse.ts");
+            const { EventEndpoint } = await import("./sse.ts");
 
             const port = await randomPort();
-            const task = asyncTask<InstanceType<typeof SSE>>();
+            const task = asyncTask<InstanceType<typeof EventEndpoint>>();
 
             if (isDeno) {
                 const controller = new AbortController();
                 Deno.serve({ port, signal: controller.signal }, req => {
-                    const sse = new SSE(req);
+                    const sse = new EventEndpoint(req);
                     task.resolve(sse);
                     return sse.response!;
                 });
@@ -75,7 +75,7 @@ describe("sse", () => {
                 const server = Bun.serve({
                     port,
                     fetch: async (req: Request) => {
-                        const sse = new SSE(req);
+                        const sse = new EventEndpoint(req);
                         task.resolve(sse);
                         return sse.response!;
                     },
@@ -84,7 +84,7 @@ describe("sse", () => {
             } else {
                 const http = await import("node:http");
                 const server = http.createServer(withWeb(async (req) => {
-                    const sse = new SSE(req);
+                    const sse = new EventEndpoint(req);
                     task.resolve(sse);
                     return sse.response!;
                 }));
@@ -158,15 +158,15 @@ describe("sse", () => {
         }));
 
         it("close", jsext.func(async function (defer) {
-            const { SSE } = await import("./sse.ts");
+            const { EventEndpoint } = await import("./sse.ts");
 
             const port = await randomPort();
-            const task = asyncTask<InstanceType<typeof SSE>>();
+            const task = asyncTask<InstanceType<typeof EventEndpoint>>();
 
             if (isDeno) {
                 const controller = new AbortController();
                 Deno.serve({ port, signal: controller.signal }, req => {
-                    const sse = new SSE(req);
+                    const sse = new EventEndpoint(req);
                     task.resolve(sse);
                     return sse.response!;
                 });
@@ -175,7 +175,7 @@ describe("sse", () => {
                 const server = Bun.serve({
                     port,
                     fetch: async (req: Request) => {
-                        const sse = new SSE(req);
+                        const sse = new EventEndpoint(req);
                         task.resolve(sse);
                         return sse.response!;
                     },
@@ -184,7 +184,7 @@ describe("sse", () => {
             } else {
                 const http = await import("node:http");
                 const server = http.createServer(withWeb(async (req) => {
-                    const sse = new SSE(req);
+                    const sse = new EventEndpoint(req);
                     task.resolve(sse);
                     return sse.response!;
                 }));
@@ -218,16 +218,16 @@ describe("sse", () => {
                 this.skip();
             }
 
-            const { SSE } = await import("./sse.ts");
+            const { EventEndpoint } = await import("./sse.ts");
 
             let closeEvent: CloseEvent | undefined = undefined;
-            const task = asyncTask<InstanceType<typeof SSE>>();
+            const task = asyncTask<InstanceType<typeof EventEndpoint>>();
             const port = await randomPort();
 
             if (isDeno) {
                 const controller = new AbortController();
                 Deno.serve({ port, signal: controller.signal }, req => {
-                    const sse = new SSE(req);
+                    const sse = new EventEndpoint(req);
 
                     sse.addEventListener("close", _ev => {
                         closeEvent = _ev as CloseEvent;
@@ -241,7 +241,7 @@ describe("sse", () => {
                 const server = Bun.serve({
                     port,
                     fetch: async (req: Request) => {
-                        const sse = new SSE(req);
+                        const sse = new EventEndpoint(req);
 
                         sse.addEventListener("close", _ev => {
                             closeEvent = _ev as CloseEvent;
@@ -255,7 +255,7 @@ describe("sse", () => {
             } else {
                 const http = await import("node:http");
                 const server = http.createServer(withWeb(async (req) => {
-                    const sse = new SSE(req);
+                    const sse = new EventEndpoint(req);
 
                     sse.addEventListener("close", _ev => {
                         closeEvent = _ev as CloseEvent;
@@ -287,7 +287,7 @@ describe("sse", () => {
         }));
     });
 
-    describe("SSE (Node.js APIs)", () => {
+    describe("EventEndpoint (Node.js APIs)", () => {
         if (!isNode ||
             typeof EventTarget === "undefined" ||
             typeof WritableStream === "undefined"
@@ -297,11 +297,11 @@ describe("sse", () => {
 
         it("constructor", async () => {
             const http = await import("node:http");
-            const { SSE } = await import("./sse.ts");
+            const { EventEndpoint } = await import("./sse.ts");
 
-            const task1 = asyncTask<InstanceType<typeof SSE>>();
+            const task1 = asyncTask<InstanceType<typeof EventEndpoint>>();
             const server1 = http.createServer((req, res) => {
-                const sse = new SSE(req, res);
+                const sse = new EventEndpoint(req, res);
                 task1.resolve(sse);
             });
             const port1 = await randomPort();
@@ -321,9 +321,9 @@ describe("sse", () => {
             await until(() => sse1.closed);
             server1.close();
 
-            const task2 = asyncTask<InstanceType<typeof SSE>>();
+            const task2 = asyncTask<InstanceType<typeof EventEndpoint>>();
             const server2 = http.createServer((req, res) => {
-                const sse = new SSE(req, res, { reconnectionTime: 1000 });
+                const sse = new EventEndpoint(req, res, { reconnectionTime: 1000 });
                 task2.resolve(sse);
             });
             const port2 = await randomPort();
@@ -345,9 +345,9 @@ describe("sse", () => {
             server2.close();
 
 
-            const task3 = asyncTask<InstanceType<typeof SSE>>();
+            const task3 = asyncTask<InstanceType<typeof EventEndpoint>>();
             const server3 = http.createServer((req, res) => {
-                const sse = new SSE(req, res);
+                const sse = new EventEndpoint(req, res);
                 task3.resolve(sse);
             });
             const port3 = await randomPort();
@@ -370,11 +370,11 @@ describe("sse", () => {
         it("dispatchEvent", jsext.func(async function (defer) {
             const http = await import("node:http");
             const { default: EventSource } = await import("eventsource");
-            const { SSE } = await import("./sse.ts");
+            const { EventEndpoint } = await import("./sse.ts");
 
-            const task = asyncTask<InstanceType<typeof SSE>>();
+            const task = asyncTask<InstanceType<typeof EventEndpoint>>();
             const server = http.createServer((req, res) => {
-                const sse = new SSE(req, res);
+                const sse = new EventEndpoint(req, res);
                 task.resolve(sse);
             });
             const port = await randomPort();
@@ -434,11 +434,11 @@ describe("sse", () => {
         it("close", jsext.func(async function (defer) {
             const http = await import("node:http");
             const { default: EventSource } = await import("eventsource");
-            const { SSE } = await import("./sse.ts");
+            const { EventEndpoint } = await import("./sse.ts");
 
-            const task = asyncTask<InstanceType<typeof SSE>>();
+            const task = asyncTask<InstanceType<typeof EventEndpoint>>();
             const server = http.createServer((req, res) => {
-                const sse = new SSE(req, res);
+                const sse = new EventEndpoint(req, res);
                 task.resolve(sse);
             });
             const port = await randomPort();
@@ -461,12 +461,12 @@ describe("sse", () => {
         it("listen close event", jsext.func(async function (defer) {
             const http = await import("node:http");
             const { default: EventSource } = await import("eventsource");
-            const { SSE } = await import("./sse.ts");
+            const { EventEndpoint } = await import("./sse.ts");
 
             let closeEvent: CloseEvent | undefined = undefined;
-            const task = asyncTask<InstanceType<typeof SSE>>();
+            const task = asyncTask<InstanceType<typeof EventEndpoint>>();
             const server = http.createServer((req, res) => {
-                const sse = new SSE(req, res);
+                const sse = new EventEndpoint(req, res);
 
                 sse.addEventListener("close", _ev => {
                     closeEvent = _ev as CloseEvent;
@@ -500,14 +500,14 @@ describe("sse", () => {
         }
 
         it("listen message event", async () => {
-            const { SSE, EventClient } = await import("./sse.ts");
+            const { EventEndpoint, EventClient } = await import("./sse.ts");
 
             const req = new Request("http://localhost:8080", {
                 headers: {
                     "Accept": "text/event-stream",
                 },
             });
-            const sse = new SSE(req);
+            const sse = new EventEndpoint(req);
             strictEqual(sse.closed, false);
             const { response } = sse;
 
@@ -546,14 +546,14 @@ describe("sse", () => {
         });
 
         it("listen custom event", async () => {
-            const { SSE, EventClient } = await import("./sse.ts");
+            const { EventEndpoint, EventClient } = await import("./sse.ts");
 
             const req = new Request("http://localhost:8080", {
                 headers: {
                     "Accept": "text/event-stream",
                 },
             });
-            const sse = new SSE(req);
+            const sse = new EventEndpoint(req);
             strictEqual(sse.closed, false);
             const { response } = sse;
 
@@ -592,14 +592,14 @@ describe("sse", () => {
         });
 
         it("listen close event by the server", async () => {
-            const { SSE, EventClient } = await import("./sse.ts");
+            const { EventEndpoint, EventClient } = await import("./sse.ts");
 
             const req = new Request("http://localhost:8080", {
                 headers: {
                     "Accept": "text/event-stream",
                 },
             });
-            const sse = new SSE(req);
+            const sse = new EventEndpoint(req);
             strictEqual(sse.closed, false);
             const { response } = sse;
 
@@ -620,14 +620,14 @@ describe("sse", () => {
         });
 
         it("listen close event by the client", async () => {
-            const { SSE, EventClient } = await import("./sse.ts");
+            const { EventEndpoint, EventClient } = await import("./sse.ts");
 
             const req = new Request("http://localhost:8080", {
                 headers: {
                     "Accept": "text/event-stream",
                 },
             });
-            const sse = new SSE(req);
+            const sse = new EventEndpoint(req);
             strictEqual(sse.closed, false);
             const { response } = sse;
 

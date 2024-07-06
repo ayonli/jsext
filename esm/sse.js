@@ -1,12 +1,13 @@
 import { createCloseEvent, createErrorEvent } from './event.js';
 import { isBun } from './env.js';
+import runtime from './runtime.js';
 
 /**
  * This module provides tools for working with server-sent events.
  *
- * The {@link SSE} class is used to handle SSE requests and send messages to the
- * client, while the {@link EventClient} class is used to process messages sent
- * by the server.
+ * The {@link EventEndpoint} class is used to handle SSE requests on the server
+ * and send messages to the client, while the {@link EventClient} class is
+ * used to process messages sent by the server.
  *
  * NOTE: This module depends on the Web Streams API, in Node.js, it requires
  * Node.js v16.5 or higher.
@@ -15,6 +16,31 @@ import { isBun } from './env.js';
  * @experimental
  */
 var _a, _b, _c;
+if (runtime().identity === "cloudflare-worker") {
+    // Cloudflare Workers does not fully implement the MessageEvent, so we need
+    // to implement it ourselves.
+    globalThis.MessageEvent = class MessageEvent extends Event {
+        constructor(type, eventInitDict) {
+            var _d, _e, _f;
+            super(type, eventInitDict);
+            this.data = undefined;
+            this.lastEventId = "";
+            this.origin = "";
+            this.ports = [];
+            this.source = null;
+            if (eventInitDict) {
+                this.data = eventInitDict.data;
+                this.lastEventId = (_d = eventInitDict.lastEventId) !== null && _d !== void 0 ? _d : "";
+                this.origin = (_e = eventInitDict.origin) !== null && _e !== void 0 ? _e : "";
+                this.ports = (_f = eventInitDict.ports) !== null && _f !== void 0 ? _f : [];
+            }
+        }
+        initMessageEvent(type, bubbles, cancelable, data, origin, lastEventId, source, ports) {
+            this.initEvent(type, bubbles !== null && bubbles !== void 0 ? bubbles : false, cancelable !== null && cancelable !== void 0 ? cancelable : false);
+            Object.assign(this, { data, origin, lastEventId, source, ports });
+        }
+    };
+}
 const SSEMarkClosed = new Set();
 const _lastEventId = Symbol.for("lastEventId");
 const _closed = Symbol.for("closed");
@@ -24,7 +50,7 @@ const _reader = Symbol.for("reader");
 const _reconnectionTime = Symbol.for("reconnectionTime");
 const encoder = new TextEncoder();
 /**
- * A server-sent events (SSE) implementation that can be used to send messages
+ * An SSE (server-sent events) implementation that can be used to send messages
  * to the client. This implementation is based on the `EventTarget` interface
  * and conforms the web standard.
  *
@@ -35,24 +61,24 @@ const encoder = new TextEncoder();
  * @example
  * ```ts
  * // with Web APIs
- * import { SSE } from "@ayonli/jsext/sse";
+ * import { EventEndpoint } from "@ayonli/jsext/sse";
  *
  * export default {
  *     async fetch(req: Request) {
- *         const sse = new SSE(req);
+ *         const events = new EventEndpoint(req);
  *
- *         sse.addEventListener("close", (ev) => {
+ *         events.addEventListener("close", (ev) => {
  *             console.log(`The connection is closed, reason: ${ev.reason}`);
  *         });
  *
  *         setTimeout(() => {
- *             sse.dispatchEvent(new MessageEvent("my-event", {
+ *             events.dispatchEvent(new MessageEvent("my-event", {
  *                 data: "Hello, World!",
  *                 lastEventId: "1",
  *             }));
  *         }, 1_000);
  *
- *         return sse.response;
+ *         return events.response;
  *     }
  * }
  * ```
@@ -61,17 +87,17 @@ const encoder = new TextEncoder();
  * ```ts
  * // with Node.js APIs
  * import * as http from "node:http";
- * import { SSE } from "@ayonli/jsext/sse";
+ * import { EventEndpoint } from "@ayonli/jsext/sse";
  *
  * const server = http.createServer((req, res) => {
- *     const sse = new SSE(req, res);
+ *     const events = new EventEndpoint(req, res);
  *
- *     sse.addEventListener("close", (ev) => {
+ *     events.addEventListener("close", (ev) => {
  *         console.log(`The connection is closed, reason: ${ev.reason}`);
  *     });
  *
  *     setTimeout(() => {
- *         sse.dispatchEvent(new MessageEvent("my-event", {
+ *         events.dispatchEvent(new MessageEvent("my-event", {
  *             data: "Hello, World!",
  *             lastEventId: "1",
  *         }));
@@ -81,7 +107,7 @@ const encoder = new TextEncoder();
  * server.listen(3000);
  * ```
  */
-class SSE extends EventTarget {
+class EventEndpoint extends EventTarget {
     constructor(request, ...args) {
         var _d, _e, _f, _g, _h;
         super();
@@ -206,12 +232,11 @@ class SSE extends EventTarget {
     }
     dispatchEvent(event) {
         if (event instanceof MessageEvent) {
-            const _event = event;
             if (event.type === "message") {
-                this.send(_event.data, _event.lastEventId).catch(() => { });
+                this.send(event.data, event.lastEventId).catch(() => { });
             }
             else {
-                this.sendEvent(_event.type, _event.data, _event.lastEventId)
+                this.sendEvent(event.type, event.data, event.lastEventId)
                     .catch(() => { });
             }
             return !event.cancelable || !event.defaultPrevented;
@@ -292,6 +317,10 @@ class SSE extends EventTarget {
         });
     }
 }
+/**
+ * @deprecated Use {@link EventEndpoint} instead.
+ */
+const SSE = EventEndpoint;
 /**
  * An SSE (server-sent events) client that consumes event messages sent by the
  * server. Unlike the `EventSource` API, which takes a URL and only supports
@@ -471,5 +500,5 @@ class EventClient extends EventTarget {
 }
 _a = _lastEventId, _b = _reconnectionTime, _c = _closed;
 
-export { EventClient, SSE };
+export { EventClient, EventEndpoint, SSE };
 //# sourceMappingURL=sse.js.map
