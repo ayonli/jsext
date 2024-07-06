@@ -19,8 +19,8 @@ class WebSocketServer {
         }
     }
     async upgrade(request) {
-        if ("httpVersion" in request) {
-            throw new TypeError("Expected an Request instance");
+        if ("socket" in request) {
+            throw new TypeError("Expected a Request instance");
         }
         const upgradeHeader = request.headers.get("Upgrade");
         if (!upgradeHeader || upgradeHeader !== "websocket") {

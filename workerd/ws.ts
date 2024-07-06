@@ -35,8 +35,8 @@ export class WebSocketServer {
     upgrade(request: Request): Promise<{ socket: WebSocketConnection; response: Response; }>;
     upgrade(request: IncomingMessage): Promise<{ socket: WebSocketConnection; }>;
     async upgrade(request: Request | IncomingMessage): Promise<{ socket: WebSocketConnection; response: Response; }> {
-        if ("httpVersion" in request) {
-            throw new TypeError("Expected an Request instance");
+        if ("socket" in request) {
+            throw new TypeError("Expected a Request instance");
         }
 
         const upgradeHeader = request.headers.get("Upgrade");

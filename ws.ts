@@ -204,7 +204,7 @@ export class WebSocketServer {
         socket: WebSocketConnection;
         response?: Response;
     }> {
-        const upgradeHeader = "httpVersion" in request
+        const upgradeHeader = "socket" in request
             ? request.headers["upgrade"]
             : request.headers.get("Upgrade");
         if (!upgradeHeader || upgradeHeader !== "websocket") {
@@ -217,7 +217,7 @@ export class WebSocketServer {
         const { identity } = runtime();
 
         if (identity === "deno") {
-            if ("httpVersion" in request) {
+            if ("socket" in request) {
                 throw new TypeError("Node.js support is not implemented outside Node.js runtime.");
             }
 
@@ -264,7 +264,7 @@ export class WebSocketServer {
 
             return { socket, response };
         } else if (identity === "bun") {
-            if ("httpVersion" in request) {
+            if ("socket" in request) {
                 throw new TypeError("Node.js support is not implemented outside Node.js runtime.");
             }
 
@@ -307,13 +307,13 @@ export class WebSocketServer {
 
             const wsServer = await this[_wsServer];
             return new Promise((resolve, reject) => {
-                const isNodeRequest = "httpVersion" in request;
+                const isNodeRequest = "socket" in request;
 
                 if (!isNodeRequest && Reflect.has(request, Symbol.for("incomingMessage"))) {
                     request = Reflect.get(request, Symbol.for("incomingMessage"));
                 }
 
-                if (!("httpVersion" in request)) {
+                if (!("socket" in request)) {
                     return reject(new TypeError("Expected an instance of http.IncomingMessage"));
                 }
 
