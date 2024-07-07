@@ -761,7 +761,7 @@ if (isMain(import.meta)) {
                 fsDir: filename,
                 listDir: true,
                 headers: {
-                    "Server": typeof navigator === "object"
+                    "Server": typeof navigator === "object" && navigator.userAgent
                         ? navigator.userAgent
                         : typeof process === "object"
                             ? `Node.js/${process.version}`
