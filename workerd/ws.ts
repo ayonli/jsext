@@ -1,4 +1,4 @@
-import { createCloseEvent, createErrorEvent } from "../event";
+import { createCloseEvent, createErrorEvent } from "../event.ts";
 import type { BunServer } from "../http/server.ts";
 import type { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike } from "../ws/base.ts";
 import type { IncomingMessage } from "node:http";

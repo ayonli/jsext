@@ -1,18 +1,7 @@
-import parallel from "./parallel";
+import { RunOptions, WorkerTask } from "../run.ts";
+import parallel from "./parallel.ts";
 
-export interface RunOptions {
-    fn?: string;
-    timeout?: number;
-    keepAlive?: boolean;
-    adapter?: "worker_threads" | "child_process";
-}
-
-export interface WorkerTask<R> {
-    workerId: number;
-    result(): Promise<R>;
-    iterate(): AsyncIterable<R>;
-    abort(reason?: Error | null): Promise<void>;
-}
+export type { RunOptions, WorkerTask };
 
 async function run<R, A extends any[] = any[]>(
     script: string,

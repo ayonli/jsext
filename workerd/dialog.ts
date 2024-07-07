@@ -1,6 +1,26 @@
-export interface DialogOptions {
-    gui?: boolean;
-}
+import type {
+    DialogOptions,
+    DownloadFileOptions,
+    FileDialogOptions,
+    PickFileOptions,
+    ProgressAbortHandler,
+    ProgressFunc,
+    ProgressState,
+    PromptOptions,
+    SaveFileOptions,
+} from "../dialog.ts";
+
+export type {
+    DialogOptions,
+    DownloadFileOptions,
+    FileDialogOptions,
+    PickFileOptions,
+    ProgressAbortHandler,
+    ProgressFunc,
+    ProgressState,
+    PromptOptions,
+    SaveFileOptions,
+};
 
 export async function alert(message: string, options: DialogOptions = {}): Promise<void> {
     void message, options;
@@ -10,12 +30,6 @@ export async function alert(message: string, options: DialogOptions = {}): Promi
 export async function confirm(message: string, options: DialogOptions = {}): Promise<boolean> {
     void message, options;
     throw new Error("Unsupported runtime");
-}
-
-export interface PromptOptions extends DialogOptions {
-    defaultValue?: string | undefined;
-    type?: "text" | "password";
-    mask?: string;
 }
 
 export async function prompt(
@@ -31,15 +45,6 @@ export async function prompt(
     throw new Error("Unsupported runtime");
 }
 
-export type ProgressState = {
-    percent?: number;
-    message?: string;
-};
-
-export type ProgressFunc<T> = (set: (state: ProgressState) => void, signal: AbortSignal) => Promise<T>;
-export type ProgressAbortHandler<T> = () => T | never | Promise<T | never>;
-
-
 export async function progress<T>(
     message: string,
     fn: ProgressFunc<T>,
@@ -47,16 +52,6 @@ export async function progress<T>(
 ): Promise<T | null> {
     void message, fn, onAbort;
     throw new Error("Unsupported runtime");
-}
-
-export interface FileDialogOptions {
-    title?: string | undefined;
-    type?: string | undefined;
-}
-
-export interface PickFileOptions extends FileDialogOptions {
-    forSave?: boolean;
-    defaultName?: string | undefined;
 }
 
 export async function pickFile(
@@ -113,12 +108,6 @@ export async function openDirectory(
     throw new Error("Unsupported runtime");
 }
 
-export interface SaveFileOptions {
-    title?: string;
-    name?: string;
-    type?: string;
-}
-
 export async function saveFile(file: File, options?: Pick<SaveFileOptions, "title">): Promise<void>;
 export async function saveFile(
     file: Blob | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array>,
@@ -134,7 +123,7 @@ export async function saveFile(
 
 export async function downloadFile(
     url: string | URL,
-    options: SaveFileOptions = {}
+    options: DownloadFileOptions = {}
 ): Promise<void> {
     void url, options;
     throw new Error("Unsupported runtime");

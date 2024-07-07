@@ -1,18 +1,10 @@
 import { FileSystemOptions } from "../fs/types.ts";
 import Tarball, { TarEntry } from "../archive/Tarball.ts";
+import type { TarOptions } from "../archive/tar.ts";
+import type { UntarOptions } from "../archive/untar.ts";
 
 export { Tarball };
-export type { TarEntry };
-
-export interface TarOptions extends FileSystemOptions {
-    gzip?: boolean;
-    signal?: AbortSignal;
-}
-
-export interface UntarOptions extends TarOptions {
-    size?: number;
-    onProgress?: (event: ProgressEvent) => void;
-}
+export type { TarEntry, TarOptions, UntarOptions };
 
 export function tar(
     src: string | FileSystemDirectoryHandle,

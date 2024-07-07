@@ -1,16 +1,7 @@
-export * from "../cli/common.ts";
+import type { CommandResult, SudoOptions } from "../cli.ts";
 
-export interface CommandResult {
-    /**
-     * The exit code of the command. A non-zero value indicates an error.
-     */
-    code: number;
-    /**
-     * The standard output of the command, may end with a newline character.
-     */
-    stdout: string;
-    stderr: string;
-};
+export type { CommandResult };
+export * from "../cli/common.ts";
 
 export async function run(cmd: string, args: string[]): Promise<CommandResult> {
     void cmd, args;
@@ -21,11 +12,6 @@ export async function powershell(script: string): Promise<CommandResult> {
     void script;
     throw new Error("Unsupported runtime");
 }
-
-export interface SudoOptions {
-    gui?: boolean;
-    title?: string;
-};
 
 export async function sudo(
     cmd: string,
