@@ -73,6 +73,7 @@
             "augment.ts",
             "augment/*",
             "workerd/*",
+            "!workerd/types.ts",
             "worker-node.ts",
             "test-deno.ts",
             "lib.deno.d.ts",
