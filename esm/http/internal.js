@@ -1,8 +1,16 @@
+import { orderBy } from '../array.js';
 import { join } from '../path.js';
 import { dedent } from '../string.js';
 
-function respondDir(filenames, pathname, extraHeaders = {}) {
-    const listHtml = filenames.map((name) => {
+async function respondDir(entries, pathname, extraHeaders = {}) {
+    const list = [
+        ...orderBy(entries.filter(e => e.kind === "directory"), e => e.name).map(e => e.name + "/"),
+        ...orderBy(entries.filter(e => e.kind === "file"), e => e.name).map(e => e.name),
+    ];
+    if (pathname !== "/") {
+        list.unshift("../");
+    }
+    const listHtml = list.map((name) => {
         let url = join(pathname, name);
         if (name.endsWith("/") && url !== "/") {
             url += "/";

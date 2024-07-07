@@ -42,7 +42,6 @@
 
 import type { IncomingMessage, ServerResponse, Server as HttpServer } from "node:http";
 import type { Http2SecureServer, Http2ServerRequest, Http2ServerResponse } from "node:http2";
-import { orderBy } from "./array.ts";
 import { asyncTask, sleep } from "./async.ts";
 import bytes from "./bytes.ts";
 import { args, parseArgs } from "./cli.ts";
@@ -638,30 +637,15 @@ export async function serveStatic(
                 return serveStatic(new Request(join(req.url, "index.html"), req), options);
             } else if (await exists(join(filename, "index.htm"))) {
                 return serveStatic(new Request(join(req.url, "index.htm"), req), options);
-            } else if (!options.listDir) {
+            } else if (options.listDir) {
+                const entries = await readAsArray(readDir(filename));
+                return respondDir(entries, pathname, extraHeaders);
+            } else {
                 return new Response("Forbidden", {
                     status: 403,
                     statusText: "Forbidden",
                     headers: extraHeaders,
                 });
-            } else {
-                const entries = await readAsArray(readDir(filename));
-                const list = [
-                    ...orderBy(
-                        entries.filter(e => e.kind === "directory"),
-                        e => e.name
-                    ).map(e => e.name + "/"),
-                    ...orderBy(
-                        entries.filter(e => e.kind === "file"),
-                        e => e.name
-                    ).map(e => e.name),
-                ];
-
-                if (pathname !== "/") {
-                    list.unshift("../");
-                }
-
-                return respondDir(list, pathname, extraHeaders);
             }
         }
     } else if (info.kind !== "file") {

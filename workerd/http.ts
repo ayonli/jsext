@@ -1,6 +1,6 @@
 import bytes from "../bytes.ts";
 import { getMIME } from "../filetype.ts";
-import { FileInfo } from "./fs.ts";
+import { FileInfo, exists, readDir, readFile } from "./fs.ts";
 import { sha256 } from "./hash.ts";
 import { respondDir } from "../http/internal.ts";
 import {
@@ -11,7 +11,9 @@ import {
     Server,
 } from "../http/server.ts";
 import { ifMatch, ifNoneMatch, parseRange, Range } from "../http/util.ts";
+import { as } from "../object.ts";
 import { extname, join, startsWith } from "../path.ts";
+import { readAsArray } from "../reader.ts";
 import { stripStart } from "../string.ts";
 import { KVNamespace } from "./types.ts";
 import { WebSocketServer } from "./ws.ts";
@@ -100,82 +102,57 @@ export async function serveStatic(
     if (pathname.endsWith("/")) {
         const indexHtml = filename ? join(filename, "index.html") : "index.html";
         const indexHtm = filename ? join(filename, "index.htm") : "index.htm";
-        let indexPage = await kv.get(indexHtml, { type: "arrayBuffer" });
 
-        if (indexPage) {
-            return await serveFile(new Uint8Array(indexPage), {
+        if (await exists(indexHtml, { root: kv })) {
+            const data = await readFile(indexHtml, { root: kv });
+            return await serveFile(data, {
                 filename: indexHtml,
                 reqHeaders: req.headers,
                 extraHeaders,
                 maxAge: options.maxAge ?? 0,
             });
-        } else if ((indexPage = await kv.get(indexHtm, { type: "arrayBuffer" }))) {
-            return await serveFile(new Uint8Array(indexPage), {
+        } else if (await exists(indexHtm, { root: kv })) {
+            const data = await readFile(indexHtm, { root: kv });
+            return await serveFile(data, {
                 filename: indexHtm,
                 reqHeaders: req.headers,
                 extraHeaders,
                 maxAge: options.maxAge ?? 0,
             });
-        } else if (!options.listDir) {
+        } else if (options.listDir) {
+            const entries = await readAsArray(readDir(filename, { root: kv }));
+            return respondDir(entries, pathname, extraHeaders);
+        } else {
             return new Response("Forbidden", {
                 status: 403,
                 statusText: "Forbidden",
                 headers: extraHeaders,
             });
-        } else {
-            const prefix = "$__MINIFLARE_SITES__$/";
-            const dir = prefix + (filename ? encodeURIComponent(filename + "/") : "");
-            const dirEntries = new Set<string>();
-            const fileEntries = new Set<string>();
-            let result: Awaited<ReturnType<KVNamespace["list"]>> = {
-                keys: [],
-                list_complete: false,
-                cursor: null,
-            };
-
-            while (!result.list_complete) {
-                result = await kv.list({ prefix: dir, cursor: result.cursor ?? "" });
-
-                for (const { name } of result.keys) {
-                    const relativePath = decodeURIComponent(name.slice(dir.length));
-                    const parts = relativePath.split("/");
-
-                    if (parts.length === 2) { // direct folder
-                        dirEntries.add(parts[0]! + "/");
-                    } else if (parts.length === 1) { // direct file
-                        fileEntries.add(parts[0]!);
-                    }
-                }
-            }
-
-            const list = [
-                ...[...dirEntries].sort(),
-                ...[...fileEntries].sort(),
-            ];
-
-            if (pathname !== "/") {
-                list.unshift("../");
-            }
-
-            return respondDir(list, pathname, extraHeaders);
         }
     } else if (filename) {
-        const buffer = await kv.get(filename, { type: "arrayBuffer" });
-
-        if (!buffer) {
-            return new Response("Not Found", {
-                status: 404,
-                statusText: "Not Found",
-                headers: extraHeaders,
+        try {
+            const data = await readFile(filename, { root: kv });
+            return await serveFile(data, {
+                filename,
+                reqHeaders: req.headers,
+                extraHeaders,
+                maxAge: options.maxAge ?? 0,
             });
+        } catch (err) {
+            if (as(err, Exception)?.name === "NotFoundError") {
+                return new Response("Not Found", {
+                    status: 404,
+                    statusText: "Not Found",
+                    headers: extraHeaders,
+                });
+            } else {
+                return new Response("Internal Server Error", {
+                    status: 500,
+                    statusText: "Internal Server Error",
+                    headers: extraHeaders,
+                });
+            }
         }
-
-        return await serveFile(new Uint8Array(buffer), {
-            filename,
-            reqHeaders: req.headers,
-            extraHeaders,
-            maxAge: options.maxAge ?? 0,
-        });
     } else {
         return Response.redirect(req.url + "/", 301);
     }

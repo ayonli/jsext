@@ -129,8 +129,8 @@ export interface ServeStaticOptions {
     fsDir?: string;
     /**
      * A KV namespace in Cloudflare Workers where the static files are stored.
-     * This option is only needed in Cloudflare Workers, usually obtained via
-     * `env.__STATIC_CONTENT`.
+     * This option is only needed in Cloudflare Workers, usually obtained from
+     * the `__STATIC_CONTENT` binding.
      */
     kv?: KVNamespace;
     /**
@@ -215,7 +215,7 @@ export class Server {
                         return { events, response: events.response! };
                     },
                     upgradeWebSocket: () => ws.upgrade(req),
-                    waitUntil: ctx.waitUntil.bind(ctx),
+                    waitUntil: ctx.waitUntil?.bind(ctx),
                     bindings,
                 });
             };

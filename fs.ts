@@ -7,6 +7,7 @@
  * - Deno
  * - Bun
  * - Modern browsers
+ * - Cloudflare Workers (limited support and experimental)
  * 
  * We can also use the {@link runtime} function to check whether the runtime
  * has file system support. When `runtime().fsSupport` is `true`, this module
@@ -17,7 +18,15 @@
  * In Chromium browsers, this module can also access the device's local file
  * system via `window.showOpenFilePicker()` and `window.showDirectoryPicker()`.
  * 
- * **Exceptions:**
+ * This module also provides limited support for Cloudflare Workers, however it
+ * requires setting the `[site].bucket` option in the `wrangler.toml` file. Only
+ * the reading functions are supported, such as {@link readFile} and
+ * {@link readDir}, these functions allow us reading static files in the in the
+ * workers, writing functions is not implemented at the moment. More details
+ * about serving static assets in Cloudflare workers can be found here:
+ * [Add static assets to an existing Workers project](https://developers.cloudflare.com/workers/configuration/sites/start-from-worker/).
+ * 
+ * **Errors:**
  * 
  * When a file system operation fails, this module throws an {@link Exception}
  * with one of the following names:
@@ -249,7 +258,7 @@ export async function getDirHandle(
     const { create = false, recursive = false } = options;
     const paths = split(stripStart(path, "/")).filter(p => p !== ".");
     const root = options.root ?? await rawOp(navigator.storage.getDirectory(), "directory");
-    let dir = root;
+    let dir = root as FileSystemDirectoryHandle;
 
     for (let i = 0; i < paths.length; i++) {
         const _path = paths[i]!;
@@ -319,6 +328,10 @@ export async function getFileHandle(
  * This function may throw an error if the path is invalid or the operation is
  * not allowed.
  * 
+ * NOTE: This function can also be used in Cloudflare Workers. However, it can
+ * only check the existence of a file since the Workers KV namespace does not
+ * have the concept of directories.
+ * 
  * @example
  * ```ts
  * // with the default storage
@@ -373,6 +386,8 @@ export interface StatOptions extends FileSystemOptions {
 
 /**
  * Returns the information of the given file or directory.
+ * 
+ * NOTE: This function can also be used in Cloudflare Workers.
  * 
  * @example
  * ```ts
@@ -648,6 +663,9 @@ export interface ReadDirOptions extends FileSystemOptions {
  * 
  * NOTE: The order of the entries is not guaranteed.
  * 
+ * NOTE: This function can also be used in Cloudflare Workers, but it's very
+ * inefficient if the `recursive` option is not set.
+ * 
  * @example
  * ```ts
  * // with the default storage
@@ -752,6 +770,8 @@ export async function* readDir(
  * function is guaranteed, they are ordered first by kind (directories before
  * files), then by names alphabetically.
  * 
+ * NOTE: This function can also be used in Cloudflare Workers.
+ * 
  * @example
  * ```ts
  * // with the default storage
@@ -779,7 +799,7 @@ export async function readTree(
     const tree = makeTree<DirEntry, DirTree>(target, entries, true);
 
     if (!tree.handle && options.root) {
-        tree.handle = options.root;
+        tree.handle = options.root as FileSystemDirectoryHandle;
     }
 
     return tree;
@@ -841,6 +861,8 @@ export interface ReadFileOptions extends FileSystemOptions {
 
 /**
  * Reads the content of the given file in bytes.
+ * 
+ * NOTE: This function can also be used in Cloudflare Workers.
  * 
  * @example
  * ```ts
@@ -1742,7 +1764,7 @@ export interface LinkOptions {
  * Creates a hard link (or symbolic link) from the source path to the destination
  * path.
  * 
- * NOTE: This function is not available in the browser.
+ * NOTE: This function is only available in Node.js, Deno and Bun.
  * 
  * @example
  * ```ts
@@ -1795,7 +1817,7 @@ export async function link(src: string, dest: string, options: LinkOptions = {})
 /**
  * Returns the destination path of a symbolic link.
  * 
- * NOTE: This function is not available in the browser.
+ * NOTE: This function is only available in Node.js, Deno and Bun.
  * 
  * @example
  * ```ts
@@ -1837,8 +1859,8 @@ export async function readLink(path: string): Promise<string> {
  * | 1      | execute only |
  * | 0      | no permission |
  * 
- * NOTE: This function only works in Unix/Linux server-side environments, in
- * other environments, it's a no-op.
+ * NOTE: This function is only available in Node.js, Deno and Bun, and only
+ * works in Unix/Linux systems, in other environments, it's a no-op.
  * 
  * @example
  * ```ts
@@ -1862,8 +1884,8 @@ export async function chmod(path: string, mode: number): Promise<void> {
 /**
  * Changes the owner and group of the specified file or directory.
  * 
- * NOTE: This function only works in Unix/Linux server-side environments, in
- * other environments, it's a no-op.
+ * NOTE: This function is only available in Node.js, Deno and Bun, and only
+ * works in Unix/Linux systems, in other environments, it's a no-op.
  * 
  * @example
  * ```ts
@@ -1889,7 +1911,8 @@ export async function chown(path: string, uid: number, gid: number): Promise<voi
  * or directory. Given times are either in seconds (UNIX epoch time) or as `Date`
  * objects.
  * 
- * NOTE: This function is a no-op in the browser.
+ * NOTE: This function only works in Node.js, Deno and Bun, in other
+ * environments, it's a no-op.
  * 
  * @example
  * ```ts

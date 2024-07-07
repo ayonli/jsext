@@ -1,11 +1,14 @@
 import bytes from '../bytes.js';
 import { getMIME } from '../filetype.js';
+import { exists, readFile, readDir } from './fs.js';
 import { sha256 } from '../hash/web.js';
 import { respondDir } from '../http/internal.js';
 import { Server } from '../http/server.js';
 import { parseRange, ifNoneMatch, ifMatch } from '../http/util.js';
 export { parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, stringifyCookie, stringifyCookies, verifyBasicAuth } from '../http/util.js';
+import { as } from '../object.js';
 import { join, extname } from '../path.js';
+import { readAsArray } from '../reader.js';
 import { stripStart } from '../string.js';
 import { WebSocketServer } from './ws.js';
 import { startsWith } from '../path/util.js';
@@ -74,78 +77,62 @@ async function serveStatic(req, options = {}) {
     if (pathname.endsWith("/")) {
         const indexHtml = filename ? join(filename, "index.html") : "index.html";
         const indexHtm = filename ? join(filename, "index.htm") : "index.htm";
-        let indexPage = await kv.get(indexHtml, { type: "arrayBuffer" });
-        if (indexPage) {
-            return await serveFile(new Uint8Array(indexPage), {
+        if (await exists(indexHtml, { root: kv })) {
+            const data = await readFile(indexHtml, { root: kv });
+            return await serveFile(data, {
                 filename: indexHtml,
                 reqHeaders: req.headers,
                 extraHeaders,
                 maxAge: (_c = options.maxAge) !== null && _c !== void 0 ? _c : 0,
             });
         }
-        else if ((indexPage = await kv.get(indexHtm, { type: "arrayBuffer" }))) {
-            return await serveFile(new Uint8Array(indexPage), {
+        else if (await exists(indexHtm, { root: kv })) {
+            const data = await readFile(indexHtm, { root: kv });
+            return await serveFile(data, {
                 filename: indexHtm,
                 reqHeaders: req.headers,
                 extraHeaders,
                 maxAge: (_d = options.maxAge) !== null && _d !== void 0 ? _d : 0,
             });
         }
-        else if (!options.listDir) {
+        else if (options.listDir) {
+            const entries = await readAsArray(readDir(filename, { root: kv }));
+            return respondDir(entries, pathname, extraHeaders);
+        }
+        else {
             return new Response("Forbidden", {
                 status: 403,
                 statusText: "Forbidden",
                 headers: extraHeaders,
             });
         }
-        else {
-            const prefix = "$__MINIFLARE_SITES__$/";
-            const dir = prefix + (filename ? encodeURIComponent(filename + "/") : "");
-            const dirEntries = new Set();
-            const fileEntries = new Set();
-            let result = {
-                keys: [],
-                list_complete: false,
-                cursor: null,
-            };
-            while (!result.list_complete) {
-                result = await kv.list({ prefix: dir, cursor: (_e = result.cursor) !== null && _e !== void 0 ? _e : "" });
-                for (const { name } of result.keys) {
-                    const relativePath = decodeURIComponent(name.slice(dir.length));
-                    const parts = relativePath.split("/");
-                    if (parts.length === 2) { // direct folder
-                        dirEntries.add(parts[0] + "/");
-                    }
-                    else if (parts.length === 1) { // direct file
-                        fileEntries.add(parts[0]);
-                    }
-                }
-            }
-            const list = [
-                ...[...dirEntries].sort(),
-                ...[...fileEntries].sort(),
-            ];
-            if (pathname !== "/") {
-                list.unshift("../");
-            }
-            return respondDir(list, pathname, extraHeaders);
-        }
     }
     else if (filename) {
-        const buffer = await kv.get(filename, { type: "arrayBuffer" });
-        if (!buffer) {
-            return new Response("Not Found", {
-                status: 404,
-                statusText: "Not Found",
-                headers: extraHeaders,
+        try {
+            const data = await readFile(filename, { root: kv });
+            return await serveFile(data, {
+                filename,
+                reqHeaders: req.headers,
+                extraHeaders,
+                maxAge: (_e = options.maxAge) !== null && _e !== void 0 ? _e : 0,
             });
         }
-        return await serveFile(new Uint8Array(buffer), {
-            filename,
-            reqHeaders: req.headers,
-            extraHeaders,
-            maxAge: (_f = options.maxAge) !== null && _f !== void 0 ? _f : 0,
-        });
+        catch (err) {
+            if (((_f = as(err, Exception)) === null || _f === void 0 ? void 0 : _f.name) === "NotFoundError") {
+                return new Response("Not Found", {
+                    status: 404,
+                    statusText: "Not Found",
+                    headers: extraHeaders,
+                });
+            }
+            else {
+                return new Response("Internal Server Error", {
+                    status: 500,
+                    statusText: "Internal Server Error",
+                    headers: extraHeaders,
+                });
+            }
+        }
     }
     else {
         return Response.redirect(req.url + "/", 301);

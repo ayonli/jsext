@@ -1,4 +1,3 @@
-import { orderBy } from './array.js';
 import { sleep, asyncTask } from './async.js';
 import bytes from './bytes.js';
 import { stripStart } from './string.js';
@@ -605,23 +604,16 @@ async function serveStatic(req, options = {}) {
             else if (await exists(join(filename, "index.htm"))) {
                 return serveStatic(new Request(join(req.url, "index.htm"), req), options);
             }
-            else if (!options.listDir) {
+            else if (options.listDir) {
+                const entries = await readAsArray(readDir(filename));
+                return respondDir(entries, pathname, extraHeaders);
+            }
+            else {
                 return new Response("Forbidden", {
                     status: 403,
                     statusText: "Forbidden",
                     headers: extraHeaders,
                 });
-            }
-            else {
-                const entries = await readAsArray(readDir(filename));
-                const list = [
-                    ...orderBy(entries.filter(e => e.kind === "directory"), e => e.name).map(e => e.name + "/"),
-                    ...orderBy(entries.filter(e => e.kind === "file"), e => e.name).map(e => e.name),
-                ];
-                if (pathname !== "/") {
-                    list.unshift("../");
-                }
-                return respondDir(list, pathname, extraHeaders);
             }
         }
     }

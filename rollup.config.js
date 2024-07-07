@@ -54,7 +54,8 @@ function isExternal(id) {
     return builtinModules.includes(id)
         || id.includes("node_modules")
         || id.startsWith("npm:")
-        || id.startsWith("jsr:");
+        || id.startsWith("jsr:")
+        || id === "__STATIC_CONTENT_MANIFEST";
 }
 
 /** @type {import ("rollup").RollupOptions[]} */

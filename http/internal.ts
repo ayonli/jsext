@@ -1,8 +1,29 @@
+import { orderBy } from "../array.ts";
+import { DirEntry } from "../fs.ts";
 import { join } from "../path.ts";
 import { dedent } from "../string.ts";
 
-export function respondDir(filenames: string[], pathname: string, extraHeaders: HeadersInit = {}) {
-    const listHtml = filenames.map((name) => {
+export async function respondDir(
+    entries: DirEntry[],
+    pathname: string,
+    extraHeaders: HeadersInit = {}
+): Promise<Response> {
+    const list = [
+        ...orderBy(
+            entries.filter(e => e.kind === "directory"),
+            e => e.name
+        ).map(e => e.name + "/"),
+        ...orderBy(
+            entries.filter(e => e.kind === "file"),
+            e => e.name
+        ).map(e => e.name),
+    ];
+
+    if (pathname !== "/") {
+        list.unshift("../");
+    }
+
+    const listHtml = list.map((name) => {
         let url = join(pathname, name);
 
         if (name.endsWith("/") && url !== "/") {

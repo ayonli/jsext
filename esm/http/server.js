@@ -30,6 +30,7 @@ class Server {
         const { identity } = runtime();
         if (identity === "cloudflare-worker") {
             this.fetch = async (req, bindings, ctx) => {
+                var _f;
                 if (!_this[_handler]) {
                     return new Response("Service Unavailable", {
                         status: 503,
@@ -45,7 +46,7 @@ class Server {
                         return { events, response: events.response };
                     },
                     upgradeWebSocket: () => ws.upgrade(req),
-                    waitUntil: ctx.waitUntil.bind(ctx),
+                    waitUntil: (_f = ctx.waitUntil) === null || _f === void 0 ? void 0 : _f.bind(ctx),
                     bindings,
                 });
             };

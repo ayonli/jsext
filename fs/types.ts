@@ -1,15 +1,21 @@
-export { };
+import type { KVNamespace } from "../workerd/types.ts";
 
 /**
  * Common options for file system operations.
  */
 export interface FileSystemOptions {
     /**
-     * The root directory handle to operate in. This option is only available in
-     * the browser, usually obtained from `window.showDirectoryPicker()`. If not
-     * provided, the result of `navigator.storage.getDirectory()` will be used.
+     * The root directory handle to operate in, used in the browser, usually
+     * obtained from `window.showDirectoryPicker()`. If not provided, the result
+     * of `navigator.storage.getDirectory()` will be used.
+     * 
+     * This option can also be set to a KV namespace in Cloudflare Workers,
+     * however, Cloudflare Workers support is very limited and is experimental.
+     * When setting, this option is usually obtained from the `__STATIC_CONTENT`
+     * binding, or if not provided, the global `__STATIC_CONTENT` will be used
+     * (when available).
      */
-    root?: FileSystemDirectoryHandle | undefined;
+    root?: FileSystemDirectoryHandle | KVNamespace | undefined;
 }
 
 /**
@@ -53,7 +59,7 @@ export interface FileInfo {
     kind: "file" | "directory" | "symlink";
     /**
      * The size of the file in bytes. This value may be `0` if this is a
-     * directory.
+     * directory or the size cannot be determined.
      */
     size: number;
     /**
