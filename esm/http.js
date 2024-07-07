@@ -446,6 +446,13 @@ function serve(options) {
             },
             upgradeWebSocket: () => ws.upgrade(req),
         });
+        const handleError = (err) => {
+            console.error(err);
+            return new Response("Internal Server Error", {
+                status: 500,
+                statusText: "Internal Server Error",
+            });
+        };
         if (isDeno) {
             await sleep(0); // This will make sure `deno serve` works for the same port
             controller = new AbortController();
@@ -458,6 +465,7 @@ function serve(options) {
                     cert,
                     signal: controller.signal,
                     onListen: () => task.resolve(),
+                    onError: handleError,
                 }, (req, info) => options.fetch(req, createContext(req, {
                     family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
                     address: info.remoteAddr.hostname,
@@ -480,28 +488,27 @@ function serve(options) {
                     return options.fetch(req, createContext(req, remoteAddr));
                 },
                 websocket: ws === null || ws === void 0 ? void 0 : ws.bunListener,
+                error: handleError,
             });
             ws.bunBind(server);
         }
-        else if (key && cert) {
-            const { createSecureServer } = await import('node:http2');
-            server = createSecureServer({ key, cert, allowHTTP1: true }, withWeb((req, info) => {
-                return options.fetch(req, createContext(req, info.remoteAddress));
-            }));
-            await new Promise((resolve) => {
-                if (hostname && hostname !== "0.0.0.0") {
-                    server.listen(port, hostname, resolve);
+        else {
+            const reqListener = withWeb(async (req, info) => {
+                try {
+                    return await options.fetch(req, createContext(req, info.remoteAddress));
                 }
-                else {
-                    server.listen(port, resolve);
+                catch (err) {
+                    return handleError(err);
                 }
             });
-        }
-        else {
-            const { createServer } = await import('node:http');
-            server = createServer(withWeb((req, info) => {
-                return options.fetch(req, createContext(req, info.remoteAddress));
-            }));
+            if (key && cert) {
+                const { createSecureServer } = await import('node:http2');
+                server = createSecureServer({ key, cert }, reqListener);
+            }
+            else {
+                const { createServer } = await import('node:http');
+                server = createServer(reqListener);
+            }
             await new Promise((resolve) => {
                 if (hostname && hostname !== "0.0.0.0") {
                     server.listen(port, hostname, resolve);

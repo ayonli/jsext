@@ -470,6 +470,7 @@ export function serve(options: ServeOptions): Server {
         const { EventEndpoint } = await import("./sse.ts");
         const { key, cert } = options;
         let server: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null = null;
+
         const createContext = (req: Request, remoteAddress: NetAddress): RequestContext => ({
             remoteAddress,
             createEventEndpoint: () => {
@@ -478,6 +479,14 @@ export function serve(options: ServeOptions): Server {
             },
             upgradeWebSocket: () => ws.upgrade(req),
         });
+
+        const handleError = (err: unknown) => {
+            console.error(err);
+            return new Response("Internal Server Error", {
+                status: 500,
+                statusText: "Internal Server Error",
+            });
+        };
 
         if (isDeno) {
             await sleep(0); // This will make sure `deno serve` works for the same port
@@ -492,6 +501,7 @@ export function serve(options: ServeOptions): Server {
                     cert,
                     signal: controller.signal,
                     onListen: () => task.resolve(),
+                    onError: handleError,
                 }, (req, info) => options.fetch(req, createContext(req, {
                     family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
                     address: info.remoteAddr.hostname,
@@ -512,33 +522,32 @@ export function serve(options: ServeOptions): Server {
                     return options.fetch(req, createContext(req, remoteAddr));
                 },
                 websocket: ws?.bunListener,
+                error: handleError,
             }) as BunServer;
 
             ws.bunBind(server);
-        } else if (key && cert) {
-            const { createSecureServer } = await import("node:http2");
-            server = createSecureServer({ key, cert, allowHTTP1: true }, withWeb((req, info) => {
-                return options.fetch(req, createContext(req, info.remoteAddress));
-            }));
-
-            await new Promise<void>((resolve) => {
-                if (hostname && hostname !== "0.0.0.0") {
-                    (server as HttpServer).listen(port, hostname, resolve);
-                } else {
-                    (server as HttpServer).listen(port, resolve);
+        } else {
+            const reqListener = withWeb(async (req, info) => {
+                try {
+                    return await options.fetch(req, createContext(req, info.remoteAddress));
+                } catch (err) {
+                    return handleError(err);
                 }
             });
-        } else {
-            const { createServer } = await import("node:http");
-            server = createServer(withWeb((req, info) => {
-                return options.fetch(req, createContext(req, info.remoteAddress));
-            }));
+
+            if (key && cert) {
+                const { createSecureServer } = await import("node:http2");
+                server = createSecureServer({ key, cert }, reqListener);
+            } else {
+                const { createServer } = await import("node:http");
+                server = createServer(reqListener);
+            }
 
             await new Promise<void>((resolve) => {
                 if (hostname && hostname !== "0.0.0.0") {
-                    (server as HttpServer).listen(port, hostname, resolve);
+                    (server as HttpServer | Http2SecureServer).listen(port, hostname, resolve);
                 } else {
-                    (server as HttpServer).listen(port, resolve);
+                    (server as HttpServer | Http2SecureServer).listen(port, resolve);
                 }
             });
         }
