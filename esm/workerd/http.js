@@ -47,7 +47,7 @@ function serve(options) {
     });
 }
 async function serveStatic(req, options = {}) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     // @ts-ignore
     const kv = (_a = options.kv) !== null && _a !== void 0 ? _a : globalThis["__STATIC_CONTENT"];
     if (!kv) {
@@ -109,7 +109,7 @@ async function serveStatic(req, options = {}) {
                 cursor: null,
             };
             while (!result.list_complete) {
-                result = await kv.list({ prefix: dir });
+                result = await kv.list({ prefix: dir, cursor: (_e = result.cursor) !== null && _e !== void 0 ? _e : "" });
                 for (const { name } of result.keys) {
                     const relativePath = decodeURIComponent(name.slice(dir.length));
                     const parts = relativePath.split("/");
@@ -144,7 +144,7 @@ async function serveStatic(req, options = {}) {
             filename,
             reqHeaders: req.headers,
             extraHeaders,
-            maxAge: (_e = options.maxAge) !== null && _e !== void 0 ? _e : 0,
+            maxAge: (_f = options.maxAge) !== null && _f !== void 0 ? _f : 0,
         });
     }
     else {

@@ -134,7 +134,7 @@ export async function serveStatic(
             };
 
             while (!result.list_complete) {
-                result = await kv.list({ prefix: dir });
+                result = await kv.list({ prefix: dir, cursor: result.cursor ?? "" });
 
                 for (const { name } of result.keys) {
                     const relativePath = decodeURIComponent(name.slice(dir.length));
