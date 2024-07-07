@@ -21,9 +21,9 @@
  * This module also provides limited support for Cloudflare Workers, however it
  * requires setting the `[site].bucket` option in the `wrangler.toml` file. Only
  * the reading functions are supported, such as {@link readFile} and
- * {@link readDir}, these functions allow us reading static files in the in the
- * workers, writing functions is not implemented at the moment. More details
- * about serving static assets in Cloudflare workers can be found here:
+ * {@link readDir}, these functions allow us reading static files in the workers,
+ * writing functions is not implemented at the moment. More details about
+ * serving static assets in Cloudflare Workers can be found here:
  * [Add static assets to an existing Workers project](https://developers.cloudflare.com/workers/configuration/sites/start-from-worker/).
  * 
  * **Errors:**
@@ -328,9 +328,7 @@ export async function getFileHandle(
  * This function may throw an error if the path is invalid or the operation is
  * not allowed.
  * 
- * NOTE: This function can also be used in Cloudflare Workers. However, it can
- * only check the existence of a file since the Workers KV namespace does not
- * have the concept of directories.
+ * NOTE: This function can also be used in Cloudflare Workers.
  * 
  * @example
  * ```ts
@@ -663,8 +661,7 @@ export interface ReadDirOptions extends FileSystemOptions {
  * 
  * NOTE: The order of the entries is not guaranteed.
  * 
- * NOTE: This function can also be used in Cloudflare Workers, but it's very
- * inefficient if the `recursive` option is not set.
+ * NOTE: This function can also be used in Cloudflare Workers.
  * 
  * @example
  * ```ts
@@ -906,6 +903,8 @@ export async function readFile(
 /**
  * Reads the content of the given file as text with `utf-8` encoding.
  * 
+ * NOTE: This function can also be used in Cloudflare Workers.
+ * 
  * @example
  * ```ts
  * // with the default storage
@@ -948,6 +947,8 @@ export async function readFileAsText(
 
 /**
  * Reads the file as a `File` object.
+ * 
+ * NOTE: This function can also be used in Cloudflare Workers.
  * 
  * @example
  * ```ts

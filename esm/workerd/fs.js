@@ -1,4 +1,3 @@
-import { copy as copy$1 } from '../bytes.js';
 import Exception from '../error/Exception.js';
 import { getMIME } from '../filetype.js';
 import { makeTree } from '../fs/util.js';
@@ -221,26 +220,13 @@ async function writeLines(target, lines, options = {}) {
     throw new Error("Unsupported runtime");
 }
 async function truncate(target, size = 0, options = {}) {
-    const filename = target;
-    const kv = getKVStore(options);
-    const buffer = await kv.get(filename, { type: "arrayBuffer" });
-    if (!buffer) {
-        await writeFile(target, new ArrayBuffer(size), options);
-    }
-    else {
-        const src = new Uint8Array(buffer);
-        const dest = new Uint8Array(size);
-        copy$1(src, dest);
-        await writeFile(target, dest, options);
-    }
+    throw new Error("Unsupported runtime");
 }
 async function remove(path, options = {}) {
-    const kv = getKVStore(options);
-    await kv.delete(path);
+    throw new Error("Unsupported runtime");
 }
 async function rename(oldPath, newPath, options = {}) {
-    await copy(oldPath, newPath, options);
-    await remove(oldPath, options);
+    throw new Error("Unsupported runtime");
 }
 async function copy(src, dest, options = {}) {
     throw new Error("Unsupported runtime");

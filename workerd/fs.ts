@@ -1,4 +1,3 @@
-import { copy as copyBytes } from "../bytes.ts";
 import { Exception } from "../error.ts";
 import { getMIME } from "../filetype.ts";
 import type {
@@ -330,24 +329,13 @@ export async function truncate(
     size = 0,
     options: FileSystemOptions = {}
 ): Promise<void> {
-    const filename = target as string;
-    const kv = getKVStore(options);
-    const buffer = await kv.get(filename, { type: "arrayBuffer" });
-
-    if (!buffer) {
-        await writeFile(target, new ArrayBuffer(size), options);
-    } else {
-        const src = new Uint8Array(buffer);
-        const dest = new Uint8Array(size);
-
-        copyBytes(src, dest);
-        await writeFile(target, dest, options);
-    }
+    void target, size, options;
+    throw new Error("Unsupported runtime");
 }
 
 export async function remove(path: string, options: RemoveOptions = {}): Promise<void> {
-    const kv = getKVStore(options);
-    await kv.delete(path);
+    void path, options;
+    throw new Error("Unsupported runtime");
 }
 
 export async function rename(
@@ -355,8 +343,8 @@ export async function rename(
     newPath: string,
     options: FileSystemOptions = {}
 ): Promise<void> {
-    await copy(oldPath, newPath, options);
-    await remove(oldPath, options);
+    void oldPath, newPath, options;
+    throw new Error("Unsupported runtime");
 }
 
 export async function copy(src: string, dest: string, options?: CopyOptions): Promise<void>;
