@@ -166,7 +166,7 @@
         "./fs": {
             "types": "./types/fs.d.ts",
             "bun": "./fs.ts",
-            "workerd": "./workerd/fs.ts",
+            "workerd": "./esm/workerd/fs.js",
             "import": "./esm/fs.js",
             "require": "./cjs/fs.js",
             "default": "./fs.ts"
@@ -189,7 +189,7 @@
         "./http": {
             "types": "./types/http.d.ts",
             "bun": "./http.ts",
-            "workerd": "./workerd/http.ts",
+            "workerd": "./esm/workerd/http.js",
             "import": "./esm/http.js",
             "require": "./cjs/http.js",
             "default": "./http.ts"
