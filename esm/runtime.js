@@ -439,8 +439,8 @@ function addShutdownListener(fn) {
     }
 }
 /**
- * A universal symbol that can be used to customize the inspection behavior of
- * an object, currently supports Node.js, Bun and Deno.
+ * A unified symbol that can be used to customize the inspection behavior of an
+ * object, currently supports Node.js, Bun and Deno.
  *
  * @example
  * ```ts

@@ -2,7 +2,7 @@
 
 A JavaScript extension package for building strong and modern applications.
 
-This package is built on top of modern web standards and provides universal
+This package is built on top of modern web standards and provides unified
 high-level APIs that can work across different runtime environments, whether
 it's Node.js, Deno, Bun, Cloudflare Workers, browsers, Windows, macOS or Linux.
 
@@ -150,7 +150,7 @@ categories:
   strings.
 - [types](https://jsr.io/@ayonli/jsext/doc/types/~) The missing builtin classes
   of JavaScript and utility types for TypeScript.
-- [ws](https://jsr.io/@ayonli/jsext/doc/ws/~) (Experimental) A universal
+- [ws](https://jsr.io/@ayonli/jsext/doc/ws/~) (Experimental) A unified
   WebSocket server interface for Node.js, Deno, Bun and Cloudflare Workers.
 
 ## Augmentation

@@ -1,5 +1,5 @@
 /**
- * This module provides a universal WebSocket server interface for Node.js, Deno,
+ * This module provides a unified WebSocket server interface for Node.js, Deno,
  * Bun and Cloudflare Workers. This module is based on the `EventTarget`
  * interface and conforms the web standard.
  * 
@@ -27,7 +27,7 @@ const _wsServer = Symbol.for("wsServer");
 const _connTasks = Symbol.for("connTasks");
 
 /**
- * A universal WebSocket server interface for Node.js, Deno, Bun and Cloudflare
+ * A unified WebSocket server interface for Node.js, Deno, Bun and Cloudflare
  * Workers.
  * 
  * There are two ways to handle WebSocket connections:

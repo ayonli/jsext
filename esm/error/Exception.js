@@ -1,5 +1,5 @@
 /**
- * The universal exception class, which can be used to represent any kind of error.
+ * A generic exception class, which can be used to represent any kind of error.
  * It's similar to the `DOMException`, but for any JavaScript environment.
  *
  * @example

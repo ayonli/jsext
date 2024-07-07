@@ -364,9 +364,9 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
 /**
  * Serves HTTP requests with the given options.
  * 
- * This function provides a universal way to serve HTTP requests in Node.js,
- * Deno, Bun and Cloudflare Workers. It's similar to the `Deno.serve` and
- * `Bun.serve` functions, in fact, it calls them internally when running in the
+ * This function provides a unified way to serve HTTP requests in Node.js, Deno,
+ * Bun and Cloudflare Workers. It's similar to the `Deno.serve` and `Bun.serve`
+ * functions, in fact, it calls them internally when running in the
  * corresponding runtime. When running in Node.js, it uses the built-in `http`
  * or `http2` modules to create the server.
  * 
