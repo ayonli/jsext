@@ -247,7 +247,7 @@ export class Server {
      * the server is ready.
      */
     get hostname(): string {
-        return this[_hostname];
+        return this[_hostname] || "localhost";
     }
 
     /**
@@ -255,7 +255,15 @@ export class Server {
      * server is ready.
      */
     get port(): number {
-        return this[_port];
+        if (this[_port]) {
+            return this[_port];
+        } else if (runtime().identity === "cloudflare-worker") {
+            return 8787;
+        } else if (runtime().identity === "deno") {
+            return 8000;
+        } else {
+            return 0;
+        }
     }
 
     /**

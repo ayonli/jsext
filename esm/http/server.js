@@ -77,14 +77,25 @@ class Server {
      * the server is ready.
      */
     get hostname() {
-        return this[_hostname];
+        return this[_hostname] || "localhost";
     }
     /**
      * The port of which the server is listening on, only available after the
      * server is ready.
      */
     get port() {
-        return this[_port];
+        if (this[_port]) {
+            return this[_port];
+        }
+        else if (runtime().identity === "cloudflare-worker") {
+            return 8787;
+        }
+        else if (runtime().identity === "deno") {
+            return 8000;
+        }
+        else {
+            return 0;
+        }
     }
     /**
      * A promise that resolves when the server is ready to accept connections.

@@ -1,4 +1,5 @@
 import bytes from "../bytes.ts";
+import { Exception } from "../error.ts";
 import { getMIME } from "../filetype.ts";
 import { FileInfo, exists, readDir, readFile } from "./fs.ts";
 import { sha256 } from "./hash.ts";

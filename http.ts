@@ -537,7 +537,7 @@ export function serve(options: ServeOptions): Server {
 
             if (key && cert) {
                 const { createSecureServer } = await import("node:http2");
-                server = createSecureServer({ key, cert }, reqListener);
+                server = createSecureServer({ key, cert, allowHTTP1: true }, reqListener);
             } else {
                 const { createServer } = await import("node:http");
                 server = createServer(reqListener);

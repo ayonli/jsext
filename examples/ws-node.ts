@@ -1,5 +1,5 @@
 import * as http from "node:http";
-import { WebSocketServer } from "../ws/node.ts";
+import { WebSocketServer } from "../ws.ts";
 
 const wsServer = new WebSocketServer();
 const httpServer = http.createServer(async (req, res) => {

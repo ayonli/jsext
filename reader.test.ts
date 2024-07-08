@@ -4,7 +4,6 @@ import { readFile } from "node:fs/promises";
 import http from "node:http";
 import EventEmitter from "node:events";
 // @ts-ignore
-import { SSE } from "@ayonli/sse";
 import jsext from "./index.ts";
 import bytes from "./bytes.ts";
 import {
@@ -323,23 +322,23 @@ describe("reader", () => {
             ok(chunks.length > 0);
         });
 
-        it("EventSource", jsext.func(async (defer) => {
+        it("EventSource", jsext.func(async function (defer) {
+            if (typeof EventTarget !== "function" || typeof WritableStream !== "function") {
+                this.skip();
+            }
+
+            const { EventEndpoint } = await import("./sse.ts");
             const port = await randomPort();
             const server = await new Promise<http.Server>((resolve) => {
                 const server = http.createServer((req, res) => {
-                    if (!SSE.isEventSource(req)) {
-                        res.end();
-                        return;
-                    }
-
-                    const sse = new SSE(req, res);
+                    const sse = new EventEndpoint(req, res);
 
                     if (req.url === "/message") {
                         sse.send("hello");
                         sse.send("world");
                     } else if (req.url === "/event") {
-                        sse.emit("reply", "foo");
-                        sse.emit("reply", "bar");
+                        sse.sendEvent("reply", "foo");
+                        sse.sendEvent("reply", "bar");
                     } else {
                         res.end();
                     }
@@ -556,23 +555,23 @@ describe("reader", () => {
             ok(chunks.length > 0);
         });
 
-        it("EventSource", jsext.func(async (defer) => {
+        it("EventSource", jsext.func(async function (defer) {
+            if (typeof EventTarget !== "function" || typeof WritableStream !== "function") {
+                this.skip();
+            }
+
+            const { EventEndpoint } = await import("./sse.ts");
             const port = await randomPort();
             const server = await new Promise<http.Server>((resolve) => {
                 const server = http.createServer((req, res) => {
-                    if (!SSE.isEventSource(req)) {
-                        res.end();
-                        return;
-                    }
-
-                    const sse = new SSE(req, res);
+                    const sse = new EventEndpoint(req, res);
 
                     if (req.url === "/message") {
                         sse.send("hello");
                         sse.send("world");
                     } else if (req.url === "/event") {
-                        sse.emit("reply", "foo");
-                        sse.emit("reply", "bar");
+                        sse.sendEvent("reply", "foo");
+                        sse.sendEvent("reply", "bar");
                     } else {
                         res.end();
                     }
