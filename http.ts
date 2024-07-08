@@ -601,7 +601,7 @@ export async function serveStatic(
     const dir = options.fsDir ?? ".";
     const prefix = options.urlPrefix ? join(options.urlPrefix) : "";
     const url = new URL(req.url);
-    const { pathname } = url;
+    const pathname = decodeURIComponent(url.pathname);
 
     if (prefix && !startsWith(pathname, prefix)) {
         return new Response("Not Found", {

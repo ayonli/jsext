@@ -63,7 +63,7 @@ async function serveStatic(req, options = {}) {
     const extraHeaders = (_b = options.headers) !== null && _b !== void 0 ? _b : {};
     const prefix = options.urlPrefix ? join(options.urlPrefix) : "";
     const url = new URL(req.url);
-    const { pathname } = url;
+    const pathname = decodeURIComponent(url.pathname);
     if (prefix && !startsWith(pathname, prefix)) {
         return new Response("Not Found", {
             status: 404,
