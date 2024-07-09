@@ -298,7 +298,8 @@ export function env(name: string): string | undefined;
 /**
  * Sets the value of a specific environment variable.
  * 
- * NOTE: This is a temporary change and will not persist when the program exits.
+ * @deprecated The program should not try to modify the environment variables,
+ * and it's forbidden in worker environments.
  */
 export function env(name: string, value: string): undefined;
 /**
@@ -336,6 +337,44 @@ export function env(
             return process.env[name];
         } else {
             process.env[name] = String(value);
+        }
+    } else if (runtime().identity === "cloudflare-worker") {
+        if (typeof name === "object" && name !== null) {
+            for (const [key, val] of Object.entries(name)) {
+                if (["string", "number", "boolean"].includes(typeof val)) {
+                    ENV[key] = String(val);
+                }
+            }
+        } else if (name === undefined) {
+            if (Object.keys(ENV).length) {
+                return ENV;
+            } else {
+                const keys = Object.keys(globalThis).filter(key => {
+                    return /^[A-Z0-9_]+$/.test(key)
+                        // @ts-ignore
+                        && ["string", "number", "boolean"].includes(typeof globalThis[key]);
+                });
+                return keys.reduce((record, key) => {
+                    // @ts-ignore
+                    record[key] = String(globalThis[key]);
+                    return record;
+                }, {});
+            }
+        } else if (value === undefined) {
+            if (ENV[name] !== undefined) {
+                return ENV[name];
+            } else {
+                // @ts-ignore
+                const value = globalThis[name];
+
+                if (["string", "number", "boolean"].includes(typeof value)) {
+                    return String(value);
+                } else {
+                    return undefined;
+                }
+            }
+        } else {
+            throw new Error("Cannot modify environment variables in the worker");
         }
     } else {
         // @ts-ignore

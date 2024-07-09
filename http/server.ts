@@ -4,7 +4,7 @@ import type { serve, serveStatic } from "../http.ts";
 import type { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
 import { until } from "../async.ts";
 import { isBun, isDeno, isNode } from "../env.ts";
-import runtime from "../runtime.ts";
+import runtime, { env } from "../runtime.ts";
 import { EventEndpoint } from "../sse.ts";
 import { KVNamespace } from "../workerd/types.ts";
 
@@ -292,6 +292,10 @@ export class Server {
                             status: 503,
                             statusText: "Service Unavailable",
                         });
+                    }
+
+                    if (bindings && typeof bindings === "object" && !Array.isArray(bindings)) {
+                        env(bindings as object);
                     }
 
                     const ws = _this[_ws]!;

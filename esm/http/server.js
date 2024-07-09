@@ -1,6 +1,6 @@
 import { until } from '../async.js';
 import { isDeno, isNode, isBun } from '../env.js';
-import runtime from '../runtime.js';
+import runtime, { env } from '../runtime.js';
 import { EventEndpoint } from '../sse.js';
 
 var _a, _b, _c, _d, _e;
@@ -94,6 +94,9 @@ class Server {
                             status: 503,
                             statusText: "Service Unavailable",
                         });
+                    }
+                    if (bindings && typeof bindings === "object" && !Array.isArray(bindings)) {
+                        env(bindings);
                     }
                     const ws = _this[_ws];
                     const handle = _this[_handler];
