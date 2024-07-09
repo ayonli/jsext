@@ -21,31 +21,38 @@ declare function WorkerLocation(): void;
 export type WellknownRuntimes = "node"
     | "deno"
     | "bun"
+    | "workerd"
+    | "fastly"
     | "chrome"
     | "firefox"
-    | "safari"
-    | "cloudflare-worker"
-    | "fastly";
+    | "safari";
 export const WellknownRuntimes: WellknownRuntimes[] = [
     "node",
     "deno",
     "bun",
+    "workerd",
+    "fastly",
     "chrome",
     "firefox",
     "safari",
-    "cloudflare-worker",
-    "fastly",
 ];
 
 /**
  * The information of the runtime environment in which the program is running.
  */
 export interface RuntimeInfo {
-    /** The representation term of the runtime. */
-    identity: WellknownRuntimes | "unknown";
     /**
-     * The version of the runtime. This property is `undefined` when `identity`
-     * is `unknown`.
+     * The representation term of the runtime.
+     */
+    type: WellknownRuntimes | "unknown";
+    /**
+     * @deprecated Use `type` instead, this property will be removed in the next
+     * major version.
+     */
+    identity?: string;
+    /**
+     * The version of the runtime. This property is `undefined` when `type` is
+     * `unknown`.
      */
     version?: string | undefined;
     /**
@@ -77,7 +84,7 @@ export interface RuntimeInfo {
  * 
  * // In Node.js
  * // {
- * //     identity: "node",
+ * //     type: "node",
  * //     version: "22.0.0",
  * //     fsSupport: true,
  * //     tsSupport: false,
@@ -86,7 +93,7 @@ export interface RuntimeInfo {
  * 
  * // In Deno
  * // {
- * //     identity: "deno",
+ * //     type: "deno",
  * //     version: "1.42.0",
  * //     fsSupport: true,
  * //     tsSupport: true,
@@ -95,7 +102,7 @@ export interface RuntimeInfo {
  * 
  * // In the browser (Chrome)
  * // {
- * //     identity: "chrome",
+ * //     type: "chrome",
  * //     version: "125.0.0.0",
  * //     fsSupport: true,
  * //     tsSupport: false,
@@ -106,31 +113,41 @@ export interface RuntimeInfo {
  * ```
  */
 export default function runtime(): RuntimeInfo {
+    const construct = (info: RuntimeInfo): RuntimeInfo => {
+        Object.defineProperty(info, "identity", {
+            get() {
+                return info.type === "workerd" ? "cloudflare-worker" : info.type;
+            },
+        });
+
+        return info;
+    };
+
     if (isDeno) {
-        return {
-            identity: "deno",
+        return construct({
+            type: "deno",
             version: Deno.version.deno,
             fsSupport: true,
             tsSupport: true,
             worker: isMainThread ? undefined : "dedicated",
-        };
+        });
     } else if (isBun) {
-        return {
-            identity: "bun",
+        return construct({
+            type: "bun",
             version: Bun.version,
             fsSupport: true,
             tsSupport: true,
             worker: isMainThread ? undefined : "dedicated",
-        };
+        });
     } else if (isNode) {
-        return {
-            identity: "node",
+        return construct({
+            type: "node",
             version: process.version.slice(1),
             fsSupport: true,
             tsSupport: process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
                 || /\.tsx?$|\bvite\b/.test(process.argv[1] ?? ""),
             worker: isMainThread ? undefined : "dedicated",
-        };
+        });
     }
 
     const fsSupport = typeof FileSystemHandle === "function";
@@ -152,41 +169,41 @@ export default function runtime(): RuntimeInfo {
             const chrome = list.find(({ name }) => name === "Chrome" || name === "Chromium");
 
             if (safari && !chrome && !firefox) {
-                return {
-                    identity: "safari",
+                return construct({
+                    type: "safari",
                     version: safari!.version,
                     fsSupport,
                     tsSupport: false,
                     worker,
-                };
+                });
             } else if (firefox && !chrome && !safari) {
-                return {
-                    identity: "firefox",
+                return construct({
+                    type: "firefox",
                     version: firefox!.version,
                     fsSupport,
                     tsSupport: false,
                     worker,
-                };
+                });
             } else if (chrome) {
-                return {
-                    identity: "chrome",
+                return construct({
+                    type: "chrome",
                     version: chrome!.version,
                     fsSupport,
                     tsSupport: false,
                     worker,
-                };
+                });
             } else {
-                return {
-                    identity: "unknown",
+                return construct({
+                    type: "unknown",
                     version: undefined,
                     fsSupport,
                     tsSupport: false,
                     worker,
-                };
+                });
             }
         } else if (/Cloudflare[-\s]Workers?/i.test(navigator.userAgent)) {
-            return {
-                identity: "cloudflare-worker",
+            return construct({
+                type: "workerd",
                 version: undefined,
                 fsSupport,
                 tsSupport: (() => {
@@ -196,34 +213,26 @@ export default function runtime(): RuntimeInfo {
                         return /[\\/]\.?wrangler[\\/]/.test(err.stack!);
                     }
                 })(),
-                worker,
-            };
+                worker: "service",
+            });
         }
     } else if (typeof WorkerLocation === "function" && globalThis.location instanceof WorkerLocation) {
-        return {
-            identity: "fastly",
+        return construct({
+            type: "fastly",
             version: undefined,
             fsSupport,
             tsSupport: false,
             worker: "service",
-        };
-        // } else if (typeof process === "object" && typeof process.env === "object") {
-        //     return {
-        //         identity: "winterjs",
-        //         version: undefined,
-        //         fsSupport,
-        //         tsSupport: false,
-        //         worker: "service",
-        //     };
+        });
     }
 
-    return {
-        identity: "unknown",
+    return construct({
+        type: "unknown",
         version: undefined,
         fsSupport,
         tsSupport: false,
         worker,
-    };
+    });
 }
 
 export type WellknownPlatforms = "darwin"
@@ -338,7 +347,7 @@ export function env(
         } else {
             process.env[name] = String(value);
         }
-    } else if (runtime().identity === "cloudflare-worker") {
+    } else if (runtime().type === "workerd") {
         if (typeof name === "object" && name !== null) {
             for (const [key, val] of Object.entries(name)) {
                 if (["string", "number", "boolean"].includes(typeof val)) {

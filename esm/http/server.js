@@ -131,17 +131,18 @@ class Server {
      * server is ready.
      */
     get port() {
+        const { type } = runtime();
         if (this[_port]) {
             return this[_port];
         }
-        else if (runtime().identity === "cloudflare-worker") {
+        else if (type === "deno") {
+            return 8000;
+        }
+        else if (type === "workerd") {
             return 8787;
         }
-        else if (runtime().identity === "fastly") {
+        else if (type === "fastly") {
             return 7676;
-        }
-        else if (runtime().identity === "deno") {
-            return 8000;
         }
         else {
             return 0;

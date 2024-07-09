@@ -56,8 +56,8 @@ export function withWeb(
 }
 
 export function serve(options: ServeOptions): Server {
-    const { identity } = runtime();
-    const type = identity === "cloudflare-worker" ? options.type || "classic" : "classic";
+    const { type: identity } = runtime();
+    const type = identity === "workerd" ? options.type || "classic" : "classic";
     // @ts-ignore
     return new Server(async () => {
         const ws = new WebSocketServer(options.ws);

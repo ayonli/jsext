@@ -69,7 +69,7 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
     target: Fn | string,
     ...args: any[]
 ): Fn | void {
-    const { identity } = runtime();
+    const { type } = runtime();
 
     if (typeof target === "function") {
         const tip = (args[0] as string) ?? "";
@@ -80,15 +80,15 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
                 "node": 2,
                 "deno": 2,
                 "chrome": 2,
-                "cloudflare-worker": 2,
+                "workerd": 2,
                 "bun": 1,
                 "safari": 1,
                 "firefox": 3,
                 "fastly": 3,
                 "unknown": 3,
-            })[identity]!;
+            })[type]!;
 
-            emitWarning(fn.name + "()", wrapped, tip, once, lineOffset, identity, true);
+            emitWarning(fn.name + "()", wrapped, tip, once, lineOffset, type, true);
             return fn.apply(this, args);
         });
     }
@@ -100,15 +100,15 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
         "node": 1,
         "deno": 1,
         "chrome": 1,
-        "cloudflare-worker": 1,
+        "workerd": 1,
         "bun": 1,
         "safari": 1,
         "firefox": 3,
         "fastly": 3,
         "unknown": 3,
-    })[identity]!;
+    })[type]!;
 
-    return emitWarning(target, forFn, tip, once, lineOffset, identity, false);
+    return emitWarning(target, forFn, tip, once, lineOffset, type, false);
 }
 
 function emitWarning(
@@ -117,7 +117,7 @@ function emitWarning(
     tip: string,
     once: boolean,
     lineNum: number,
-    identity: RuntimeInfo["identity"],
+    type: RuntimeInfo["type"],
     wrapped = false
 ) {
     if (!once || !warnedRecord.has(forFn)) {
@@ -138,10 +138,10 @@ function emitWarning(
 
         let line: string | undefined;
 
-        if (identity === "safari") {
+        if (type === "safari") {
             line = lines.find(line => line.trim().startsWith("module code@"))
                 || lines[lineNum];
-        } else if (identity === "bun" && !wrapped) {
+        } else if (type === "bun" && !wrapped) {
             line = lines.find(line => line.trim().startsWith("at module code"))
                 || lines[lineNum];
         } else {

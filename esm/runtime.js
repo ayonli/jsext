@@ -9,11 +9,11 @@ const WellknownRuntimes = [
     "node",
     "deno",
     "bun",
+    "workerd",
+    "fastly",
     "chrome",
     "firefox",
     "safari",
-    "cloudflare-worker",
-    "fastly",
 ];
 /**
  * Returns the information of the runtime environment in which the program is
@@ -27,7 +27,7 @@ const WellknownRuntimes = [
  *
  * // In Node.js
  * // {
- * //     identity: "node",
+ * //     type: "node",
  * //     version: "22.0.0",
  * //     fsSupport: true,
  * //     tsSupport: false,
@@ -36,7 +36,7 @@ const WellknownRuntimes = [
  *
  * // In Deno
  * // {
- * //     identity: "deno",
+ * //     type: "deno",
  * //     version: "1.42.0",
  * //     fsSupport: true,
  * //     tsSupport: true,
@@ -45,7 +45,7 @@ const WellknownRuntimes = [
  *
  * // In the browser (Chrome)
  * // {
- * //     identity: "chrome",
+ * //     type: "chrome",
  * //     version: "125.0.0.0",
  * //     fsSupport: true,
  * //     tsSupport: false,
@@ -57,33 +57,41 @@ const WellknownRuntimes = [
  */
 function runtime() {
     var _a;
+    const construct = (info) => {
+        Object.defineProperty(info, "identity", {
+            get() {
+                return info.type === "workerd" ? "cloudflare-worker" : info.type;
+            },
+        });
+        return info;
+    };
     if (isDeno) {
-        return {
-            identity: "deno",
+        return construct({
+            type: "deno",
             version: Deno.version.deno,
             fsSupport: true,
             tsSupport: true,
             worker: isMainThread ? undefined : "dedicated",
-        };
+        });
     }
     else if (isBun) {
-        return {
-            identity: "bun",
+        return construct({
+            type: "bun",
             version: Bun.version,
             fsSupport: true,
             tsSupport: true,
             worker: isMainThread ? undefined : "dedicated",
-        };
+        });
     }
     else if (isNode) {
-        return {
-            identity: "node",
+        return construct({
+            type: "node",
             version: process.version.slice(1),
             fsSupport: true,
             tsSupport: process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
                 || /\.tsx?$|\bvite\b/.test((_a = process.argv[1]) !== null && _a !== void 0 ? _a : ""),
             worker: isMainThread ? undefined : "dedicated",
-        };
+        });
     }
     const fsSupport = typeof FileSystemHandle === "function";
     const worker = isSharedWorker ? "shared"
@@ -101,45 +109,45 @@ function runtime() {
             const firefox = list.find(({ name }) => name === "Firefox");
             const chrome = list.find(({ name }) => name === "Chrome" || name === "Chromium");
             if (safari && !chrome && !firefox) {
-                return {
-                    identity: "safari",
+                return construct({
+                    type: "safari",
                     version: safari.version,
                     fsSupport,
                     tsSupport: false,
                     worker,
-                };
+                });
             }
             else if (firefox && !chrome && !safari) {
-                return {
-                    identity: "firefox",
+                return construct({
+                    type: "firefox",
                     version: firefox.version,
                     fsSupport,
                     tsSupport: false,
                     worker,
-                };
+                });
             }
             else if (chrome) {
-                return {
-                    identity: "chrome",
+                return construct({
+                    type: "chrome",
                     version: chrome.version,
                     fsSupport,
                     tsSupport: false,
                     worker,
-                };
+                });
             }
             else {
-                return {
-                    identity: "unknown",
+                return construct({
+                    type: "unknown",
                     version: undefined,
                     fsSupport,
                     tsSupport: false,
                     worker,
-                };
+                });
             }
         }
         else if (/Cloudflare[-\s]Workers?/i.test(navigator.userAgent)) {
-            return {
-                identity: "cloudflare-worker",
+            return construct({
+                type: "workerd",
                 version: undefined,
                 fsSupport,
                 tsSupport: (() => {
@@ -150,34 +158,26 @@ function runtime() {
                         return /[\\/]\.?wrangler[\\/]/.test(err.stack);
                     }
                 })(),
-                worker,
-            };
+                worker: "service",
+            });
         }
     }
     else if (typeof WorkerLocation === "function" && globalThis.location instanceof WorkerLocation) {
-        return {
-            identity: "fastly",
+        return construct({
+            type: "fastly",
             version: undefined,
             fsSupport,
             tsSupport: false,
             worker: "service",
-        };
-        // } else if (typeof process === "object" && typeof process.env === "object") {
-        //     return {
-        //         identity: "winterjs",
-        //         version: undefined,
-        //         fsSupport,
-        //         tsSupport: false,
-        //         worker: "service",
-        //     };
+        });
     }
-    return {
-        identity: "unknown",
+    return construct({
+        type: "unknown",
         version: undefined,
         fsSupport,
         tsSupport: false,
         worker,
-    };
+    });
 }
 const WellknownPlatforms = [
     "darwin",
@@ -279,7 +279,7 @@ function env(name = undefined, value = undefined) {
             process.env[name] = String(value);
         }
     }
-    else if (runtime().identity === "cloudflare-worker") {
+    else if (runtime().type === "workerd") {
         if (typeof name === "object" && name !== null) {
             for (const [key, val] of Object.entries(name)) {
                 if (["string", "number", "boolean"].includes(typeof val)) {

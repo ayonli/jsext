@@ -214,9 +214,9 @@ export class WebSocketServer {
         const { WebSocketConnection } = await import("./ws/base.ts");
         const handler = this[_handler];
         const clients = this[_clients];
-        const { identity } = runtime();
+        const { type } = runtime();
 
-        if (identity === "deno") {
+        if (type === "deno") {
             if ("socket" in request) {
                 throw new TypeError("Node.js support is not implemented outside Node.js runtime.");
             }
@@ -263,7 +263,7 @@ export class WebSocketServer {
             }
 
             return { socket, response };
-        } else if (identity === "bun") {
+        } else if (type === "bun") {
             if ("socket" in request) {
                 throw new TypeError("Node.js support is not implemented outside Node.js runtime.");
             }
@@ -295,7 +295,7 @@ export class WebSocketServer {
                     }),
                 }),
             };
-        } else if (identity === "node") {
+        } else if (type === "node") {
             if (!this[_wsServer]) {
                 this[_wsServer] = import("ws").then(({ WebSocketServer: WsServer }) => {
                     return new WsServer({

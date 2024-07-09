@@ -9,7 +9,7 @@ import wrap from './wrap.js';
 const warnedRecord = new Map();
 function deprecate(target, ...args) {
     var _a, _b, _c, _d;
-    const { identity } = runtime();
+    const { type } = runtime();
     if (typeof target === "function") {
         const tip = (_a = args[0]) !== null && _a !== void 0 ? _a : "";
         const once = (_b = args[1]) !== null && _b !== void 0 ? _b : false;
@@ -18,14 +18,14 @@ function deprecate(target, ...args) {
                 "node": 2,
                 "deno": 2,
                 "chrome": 2,
-                "cloudflare-worker": 2,
+                "workerd": 2,
                 "bun": 1,
                 "safari": 1,
                 "firefox": 3,
                 "fastly": 3,
                 "unknown": 3,
-            })[identity];
-            emitWarning(fn.name + "()", wrapped, tip, once, lineOffset, identity, true);
+            })[type];
+            emitWarning(fn.name + "()", wrapped, tip, once, lineOffset, type, true);
             return fn.apply(this, args);
         });
     }
@@ -36,16 +36,16 @@ function deprecate(target, ...args) {
         "node": 1,
         "deno": 1,
         "chrome": 1,
-        "cloudflare-worker": 1,
+        "workerd": 1,
         "bun": 1,
         "safari": 1,
         "firefox": 3,
         "fastly": 3,
         "unknown": 3,
-    })[identity];
-    return emitWarning(target, forFn, tip, once, lineOffset, identity, false);
+    })[type];
+    return emitWarning(target, forFn, tip, once, lineOffset, type, false);
 }
-function emitWarning(target, forFn, tip, once, lineNum, identity, wrapped = false) {
+function emitWarning(target, forFn, tip, once, lineNum, type, wrapped = false) {
     if (!once || !warnedRecord.has(forFn)) {
         let trace = {};
         if (typeof Error.captureStackTrace === "function") {
@@ -60,11 +60,11 @@ function emitWarning(target, forFn, tip, once, lineNum, identity, wrapped = fals
             lines = lines.slice(offset); // fix for tsx in Node.js v16
         }
         let line;
-        if (identity === "safari") {
+        if (type === "safari") {
             line = lines.find(line => line.trim().startsWith("module code@"))
                 || lines[lineNum];
         }
-        else if (identity === "bun" && !wrapped) {
+        else if (type === "bun" && !wrapped) {
             line = lines.find(line => line.trim().startsWith("at module code"))
                 || lines[lineNum];
         }

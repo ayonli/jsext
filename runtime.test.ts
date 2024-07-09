@@ -9,7 +9,7 @@ describe("runtime", () => {
     it("runtime", () => {
         if (isNode) {
             deepStrictEqual(runtime(), {
-                identity: "node",
+                type: "node",
                 version: process.version.slice(1),
                 fsSupport: true,
                 tsSupport: process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
@@ -18,7 +18,7 @@ describe("runtime", () => {
             } as RuntimeInfo);
         } else if (isDeno) {
             deepStrictEqual(runtime(), {
-                identity: "deno",
+                type: "deno",
                 version: Deno.version.deno,
                 fsSupport: true,
                 tsSupport: true,
@@ -26,7 +26,7 @@ describe("runtime", () => {
             } as RuntimeInfo);
         } else if (isBun) {
             deepStrictEqual(runtime(), {
-                identity: "bun",
+                type: "bun",
                 version: Bun.version,
                 fsSupport: true,
                 tsSupport: true,

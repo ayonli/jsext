@@ -299,7 +299,7 @@ export async function edit(filename: string): Promise<void> {
         return;
     } else if (isSharedWorker
         || isSharedWorker
-        || (isDedicatedWorker && (["chrome", "firefox", "safari"]).includes(runtime().identity))
+        || (isDedicatedWorker && (["chrome", "firefox", "safari"]).includes(runtime().type))
     ) {
         throw new Error("Unsupported runtime");
     }

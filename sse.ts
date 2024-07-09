@@ -21,7 +21,7 @@ import { createCloseEvent, createErrorEvent } from "./event.ts";
 import { isBun } from "./env.ts";
 import runtime from "./runtime.ts";
 
-if (typeof MessageEvent !== "function" || runtime().identity === "cloudflare-worker") {
+if (typeof MessageEvent !== "function" || runtime().type === "workerd") {
     // Worker environments does not implement or only partially implement the MessageEvent, 
     // we need to implement it ourselves.
     globalThis.MessageEvent = class MessageEvent<T = any> extends Event implements MessageEvent<T> {
