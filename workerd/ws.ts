@@ -42,6 +42,8 @@ export class WebSocketServer {
         const upgradeHeader = request.headers.get("Upgrade");
         if (!upgradeHeader || upgradeHeader !== "websocket") {
             throw new TypeError("Expected Upgrade: websocket");
+        } else if (typeof WebSocketPair !== "function") {
+            throw new Error("WebSocket is not supported in this environment");
         }
 
         const { WebSocketConnection } = await import("../ws/base.ts");

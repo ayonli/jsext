@@ -12,6 +12,7 @@ import { join, extname } from '../path.js';
 import { readAsArray } from '../reader.js';
 import { stripStart } from '../string.js';
 import { WebSocketServer } from './ws.js';
+import runtime from '../runtime.js';
 import { startsWith } from '../path/util.js';
 
 async function etag(data) {
@@ -38,7 +39,8 @@ function withWeb(listener) {
     throw new Error("Unsupported runtime");
 }
 function serve(options) {
-    const { type = "module" } = options;
+    const { identity } = runtime();
+    const type = identity === "cloudflare-worker" ? options.type || "classic" : "classic";
     // @ts-ignore
     return new Server(async () => {
         const ws = new WebSocketServer(options.ws);

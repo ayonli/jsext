@@ -1,10 +1,11 @@
 import type { Server as HttpServer } from "node:http";
 import type { Http2SecureServer } from "node:http2";
 import type { serve, serveStatic } from "../http.ts";
-import type { EventEndpoint } from "../sse.ts";
 import type { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
-import runtime from "../runtime.ts";
 import { until } from "../async.ts";
+import { isBun, isDeno, isNode } from "../env.ts";
+import runtime from "../runtime.ts";
+import { EventEndpoint } from "../sse.ts";
 import { KVNamespace } from "../workerd/types.ts";
 
 export interface BunServer {
@@ -33,7 +34,10 @@ export interface BunServer {
 export interface FetchEvent extends Event {
     request: Request;
     respondWith(response: Response | Promise<Response>): void;
-    waitUntil(promise: Promise<unknown>): void;
+    waitUntil?(promise: Promise<unknown>): void;
+    client?: {
+        address: string;
+    };
 }
 
 /**
@@ -41,7 +45,13 @@ export interface FetchEvent extends Event {
  */
 export interface NetAddress {
     family: "IPv4" | "IPv6";
+    /**
+     * The IP address of the remote peer.
+     */
     address: string;
+    /**
+     * The port number of the remote peer, or `0` if it's not available.
+     */
     port: number;
 }
 
@@ -51,8 +61,9 @@ export interface NetAddress {
  */
 export interface RequestContext {
     /**
-     * The remote address of the client. This options is not available in
-     * Cloudflare Workers or when the server is started with `deno serve`.
+     * The remote address of the client. This options may not be available in
+     * worker environments (such as Cloudflare Workers) or when the server is
+     * started via `deno serve`.
      */
     remoteAddress: NetAddress | null;
     /**
@@ -66,16 +77,17 @@ export interface RequestContext {
     upgradeWebSocket(): Promise<{ socket: WebSocketConnection; response: Response; }>;
     /**
      * Prolongs the request's lifetime until the promise is resolved. Only
-     * available in Cloudflare Workers.
+     * available in workers environments such as Cloudflare Workers.
      */
-    waitUntil?(promise: Promise<unknown>): void;
+    waitUntil?: ((promise: Promise<unknown>) => void) | undefined;
     /**
-     * The bindings of the request. Only available in Cloudflare Workers.
+     * The bindings of the request. Only available in Cloudflare Workers when
+     * `type` is set to `module` when calling {@link serve}.
      */
     bindings?: {
         [x: string]: any;
         __STATIC_CONTENT?: KVNamespace;
-    };
+    } | undefined;
 }
 
 /**
@@ -88,50 +100,52 @@ export type RequestHandler = (request: Request, ctx: RequestContext) => Response
  */
 export interface ServeOptions {
     /**
+     * Instructs how the server should be deployed. `classic` means {@link serve}
+     * will start the server itself (or use `addEventListener("fetch")` in
+     * service workers), while `module` means using the {@link Server} instance
+     * as an ES module with the syntax `export default serve({ ... })`.
+     * 
+     * NOTE: This option is only adjustable in Cloudflare Workers and Deno, in
+     * other environments, it will be ignored and will default to `classic`.
+     * 
+     * @default "classic"
+     */
+    type?: "classic" | "module";
+    /**
      * The handler for processing HTTP requests.
      */
     fetch: RequestHandler;
     /**
      * The hostname to listen on. Default is `0.0.0.0`.
      * 
-     * NOTE: This option is ignored in Cloudflare Workers and `deno serve`.
+     * NOTE: This option is ignored in workers and `deno serve`.
      */
     hostname?: string | undefined;
     /**
      * The port to listen on. If not set, the server will first try to use the
      * `8000` port, and if it's not available, it will use a random port.
      * 
-     * NOTE: This option is ignored in Cloudflare Workers and `deno serve`.
+     * NOTE: This option is ignored in workers and `deno serve`.
      */
     port?: number | undefined;
     /**
      * The certificate key for serving HTTPS/HTTP2 requests.
      * 
-     * NOTE: This option is ignored in Cloudflare Workers and `deno serve`.
+     * NOTE: This option is ignored in workers and `deno serve`.
      */
     key?: string | undefined;
     /**
      * The certificate for serving HTTPS/HTTP2 requests.
      * 
-     * NOTE: This option is ignored in Cloudflare Workers and `deno serve`.
+     * NOTE: This option is ignored in workers and `deno serve`.
      */
     cert?: string | undefined;
     /**
-     * The WebSocket handler for processing WebSocket connections.
+     * The WebSocket handler for processing WebSocket connections. Normally this
+     * options is not set and the WebSocket is handled per request inside the
+     * `fetch` handler.
      */
     ws?: WebSocketHandler | undefined;
-    /**
-     * Instructs how the server should be deployed. `classic` means {@link serve}
-     * will start the server itself (or use `addEventListener("fetch")` in
-     * service workers), while `module` means using the {@link Server} instance
-     * as an ES module with the syntax `export default serve({ ... })`.
-     * 
-     * The default value is changeable depending on the runtime. In Cloudflare
-     * Workers, it's `module`, while in others, it's `classic`.
-     * 
-     * NOTE: This option is only available in Cloudflare Workers and Deno.
-     */
-    type?: "classic" | "module";
 }
 
 
@@ -191,9 +205,9 @@ export class Server {
 
     /**
      * A request handler for using the server instance as an ES module worker in
-     * Cloudflare Workers.
+     * worker environments such as Cloudflare Workers.
      */
-    fetch?: ((req: Request, env?: any, ctx?: any) => Response | Promise<Response>);
+    fetch?: ((request: Request, env?: any, ctx?: any) => Response | Promise<Response>);
 
     constructor(impl: () => Promise<{
         http: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null;
@@ -215,11 +229,12 @@ export class Server {
         });
 
         const _this = this;
-        const { identity } = runtime();
 
-        if (identity === "cloudflare-worker") {
-            if (this.type === "module") {
-                this.fetch = async (req, bindings, ctx) => {
+        if (isDeno) {
+            if (this.type === "classic") {
+                delete this.fetch;
+            } else {
+                this.fetch = async (request) => {
                     if (!_this[_handler]) {
                         return new Response("Service Unavailable", {
                             status: 503,
@@ -227,20 +242,19 @@ export class Server {
                         });
                     }
 
-                    const { EventEndpoint } = await import("../sse.ts");
                     const ws = _this[_ws]!;
-                    return _this[_handler](req, {
+                    return _this[_handler](request, {
                         remoteAddress: null,
                         createEventEndpoint: () => {
-                            const events = new EventEndpoint(req);
+                            const events = new EventEndpoint(request);
                             return { events, response: events.response! };
                         },
-                        upgradeWebSocket: () => ws.upgrade(req),
-                        waitUntil: ctx.waitUntil?.bind(ctx),
-                        bindings,
+                        upgradeWebSocket: () => ws.upgrade(request),
                     });
                 };
-            } else { // classic
+            }
+        } else if (!isNode && !isBun && typeof addEventListener === "function") {
+            if (this.type === "classic") {
                 // @ts-ignore
                 addEventListener("fetch", (event: FetchEvent) => {
                     if (!_this[_handler]) {
@@ -251,29 +265,28 @@ export class Server {
                         return;
                     }
 
+                    const { request } = event;
+                    const ws = _this[_ws]!;
                     const handle = _this[_handler];
-                    const { request: req } = event;
-                    const res = import("../sse.ts").then(({ EventEndpoint }) => {
-                        const ws = _this[_ws]!;
-                        return handle(req, {
-                            remoteAddress: null,
-                            createEventEndpoint: () => {
-                                const events = new EventEndpoint(req);
-                                return { events, response: events.response! };
-                            },
-                            upgradeWebSocket: () => ws.upgrade(req),
-                            waitUntil: event.waitUntil.bind(event),
-                        });
-                    });
+                    const address = request.headers.get("cf-connecting-ip")
+                        ?? event.client?.address;
 
-                    event.respondWith(res);
+                    event.respondWith(handle(request, {
+                        remoteAddress: address ? {
+                            family: address.includes(":") ? "IPv6" : "IPv4",
+                            address: address,
+                            port: 0,
+                        } : null,
+                        createEventEndpoint: () => {
+                            const events = new EventEndpoint(request);
+                            return { events, response: events.response! };
+                        },
+                        upgradeWebSocket: () => ws.upgrade(request),
+                        waitUntil: event.waitUntil?.bind(event),
+                    }));
                 });
-            }
-        } else if (identity === "deno") {
-            if (this.type === "classic") {
-                delete this.fetch;
             } else {
-                this.fetch = async (req) => {
+                this.fetch = async (request, bindings, ctx) => {
                     if (!_this[_handler]) {
                         return new Response("Service Unavailable", {
                             status: 503,
@@ -281,15 +294,23 @@ export class Server {
                         });
                     }
 
-                    const { EventEndpoint } = await import("../sse.ts");
                     const ws = _this[_ws]!;
-                    return _this[_handler](req, {
-                        remoteAddress: null,
+                    const handle = _this[_handler];
+                    const address = request.headers.get("cf-connecting-ip");
+
+                    return handle(request, {
+                        remoteAddress: address ? {
+                            family: address.includes(":") ? "IPv6" : "IPv4",
+                            address: address,
+                            port: 0,
+                        } : null,
                         createEventEndpoint: () => {
-                            const events = new EventEndpoint(req);
+                            const events = new EventEndpoint(request);
                             return { events, response: events.response! };
                         },
-                        upgradeWebSocket: () => ws.upgrade(req),
+                        upgradeWebSocket: () => ws.upgrade(request),
+                        waitUntil: ctx.waitUntil?.bind(ctx),
+                        bindings,
                     });
                 };
             }
@@ -313,6 +334,8 @@ export class Server {
             return this[_port];
         } else if (runtime().identity === "cloudflare-worker") {
             return 8787;
+        } else if (runtime().identity === "fastly") {
+            return 7676;
         } else if (runtime().identity === "deno") {
             return 8000;
         } else {

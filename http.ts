@@ -64,6 +64,7 @@ import { as } from "./object.ts";
 import { extname, join, resolve, startsWith } from "./path.ts";
 import { readAsArray } from "./reader.ts";
 import { stripStart } from "./string.ts";
+import { EventEndpoint } from "./sse.ts";
 import { WebSocketServer } from "./ws.ts";
 
 export * from "./http/util.ts";
@@ -365,10 +366,10 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * Serves HTTP requests with the given options.
  * 
  * This function provides a unified way to serve HTTP requests in Node.js, Deno,
- * Bun and Cloudflare Workers. It's similar to the `Deno.serve` and `Bun.serve`
- * functions, in fact, it calls them internally when running in the
- * corresponding runtime. When running in Node.js, it uses the built-in `http`
- * or `http2` modules to create the server.
+ * Bun, Cloudflare Workers and Fastly Compute. It's similar to the `Deno.serve`
+ * and `Bun.serve` functions, in fact, it calls them internally when running in
+ * the corresponding runtime. When running in Node.js, it uses the built-in
+ * `http` or `http2` modules to create the server.
  * 
  * This function also provides easy ways to handle Server-sent Events and
  * WebSockets inside the fetch handler without touching the underlying verbose
@@ -376,12 +377,14 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * 
  * NOTE: In Node.js, this function requires Node.js v18.4.1 or above.
  * 
+ * NOTE: WebSocket is not supported in Fastly Compute at the moment.
+ * 
  * @example
  * ```ts
  * // simple http server
  * import { serve } from "@ayonli/jsext/http";
  * 
- * export default serve({
+ * serve({
  *     async fetch(req) {
  *         return new Response("Hello, World!");
  *     },
@@ -393,7 +396,7 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * // set the hostname and port
  * import { serve } from "@ayonli/jsext/http";
  * 
- * export default serve({
+ * serve({
  *     hostname: "localhost",
  *     port: 8787, // same port as Wrangler dev
  *     async fetch(req) {
@@ -408,7 +411,7 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * import { readFileAsText } from "@ayonli/jsext/fs";
  * import { serve } from "@ayonli/jsext/http";
  * 
- * export default serve({
+ * serve({
  *     key: await readFileAsText("./cert.key"),
  *     cert: await readFileAsText("./cert.pem"),
  *     async fetch(req) {
@@ -422,7 +425,7 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * // respond Server-sent Events
  * import { serve } from "@ayonli/jsext/http";
  * 
- * export default serve({
+ * serve({
  *     async fetch(req, ctx) {
  *         const { events, response } = ctx.createEventEndpoint();
  *         let count = events.lastEventId ? Number(events.lastEventId) : 0;
@@ -445,7 +448,7 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * // upgrade to WebSocket
  * import { serve } from "@ayonli/jsext/http";
  * 
- * export default serve({
+ * serve({
  *     async fetch(req, ctx) {
  *         const { socket, response } = await ctx.upgradeWebSocket();
  * 
@@ -462,13 +465,12 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * ```
  */
 export function serve(options: ServeOptions): Server {
-    const { type = "classic" } = options;
+    const type = isDeno ? options.type || "classic" : "classic";
     return new Server(async () => {
         let controller: AbortController | null = null;
         const ws = new WebSocketServer(options.ws);
         const hostname = options.hostname || "0.0.0.0";
         let port = options.port || await randomPort(8000);
-        const { EventEndpoint } = await import("./sse.ts");
         const { key, cert } = options;
         let server: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null = null;
 
@@ -529,7 +531,7 @@ export function serve(options: ServeOptions): Server {
             }) as BunServer;
 
             ws.bunBind(server);
-        } else {
+        } else if (isNode) {
             const reqListener = withWeb(async (req, info) => {
                 try {
                     return await options.fetch(req, createContext(req, info.remoteAddress));
@@ -553,6 +555,8 @@ export function serve(options: ServeOptions): Server {
                     (server as HttpServer | Http2SecureServer).listen(port, resolve);
                 }
             });
+        } else {
+            throw new Error("Unsupported runtime");
         }
 
         return { http: server, ws, hostname, port, fetch: options.fetch, controller };

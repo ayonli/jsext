@@ -1,3 +1,4 @@
+import './external/event-target-polyfill/index.js';
 import './augment/string.js';
 import './augment/number.js';
 import './augment/array.js';

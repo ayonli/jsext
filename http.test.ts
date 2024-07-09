@@ -906,8 +906,10 @@ describe("http", () => {
                 }
             });
             defer(() => {
-                if (typeof process === "object" && parseInt(process.version.slice(1)) === 20) {
-                    // Cannot close the server in Node.js v20, reason unknown.
+                if (typeof process === "object" &&
+                    [20, 21].includes(parseInt(process.version.slice(1)))
+                ) {
+                    // Cannot close the server in Node.js v20 and v21, reason unknown.
                     return Promise.race([server.close(true), sleep(100)]);
                 } else {
                     return server.close(true);

@@ -12,13 +12,10 @@
  */
 
 /// <reference types="../lib.deno.d.ts" />
-import "../esm/augment.js";
 import runtime from "../esm/runtime.js";
-import { extname } from "../esm/path.js";
-import { getMIME } from "../esm/filetype.js";
 import { isBun, isDeno, isNode } from "../esm/env.js";
-import { incomingMessageToRequest, pipeResponse } from "./node/util.js";
-import { byteLength } from "../esm/string.js";
+import { serve } from "../esm/workerd/http.js";
+import { startsWith } from "../esm/path.js";
 import deprecate from "../esm/deprecate.js";
 
 const sum = deprecate(function sum(a, b) {
@@ -40,20 +37,7 @@ if (typeof navigator !== "undefined") {
 const _runtime = runtime();
 console.log(_runtime);
 
-const poweredBy = (({
-    "node": "Node.js",
-    "deno": "Deno",
-    "bun": "Bun",
-    "cloudflare-worker": "Cloudflare Workers",
-    "chrome": "Chrome",
-    "firefox": "Firefox",
-    "safari": "Safari",
-})[_runtime.identity] ?? "Unknown") + (_runtime.version ? "/" + _runtime.version : "");
-
-const config = {
-    /**
-     * Only for Deno and Bun.
-     */
+const config = serve({
     port: 8000,
     /**
      * 
@@ -62,104 +46,51 @@ const config = {
      * @param {any} ctx 
      * @returns 
      */
-    async fetch(req, info, ctx) {
-        console.log(req.method, req.url);
-        console.log("Context:", ctx);
+    async fetch(request, ctx) {
+        const { pathname } = new URL(request.url);
 
-        if ("requestIP" in info) {
-            console.log("Client address:", info.requestIP(req));
-        } else if ("remoteAddr" in info) {
-            console.log("Client address:", info.remoteAddr);
-        } else {
-            console.log("Env:", info);
+        if (pathname === "/sse") {
+            const { events, response } = ctx.createEventEndpoint();
+            let count = events.lastEventId ? Number(events.lastEventId) : 0;
+
+            setInterval(() => {
+                const lastEventId = String(++count);
+                events.dispatchEvent(new MessageEvent("ping", {
+                    data: lastEventId,
+                    // @ts-ignore
+                    lastEventId,
+                }));
+            }, 5_000);
+
+            return response;
+        } else if (pathname === "/ws") {
+            const { socket, response } = await ctx.upgradeWebSocket();
+
+            socket.ready.then(() => {
+                socket.send(`Hello, ${ctx.remoteAddress?.address}!`);
+
+                socket.addEventListener("message", (event) => {
+                    console.log(event.data);
+                });
+            });
+
+            return response;
         }
 
-        if (["node", "deno", "bun"].includes(_runtime.identity)) {
-            try {
-                const { existsSync, statSync } = await import("node:fs");
-                const { readFile } = await import("node:fs/promises");
-                const ext = extname(req.url);
-                const path = "." + new URL(req.url).pathname;
-
-                if (!path.endsWith("/") && existsSync(path)) {
-                    const stats = statSync(path);
-
-                    if (stats.isDirectory()) {
-                        return new Response(Uint8Array.from([]), {
-                            status: 301,
-                            statusText: "Moved Permanently",
-                            headers: {
-                                "Location": req.url + "/",
-                                "Powered-By": poweredBy,
-                            },
-                        });
-                    } else {
-                        const file = await readFile(path);
-                        return new Response(file.buffer, {
-                            headers: {
-                                "Content-Length": String(file.byteLength),
-                                "Content-Type": getMIME(ext) + "; charset=utf-8",
-                                "Powered-By": poweredBy,
-                            },
-                        });
-                    }
-                } else if (!ext && !path.endsWith("/") && existsSync(path + ".html")) {
-                    const file = await readFile(path + ".html");
-                    return new Response(file.buffer, {
-                        headers: {
-                            "Content-Length": String(file.byteLength),
-                            "Content-Type": "text/html; charset=utf-8",
-                            "Powered-By": poweredBy,
-                        },
-                    });
-                } else if (!ext && path.endsWith("/") && existsSync(path + "index.html")) {
-                    const file = await readFile(path + "index.html");
-                    return new Response(file.buffer, {
-                        headers: {
-                            "Content-Length": String(file.byteLength),
-                            "Content-Type": "text/html; charset=utf-8",
-                            "Powered-By": poweredBy,
-                        },
-                    });
-                } else {
-                    return new Response("Not found", { status: 404 });
-                }
-            } catch {
-                return new Response("Internal Server Error", { status: 500 });
-            }
-        }
-
-        const { isEmoji } = await import(_runtime.tsSupport ? "../string.ts" : "../esm/string.js");
-        const emoji = "😴😄⛔🎠🚓🚇";
-        const text = "Hello, World!" + (isEmoji(emoji) ? " " + emoji : "");
-
-        return new Response(text, {
-            headers: {
-                "Content-Length": String(byteLength(text)),
-                "Content-Type": "text/plain; charset=utf-8",
-                "Powered-By": poweredBy,
-            },
-        });
+        return new Response(`Hello, ${ctx.remoteAddress?.address}!`);
     }
-};
+});
 
 export default config;
 
-if (isBun) {
-    console.log(`Listening on http://localhost:${config.port}/`);
-} else if (isDeno) {
-    Deno.serve({ port: config.port }, config.fetch);
-} else if (isNode) {
-    import("node:http").then(({ createServer }) => {
-        createServer(async (nReq, nRes) => {
-            const req = incomingMessageToRequest(nReq);
-            const res = await config.fetch(req, {
-                remoteAddr: nReq.socket.address(),
-            });
-            pipeResponse(res, nRes);
-        }).listen(config.port, () => {
-            console.log(`Listening on http://localhost:${config.port}/`);
-        });
+if (isBun || isDeno || isNode) {
+    const server = serve({
+        port: config.port,
+        fetch: config.fetch,
+    });
+
+    server.ready.then(() => {
+        console.log(`Listening on http://localhost:${config.port}/`);
     });
 }
 

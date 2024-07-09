@@ -1,5 +1,7 @@
-import runtime from '../runtime.js';
 import { until } from '../async.js';
+import { isDeno, isNode, isBun } from '../env.js';
+import runtime from '../runtime.js';
+import { EventEndpoint } from '../sse.js';
 
 var _a, _b, _c, _d, _e;
 const _hostname = Symbol.for("hostname");
@@ -29,34 +31,35 @@ class Server {
             return http;
         });
         const _this = this;
-        const { identity } = runtime();
-        if (identity === "cloudflare-worker") {
-            if (this.type === "module") {
-                this.fetch = async (req, bindings, ctx) => {
-                    var _f;
+        if (isDeno) {
+            if (this.type === "classic") {
+                delete this.fetch;
+            }
+            else {
+                this.fetch = async (request) => {
                     if (!_this[_handler]) {
                         return new Response("Service Unavailable", {
                             status: 503,
                             statusText: "Service Unavailable",
                         });
                     }
-                    const { EventEndpoint } = await import('../sse.js');
                     const ws = _this[_ws];
-                    return _this[_handler](req, {
+                    return _this[_handler](request, {
                         remoteAddress: null,
                         createEventEndpoint: () => {
-                            const events = new EventEndpoint(req);
+                            const events = new EventEndpoint(request);
                             return { events, response: events.response };
                         },
-                        upgradeWebSocket: () => ws.upgrade(req),
-                        waitUntil: (_f = ctx.waitUntil) === null || _f === void 0 ? void 0 : _f.bind(ctx),
-                        bindings,
+                        upgradeWebSocket: () => ws.upgrade(request),
                     });
                 };
             }
-            else { // classic
+        }
+        else if (!isNode && !isBun && typeof addEventListener === "function") {
+            if (this.type === "classic") {
                 // @ts-ignore
                 addEventListener("fetch", (event) => {
+                    var _f, _g, _h;
                     if (!_this[_handler]) {
                         event.respondWith(new Response("Service Unavailable", {
                             status: 503,
@@ -64,45 +67,50 @@ class Server {
                         }));
                         return;
                     }
+                    const { request } = event;
+                    const ws = _this[_ws];
                     const handle = _this[_handler];
-                    const { request: req } = event;
-                    const res = import('../sse.js').then(({ EventEndpoint }) => {
-                        const ws = _this[_ws];
-                        return handle(req, {
-                            remoteAddress: null,
-                            createEventEndpoint: () => {
-                                const events = new EventEndpoint(req);
-                                return { events, response: events.response };
-                            },
-                            upgradeWebSocket: () => ws.upgrade(req),
-                            waitUntil: event.waitUntil.bind(event),
-                        });
-                    });
-                    event.respondWith(res);
+                    const address = (_f = request.headers.get("cf-connecting-ip")) !== null && _f !== void 0 ? _f : (_g = event.client) === null || _g === void 0 ? void 0 : _g.address;
+                    event.respondWith(handle(request, {
+                        remoteAddress: address ? {
+                            family: address.includes(":") ? "IPv6" : "IPv4",
+                            address: address,
+                            port: 0,
+                        } : null,
+                        createEventEndpoint: () => {
+                            const events = new EventEndpoint(request);
+                            return { events, response: events.response };
+                        },
+                        upgradeWebSocket: () => ws.upgrade(request),
+                        waitUntil: (_h = event.waitUntil) === null || _h === void 0 ? void 0 : _h.bind(event),
+                    }));
                 });
             }
-        }
-        else if (identity === "deno") {
-            if (this.type === "classic") {
-                delete this.fetch;
-            }
             else {
-                this.fetch = async (req) => {
+                this.fetch = async (request, bindings, ctx) => {
+                    var _f;
                     if (!_this[_handler]) {
                         return new Response("Service Unavailable", {
                             status: 503,
                             statusText: "Service Unavailable",
                         });
                     }
-                    const { EventEndpoint } = await import('../sse.js');
                     const ws = _this[_ws];
-                    return _this[_handler](req, {
-                        remoteAddress: null,
+                    const handle = _this[_handler];
+                    const address = request.headers.get("cf-connecting-ip");
+                    return handle(request, {
+                        remoteAddress: address ? {
+                            family: address.includes(":") ? "IPv6" : "IPv4",
+                            address: address,
+                            port: 0,
+                        } : null,
                         createEventEndpoint: () => {
-                            const events = new EventEndpoint(req);
+                            const events = new EventEndpoint(request);
                             return { events, response: events.response };
                         },
-                        upgradeWebSocket: () => ws.upgrade(req),
+                        upgradeWebSocket: () => ws.upgrade(request),
+                        waitUntil: (_f = ctx.waitUntil) === null || _f === void 0 ? void 0 : _f.bind(ctx),
+                        bindings,
                     });
                 };
             }
@@ -125,6 +133,9 @@ class Server {
         }
         else if (runtime().identity === "cloudflare-worker") {
             return 8787;
+        }
+        else if (runtime().identity === "fastly") {
+            return 7676;
         }
         else if (runtime().identity === "deno") {
             return 8000;

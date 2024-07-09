@@ -10,7 +10,7 @@ import { randomPort, withWeb } from "./http.ts";
 declare const Bun: any;
 
 describe("ws", () => {
-    if (typeof EventTarget === "undefined") {
+    if (typeof MessageEvent === "undefined") {
         return;
     }
 

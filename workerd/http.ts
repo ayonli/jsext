@@ -18,6 +18,7 @@ import { readAsArray } from "../reader.ts";
 import { stripStart } from "../string.ts";
 import { KVNamespace } from "./types.ts";
 import { WebSocketServer } from "./ws.ts";
+import runtime from "../runtime.ts";
 
 export * from "../http/util.ts";
 export type { NetAddress, RequestHandler, ServeOptions, Server };
@@ -55,7 +56,8 @@ export function withWeb(
 }
 
 export function serve(options: ServeOptions): Server {
-    const { type = "module" } = options;
+    const { identity } = runtime();
+    const type = identity === "cloudflare-worker" ? options.type || "classic" : "classic";
     // @ts-ignore
     return new Server(async () => {
         const ws = new WebSocketServer(options.ws);
