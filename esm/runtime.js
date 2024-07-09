@@ -13,6 +13,7 @@ const WellknownRuntimes = [
     "firefox",
     "safari",
     "cloudflare-worker",
+    "fastly",
 ];
 /**
  * Returns the information of the runtime environment in which the program is
@@ -152,6 +153,23 @@ function runtime() {
                 worker,
             };
         }
+    }
+    else if (typeof WorkerLocation === "function" && globalThis.location instanceof WorkerLocation) {
+        return {
+            identity: "fastly",
+            version: undefined,
+            fsSupport,
+            tsSupport: false,
+            worker: "service",
+        };
+        // } else if (typeof process === "object" && typeof process.env === "object") {
+        //     return {
+        //         identity: "winterjs",
+        //         version: undefined,
+        //         fsSupport,
+        //         tsSupport: false,
+        //         worker: "service",
+        //     };
     }
     return {
         identity: "unknown",

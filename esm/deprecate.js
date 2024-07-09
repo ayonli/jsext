@@ -22,6 +22,7 @@ function deprecate(target, ...args) {
                 "bun": 1,
                 "safari": 1,
                 "firefox": 3,
+                "fastly": 3,
                 "unknown": 3,
             })[identity];
             emitWarning(fn.name + "()", wrapped, tip, once, lineOffset, identity, true);
@@ -39,6 +40,7 @@ function deprecate(target, ...args) {
         "bun": 1,
         "safari": 1,
         "firefox": 3,
+        "fastly": 3,
         "unknown": 3,
     })[identity];
     return emitWarning(target, forFn, tip, once, lineOffset, identity, false);

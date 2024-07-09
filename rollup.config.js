@@ -55,6 +55,7 @@ function isExternal(id) {
         || id.includes("node_modules")
         || id.startsWith("npm:")
         || id.startsWith("jsr:")
+        || id.startsWith("fastly:")
         || id === "__STATIC_CONTENT_MANIFEST";
 }
 

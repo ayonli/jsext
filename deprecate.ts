@@ -84,6 +84,7 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
                 "bun": 1,
                 "safari": 1,
                 "firefox": 3,
+                "fastly": 3,
                 "unknown": 3,
             })[identity]!;
 
@@ -103,6 +104,7 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
         "bun": 1,
         "safari": 1,
         "firefox": 3,
+        "fastly": 3,
         "unknown": 3,
     })[identity]!;
 

@@ -16,6 +16,7 @@ import {
 } from "./env.ts";
 
 declare const Bun: any;
+declare function WorkerLocation(): void;
 
 export type WellknownRuntimes = "node"
     | "deno"
@@ -23,7 +24,8 @@ export type WellknownRuntimes = "node"
     | "chrome"
     | "firefox"
     | "safari"
-    | "cloudflare-worker";
+    | "cloudflare-worker"
+    | "fastly";
 export const WellknownRuntimes: WellknownRuntimes[] = [
     "node",
     "deno",
@@ -32,6 +34,7 @@ export const WellknownRuntimes: WellknownRuntimes[] = [
     "firefox",
     "safari",
     "cloudflare-worker",
+    "fastly",
 ];
 
 /**
@@ -196,6 +199,22 @@ export default function runtime(): RuntimeInfo {
                 worker,
             };
         }
+    } else if (typeof WorkerLocation === "function" && globalThis.location instanceof WorkerLocation) {
+        return {
+            identity: "fastly",
+            version: undefined,
+            fsSupport,
+            tsSupport: false,
+            worker: "service",
+        };
+        // } else if (typeof process === "object" && typeof process.env === "object") {
+        //     return {
+        //         identity: "winterjs",
+        //         version: undefined,
+        //         fsSupport,
+        //         tsSupport: false,
+        //         worker: "service",
+        //     };
     }
 
     return {

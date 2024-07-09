@@ -8,6 +8,7 @@
             "types": "./types/index.d.ts",
             "bun": "./index.ts",
             "workerd": "./esm/workerd/index.js",
+            "fastly": "./esm/workerd/index.js",
             "import": "./esm/index.js",
             "require": "./cjs/index.js",
             "default": "./index.ts"
@@ -16,6 +17,7 @@
             "types": "./types/archive.d.ts",
             "bun": "./archive.ts",
             "workerd": "./esm/workerd/archive.js",
+            "fastly": "./esm/workerd/archive.js",
             "import": "./esm/archive.js",
             "require": "./cjs/archive.js",
             "default": "./archive.ts"
@@ -80,6 +82,7 @@
             "types": "./types/cli.d.ts",
             "bun": "./cli.ts",
             "workerd": "./esm/workerd/cli.js",
+            "fastly": "./esm/workerd/cli.js",
             "import": "./esm/cli.js",
             "require": "./cjs/cli.js",
             "default": "./cli.ts"
@@ -116,6 +119,7 @@
             "types": "./types/dialog.d.ts",
             "bun": "./dialog.ts",
             "workerd": "./esm/workerd/dialog.js",
+            "fastly": "./esm/workerd/dialog.js",
             "import": "./esm/dialog.js",
             "require": "./cjs/dialog.js",
             "default": "./dialog.ts"
@@ -152,6 +156,7 @@
             "types": "./types/example.d.ts",
             "bun": "./example.ts",
             "workerd": "./esm/workerd/example.js",
+            "fastly": "./esm/workerd/example.js",
             "import": "./esm/example.js",
             "require": "./cjs/example.js",
             "default": "./example.ts"
@@ -167,6 +172,7 @@
             "types": "./types/fs.d.ts",
             "bun": "./fs.ts",
             "workerd": "./esm/workerd/fs.js",
+            "fastly": "./esm/workerd/fs.js",
             "import": "./esm/fs.js",
             "require": "./cjs/fs.js",
             "default": "./fs.ts"
@@ -182,6 +188,7 @@
             "types": "./types/hash.d.ts",
             "bun": "./hash.ts",
             "workerd": "./esm/workerd/hash.js",
+            "fastly": "./esm/workerd/hash.js",
             "import": "./esm/hash.js",
             "require": "./cjs/hash.js",
             "default": "./hash.ts"
@@ -189,7 +196,8 @@
         "./http": {
             "types": "./types/http.d.ts",
             "bun": "./http.ts",
-            "workerd": "./workerd/http.ts",
+            "workerd": "./esm/workerd/http.js",
+            "fastly": "./esm/workerd/http.js",
             "import": "./esm/http.js",
             "require": "./cjs/http.js",
             "default": "./http.ts"
@@ -282,6 +290,7 @@
             "types": "./types/parallel.d.ts",
             "bun": "./parallel.ts",
             "workerd": "./esm/workerd/parallel.js",
+            "fastly": "./esm/workerd/parallel.js",
             "import": "./esm/parallel.js",
             "require": "./cjs/parallel.js",
             "default": "./parallel.ts"
@@ -346,6 +355,7 @@
             "types": "./types/run.d.ts",
             "bun": "./run.ts",
             "workerd": "./esm/workerd/run.js",
+            "fastly": "./esm/workerd/run.js",
             "import": "./esm/run.js",
             "require": "./cjs/run.js",
             "default": "./run.ts"
@@ -353,6 +363,7 @@
         "./runtime": {
             "types": "./types/runtime.d.ts",
             "bun": "./runtime.ts",
+            "fastly": "./esm/fastly/runtime.js",
             "import": "./esm/runtime.js",
             "require": "./cjs/runtime.js",
             "default": "./runtime.ts"
@@ -424,6 +435,7 @@
             "types": "./types/ws.d.ts",
             "bun": "./ws.ts",
             "workerd": "./esm/workerd/ws.js",
+            "fastly": "./esm/workerd/ws.js",
             "import": "./esm/ws.js",
             "require": "./cjs/ws.js",
             "default": "./ws.ts"
