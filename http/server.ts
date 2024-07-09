@@ -95,6 +95,11 @@ export interface RequestContext {
 export type RequestHandler = (request: Request, ctx: RequestContext) => Response | Promise<Response>;
 
 /**
+ * The handler for processing errors happened during processing HTTP requests.
+ */
+export type RequestErrorHandler = (error: unknown, request: Request, ctx: RequestContext) => Response | Promise<Response>;
+
+/**
  * Options for serving HTTP requests, used by {@link serve}.
  */
 export interface ServeOptions {
@@ -146,6 +151,21 @@ export interface ServeOptions {
      * `fetch` handler.
      */
     ws?: WebSocketHandler | undefined;
+    /**
+     * A listener that will be called when the `fetch` handler throws an error.
+     * By default, the server will respond with a `500 Internal Server Error`
+     * response, we can override this behavior by setting this option.
+     */
+    onError?: RequestErrorHandler | undefined;
+    /**
+     * A listener that will be called when the server starts listening. By
+     * default, the server will log the address it's listening on, we can
+     * override this behavior by setting this option.
+     * 
+     * NOTE: This option will be ignored if the server is started by the runtime
+     * itself, for example, in Cloudflare Workers, or when using `deno serve`.
+     */
+    onListen?: ((info: { hostname: string; port: number; }) => void) | undefined;
 }
 
 
@@ -188,7 +208,6 @@ const _hostname = Symbol.for("hostname");
 const _port = Symbol.for("port");
 const _http = Symbol.for("http");
 const _ws = Symbol.for("ws");
-const _handler = Symbol.for("handler");
 const _controller = Symbol.for("controller");
 
 /**
@@ -200,7 +219,6 @@ export class Server {
     private [_port] = 0;
     private [_http]: Promise<HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null>;
     private [_ws]: WebSocketServer | null = null;
-    private [_handler]: RequestHandler | null = null;
     private [_controller]: AbortController | null = null;
 
     /**
@@ -214,16 +232,36 @@ export class Server {
         ws: WebSocketServer;
         hostname: string;
         port: number;
-        fetch: RequestHandler;
         controller: AbortController | null;
-    }>, options: Pick<ServeOptions, "type"> = {}) {
+    }>, options: Pick<ServeOptions, "type" | "fetch" | "onError" | "onListen"> & {
+        secure?: boolean;
+    }) {
         this.type = options.type ?? "classic";
-        this[_http] = impl().then(({ http, ws, hostname, port, fetch, controller }) => {
+        const { fetch: handle, secure } = options;
+
+        const onError = options.onError ?? ((err) => {
+            console.error(err);
+            return new Response("Internal Server Error", {
+                status: 500,
+                statusText: "Internal Server Error",
+            });
+        });
+
+        const onListen = options.onListen ?? (({ hostname, port }) => {
+            const _hostname = hostname === "0.0.0.0" ? "localhost" : hostname;
+            const protocol = secure ? "https" : "http";
+            console.log(`Server listening on ${protocol}://${_hostname}:${port}`);
+        });
+
+        this[_http] = impl().then(({ http, ws, hostname, port, controller }) => {
             this[_ws] = ws;
             this[_hostname] = hostname;
             this[_port] = port;
-            this[_handler] = fetch;
             this[_controller] = controller;
+
+            if (http) {
+                onListen({ hostname, port });
+            }
 
             return http;
         });
@@ -235,22 +273,21 @@ export class Server {
                 delete this.fetch;
             } else {
                 this.fetch = async (request) => {
-                    if (!_this[_handler]) {
-                        return new Response("Service Unavailable", {
-                            status: 503,
-                            statusText: "Service Unavailable",
-                        });
-                    }
-
                     const ws = _this[_ws]!;
-                    return _this[_handler](request, {
+                    const ctx: RequestContext = {
                         remoteAddress: null,
                         createEventEndpoint: () => {
                             const events = new EventEndpoint(request);
                             return { events, response: events.response! };
                         },
                         upgradeWebSocket: () => ws.upgrade(request),
-                    });
+                    };
+
+                    try {
+                        return await handle(request, ctx);
+                    } catch (err) {
+                        return await onError(err, request, ctx);
+                    }
                 };
             }
         } else if (!isNode && !isBun && typeof addEventListener === "function") {
@@ -270,21 +307,11 @@ export class Server {
 
                 // @ts-ignore
                 addEventListener("fetch", (event: FetchEvent) => {
-                    if (!_this[_handler]) {
-                        event.respondWith(new Response("Service Unavailable", {
-                            status: 503,
-                            statusText: "Service Unavailable",
-                        }));
-                        return;
-                    }
-
                     const { request } = event;
                     const ws = _this[_ws]!;
-                    const handle = _this[_handler];
                     const address = request.headers.get("cf-connecting-ip")
                         ?? event.client?.address;
-
-                    event.respondWith(handle(request, {
+                    const ctx: RequestContext = {
                         remoteAddress: address ? {
                             family: address.includes(":") ? "IPv6" : "IPv4",
                             address: address,
@@ -297,26 +324,21 @@ export class Server {
                         upgradeWebSocket: () => ws.upgrade(request),
                         waitUntil: event.waitUntil?.bind(event),
                         bindings,
-                    }));
+                    };
+
+                    const response = Promise.resolve(handle(request, ctx))
+                        .catch(err => onError(err, request, ctx));
+                    event.respondWith(response);
                 });
             } else {
-                this.fetch = async (request, bindings, ctx) => {
-                    if (!_this[_handler]) {
-                        return new Response("Service Unavailable", {
-                            status: 503,
-                            statusText: "Service Unavailable",
-                        });
-                    }
-
+                this.fetch = async (request, bindings, _ctx) => {
                     if (bindings && typeof bindings === "object" && !Array.isArray(bindings)) {
                         env(bindings as object);
                     }
 
                     const ws = _this[_ws]!;
-                    const handle = _this[_handler];
                     const address = request.headers.get("cf-connecting-ip");
-
-                    return handle(request, {
+                    const ctx: RequestContext = {
                         remoteAddress: address ? {
                             family: address.includes(":") ? "IPv6" : "IPv4",
                             address: address,
@@ -327,9 +349,15 @@ export class Server {
                             return { events, response: events.response! };
                         },
                         upgradeWebSocket: () => ws.upgrade(request),
-                        waitUntil: ctx.waitUntil?.bind(ctx),
+                        waitUntil: _ctx.waitUntil?.bind(_ctx),
                         bindings,
-                    });
+                    };
+
+                    try {
+                        return await handle(request, ctx);
+                    } catch (err) {
+                        return await onError(err, request, ctx);
+                    }
                 };
             }
         }

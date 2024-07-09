@@ -3,31 +3,44 @@ import { isDeno, isNode, isBun } from '../env.js';
 import runtime, { env } from '../runtime.js';
 import { EventEndpoint } from '../sse.js';
 
-var _a, _b, _c, _d, _e;
+var _a, _b, _c, _d;
 const _hostname = Symbol.for("hostname");
 const _port = Symbol.for("port");
 const _http = Symbol.for("http");
 const _ws = Symbol.for("ws");
-const _handler = Symbol.for("handler");
 const _controller = Symbol.for("controller");
 /**
  * A unified HTTP server interface.
  */
 class Server {
-    constructor(impl, options = {}) {
-        var _f;
+    constructor(impl, options) {
+        var _e, _f, _g;
         this[_a] = "";
         this[_b] = 0;
         this[_c] = null;
         this[_d] = null;
-        this[_e] = null;
-        this.type = (_f = options.type) !== null && _f !== void 0 ? _f : "classic";
-        this[_http] = impl().then(({ http, ws, hostname, port, fetch, controller }) => {
+        this.type = (_e = options.type) !== null && _e !== void 0 ? _e : "classic";
+        const { fetch: handle, secure } = options;
+        const onError = (_f = options.onError) !== null && _f !== void 0 ? _f : ((err) => {
+            console.error(err);
+            return new Response("Internal Server Error", {
+                status: 500,
+                statusText: "Internal Server Error",
+            });
+        });
+        const onListen = (_g = options.onListen) !== null && _g !== void 0 ? _g : (({ hostname, port }) => {
+            const _hostname = hostname === "0.0.0.0" ? "localhost" : hostname;
+            const protocol = secure ? "https" : "http";
+            console.log(`Server listening on ${protocol}://${_hostname}:${port}`);
+        });
+        this[_http] = impl().then(({ http, ws, hostname, port, controller }) => {
             this[_ws] = ws;
             this[_hostname] = hostname;
             this[_port] = port;
-            this[_handler] = fetch;
             this[_controller] = controller;
+            if (http) {
+                onListen({ hostname, port });
+            }
             return http;
         });
         const _this = this;
@@ -37,21 +50,21 @@ class Server {
             }
             else {
                 this.fetch = async (request) => {
-                    if (!_this[_handler]) {
-                        return new Response("Service Unavailable", {
-                            status: 503,
-                            statusText: "Service Unavailable",
-                        });
-                    }
                     const ws = _this[_ws];
-                    return _this[_handler](request, {
+                    const ctx = {
                         remoteAddress: null,
                         createEventEndpoint: () => {
                             const events = new EventEndpoint(request);
                             return { events, response: events.response };
                         },
                         upgradeWebSocket: () => ws.upgrade(request),
-                    });
+                    };
+                    try {
+                        return await handle(request, ctx);
+                    }
+                    catch (err) {
+                        return await onError(err, request, ctx);
+                    }
                 };
             }
         }
@@ -70,19 +83,11 @@ class Server {
                 }
                 // @ts-ignore
                 addEventListener("fetch", (event) => {
-                    var _f, _g, _h;
-                    if (!_this[_handler]) {
-                        event.respondWith(new Response("Service Unavailable", {
-                            status: 503,
-                            statusText: "Service Unavailable",
-                        }));
-                        return;
-                    }
+                    var _e, _f, _g;
                     const { request } = event;
                     const ws = _this[_ws];
-                    const handle = _this[_handler];
-                    const address = (_f = request.headers.get("cf-connecting-ip")) !== null && _f !== void 0 ? _f : (_g = event.client) === null || _g === void 0 ? void 0 : _g.address;
-                    event.respondWith(handle(request, {
+                    const address = (_e = request.headers.get("cf-connecting-ip")) !== null && _e !== void 0 ? _e : (_f = event.client) === null || _f === void 0 ? void 0 : _f.address;
+                    const ctx = {
                         remoteAddress: address ? {
                             family: address.includes(":") ? "IPv6" : "IPv4",
                             address: address,
@@ -93,27 +98,23 @@ class Server {
                             return { events, response: events.response };
                         },
                         upgradeWebSocket: () => ws.upgrade(request),
-                        waitUntil: (_h = event.waitUntil) === null || _h === void 0 ? void 0 : _h.bind(event),
+                        waitUntil: (_g = event.waitUntil) === null || _g === void 0 ? void 0 : _g.bind(event),
                         bindings,
-                    }));
+                    };
+                    const response = Promise.resolve(handle(request, ctx))
+                        .catch(err => onError(err, request, ctx));
+                    event.respondWith(response);
                 });
             }
             else {
-                this.fetch = async (request, bindings, ctx) => {
-                    var _f;
-                    if (!_this[_handler]) {
-                        return new Response("Service Unavailable", {
-                            status: 503,
-                            statusText: "Service Unavailable",
-                        });
-                    }
+                this.fetch = async (request, bindings, _ctx) => {
+                    var _e;
                     if (bindings && typeof bindings === "object" && !Array.isArray(bindings)) {
                         env(bindings);
                     }
                     const ws = _this[_ws];
-                    const handle = _this[_handler];
                     const address = request.headers.get("cf-connecting-ip");
-                    return handle(request, {
+                    const ctx = {
                         remoteAddress: address ? {
                             family: address.includes(":") ? "IPv6" : "IPv4",
                             address: address,
@@ -124,9 +125,15 @@ class Server {
                             return { events, response: events.response };
                         },
                         upgradeWebSocket: () => ws.upgrade(request),
-                        waitUntil: (_f = ctx.waitUntil) === null || _f === void 0 ? void 0 : _f.bind(ctx),
+                        waitUntil: (_e = _ctx.waitUntil) === null || _e === void 0 ? void 0 : _e.bind(_ctx),
                         bindings,
-                    });
+                    };
+                    try {
+                        return await handle(request, ctx);
+                    }
+                    catch (err) {
+                        return await onError(err, request, ctx);
+                    }
                 };
             }
         }
@@ -214,7 +221,7 @@ class Server {
      * effect.
      */
     ref() {
-        this[_http].then(server => { var _f; return (_f = server === null || server === void 0 ? void 0 : server.ref) === null || _f === void 0 ? void 0 : _f.call(server); });
+        this[_http].then(server => { var _e; return (_e = server === null || server === void 0 ? void 0 : server.ref) === null || _e === void 0 ? void 0 : _e.call(server); });
     }
     /**
      * Calling `unref()` on a server will allow the program to exit if this is
@@ -222,10 +229,10 @@ class Server {
      * `unref`ed calling`unref()` again will have no effect.
      */
     unref() {
-        this[_http].then(server => { var _f; return (_f = server === null || server === void 0 ? void 0 : server.unref) === null || _f === void 0 ? void 0 : _f.call(server); });
+        this[_http].then(server => { var _e; return (_e = server === null || server === void 0 ? void 0 : server.unref) === null || _e === void 0 ? void 0 : _e.call(server); });
     }
 }
-_a = _hostname, _b = _port, _c = _ws, _d = _handler, _e = _controller;
+_a = _hostname, _b = _port, _c = _ws, _d = _controller;
 
 export { Server };
 //# sourceMappingURL=server.js.map

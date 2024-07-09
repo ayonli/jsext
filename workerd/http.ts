@@ -6,7 +6,9 @@ import { sha256 } from "./hash.ts";
 import { respondDir } from "../http/internal.ts";
 import {
     NetAddress,
+    RequestContext,
     RequestHandler,
+    RequestErrorHandler,
     ServeOptions,
     ServeStaticOptions,
     Server,
@@ -21,7 +23,15 @@ import { WebSocketServer } from "./ws.ts";
 import runtime from "../runtime.ts";
 
 export * from "../http/util.ts";
-export type { NetAddress, RequestHandler, ServeOptions, Server };
+export type {
+    NetAddress,
+    RequestContext,
+    RequestHandler,
+    RequestErrorHandler,
+    ServeOptions,
+    ServeStaticOptions,
+    Server,
+};
 
 export async function etag(data: string | Uint8Array | FileInfo): Promise<string> {
     if (typeof data === "string" || data instanceof Uint8Array) {
@@ -58,6 +68,8 @@ export function withWeb(
 export function serve(options: ServeOptions): Server {
     const { type: identity } = runtime();
     const type = identity === "workerd" ? options.type || "classic" : "classic";
+    const { fetch, onError, onListen } = options;
+
     // @ts-ignore
     return new Server(async () => {
         const ws = new WebSocketServer(options.ws);
@@ -66,9 +78,8 @@ export function serve(options: ServeOptions): Server {
             ws,
             hostname: "",
             port: 0,
-            fetch: options.fetch,
         };
-    }, { type });
+    }, { type, fetch, onError, onListen });
 }
 
 export async function serveStatic(

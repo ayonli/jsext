@@ -1,7 +1,7 @@
 import { serve, serveStatic } from "../http.ts";
 import { startsWith } from "../path.ts";
 
-const server = serve({
+serve({
     async fetch(request, ctx) {
         const { pathname } = new URL(request.url);
 
@@ -46,12 +46,4 @@ const server = serve({
 
         return new Response(`Hello, ${ctx.remoteAddress?.address}!`);
     },
-});
-
-export default server;
-
-server.ready.then(() => {
-    const { hostname, port } = server;
-    const _hostname = hostname === "0.0.0.0" ? "localhost" : hostname;
-    console.log(`Server listening on http://${_hostname}:${port}`);
 });

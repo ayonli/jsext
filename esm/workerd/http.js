@@ -41,6 +41,7 @@ function withWeb(listener) {
 function serve(options) {
     const { type: identity } = runtime();
     const type = identity === "workerd" ? options.type || "classic" : "classic";
+    const { fetch, onError, onListen } = options;
     // @ts-ignore
     return new Server(async () => {
         const ws = new WebSocketServer(options.ws);
@@ -49,9 +50,8 @@ function serve(options) {
             ws,
             hostname: "",
             port: 0,
-            fetch: options.fetch,
         };
-    }, { type });
+    }, { type, fetch, onError, onListen });
 }
 async function serveStatic(req, options = {}) {
     var _a, _b, _c, _d, _e, _f;

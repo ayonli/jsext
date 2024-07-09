@@ -47,6 +47,7 @@ import {
     NetAddress,
     RequestContext,
     RequestHandler,
+    RequestErrorHandler,
     ServeOptions,
     ServeStaticOptions,
     Server
@@ -66,6 +67,7 @@ export type {
     NetAddress,
     RequestContext,
     RequestHandler,
+    RequestErrorHandler,
     ServeOptions,
     ServeStaticOptions,
     Server,
@@ -466,12 +468,21 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  */
 export function serve(options: ServeOptions): Server {
     const type = isDeno ? options.type || "classic" : "classic";
+    const hostname = options.hostname || "0.0.0.0";
+    const { fetch: handle, key, cert, onListen } = options;
+
+    const onError: ServeOptions["onError"] = options.onError ?? ((err) => {
+        console.error(err);
+        return new Response("Internal Server Error", {
+            status: 500,
+            statusText: "Internal Server Error",
+        });
+    });
+
     return new Server(async () => {
-        let controller: AbortController | null = null;
         const ws = new WebSocketServer(options.ws);
-        const hostname = options.hostname || "0.0.0.0";
         let port = options.port || await randomPort(8000);
-        const { key, cert } = options;
+        let controller: AbortController | null = null;
         let server: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null = null;
 
         const createContext = (req: Request, remoteAddress: NetAddress): RequestContext => ({
@@ -482,14 +493,6 @@ export function serve(options: ServeOptions): Server {
             },
             upgradeWebSocket: () => ws.upgrade(req),
         });
-
-        const handleError = (err: unknown) => {
-            console.error(err);
-            return new Response("Internal Server Error", {
-                status: 500,
-                statusText: "Internal Server Error",
-            });
-        };
 
         if (isDeno) {
             if (type === "classic") {
@@ -503,12 +506,19 @@ export function serve(options: ServeOptions): Server {
                         cert,
                         signal: controller.signal,
                         onListen: () => task.resolve(),
-                        onError: handleError,
-                    }, (req, info) => options.fetch(req, createContext(req, {
-                        family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                        address: info.remoteAddr.hostname,
-                        port: info.remoteAddr.port,
-                    })));
+                    }, async (req, info) => {
+                        const ctx = createContext(req, {
+                            family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
+                            address: info.remoteAddr.hostname,
+                            port: info.remoteAddr.port,
+                        });
+
+                        try {
+                            return await handle(req, ctx);
+                        } catch (err) {
+                            return await onError(err, req, ctx);
+                        }
+                    });
                     await task;
                 } catch {
                     server = null;
@@ -522,21 +532,28 @@ export function serve(options: ServeOptions): Server {
                 hostname,
                 port,
                 tls,
-                fetch: (req: Request, server: BunServer) => {
+                fetch: async (req: Request, server: BunServer) => {
                     const remoteAddr = server.requestIP(req)!;
-                    return options.fetch(req, createContext(req, remoteAddr));
+                    const ctx = createContext(req, remoteAddr);
+
+                    try {
+                        return await handle(req, ctx);
+                    } catch (err) {
+                        return await onError(err, req, ctx);
+                    }
                 },
                 websocket: ws?.bunListener,
-                error: handleError,
             }) as BunServer;
 
             ws.bunBind(server);
         } else if (isNode) {
             const reqListener = withWeb(async (req, info) => {
+                const ctx = createContext(req, info.remoteAddress);
+
                 try {
-                    return await options.fetch(req, createContext(req, info.remoteAddress));
+                    return await handle(req, ctx);
                 } catch (err) {
-                    return handleError(err);
+                    return onError(err, req, ctx);
                 }
             });
 
@@ -559,8 +576,8 @@ export function serve(options: ServeOptions): Server {
             throw new Error("Unsupported runtime");
         }
 
-        return { http: server, ws, hostname, port, fetch: options.fetch, controller };
-    }, { type });
+        return { http: server, ws, hostname, port, controller };
+    }, { type, fetch: handle, onError, onListen, secure: !!key && !!cert });
 }
 
 /**
@@ -786,11 +803,9 @@ if (isMain(import.meta)) {
     const options = parseArgs(args, {
         alias: { p: "port" }
     });
+    let config: Partial<ServeOptions> = {};
     let fetch: ServeOptions["fetch"];
-    let hostname = "0.0.0.0";
     let port = Number.isFinite(options["port"]) ? options["port"] as number : undefined;
-    let cert: string | undefined;
-    let key: string | undefined;
     let filename = String(options[0] || ".");
     const ext = extname(filename);
 
@@ -801,12 +816,9 @@ if (isMain(import.meta)) {
                 const mod = await import(filename);
 
                 if (typeof mod.default === "object" && typeof mod.default.fetch === "function") {
-                    const config = mod.default as ServeOptions;
-                    fetch = config.fetch;
+                    config = mod.default as ServeOptions;
+                    fetch = config.fetch!;
                     port ||= config.port;
-                    config.hostname && (hostname = config.hostname);
-                    config.cert && (cert = config.cert);
-                    config.key && (key = config.key);
                 } else {
                     throw new Error("Invalid entry file");
                 }
@@ -824,11 +836,7 @@ if (isMain(import.meta)) {
                 },
             });
 
-            const server = serve({ hostname, port, fetch, key, cert });
-            server.ready.then(({ hostname, port }) => {
-                hostname = hostname === "0.0.0.0" ? "localhost" : hostname;
-                console.log(`Listening on http://${hostname}:${port}/`);
-            });
+            serve({ ...config, fetch, port });
         })();
     }
 }
