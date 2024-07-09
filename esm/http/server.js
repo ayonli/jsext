@@ -57,6 +57,17 @@ class Server {
         }
         else if (!isNode && !isBun && typeof addEventListener === "function") {
             if (this.type === "classic") {
+                let bindings;
+                if (runtime().type === "workerd") {
+                    bindings = {};
+                    Object.keys(globalThis).forEach((key) => {
+                        if (/^[A-Z0-9_]+$/.test(key)) {
+                            // @ts-ignore
+                            bindings[key] = globalThis[key];
+                        }
+                    });
+                    env(bindings);
+                }
                 // @ts-ignore
                 addEventListener("fetch", (event) => {
                     var _f, _g, _h;
@@ -83,6 +94,7 @@ class Server {
                         },
                         upgradeWebSocket: () => ws.upgrade(request),
                         waitUntil: (_h = event.waitUntil) === null || _h === void 0 ? void 0 : _h.bind(event),
+                        bindings,
                     }));
                 });
             }

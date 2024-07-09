@@ -81,8 +81,7 @@ export interface RequestContext {
      */
     waitUntil?: ((promise: Promise<unknown>) => void) | undefined;
     /**
-     * The bindings of the request. Only available in Cloudflare Workers when
-     * `type` is set to `module` when calling {@link serve}.
+     * The bindings of the request, only available in Cloudflare Workers.
      */
     bindings?: {
         [x: string]: any;
@@ -106,7 +105,8 @@ export interface ServeOptions {
      * as an ES module with the syntax `export default serve({ ... })`.
      * 
      * NOTE: This option is only adjustable in Cloudflare Workers and Deno, in
-     * other environments, it will be ignored and will default to `classic`.
+     * other environments, it will be ignored and will default to `classic`. It
+     * is recommended to set this option to `module` in Cloudflare Workers.
      * 
      * @default "classic"
      */
@@ -255,6 +255,19 @@ export class Server {
             }
         } else if (!isNode && !isBun && typeof addEventListener === "function") {
             if (this.type === "classic") {
+                let bindings: any;
+
+                if (runtime().type === "workerd") {
+                    bindings = {};
+                    Object.keys(globalThis).forEach((key) => {
+                        if (/^[A-Z0-9_]+$/.test(key)) {
+                            // @ts-ignore
+                            bindings[key] = globalThis[key];
+                        }
+                    });
+                    env(bindings as object);
+                }
+
                 // @ts-ignore
                 addEventListener("fetch", (event: FetchEvent) => {
                     if (!_this[_handler]) {
@@ -283,6 +296,7 @@ export class Server {
                         },
                         upgradeWebSocket: () => ws.upgrade(request),
                         waitUntil: event.waitUntil?.bind(event),
+                        bindings,
                     }));
                 });
             } else {
