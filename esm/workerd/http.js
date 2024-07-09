@@ -38,6 +38,7 @@ function withWeb(listener) {
     throw new Error("Unsupported runtime");
 }
 function serve(options) {
+    const { type = "module" } = options;
     // @ts-ignore
     return new Server(async () => {
         const ws = new WebSocketServer(options.ws);
@@ -48,7 +49,7 @@ function serve(options) {
             port: 0,
             fetch: options.fetch,
         };
-    });
+    }, { type });
 }
 async function serveStatic(req, options = {}) {
     var _a, _b, _c, _d, _e, _f;

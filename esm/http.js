@@ -1,4 +1,4 @@
-import { sleep, asyncTask } from './async.js';
+import { asyncTask } from './async.js';
 import bytes from './bytes.js';
 import { stripStart } from './string.js';
 import { isDeno, isBun, isNode } from './env.js';
@@ -430,11 +430,12 @@ function toNodeResponse(res, nodeRes) {
  * ```
  */
 function serve(options) {
+    const { type = "classic" } = options;
     return new Server(async () => {
         let controller = null;
         const ws = new WebSocketServer(options.ws);
         const hostname = options.hostname || "0.0.0.0";
-        const port = options.port || await randomPort(8000);
+        let port = options.port || await randomPort(8000);
         const { EventEndpoint } = await import('./sse.js');
         const { key, cert } = options;
         let server = null;
@@ -454,27 +455,31 @@ function serve(options) {
             });
         };
         if (isDeno) {
-            await sleep(0); // This will make sure `deno serve` works for the same port
-            controller = new AbortController();
-            const task = asyncTask();
-            try {
-                server = Deno.serve({
-                    hostname,
-                    port,
-                    key,
-                    cert,
-                    signal: controller.signal,
-                    onListen: () => task.resolve(),
-                    onError: handleError,
-                }, (req, info) => options.fetch(req, createContext(req, {
-                    family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                    address: info.remoteAddr.hostname,
-                    port: info.remoteAddr.port,
-                })));
-                await task;
+            if (type === "classic") {
+                controller = new AbortController();
+                const task = asyncTask();
+                try {
+                    server = Deno.serve({
+                        hostname,
+                        port,
+                        key,
+                        cert,
+                        signal: controller.signal,
+                        onListen: () => task.resolve(),
+                        onError: handleError,
+                    }, (req, info) => options.fetch(req, createContext(req, {
+                        family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
+                        address: info.remoteAddr.hostname,
+                        port: info.remoteAddr.port,
+                    })));
+                    await task;
+                }
+                catch (_a) {
+                    server = null;
+                }
             }
-            catch (_a) {
-                server = null;
+            else {
+                port = 8000;
             }
         }
         else if (isBun) {
@@ -519,7 +524,7 @@ function serve(options) {
             });
         }
         return { http: server, ws, hostname, port, fetch: options.fetch, controller };
-    });
+    }, { type });
 }
 /**
  * Serves static files from a file system directory or KV namespace (in

@@ -42,7 +42,7 @@
 
 import type { IncomingMessage, ServerResponse, Server as HttpServer } from "node:http";
 import type { Http2SecureServer, Http2ServerRequest, Http2ServerResponse } from "node:http2";
-import { asyncTask, sleep } from "./async.ts";
+import { asyncTask } from "./async.ts";
 import bytes from "./bytes.ts";
 import { args, parseArgs } from "./cli.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
@@ -462,11 +462,12 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * ```
  */
 export function serve(options: ServeOptions): Server {
+    const { type = "classic" } = options;
     return new Server(async () => {
         let controller: AbortController | null = null;
         const ws = new WebSocketServer(options.ws);
         const hostname = options.hostname || "0.0.0.0";
-        const port = options.port || await randomPort(8000);
+        let port = options.port || await randomPort(8000);
         const { EventEndpoint } = await import("./sse.ts");
         const { key, cert } = options;
         let server: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null = null;
@@ -489,27 +490,29 @@ export function serve(options: ServeOptions): Server {
         };
 
         if (isDeno) {
-            await sleep(0); // This will make sure `deno serve` works for the same port
-
-            controller = new AbortController();
-            const task = asyncTask<void>();
-            try {
-                server = Deno.serve({
-                    hostname,
-                    port,
-                    key,
-                    cert,
-                    signal: controller.signal,
-                    onListen: () => task.resolve(),
-                    onError: handleError,
-                }, (req, info) => options.fetch(req, createContext(req, {
-                    family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                    address: info.remoteAddr.hostname,
-                    port: info.remoteAddr.port,
-                })));
-                await task;
-            } catch {
-                server = null;
+            if (type === "classic") {
+                controller = new AbortController();
+                const task = asyncTask<void>();
+                try {
+                    server = Deno.serve({
+                        hostname,
+                        port,
+                        key,
+                        cert,
+                        signal: controller.signal,
+                        onListen: () => task.resolve(),
+                        onError: handleError,
+                    }, (req, info) => options.fetch(req, createContext(req, {
+                        family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
+                        address: info.remoteAddr.hostname,
+                        port: info.remoteAddr.port,
+                    })));
+                    await task;
+                } catch {
+                    server = null;
+                }
+            } else {
+                port = 8000;
             }
         } else if (isBun) {
             const tls = key && cert ? { key, cert } : undefined;
@@ -553,7 +556,7 @@ export function serve(options: ServeOptions): Server {
         }
 
         return { http: server, ws, hostname, port, fetch: options.fetch, controller };
-    });
+    }, { type });
 }
 
 /**

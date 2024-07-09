@@ -12,12 +12,14 @@ const _controller = Symbol.for("controller");
  * A unified HTTP server interface.
  */
 class Server {
-    constructor(impl) {
+    constructor(impl, options = {}) {
+        var _f;
         this[_a] = "";
         this[_b] = 0;
         this[_c] = null;
         this[_d] = null;
         this[_e] = null;
+        this.type = (_f = options.type) !== null && _f !== void 0 ? _f : "classic";
         this[_http] = impl().then(({ http, ws, hostname, port, fetch, controller }) => {
             this[_ws] = ws;
             this[_hostname] = hostname;
@@ -29,47 +31,81 @@ class Server {
         const _this = this;
         const { identity } = runtime();
         if (identity === "cloudflare-worker") {
-            this.fetch = async (req, bindings, ctx) => {
-                var _f;
-                if (!_this[_handler]) {
-                    return new Response("Service Unavailable", {
-                        status: 503,
-                        statusText: "Service Unavailable",
+            if (this.type === "module") {
+                this.fetch = async (req, bindings, ctx) => {
+                    var _f;
+                    if (!_this[_handler]) {
+                        return new Response("Service Unavailable", {
+                            status: 503,
+                            statusText: "Service Unavailable",
+                        });
+                    }
+                    const { EventEndpoint } = await import('../sse.js');
+                    const ws = _this[_ws];
+                    return _this[_handler](req, {
+                        remoteAddress: null,
+                        createEventEndpoint: () => {
+                            const events = new EventEndpoint(req);
+                            return { events, response: events.response };
+                        },
+                        upgradeWebSocket: () => ws.upgrade(req),
+                        waitUntil: (_f = ctx.waitUntil) === null || _f === void 0 ? void 0 : _f.bind(ctx),
+                        bindings,
                     });
-                }
-                const { EventEndpoint } = await import('../sse.js');
-                const ws = _this[_ws];
-                return _this[_handler](req, {
-                    remoteAddress: null,
-                    createEventEndpoint: () => {
-                        const events = new EventEndpoint(req);
-                        return { events, response: events.response };
-                    },
-                    upgradeWebSocket: () => ws.upgrade(req),
-                    waitUntil: (_f = ctx.waitUntil) === null || _f === void 0 ? void 0 : _f.bind(ctx),
-                    bindings,
+                };
+            }
+            else { // classic
+                // @ts-ignore
+                addEventListener("fetch", (event) => {
+                    if (!_this[_handler]) {
+                        event.respondWith(new Response("Service Unavailable", {
+                            status: 503,
+                            statusText: "Service Unavailable",
+                        }));
+                        return;
+                    }
+                    const handle = _this[_handler];
+                    const { request: req } = event;
+                    const res = import('../sse.js').then(({ EventEndpoint }) => {
+                        const ws = _this[_ws];
+                        return handle(req, {
+                            remoteAddress: null,
+                            createEventEndpoint: () => {
+                                const events = new EventEndpoint(req);
+                                return { events, response: events.response };
+                            },
+                            upgradeWebSocket: () => ws.upgrade(req),
+                            waitUntil: event.waitUntil.bind(event),
+                        });
+                    });
+                    event.respondWith(res);
                 });
-            };
+            }
         }
         else if (identity === "deno") {
-            this.fetch = async (req) => {
-                if (!_this[_handler]) {
-                    return new Response("Service Unavailable", {
-                        status: 503,
-                        statusText: "Service Unavailable",
+            if (this.type === "classic") {
+                delete this.fetch;
+            }
+            else {
+                this.fetch = async (req) => {
+                    if (!_this[_handler]) {
+                        return new Response("Service Unavailable", {
+                            status: 503,
+                            statusText: "Service Unavailable",
+                        });
+                    }
+                    const { EventEndpoint } = await import('../sse.js');
+                    const ws = _this[_ws];
+                    return _this[_handler](req, {
+                        remoteAddress: null,
+                        createEventEndpoint: () => {
+                            const events = new EventEndpoint(req);
+                            return { events, response: events.response };
+                        },
+                        upgradeWebSocket: () => ws.upgrade(req),
                     });
-                }
-                const { EventEndpoint } = await import('../sse.js');
-                const ws = _this[_ws];
-                return _this[_handler](req, {
-                    remoteAddress: null,
-                    createEventEndpoint: () => {
-                        const events = new EventEndpoint(req);
-                        return { events, response: events.response };
-                    },
-                    upgradeWebSocket: () => ws.upgrade(req),
-                });
-            };
+                };
+            }
         }
     }
     /**

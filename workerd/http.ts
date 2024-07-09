@@ -55,6 +55,7 @@ export function withWeb(
 }
 
 export function serve(options: ServeOptions): Server {
+    const { type = "module" } = options;
     // @ts-ignore
     return new Server(async () => {
         const ws = new WebSocketServer(options.ws);
@@ -65,7 +66,7 @@ export function serve(options: ServeOptions): Server {
             port: 0,
             fetch: options.fetch,
         };
-    });
+    }, { type });
 }
 
 export async function serveStatic(

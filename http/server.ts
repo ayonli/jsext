@@ -30,6 +30,12 @@ export interface BunServer {
     readonly url: URL;
 }
 
+export interface FetchEvent extends Event {
+    request: Request;
+    respondWith(response: Response | Promise<Response>): void;
+    waitUntil(promise: Promise<unknown>): void;
+}
+
 /**
  * Represents the network address of a connection peer.
  */
@@ -114,6 +120,18 @@ export interface ServeOptions {
      * The WebSocket handler for processing WebSocket connections.
      */
     ws?: WebSocketHandler | undefined;
+    /**
+     * Instructs how the server should be deployed. `classic` means {@link serve}
+     * will start the server itself (or use `addEventListener("fetch")` in
+     * service workers), while `module` means using the {@link Server} instance
+     * as an ES module with the syntax `export default serve({ ... })`.
+     * 
+     * The default value is changeable depending on the runtime. In Cloudflare
+     * Workers, it's `module`, while in others, it's `classic`.
+     * 
+     * NOTE: This option is only available in Cloudflare Workers and Deno.
+     */
+    type?: "classic" | "module";
 }
 
 
@@ -163,6 +181,7 @@ const _controller = Symbol.for("controller");
  * A unified HTTP server interface.
  */
 export class Server {
+    readonly type: "classic" | "module";
     private [_hostname] = "";
     private [_port] = 0;
     private [_http]: Promise<HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null>;
@@ -174,7 +193,7 @@ export class Server {
      * A request handler for using the server instance as an ES module worker in
      * Cloudflare Workers.
      */
-    readonly fetch: ((req: Request, env?: any, ctx?: any) => Response | Promise<Response>) | undefined;
+    fetch?: ((req: Request, env?: any, ctx?: any) => Response | Promise<Response>);
 
     constructor(impl: () => Promise<{
         http: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null;
@@ -183,7 +202,8 @@ export class Server {
         port: number;
         fetch: RequestHandler;
         controller: AbortController | null;
-    }>) {
+    }>, options: Pick<ServeOptions, "type"> = {}) {
+        this.type = options.type ?? "classic";
         this[_http] = impl().then(({ http, ws, hostname, port, fetch, controller }) => {
             this[_ws] = ws;
             this[_hostname] = hostname;
@@ -198,47 +218,81 @@ export class Server {
         const { identity } = runtime();
 
         if (identity === "cloudflare-worker") {
-            this.fetch = async (req, bindings, ctx) => {
-                if (!_this[_handler]) {
-                    return new Response("Service Unavailable", {
-                        status: 503,
-                        statusText: "Service Unavailable",
-                    });
-                }
+            if (this.type === "module") {
+                this.fetch = async (req, bindings, ctx) => {
+                    if (!_this[_handler]) {
+                        return new Response("Service Unavailable", {
+                            status: 503,
+                            statusText: "Service Unavailable",
+                        });
+                    }
 
-                const { EventEndpoint } = await import("../sse.ts");
-                const ws = _this[_ws]!;
-                return _this[_handler](req, {
-                    remoteAddress: null,
-                    createEventEndpoint: () => {
-                        const events = new EventEndpoint(req);
-                        return { events, response: events.response! };
-                    },
-                    upgradeWebSocket: () => ws.upgrade(req),
-                    waitUntil: ctx.waitUntil?.bind(ctx),
-                    bindings,
+                    const { EventEndpoint } = await import("../sse.ts");
+                    const ws = _this[_ws]!;
+                    return _this[_handler](req, {
+                        remoteAddress: null,
+                        createEventEndpoint: () => {
+                            const events = new EventEndpoint(req);
+                            return { events, response: events.response! };
+                        },
+                        upgradeWebSocket: () => ws.upgrade(req),
+                        waitUntil: ctx.waitUntil?.bind(ctx),
+                        bindings,
+                    });
+                };
+            } else { // classic
+                // @ts-ignore
+                addEventListener("fetch", (event: FetchEvent) => {
+                    if (!_this[_handler]) {
+                        event.respondWith(new Response("Service Unavailable", {
+                            status: 503,
+                            statusText: "Service Unavailable",
+                        }));
+                        return;
+                    }
+
+                    const handle = _this[_handler];
+                    const { request: req } = event;
+                    const res = import("../sse.ts").then(({ EventEndpoint }) => {
+                        const ws = _this[_ws]!;
+                        return handle(req, {
+                            remoteAddress: null,
+                            createEventEndpoint: () => {
+                                const events = new EventEndpoint(req);
+                                return { events, response: events.response! };
+                            },
+                            upgradeWebSocket: () => ws.upgrade(req),
+                            waitUntil: event.waitUntil.bind(event),
+                        });
+                    });
+
+                    event.respondWith(res);
                 });
-            };
+            }
         } else if (identity === "deno") {
-            this.fetch = async (req) => {
-                if (!_this[_handler]) {
-                    return new Response("Service Unavailable", {
-                        status: 503,
-                        statusText: "Service Unavailable",
-                    });
-                }
+            if (this.type === "classic") {
+                delete this.fetch;
+            } else {
+                this.fetch = async (req) => {
+                    if (!_this[_handler]) {
+                        return new Response("Service Unavailable", {
+                            status: 503,
+                            statusText: "Service Unavailable",
+                        });
+                    }
 
-                const { EventEndpoint } = await import("../sse.ts");
-                const ws = _this[_ws]!;
-                return _this[_handler](req, {
-                    remoteAddress: null,
-                    createEventEndpoint: () => {
-                        const events = new EventEndpoint(req);
-                        return { events, response: events.response! };
-                    },
-                    upgradeWebSocket: () => ws.upgrade(req),
-                });
-            };
+                    const { EventEndpoint } = await import("../sse.ts");
+                    const ws = _this[_ws]!;
+                    return _this[_handler](req, {
+                        remoteAddress: null,
+                        createEventEndpoint: () => {
+                            const events = new EventEndpoint(req);
+                            return { events, response: events.response! };
+                        },
+                        upgradeWebSocket: () => ws.upgrade(req),
+                    });
+                };
+            }
         }
     }
 
