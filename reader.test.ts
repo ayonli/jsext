@@ -20,6 +20,7 @@ import {
     concat,
 } from "./reader.ts";
 import { randomPort } from "./http.ts";
+import { EventEndpoint } from "./sse.ts";
 
 describe("reader", () => {
     describe("readAsArray", () => {
@@ -323,11 +324,10 @@ describe("reader", () => {
         });
 
         it("EventSource", jsext.func(async function (defer) {
-            if (typeof EventTarget !== "function" || typeof WritableStream !== "function") {
+            if (typeof WritableStream !== "function") {
                 this.skip();
             }
 
-            const { EventEndpoint } = await import("./sse.ts");
             const port = await randomPort();
             const server = await new Promise<http.Server>((resolve) => {
                 const server = http.createServer((req, res) => {
@@ -437,7 +437,7 @@ describe("reader", () => {
         }));
 
         it("EventTarget", async () => {
-            if (typeof EventTarget !== "function") {
+            if (typeof MessageEvent !== "function") {
                 return;
             }
 
@@ -556,11 +556,10 @@ describe("reader", () => {
         });
 
         it("EventSource", jsext.func(async function (defer) {
-            if (typeof EventTarget !== "function" || typeof WritableStream !== "function") {
+            if (typeof WritableStream !== "function") {
                 this.skip();
             }
 
-            const { EventEndpoint } = await import("./sse.ts");
             const port = await randomPort();
             const server = await new Promise<http.Server>((resolve) => {
                 const server = http.createServer((req, res) => {
@@ -681,7 +680,7 @@ describe("reader", () => {
         }));
 
         it("EventTarget", async () => {
-            if (typeof EventTarget !== "function") {
+            if (typeof MessageEvent !== "function") {
                 return;
             }
 

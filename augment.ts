@@ -1,4 +1,5 @@
 /// <reference types="./lib.deno.d.ts" />
+import "./external/event-target-polyfill/index.ts";
 import "./augment/string.ts";
 import "./augment/number.ts";
 import "./augment/array.ts";

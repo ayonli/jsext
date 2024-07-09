@@ -4,21 +4,17 @@ import { isBun, isDeno, isNode } from "./env.ts";
 import "./index.ts";
 import jsext from "./index.ts";
 import { randomPort, withWeb } from "./http.ts";
+import { EventClient, EventEndpoint } from "./sse.ts";
 
 declare const Bun: any;
 
 describe("sse", () => {
     describe("EventEndpoint (Web APIs)", () => {
-        if (typeof EventTarget === "undefined" ||
-            typeof Request === "undefined" ||
-            typeof Response === "undefined"
-        ) {
+        if (typeof Request === "undefined" || typeof Response === "undefined") {
             return;
         }
 
         it("constructor", async () => {
-            const { EventEndpoint } = await import("./sse.ts");
-
             const req1 = new Request("http://localhost:8080", {
                 headers: {
                     "Accept": "text/event-stream",
@@ -58,8 +54,6 @@ describe("sse", () => {
         });
 
         it("dispatchEvent", jsext.func(async function (defer) {
-            const { EventEndpoint } = await import("./sse.ts");
-
             const port = await randomPort();
             const task = asyncTask<InstanceType<typeof EventEndpoint>>();
 
@@ -158,8 +152,6 @@ describe("sse", () => {
         }));
 
         it("close", jsext.func(async function (defer) {
-            const { EventEndpoint } = await import("./sse.ts");
-
             const port = await randomPort();
             const task = asyncTask<InstanceType<typeof EventEndpoint>>();
 
@@ -217,8 +209,6 @@ describe("sse", () => {
                 // to dispatch the `close` event. We just skip this test for now.
                 this.skip();
             }
-
-            const { EventEndpoint } = await import("./sse.ts");
 
             let closeEvent: CloseEvent | undefined = undefined;
             const task = asyncTask<InstanceType<typeof EventEndpoint>>();
@@ -288,16 +278,12 @@ describe("sse", () => {
     });
 
     describe("EventEndpoint (Node.js APIs)", () => {
-        if (!isNode ||
-            typeof EventTarget === "undefined" ||
-            typeof WritableStream === "undefined"
-        ) {
+        if (!isNode || typeof WritableStream === "undefined") {
             return;
         }
 
         it("constructor", async () => {
             const http = await import("node:http");
-            const { EventEndpoint } = await import("./sse.ts");
 
             const task1 = asyncTask<InstanceType<typeof EventEndpoint>>();
             const server1 = http.createServer((req, res) => {
@@ -370,7 +356,6 @@ describe("sse", () => {
         it("dispatchEvent", jsext.func(async function (defer) {
             const http = await import("node:http");
             const { default: EventSource } = await import("eventsource");
-            const { EventEndpoint } = await import("./sse.ts");
 
             const task = asyncTask<InstanceType<typeof EventEndpoint>>();
             const server = http.createServer((req, res) => {
@@ -434,7 +419,6 @@ describe("sse", () => {
         it("close", jsext.func(async function (defer) {
             const http = await import("node:http");
             const { default: EventSource } = await import("eventsource");
-            const { EventEndpoint } = await import("./sse.ts");
 
             const task = asyncTask<InstanceType<typeof EventEndpoint>>();
             const server = http.createServer((req, res) => {
@@ -461,7 +445,6 @@ describe("sse", () => {
         it("listen close event", jsext.func(async function (defer) {
             const http = await import("node:http");
             const { default: EventSource } = await import("eventsource");
-            const { EventEndpoint } = await import("./sse.ts");
 
             let closeEvent: CloseEvent | undefined = undefined;
             const task = asyncTask<InstanceType<typeof EventEndpoint>>();
@@ -492,16 +475,11 @@ describe("sse", () => {
     });
 
     describe("EventClient", () => {
-        if (typeof EventTarget === "undefined" ||
-            typeof Request === "undefined" ||
-            typeof Response === "undefined"
-        ) {
+        if (typeof Request === "undefined" || typeof Response === "undefined") {
             return;
         }
 
         it("listen message event", async () => {
-            const { EventEndpoint, EventClient } = await import("./sse.ts");
-
             const req = new Request("http://localhost:8080", {
                 headers: {
                     "Accept": "text/event-stream",
@@ -546,8 +524,6 @@ describe("sse", () => {
         });
 
         it("listen custom event", async () => {
-            const { EventEndpoint, EventClient } = await import("./sse.ts");
-
             const req = new Request("http://localhost:8080", {
                 headers: {
                     "Accept": "text/event-stream",
@@ -592,8 +568,6 @@ describe("sse", () => {
         });
 
         it("listen close event by the server", async () => {
-            const { EventEndpoint, EventClient } = await import("./sse.ts");
-
             const req = new Request("http://localhost:8080", {
                 headers: {
                     "Accept": "text/event-stream",
@@ -620,8 +594,6 @@ describe("sse", () => {
         });
 
         it("listen close event by the client", async () => {
-            const { EventEndpoint, EventClient } = await import("./sse.ts");
-
             const req = new Request("http://localhost:8080", {
                 headers: {
                     "Accept": "text/event-stream",

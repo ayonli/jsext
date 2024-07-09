@@ -1,27 +1,12 @@
+import './external/event-target-polyfill/index.js';
 import { createCloseEvent, createErrorEvent } from './event.js';
 import { isBun } from './env.js';
 import runtime from './runtime.js';
 
-/**
- * This module provides tools for working with server-sent events.
- *
- * The {@link EventEndpoint} class is used to handle SSE requests on the server
- * and send messages to the client, while the {@link EventClient} class is
- * used to process messages sent by the server.
- *
- * Despite their names, these classes can be used in both the browser/client
- * and the server environments.
- *
- * NOTE: This module depends on the Web Streams API, in Node.js, it requires
- * Node.js v16.5 or higher.
- *
- * @module
- * @experimental
- */
 var _a, _b, _c;
-if (runtime().identity === "cloudflare-worker") {
-    // Cloudflare Workers does not fully implement the MessageEvent, so we need
-    // to implement it ourselves.
+if (typeof MessageEvent !== "function" || runtime().identity === "cloudflare-worker") {
+    // Worker environments does not implement or only partially implement the MessageEvent, 
+    // we need to implement it ourselves.
     globalThis.MessageEvent = class MessageEvent extends Event {
         constructor(type, eventInitDict) {
             var _d, _e, _f;

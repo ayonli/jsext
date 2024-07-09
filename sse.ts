@@ -14,16 +14,16 @@
  * @module
  * @experimental
  */
-
+import "./external/event-target-polyfill/index.ts";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
 import { createCloseEvent, createErrorEvent } from "./event.ts";
 import { isBun } from "./env.ts";
 import runtime from "./runtime.ts";
 
-if (runtime().identity === "cloudflare-worker") {
-    // Cloudflare Workers does not fully implement the MessageEvent, so we need
-    // to implement it ourselves.
+if (typeof MessageEvent !== "function" || runtime().identity === "cloudflare-worker") {
+    // Worker environments does not implement or only partially implement the MessageEvent, 
+    // we need to implement it ourselves.
     globalThis.MessageEvent = class MessageEvent<T = any> extends Event implements MessageEvent<T> {
         readonly data: T = undefined as T;
         readonly lastEventId: string = "";
