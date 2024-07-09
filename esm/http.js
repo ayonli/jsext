@@ -45,12 +45,6 @@ import { startsWith } from './path/util.js';
  * bun run node_modules/@ayonli/jsext/http.ts <entry.ts>
  * ```
  *
- * Node.js:
- * ```sh
- * node node_modules/@ayonli/jsext/esm/http.js [--port PORT] [DIR]
- * node node_modules/@ayonli/jsext/esm/http.js <entry.js>
- * ```
- *
  * Node.js (tsx):
  * ```sh
  * tsx node_modules/@ayonli/jsext/http.ts [--port PORT] [DIR]
@@ -333,17 +327,23 @@ function toNodeResponse(res, nodeRes) {
 /**
  * Serves HTTP requests with the given options.
  *
- * This function provides a unified way to serve HTTP requests in Node.js, Deno,
- * Bun, Cloudflare Workers and Fastly Compute. It's similar to the `Deno.serve`
- * and `Bun.serve` functions, in fact, it calls them internally when running in
- * the corresponding runtime. When running in Node.js, it uses the built-in
- * `http` or `http2` modules to create the server.
+ * This function provides a unified way to serve HTTP requests in all server
+ * runtimes. It's similar to the `Deno.serve` and `Bun.serve` functions, in fact,
+ * it calls them internally when running in the corresponding runtime. When
+ * running in Node.js, it uses the built-in `http` or `http2` modules to create
+ * the server.
  *
  * This function also provides easy ways to handle Server-sent Events and
  * WebSockets inside the fetch handler without touching the underlying verbose
  * APIs.
  *
- * NOTE: In Node.js, this function requires Node.js v18.4.1 or above.
+ * Currently, the following runtimes are supported:
+ *
+ * - Node.js (v18.4.1 or above)
+ * - Deno
+ * - Bun
+ * - Cloudflare Workers
+ * - Fastly Compute
  *
  * NOTE: WebSocket is not supported in Fastly Compute at the moment.
  *
@@ -353,7 +353,7 @@ function toNodeResponse(res, nodeRes) {
  * import { serve } from "@ayonli/jsext/http";
  *
  * serve({
- *     async fetch(req) {
+ *     fetch(req) {
  *         return new Response("Hello, World!");
  *     },
  * });
@@ -367,7 +367,7 @@ function toNodeResponse(res, nodeRes) {
  * serve({
  *     hostname: "localhost",
  *     port: 8787, // same port as Wrangler dev
- *     async fetch(req) {
+ *     fetch(req) {
  *         return new Response("Hello, World!");
  *     },
  * });
@@ -382,7 +382,7 @@ function toNodeResponse(res, nodeRes) {
  * serve({
  *     key: await readFileAsText("./cert.key"),
  *     cert: await readFileAsText("./cert.pem"),
- *     async fetch(req) {
+ *     fetch(req) {
  *         return new Response("Hello, World!");
  *    },
  * });
@@ -394,7 +394,7 @@ function toNodeResponse(res, nodeRes) {
  * import { serve } from "@ayonli/jsext/http";
  *
  * serve({
- *     async fetch(req, ctx) {
+ *     fetch(req, ctx) {
  *         const { events, response } = ctx.createEventEndpoint();
  *         let count = events.lastEventId ? Number(events.lastEventId) : 0;
  *
@@ -544,7 +544,8 @@ function serve(options) {
  * ```ts
  * import { serve, serveStatic } from "@ayonli/jsext/http";
  *
- * export default serve({ // use `serve()` so this program runs in all environments
+ * // use `serve()` so this program runs in all environments
+ * serve({
  *     async fetch(req: Request, ctx) {
  *         const { pathname } = new URL(req.url);
  *
