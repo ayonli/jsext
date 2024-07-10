@@ -1,7 +1,65 @@
 import { orderBy } from '../array.js';
 import { join } from '../path.js';
+import runtime from '../runtime.js';
+import { EventEndpoint } from '../sse.js';
 import { dedent } from '../string.js';
 
+function createContext(request, props) {
+    const { ws, remoteAddress = null, ...rest } = props;
+    return {
+        remoteAddress,
+        createEventEndpoint: () => {
+            const events = new EventEndpoint(request);
+            return { events, response: events.response };
+        },
+        upgradeWebSocket: () => ws.upgrade(request),
+        ...rest,
+    };
+}
+function withHeaders(handle, headers = undefined) {
+    if (headers === undefined) {
+        const { type, version } = runtime();
+        let serverName = ({
+            "node": "Node.js",
+            "deno": "Deno",
+            "bun": "Bun",
+            "workerd": "Cloudflare Workers",
+            "fastly": "Fastly Compute",
+        })[type] || "Unknown";
+        if (version) {
+            serverName += `/${version}`;
+        }
+        headers = { "Server": serverName };
+    }
+    return (...args) => Promise.resolve(handle(...args))
+        .then((response) => {
+        if (response.status === 101) {
+            // WebSocket headers cannot be modified
+            return response;
+        }
+        try {
+            if (headers instanceof Headers) {
+                headers.forEach((value, name) => {
+                    response.headers.set(name, value);
+                });
+            }
+            else if (Array.isArray(headers)) {
+                headers.forEach(([name, value]) => {
+                    response.headers.set(name, value);
+                });
+            }
+            else if (headers !== null) {
+                Object.entries(headers).forEach(([name, value]) => {
+                    response.headers.set(name, value);
+                });
+            }
+        }
+        catch (_a) {
+            // In case the headers are immutable, ignore the error.
+        }
+        return response;
+    });
+}
 async function respondDir(entries, pathname, extraHeaders = {}) {
     const list = [
         ...orderBy(entries.filter(e => e.kind === "directory"), e => e.name).map(e => e.name + "/"),
@@ -51,5 +109,5 @@ async function respondDir(entries, pathname, extraHeaders = {}) {
     });
 }
 
-export { respondDir };
+export { createContext, respondDir, withHeaders };
 //# sourceMappingURL=internal.js.map

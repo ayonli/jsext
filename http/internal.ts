@@ -1,7 +1,79 @@
 import { orderBy } from "../array.ts";
 import { DirEntry } from "../fs.ts";
 import { join } from "../path.ts";
+import runtime from "../runtime.ts";
+import { EventEndpoint } from "../sse.ts";
 import { dedent } from "../string.ts";
+import type { RequestContext } from "./server.ts";
+import type { WebSocketServer } from "../ws.ts";
+
+export function createContext(
+    request: Request,
+    props: Pick<RequestContext, "remoteAddress" | "waitUntil" | "bindings"> & {
+        ws: WebSocketServer;
+    }
+) {
+    const { ws, remoteAddress = null, ...rest } = props;
+    return {
+        remoteAddress,
+        createEventEndpoint: () => {
+            const events = new EventEndpoint(request);
+            return { events, response: events.response! };
+        },
+        upgradeWebSocket: () => ws.upgrade(request),
+        ...rest,
+    } as RequestContext;
+};
+
+export function withHeaders<A extends any[]>(
+    handle: (...args: A) => Response | Promise<Response>,
+    headers: HeadersInit | null | undefined = undefined
+): (...args: A) => Promise<Response> {
+    if (headers === undefined) {
+        const { type, version } = runtime();
+        let serverName = ({
+            "node": "Node.js",
+            "deno": "Deno",
+            "bun": "Bun",
+            "workerd": "Cloudflare Workers",
+            "fastly": "Fastly Compute",
+        })[type as string] || "Unknown";
+
+        if (version) {
+            serverName += `/${version}`;
+        }
+
+        headers = { "Server": serverName };
+    }
+
+    return (...args: A) => Promise.resolve(handle(...args))
+        .then((response) => {
+            if (response.status === 101) {
+                // WebSocket headers cannot be modified
+                return response;
+            }
+
+            try {
+                if (headers instanceof Headers) {
+                    headers.forEach((value, name) => {
+                        response.headers.set(name, value);
+                    });
+                } else if (Array.isArray(headers)) {
+                    headers.forEach(([name, value]) => {
+                        response.headers.set(name, value);
+                    });
+                } else if (headers !== null) {
+                    Object.entries(headers).forEach(([name, value]) => {
+                        response.headers.set(name, value);
+                    });
+                }
+            } catch {
+                // In case the headers are immutable, ignore the error.
+            }
+
+            return response;
+        });
+}
 
 export async function respondDir(
     entries: DirEntry[],

@@ -1,7 +1,7 @@
 import { until } from '../async.js';
 import { isBun, isDeno, isNode } from '../env.js';
 import runtime, { env } from '../runtime.js';
-import { EventEndpoint } from '../sse.js';
+import { withHeaders, createContext } from './internal.js';
 
 var _a, _b, _c;
 const _hostname = Symbol.for("hostname");
@@ -18,7 +18,7 @@ class Server {
         this[_b] = 0;
         this[_c] = null;
         this.type = (_d = options.type) !== null && _d !== void 0 ? _d : "classic";
-        const { fetch: handle, ws, secure } = options;
+        const { fetch: handle, ws, headers, secure } = options;
         const onError = (_e = options.onError) !== null && _e !== void 0 ? _e : ((err) => {
             console.error(err);
             return new Response("Internal Server Error", {
@@ -43,32 +43,20 @@ class Server {
             }
             return http;
         });
-        const createContext = (request, props) => {
-            const { remoteAddress = null, ...rest } = props;
-            return {
-                remoteAddress,
-                createEventEndpoint: () => {
-                    const events = new EventEndpoint(request);
-                    return { events, response: events.response };
-                },
-                upgradeWebSocket: () => ws.upgrade(request),
-                ...rest,
-            };
-        };
         if (isDeno) {
             if (this.type === "classic") {
                 delete this.fetch;
             }
             else {
-                this.fetch = async (request) => {
-                    const ctx = createContext(request, { remoteAddress: null });
+                this.fetch = withHeaders(async (request) => {
+                    const ctx = createContext(request, { ws, remoteAddress: null });
                     try {
                         return await handle(request, ctx);
                     }
                     catch (err) {
                         return await onError(err, request, ctx);
                     }
-                };
+                }, headers);
             }
         }
         else if (isBun) {
@@ -76,9 +64,10 @@ class Server {
                 delete this.fetch;
             }
             else {
-                this.fetch = async (request, server) => {
+                this.fetch = withHeaders(async (request, server) => {
                     ws.bunBind(server);
                     const ctx = createContext(request, {
+                        ws,
                         remoteAddress: server.requestIP(request),
                     });
                     try {
@@ -87,7 +76,7 @@ class Server {
                     catch (err) {
                         return await onError(err, request, ctx);
                     }
-                };
+                }, headers);
                 Object.assign(this, {
                     // Bun specific properties
                     websocket: ws.bunListener,
@@ -113,6 +102,7 @@ class Server {
                     const { request } = event;
                     const address = (_d = request.headers.get("cf-connecting-ip")) !== null && _d !== void 0 ? _d : (_e = event.client) === null || _e === void 0 ? void 0 : _e.address;
                     const ctx = createContext(request, {
+                        ws,
                         remoteAddress: address ? {
                             family: address.includes(":") ? "IPv6" : "IPv4",
                             address: address,
@@ -121,19 +111,22 @@ class Server {
                         waitUntil: (_f = event.waitUntil) === null || _f === void 0 ? void 0 : _f.bind(event),
                         bindings,
                     });
-                    const response = Promise.resolve(handle(request, ctx))
-                        .catch(err => onError(err, request, ctx));
+                    const _handle = withHeaders(handle, headers);
+                    const _onError = withHeaders(onError, headers);
+                    const response = Promise.resolve((_handle(request, ctx)))
+                        .catch(err => _onError(err, request, ctx));
                     event.respondWith(response);
                 });
             }
             else {
-                this.fetch = async (request, bindings, _ctx) => {
+                this.fetch = withHeaders(async (request, bindings, _ctx) => {
                     var _d;
                     if (bindings && typeof bindings === "object" && !Array.isArray(bindings)) {
                         env(bindings);
                     }
                     const address = request.headers.get("cf-connecting-ip");
                     const ctx = createContext(request, {
+                        ws,
                         remoteAddress: address ? {
                             family: address.includes(":") ? "IPv6" : "IPv4",
                             address: address,
@@ -148,7 +141,7 @@ class Server {
                     catch (err) {
                         return await onError(err, request, ctx);
                     }
-                };
+                }, headers);
             }
         }
     }

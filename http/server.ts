@@ -1,12 +1,13 @@
 import type { Server as HttpServer } from "node:http";
 import type { Http2SecureServer } from "node:http2";
 import type { serve, serveStatic } from "../http.ts";
+import type { EventEndpoint } from "../sse.ts";
 import { until } from "../async.ts";
 import { isBun, isDeno, isNode } from "../env.ts";
 import runtime, { env } from "../runtime.ts";
-import { EventEndpoint } from "../sse.ts";
 import { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
 import { KVNamespace } from "../workerd/types.ts";
+import { createContext, withHeaders } from "./internal.ts";
 
 export interface BunServer {
     fetch(request: Request | string): Response | Promise<Response>;
@@ -165,6 +166,13 @@ export interface ServeOptions {
      * NOTE: This option is ignored in workers or when the `type` is `module`.
      */
     onListen?: ((info: { hostname: string; port: number; }) => void) | undefined;
+    /**
+     * Extra headers to be sent with the response. By default, the server will
+     * set the `Server` header to the runtime name and its version. We can set
+     * this option to override the default behavior, or set it to `null` to
+     * disable the default headers.
+     */
+    headers?: HeadersInit | null | undefined;
 }
 
 
@@ -198,7 +206,7 @@ export interface ServeStaticOptions {
      */
     maxAge?: number;
     /**
-     * Extra headers to be set in the response.
+     * Extra headers to be sent with the response.
      */
     headers?: HeadersInit;
 }
@@ -229,12 +237,12 @@ export class Server {
         hostname: string;
         port: number;
         controller: AbortController | null;
-    }>, options: Pick<ServeOptions, "type" | "fetch" | "onError" | "onListen"> & {
+    }>, options: Pick<ServeOptions, "type" | "fetch" | "onError" | "onListen" | "headers"> & {
         ws: WebSocketServer;
         secure?: boolean;
     }) {
         this.type = options.type ?? "classic";
-        const { fetch: handle, ws, secure } = options;
+        const { fetch: handle, ws, headers, secure } = options;
 
         const onError = options.onError ?? ((err) => {
             console.error(err);
@@ -265,43 +273,28 @@ export class Server {
             return http;
         });
 
-        const createContext = (
-            request: Request,
-            props: Pick<RequestContext, "remoteAddress" | "waitUntil" | "bindings">
-        ) => {
-            const { remoteAddress = null, ...rest } = props;
-            return {
-                remoteAddress,
-                createEventEndpoint: () => {
-                    const events = new EventEndpoint(request);
-                    return { events, response: events.response! };
-                },
-                upgradeWebSocket: () => ws.upgrade(request),
-                ...rest,
-            } as RequestContext;
-        };
-
         if (isDeno) {
             if (this.type === "classic") {
                 delete this.fetch;
             } else {
-                this.fetch = async (request) => {
-                    const ctx = createContext(request, { remoteAddress: null });
+                this.fetch = withHeaders(async (request) => {
+                    const ctx = createContext(request, { ws, remoteAddress: null });
 
                     try {
                         return await handle(request, ctx);
                     } catch (err) {
                         return await onError(err, request, ctx);
                     }
-                };
+                }, headers);
             }
         } else if (isBun) {
             if (this.type === "classic") {
                 delete this.fetch;
             } else {
-                this.fetch = async (request, server: BunServer) => {
+                this.fetch = withHeaders(async (request, server: BunServer) => {
                     ws.bunBind(server);
                     const ctx = createContext(request, {
+                        ws,
                         remoteAddress: server.requestIP(request),
                     });
 
@@ -310,7 +303,7 @@ export class Server {
                     } catch (err) {
                         return await onError(err, request, ctx);
                     }
-                };
+                }, headers);
 
                 Object.assign(this, {
                     // Bun specific properties
@@ -338,6 +331,7 @@ export class Server {
                     const address = request.headers.get("cf-connecting-ip")
                         ?? event.client?.address;
                     const ctx = createContext(request, {
+                        ws,
                         remoteAddress: address ? {
                             family: address.includes(":") ? "IPv6" : "IPv4",
                             address: address,
@@ -347,18 +341,22 @@ export class Server {
                         bindings,
                     });
 
-                    const response = Promise.resolve(handle(request, ctx))
-                        .catch(err => onError(err, request, ctx));
+                    const _handle = withHeaders(handle, headers);
+                    const _onError = withHeaders(onError, headers);
+                    const response = Promise.resolve((_handle(request, ctx)))
+                        .catch(err => _onError(err, request, ctx));
+
                     event.respondWith(response);
                 });
             } else {
-                this.fetch = async (request, bindings, _ctx) => {
+                this.fetch = withHeaders(async (request, bindings, _ctx) => {
                     if (bindings && typeof bindings === "object" && !Array.isArray(bindings)) {
                         env(bindings as object);
                     }
 
                     const address = request.headers.get("cf-connecting-ip");
                     const ctx = createContext(request, {
+                        ws,
                         remoteAddress: address ? {
                             family: address.includes(":") ? "IPv6" : "IPv4",
                             address: address,
@@ -373,7 +371,7 @@ export class Server {
                     } catch (err) {
                         return await onError(err, request, ctx);
                     }
-                };
+                }, headers);
             }
         }
     }

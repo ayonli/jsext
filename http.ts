@@ -52,14 +52,13 @@ import {
     ServeStaticOptions,
     Server
 } from "./http/server.ts";
-import { respondDir } from "./http/internal.ts";
+import { createContext, respondDir, withHeaders } from "./http/internal.ts";
 import { Range, ifMatch, ifNoneMatch, parseRange } from "./http/util.ts";
 import { isMain } from "./module.ts";
 import { as } from "./object.ts";
 import { extname, join, resolve, startsWith } from "./path.ts";
 import { readAsArray } from "./reader.ts";
 import { stripStart } from "./string.ts";
-import { EventEndpoint } from "./sse.ts";
 import { WebSocketServer } from "./ws.ts";
 
 export * from "./http/util.ts";
@@ -470,7 +469,7 @@ export function serve(options: ServeOptions): Server {
     const type = isDeno || isBun ? options.type || "classic" : "classic";
     const hostname = options.hostname || "0.0.0.0";
     const ws = new WebSocketServer(options.ws);
-    const { fetch: handle, key, cert, onListen } = options;
+    const { fetch: handle, key, cert, onListen, headers } = options;
 
     const onError: ServeOptions["onError"] = options.onError ?? ((err) => {
         console.error(err);
@@ -485,15 +484,6 @@ export function serve(options: ServeOptions): Server {
         let controller: AbortController | null = null;
         let server: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null = null;
 
-        const createContext = (req: Request, remoteAddress: NetAddress): RequestContext => ({
-            remoteAddress,
-            createEventEndpoint: () => {
-                const endpoint = new EventEndpoint(req);
-                return { events: endpoint, response: endpoint.response! };
-            },
-            upgradeWebSocket: () => ws.upgrade(req),
-        });
-
         if (isDeno) {
             if (type === "classic") {
                 controller = new AbortController();
@@ -505,11 +495,14 @@ export function serve(options: ServeOptions): Server {
                     cert,
                     signal: controller.signal,
                     onListen: () => task.resolve(),
-                }, async (req, info) => {
+                }, withHeaders(async (req, info) => {
                     const ctx = createContext(req, {
-                        family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                        address: info.remoteAddr.hostname,
-                        port: info.remoteAddr.port,
+                        ws,
+                        remoteAddress: {
+                            family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
+                            address: info.remoteAddr.hostname,
+                            port: info.remoteAddr.port,
+                        },
                     });
 
                     try {
@@ -517,7 +510,7 @@ export function serve(options: ServeOptions): Server {
                     } catch (err) {
                         return await onError(err, req, ctx);
                     }
-                });
+                }, headers));
                 await task;
             } else {
                 hostname === "";
@@ -530,16 +523,18 @@ export function serve(options: ServeOptions): Server {
                     hostname,
                     port,
                     tls,
-                    fetch: async (req: Request, server: BunServer) => {
-                        const remoteAddr = server.requestIP(req)!;
-                        const ctx = createContext(req, remoteAddr);
+                    fetch: withHeaders(async (req: Request, server: BunServer) => {
+                        const ctx = createContext(req, {
+                            ws,
+                            remoteAddress: server.requestIP(req)!,
+                        });
 
                         try {
                             return await handle(req, ctx);
                         } catch (err) {
                             return await onError(err, req, ctx);
                         }
-                    },
+                    }, headers),
                     websocket: ws.bunListener,
                 }) as BunServer;
 
@@ -549,15 +544,15 @@ export function serve(options: ServeOptions): Server {
                 port = 3000;
             }
         } else if (isNode) {
-            const reqListener = withWeb(async (req, info) => {
-                const ctx = createContext(req, info.remoteAddress);
+            const reqListener = withWeb(withHeaders(async (req, info) => {
+                const ctx = createContext(req, { ws, ...info });
 
                 try {
                     return await handle(req, ctx);
                 } catch (err) {
-                    return onError(err, req, ctx);
+                    return await onError(err, req, ctx);
                 }
-            });
+            }, headers));
 
             if (key && cert) {
                 const { createSecureServer } = await import("node:http2");
@@ -579,7 +574,7 @@ export function serve(options: ServeOptions): Server {
         }
 
         return { http: server, hostname, port, controller };
-    }, { type, fetch: handle, onError, onListen, ws, secure: !!key && !!cert });
+    }, { type, fetch: handle, onError, onListen, ws, headers, secure: !!key && !!cert });
 }
 
 /**
@@ -820,22 +815,15 @@ if (isMain(import.meta)) {
                 if (typeof mod.default === "object" && typeof mod.default.fetch === "function") {
                     config = mod.default as ServeOptions;
                     fetch = config.fetch!;
-                    port ||= config.port;
                 } else {
-                    throw new Error("Invalid entry file");
+                    throw new Error(
+                        "The entry file must have an `export default { fetch }` statement");
                 }
             }
 
             fetch ||= (req) => serveStatic(req, {
                 fsDir: filename,
                 listDir: true,
-                headers: {
-                    "Server": typeof navigator === "object" && navigator.userAgent
-                        ? navigator.userAgent
-                        : typeof process === "object"
-                            ? `Node.js/${process.version}`
-                            : "Unknown",
-                },
             });
 
             serve({ ...config, fetch, port });
