@@ -38,20 +38,19 @@ function withHeaders(handle, headers = undefined) {
             return response;
         }
         try {
-            if (headers instanceof Headers) {
-                headers.forEach((value, name) => {
+            const patch = (name, value) => {
+                if (!response.headers.has(name)) {
                     response.headers.set(name, value);
-                });
+                }
+            };
+            if (headers instanceof Headers) {
+                headers.forEach((value, name) => patch(name, value));
             }
             else if (Array.isArray(headers)) {
-                headers.forEach(([name, value]) => {
-                    response.headers.set(name, value);
-                });
+                headers.forEach(([name, value]) => patch(name, value));
             }
             else if (headers !== null) {
-                Object.entries(headers).forEach(([name, value]) => {
-                    response.headers.set(name, value);
-                });
+                Object.entries(headers).forEach(([name, value]) => patch(name, value));
             }
         }
         catch (_a) {

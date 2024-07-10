@@ -167,10 +167,12 @@ export interface ServeOptions {
      */
     onListen?: ((info: { hostname: string; port: number; }) => void) | undefined;
     /**
-     * Extra headers to be sent with the response. By default, the server will
-     * set the `Server` header to the runtime name and its version. We can set
-     * this option to override the default behavior, or set it to `null` to
-     * disable the default headers.
+     * Extra headers to be sent with the response. These headers are only set
+     * when they're not present.
+     * 
+     * By default, the server will set the `Server` header to the runtime name
+     * and its version. We can set this option to override the default behavior,
+     * or set it to `null` to disable the default headers.
      */
     headers?: HeadersInit | null | undefined;
 }

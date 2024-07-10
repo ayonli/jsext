@@ -54,18 +54,18 @@ export function withHeaders<A extends any[]>(
             }
 
             try {
+                const patch = (name: string, value: string) => {
+                    if (!response.headers.has(name)) {
+                        response.headers.set(name, value);
+                    }
+                };
+
                 if (headers instanceof Headers) {
-                    headers.forEach((value, name) => {
-                        response.headers.set(name, value);
-                    });
+                    headers.forEach((value, name) => patch(name, value));
                 } else if (Array.isArray(headers)) {
-                    headers.forEach(([name, value]) => {
-                        response.headers.set(name, value);
-                    });
+                    headers.forEach(([name, value]) => patch(name, value));
                 } else if (headers !== null) {
-                    Object.entries(headers).forEach(([name, value]) => {
-                        response.headers.set(name, value);
-                    });
+                    Object.entries(headers).forEach(([name, value]) => patch(name, value));
                 }
             } catch {
                 // In case the headers are immutable, ignore the error.
