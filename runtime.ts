@@ -359,7 +359,7 @@ export function env(
                 return ENV;
             } else {
                 const keys = Object.keys(globalThis).filter(key => {
-                    return /^[A-Z0-9_]+$/.test(key)
+                    return /^[A-Z][A-Z0-9_]*$/.test(key)
                         // @ts-ignore
                         && ["string", "number", "boolean"].includes(typeof globalThis[key]);
                 });

@@ -43,20 +43,25 @@ class Server {
             }
             return http;
         });
+        const createContext = (request, props) => {
+            const { remoteAddress = null, ...rest } = props;
+            return {
+                remoteAddress,
+                createEventEndpoint: () => {
+                    const events = new EventEndpoint(request);
+                    return { events, response: events.response };
+                },
+                upgradeWebSocket: () => ws.upgrade(request),
+                ...rest,
+            };
+        };
         if (isDeno) {
             if (this.type === "classic") {
                 delete this.fetch;
             }
             else {
                 this.fetch = async (request) => {
-                    const ctx = {
-                        remoteAddress: null,
-                        createEventEndpoint: () => {
-                            const events = new EventEndpoint(request);
-                            return { events, response: events.response };
-                        },
-                        upgradeWebSocket: () => ws.upgrade(request),
-                    };
+                    const ctx = createContext(request, { remoteAddress: null });
                     try {
                         return await handle(request, ctx);
                     }
@@ -73,14 +78,9 @@ class Server {
             else {
                 this.fetch = async (request, server) => {
                     ws.bunBind(server);
-                    const ctx = {
+                    const ctx = createContext(request, {
                         remoteAddress: server.requestIP(request),
-                        createEventEndpoint: () => {
-                            const events = new EventEndpoint(request);
-                            return { events, response: events.response };
-                        },
-                        upgradeWebSocket: () => ws.upgrade(request),
-                    };
+                    });
                     try {
                         return await handle(request, ctx);
                     }
@@ -89,6 +89,7 @@ class Server {
                     }
                 };
                 Object.assign(this, {
+                    // Bun specific properties
                     websocket: ws.bunListener,
                 });
             }
@@ -99,7 +100,7 @@ class Server {
                 if (runtime().type === "workerd") {
                     bindings = {};
                     Object.keys(globalThis).forEach((key) => {
-                        if (/^[A-Z0-9_]+$/.test(key)) {
+                        if (/^[A-Z][A-Z0-9_]*$/.test(key)) {
                             // @ts-ignore
                             bindings[key] = globalThis[key];
                         }
@@ -111,20 +112,15 @@ class Server {
                     var _d, _e, _f;
                     const { request } = event;
                     const address = (_d = request.headers.get("cf-connecting-ip")) !== null && _d !== void 0 ? _d : (_e = event.client) === null || _e === void 0 ? void 0 : _e.address;
-                    const ctx = {
+                    const ctx = createContext(request, {
                         remoteAddress: address ? {
                             family: address.includes(":") ? "IPv6" : "IPv4",
                             address: address,
                             port: 0,
                         } : null,
-                        createEventEndpoint: () => {
-                            const events = new EventEndpoint(request);
-                            return { events, response: events.response };
-                        },
-                        upgradeWebSocket: () => ws.upgrade(request),
                         waitUntil: (_f = event.waitUntil) === null || _f === void 0 ? void 0 : _f.bind(event),
                         bindings,
-                    };
+                    });
                     const response = Promise.resolve(handle(request, ctx))
                         .catch(err => onError(err, request, ctx));
                     event.respondWith(response);
@@ -137,20 +133,15 @@ class Server {
                         env(bindings);
                     }
                     const address = request.headers.get("cf-connecting-ip");
-                    const ctx = {
+                    const ctx = createContext(request, {
                         remoteAddress: address ? {
                             family: address.includes(":") ? "IPv6" : "IPv4",
                             address: address,
                             port: 0,
                         } : null,
-                        createEventEndpoint: () => {
-                            const events = new EventEndpoint(request);
-                            return { events, response: events.response };
-                        },
-                        upgradeWebSocket: () => ws.upgrade(request),
                         waitUntil: (_d = _ctx.waitUntil) === null || _d === void 0 ? void 0 : _d.bind(_ctx),
                         bindings,
-                    };
+                    });
                     try {
                         return await handle(request, ctx);
                     }
