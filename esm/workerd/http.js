@@ -41,17 +41,12 @@ function withWeb(listener) {
 function serve(options) {
     const { type: identity } = runtime();
     const type = identity === "workerd" ? options.type || "classic" : "classic";
+    const ws = new WebSocketServer(options.ws);
     const { fetch, onError, onListen } = options;
     // @ts-ignore
     return new Server(async () => {
-        const ws = new WebSocketServer(options.ws);
-        return {
-            http: null,
-            ws,
-            hostname: "",
-            port: 0,
-        };
-    }, { type, fetch, onError, onListen });
+        return { http: null, hostname: "", port: 0 };
+    }, { type, fetch, onError, onListen, ws });
 }
 async function serveStatic(req, options = {}) {
     var _a, _b, _c, _d, _e, _f;

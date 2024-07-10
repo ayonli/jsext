@@ -1,11 +1,11 @@
 import type { Server as HttpServer } from "node:http";
 import type { Http2SecureServer } from "node:http2";
 import type { serve, serveStatic } from "../http.ts";
-import type { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
 import { until } from "../async.ts";
 import { isBun, isDeno, isNode } from "../env.ts";
 import runtime, { env } from "../runtime.ts";
 import { EventEndpoint } from "../sse.ts";
+import { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
 import { KVNamespace } from "../workerd/types.ts";
 
 export interface BunServer {
@@ -109,9 +109,9 @@ export interface ServeOptions {
      * service workers), while `module` means using the {@link Server} instance
      * as an ES module with the syntax `export default serve({ ... })`.
      * 
-     * NOTE: This option is only adjustable in Cloudflare Workers and Deno, in
-     * other environments, it will be ignored and will default to `classic`. It
-     * is recommended to set this option to `module` in Cloudflare Workers.
+     * NOTE: This option is only adjustable in Deno, Bun and Cloudflare Workers,
+     * in other environments, it will be ignored and will default to `classic`.
+     * It is recommended to set this option to `module` in Cloudflare Workers.
      * 
      * @default "classic"
      */
@@ -123,26 +123,26 @@ export interface ServeOptions {
     /**
      * The hostname to listen on. Default is `0.0.0.0`.
      * 
-     * NOTE: This option is ignored in workers and `deno serve`.
+     * NOTE: This option is ignored in workers or when the `type` is `module`.
      */
     hostname?: string | undefined;
     /**
      * The port to listen on. If not set, the server will first try to use the
      * `8000` port, and if it's not available, it will use a random port.
      * 
-     * NOTE: This option is ignored in workers and `deno serve`.
+     * NOTE: This option is ignored in workers or when the `type` is `module`.
      */
     port?: number | undefined;
     /**
      * The certificate key for serving HTTPS/HTTP2 requests.
      * 
-     * NOTE: This option is ignored in workers and `deno serve`.
+     * NOTE: This option is ignored in workers or when the `type` is `module`.
      */
     key?: string | undefined;
     /**
      * The certificate for serving HTTPS/HTTP2 requests.
      * 
-     * NOTE: This option is ignored in workers and `deno serve`.
+     * NOTE: This option is ignored in workers or when the `type` is `module`.
      */
     cert?: string | undefined;
     /**
@@ -162,8 +162,7 @@ export interface ServeOptions {
      * default, the server will log the address it's listening on, we can
      * override this behavior by setting this option.
      * 
-     * NOTE: This option will be ignored if the server is started by the runtime
-     * itself, for example, in Cloudflare Workers, or when using `deno serve`.
+     * NOTE: This option is ignored in workers or when the `type` is `module`.
      */
     onListen?: ((info: { hostname: string; port: number; }) => void) | undefined;
 }
@@ -207,7 +206,6 @@ export interface ServeStaticOptions {
 const _hostname = Symbol.for("hostname");
 const _port = Symbol.for("port");
 const _http = Symbol.for("http");
-const _ws = Symbol.for("ws");
 const _controller = Symbol.for("controller");
 
 /**
@@ -215,29 +213,28 @@ const _controller = Symbol.for("controller");
  */
 export class Server {
     readonly type: "classic" | "module";
-    private [_hostname] = "";
+    private [_hostname] = "0.0.0.0";
     private [_port] = 0;
     private [_http]: Promise<HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null>;
-    private [_ws]: WebSocketServer | null = null;
     private [_controller]: AbortController | null = null;
 
     /**
-     * A request handler for using the server instance as an ES module worker in
-     * worker environments such as Cloudflare Workers.
+     * A request handler for using the server instance as an ES module worker,
+     * only available when the server type is `module`.
      */
     fetch?: ((request: Request, env?: any, ctx?: any) => Response | Promise<Response>);
 
     constructor(impl: () => Promise<{
         http: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null;
-        ws: WebSocketServer;
         hostname: string;
         port: number;
         controller: AbortController | null;
     }>, options: Pick<ServeOptions, "type" | "fetch" | "onError" | "onListen"> & {
+        ws: WebSocketServer;
         secure?: boolean;
     }) {
         this.type = options.type ?? "classic";
-        const { fetch: handle, secure } = options;
+        const { fetch: handle, ws, secure } = options;
 
         const onError = options.onError ?? ((err) => {
             console.error(err);
@@ -247,33 +244,32 @@ export class Server {
             });
         });
 
-        const onListen = options.onListen ?? (({ hostname, port }) => {
+        const defaultOnListen: ServeOptions["onListen"] = ({ hostname, port }) => {
             const _hostname = hostname === "0.0.0.0" ? "localhost" : hostname;
             const protocol = secure ? "https" : "http";
             console.log(`Server listening on ${protocol}://${_hostname}:${port}`);
-        });
+        };
+        const onListen = this.type === "classic"
+            ? (options.onListen ?? defaultOnListen)
+            : defaultOnListen;
 
-        this[_http] = impl().then(({ http, ws, hostname, port, controller }) => {
-            this[_ws] = ws;
+        this[_http] = impl().then(({ http, hostname, port, controller }) => {
             this[_hostname] = hostname;
             this[_port] = port;
             this[_controller] = controller;
 
-            if (http) {
+            if (http || isBun) {
                 onListen({ hostname, port });
             }
 
             return http;
         });
 
-        const _this = this;
-
         if (isDeno) {
             if (this.type === "classic") {
                 delete this.fetch;
             } else {
                 this.fetch = async (request) => {
-                    const ws = _this[_ws]!;
                     const ctx: RequestContext = {
                         remoteAddress: null,
                         createEventEndpoint: () => {
@@ -290,7 +286,34 @@ export class Server {
                     }
                 };
             }
-        } else if (!isNode && !isBun && typeof addEventListener === "function") {
+        } else if (isBun) {
+            if (this.type === "classic") {
+                delete this.fetch;
+            } else {
+                this.fetch = async (request, server: BunServer) => {
+                    ws.bunBind(server);
+
+                    const ctx: RequestContext = {
+                        remoteAddress: server.requestIP(request)!,
+                        createEventEndpoint: () => {
+                            const events = new EventEndpoint(request);
+                            return { events, response: events.response! };
+                        },
+                        upgradeWebSocket: () => ws.upgrade(request),
+                    };
+
+                    try {
+                        return await handle(request, ctx);
+                    } catch (err) {
+                        return await onError(err, request, ctx);
+                    }
+                };
+
+                Object.assign(this, {
+                    websocket: ws.bunListener,
+                });
+            }
+        } else if (!isNode && typeof addEventListener === "function") {
             if (this.type === "classic") {
                 let bindings: any;
 
@@ -308,7 +331,6 @@ export class Server {
                 // @ts-ignore
                 addEventListener("fetch", (event: FetchEvent) => {
                     const { request } = event;
-                    const ws = _this[_ws]!;
                     const address = request.headers.get("cf-connecting-ip")
                         ?? event.client?.address;
                     const ctx: RequestContext = {
@@ -336,7 +358,6 @@ export class Server {
                         env(bindings as object);
                     }
 
-                    const ws = _this[_ws]!;
                     const address = request.headers.get("cf-connecting-ip");
                     const ctx: RequestContext = {
                         remoteAddress: address ? {
@@ -365,30 +386,18 @@ export class Server {
 
     /**
      * The hostname of which the server is listening on, only available after
-     * the server is ready.
+     * the server is ready and the server type is `classic`.
      */
     get hostname(): string {
-        return this[_hostname] || "localhost";
+        return this[_hostname] || "";
     }
 
     /**
      * The port of which the server is listening on, only available after the
-     * server is ready.
+     * server is ready and the server type is `classic`.
      */
     get port(): number {
-        const { type } = runtime();
-
-        if (this[_port]) {
-            return this[_port];
-        } else if (type === "deno") {
-            return 8000;
-        } else if (type === "workerd") {
-            return 8787;
-        } else if (type === "fastly") {
-            return 7676;
-        } else {
-            return 0;
-        }
+        return this[_port] || (isBun && this.type === "module" ? 3000 : 0);
     }
 
     /**

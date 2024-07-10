@@ -434,8 +434,9 @@ function toNodeResponse(res, nodeRes) {
  */
 function serve(options) {
     var _a;
-    const type = isDeno ? options.type || "classic" : "classic";
+    const type = isDeno || isBun ? options.type || "classic" : "classic";
     const hostname = options.hostname || "0.0.0.0";
+    const ws = new WebSocketServer(options.ws);
     const { fetch: handle, key, cert, onListen } = options;
     const onError = (_a = options.onError) !== null && _a !== void 0 ? _a : ((err) => {
         console.error(err);
@@ -445,8 +446,7 @@ function serve(options) {
         });
     });
     return new Server(async () => {
-        const ws = new WebSocketServer(options.ws);
-        let port = options.port || await randomPort(8000);
+        let port = options.port || (type === "module" ? 8000 : await randomPort(8000));
         let controller = null;
         let server = null;
         const createContext = (req, remoteAddress) => ({
@@ -461,56 +461,56 @@ function serve(options) {
             if (type === "classic") {
                 controller = new AbortController();
                 const task = asyncTask();
-                try {
-                    server = Deno.serve({
-                        hostname,
-                        port,
-                        key,
-                        cert,
-                        signal: controller.signal,
-                        onListen: () => task.resolve(),
-                    }, async (req, info) => {
-                        const ctx = createContext(req, {
-                            family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                            address: info.remoteAddr.hostname,
-                            port: info.remoteAddr.port,
-                        });
-                        try {
-                            return await handle(req, ctx);
-                        }
-                        catch (err) {
-                            return await onError(err, req, ctx);
-                        }
+                server = Deno.serve({
+                    hostname,
+                    port,
+                    key,
+                    cert,
+                    signal: controller.signal,
+                    onListen: () => task.resolve(),
+                }, async (req, info) => {
+                    const ctx = createContext(req, {
+                        family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
+                        address: info.remoteAddr.hostname,
+                        port: info.remoteAddr.port,
                     });
-                    await task;
-                }
-                catch (_a) {
-                    server = null;
-                }
-            }
-            else {
-                port = 8000;
-            }
-        }
-        else if (isBun) {
-            const tls = key && cert ? { key, cert } : undefined;
-            server = Bun.serve({
-                hostname,
-                port,
-                tls,
-                fetch: async (req, server) => {
-                    const remoteAddr = server.requestIP(req);
-                    const ctx = createContext(req, remoteAddr);
                     try {
                         return await handle(req, ctx);
                     }
                     catch (err) {
                         return await onError(err, req, ctx);
                     }
-                },
-                websocket: ws === null || ws === void 0 ? void 0 : ws.bunListener,
-            });
-            ws.bunBind(server);
+                });
+                await task;
+            }
+            else {
+                port = 0;
+            }
+        }
+        else if (isBun) {
+            if (type === "classic") {
+                const tls = key && cert ? { key, cert } : undefined;
+                server = Bun.serve({
+                    hostname,
+                    port,
+                    tls,
+                    fetch: async (req, server) => {
+                        const remoteAddr = server.requestIP(req);
+                        const ctx = createContext(req, remoteAddr);
+                        try {
+                            return await handle(req, ctx);
+                        }
+                        catch (err) {
+                            return await onError(err, req, ctx);
+                        }
+                    },
+                    websocket: ws.bunListener,
+                });
+                ws.bunBind(server);
+            }
+            else {
+                port = 3000;
+            }
         }
         else if (isNode) {
             const reqListener = withWeb(async (req, info) => {
@@ -542,8 +542,8 @@ function serve(options) {
         else {
             throw new Error("Unsupported runtime");
         }
-        return { http: server, ws, hostname, port, controller };
-    }, { type, fetch: handle, onError, onListen, secure: !!key && !!cert });
+        return { http: server, hostname, port, controller };
+    }, { type, fetch: handle, onError, onListen, ws, secure: !!key && !!cert });
 }
 /**
  * Serves static files from a file system directory or KV namespace (in

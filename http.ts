@@ -467,8 +467,9 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * ```
  */
 export function serve(options: ServeOptions): Server {
-    const type = isDeno ? options.type || "classic" : "classic";
+    const type = isDeno || isBun ? options.type || "classic" : "classic";
     const hostname = options.hostname || "0.0.0.0";
+    const ws = new WebSocketServer(options.ws);
     const { fetch: handle, key, cert, onListen } = options;
 
     const onError: ServeOptions["onError"] = options.onError ?? ((err) => {
@@ -480,8 +481,7 @@ export function serve(options: ServeOptions): Server {
     });
 
     return new Server(async () => {
-        const ws = new WebSocketServer(options.ws);
-        let port = options.port || await randomPort(8000);
+        let port = options.port || (type === "module" ? 8000 : await randomPort(8000));
         let controller: AbortController | null = null;
         let server: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null = null;
 
@@ -498,54 +498,56 @@ export function serve(options: ServeOptions): Server {
             if (type === "classic") {
                 controller = new AbortController();
                 const task = asyncTask<void>();
-                try {
-                    server = Deno.serve({
-                        hostname,
-                        port,
-                        key,
-                        cert,
-                        signal: controller.signal,
-                        onListen: () => task.resolve(),
-                    }, async (req, info) => {
-                        const ctx = createContext(req, {
-                            family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                            address: info.remoteAddr.hostname,
-                            port: info.remoteAddr.port,
-                        });
-
-                        try {
-                            return await handle(req, ctx);
-                        } catch (err) {
-                            return await onError(err, req, ctx);
-                        }
+                server = Deno.serve({
+                    hostname,
+                    port,
+                    key,
+                    cert,
+                    signal: controller.signal,
+                    onListen: () => task.resolve(),
+                }, async (req, info) => {
+                    const ctx = createContext(req, {
+                        family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
+                        address: info.remoteAddr.hostname,
+                        port: info.remoteAddr.port,
                     });
-                    await task;
-                } catch {
-                    server = null;
-                }
-            } else {
-                port = 8000;
-            }
-        } else if (isBun) {
-            const tls = key && cert ? { key, cert } : undefined;
-            server = Bun.serve({
-                hostname,
-                port,
-                tls,
-                fetch: async (req: Request, server: BunServer) => {
-                    const remoteAddr = server.requestIP(req)!;
-                    const ctx = createContext(req, remoteAddr);
 
                     try {
                         return await handle(req, ctx);
                     } catch (err) {
                         return await onError(err, req, ctx);
                     }
-                },
-                websocket: ws?.bunListener,
-            }) as BunServer;
+                });
+                await task;
+            } else {
+                hostname === "";
+                port = 0;
+            }
+        } else if (isBun) {
+            if (type === "classic") {
+                const tls = key && cert ? { key, cert } : undefined;
+                server = Bun.serve({
+                    hostname,
+                    port,
+                    tls,
+                    fetch: async (req: Request, server: BunServer) => {
+                        const remoteAddr = server.requestIP(req)!;
+                        const ctx = createContext(req, remoteAddr);
 
-            ws.bunBind(server);
+                        try {
+                            return await handle(req, ctx);
+                        } catch (err) {
+                            return await onError(err, req, ctx);
+                        }
+                    },
+                    websocket: ws.bunListener,
+                }) as BunServer;
+
+                ws.bunBind(server);
+            } else {
+                hostname === "0.0.0.0";
+                port = 3000;
+            }
         } else if (isNode) {
             const reqListener = withWeb(async (req, info) => {
                 const ctx = createContext(req, info.remoteAddress);
@@ -576,8 +578,8 @@ export function serve(options: ServeOptions): Server {
             throw new Error("Unsupported runtime");
         }
 
-        return { http: server, ws, hostname, port, controller };
-    }, { type, fetch: handle, onError, onListen, secure: !!key && !!cert });
+        return { http: server, hostname, port, controller };
+    }, { type, fetch: handle, onError, onListen, ws, secure: !!key && !!cert });
 }
 
 /**

@@ -1,56 +1,54 @@
 import { until } from '../async.js';
-import { isDeno, isNode, isBun } from '../env.js';
+import { isBun, isDeno, isNode } from '../env.js';
 import runtime, { env } from '../runtime.js';
 import { EventEndpoint } from '../sse.js';
 
-var _a, _b, _c, _d;
+var _a, _b, _c;
 const _hostname = Symbol.for("hostname");
 const _port = Symbol.for("port");
 const _http = Symbol.for("http");
-const _ws = Symbol.for("ws");
 const _controller = Symbol.for("controller");
 /**
  * A unified HTTP server interface.
  */
 class Server {
     constructor(impl, options) {
-        var _e, _f, _g;
-        this[_a] = "";
+        var _d, _e, _f;
+        this[_a] = "0.0.0.0";
         this[_b] = 0;
         this[_c] = null;
-        this[_d] = null;
-        this.type = (_e = options.type) !== null && _e !== void 0 ? _e : "classic";
-        const { fetch: handle, secure } = options;
-        const onError = (_f = options.onError) !== null && _f !== void 0 ? _f : ((err) => {
+        this.type = (_d = options.type) !== null && _d !== void 0 ? _d : "classic";
+        const { fetch: handle, ws, secure } = options;
+        const onError = (_e = options.onError) !== null && _e !== void 0 ? _e : ((err) => {
             console.error(err);
             return new Response("Internal Server Error", {
                 status: 500,
                 statusText: "Internal Server Error",
             });
         });
-        const onListen = (_g = options.onListen) !== null && _g !== void 0 ? _g : (({ hostname, port }) => {
+        const defaultOnListen = ({ hostname, port }) => {
             const _hostname = hostname === "0.0.0.0" ? "localhost" : hostname;
             const protocol = secure ? "https" : "http";
             console.log(`Server listening on ${protocol}://${_hostname}:${port}`);
-        });
-        this[_http] = impl().then(({ http, ws, hostname, port, controller }) => {
-            this[_ws] = ws;
+        };
+        const onListen = this.type === "classic"
+            ? ((_f = options.onListen) !== null && _f !== void 0 ? _f : defaultOnListen)
+            : defaultOnListen;
+        this[_http] = impl().then(({ http, hostname, port, controller }) => {
             this[_hostname] = hostname;
             this[_port] = port;
             this[_controller] = controller;
-            if (http) {
+            if (http || isBun) {
                 onListen({ hostname, port });
             }
             return http;
         });
-        const _this = this;
         if (isDeno) {
             if (this.type === "classic") {
                 delete this.fetch;
             }
             else {
                 this.fetch = async (request) => {
-                    const ws = _this[_ws];
                     const ctx = {
                         remoteAddress: null,
                         createEventEndpoint: () => {
@@ -68,7 +66,34 @@ class Server {
                 };
             }
         }
-        else if (!isNode && !isBun && typeof addEventListener === "function") {
+        else if (isBun) {
+            if (this.type === "classic") {
+                delete this.fetch;
+            }
+            else {
+                this.fetch = async (request, server) => {
+                    ws.bunBind(server);
+                    const ctx = {
+                        remoteAddress: server.requestIP(request),
+                        createEventEndpoint: () => {
+                            const events = new EventEndpoint(request);
+                            return { events, response: events.response };
+                        },
+                        upgradeWebSocket: () => ws.upgrade(request),
+                    };
+                    try {
+                        return await handle(request, ctx);
+                    }
+                    catch (err) {
+                        return await onError(err, request, ctx);
+                    }
+                };
+                Object.assign(this, {
+                    websocket: ws.bunListener,
+                });
+            }
+        }
+        else if (!isNode && typeof addEventListener === "function") {
             if (this.type === "classic") {
                 let bindings;
                 if (runtime().type === "workerd") {
@@ -83,10 +108,9 @@ class Server {
                 }
                 // @ts-ignore
                 addEventListener("fetch", (event) => {
-                    var _e, _f, _g;
+                    var _d, _e, _f;
                     const { request } = event;
-                    const ws = _this[_ws];
-                    const address = (_e = request.headers.get("cf-connecting-ip")) !== null && _e !== void 0 ? _e : (_f = event.client) === null || _f === void 0 ? void 0 : _f.address;
+                    const address = (_d = request.headers.get("cf-connecting-ip")) !== null && _d !== void 0 ? _d : (_e = event.client) === null || _e === void 0 ? void 0 : _e.address;
                     const ctx = {
                         remoteAddress: address ? {
                             family: address.includes(":") ? "IPv6" : "IPv4",
@@ -98,7 +122,7 @@ class Server {
                             return { events, response: events.response };
                         },
                         upgradeWebSocket: () => ws.upgrade(request),
-                        waitUntil: (_g = event.waitUntil) === null || _g === void 0 ? void 0 : _g.bind(event),
+                        waitUntil: (_f = event.waitUntil) === null || _f === void 0 ? void 0 : _f.bind(event),
                         bindings,
                     };
                     const response = Promise.resolve(handle(request, ctx))
@@ -108,11 +132,10 @@ class Server {
             }
             else {
                 this.fetch = async (request, bindings, _ctx) => {
-                    var _e;
+                    var _d;
                     if (bindings && typeof bindings === "object" && !Array.isArray(bindings)) {
                         env(bindings);
                     }
-                    const ws = _this[_ws];
                     const address = request.headers.get("cf-connecting-ip");
                     const ctx = {
                         remoteAddress: address ? {
@@ -125,7 +148,7 @@ class Server {
                             return { events, response: events.response };
                         },
                         upgradeWebSocket: () => ws.upgrade(request),
-                        waitUntil: (_e = _ctx.waitUntil) === null || _e === void 0 ? void 0 : _e.bind(_ctx),
+                        waitUntil: (_d = _ctx.waitUntil) === null || _d === void 0 ? void 0 : _d.bind(_ctx),
                         bindings,
                     };
                     try {
@@ -140,32 +163,17 @@ class Server {
     }
     /**
      * The hostname of which the server is listening on, only available after
-     * the server is ready.
+     * the server is ready and the server type is `classic`.
      */
     get hostname() {
-        return this[_hostname] || "localhost";
+        return this[_hostname] || "";
     }
     /**
      * The port of which the server is listening on, only available after the
-     * server is ready.
+     * server is ready and the server type is `classic`.
      */
     get port() {
-        const { type } = runtime();
-        if (this[_port]) {
-            return this[_port];
-        }
-        else if (type === "deno") {
-            return 8000;
-        }
-        else if (type === "workerd") {
-            return 8787;
-        }
-        else if (type === "fastly") {
-            return 7676;
-        }
-        else {
-            return 0;
-        }
+        return this[_port] || (isBun && this.type === "module" ? 3000 : 0);
     }
     /**
      * A promise that resolves when the server is ready to accept connections.
@@ -221,7 +229,7 @@ class Server {
      * effect.
      */
     ref() {
-        this[_http].then(server => { var _e; return (_e = server === null || server === void 0 ? void 0 : server.ref) === null || _e === void 0 ? void 0 : _e.call(server); });
+        this[_http].then(server => { var _d; return (_d = server === null || server === void 0 ? void 0 : server.ref) === null || _d === void 0 ? void 0 : _d.call(server); });
     }
     /**
      * Calling `unref()` on a server will allow the program to exit if this is
@@ -229,10 +237,10 @@ class Server {
      * `unref`ed calling`unref()` again will have no effect.
      */
     unref() {
-        this[_http].then(server => { var _e; return (_e = server === null || server === void 0 ? void 0 : server.unref) === null || _e === void 0 ? void 0 : _e.call(server); });
+        this[_http].then(server => { var _d; return (_d = server === null || server === void 0 ? void 0 : server.unref) === null || _d === void 0 ? void 0 : _d.call(server); });
     }
 }
-_a = _hostname, _b = _port, _c = _ws, _d = _controller;
+_a = _hostname, _b = _port, _c = _controller;
 
 export { Server };
 //# sourceMappingURL=server.js.map
