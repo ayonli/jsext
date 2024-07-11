@@ -73,9 +73,16 @@
         } from "@ayonli/jsext/dialog";
         import { getDirHandle } from "@ayonli/jsext/fs";
         import { basename, extname } from "@ayonli/jsext/path";
-        import runtime, { isREPL } from "@ayonli/jsext/runtime";
+        import runtime, { isREPL, addUnhandledRejectionListener } from "@ayonli/jsext/runtime";
+
+        addEventListener("unhandledrejection", event => {
+            console.error(event.reason);
+            event.preventDefault();
+        });
 
         self.onload = () => {
+            Promise.reject(new Error("Unhandled rejection test"));
+
             const alertBtn = document.getElementById('alert');
             alertBtn.addEventListener('click', () => {
                 alert('Hello, World!');

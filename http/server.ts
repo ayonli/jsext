@@ -62,7 +62,7 @@ export interface NetAddress {
  */
 export interface RequestContext {
     /**
-     * The remote address of the client. This options may not be available in
+     * The remote address of the client. This property may not be available in
      * worker environments (such as Cloudflare Workers) or when the server is
      * started via `deno serve`.
      */

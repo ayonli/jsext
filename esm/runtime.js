@@ -529,7 +529,8 @@ const rejectionListeners = [];
  * ```
  */
 function addUnhandledRejectionListener(fn) {
-    if (isNode || isBun) {
+    const _runtime = runtime().type;
+    if (_runtime === "node" || _runtime === "bun") {
         if (rejectionListeners.length) {
             rejectionListeners.push(fn);
             return;
@@ -556,12 +557,17 @@ function addUnhandledRejectionListener(fn) {
                 listener.call(globalThis, event);
             });
             if (!event.defaultPrevented) {
-                console.error("Uncaught (in promise)", reason);
+                if (_runtime === "node") {
+                    console.error("\x1b[1m\x1b[31merror\x1b[0m: Uncaught (in promise)", reason);
+                }
+                else {
+                    console.error("Uncaught (in promise)", reason);
+                }
                 process.exit(1);
             }
         });
     }
-    else if (runtime().type === "workerd") {
+    else if (_runtime === "workerd") {
         if (rejectionListeners.length) {
             rejectionListeners.push(fn);
             return;
@@ -587,7 +593,10 @@ function addUnhandledRejectionListener(fn) {
             }
         });
     }
-    else if (typeof addEventListener === "function") {
+    else if (typeof addEventListener === "function"
+        && _runtime !== "fastly" // Fastly Compute doesn't support `unhandledrejection` event
+        && _runtime !== "unknown" // Unknown environment, don't know if it supports `unhandledrejection`
+    ) {
         addEventListener("unhandledrejection", fn);
     }
 }
