@@ -1,6 +1,29 @@
 if (typeof globalThis.Event !== "function") {
     // @ts-ignore
-    globalThis.Event = class Event {
+    globalThis.Event = class Event implements globalThis.Event {
+        bubbles = false;
+        cancelable = false;
+        cancelBubble = false;
+        composed = false;
+        currentTarget: EventTarget | null = null;
+        defaultPrevented = false;
+        eventPhase = Event.NONE;
+        isTrusted = false;
+        returnValue = true;
+        target: EventTarget | null = null;
+        timeStamp = Date.now();
+        srcElement: EventTarget | null = null;
+
+        AT_TARGET = 2 as const;
+        BUBBLING_PHASE = 3 as const;
+        CAPTURING_PHASE = 1 as const;
+        NONE = 0 as const;
+
+        static AT_TARGET = 2 as const;
+        static BUBBLING_PHASE = 3 as const;
+        static CAPTURING_PHASE = 1 as const;
+        static NONE = 0 as const;
+
         constructor(public type: string, public eventInitDict: EventInit = {}) {
             if (eventInitDict.bubbles !== undefined) {
                 this.bubbles = eventInitDict.bubbles;
@@ -15,21 +38,14 @@ if (typeof globalThis.Event !== "function") {
             }
         }
 
-        bubbles = false;
-        cancelable = false;
-        composed = false;
-        currentTarget: EventTarget | null = null;
-        defaultPrevented = false;
-        target: EventTarget | null = null;
-        timeStamp = Date.now();
-        isTrusted = false;
-
         composedPath(): EventTarget[] {
             return [];
         }
 
         preventDefault() {
-            this.defaultPrevented = true;
+            if (this.cancelable) {
+                this.defaultPrevented = true;
+            }
         }
 
         stopImmediatePropagation() {
@@ -37,7 +53,17 @@ if (typeof globalThis.Event !== "function") {
         }
 
         stopPropagation() {
-            // Do nothing
+            this.cancelBubble = true;
+        }
+
+        initEvent(
+            type: string,
+            bubbles: boolean | undefined = undefined,
+            cancelable: boolean | undefined = undefined
+        ): void {
+            this.type = type as string;
+            this.bubbles = bubbles ?? false;
+            this.cancelable = cancelable ?? false;
         }
     };
 }
@@ -84,6 +110,11 @@ if (typeof globalThis.EventTarget !== "function") {
             if (!(event.type in this.listeners)) {
                 return true;
             }
+
+            Object.defineProperties(event, {
+                currentTarget: { configurable: true, value: this },
+                target: { configurable: true, value: this },
+            });
 
             const stack = this.listeners[event.type]!.slice();
             for (let i = 0, l = stack.length; i < l; i++) {
