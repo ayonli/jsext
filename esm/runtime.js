@@ -1,4 +1,5 @@
 import { isDeno, isMainThread, isBun, isNode, isSharedWorker, isServiceWorker, isDedicatedWorker, isNodeLike } from './env.js';
+import { createCloseEvent } from './event.js';
 
 /**
  * Utility functions to retrieve runtime information or modify runtime behaviors.
@@ -435,6 +436,9 @@ const shutdownListeners = [];
  * In fact, calling the `exit` method in a listener is problematic and will
  * cause any subsequent listeners not to be executed.
  *
+ * The listener function receives a `CloseEvent`, if we don't what the program
+ * to exit, we can call `event.preventDefault()` to prevent from exiting.
+ *
  * In the browser or unsupported environments, this function is a no-op.
  *
  * @example
@@ -466,14 +470,34 @@ function addShutdownListener(fn) {
     shutdownListeners.push(fn);
     const shutdownListener = async () => {
         try {
+            const event = createCloseEvent("shutdown", {
+                code: 0,
+                reason: "The program is interrupted.",
+                wasClean: true,
+            });
+            Object.defineProperties(event, {
+                target: { configurable: true, value: globalThis },
+                currentTarget: { configurable: true, value: globalThis },
+                preventDefault: {
+                    configurable: true,
+                    value() {
+                        Object.defineProperty(this, "defaultPrevented", {
+                            configurable: true,
+                            value: true,
+                        });
+                    }
+                },
+            });
             for (const listener of shutdownListeners) {
-                await listener();
+                await listener(event);
             }
-            if (isDeno) {
-                Deno.exit(0);
-            }
-            else {
-                process.exit(0);
+            if (!event.defaultPrevented) {
+                if (isDeno) {
+                    Deno.exit(0);
+                }
+                else {
+                    process.exit(0);
+                }
             }
         }
         catch (err) {

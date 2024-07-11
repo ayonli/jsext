@@ -14,6 +14,7 @@ import {
     isDedicatedWorker,
     isNodeLike,
 } from "./env.ts";
+import { createCloseEvent } from "./event.ts";
 
 declare const Bun: any;
 declare function WorkerLocation(): void;
@@ -482,7 +483,7 @@ export function unrefTimer(timer: NodeJS.Timeout | number): void {
     }
 }
 
-const shutdownListeners: (() => (void | Promise<void>))[] = [];
+const shutdownListeners: ((event: CloseEvent) => void | Promise<void>)[] = [];
 
 /**
  * Adds a listener function to be called when the program receives a `SIGINT`
@@ -498,6 +499,9 @@ const shutdownListeners: (() => (void | Promise<void>))[] = [];
  * the program will exit automatically after all listeners are executed in order.
  * In fact, calling the `exit` method in a listener is problematic and will
  * cause any subsequent listeners not to be executed.
+ * 
+ * The listener function receives a `CloseEvent`, if we don't what the program
+ * to exit, we can call `event.preventDefault()` to prevent from exiting.
  * 
  * In the browser or unsupported environments, this function is a no-op.
  * 
@@ -519,7 +523,7 @@ const shutdownListeners: (() => (void | Promise<void>))[] = [];
  * });
  * ```
  */
-export function addShutdownListener(fn: () => (void | Promise<void>)): void {
+export function addShutdownListener(fn: (event: CloseEvent) => void | Promise<void>): void {
     if (!isDeno && !isNodeLike) {
         return;
     }
@@ -533,14 +537,36 @@ export function addShutdownListener(fn: () => (void | Promise<void>)): void {
 
     const shutdownListener = async () => {
         try {
+            const event = createCloseEvent("shutdown", {
+                code: 0,
+                reason: "The program is interrupted.",
+                wasClean: true,
+            });
+
+            Object.defineProperties(event, {
+                target: { configurable: true, value: globalThis },
+                currentTarget: { configurable: true, value: globalThis },
+                preventDefault: {
+                    configurable: true,
+                    value() {
+                        Object.defineProperty(this, "defaultPrevented", {
+                            configurable: true,
+                            value: true,
+                        });
+                    }
+                },
+            });
+
             for (const listener of shutdownListeners) {
-                await listener();
+                await listener(event);
             }
 
-            if (isDeno) {
-                Deno.exit(0);
-            } else {
-                process.exit(0);
+            if (!event.defaultPrevented) {
+                if (isDeno) {
+                    Deno.exit(0);
+                } else {
+                    process.exit(0);
+                }
             }
         } catch (err) {
             console.error(err);
