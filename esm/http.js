@@ -2,6 +2,7 @@ import { asyncTask } from './async.js';
 import bytes from './bytes.js';
 import { stripStart } from './string.js';
 import { isDeno, isBun, isNode } from './env.js';
+import './external/event-target-polyfill/index.js';
 import { isMain } from './module.js';
 import { extname, resolve, join } from './path.js';
 import './cli/constants.js';

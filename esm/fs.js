@@ -3,6 +3,7 @@ import bytes, { text } from './bytes.js';
 import { isDeno, isNodeLike } from './env.js';
 import { as } from './object.js';
 import Exception from './error/Exception.js';
+import './external/event-target-polyfill/index.js';
 import { getMIME } from './filetype.js';
 import { fixDirEntry, makeTree, fixFileType } from './fs/util.js';
 import { dirname, basename, extname, join } from './path.js';

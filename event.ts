@@ -2,6 +2,7 @@
  * Functions for working with events.
  * @module
  */
+import "./external/event-target-polyfill/index.ts";
 
 /**
  * Creates an `ErrorEvent` instance based on the given options. If the

@@ -1,6 +1,7 @@
 import bytes from '../bytes.js';
 import { as } from '../object.js';
 import Exception from '../error/Exception.js';
+import '../external/event-target-polyfill/index.js';
 import { getMIME } from '../filetype.js';
 import { exists, readFile, readDir } from './fs.js';
 import { sha256 } from '../hash/web.js';

@@ -1,4 +1,5 @@
 import Exception from '../error/Exception.js';
+import '../external/event-target-polyfill/index.js';
 import { getMIME } from '../filetype.js';
 import { makeTree } from '../fs/util.js';
 import { join, basename, extname } from '../path.js';

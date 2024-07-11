@@ -1,3 +1,5 @@
+import './external/event-target-polyfill/index.js';
+
 /**
  * Functions for working with events.
  * @module
