@@ -580,7 +580,7 @@ function addUnhandledRejectionListener(fn) {
                 },
             });
             rejectionListeners.forEach((listener) => {
-                listener.call(globalThis, event);
+                listener.call(this, event);
             });
             if (!event.defaultPrevented) {
                 console.error("Uncaught (in promise)", event.reason);

@@ -656,7 +656,7 @@ export function addUnhandledRejectionListener(fn: (event: PromiseRejectionEvent)
             });
 
             rejectionListeners.forEach((listener) => {
-                listener.call(globalThis, event as PromiseRejectionEvent);
+                listener.call(this, event);
             });
 
             if (!event.defaultPrevented) {
