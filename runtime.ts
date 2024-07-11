@@ -483,7 +483,6 @@ export function unrefTimer(timer: NodeJS.Timeout | number): void {
 }
 
 const shutdownListeners: (() => (void | Promise<void>))[] = [];
-let shutdownListenerRegistered = false;
 
 /**
  * Adds a listener function to be called when the program receives a `SIGINT`
@@ -525,46 +524,147 @@ export function addShutdownListener(fn: () => (void | Promise<void>)): void {
         return;
     }
 
+    if (shutdownListeners.length) {
+        shutdownListeners.push(fn);
+        return;
+    }
+
     shutdownListeners.push(fn);
 
-    if (!shutdownListenerRegistered) {
-        shutdownListenerRegistered = true;
-
-        const shutdownListener = async () => {
-            try {
-                for (const listener of shutdownListeners) {
-                    await listener();
-                }
-
-                if (isDeno) {
-                    Deno.exit(0);
-                } else {
-                    process.exit(0);
-                }
-            } catch (err) {
-                console.error(err);
-
-                if (isDeno) {
-                    Deno.exit(1);
-                } else {
-                    process.exit(1);
-                }
+    const shutdownListener = async () => {
+        try {
+            for (const listener of shutdownListeners) {
+                await listener();
             }
-        };
 
-        if (isDeno) {
-            Deno.addSignalListener("SIGINT", shutdownListener);
-        } else {
-            process.on("SIGINT", shutdownListener);
+            if (isDeno) {
+                Deno.exit(0);
+            } else {
+                process.exit(0);
+            }
+        } catch (err) {
+            console.error(err);
 
-            if (platform() === "windows") {
-                process.on("message", message => {
-                    if (message === "shutdown") {
-                        shutdownListener();
-                    }
-                });
+            if (isDeno) {
+                Deno.exit(1);
+            } else {
+                process.exit(1);
             }
         }
+    };
+
+    if (isDeno) {
+        Deno.addSignalListener("SIGINT", shutdownListener);
+    } else {
+        process.on("SIGINT", shutdownListener);
+
+        if (platform() === "windows") {
+            process.on("message", message => {
+                if (message === "shutdown") {
+                    shutdownListener();
+                }
+            });
+        }
+    }
+}
+
+const rejectionListeners: ((event: PromiseRejectionEvent) => void)[] = [];
+
+/**
+ * Adds a listener function to be called when an unhandled promise rejection
+ * occurs in the program, this function calls
+ * `addEventListener("unhandledrejection")` or `process.on("unhandledRejection")`
+ * under the hood.
+ * 
+ * The purpose of this function is to provide a unified way to handle unhandled
+ * promise rejections in different environments, and when possible, provide a
+ * consistent behavior of the program when an unhandled rejection occurs.
+ * 
+ * By default, when an unhandled rejection occurs, the program will log the
+ * error to the console (and exit with a non-zero code in Node.js, Deno and Bun),
+ * but this behavior can be customized by calling `event.preventDefault()` in
+ * the listener function.
+ * 
+ * In unsupported environments, this function is a no-op.
+ * 
+ * @example
+ * ```ts
+ * import { addUnhandledRejectionListener } from "@ayonli/jsext/runtime";
+ * 
+ * addUnhandledRejectionListener((event) => {
+ *     console.error(event.reason);
+ *     event.preventDefault(); // Prevent the program from exiting
+ * });
+ * ```
+ */
+export function addUnhandledRejectionListener(fn: (event: PromiseRejectionEvent) => void) {
+    if (isNode || isBun) {
+        if (rejectionListeners.length) {
+            rejectionListeners.push(fn);
+            return;
+        }
+
+        rejectionListeners.push(fn);
+
+        process.on("unhandledRejection", (reason, promise) => {
+            const event = new Event("unhandledrejection");
+
+            Object.defineProperties(event, {
+                reason: { configurable: true, value: reason },
+                promise: { configurable: true, value: promise },
+                target: { configurable: true, value: globalThis },
+                currentTarget: { configurable: true, value: globalThis },
+                preventDefault: {
+                    configurable: true,
+                    value() {
+                        Object.defineProperty(this, "defaultPrevented", {
+                            configurable: true,
+                            value: true,
+                        });
+                    }
+                },
+            });
+
+            rejectionListeners.forEach((listener) => {
+                listener.call(globalThis, event as PromiseRejectionEvent);
+            });
+
+            if (!event.defaultPrevented) {
+                console.error("Uncaught (in promise)", reason);
+                process.exit(1);
+            }
+        });
+    } else if (runtime().type === "workerd") {
+        if (rejectionListeners.length) {
+            rejectionListeners.push(fn);
+            return;
+        }
+
+        rejectionListeners.push(fn);
+
+        addEventListener("unhandledrejection", function (event) {
+            Object.defineProperties(event, {
+                preventDefault: {
+                    configurable: true,
+                    value() {
+                        Object.defineProperty(this, "defaultPrevented", {
+                            configurable: true,
+                            value: true,
+                        });
+                    }
+                },
+            });
+
+            rejectionListeners.forEach((listener) => {
+                listener.call(globalThis, event as PromiseRejectionEvent);
+            });
+
+            if (!event.defaultPrevented) {
+                console.error("Uncaught (in promise)", event.reason);
+            }
+        });
+    } else if (typeof addEventListener === "function") {
+        addEventListener("unhandledrejection", fn);
     }
 }
 
