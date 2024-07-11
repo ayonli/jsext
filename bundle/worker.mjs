@@ -1,4 +1,4 @@
-var _a$1, _b;
+var _a$2, _b;
 const id = Symbol.for("id");
 typeof ServiceWorkerGlobalScope === "function"
     && globalThis instanceof ServiceWorkerGlobalScope;
@@ -6,7 +6,7 @@ typeof SharedWorkerGlobalScope === "function"
     && globalThis instanceof SharedWorkerGlobalScope;
 typeof DedicatedWorkerGlobalScope === "function"
     && globalThis instanceof DedicatedWorkerGlobalScope;
-const isDeno = typeof Deno === "object" && !!((_a$1 = Deno.version) === null || _a$1 === void 0 ? void 0 : _a$1.deno);
+const isDeno = typeof Deno === "object" && !!((_a$2 = Deno.version) === null || _a$2 === void 0 ? void 0 : _a$2.deno);
 const isBun = typeof Bun === "object" && !!Bun.version;
 const isNodeLike = typeof process === "object" && !!((_b = process.versions) === null || _b === void 0 ? void 0 : _b.node) && !isDeno;
 const isNode = isNodeLike && !isDeno && !isBun;
@@ -67,7 +67,7 @@ function* sequence(min, max, step = 1, loop = false) {
  * multiple threads, inspired by Golang.
  * @module
  */
-var _a;
+var _a$1;
 if (typeof Symbol.dispose === "undefined") {
     Object.defineProperty(Symbol, "dispose", { value: Symbol("Symbol.dispose") });
 }
@@ -78,7 +78,7 @@ const idGenerator = serial(true);
  */
 class Channel {
     constructor(capacity = 0) {
-        this[_a] = idGenerator.next().value;
+        this[_a$1] = idGenerator.next().value;
         this.buffer = [];
         this.producers = [];
         this.consumers = [];
@@ -212,7 +212,7 @@ class Channel {
             consume(err, undefined);
         }
     }
-    [(_a = id, Symbol.asyncIterator)]() {
+    [(_a$1 = id, Symbol.asyncIterator)]() {
         const channel = this;
         return {
             async next() {
@@ -1135,43 +1135,64 @@ Object.defineProperty(Exception.prototype, "name", {
     value: "Exception",
 });
 
+var _a;
 if (typeof globalThis.Event !== "function") {
     // @ts-ignore
-    globalThis.Event = class Event {
-        constructor(type, eventInitDict = {}) {
-            this.type = type;
-            this.eventInitDict = eventInitDict;
-            this.bubbles = false;
-            this.cancelable = false;
-            this.composed = false;
-            this.currentTarget = null;
-            this.defaultPrevented = false;
-            this.target = null;
-            this.timeStamp = Date.now();
-            this.isTrusted = false;
-            if (eventInitDict.bubbles !== undefined) {
-                this.bubbles = eventInitDict.bubbles;
+    globalThis.Event = (_a = class Event {
+            constructor(type, eventInitDict = {}) {
+                this.type = type;
+                this.eventInitDict = eventInitDict;
+                this.bubbles = false;
+                this.cancelable = false;
+                this.cancelBubble = false;
+                this.composed = false;
+                this.currentTarget = null;
+                this.defaultPrevented = false;
+                this.eventPhase = _a.NONE;
+                this.isTrusted = false;
+                this.returnValue = true;
+                this.target = null;
+                this.timeStamp = Date.now();
+                this.srcElement = null;
+                this.AT_TARGET = 2;
+                this.BUBBLING_PHASE = 3;
+                this.CAPTURING_PHASE = 1;
+                this.NONE = 0;
+                if (eventInitDict.bubbles !== undefined) {
+                    this.bubbles = eventInitDict.bubbles;
+                }
+                if (eventInitDict.cancelable !== undefined) {
+                    this.cancelable = eventInitDict.cancelable;
+                }
+                if (eventInitDict.composed !== undefined) {
+                    this.composed = eventInitDict.composed;
+                }
             }
-            if (eventInitDict.cancelable !== undefined) {
-                this.cancelable = eventInitDict.cancelable;
+            composedPath() {
+                return [];
             }
-            if (eventInitDict.composed !== undefined) {
-                this.composed = eventInitDict.composed;
+            preventDefault() {
+                if (this.cancelable) {
+                    this.defaultPrevented = true;
+                }
             }
-        }
-        composedPath() {
-            return [];
-        }
-        preventDefault() {
-            this.defaultPrevented = true;
-        }
-        stopImmediatePropagation() {
-            // Do nothing
-        }
-        stopPropagation() {
-            // Do nothing
-        }
-    };
+            stopImmediatePropagation() {
+                // Do nothing
+            }
+            stopPropagation() {
+                this.cancelBubble = true;
+            }
+            initEvent(type, bubbles = undefined, cancelable = undefined) {
+                this.type = type;
+                this.bubbles = bubbles !== null && bubbles !== void 0 ? bubbles : false;
+                this.cancelable = cancelable !== null && cancelable !== void 0 ? cancelable : false;
+            }
+        },
+        _a.AT_TARGET = 2,
+        _a.BUBBLING_PHASE = 3,
+        _a.CAPTURING_PHASE = 1,
+        _a.NONE = 0,
+        _a);
 }
 if (typeof globalThis.EventTarget !== "function") {
     // @ts-ignore
@@ -1180,12 +1201,12 @@ if (typeof globalThis.EventTarget !== "function") {
             this.listeners = {};
         }
         addEventListener(type, callback, options = {}) {
-            var _a;
+            var _b;
             if (!(type in this.listeners)) {
                 this.listeners[type] = [];
             }
             // @ts-ignore
-            this.listeners[type].push({ callback, once: (_a = options === null || options === void 0 ? void 0 : options.once) !== null && _a !== void 0 ? _a : false });
+            this.listeners[type].push({ callback, once: (_b = options === null || options === void 0 ? void 0 : options.once) !== null && _b !== void 0 ? _b : false });
         }
         removeEventListener(type, callback) {
             if (!(type in this.listeners)) {
@@ -1206,6 +1227,10 @@ if (typeof globalThis.EventTarget !== "function") {
             if (!(event.type in this.listeners)) {
                 return true;
             }
+            Object.defineProperties(event, {
+                currentTarget: { configurable: true, value: this },
+                target: { configurable: true, value: this },
+            });
             const stack = this.listeners[event.type].slice();
             for (let i = 0, l = stack.length; i < l; i++) {
                 const listener = stack[i];

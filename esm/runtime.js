@@ -471,6 +471,7 @@ function addShutdownListener(fn) {
     const shutdownListener = async () => {
         try {
             const event = createCloseEvent("shutdown", {
+                cancelable: true,
                 code: 0,
                 reason: "The program is interrupted.",
                 wasClean: true,
@@ -478,15 +479,6 @@ function addShutdownListener(fn) {
             Object.defineProperties(event, {
                 target: { configurable: true, value: globalThis },
                 currentTarget: { configurable: true, value: globalThis },
-                preventDefault: {
-                    configurable: true,
-                    value() {
-                        Object.defineProperty(this, "defaultPrevented", {
-                            configurable: true,
-                            value: true,
-                        });
-                    }
-                },
             });
             for (const listener of shutdownListeners) {
                 await listener(event);
@@ -548,12 +540,27 @@ const rejectionListeners = [];
  *
  * addUnhandledRejectionListener((event) => {
  *     console.error(event.reason);
- *     event.preventDefault(); // Prevent the program from exiting
+ *     event.preventDefault(); // Prevent default logging and exiting behavior
  * });
  * ```
  */
 function addUnhandledRejectionListener(fn) {
     const _runtime = runtime().type;
+    const fireEvent = (reason, promise) => {
+        const event = new Event("unhandledrejection", {
+            cancelable: true,
+        });
+        Object.defineProperties(event, {
+            reason: { configurable: true, value: reason },
+            promise: { configurable: true, value: promise },
+            target: { configurable: true, value: globalThis },
+            currentTarget: { configurable: true, value: globalThis },
+        });
+        rejectionListeners.forEach((listener) => {
+            listener.call(globalThis, event);
+        });
+        return event;
+    };
     if (_runtime === "node" || _runtime === "bun") {
         if (rejectionListeners.length) {
             rejectionListeners.push(fn);
@@ -561,25 +568,7 @@ function addUnhandledRejectionListener(fn) {
         }
         rejectionListeners.push(fn);
         process.on("unhandledRejection", (reason, promise) => {
-            const event = new Event("unhandledrejection");
-            Object.defineProperties(event, {
-                reason: { configurable: true, value: reason },
-                promise: { configurable: true, value: promise },
-                target: { configurable: true, value: globalThis },
-                currentTarget: { configurable: true, value: globalThis },
-                preventDefault: {
-                    configurable: true,
-                    value() {
-                        Object.defineProperty(this, "defaultPrevented", {
-                            configurable: true,
-                            value: true,
-                        });
-                    }
-                },
-            });
-            rejectionListeners.forEach((listener) => {
-                listener.call(globalThis, event);
-            });
+            const event = fireEvent(reason, promise);
             if (!event.defaultPrevented) {
                 if (_runtime === "node") {
                     console.error("\x1b[1m\x1b[31merror\x1b[0m: Uncaught (in promise)", reason);
@@ -597,21 +586,8 @@ function addUnhandledRejectionListener(fn) {
             return;
         }
         rejectionListeners.push(fn);
-        addEventListener("unhandledrejection", function (event) {
-            Object.defineProperties(event, {
-                preventDefault: {
-                    configurable: true,
-                    value() {
-                        Object.defineProperty(this, "defaultPrevented", {
-                            configurable: true,
-                            value: true,
-                        });
-                    }
-                },
-            });
-            rejectionListeners.forEach((listener) => {
-                listener.call(this, event);
-            });
+        addEventListener("unhandledrejection", (event) => {
+            event = fireEvent(event.reason, event.promise);
             if (!event.defaultPrevented) {
                 console.error("Uncaught (in promise)", event.reason);
             }
