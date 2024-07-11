@@ -1,8 +1,8 @@
 /// <reference path="../lib.deno.d.ts" />
-import { SSE } from "../sse.ts";
+import { EventEndpoint } from "../sse.ts";
 
 Deno.serve({ port: 8082 }, req => {
-    const sse = new SSE(req);
+    const sse = new EventEndpoint(req);
 
     setTimeout(async () => {
         await sse.send("Hello, World!", "1");
@@ -13,7 +13,7 @@ Deno.serve({ port: 8082 }, req => {
         }));
     }, 100);
 
-    return sse.response;
+    return sse.response!;
 });
 
 self.postMessage("ready");

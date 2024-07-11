@@ -27,6 +27,7 @@ import { readFileAsText } from "./fs.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 import { sleep } from "./async.ts";
 import { readAsJSON, readAsText } from "./reader.ts";
+import { EventConsumer } from "./sse.ts";
 
 declare const Bun: any;
 
@@ -1023,8 +1024,6 @@ describe("http", () => {
         }));
 
         it("SSE", func(async function (defer) {
-            const { EventClient } = await import("./sse.ts");
-
             const port = await randomPort();
             const server = serve({
                 port,
@@ -1044,7 +1043,7 @@ describe("http", () => {
             await server.ready;
 
             const res = await fetch(`http://localhost:${port}`);
-            const client = new EventClient(res);
+            const client = new EventConsumer(res);
 
             const text = await new Promise<string>((resolve) => {
                 client.addEventListener("message", (event) => {

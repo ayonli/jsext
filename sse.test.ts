@@ -4,7 +4,7 @@ import { isBun, isDeno, isNode } from "./env.ts";
 import "./index.ts";
 import jsext from "./index.ts";
 import { randomPort, withWeb } from "./http.ts";
-import { EventClient, EventEndpoint } from "./sse.ts";
+import { EventConsumer, EventEndpoint } from "./sse.ts";
 
 declare const Bun: any;
 
@@ -474,7 +474,7 @@ describe("sse", () => {
         }));
     });
 
-    describe("EventClient", () => {
+    describe("EventConsumer", () => {
         if (typeof Request === "undefined" || typeof Response === "undefined") {
             return;
         }
@@ -489,7 +489,7 @@ describe("sse", () => {
             strictEqual(sse.closed, false);
             const { response } = sse;
 
-            const client = new EventClient(response!);
+            const client = new EventConsumer(response!);
             const messages: string[] = [];
             let lastEventId = "";
 
@@ -533,7 +533,7 @@ describe("sse", () => {
             strictEqual(sse.closed, false);
             const { response } = sse;
 
-            const client = new EventClient(response!);
+            const client = new EventConsumer(response!);
             const messages: string[] = [];
             let lastEventId = "";
 
@@ -577,7 +577,7 @@ describe("sse", () => {
             strictEqual(sse.closed, false);
             const { response } = sse;
 
-            const client = new EventClient(response!);
+            const client = new EventConsumer(response!);
             let closeEvent: CloseEvent | undefined = undefined;
 
             client.addEventListener("close", _ev => {
@@ -603,7 +603,7 @@ describe("sse", () => {
             strictEqual(sse.closed, false);
             const { response } = sse;
 
-            const client = new EventClient(response!);
+            const client = new EventConsumer(response!);
             let closeEvent: CloseEvent | undefined = undefined;
 
             client.addEventListener("close", _ev => {
@@ -624,8 +624,6 @@ describe("sse", () => {
                 this.skip();
             }
 
-            const { EventClient } = await import("./sse.ts");
-
             const worker = new Worker(new URL("./examples/sse-deno.ts", import.meta.url), {
                 type: "module",
             });
@@ -640,7 +638,7 @@ describe("sse", () => {
 
             const res = await fetch("http://localhost:8082");
 
-            const client = new EventClient(res);
+            const client = new EventConsumer(res);
             let errorEvent: Event | undefined = undefined;
             let closeEvent: CloseEvent | undefined = undefined;
 

@@ -66,7 +66,7 @@ const encoder = new TextEncoder();
  *             }));
  *         }, 1_000);
  *
- *         return events.response;
+ *         return events.response!;
  *     }
  * }
  * ```
@@ -252,7 +252,7 @@ class EventEndpoint extends EventTarget {
     /**
      * Sends a message to the client.
      *
-     * The client (`EventSource` or {@link EventClient}) will receive the
+     * The client (`EventSource` or {@link EventConsumer}) will receive the
      * message as a `MessageEvent`, which can be listened to using the
      * `message` event.
      *
@@ -265,7 +265,7 @@ class EventEndpoint extends EventTarget {
     /**
      * Sends a custom event to the client.
      *
-     * The client (`EventSource` or {@link EventClient}) will receive the
+     * The client (`EventSource` or {@link EventConsumer}) will receive the
      * event as a `MessageEvent`, which can be listened to using the custom
      * event name.
      *
@@ -310,14 +310,14 @@ class EventEndpoint extends EventTarget {
  */
 const SSE = EventEndpoint;
 /**
- * An SSE (server-sent events) client that consumes event messages sent by the
- * server. Unlike the `EventSource` API, which takes a URL and only supports
- * GET request, this implementation accepts a `Response` object and reads the
- * messages from its body, the response can be generated from any type of
- * request, usually returned from the `fetch` function.
+ * An SSE (server-sent events) client that consumes and processes event messages
+ * sent by the server. Unlike the `EventSource` API, which takes a URL and only
+ * supports GET request, this implementation accepts a `Response` object and
+ * reads the messages from its body, the response can be generated from any type
+ * of request, usually returned from the `fetch` function.
  *
- * This client doesn't support reconnection, however, we can add a event
- * listener to the close event and re-create the client manually.
+ * This API doesn't support reconnection, however, we can add a event listener
+ * to the close event and reestablish the connection manually.
  *
  * **Events:**
  *
@@ -335,7 +335,7 @@ const SSE = EventEndpoint;
  *
  * @example
  * ```ts
- * import { EventClient } from "@ayonli/jsext/sse";
+ * import { EventConsumer } from "@ayonli/jsext/sse";
  *
  * const response = await fetch("http://localhost:3000", {
  *     method: "POST",
@@ -343,22 +343,22 @@ const SSE = EventEndpoint;
  *         "Accept": "text/event-stream",
  *     },
  * });
- * const client = new EventClient(response);
+ * const events = new EventConsumer(response);
  *
- * client.addEventListener("close", (ev) => {
+ * events.addEventListener("close", (ev) => {
  *     console.log(`The connection is closed, reason: ${ev.reason}`);
  *
  *     if (!ev.wasClean) {
- *         // perhaps to re-create the client
+ *         // perhaps to reestablish the connection
  *     }
  * });
  *
- * client.addEventListener("my-event", (ev) => {
+ * events.addEventListener("my-event", (ev) => {
  *     console.log(`Received message from the server: ${ev.data}`);
  * });
  * ```
  */
-class EventClient extends EventTarget {
+class EventConsumer extends EventTarget {
     constructor(response) {
         var _d;
         super();
@@ -396,8 +396,9 @@ class EventClient extends EventTarget {
      * The time in milliseconds that instructs the client to wait before
      * reconnecting.
      *
-     * NOTE: the client doesn't support reconnection, this value is only used
-     * when we want to re-create the client manually.
+     * NOTE: The {@link EventConsumer} API does not support auto-reconnection,
+     * this value is only used when we want to reestablish the connection
+     * manually.
      */
     get retry() {
         return this[_reconnectionTime];
@@ -487,6 +488,10 @@ class EventClient extends EventTarget {
     }
 }
 _a = _lastEventId, _b = _reconnectionTime, _c = _closed;
+/**
+ * @deprecated Use {@link EventConsumer} instead.
+ */
+const EventClient = EventConsumer;
 
-export { EventClient, EventEndpoint, SSE };
+export { EventClient, EventConsumer, EventEndpoint, SSE };
 //# sourceMappingURL=sse.js.map
