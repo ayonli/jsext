@@ -52,7 +52,7 @@ import {
     ServeStaticOptions,
     Server
 } from "./http/server.ts";
-import { createContext, respondDir, withHeaders } from "./http/internal.ts";
+import { createContext, listenFetchEvent, respondDir, withHeaders } from "./http/internal.ts";
 import { Range, ifMatch, ifNoneMatch, parseRange } from "./http/util.ts";
 import { isMain } from "./module.ts";
 import { as } from "./object.ts";
@@ -361,10 +361,10 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * Serves HTTP requests with the given options.
  * 
  * This function provides a unified way to serve HTTP requests in all server
- * runtimes. It's similar to the `Deno.serve` and `Bun.serve` functions, in fact,
- * it calls them internally when running in the corresponding runtime. When
- * running in Node.js, it uses the built-in `http` or `http2` modules to create
- * the server.
+ * runtimes, even worker runtimes. It's similar to the `Deno.serve` and
+ * `Bun.serve` functions, in fact, it calls them internally when running in the
+ * corresponding runtime. When running in Node.js, it uses the built-in `http`
+ * or `http2` modules to create the server.
  * 
  * This function also provides easy ways to handle Server-sent Events and
  * WebSockets inside the fetch handler without touching the underlying verbose
@@ -377,8 +377,10 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  * - Bun
  * - Cloudflare Workers
  * - Fastly Compute
+ * - Service Worker in the browser
  * 
- * NOTE: WebSocket is not supported in Fastly Compute at the moment.
+ * NOTE: WebSocket is not supported in Fastly Compute and browser's Service
+ * Worker at the moment.
  * 
  * @example
  * ```ts
@@ -467,7 +469,6 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  */
 export function serve(options: ServeOptions): Server {
     const type = isDeno || isBun ? options.type || "classic" : "classic";
-    const hostname = options.hostname || "0.0.0.0";
     const ws = new WebSocketServer(options.ws);
     const { fetch: handle, key, cert, onListen, headers } = options;
 
@@ -480,12 +481,14 @@ export function serve(options: ServeOptions): Server {
     });
 
     return new Server(async () => {
-        let port = options.port || (type === "module" ? 8000 : await randomPort(8000));
+        let hostname = options.hostname || "0.0.0.0";
+        let port = options.port;
         let controller: AbortController | null = null;
         let server: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null = null;
 
         if (isDeno) {
             if (type === "classic") {
+                port ||= await randomPort(8000);
                 controller = new AbortController();
                 const task = asyncTask<void>();
                 server = Deno.serve({
@@ -513,12 +516,13 @@ export function serve(options: ServeOptions): Server {
                 }, headers));
                 await task;
             } else {
-                hostname === "";
+                hostname = "";
                 port = 0;
             }
         } else if (isBun) {
             if (type === "classic") {
                 const tls = key && cert ? { key, cert } : undefined;
+                port ||= await randomPort(8000);
                 server = Bun.serve({
                     hostname,
                     port,
@@ -540,7 +544,7 @@ export function serve(options: ServeOptions): Server {
 
                 ws.bunBind(server);
             } else {
-                hostname === "0.0.0.0";
+                hostname = "0.0.0.0";
                 port = 3000;
             }
         } else if (isNode) {
@@ -562,6 +566,7 @@ export function serve(options: ServeOptions): Server {
                 server = createServer(reqListener);
             }
 
+            port ||= await randomPort(8000);
             await new Promise<void>((resolve) => {
                 if (hostname && hostname !== "0.0.0.0") {
                     (server as HttpServer | Http2SecureServer).listen(port, hostname, resolve);
@@ -569,6 +574,13 @@ export function serve(options: ServeOptions): Server {
                     (server as HttpServer | Http2SecureServer).listen(port, resolve);
                 }
             });
+        } else if (typeof addEventListener === "function") {
+            hostname = "";
+            port = 0;
+
+            if (type === "classic") {
+                listenFetchEvent({ ws, fetch: handle, onError, headers });
+            }
         } else {
             throw new Error("Unsupported runtime");
         }

@@ -4,7 +4,7 @@ import { join } from "../path.ts";
 import runtime from "../runtime.ts";
 import { EventEndpoint } from "../sse.ts";
 import { dedent } from "../string.ts";
-import type { RequestContext } from "./server.ts";
+import type { FetchEvent, RequestContext, RequestErrorHandler, ServeOptions } from "./server.ts";
 import type { WebSocketServer } from "../ws.ts";
 
 export function createContext(
@@ -73,6 +73,38 @@ export function withHeaders<A extends any[]>(
 
             return response;
         });
+}
+
+export function listenFetchEvent(options: Pick<ServeOptions, "fetch" | "headers"> & {
+    onError: RequestErrorHandler;
+    ws: WebSocketServer;
+    bindings?: RequestContext["bindings"];
+}) {
+    const { ws, fetch, headers, onError, bindings } = options;
+
+    // @ts-ignore
+    addEventListener("fetch", (event: FetchEvent) => {
+        const { request } = event;
+        const address = request.headers.get("cf-connecting-ip")
+            ?? event.client?.address;
+        const ctx = createContext(request, {
+            ws,
+            remoteAddress: address ? {
+                family: address.includes(":") ? "IPv6" : "IPv4",
+                address: address,
+                port: 0,
+            } : null,
+            waitUntil: event.waitUntil?.bind(event),
+            bindings,
+        });
+
+        const _handle = withHeaders(fetch, headers);
+        const _onError = withHeaders(onError, headers);
+        const response = Promise.resolve((_handle(request, ctx)))
+            .catch(err => _onError(err, request, ctx));
+
+        event.respondWith(response);
+    });
 }
 
 export async function respondDir(

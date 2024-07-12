@@ -59,6 +59,30 @@ function withHeaders(handle, headers = undefined) {
         return response;
     });
 }
+function listenFetchEvent(options) {
+    const { ws, fetch, headers, onError, bindings } = options;
+    // @ts-ignore
+    addEventListener("fetch", (event) => {
+        var _a, _b, _c;
+        const { request } = event;
+        const address = (_a = request.headers.get("cf-connecting-ip")) !== null && _a !== void 0 ? _a : (_b = event.client) === null || _b === void 0 ? void 0 : _b.address;
+        const ctx = createContext(request, {
+            ws,
+            remoteAddress: address ? {
+                family: address.includes(":") ? "IPv6" : "IPv4",
+                address: address,
+                port: 0,
+            } : null,
+            waitUntil: (_c = event.waitUntil) === null || _c === void 0 ? void 0 : _c.bind(event),
+            bindings,
+        });
+        const _handle = withHeaders(fetch, headers);
+        const _onError = withHeaders(onError, headers);
+        const response = Promise.resolve((_handle(request, ctx)))
+            .catch(err => _onError(err, request, ctx));
+        event.respondWith(response);
+    });
+}
 async function respondDir(entries, pathname, extraHeaders = {}) {
     const list = [
         ...orderBy(entries.filter(e => e.kind === "directory"), e => e.name).map(e => e.name + "/"),
@@ -108,5 +132,5 @@ async function respondDir(entries, pathname, extraHeaders = {}) {
     });
 }
 
-export { createContext, respondDir, withHeaders };
+export { createContext, listenFetchEvent, respondDir, withHeaders };
 //# sourceMappingURL=internal.js.map

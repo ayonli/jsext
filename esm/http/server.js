@@ -1,7 +1,7 @@
 import { until } from '../async.js';
 import { isBun, isDeno, isNode } from '../env.js';
 import runtime, { env } from '../runtime.js';
-import { withHeaders, createContext } from './internal.js';
+import { withHeaders, createContext, listenFetchEvent } from './internal.js';
 
 var _a, _b, _c;
 const _hostname = Symbol.for("hostname");
@@ -96,27 +96,7 @@ class Server {
                     });
                     env(bindings);
                 }
-                // @ts-ignore
-                addEventListener("fetch", (event) => {
-                    var _d, _e, _f;
-                    const { request } = event;
-                    const address = (_d = request.headers.get("cf-connecting-ip")) !== null && _d !== void 0 ? _d : (_e = event.client) === null || _e === void 0 ? void 0 : _e.address;
-                    const ctx = createContext(request, {
-                        ws,
-                        remoteAddress: address ? {
-                            family: address.includes(":") ? "IPv6" : "IPv4",
-                            address: address,
-                            port: 0,
-                        } : null,
-                        waitUntil: (_f = event.waitUntil) === null || _f === void 0 ? void 0 : _f.bind(event),
-                        bindings,
-                    });
-                    const _handle = withHeaders(handle, headers);
-                    const _onError = withHeaders(onError, headers);
-                    const response = Promise.resolve((_handle(request, ctx)))
-                        .catch(err => _onError(err, request, ctx));
-                    event.respondWith(response);
-                });
+                listenFetchEvent({ ws, fetch: handle, onError, headers, bindings });
             }
             else {
                 this.fetch = withHeaders(async (request, bindings, _ctx) => {

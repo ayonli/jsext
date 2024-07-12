@@ -7,7 +7,7 @@ import { isBun, isDeno, isNode } from "../env.ts";
 import runtime, { env } from "../runtime.ts";
 import { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
 import { KVNamespace } from "../workerd/types.ts";
-import { createContext, withHeaders } from "./internal.ts";
+import { createContext, listenFetchEvent, withHeaders } from "./internal.ts";
 
 export interface BunServer {
     fetch(request: Request | string): Response | Promise<Response>;
@@ -327,29 +327,7 @@ export class Server {
                     env(bindings as object);
                 }
 
-                // @ts-ignore
-                addEventListener("fetch", (event: FetchEvent) => {
-                    const { request } = event;
-                    const address = request.headers.get("cf-connecting-ip")
-                        ?? event.client?.address;
-                    const ctx = createContext(request, {
-                        ws,
-                        remoteAddress: address ? {
-                            family: address.includes(":") ? "IPv6" : "IPv4",
-                            address: address,
-                            port: 0,
-                        } : null,
-                        waitUntil: event.waitUntil?.bind(event),
-                        bindings,
-                    });
-
-                    const _handle = withHeaders(handle, headers);
-                    const _onError = withHeaders(onError, headers);
-                    const response = Promise.resolve((_handle(request, ctx)))
-                        .catch(err => _onError(err, request, ctx));
-
-                    event.respondWith(response);
-                });
+                listenFetchEvent({ ws, fetch: handle, onError, headers, bindings });
             } else {
                 this.fetch = withHeaders(async (request, bindings, _ctx) => {
                     if (bindings && typeof bindings === "object" && !Array.isArray(bindings)) {

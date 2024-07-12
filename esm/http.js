@@ -10,7 +10,7 @@ import { parseArgs, args } from './cli/common.js';
 import { stat, exists, readDir, readFile, createReadableStream } from './fs.js';
 import { sha256 } from './hash.js';
 import { Server } from './http/server.js';
-import { withHeaders, createContext, respondDir } from './http/internal.js';
+import { withHeaders, createContext, listenFetchEvent, respondDir } from './http/internal.js';
 import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
 export { parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, stringifyCookie, stringifyCookies, verifyBasicAuth } from './http/util.js';
 import { as } from './object.js';
@@ -328,10 +328,10 @@ function toNodeResponse(res, nodeRes) {
  * Serves HTTP requests with the given options.
  *
  * This function provides a unified way to serve HTTP requests in all server
- * runtimes. It's similar to the `Deno.serve` and `Bun.serve` functions, in fact,
- * it calls them internally when running in the corresponding runtime. When
- * running in Node.js, it uses the built-in `http` or `http2` modules to create
- * the server.
+ * runtimes, even worker runtimes. It's similar to the `Deno.serve` and
+ * `Bun.serve` functions, in fact, it calls them internally when running in the
+ * corresponding runtime. When running in Node.js, it uses the built-in `http`
+ * or `http2` modules to create the server.
  *
  * This function also provides easy ways to handle Server-sent Events and
  * WebSockets inside the fetch handler without touching the underlying verbose
@@ -344,8 +344,10 @@ function toNodeResponse(res, nodeRes) {
  * - Bun
  * - Cloudflare Workers
  * - Fastly Compute
+ * - Service Worker in the browser
  *
- * NOTE: WebSocket is not supported in Fastly Compute at the moment.
+ * NOTE: WebSocket is not supported in Fastly Compute and browser's Service
+ * Worker at the moment.
  *
  * @example
  * ```ts
@@ -435,7 +437,6 @@ function toNodeResponse(res, nodeRes) {
 function serve(options) {
     var _a;
     const type = isDeno || isBun ? options.type || "classic" : "classic";
-    const hostname = options.hostname || "0.0.0.0";
     const ws = new WebSocketServer(options.ws);
     const { fetch: handle, key, cert, onListen, headers } = options;
     const onError = (_a = options.onError) !== null && _a !== void 0 ? _a : ((err) => {
@@ -446,11 +447,13 @@ function serve(options) {
         });
     });
     return new Server(async () => {
-        let port = options.port || (type === "module" ? 8000 : await randomPort(8000));
+        let hostname = options.hostname || "0.0.0.0";
+        let port = options.port;
         let controller = null;
         let server = null;
         if (isDeno) {
             if (type === "classic") {
+                port || (port = await randomPort(8000));
                 controller = new AbortController();
                 const task = asyncTask();
                 server = Deno.serve({
@@ -479,12 +482,14 @@ function serve(options) {
                 await task;
             }
             else {
+                hostname = "";
                 port = 0;
             }
         }
         else if (isBun) {
             if (type === "classic") {
                 const tls = key && cert ? { key, cert } : undefined;
+                port || (port = await randomPort(8000));
                 server = Bun.serve({
                     hostname,
                     port,
@@ -506,6 +511,7 @@ function serve(options) {
                 ws.bunBind(server);
             }
             else {
+                hostname = "0.0.0.0";
                 port = 3000;
             }
         }
@@ -527,6 +533,7 @@ function serve(options) {
                 const { createServer } = await import('node:http');
                 server = createServer(reqListener);
             }
+            port || (port = await randomPort(8000));
             await new Promise((resolve) => {
                 if (hostname && hostname !== "0.0.0.0") {
                     server.listen(port, hostname, resolve);
@@ -535,6 +542,13 @@ function serve(options) {
                     server.listen(port, resolve);
                 }
             });
+        }
+        else if (typeof addEventListener === "function") {
+            hostname = "";
+            port = 0;
+            if (type === "classic") {
+                listenFetchEvent({ ws, fetch: handle, onError, headers });
+            }
         }
         else {
             throw new Error("Unsupported runtime");
