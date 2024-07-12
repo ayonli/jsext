@@ -9,7 +9,7 @@ import wrap from './wrap.js';
 const warnedRecord = new Map();
 function deprecate(target, ...args) {
     var _a, _b, _c, _d;
-    const { type } = runtime();
+    const { identity } = runtime();
     if (typeof target === "function") {
         const tip = (_a = args[0]) !== null && _a !== void 0 ? _a : "";
         const once = (_b = args[1]) !== null && _b !== void 0 ? _b : false;
@@ -24,8 +24,8 @@ function deprecate(target, ...args) {
                 "firefox": 3,
                 "fastly": 3,
                 "unknown": 3,
-            })[type];
-            emitWarning(fn.name + "()", wrapped, tip, once, lineOffset, type, true);
+            })[identity];
+            emitWarning(fn.name + "()", wrapped, tip, once, lineOffset, identity, true);
             return fn.apply(this, args);
         });
     }
@@ -42,10 +42,10 @@ function deprecate(target, ...args) {
         "firefox": 3,
         "fastly": 3,
         "unknown": 3,
-    })[type];
-    return emitWarning(target, forFn, tip, once, lineOffset, type, false);
+    })[identity];
+    return emitWarning(target, forFn, tip, once, lineOffset, identity, false);
 }
-function emitWarning(target, forFn, tip, once, lineNum, type, wrapped = false) {
+function emitWarning(target, forFn, tip, once, lineNum, runtime, wrapped = false) {
     if (!once || !warnedRecord.has(forFn)) {
         let trace = {};
         if (typeof Error.captureStackTrace === "function") {
@@ -60,11 +60,11 @@ function emitWarning(target, forFn, tip, once, lineNum, type, wrapped = false) {
             lines = lines.slice(offset); // fix for tsx in Node.js v16
         }
         let line;
-        if (type === "safari") {
+        if (runtime === "safari") {
             line = lines.find(line => line.trim().startsWith("module code@"))
                 || lines[lineNum];
         }
-        else if (type === "bun" && !wrapped) {
+        else if (runtime === "bun" && !wrapped) {
             line = lines.find(line => line.trim().startsWith("at module code"))
                 || lines[lineNum];
         }

@@ -18,14 +18,14 @@ function createContext(request, props) {
 }
 function withHeaders(handle, headers = undefined) {
     if (headers === undefined) {
-        const { type, version } = runtime();
+        const { identity, version } = runtime();
         let serverName = ({
             "node": "Node.js",
             "deno": "Deno",
             "bun": "Bun",
             "workerd": "Cloudflare Workers",
             "fastly": "Fastly Compute",
-        })[type] || "Unknown";
+        })[identity] || "Unknown";
         if (version) {
             serverName += `/${version}`;
         }

@@ -316,7 +316,7 @@ export class Server {
             if (this.type === "classic") {
                 let bindings: any;
 
-                if (runtime().type === "workerd") {
+                if (runtime().identity === "workerd") {
                     bindings = {};
                     Object.keys(globalThis).forEach((key) => {
                         if (/^[A-Z][A-Z0-9_]*$/.test(key)) {

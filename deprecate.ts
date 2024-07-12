@@ -69,7 +69,7 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
     target: Fn | string,
     ...args: any[]
 ): Fn | void {
-    const { type } = runtime();
+    const { identity } = runtime();
 
     if (typeof target === "function") {
         const tip = (args[0] as string) ?? "";
@@ -86,9 +86,9 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
                 "firefox": 3,
                 "fastly": 3,
                 "unknown": 3,
-            })[type]!;
+            })[identity]!;
 
-            emitWarning(fn.name + "()", wrapped, tip, once, lineOffset, type, true);
+            emitWarning(fn.name + "()", wrapped, tip, once, lineOffset, identity, true);
             return fn.apply(this, args);
         });
     }
@@ -106,9 +106,9 @@ export default function deprecate<T, Fn extends (this: T, ...args: any[]) => any
         "firefox": 3,
         "fastly": 3,
         "unknown": 3,
-    })[type]!;
+    })[identity]!;
 
-    return emitWarning(target, forFn, tip, once, lineOffset, type, false);
+    return emitWarning(target, forFn, tip, once, lineOffset, identity, false);
 }
 
 function emitWarning(
@@ -117,7 +117,7 @@ function emitWarning(
     tip: string,
     once: boolean,
     lineNum: number,
-    type: RuntimeInfo["type"],
+    runtime: RuntimeInfo["identity"],
     wrapped = false
 ) {
     if (!once || !warnedRecord.has(forFn)) {
@@ -138,10 +138,10 @@ function emitWarning(
 
         let line: string | undefined;
 
-        if (type === "safari") {
+        if (runtime === "safari") {
             line = lines.find(line => line.trim().startsWith("module code@"))
                 || lines[lineNum];
-        } else if (type === "bun" && !wrapped) {
+        } else if (runtime === "bun" && !wrapped) {
             line = lines.find(line => line.trim().startsWith("at module code"))
                 || lines[lineNum];
         } else {

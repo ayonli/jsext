@@ -66,7 +66,7 @@ export function withWeb(
 }
 
 export function serve(options: ServeOptions): Server {
-    const { type: identity } = runtime();
+    const { identity } = runtime();
     const type = identity === "workerd" ? options.type || "classic" : "classic";
     const ws = new WebSocketServer(options.ws);
     const { fetch, onError, onListen, headers } = options;

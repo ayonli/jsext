@@ -30,14 +30,14 @@ export function withHeaders<A extends any[]>(
     headers: HeadersInit | null | undefined = undefined
 ): (...args: A) => Promise<Response> {
     if (headers === undefined) {
-        const { type, version } = runtime();
+        const { identity, version } = runtime();
         let serverName = ({
             "node": "Node.js",
             "deno": "Deno",
             "bun": "Bun",
             "workerd": "Cloudflare Workers",
             "fastly": "Fastly Compute",
-        })[type as string] || "Unknown";
+        })[identity as string] || "Unknown";
 
         if (version) {
             serverName += `/${version}`;

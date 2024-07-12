@@ -45,12 +45,7 @@ export interface RuntimeInfo {
     /**
      * The representation term of the runtime.
      */
-    type: WellknownRuntimes | "unknown";
-    /**
-     * @deprecated Use `type` instead, this property will be removed in the next
-     * major version.
-     */
-    identity?: string;
+    identity: WellknownRuntimes | "unknown";
     /**
      * The version of the runtime. This property is `undefined` when `type` is
      * `unknown`.
@@ -114,41 +109,31 @@ export interface RuntimeInfo {
  * ```
  */
 export default function runtime(): RuntimeInfo {
-    const construct = (info: RuntimeInfo): RuntimeInfo => {
-        Object.defineProperty(info, "identity", {
-            get() {
-                return info.type === "workerd" ? "cloudflare-worker" : info.type;
-            },
-        });
-
-        return info;
-    };
-
     if (isDeno) {
-        return construct({
-            type: "deno",
+        return {
+            identity: "deno",
             version: Deno.version.deno,
             fsSupport: true,
             tsSupport: true,
             worker: isMainThread ? undefined : "dedicated",
-        });
+        };
     } else if (isBun) {
-        return construct({
-            type: "bun",
+        return {
+            identity: "bun",
             version: Bun.version,
             fsSupport: true,
             tsSupport: true,
             worker: isMainThread ? undefined : "dedicated",
-        });
+        };
     } else if (isNode) {
-        return construct({
-            type: "node",
+        return {
+            identity: "node",
             version: process.version.slice(1),
             fsSupport: true,
             tsSupport: process.execArgv.some(arg => /\b(tsx|ts-node|vite|swc-node|tsimp)\b/.test(arg))
                 || /\.tsx?$|\bvite\b/.test(process.argv[1] ?? ""),
             worker: isMainThread ? undefined : "dedicated",
-        });
+        };
     }
 
     const fsSupport = typeof FileSystemHandle === "function";
@@ -170,41 +155,41 @@ export default function runtime(): RuntimeInfo {
             const chrome = list.find(({ name }) => name === "Chrome" || name === "Chromium");
 
             if (safari && !chrome && !firefox) {
-                return construct({
-                    type: "safari",
+                return {
+                    identity: "safari",
                     version: safari!.version,
                     fsSupport,
                     tsSupport: false,
                     worker,
-                });
+                };
             } else if (firefox && !chrome && !safari) {
-                return construct({
-                    type: "firefox",
+                return {
+                    identity: "firefox",
                     version: firefox!.version,
                     fsSupport,
                     tsSupport: false,
                     worker,
-                });
+                };
             } else if (chrome) {
-                return construct({
-                    type: "chrome",
+                return {
+                    identity: "chrome",
                     version: chrome!.version,
                     fsSupport,
                     tsSupport: false,
                     worker,
-                });
+                };
             } else {
-                return construct({
-                    type: "unknown",
+                return {
+                    identity: "unknown",
                     version: undefined,
                     fsSupport,
                     tsSupport: false,
                     worker,
-                });
+                };
             }
         } else if (/Cloudflare[-\s]Workers?/i.test(navigator.userAgent)) {
-            return construct({
-                type: "workerd",
+            return {
+                identity: "workerd",
                 version: undefined,
                 fsSupport,
                 tsSupport: (() => {
@@ -215,25 +200,25 @@ export default function runtime(): RuntimeInfo {
                     }
                 })(),
                 worker: "service",
-            });
+            };
         }
     } else if (typeof WorkerLocation === "function" && globalThis.location instanceof WorkerLocation) {
-        return construct({
-            type: "fastly",
+        return {
+            identity: "fastly",
             version: undefined,
             fsSupport,
             tsSupport: false,
             worker: "service",
-        });
+        };
     }
 
-    return construct({
-        type: "unknown",
+    return {
+        identity: "unknown",
         version: undefined,
         fsSupport,
         tsSupport: false,
         worker,
-    });
+    };
 }
 
 export type WellknownPlatforms = "darwin"
@@ -348,7 +333,7 @@ export function env(
         } else {
             process.env[name] = String(value);
         }
-    } else if (runtime().type === "workerd") {
+    } else if (runtime().identity === "workerd") {
         if (typeof name === "object" && name !== null) {
             for (const [key, val] of Object.entries(name)) {
                 if (["string", "number", "boolean"].includes(typeof val)) {
@@ -500,7 +485,7 @@ const shutdownListeners: ((event: CloseEvent) => void | Promise<void>)[] = [];
  * In fact, calling the `exit` method in a listener is problematic and will
  * cause any subsequent listeners not to be executed.
  * 
- * The listener function receives a `CloseEvent`, if we don't what the program
+ * The listener function receives a {@link CloseEvent}, if we don't what the program
  * to exit, we can call `event.preventDefault()` to prevent from exiting.
  * 
  * In the browser or unsupported environments, this function is a no-op.
@@ -508,18 +493,16 @@ const shutdownListeners: ((event: CloseEvent) => void | Promise<void>)[] = [];
  * @example
  * ```ts
  * import { addShutdownListener } from "@ayonli/jsext/runtime";
- * import * as http from "node:http";
+ * import { serve } from "@ayonli/jsext/http";
  * 
- * const server = http.createServer((req, res) => {
- *     res.end("Hello, World!");
+ * const server = serve({
+ *     fetch(req) {
+ *         return new Response("Hello, World!");
+ *     }
  * });
  * 
- * server.listen(3000);
- * 
  * addShutdownListener(async () => {
- *     await new Promise<void>((resolve) => {
- *         server.close(resolve);
- *     });
+ *     await server.close();
  * });
  * ```
  */
@@ -616,7 +599,7 @@ const rejectionListeners: ((event: PromiseRejectionEvent) => void)[] = [];
  * ```
  */
 export function addUnhandledRejectionListener(fn: (event: PromiseRejectionEvent) => void) {
-    const _runtime = runtime().type;
+    const _runtime = runtime().identity;
 
     const fireEvent = (reason: unknown, promise: Promise<unknown>) => {
         const event = new Event("unhandledrejection", {

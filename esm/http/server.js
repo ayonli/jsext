@@ -86,7 +86,7 @@ class Server {
         else if (!isNode && typeof addEventListener === "function") {
             if (this.type === "classic") {
                 let bindings;
-                if (runtime().type === "workerd") {
+                if (runtime().identity === "workerd") {
                     bindings = {};
                     Object.keys(globalThis).forEach((key) => {
                         if (/^[A-Z][A-Z0-9_]*$/.test(key)) {

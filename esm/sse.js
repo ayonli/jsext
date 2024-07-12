@@ -4,7 +4,7 @@ import { isBun } from './env.js';
 import runtime from './runtime.js';
 
 var _a, _b, _c;
-if (typeof MessageEvent !== "function" || runtime().type === "workerd") {
+if (typeof MessageEvent !== "function" || runtime().identity === "workerd") {
     // Worker environments does not implement or only partially implement the MessageEvent, 
     // we need to implement it ourselves.
     globalThis.MessageEvent = class MessageEvent extends Event {

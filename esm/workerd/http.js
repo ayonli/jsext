@@ -40,7 +40,7 @@ function withWeb(listener) {
     throw new Error("Unsupported runtime");
 }
 function serve(options) {
-    const { type: identity } = runtime();
+    const { identity } = runtime();
     const type = identity === "workerd" ? options.type || "classic" : "classic";
     const ws = new WebSocketServer(options.ws);
     const { fetch, onError, onListen, headers } = options;
