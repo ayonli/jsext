@@ -864,8 +864,39 @@ describe("http", () => {
         }
 
         it("default", func(async (defer) => {
+            const server = serve({
+                async fetch(_req, ctx) {
+                    return new Response("Hello, World!", {
+                        status: 200,
+                        statusText: "OK",
+                        headers: {
+                            "X-Client-IP": ctx.remoteAddress?.address || "",
+                        },
+                    });
+                }
+            });
+            defer(() => server.close(true));
+
+            strictEqual(server.type, "classic");
+            strictEqual(typeof server.fetch, "undefined");
+
+            await server.ready;
+            strictEqual(server.hostname, "0.0.0.0");
+            ok(server.port > 0);
+
+            const res = await fetch(`http://localhost:${server.port}`);
+            const text = await res.text();
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(text, "Hello, World!");
+            ok(!!res.headers.get("X-Client-IP"));
+        }));
+
+        it("custom address", func(async (defer) => {
             const port = await randomPort();
             const server = serve({
+                hostname: "localhost",
                 port,
                 async fetch(_req, ctx) {
                     return new Response("Hello, World!", {
@@ -878,7 +909,13 @@ describe("http", () => {
                 }
             });
             defer(() => server.close(true));
+
+            strictEqual(server.type, "classic");
+            strictEqual(typeof server.fetch, "undefined");
+
             await server.ready;
+            strictEqual(server.hostname, "localhost");
+            strictEqual(server.port, port);
 
             const res = await fetch(`http://localhost:${port}`);
             const text = await res.text();
@@ -896,6 +933,7 @@ describe("http", () => {
 
             const port = await randomPort();
             const server = serve({
+                hostname: "localhost",
                 port,
                 key: await readFileAsText("./examples/certs/cert.key"),
                 cert: await readFileAsText("./examples/certs/cert.pem"),
@@ -916,7 +954,13 @@ describe("http", () => {
                     return server.close(true);
                 }
             });
+
+            strictEqual(server.type, "classic");
+            strictEqual(typeof server.fetch, "undefined");
+
             await server.ready;
+            strictEqual(server.hostname, "localhost");
+            strictEqual(server.port, port);
 
             const https = await import("node:https");
             const res = await new Promise<{
@@ -963,6 +1007,7 @@ describe("http", () => {
 
             const port = await randomPort();
             const server = serve({
+                hostname: "localhost",
                 port,
                 key: await readFileAsText("./examples/certs/cert.key"),
                 cert: await readFileAsText("./examples/certs/cert.pem"),
@@ -974,7 +1019,13 @@ describe("http", () => {
                 }
             });
             defer(() => server.close(true));
+
+            strictEqual(server.type, "classic");
+            strictEqual(typeof server.fetch, "undefined");
+
             await server.ready;
+            strictEqual(server.hostname, "localhost");
+            strictEqual(server.port, port);
 
             const http2 = await import("node:http2");
             const client = http2.connect(`https://localhost:${port}`, {
@@ -1024,9 +1075,7 @@ describe("http", () => {
         }));
 
         it("SSE", func(async function (defer) {
-            const port = await randomPort();
             const server = serve({
-                port,
                 async fetch(_req, ctx) {
                     const { events, response } = ctx.createEventEndpoint();
 
@@ -1040,9 +1089,15 @@ describe("http", () => {
                 }
             });
             defer(() => server.close(true));
-            await server.ready;
 
-            const res = await fetch(`http://localhost:${port}`);
+            strictEqual(server.type, "classic");
+            strictEqual(typeof server.fetch, "undefined");
+
+            await server.ready;
+            strictEqual(server.hostname, "0.0.0.0");
+            ok(server.port > 0);
+
+            const res = await fetch(`http://localhost:${server.port}`);
             const client = new EventConsumer(res);
 
             const text = await new Promise<string>((resolve) => {
@@ -1058,9 +1113,7 @@ describe("http", () => {
         it("WebSocket", func(async function (defer) {
             this.timeout(5_000);
 
-            const port = await randomPort();
             const server = serve({
-                port,
                 async fetch(_req, ctx) {
                     const { socket, response } = await ctx.upgradeWebSocket();
 
@@ -1072,15 +1125,21 @@ describe("http", () => {
                 }
             });
             defer(() => server.close(true));
+
+            strictEqual(server.type, "classic");
+            strictEqual(typeof server.fetch, "undefined");
+
             await server.ready;
+            strictEqual(server.hostname, "0.0.0.0");
+            ok(server.port > 0);
 
             let ws: WebSocket;
 
             if (typeof WebSocket === "function") {
-                ws = new WebSocket(`ws://localhost:${port}`);
+                ws = new WebSocket(`ws://localhost:${server.port}`);
             } else {
                 const dWebSocket = (await import("isomorphic-ws")).default;
-                ws = new dWebSocket(`ws://localhost:${port}`) as unknown as WebSocket;
+                ws = new dWebSocket(`ws://localhost:${server.port}`) as unknown as WebSocket;
             }
 
             const text = await new Promise<string>((resolve, reject) => {
@@ -1122,12 +1181,17 @@ describe("http", () => {
                     return response;
                 });
 
-            const port = await randomPort();
-            const server = serve({ port, fetch: app.fetch });
+            const server = serve({ fetch: app.fetch });
             defer(() => server.close(true));
-            await server.ready;
 
-            const res = await fetch(`http://localhost:${port}`);
+            strictEqual(server.type, "classic");
+            strictEqual(typeof server.fetch, "undefined");
+
+            await server.ready;
+            strictEqual(server.hostname, "0.0.0.0");
+            ok(server.port > 0);
+
+            const res = await fetch(`http://localhost:${server.port}`);
             const text = await res.text();
 
             strictEqual(res.status, 200);
@@ -1138,10 +1202,10 @@ describe("http", () => {
             let ws: WebSocket;
 
             if (typeof WebSocket === "function") {
-                ws = new WebSocket(`ws://localhost:${port}/ws`);
+                ws = new WebSocket(`ws://localhost:${server.port}/ws`);
             } else {
                 const dWebSocket = (await import("isomorphic-ws")).default;
-                ws = new dWebSocket(`ws://localhost:${port}/ws`) as unknown as WebSocket;
+                ws = new dWebSocket(`ws://localhost:${server.port}/ws`) as unknown as WebSocket;
             }
 
             const text2 = await new Promise<string>((resolve, reject) => {
@@ -1157,6 +1221,132 @@ describe("http", () => {
 
             ws.close();
             strictEqual(text2, "Hello, World!");
+        }));
+
+        it("with type module", func(async function (defer) {
+            const port = await randomPort();
+            const server = serve({
+                type: "module",
+                port,
+                async fetch(_req) {
+                    return new Response("Hello, World!", {
+                        status: 200,
+                        statusText: "OK",
+                    });
+                }
+            });
+            defer(() => server.close(true));
+
+            if (isBun || isDeno) {
+                strictEqual(server.type, "module");
+                strictEqual(typeof server.fetch, "function");
+            } else {
+                strictEqual(server.type, "classic");
+                strictEqual(typeof server.fetch, "undefined");
+                return;
+            }
+
+            if (isBun) {
+                const _server = Bun.serve({
+                    port,
+                    fetch: server.fetch,
+                });
+                defer(() => _server.stop(true));
+            } else if (isDeno) {
+                const controller = new AbortController();
+                await new Promise((resolve) => {
+                    Deno.serve({
+                        port,
+                        signal: controller.signal,
+                        onListen: resolve,
+                    }, async (req) => {
+                        return server.fetch!(req);
+                    });
+                });
+                defer(() => controller.abort());
+            }
+
+            await server.ready;
+            strictEqual(server.hostname, isBun ? "0.0.0.0" : "");
+            strictEqual(server.port, isBun ? 3000 : 0);
+
+            const res = await fetch(`http://localhost:${port}`);
+            const text = await res.text();
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(text, "Hello, World!");
+        }));
+
+        it("onListen and onError", func(async function (defer) {
+            let listened = false;
+            let error: Error | null = null;
+
+            const server = serve({
+                async fetch(_req) {
+                    throw new Error("Something went wrong");
+                },
+                onListen() {
+                    listened = true;
+                },
+                onError(err) {
+                    error = err as Error;
+                    return new Response("Something went wrong", {
+                        status: 500,
+                        statusText: "Internal Server Error",
+                    });
+                }
+            });
+            defer(() => server.close(true));
+
+            strictEqual(server.type, "classic");
+            strictEqual(typeof server.fetch, "undefined");
+
+            await server.ready;
+            strictEqual(server.hostname, "0.0.0.0");
+            ok(server.port > 0);
+            strictEqual(listened, true);
+
+            const res = await fetch(`http://localhost:${server.port}`);
+            const text = await res.text();
+
+            strictEqual(res.status, 500);
+            strictEqual(res.statusText, "Internal Server Error");
+            strictEqual(text, "Something went wrong");
+            strictEqual(String(error), "Error: Something went wrong");
+        }));
+
+        it("Custom headers", func(async (defer) => {
+            const server = serve({
+                async fetch(_req, ctx) {
+                    return new Response("Hello, World!", {
+                        status: 200,
+                        statusText: "OK",
+                        headers: {
+                            "X-Client-IP": ctx.remoteAddress?.address || "",
+                        },
+                    });
+                },
+                headers: {
+                    "X-Powered-By": "JsExt",
+                },
+            });
+            defer(() => server.close(true));
+
+            strictEqual(server.type, "classic");
+            strictEqual(typeof server.fetch, "undefined");
+
+            await server.ready;
+            strictEqual(server.hostname, "0.0.0.0");
+            ok(server.port > 0);
+
+            const res = await fetch(`http://localhost:${server.port}`);
+            const text = await res.text();
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(text, "Hello, World!");
+            strictEqual(res.headers.get("X-Powered-By"), "JsExt");
         }));
     });
 
