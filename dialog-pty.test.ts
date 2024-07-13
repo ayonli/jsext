@@ -12,7 +12,7 @@ const { LEFT, RIGHT } = NavigationKeys;
 const useDeno = process.argv.includes("--deno");
 const useBun = process.argv.includes("--bun");
 
-async function runInSimulator(filename: string) {
+async function runInEmulator(filename: string) {
     const options: IPtyForkOptions = {
         cwd: process.cwd(),
         env: process.env,
@@ -54,7 +54,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
 
     describe("alert", () => {
         it("press Enter", async () => {
-            const { cmd, output } = await runInSimulator(`examples/dialog/alert.ts`);
+            const { cmd, output } = await runInEmulator(`examples/dialog/alert.ts`);
 
             cmd.write("\n");
             const outputs = await output;
@@ -67,7 +67,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
         });
 
         it("press Escape", async () => {
-            const { cmd, output } = await runInSimulator(`examples/dialog/alert.ts`);
+            const { cmd, output } = await runInEmulator(`examples/dialog/alert.ts`);
 
             cmd.write(String(ESC));
             const outputs = await output;
@@ -82,7 +82,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
 
     describe("confirm", () => {
         it("input 'y'", async () => {
-            const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
+            const { cmd, output } = await runInEmulator("examples/dialog/confirm.ts");
 
             cmd.write("y");
             await sleep(10);
@@ -97,7 +97,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
         });
 
         it("input 'yes'", async () => {
-            const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
+            const { cmd, output } = await runInEmulator("examples/dialog/confirm.ts");
 
             for (const char of "yes") {
                 cmd.write(char);
@@ -115,7 +115,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
         });
 
         it("input 'n'", async () => {
-            const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
+            const { cmd, output } = await runInEmulator("examples/dialog/confirm.ts");
 
             cmd.write("n");
             await sleep(10);
@@ -130,7 +130,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
         });
 
         it("input 'no'", async () => {
-            const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
+            const { cmd, output } = await runInEmulator("examples/dialog/confirm.ts");
 
             for (const char of "no") {
                 cmd.write(char);
@@ -149,7 +149,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
         });
 
         it("press Enter", async () => {
-            const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
+            const { cmd, output } = await runInEmulator("examples/dialog/confirm.ts");
 
             cmd.write("\n");
             const outputs = await output;
@@ -162,7 +162,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
         });
 
         it("press Escape", async () => {
-            const { cmd, output } = await runInSimulator("examples/dialog/confirm.ts");
+            const { cmd, output } = await runInEmulator("examples/dialog/confirm.ts");
 
             cmd.write(String(ESC));
             const outputs = await output;
@@ -177,7 +177,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
 
     describe("prompt", () => {
         it("input 'Hello, World!'", async () => {
-            const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+            const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
             for (const char of "Hello, World!") {
                 cmd.write(char);
@@ -195,7 +195,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
         });
 
         it("input '你好，世界！'", async () => {
-            const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+            const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
             for (const char of "你好，世界！") {
                 cmd.write(char);
@@ -213,7 +213,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
         });
 
         it("input emojis", async () => {
-            const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+            const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
             for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                 cmd.write(char);
@@ -231,7 +231,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
         });
 
         it("no input", async () => {
-            const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+            const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
             cmd.write("\n");
             const outputs = await output;
@@ -244,7 +244,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
         });
 
         it("default value", async () => {
-            const { cmd, output } = await runInSimulator("examples/dialog/prompt-default.ts");
+            const { cmd, output } = await runInEmulator("examples/dialog/prompt-default.ts");
 
             cmd.write("\n");
             const outputs = await output;
@@ -260,7 +260,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             this.timeout(5_000);
 
             { // for 'Hello, World!'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt-password.ts");
 
                 for (const char of "Hello, World!") {
                     cmd.write(char);
@@ -278,7 +278,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for '你好，世界！'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt-password.ts");
 
                 for (const char of "你好，世界！") {
                     cmd.write(char);
@@ -296,7 +296,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for emojis
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt-password.ts");
 
                 for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
@@ -316,7 +316,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
 
         it("press Escape", async () => {
             {
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 cmd.write(String(ESC));
                 const outputs = await output;
@@ -329,7 +329,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             {
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt-default.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt-default.ts");
 
                 cmd.write(String(ESC));
                 const outputs = await output;
@@ -346,7 +346,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             this.timeout(5_000);
 
             { // for 'Hello, World!'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of "Hello, World!") {
                     cmd.write(char);
@@ -366,7 +366,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for '你好，世界！'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of "你好，世界！") {
                     cmd.write(char);
@@ -388,7 +388,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for emojis
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
@@ -412,7 +412,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for password 'Hello, World!'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt-password.ts");
 
                 for (const char of "Hello, World!") {
                     cmd.write(char);
@@ -432,7 +432,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for password '你好，世界！'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt-password.ts");
 
                 for (const char of "你好，世界！") {
                     char && cmd.write(char);
@@ -454,7 +454,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for password emojis
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt-password.ts");
 
                 for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
@@ -482,7 +482,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             this.timeout(5_000);
 
             { // for 'Hello, World!'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of "Hello, World!") {
                     char && cmd.write(char);
@@ -506,7 +506,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for '你好，世界！'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of "你好，世界！") {
                     char && cmd.write(char);
@@ -530,7 +530,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for emojis
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
@@ -558,7 +558,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             this.timeout(5_000);
 
             { // for 'Hello, World!'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of "Hello, World!") {
                     cmd.write(char);
@@ -582,7 +582,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for '你好，世界！'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of "你好，世界！") {
                     cmd.write(char);
@@ -606,7 +606,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for emojis
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
@@ -640,7 +640,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             this.timeout(5_000);
 
             { // for 'Hello, World!'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of "Hello, World!") {
                     cmd.write(char);
@@ -660,7 +660,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for '你好，世界！'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of "你好，世界！") {
                     cmd.write(char);
@@ -680,7 +680,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for emojis
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
@@ -704,7 +704,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             this.timeout(5_000);
 
             { // for 'Hello, World!'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of "Hello, World!") {
                     cmd.write(char);
@@ -730,7 +730,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for '你好，世界！'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of "你好，世界！") {
                     cmd.write(char);
@@ -756,7 +756,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for emojis
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
@@ -786,7 +786,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             this.timeout(5_000);
 
             { // for 'Hello, World!'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of "Hello, World!") {
                     cmd.write(char);
@@ -812,7 +812,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for '你好，世界！'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of "你好，世界！") {
                     char && cmd.write(char);
@@ -838,7 +838,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for emojis
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt.ts");
 
                 for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
@@ -864,7 +864,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for password 'Hello, World!'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt-password.ts");
 
                 for (const char of "Hello, World!") {
                     cmd.write(char);
@@ -890,7 +890,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for password '你好，世界！'
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt-password.ts");
 
                 for (const char of "你好，世界！") {
                     cmd.write(char);
@@ -916,7 +916,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             }
 
             { // for password emojis
-                const { cmd, output } = await runInSimulator("examples/dialog/prompt-password.ts");
+                const { cmd, output } = await runInEmulator("examples/dialog/prompt-password.ts");
 
                 for (const char of ["👋", "🌍", "🚀", "♥️", "♣"]) {
                     cmd.write(char);
@@ -944,7 +944,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
     describe("progress", () => {
         it("default", async function () {
             this.timeout(10_000);
-            const { output } = await runInSimulator("examples/dialog/progress.ts");
+            const { output } = await runInEmulator("examples/dialog/progress.ts");
             const outputs = await output;
 
             deepStrictEqual(outputs, [
@@ -982,7 +982,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
 
         it("update", async function () {
             this.timeout(10_000);
-            const { output } = await runInSimulator("examples/dialog/progress-update.ts");
+            const { output } = await runInEmulator("examples/dialog/progress-update.ts");
             const outputs = await output;
 
             deepStrictEqual(outputs, [
@@ -1001,7 +1001,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
 
         it("cancel with fallback", async function () {
             this.timeout(10_000);
-            const { cmd, output } = await runInSimulator("examples/dialog/progress-cancel-fallback.ts");
+            const { cmd, output } = await runInEmulator("examples/dialog/progress-cancel-fallback.ts");
 
             await sleep(2500);
             cmd.write(String(ESC));
@@ -1030,7 +1030,7 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
 
         it("cancel with exception", async function () {
             this.timeout(10_000);
-            const { cmd, output } = await runInSimulator("examples/dialog/progress-cancel-throw.ts");
+            const { cmd, output } = await runInEmulator("examples/dialog/progress-cancel-throw.ts");
 
             await sleep(2500);
             cmd.write(String(ESC));

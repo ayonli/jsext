@@ -1,5 +1,5 @@
 /**
- * Utility functions to retrieve runtime information or modify runtime behaviors.
+ * Utility functions to retrieve runtime information or configure runtime behaviors.
  * @module
  * @experimental
  */
@@ -19,7 +19,7 @@ import { createCloseEvent } from "./event.ts";
 declare const Bun: any;
 declare function WorkerLocation(): void;
 
-export type WellknownRuntimes = "node"
+export type WellknownRuntime = "node"
     | "deno"
     | "bun"
     | "workerd"
@@ -27,7 +27,11 @@ export type WellknownRuntimes = "node"
     | "chrome"
     | "firefox"
     | "safari";
-export const WellknownRuntimes: WellknownRuntimes[] = [
+
+/**
+ * @deprecated
+ */
+export const WellknownRuntimes: WellknownRuntime[] = [
     "node",
     "deno",
     "bun",
@@ -43,9 +47,9 @@ export const WellknownRuntimes: WellknownRuntimes[] = [
  */
 export interface RuntimeInfo {
     /**
-     * The representation term of the runtime.
+     * A string identifying the runtime.
      */
-    identity: WellknownRuntimes | "unknown";
+    identity: WellknownRuntime | "unknown";
     /**
      * The version of the runtime. This property is `undefined` when `type` is
      * `unknown`.
@@ -221,7 +225,7 @@ export default function runtime(): RuntimeInfo {
     };
 }
 
-export type WellknownPlatforms = "darwin"
+export type WellknownPlatform = "darwin"
     | "windows"
     | "linux"
     | "android"
@@ -230,7 +234,11 @@ export type WellknownPlatforms = "darwin"
     | "netbsd"
     | "aix"
     | "solaris";
-export const WellknownPlatforms: WellknownPlatforms[] = [
+
+/**
+ * @deprecated
+ */
+export const WellknownPlatforms: WellknownPlatform[] = [
     "darwin",
     "windows",
     "linux",
@@ -246,10 +254,10 @@ export const WellknownPlatforms: WellknownPlatforms[] = [
  * Returns a string identifying the operating system platform in which the
  * program is running.
  */
-export function platform(): WellknownPlatforms | "unknown" {
+export function platform(): WellknownPlatform | "unknown" {
     if (isDeno) {
         if ((WellknownPlatforms as string[]).includes(Deno.build.os)) {
-            return Deno.build.os as WellknownPlatforms;
+            return Deno.build.os as WellknownPlatform;
         }
     } else if (isNodeLike) {
         if (process.platform === "win32") {
@@ -257,7 +265,7 @@ export function platform(): WellknownPlatforms | "unknown" {
         } else if (process.platform === "sunos") {
             return "solaris";
         } else if ((WellknownPlatforms as string[]).includes(process.platform)) {
-            return process.platform as WellknownPlatforms;
+            return process.platform as WellknownPlatform;
         }
     } else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
         if (navigator.userAgent.includes("Macintosh")) {
@@ -432,10 +440,7 @@ export function isREPL(): boolean {
 export function refTimer(timer: NodeJS.Timeout | number): void {
     if (typeof timer === "object" && typeof timer.ref === "function") {
         timer.ref();
-    } else if (typeof timer === "number"
-        && typeof Deno === "object"
-        && typeof Deno.refTimer === "function"
-    ) {
+    } else if (typeof timer === "number" && isDeno) {
         Deno.refTimer(timer);
     }
 }
@@ -460,10 +465,7 @@ export function refTimer(timer: NodeJS.Timeout | number): void {
 export function unrefTimer(timer: NodeJS.Timeout | number): void {
     if (typeof timer === "object" && typeof timer.unref === "function") {
         timer.unref();
-    } else if (typeof timer === "number"
-        && typeof Deno === "object"
-        && typeof Deno.unrefTimer === "function"
-    ) {
+    } else if (typeof timer === "number" && isDeno) {
         Deno.unrefTimer(timer);
     }
 }
@@ -650,6 +652,8 @@ export function addUnhandledRejectionListener(fn: (event: PromiseRejectionEvent)
         rejectionListeners.push(fn);
 
         addEventListener("unhandledrejection", (event) => {
+            // The `PromiseRejectionEvent` in Cloudflare Workers is incomplete,
+            // so we need to create a workaround to make it work.
             event = fireEvent(event.reason, event.promise);
 
             if (!event.defaultPrevented) {

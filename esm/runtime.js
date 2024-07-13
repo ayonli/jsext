@@ -2,9 +2,12 @@ import { isDeno, isMainThread, isBun, isNode, isSharedWorker, isServiceWorker, i
 import { createCloseEvent } from './event.js';
 
 /**
- * Utility functions to retrieve runtime information or modify runtime behaviors.
+ * Utility functions to retrieve runtime information or configure runtime behaviors.
  * @module
  * @experimental
+ */
+/**
+ * @deprecated
  */
 const WellknownRuntimes = [
     "node",
@@ -172,6 +175,9 @@ function runtime() {
         worker,
     };
 }
+/**
+ * @deprecated
+ */
 const WellknownPlatforms = [
     "darwin",
     "windows",
@@ -379,9 +385,7 @@ function refTimer(timer) {
     if (typeof timer === "object" && typeof timer.ref === "function") {
         timer.ref();
     }
-    else if (typeof timer === "number"
-        && typeof Deno === "object"
-        && typeof Deno.refTimer === "function") {
+    else if (typeof timer === "number" && isDeno) {
         Deno.refTimer(timer);
     }
 }
@@ -406,9 +410,7 @@ function unrefTimer(timer) {
     if (typeof timer === "object" && typeof timer.unref === "function") {
         timer.unref();
     }
-    else if (typeof timer === "number"
-        && typeof Deno === "object"
-        && typeof Deno.unrefTimer === "function") {
+    else if (typeof timer === "number" && isDeno) {
         Deno.unrefTimer(timer);
     }
 }
@@ -577,6 +579,8 @@ function addUnhandledRejectionListener(fn) {
         }
         rejectionListeners.push(fn);
         addEventListener("unhandledrejection", (event) => {
+            // The `PromiseRejectionEvent` in Cloudflare Workers is incomplete,
+            // so we need to create a workaround to make it work.
             event = fireEvent(event.reason, event.promise);
             if (!event.defaultPrevented) {
                 console.error("Uncaught (in promise)", event.reason);

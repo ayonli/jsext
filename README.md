@@ -14,8 +14,8 @@ it's Node.js, Deno, Bun, Cloudflare Workers, browsers, Windows, macOS or Linux.
 - [x] File system APIs for both server and browser environments.
 - [x] Open dialogs in both CLI and web applications.
 - [x] Serve HTTP requests, SSE and WebSockets for all server runtimes.
-- [x] Manipulate file system paths and URLs in the same way.
-- [x] Handle byte arrays and readable streams effortlessly.
+- [x] Manipulate file system paths and URLs in the same fashion.
+- [x] Process byte arrays and readable streams effortlessly.
 - [x] Create, extract and preview archives in all runtimes.
 - [x] And many more...
 
@@ -49,10 +49,10 @@ browser.
 </script>
 ```
 
-### Note for Cloudflare Workers
+### Note for Cloudflare Workers and Fastly Compute
 
-For applications run in Cloudflare Workers, install the NPM version of this
-package instead of the JSR version.
+For applications run in Cloudflare Workers and Fastly Compute, install the NPM
+version of this package instead of the JSR version.
 
 ## Language-enhancing Functions
 
@@ -142,8 +142,8 @@ categories:
   - Historically, there was a `read` module and a `realAll` module, but they
     have been merged into this module as the `toAsyncIterable` function and the
     `readAsArray` function.
-- [runtime](https://jsr.io/@ayonli/jsext/doc/runtime/~) Utility functions to
-  retrieve runtime information or modify runtime behaviors.
+- [runtime](https://jsr.io/@ayonli/jsext/doc/runtime/~) (Experimental) Utility
+  functions to retrieve runtime information or configure runtime behaviors.
 - [sse](https://jsr.io/@ayonli/jsext/doc/sse/~) (Experimental) Tools for
   processing Server-sent Events requests and handling message events.
 - [string](https://jsr.io/@ayonli/jsext/doc/string/~) Functions for dealing with
