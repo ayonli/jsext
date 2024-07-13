@@ -344,11 +344,6 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * console.log(arr.length); // 0
  * ```
  * 
- * **Use with Vite:**
- * 
- * In order to use parallel threads with Vite, we need to adjust a little bit,
- * please check [this document](https://github.com/ayonli/jsext/blob/main/parallel/README.md#use-with-vite).
- * 
  * **Compatibility List:**
  * 
  * The following environments are guaranteed to work:
@@ -357,6 +352,19 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * - [x] Deno v1.0+
  * - [x] Bun v1.0+
  * - [x] Modern browsers
+ * 
+ * **Use with Vite:**
+ * 
+ * In order to use parallel threads with Vite, we need to adjust a little bit,
+ * please check [this document](https://github.com/ayonli/jsext/blob/main/parallel/README.md#use-with-vite).
+ * 
+ * **Warn about TSX (the runtime):**
+ * 
+ * For users who use `tsx` to run TypeScript directly in Node.js, the runtime is
+ * unable to use TypeScript directly in worker threads at the moment, so this
+ * function won't work in such a case.
+ * See [this issue](https://github.com/privatenumber/tsx/issues/354) for more
+ * information. 
  */
 function parallel<M extends { [x: string]: any; }>(
     module: string | (() => Promise<M>)

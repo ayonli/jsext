@@ -40,7 +40,7 @@ export function sanitizeModuleId(id: string | (() => Promise<any>), strict = fal
                 _id = _id.slice(0, -4) + ".mjs";
             } else if (_id.endsWith(".cts")) { // rare, but should support
                 _id = _id.slice(0, -4) + ".cjs";
-            } else if (_id.endsWith(".tsx")) { // rare, but should support
+            } else if (_id.endsWith(".tsx") || _id.endsWith(".jsx")) { // rare, but should support
                 _id = _id.slice(0, -4) + ".js";
             }
         }
