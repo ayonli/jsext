@@ -221,7 +221,10 @@ describe("runtime - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
 
         it("in REPL", async function () {
             if (useBun) {
-                // Node-pty isn't able to correctly emulate the Bun REPL,
+                // Node-pty isn't able to correctly emulate the Bun REPL.
+                this.skip();
+            } else if (useDeno && platform() === "linux") {
+                // Node-pty isn't able to correctly emulate the Deno REPL on Linux.
                 this.skip();
             }
 
