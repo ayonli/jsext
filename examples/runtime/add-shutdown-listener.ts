@@ -25,7 +25,7 @@ addShutdownListener(async () => {
     clearTimeout(timer2);
 });
 
-if (args.includes("--no-exit")) {
+if (args.includes("--prevent-exit")) {
     addShutdownListener(event => {
         event.preventDefault();
 

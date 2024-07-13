@@ -113,7 +113,7 @@ describe("runtime - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
         it("prevent exit", async function () {
             this.timeout(5_000);
 
-            const { cmd, result } = await runInEmulator(filename, ["--no-exit"]);
+            const { cmd, result } = await runInEmulator(filename, ["--prevent-exit"]);
 
             cmd.write(String(CTRL_C));
             const { code, outputs } = await result;
