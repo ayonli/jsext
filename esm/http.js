@@ -90,12 +90,23 @@ async function etag(data) {
 /**
  * Returns a random port number that is available for listening.
  *
- * NOTE: This function is not available in Cloudflare Workers and the browser.
+ * NOTE: This function is not available in the browser and worker runtimes such
+ * as Cloudflare Workers.
+ *
+ * @param prefer The preferred port number to return if it is available,
+ * otherwise a random port is returned.
+ *
+ * @param hostname The hostname to bind the port to. Default is "0.0.0.0", only
+ * used when `prefer` is set and not `0`.
  */
-async function randomPort(prefer = undefined) {
+async function randomPort(prefer = undefined, hostname = undefined) {
+    hostname || (hostname = "0.0.0.0");
     if (isDeno) {
         try {
-            const listener = Deno.listen({ port: prefer !== null && prefer !== void 0 ? prefer : 0 });
+            const listener = Deno.listen({
+                hostname,
+                port: prefer !== null && prefer !== void 0 ? prefer : 0,
+            });
             const { port } = listener.addr;
             listener.close();
             return Promise.resolve(port);
@@ -112,7 +123,7 @@ async function randomPort(prefer = undefined) {
     else if (isBun) {
         try {
             const listener = Bun.listen({
-                hostname: "0.0.0.0",
+                hostname,
                 port: prefer !== null && prefer !== void 0 ? prefer : 0,
                 socket: {
                     data: () => { },
@@ -139,7 +150,7 @@ async function randomPort(prefer = undefined) {
             // Instead, we use the `connect` method to check if the port can be
             // reached, if so, the port is open and we don't use it.
             const isOpen = await new Promise((resolve, reject) => {
-                const conn = connect(prefer);
+                const conn = connect(prefer, hostname === "0.0.0.0" ? "localhost" : hostname);
                 conn.once("connect", () => {
                     conn.end();
                     resolve(true);
@@ -453,7 +464,7 @@ function serve(options) {
         let server = null;
         if (isDeno) {
             if (type === "classic") {
-                port || (port = await randomPort(8000));
+                port || (port = await randomPort(8000, hostname));
                 controller = new AbortController();
                 const task = asyncTask();
                 server = Deno.serve({
@@ -489,7 +500,7 @@ function serve(options) {
         else if (isBun) {
             if (type === "classic") {
                 const tls = key && cert ? { key, cert } : undefined;
-                port || (port = await randomPort(8000));
+                port || (port = await randomPort(8000, hostname));
                 server = Bun.serve({
                     hostname,
                     port,
@@ -533,7 +544,7 @@ function serve(options) {
                 const { createServer } = await import('node:http');
                 server = createServer(reqListener);
             }
-            port || (port = await randomPort(8000));
+            port || (port = await randomPort(8000, hostname));
             await new Promise((resolve) => {
                 if (hostname && hostname !== "0.0.0.0") {
                     server.listen(port, hostname, resolve);

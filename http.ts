@@ -112,12 +112,26 @@ export async function etag(data: string | Uint8Array | FileInfo): Promise<string
 /**
  * Returns a random port number that is available for listening.
  * 
- * NOTE: This function is not available in Cloudflare Workers and the browser.
+ * NOTE: This function is not available in the browser and worker runtimes such
+ * as Cloudflare Workers.
+ * 
+ * @param prefer The preferred port number to return if it is available,
+ * otherwise a random port is returned.
+ * 
+ * @param hostname The hostname to bind the port to. Default is "0.0.0.0", only
+ * used when `prefer` is set and not `0`.
  */
-export async function randomPort(prefer: number | undefined = undefined): Promise<number> {
+export async function randomPort(
+    prefer: number | undefined = undefined,
+    hostname: string | undefined = undefined
+): Promise<number> {
+    hostname ||= "0.0.0.0";
     if (isDeno) {
         try {
-            const listener = Deno.listen({ port: prefer ?? 0 });
+            const listener = Deno.listen({
+                hostname,
+                port: prefer ?? 0,
+            });
             const { port } = listener.addr as Deno.NetAddr;
             listener.close();
             return Promise.resolve(port);
@@ -131,7 +145,7 @@ export async function randomPort(prefer: number | undefined = undefined): Promis
     } else if (isBun) {
         try {
             const listener = Bun.listen({
-                hostname: "0.0.0.0",
+                hostname,
                 port: prefer ?? 0,
                 socket: {
                     data: () => { },
@@ -156,7 +170,7 @@ export async function randomPort(prefer: number | undefined = undefined): Promis
             // Instead, we use the `connect` method to check if the port can be
             // reached, if so, the port is open and we don't use it.
             const isOpen = await new Promise<boolean>((resolve, reject) => {
-                const conn = connect(prefer);
+                const conn = connect(prefer, hostname === "0.0.0.0" ? "localhost" : hostname);
                 conn.once("connect", () => {
                     conn.end();
                     resolve(true);
@@ -488,7 +502,7 @@ export function serve(options: ServeOptions): Server {
 
         if (isDeno) {
             if (type === "classic") {
-                port ||= await randomPort(8000);
+                port ||= await randomPort(8000, hostname);
                 controller = new AbortController();
                 const task = asyncTask<void>();
                 server = Deno.serve({
@@ -522,7 +536,7 @@ export function serve(options: ServeOptions): Server {
         } else if (isBun) {
             if (type === "classic") {
                 const tls = key && cert ? { key, cert } : undefined;
-                port ||= await randomPort(8000);
+                port ||= await randomPort(8000, hostname);
                 server = Bun.serve({
                     hostname,
                     port,
@@ -566,7 +580,7 @@ export function serve(options: ServeOptions): Server {
                 server = createServer(reqListener);
             }
 
-            port ||= await randomPort(8000);
+            port ||= await randomPort(8000, hostname);
             await new Promise<void>((resolve) => {
                 if (hostname && hostname !== "0.0.0.0") {
                     (server as HttpServer | Http2SecureServer).listen(port, hostname, resolve);
