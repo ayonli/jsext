@@ -65,6 +65,7 @@ const _response = Symbol.for("response");
 const _writer = Symbol.for("writer");
 const _reader = Symbol.for("reader");
 const _reconnectionTime = Symbol.for("reconnectionTime");
+const _readyState = Symbol.for("readyState");
 
 const encoder = new TextEncoder();
 
@@ -672,3 +673,279 @@ export class EventConsumer extends EventTarget {
  * @deprecated Use {@link EventConsumer} instead.
  */
 export const EventClient = EventConsumer;
+
+/**
+ * This is a polyfill for the `EventSource` API, which can be used in
+ * environments that do not support the native API, such as Node.js.
+ * 
+ * @example
+ * ```ts
+ * import { EventSource } from "@ayonli/jsext/sse";
+ * 
+ * const events = new EventSource("http://localhost:3000");
+ * 
+ * events.addEventListener("open", () => {
+ *     console.log("The connection is open.");
+ * });
+ * 
+ * events.addEventListener("error", (ev) => {
+ *     console.error("An error occurred:", ev.error);
+ * });
+ * 
+ * events.addEventListener("message", (ev) => {
+ *     console.log("Received message from the server:", ev.data);
+ * });
+ * 
+ * events.addEventListener("my-event", (ev) => {
+ *     console.log("Received custom event from the server:", ev.data);
+ * });
+ * ```
+ */
+export class EventSource extends EventTarget {
+    private [_reader]: ReadableStreamDefaultReader<Uint8Array> | null = null;
+    private [_lastEventId]: string = "";
+    private [_reconnectionTime]: number = 0;
+    private [_readyState]: number = EventSource.CONNECTING;
+    readonly url: string;
+    readonly withCredentials: boolean;
+
+    readonly CONNECTING = EventSource.CONNECTING;
+    readonly OPEN = EventSource.OPEN;
+    readonly CLOSED = EventSource.CLOSED;
+
+    static CONNECTING = 0 as const;
+    static OPEN = 1 as const;
+    static CLOSED = 2 as const;
+
+    onerror: ((this: EventSource, ev: Event) => any) | null = null;
+    onmessage: ((this: EventSource, ev: MessageEvent<any>) => any) | null = null;
+    onopen: ((this: EventSource, ev: Event) => any) | null = null;
+
+    constructor(url: string, options: { withCredentials?: boolean; } = {}) {
+        super();
+        this.url = new URL(url, typeof location === "object" ? location.origin : "").href;
+        this.withCredentials = options?.withCredentials ?? false;
+        this.connect().catch(() => { });
+    }
+
+    private async connect() {
+        if (this[_readyState] === this.CLOSED) {
+            return;
+        }
+
+        this[_readyState] = this.CONNECTING;
+        const headers = new Headers(
+            [["Accept", "text/event-stream"]],
+        );
+
+        if (this[_lastEventId]) {
+            headers.set("Last-Event-ID", this[_lastEventId]);
+        } new Request(this.url, {});
+
+        const res = await fetch(this.url, {
+            headers,
+            mode: this.withCredentials ? "cors" : "same-origin",
+            cache: "no-cache",
+        });
+
+        if (res.type === "error") {
+            if (this[_readyState] !== this.CLOSED) {
+                this[_readyState] = this.CLOSED;
+                const event = createErrorEvent("error", {
+                    error: new Error("The request failed."),
+                });
+                this.onerror?.call(this, event);
+                this.dispatchEvent(event);
+            } else {
+                setTimeout(() => {
+                    this.connect().catch(() => { });
+                }, this[_reconnectionTime]);
+            }
+            return;
+        } else if (res.status === 204) {
+            this[_readyState] = this.CLOSED;
+            return;
+        } else if (res.status !== 200) {
+            this[_readyState] = this.CLOSED;
+            const event = createErrorEvent("error", {
+                error: new Error(`The server responded with status ${res.status}.`),
+            });
+            this.onerror?.call(this, event);
+            this.dispatchEvent(event);
+            return;
+        } else if (!res.headers.get("Content-Type")?.startsWith("text/event-stream")) {
+            const event = createErrorEvent("error", {
+                error: new Error("The response is not an event stream."),
+            });
+            this.onerror?.call(this, event);
+            this.dispatchEvent(event);
+            return;
+        } else if (!res.body) {
+            const event = createErrorEvent("error", {
+                error: new Error("The response does not have a body."),
+            });
+            this.onerror?.call(this, event);
+            this.dispatchEvent(event);
+            return;
+        }
+
+        this[_readyState] = this.OPEN;
+        this[_reader] = res.body!.getReader();
+        const event = new Event("open");
+
+        this.onopen?.call(this, event);
+        this.dispatchEvent(event);
+        this.readMessages(new URL(res.url || this.url).origin);
+    }
+
+    private async readMessages(origin: string): Promise<void> {
+        const reader = this[_reader];
+        const decoder = new TextDecoder();
+        let buffer: string = "";
+
+        try {
+            while (true) {
+                const { done, value } = await reader!.read();
+
+                if (done) {
+                    if (this[_readyState] !== this.CLOSED) {
+                        const event = createErrorEvent("error", {
+                            error: new Error("The connection is closed."),
+                        });
+                        this.onerror?.call(this, event);
+                        this.dispatchEvent(event);
+
+                        setTimeout(() => {
+                            this.connect().catch(() => { });
+                        }, this[_reconnectionTime]);
+                    }
+                    break;
+                }
+
+                buffer += decoder.decode(value);
+
+                const chunks = buffer.split(/\r\n\r\n|\n\n/);
+
+                if (chunks.length === 1) {
+                    continue;
+                } else {
+                    buffer = chunks.pop()!;
+                }
+
+                for (const chunk of chunks) {
+                    const lines = chunk.split(/\r\n|\n/);
+                    let data = "";
+                    let type = "message";
+                    let isMessage = false;
+
+                    for (const line of lines) {
+                        if (line.startsWith("data:") || line === "data") {
+                            let value = line.slice(5);
+
+                            if (value[0] === " ") {
+                                value = value.slice(1);
+                            }
+
+                            if (data) {
+                                data += "\n" + value;
+                            } else {
+                                data = value;
+                            }
+
+                            isMessage = true;
+                        } else if (line.startsWith("event:") || line === "event") {
+                            type = line.slice(6).trim();
+                            isMessage = true;
+                        } else if (line.startsWith("id:") || line === "id") {
+                            this[_lastEventId] = line.slice(3).trim();
+                            isMessage = true;
+                        } else if (line.startsWith("retry:")) {
+                            const time = parseInt(line.slice(6).trim());
+                            if (!isNaN(time) && time >= 0) {
+                                this[_reconnectionTime] = time;
+                                isMessage = true;
+                            }
+                        }
+                    }
+
+                    if (isMessage) {
+                        const event = new MessageEvent(type || "message", {
+                            lastEventId: this[_lastEventId],
+                            data,
+                            origin,
+                        });
+                        this.onmessage?.call(this, event);
+                        this.dispatchEvent(event);
+                    }
+                }
+            }
+        } catch (error) {
+            if (this[_readyState] !== this.CLOSED) {
+                const event = createErrorEvent("error", { error });
+                this.onerror?.call(this, event);
+                this.dispatchEvent(event);
+            }
+        }
+    }
+
+    get readyState(): number {
+        return this[_readyState];
+    }
+
+    close(): void {
+        this[_readyState] = this.CLOSED;
+        this[_reader]?.cancel().catch(() => { });
+    }
+
+    /**
+     * Adds an event listener that will be called when the connection is open.
+     */
+    override addEventListener(
+        type: "open",
+        listener: (this: EventSource, ev: CloseEvent) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    /**
+     * Adds an event listener that will be called when the connection is
+     * interrupted.
+     */
+    override addEventListener(
+        type: "error",
+        listener: (this: EventSource, ev: ErrorEvent) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    /**
+     * Adds an event listener that will be called when a message with the
+     * default event type is received.
+     */
+    override addEventListener(
+        type: "message",
+        listener: (this: EventSource, ev: MessageEvent<string>) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    /**
+     * Adds an event listener that will be called when a message with a custom
+     * event type is received.
+     */
+    override addEventListener(
+        type: string,
+        listener: (this: EventSource, event: MessageEvent<string>) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    override addEventListener(
+        type: string,
+        listener: (this: EventSource, event: Event) => any,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    override addEventListener(
+        event: string,
+        listener: any,
+        options?: boolean | AddEventListenerOptions
+    ): void {
+        return super.addEventListener(
+            event,
+            listener as EventListenerOrEventListenerObject,
+            options
+        );
+    }
+}
