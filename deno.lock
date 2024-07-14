@@ -7,12 +7,10 @@
       "npm:@rollup/plugin-node-resolve@^15.2.1": "npm:@rollup/plugin-node-resolve@15.2.3_rollup@3.29.4",
       "npm:@rollup/plugin-terser@^0.4.3": "npm:@rollup/plugin-terser@0.4.4_rollup@3.29.4",
       "npm:@rollup/plugin-typescript@^11.1.3": "npm:@rollup/plugin-typescript@11.1.6_rollup@3.29.4_tslib@2.6.2_typescript@5.4.3",
-      "npm:@types/eventsource@^1.1.11": "npm:@types/eventsource@1.1.11",
       "npm:@types/express@^4.17.21": "npm:@types/express@4.17.21",
       "npm:@types/mocha@^10.0.1": "npm:@types/mocha@10.0.6",
       "npm:@types/node@^20.6.0": "npm:@types/node@20.10.7",
       "npm:@types/ws@^8.5.10": "npm:@types/ws@8.5.10",
-      "npm:eventsource@1.1": "npm:eventsource@1.1.2",
       "npm:express@^4.19.2": "npm:express@4.19.2",
       "npm:fast-string-truncated-width": "npm:fast-string-truncated-width@1.1.0",
       "npm:glob@^10.3.10": "npm:glob@10.3.10",
@@ -271,10 +269,6 @@
       },
       "@types/estree@1.0.5": {
         "integrity": "sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==",
-        "dependencies": {}
-      },
-      "@types/eventsource@1.1.11": {
-        "integrity": "sha512-L7wLDZlWm5mROzv87W0ofIYeQP5K2UhoFnnUyEWLKM6UBb0ZNRgAqp98qE5DkgfBXdWfc2kYmw9KZm4NLjRbsw==",
         "dependencies": {}
       },
       "@types/express-serve-static-core@4.19.3": {
@@ -721,10 +715,6 @@
       },
       "etag@1.8.1": {
         "integrity": "sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==",
-        "dependencies": {}
-      },
-      "eventsource@1.1.2": {
-        "integrity": "sha512-xAH3zWhgO2/3KIniEKYPr8plNSzlGINOUqYj0m0u7AB81iRw8b/3E73W6AuU+6klLbaSFmZnaETQ2lXPfAydrA==",
         "dependencies": {}
       },
       "express@4.19.2": {
@@ -1853,12 +1843,10 @@
         "npm:@rollup/plugin-node-resolve@^15.2.1",
         "npm:@rollup/plugin-terser@^0.4.3",
         "npm:@rollup/plugin-typescript@^11.1.3",
-        "npm:@types/eventsource@^1.1.11",
         "npm:@types/express@^4.17.21",
         "npm:@types/mocha@^10.0.1",
         "npm:@types/node@^20.6.0",
         "npm:@types/ws@^8.5.10",
-        "npm:eventsource@1.1",
         "npm:express@^4.19.2",
         "npm:glob@^10.3.10",
         "npm:global-jsdom@^24.0.0",

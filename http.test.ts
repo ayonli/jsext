@@ -1106,7 +1106,6 @@ describe("http", () => {
                 });
             });
 
-            client.close();
             strictEqual(text, "Hello, World!");
         }));
 

@@ -351,7 +351,7 @@ describe("reader", () => {
 
             const dEventSource = typeof EventSource === "function"
                 ? EventSource
-                : (await import("eventsource")).default;
+                : (await import("./sse.ts")).EventSource;
             const es1 = new dEventSource(`http://localhost:${port}/message`) as EventSource;
             const messages: string[] = [];
 
@@ -583,7 +583,7 @@ describe("reader", () => {
 
             const dEventSource = typeof EventSource === "function"
                 ? EventSource
-                : (await import("eventsource")).default;
+                : (await import("./sse.ts")).EventSource;
             const es1 = new dEventSource(`http://localhost:${port}/message`) as EventSource;
             const messages: string[] = [];
 

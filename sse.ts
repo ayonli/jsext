@@ -1,9 +1,10 @@
 /**
  * This module provides tools for working with server-sent events.
  * 
- * The {@link EventEndpoint} class is used to handle SSE requests on the server
- * and send messages to the client, while the {@link EventConsumer} class is
- * used to read and process messages sent by the server.
+ * The {@link EventEndpoint} is used to handle SSE requests on the server
+ * and send messages to the client, while the {@link EventSource} and the
+ * {@link EventConsumer} are used to read and process messages sent by the
+ * server.
  * 
  * Despite their names, these classes can be used in both the browser/client
  * and the server environments.
@@ -61,11 +62,18 @@ if (typeof MessageEvent !== "function" || runtime().identity === "workerd") {
 const SSEMarkClosed = new Set<string>();
 const _lastEventId = Symbol.for("lastEventId");
 const _closed = Symbol.for("closed");
+const _request = Symbol.for("request");
 const _response = Symbol.for("response");
 const _writer = Symbol.for("writer");
 const _reader = Symbol.for("reader");
 const _reconnectionTime = Symbol.for("reconnectionTime");
 const _readyState = Symbol.for("readyState");
+const _controller = Symbol.for("_controller");
+const _timer = Symbol.for("timer");
+const _retry = Symbol.for("retry");
+const _onopen = Symbol.for("onopen");
+const _onerror = Symbol.for("onerror");
+const _onmessage = Symbol.for("onmessage");
 
 const encoder = new TextEncoder();
 
@@ -427,14 +435,343 @@ export const SSE = EventEndpoint;
 export type SSEOptions = EventEndpointOptions;
 
 /**
- * An SSE (server-sent events) client that consumes and processes event messages
- * sent by the server. Unlike the `EventSource` API, which takes a URL and only
- * supports GET request, this implementation accepts a `Response` object and
- * reads the messages from its body, the response can be generated from any type
- * of request, usually returned from the `fetch` function.
+ * This is an implementation of the
+ * [EventSource](https://developer.mozilla.org/en-US/docs/Web/API/EventSource)
+ * API that can be used in environments that do not have native support, such as
+ * Node.js.
  * 
- * This API doesn't support reconnection, however, we can add a event listener
- * to the close event and reestablish the connection manually.
+ * @example
+ * ```ts
+ * import { EventSource } from "@ayonli/jsext/sse";
+ * 
+ * const events = new EventSource("http://localhost:3000");
+ * 
+ * events.addEventListener("open", () => {
+ *     console.log("The connection is open.");
+ * });
+ * 
+ * events.addEventListener("error", (ev) => {
+ *     console.error("An error occurred:", ev.error);
+ * });
+ * 
+ * events.addEventListener("message", (ev) => {
+ *     console.log("Received message from the server:", ev.data);
+ * });
+ * 
+ * events.addEventListener("my-event", (ev) => {
+ *     console.log("Received custom event from the server:", ev.data);
+ * });
+ * ```
+ */
+export class EventSource extends EventTarget {
+    private [_controller]: AbortController = new AbortController();
+    private [_request]: Request | null = null;
+    private [_reader]: ReadableStreamDefaultReader<Uint8Array> | null = null;
+    private [_lastEventId]: string = "";
+    private [_reconnectionTime]: number = 0;
+    private [_readyState]: number = EventSource.CONNECTING;
+    private [_timer]: number | NodeJS.Timeout | null = null;
+    private [_retry]: number = 0;
+    private [_onopen]: ((this: EventSource, ev: Event) => any) | null = null;
+    private [_onerror]: ((this: EventSource, ev: Event) => any) | null = null;
+    private [_onmessage]: ((this: EventSource, ev: MessageEvent<string>) => any) | null = null;
+    readonly url: string;
+    readonly withCredentials: boolean;
+
+    readonly CONNECTING = EventSource.CONNECTING;
+    readonly OPEN = EventSource.OPEN;
+    readonly CLOSED = EventSource.CLOSED;
+
+    static CONNECTING = 0 as const;
+    static OPEN = 1 as const;
+    static CLOSED = 2 as const;
+
+    constructor(url: string, options: EventSourceInit = {}) {
+        super();
+        this.url = new URL(url, typeof location === "object" ? location.origin : undefined).href;
+        this.withCredentials = options?.withCredentials ?? false;
+        this.connect().catch(() => { });
+    }
+
+    private async connect() {
+        if (this[_readyState] === this.CLOSED) {
+            return;
+        }
+
+        const connectedBefore = this[_readyState] === this.OPEN;
+        this[_readyState] = this.CONNECTING;
+        const headers = new Headers(
+            [["Accept", "text/event-stream"]],
+        );
+
+        if (this[_lastEventId]) {
+            headers.set("Last-Event-ID", this[_lastEventId]);
+        }
+
+        this[_request] = new Request(this.url, {
+            headers,
+            mode: this.withCredentials ? "cors" : "same-origin",
+            credentials: this.withCredentials ? "include" : "same-origin",
+            cache: "no-store",
+            signal: this[_controller].signal,
+        });
+
+        const res = await fetch(this[_request]);
+
+        if (this[_readyState] === this.CLOSED) { // The connection is aborted
+            return;
+        }
+
+        if (res.type === "error") {
+            if (!connectedBefore) { // The first attempt, fail the connection
+                this[_readyState] = this.CLOSED;
+                const event = createErrorEvent("error", {
+                    error: new Error(`Failed to fetch '${this.url}'`),
+                });
+                this.onerror?.call(this, event);
+                this.dispatchEvent(event);
+            } else { // During reconnection, try again
+                this.tryReconnect();
+            }
+            return;
+        } else if (res.status === 204) { // No more data, close the connection
+            this[_readyState] = this.CLOSED;
+            return;
+        } else if (res.status !== 200) {
+            this[_readyState] = this.CLOSED;
+            const event = createErrorEvent("error", {
+                error: new Error(`The server responded with status ${res.status}.`),
+            });
+            this.onerror?.call(this, event);
+            this.dispatchEvent(event);
+            return;
+        } else if (!res.headers.get("Content-Type")?.startsWith("text/event-stream")) {
+            const event = createErrorEvent("error", {
+                error: new Error("The response is not an event stream."),
+            });
+            this.onerror?.call(this, event);
+            this.dispatchEvent(event);
+            return;
+        } else if (!res.body) {
+            const event = createErrorEvent("error", {
+                error: new Error("The response does not have a body."),
+            });
+            this.onerror?.call(this, event);
+            this.dispatchEvent(event);
+            return;
+        }
+
+        this[_readyState] = this.OPEN;
+        this[_reader] = res.body!.getReader();
+
+        if (!connectedBefore) {
+            const event = new Event("open");
+            this.onopen?.call(this, event);
+            this.dispatchEvent(event);
+        }
+
+        this.readMessages(new URL(res.url || this.url).origin).catch(() => { });
+    }
+
+    private async readMessages(origin: string): Promise<void> {
+        const reader = this[_reader]!;
+        const decoder = new TextDecoder();
+        let buffer: string = "";
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+
+                if (done) {
+                    if (this[_readyState] !== this.CLOSED) {
+                        const event = createErrorEvent("error", {
+                            error: new Error("The connection is interrupted."),
+                        });
+                        this.onerror?.call(this, event);
+                        this.dispatchEvent(event);
+                        this.tryReconnect();
+                    }
+                    break;
+                }
+
+                buffer += decoder.decode(value);
+
+                const chunks = buffer.split(/\r\n\r\n|\n\n/);
+
+                if (chunks.length === 1) {
+                    continue;
+                } else {
+                    buffer = chunks.pop()!;
+                }
+
+                for (const chunk of chunks) {
+                    const lines = chunk.split(/\r\n|\n/);
+                    let data = "";
+                    let type = "message";
+                    let isMessage = false;
+
+                    for (const line of lines) {
+                        if (line.startsWith("data:") || line === "data") {
+                            let value = line.slice(5);
+
+                            if (value[0] === " ") {
+                                value = value.slice(1);
+                            }
+
+                            if (data) {
+                                data += "\n" + value;
+                            } else {
+                                data = value;
+                            }
+
+                            isMessage = true;
+                        } else if (line.startsWith("event:") || line === "event") {
+                            type = line.slice(6).trim();
+                            isMessage = true;
+                        } else if (line.startsWith("id:") || line === "id") {
+                            this[_lastEventId] = line.slice(3).trim();
+                            isMessage = true;
+                        } else if (line.startsWith("retry:")) {
+                            const time = parseInt(line.slice(6).trim());
+                            if (!isNaN(time) && time >= 0) {
+                                this[_reconnectionTime] = time;
+                                isMessage = true;
+                            }
+                        }
+                    }
+
+                    if (isMessage) {
+                        const event = new MessageEvent(type || "message", {
+                            lastEventId: this[_lastEventId],
+                            data,
+                            origin,
+                        });
+                        this.onmessage?.call(this, event);
+                        this.dispatchEvent(event);
+                    }
+                }
+            }
+        } catch (error) {
+            if (this[_readyState] !== this.CLOSED) {
+                const event = createErrorEvent("error", { error });
+                this.onerror?.call(this, event);
+                this.dispatchEvent(event);
+            }
+        }
+    }
+
+    private tryReconnect() {
+        if (this[_timer]) {
+            clearTimeout(this[_timer]);
+            this[_timer] = null;
+        }
+
+        this[_timer] = setTimeout(() => {
+            this.connect().then(() => {
+                this[_retry] = 0;
+            }).catch(() => { });
+        }, this[_reconnectionTime] || (1_000 * Math.pow(2, this[_retry]++)));
+    }
+
+    get readyState(): number {
+        return this[_readyState];
+    }
+
+    get onopen(): ((this: EventSource, ev: Event) => any) | null {
+        return this[_onopen];
+    }
+    set onopen(value: ((this: EventSource, ev: Event) => any) | null) {
+        this[_onopen] = value;
+    }
+
+    get onerror(): ((this: EventSource, ev: Event) => any) | null {
+        return this[_onerror];
+    }
+    set onerror(value: ((this: EventSource, ev: Event) => any) | null) {
+        this[_onerror] = value;
+    }
+
+    get onmessage(): ((this: EventSource, ev: MessageEvent<any>) => any) | null {
+        return this[_onmessage];
+    }
+    set onmessage(value: ((this: EventSource, ev: MessageEvent<any>) => any) | null) {
+        this[_onmessage] = value;
+    }
+
+    /**
+     * Closes the connection.
+     */
+    close(): void {
+        if (this[_timer]) {
+            clearTimeout(this[_timer]);
+            this[_timer] = null;
+        }
+        this[_readyState] = this.CLOSED;
+        this[_controller].abort();
+    }
+
+    /**
+     * Adds an event listener that will be called when the connection is open.
+     */
+    override addEventListener(
+        type: "open",
+        listener: (this: EventSource, ev: CloseEvent) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    /**
+     * Adds an event listener that will be called when the connection is
+     * interrupted.
+     */
+    override addEventListener(
+        type: "error",
+        listener: (this: EventSource, ev: ErrorEvent) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    /**
+     * Adds an event listener that will be called when a message with the
+     * default event type is received.
+     */
+    override addEventListener(
+        type: "message",
+        listener: (this: EventSource, ev: MessageEvent<string>) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    /**
+     * Adds an event listener that will be called when a message with a custom
+     * event type is received.
+     */
+    override addEventListener(
+        type: string,
+        listener: (this: EventSource, event: MessageEvent<string>) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    override addEventListener(
+        type: string,
+        listener: (this: EventSource, event: Event) => any,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    override addEventListener(
+        event: string,
+        listener: any,
+        options?: boolean | AddEventListenerOptions
+    ): void {
+        return super.addEventListener(
+            event,
+            listener as EventListenerOrEventListenerObject,
+            options
+        );
+    }
+}
+
+/**
+ * Unlike the {@link EventSource} API, which takes a URL and only supports GET
+ * request, the {@link EventConsumer} API accepts a `Response` object and reads
+ * the messages from its body, the response can be generated from any type of
+ * request, usually returned from the `fetch` function.
+ * 
+ * This API doesn't support active closure and reconnection, however, we can
+ * use `AbortController` in the request to terminate the connection, and add
+ * a event listener to the close event and reestablish the connection manually.
  * 
  * **Events:**
  * 
@@ -495,7 +832,7 @@ export class EventConsumer extends EventTarget {
         }
 
         this[_reader] = response.body.getReader();
-        this.readMessages(response.url ? new URL(response.url).origin : "");
+        this.readMessages(response.url ? new URL(response.url).origin : "").catch(() => { });
     }
 
     /**
@@ -605,13 +942,6 @@ export class EventConsumer extends EventTarget {
     }
 
     /**
-     * Closes the connection.
-     */
-    close(): void {
-        this[_reader].cancel().catch(() => { });
-    }
-
-    /**
      * Adds an event listener that will be called when the connection is
      * interrupted. After this event is dispatched, the connection will be
      * closed and the `close` event will be dispatched.
@@ -673,279 +1003,3 @@ export class EventConsumer extends EventTarget {
  * @deprecated Use {@link EventConsumer} instead.
  */
 export const EventClient = EventConsumer;
-
-/**
- * This is a polyfill for the `EventSource` API, which can be used in
- * environments that do not support the native API, such as Node.js.
- * 
- * @example
- * ```ts
- * import { EventSource } from "@ayonli/jsext/sse";
- * 
- * const events = new EventSource("http://localhost:3000");
- * 
- * events.addEventListener("open", () => {
- *     console.log("The connection is open.");
- * });
- * 
- * events.addEventListener("error", (ev) => {
- *     console.error("An error occurred:", ev.error);
- * });
- * 
- * events.addEventListener("message", (ev) => {
- *     console.log("Received message from the server:", ev.data);
- * });
- * 
- * events.addEventListener("my-event", (ev) => {
- *     console.log("Received custom event from the server:", ev.data);
- * });
- * ```
- */
-export class EventSource extends EventTarget {
-    private [_reader]: ReadableStreamDefaultReader<Uint8Array> | null = null;
-    private [_lastEventId]: string = "";
-    private [_reconnectionTime]: number = 0;
-    private [_readyState]: number = EventSource.CONNECTING;
-    readonly url: string;
-    readonly withCredentials: boolean;
-
-    readonly CONNECTING = EventSource.CONNECTING;
-    readonly OPEN = EventSource.OPEN;
-    readonly CLOSED = EventSource.CLOSED;
-
-    static CONNECTING = 0 as const;
-    static OPEN = 1 as const;
-    static CLOSED = 2 as const;
-
-    onerror: ((this: EventSource, ev: Event) => any) | null = null;
-    onmessage: ((this: EventSource, ev: MessageEvent<any>) => any) | null = null;
-    onopen: ((this: EventSource, ev: Event) => any) | null = null;
-
-    constructor(url: string, options: { withCredentials?: boolean; } = {}) {
-        super();
-        this.url = new URL(url, typeof location === "object" ? location.origin : "").href;
-        this.withCredentials = options?.withCredentials ?? false;
-        this.connect().catch(() => { });
-    }
-
-    private async connect() {
-        if (this[_readyState] === this.CLOSED) {
-            return;
-        }
-
-        this[_readyState] = this.CONNECTING;
-        const headers = new Headers(
-            [["Accept", "text/event-stream"]],
-        );
-
-        if (this[_lastEventId]) {
-            headers.set("Last-Event-ID", this[_lastEventId]);
-        } new Request(this.url, {});
-
-        const res = await fetch(this.url, {
-            headers,
-            mode: this.withCredentials ? "cors" : "same-origin",
-            cache: "no-cache",
-        });
-
-        if (res.type === "error") {
-            if (this[_readyState] !== this.CLOSED) {
-                this[_readyState] = this.CLOSED;
-                const event = createErrorEvent("error", {
-                    error: new Error("The request failed."),
-                });
-                this.onerror?.call(this, event);
-                this.dispatchEvent(event);
-            } else {
-                setTimeout(() => {
-                    this.connect().catch(() => { });
-                }, this[_reconnectionTime]);
-            }
-            return;
-        } else if (res.status === 204) {
-            this[_readyState] = this.CLOSED;
-            return;
-        } else if (res.status !== 200) {
-            this[_readyState] = this.CLOSED;
-            const event = createErrorEvent("error", {
-                error: new Error(`The server responded with status ${res.status}.`),
-            });
-            this.onerror?.call(this, event);
-            this.dispatchEvent(event);
-            return;
-        } else if (!res.headers.get("Content-Type")?.startsWith("text/event-stream")) {
-            const event = createErrorEvent("error", {
-                error: new Error("The response is not an event stream."),
-            });
-            this.onerror?.call(this, event);
-            this.dispatchEvent(event);
-            return;
-        } else if (!res.body) {
-            const event = createErrorEvent("error", {
-                error: new Error("The response does not have a body."),
-            });
-            this.onerror?.call(this, event);
-            this.dispatchEvent(event);
-            return;
-        }
-
-        this[_readyState] = this.OPEN;
-        this[_reader] = res.body!.getReader();
-        const event = new Event("open");
-
-        this.onopen?.call(this, event);
-        this.dispatchEvent(event);
-        this.readMessages(new URL(res.url || this.url).origin);
-    }
-
-    private async readMessages(origin: string): Promise<void> {
-        const reader = this[_reader];
-        const decoder = new TextDecoder();
-        let buffer: string = "";
-
-        try {
-            while (true) {
-                const { done, value } = await reader!.read();
-
-                if (done) {
-                    if (this[_readyState] !== this.CLOSED) {
-                        const event = createErrorEvent("error", {
-                            error: new Error("The connection is closed."),
-                        });
-                        this.onerror?.call(this, event);
-                        this.dispatchEvent(event);
-
-                        setTimeout(() => {
-                            this.connect().catch(() => { });
-                        }, this[_reconnectionTime]);
-                    }
-                    break;
-                }
-
-                buffer += decoder.decode(value);
-
-                const chunks = buffer.split(/\r\n\r\n|\n\n/);
-
-                if (chunks.length === 1) {
-                    continue;
-                } else {
-                    buffer = chunks.pop()!;
-                }
-
-                for (const chunk of chunks) {
-                    const lines = chunk.split(/\r\n|\n/);
-                    let data = "";
-                    let type = "message";
-                    let isMessage = false;
-
-                    for (const line of lines) {
-                        if (line.startsWith("data:") || line === "data") {
-                            let value = line.slice(5);
-
-                            if (value[0] === " ") {
-                                value = value.slice(1);
-                            }
-
-                            if (data) {
-                                data += "\n" + value;
-                            } else {
-                                data = value;
-                            }
-
-                            isMessage = true;
-                        } else if (line.startsWith("event:") || line === "event") {
-                            type = line.slice(6).trim();
-                            isMessage = true;
-                        } else if (line.startsWith("id:") || line === "id") {
-                            this[_lastEventId] = line.slice(3).trim();
-                            isMessage = true;
-                        } else if (line.startsWith("retry:")) {
-                            const time = parseInt(line.slice(6).trim());
-                            if (!isNaN(time) && time >= 0) {
-                                this[_reconnectionTime] = time;
-                                isMessage = true;
-                            }
-                        }
-                    }
-
-                    if (isMessage) {
-                        const event = new MessageEvent(type || "message", {
-                            lastEventId: this[_lastEventId],
-                            data,
-                            origin,
-                        });
-                        this.onmessage?.call(this, event);
-                        this.dispatchEvent(event);
-                    }
-                }
-            }
-        } catch (error) {
-            if (this[_readyState] !== this.CLOSED) {
-                const event = createErrorEvent("error", { error });
-                this.onerror?.call(this, event);
-                this.dispatchEvent(event);
-            }
-        }
-    }
-
-    get readyState(): number {
-        return this[_readyState];
-    }
-
-    close(): void {
-        this[_readyState] = this.CLOSED;
-        this[_reader]?.cancel().catch(() => { });
-    }
-
-    /**
-     * Adds an event listener that will be called when the connection is open.
-     */
-    override addEventListener(
-        type: "open",
-        listener: (this: EventSource, ev: CloseEvent) => void,
-        options?: boolean | AddEventListenerOptions
-    ): void;
-    /**
-     * Adds an event listener that will be called when the connection is
-     * interrupted.
-     */
-    override addEventListener(
-        type: "error",
-        listener: (this: EventSource, ev: ErrorEvent) => void,
-        options?: boolean | AddEventListenerOptions
-    ): void;
-    /**
-     * Adds an event listener that will be called when a message with the
-     * default event type is received.
-     */
-    override addEventListener(
-        type: "message",
-        listener: (this: EventSource, ev: MessageEvent<string>) => void,
-        options?: boolean | AddEventListenerOptions
-    ): void;
-    /**
-     * Adds an event listener that will be called when a message with a custom
-     * event type is received.
-     */
-    override addEventListener(
-        type: string,
-        listener: (this: EventSource, event: MessageEvent<string>) => void,
-        options?: boolean | AddEventListenerOptions
-    ): void;
-    override addEventListener(
-        type: string,
-        listener: (this: EventSource, event: Event) => any,
-        options?: boolean | AddEventListenerOptions
-    ): void;
-    override addEventListener(
-        event: string,
-        listener: any,
-        options?: boolean | AddEventListenerOptions
-    ): void {
-        return super.addEventListener(
-            event,
-            listener as EventListenerOrEventListenerObject,
-            options
-        );
-    }
-}

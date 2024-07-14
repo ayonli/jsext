@@ -87,8 +87,9 @@ describe("sse", () => {
             }
 
             if (typeof EventSource === "undefined") {
-                const { default: dEventSource } = await import("eventsource");
-                globalThis.EventSource = dEventSource as any;
+                const { EventSource } = await import("./sse.ts");
+                // @ts-ignore
+                globalThis.EventSource = EventSource;
             }
 
             const es = new EventSource(`http://localhost:${port}`);
@@ -185,8 +186,9 @@ describe("sse", () => {
             }
 
             if (typeof EventSource === "undefined") {
-                const { default: dEventSource } = await import("eventsource");
-                globalThis.EventSource = dEventSource as any;
+                const { EventSource } = await import("./sse.ts");
+                // @ts-ignore
+                globalThis.EventSource = EventSource;
             }
 
             const es = new EventSource(`http://localhost:${port}`);
@@ -259,8 +261,9 @@ describe("sse", () => {
             }
 
             if (typeof EventSource === "undefined") {
-                const { default: dEventSource } = await import("eventsource");
-                globalThis.EventSource = dEventSource as any;
+                const { EventSource } = await import("./sse.ts");
+                // @ts-ignore
+                globalThis.EventSource = EventSource;
             }
 
             const es = new EventSource(`http://localhost:${port}`);
@@ -355,7 +358,7 @@ describe("sse", () => {
 
         it("dispatchEvent", jsext.func(async function (defer) {
             const http = await import("node:http");
-            const { default: EventSource } = await import("eventsource");
+            const { EventSource } = await import("./sse.ts");
 
             const task = asyncTask<InstanceType<typeof EventEndpoint>>();
             const server = http.createServer((req, res) => {
@@ -418,7 +421,7 @@ describe("sse", () => {
 
         it("close", jsext.func(async function (defer) {
             const http = await import("node:http");
-            const { default: EventSource } = await import("eventsource");
+            const { EventSource } = await import("./sse.ts");
 
             const task = asyncTask<InstanceType<typeof EventEndpoint>>();
             const server = http.createServer((req, res) => {
@@ -444,7 +447,7 @@ describe("sse", () => {
 
         it("listen close event", jsext.func(async function (defer) {
             const http = await import("node:http");
-            const { default: EventSource } = await import("eventsource");
+            const { EventSource } = await import("./sse.ts");
 
             let closeEvent: CloseEvent | undefined = undefined;
             const task = asyncTask<InstanceType<typeof EventEndpoint>>();
@@ -475,21 +478,70 @@ describe("sse", () => {
     });
 
     describe("EventConsumer", () => {
-        if (typeof Request === "undefined" || typeof Response === "undefined") {
+        if (typeof ReadableStream !== "function") {
             return;
         }
 
-        it("listen message event", async () => {
-            const req = new Request("http://localhost:8080", {
+        it("listen message event", jsext.func(async (defer) => {
+            const port = await randomPort();
+            let sse: EventEndpoint | undefined = undefined;
+            const handler = () => {
+                sse!.dispatchEvent(new MessageEvent("message", {
+                    data: "Hello",
+                    lastEventId: "1",
+                }));
+                sse!.dispatchEvent(new MessageEvent("message", {
+                    data: "World",
+                    lastEventId: "2",
+                }));
+                sse!.dispatchEvent(new MessageEvent("message", {
+                    data: "This message has\ntwo lines.",
+                }));
+
+                setTimeout(() => {
+                    sse!.close();
+                });
+            };
+
+            if (isBun) {
+                const server = Bun.serve({
+                    port,
+                    fetch: async (req: Request) => {
+                        sse = new EventEndpoint(req);
+
+                        queueMicrotask(handler);
+
+                        return sse.response!;
+                    },
+                });
+                defer(() => server.stop(true));
+            } else if (isDeno) {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, req => {
+                    sse = new EventEndpoint(req);
+                    queueMicrotask(handler);
+                    return sse.response!;
+                });
+                defer(() => controller.abort());
+            } else {
+                const http = await import("node:http");
+                const server = http.createServer((req, res) => {
+                    sse = new EventEndpoint(req, res);
+                    queueMicrotask(handler);
+                });
+                server.listen(port);
+                defer(() => {
+                    server?.closeAllConnections();
+                    server.close();
+                });
+            }
+
+            const res = await fetch(`http://localhost:${port}`, {
                 headers: {
                     "Accept": "text/event-stream",
                 },
             });
-            const sse = new EventEndpoint(req);
-            strictEqual(sse.closed, false);
-            const { response } = sse;
-
-            const client = new EventConsumer(response!);
+            const client = new EventConsumer(res);
             const messages: string[] = [];
             let lastEventId = "";
 
@@ -499,41 +551,77 @@ describe("sse", () => {
                 lastEventId = ev.lastEventId;
             });
 
-            sse.dispatchEvent(new MessageEvent("message", {
-                data: "Hello",
-                lastEventId: "1",
-            }));
-            sse.dispatchEvent(new MessageEvent("message", {
-                data: "World",
-                lastEventId: "2",
-            }));
-            sse.dispatchEvent(new MessageEvent("message", {
-                data: "This message has\ntwo lines.",
-            }));
-
-            await until(() => messages.length === 3);
-            client.close();
-            await until(() => sse.closed);
+            await until(() => client.closed);
 
             deepStrictEqual(messages, ["Hello", "World", "This message has\ntwo lines."]);
-            strictEqual(sse.lastEventId, "2");
+            strictEqual(sse!.lastEventId, "2");
             strictEqual(client.lastEventId, "2");
-            strictEqual(sse.closed, true);
+            strictEqual(sse!.closed, true);
             strictEqual(client.closed, true);
             strictEqual(lastEventId, "2");
-        });
+        }));
 
-        it("listen custom event", async () => {
-            const req = new Request("http://localhost:8080", {
+        it("listen custom event", jsext.func(async (defer) => {
+            const port = await randomPort();
+            let sse: EventEndpoint | undefined = undefined;
+
+            const handler = () => {
+                sse!.dispatchEvent(new MessageEvent("my-event", {
+                    data: "Hi",
+                    lastEventId: "3",
+                }));
+                sse!.dispatchEvent(new MessageEvent("my-event", {
+                    data: "A-yon",
+                    lastEventId: "4",
+                }));
+                sse!.dispatchEvent(new MessageEvent("my-event", {
+                    data: "This message has\ntwo lines.",
+                }));
+
+                setTimeout(() => {
+                    sse!.close();
+                });
+            };
+
+            if (isBun) {
+                const server = Bun.serve({
+                    port,
+                    fetch: async (req: Request) => {
+                        sse = new EventEndpoint(req);
+
+                        queueMicrotask(handler);
+
+                        return sse.response!;
+                    },
+                });
+                defer(() => server.stop(true));
+            } else if (isDeno) {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, req => {
+                    sse = new EventEndpoint(req);
+                    queueMicrotask(handler);
+                    return sse.response!;
+                });
+                defer(() => controller.abort());
+            } else {
+                const http = await import("node:http");
+                const server = http.createServer((req, res) => {
+                    sse = new EventEndpoint(req, res);
+                    queueMicrotask(handler);
+                });
+                server.listen(port);
+                defer(() => {
+                    server?.closeAllConnections();
+                    server.close();
+                });
+            }
+
+            const res = await fetch(`http://localhost:${port}`, {
                 headers: {
                     "Accept": "text/event-stream",
                 },
             });
-            const sse = new EventEndpoint(req);
-            strictEqual(sse.closed, false);
-            const { response } = sse;
-
-            const client = new EventConsumer(response!);
+            const client = new EventConsumer(res);
             const messages: string[] = [];
             let lastEventId = "";
 
@@ -543,81 +631,126 @@ describe("sse", () => {
                 lastEventId = ev.lastEventId;
             });
 
-            sse.dispatchEvent(new MessageEvent("my-event", {
-                data: "Hi",
-                lastEventId: "3",
-            }));
-            sse.dispatchEvent(new MessageEvent("my-event", {
-                data: "A-yon",
-                lastEventId: "4",
-            }));
-            sse.dispatchEvent(new MessageEvent("my-event", {
-                data: "This message has\ntwo lines.",
-            }));
-
-            await until(() => messages.length === 3);
-            client.close();
-            await until(() => sse.closed);
+            await until(() => client.closed);
 
             deepStrictEqual(messages, ["Hi", "A-yon", "This message has\ntwo lines."]);
-            strictEqual(sse.lastEventId, "4");
+            strictEqual(sse!.lastEventId, "4");
             strictEqual(client.lastEventId, "4");
-            strictEqual(sse.closed, true);
+            strictEqual(sse!.closed, true);
             strictEqual(client.closed, true);
             strictEqual(lastEventId, "4");
-        });
+        }));
 
-        it("listen close event by the server", async () => {
-            const req = new Request("http://localhost:8080", {
+        it("listen close event", jsext.func(async (defer) => {
+            const port = await randomPort();
+            let sse: EventEndpoint | undefined = undefined;
+            const handler = () => {
+                sse!.close();
+            };
+
+            if (isBun) {
+                const server = Bun.serve({
+                    port,
+                    fetch: async (req: Request) => {
+                        sse = new EventEndpoint(req);
+                        queueMicrotask(handler);
+                        return sse.response!;
+                    },
+                });
+                defer(() => server.stop(true));
+            } else if (isDeno) {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, req => {
+                    sse = new EventEndpoint(req);
+                    queueMicrotask(handler);
+                    return sse.response!;
+                });
+                defer(() => controller.abort());
+            } else {
+                const http = await import("node:http");
+                const server = http.createServer((req, res) => {
+                    sse = new EventEndpoint(req, res);
+                    queueMicrotask(handler);
+                });
+                server.listen(port);
+                defer(() => {
+                    server?.closeAllConnections();
+                    server.close();
+                });
+            }
+
+            const res = await fetch(`http://localhost:${port}`, {
                 headers: {
                     "Accept": "text/event-stream",
                 },
             });
-            const sse = new EventEndpoint(req);
-            strictEqual(sse.closed, false);
-            const { response } = sse;
-
-            const client = new EventConsumer(response!);
+            const client = new EventConsumer(res);
             let closeEvent: CloseEvent | undefined = undefined;
 
             client.addEventListener("close", _ev => {
                 closeEvent = _ev as CloseEvent;
             });
 
-            sse.close();
             await until(() => client.closed);
 
-            strictEqual(sse.closed, true);
+            strictEqual(sse!.closed, true);
             strictEqual(client.closed, true);
             strictEqual(closeEvent!.type, "close");
             strictEqual(closeEvent!.wasClean, true);
-        });
+        }));
 
-        it("listen close event by the client", async () => {
-            const req = new Request("http://localhost:8080", {
+        it("close by the client", jsext.func(async function (defer) {
+            if (isBun) {
+                this.skip();
+            }
+
+            const port = await randomPort();
+            let sse: EventEndpoint | undefined = undefined;
+
+            if (isBun) {
+                // not supported
+                return;
+            } else if (isDeno) {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, req => {
+                    sse = new EventEndpoint(req);
+                    return sse.response!;
+                });
+                defer(() => controller.abort());
+            } else {
+                const http = await import("node:http");
+                const server = http.createServer((req, res) => {
+                    sse = new EventEndpoint(req, res);
+                });
+                server.listen(port);
+                defer(() => {
+                    server?.closeAllConnections();
+                    server.close();
+                });
+            }
+
+            const controller = new AbortController();
+            const res = await fetch(`http://localhost:${port}`, {
                 headers: {
                     "Accept": "text/event-stream",
                 },
+                signal: controller.signal,
             });
-            const sse = new EventEndpoint(req);
-            strictEqual(sse.closed, false);
-            const { response } = sse;
-
-            const client = new EventConsumer(response!);
+            const client = new EventConsumer(res);
             let closeEvent: CloseEvent | undefined = undefined;
 
             client.addEventListener("close", _ev => {
                 closeEvent = _ev as CloseEvent;
             });
 
-            client.close();
-            await until(() => client.closed);
+            controller.abort();
+            await until(() => sse!.closed);
 
-            strictEqual(sse.closed, true);
+            strictEqual(sse!.closed, true);
             strictEqual(client.closed, true);
             strictEqual(closeEvent!.type, "close");
-            strictEqual(closeEvent!.wasClean, true);
-        });
+            strictEqual(closeEvent!.wasClean, false);
+        }));
 
         it("listen error event", jsext.func(async function () {
             if (!isDeno) {
