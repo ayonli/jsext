@@ -480,6 +480,19 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  *     },
  * });
  * ```
+ * 
+ * @example
+ * ```ts
+ * // module mode (for `deno serve`, Bun and Cloudflare Workers)
+ * import { serve } from "@ayonli/jsext/http";
+ * 
+ * export default serve({
+ *     type: "module",
+ *     fetch(req) {
+ *         return new Response("Hello, World!");
+ *     },
+ * });
+ * ```
  */
 export function serve(options: ServeOptions): Server {
     const type = isDeno || isBun ? options.type || "classic" : "classic";
