@@ -774,7 +774,7 @@ export class EventSource extends EventTarget {
      */
     override addEventListener(
         type: "open",
-        listener: (this: EventSource, ev: CloseEvent) => void,
+        listener: (this: EventSource, ev: Event) => void,
         options?: boolean | AddEventListenerOptions
     ): void;
     /**
