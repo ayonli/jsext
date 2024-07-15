@@ -62,18 +62,19 @@ if (typeof MessageEvent !== "function" || runtime().identity === "workerd") {
 }
 
 const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+
 const SSEMarkClosed = new Set<string>();
 
 const _closed = Symbol.for("closed");
 const _request = Symbol.for("request");
 const _response = Symbol.for("response");
 const _writer = Symbol.for("writer");
-const _reader = Symbol.for("reader");
 const _lastEventId = Symbol.for("lastEventId");
 const _reconnectionTime = Symbol.for("reconnectionTime");
 const _retry = Symbol.for("retry");
 const _timer = Symbol.for("timer");
-const _controller = Symbol.for("_controller");
+const _controller = Symbol.for("controller");
 const _onopen = Symbol.for("onopen");
 const _onerror = Symbol.for("onerror");
 const _onmessage = Symbol.for("onmessage");
@@ -443,6 +444,84 @@ export class EventEndpoint extends EventTarget {
 }
 fixStringTag(EventEndpoint);
 
+async function readAndProcessResponse(
+    response: Response,
+    handlers: {
+        onId: (id: string) => void;
+        onRetry: (time: number) => void;
+        onData: (data: string, event: string) => void;
+        onError: (error: unknown) => void;
+        onEnd: () => void;
+    }
+): Promise<void> {
+    const reader = response.body!.getReader();
+    let buffer: string = "";
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+                handlers.onEnd();
+                break;
+            }
+
+            buffer += decoder.decode(value);
+
+            const chunks = buffer.split(/\r\n\r\n|\n\n/);
+
+            if (chunks.length === 1) {
+                continue;
+            } else {
+                buffer = chunks.pop()!;
+            }
+
+            for (const chunk of chunks) {
+                const lines = chunk.split(/\r\n|\n/);
+                let data = "";
+                let type = "message";
+                let isMessage = false;
+
+                for (const line of lines) {
+                    if (line.startsWith("data:") || line === "data") {
+                        let value = line.slice(5);
+
+                        if (value[0] === " ") {
+                            value = value.slice(1);
+                        }
+
+                        if (data) {
+                            data += "\n" + value;
+                        } else {
+                            data = value;
+                        }
+
+                        isMessage = true;
+                    } else if (line.startsWith("event:") || line === "event") {
+                        type = line.slice(6).trim();
+                        isMessage = true;
+                    } else if (line.startsWith("id:") || line === "id") {
+                        handlers.onId(line.slice(3).trim());
+                        isMessage = true;
+                    } else if (line.startsWith("retry:")) {
+                        const time = parseInt(line.slice(6).trim());
+                        if (!isNaN(time) && time >= 0) {
+                            handlers.onRetry(time);
+                            isMessage = true;
+                        }
+                    }
+                }
+
+                if (isMessage) {
+                    handlers.onData(data, type || "message");
+                }
+            }
+        }
+    } catch (error) {
+        handlers.onError(error);
+    }
+}
+
 /**
  * @deprecated Use {@link EventEndpoint} instead.
  */
@@ -488,7 +567,6 @@ export type SSEOptions = EventEndpointOptions;
 export class EventSource extends EventTarget {
     private [_controller]: AbortController = new AbortController();
     private [_request]: Request | null = null;
-    private [_reader]: ReadableStreamDefaultReader<Uint8Array> | null = null;
     private [_lastEventId]: string = "";
     private [_reconnectionTime]: number = 0;
     private [_retry]: number = 0;
@@ -550,9 +628,7 @@ export class EventSource extends EventTarget {
         setReadonly(this, "OPEN", EventSource.OPEN);
         setReadonly(this, "CLOSED", EventSource.CLOSED);
 
-        this.connect().catch((err) => {
-            console.error(err);
-        });
+        this.connect().catch(() => { });
     }
 
     private async connect() {
@@ -624,7 +700,6 @@ export class EventSource extends EventTarget {
         }
 
         setReadonly(this, "readyState", this.OPEN);
-        this[_reader] = res.body!.getReader();
 
         if (!connectedBefore) {
             const event = new Event("open");
@@ -632,94 +707,41 @@ export class EventSource extends EventTarget {
             this.dispatchEvent(event);
         }
 
-        this.readMessages(new URL(res.url || this.url).origin).catch(() => { });
-    }
-
-    private async readMessages(origin: string): Promise<void> {
-        const reader = this[_reader]!;
-        const decoder = new TextDecoder();
-        let buffer: string = "";
-
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-
-                if (done) {
-                    if (this.readyState !== this.CLOSED) {
-                        const event = createErrorEvent("error", {
-                            error: new Error("The connection is interrupted."),
-                        });
-                        this.onerror?.call(this, event);
-                        this.dispatchEvent(event);
-                        this.tryReconnect();
-                    }
-                    break;
+        const origin = new URL(res.url || this.url).origin;
+        await readAndProcessResponse(res, {
+            onId: (id) => {
+                this[_lastEventId] = id;
+            },
+            onRetry: (time) => {
+                this[_reconnectionTime] = time;
+            },
+            onData: (data, event) => {
+                const _event = new MessageEvent(event, {
+                    lastEventId: this[_lastEventId],
+                    data,
+                    origin,
+                });
+                this.dispatchEvent(_event);
+                this.onmessage?.call(this, _event);
+            },
+            onError: (error) => {
+                if (this.readyState !== this.CLOSED) {
+                    const event = createErrorEvent("error", { error });
+                    this.dispatchEvent(event);
+                    this.onerror?.call(this, event);
                 }
-
-                buffer += decoder.decode(value);
-
-                const chunks = buffer.split(/\r\n\r\n|\n\n/);
-
-                if (chunks.length === 1) {
-                    continue;
-                } else {
-                    buffer = chunks.pop()!;
+            },
+            onEnd: () => {
+                if (this.readyState !== this.CLOSED) {
+                    const event = createErrorEvent("error", {
+                        error: new Error("The connection is interrupted."),
+                    });
+                    this.dispatchEvent(event);
+                    this.onerror?.call(this, event);
+                    this.tryReconnect();
                 }
-
-                for (const chunk of chunks) {
-                    const lines = chunk.split(/\r\n|\n/);
-                    let data = "";
-                    let type = "message";
-                    let isMessage = false;
-
-                    for (const line of lines) {
-                        if (line.startsWith("data:") || line === "data") {
-                            let value = line.slice(5);
-
-                            if (value[0] === " ") {
-                                value = value.slice(1);
-                            }
-
-                            if (data) {
-                                data += "\n" + value;
-                            } else {
-                                data = value;
-                            }
-
-                            isMessage = true;
-                        } else if (line.startsWith("event:") || line === "event") {
-                            type = line.slice(6).trim();
-                            isMessage = true;
-                        } else if (line.startsWith("id:") || line === "id") {
-                            this[_lastEventId] = line.slice(3).trim();
-                            isMessage = true;
-                        } else if (line.startsWith("retry:")) {
-                            const time = parseInt(line.slice(6).trim());
-                            if (!isNaN(time) && time >= 0) {
-                                this[_reconnectionTime] = time;
-                                isMessage = true;
-                            }
-                        }
-                    }
-
-                    if (isMessage) {
-                        const event = new MessageEvent(type || "message", {
-                            lastEventId: this[_lastEventId],
-                            data,
-                            origin,
-                        });
-                        this.onmessage?.call(this, event);
-                        this.dispatchEvent(event);
-                    }
-                }
-            }
-        } catch (error) {
-            if (this.readyState !== this.CLOSED) {
-                const event = createErrorEvent("error", { error });
-                this.onerror?.call(this, event);
-                this.dispatchEvent(event);
-            }
-        }
+            },
+        });
     }
 
     private tryReconnect() {
@@ -732,7 +754,7 @@ export class EventSource extends EventTarget {
             this.connect().then(() => {
                 this[_retry] = 0;
             }).catch(() => { });
-        }, this[_reconnectionTime] || (1_000 * Math.pow(2, this[_retry]++)));
+        }, this[_reconnectionTime] || 1000 * Math.min(30, Math.pow(2, this[_retry]++)));
     }
 
     /**
@@ -878,7 +900,6 @@ fixStringTag(EventSource);
  * ```
  */
 export class EventConsumer extends EventTarget {
-    private [_reader]: ReadableStreamDefaultReader<Uint8Array>;
     private [_lastEventId]: string = "";
     private [_reconnectionTime]: number = 0;
     private [_closed] = false;
@@ -896,8 +917,34 @@ export class EventConsumer extends EventTarget {
             throw new TypeError("The response is not an event stream.");
         }
 
-        this[_reader] = response.body.getReader();
-        this.readMessages(response.url ? new URL(response.url).origin : "").catch(() => { });
+        const origin = response.url ? new URL(response.url).origin : "";
+        readAndProcessResponse(response, {
+            onId: (id) => {
+                this[_lastEventId] = id;
+            },
+            onRetry: (time) => {
+                this[_reconnectionTime] = time;
+            },
+            onData: (data, event) => {
+                this.dispatchEvent(new MessageEvent(event, {
+                    lastEventId: this[_lastEventId],
+                    data,
+                    origin,
+                }));
+            },
+            onError: (error) => {
+                this[_closed] = true;
+                this.dispatchEvent(createErrorEvent("error", { error }));
+                this.dispatchEvent(createCloseEvent("close", {
+                    reason: error instanceof Error ? error.message : String(error),
+                    wasClean: false,
+                }));
+            },
+            onEnd: () => {
+                this[_closed] = true;
+                this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
+            },
+        }).catch(() => { });
     }
 
     /**
@@ -905,13 +952,6 @@ export class EventConsumer extends EventTarget {
      */
     get lastEventId(): string {
         return this[_lastEventId];
-    }
-
-    /**
-     * Indicates whether the connection has been closed.
-     */
-    get closed(): boolean {
-        return this[_closed];
     }
 
     /**
@@ -926,84 +966,11 @@ export class EventConsumer extends EventTarget {
         return this[_reconnectionTime];
     }
 
-    private async readMessages(origin: string): Promise<void> {
-        const reader = this[_reader];
-        const decoder = new TextDecoder();
-        let buffer: string = "";
-
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-
-                if (done) {
-                    this[_closed] = true;
-                    this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
-                    break;
-                }
-
-                buffer += decoder.decode(value);
-
-                const chunks = buffer.split(/\r\n\r\n|\n\n/);
-
-                if (chunks.length === 1) {
-                    continue;
-                } else {
-                    buffer = chunks.pop()!;
-                }
-
-                for (const chunk of chunks) {
-                    const lines = chunk.split(/\r\n|\n/);
-                    let data = "";
-                    let type = "message";
-                    let isMessage = false;
-
-                    for (const line of lines) {
-                        if (line.startsWith("data:") || line === "data") {
-                            let value = line.slice(5);
-
-                            if (value[0] === " ") {
-                                value = value.slice(1);
-                            }
-
-                            if (data) {
-                                data += "\n" + value;
-                            } else {
-                                data = value;
-                            }
-
-                            isMessage = true;
-                        } else if (line.startsWith("event:") || line === "event") {
-                            type = line.slice(6).trim();
-                            isMessage = true;
-                        } else if (line.startsWith("id:") || line === "id") {
-                            this[_lastEventId] = line.slice(3).trim();
-                            isMessage = true;
-                        } else if (line.startsWith("retry:")) {
-                            const time = parseInt(line.slice(6).trim());
-                            if (!isNaN(time) && time >= 0) {
-                                this[_reconnectionTime] = time;
-                                isMessage = true;
-                            }
-                        }
-                    }
-
-                    if (isMessage) {
-                        this.dispatchEvent(new MessageEvent(type || "message", {
-                            lastEventId: this[_lastEventId],
-                            data,
-                            origin,
-                        }));
-                    }
-                }
-            }
-        } catch (error) {
-            this[_closed] = true;
-            this.dispatchEvent(createErrorEvent("error", { error }));
-            this.dispatchEvent(createCloseEvent("close", {
-                reason: error instanceof Error ? error.message : String(error),
-                wasClean: false,
-            }));
-        }
+    /**
+     * Indicates whether the connection has been closed.
+     */
+    get closed(): boolean {
+        return this[_closed];
     }
 
     /**
