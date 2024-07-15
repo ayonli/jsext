@@ -1,7 +1,7 @@
 import './external/event-target-polyfill/index.js';
 import { createCloseEvent, createErrorEvent } from './event.js';
-import { isBun } from './env.js';
-import runtime from './runtime.js';
+import { isBun, isDeno } from './env.js';
+import runtime, { customInspect } from './runtime.js';
 import _try from './try.js';
 
 var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
@@ -609,18 +609,30 @@ class EventSource extends EventTarget {
     addEventListener(event, listener, options) {
         return super.addEventListener(event, listener, options);
     }
-    [(_a = _controller, _b = _request, _c = _reader, _d = _lastEventId, _e = _reconnectionTime, _f = _retry, _g = _timer, _h = _onopen, _j = _onmessage, _k = _onerror, Symbol.for("nodejs.util.inspect.custom"))]() {
+    [(_a = _controller, _b = _request, _c = _reader, _d = _lastEventId, _e = _reconnectionTime, _f = _retry, _g = _timer, _h = _onopen, _j = _onmessage, _k = _onerror, customInspect)]() {
         const _this = this;
-        return new class EventSource {
-            constructor() {
-                this.readyState = _this.readyState;
-                this.url = _this.url;
-                this.withCredentials = _this.withCredentials;
-                this.onopen = _this.onopen;
-                this.onmessage = _this.onmessage;
-                this.onerror = _this.onerror;
-            }
-        };
+        if (isDeno) {
+            return "EventSource " + Deno.inspect({
+                readyState: _this.readyState,
+                url: _this.url,
+                withCredentials: _this.withCredentials,
+                onopen: _this.onopen,
+                onmessage: _this.onmessage,
+                onerror: _this.onerror,
+            }, { colors: true });
+        }
+        else {
+            return new class EventSource {
+                constructor() {
+                    this.readyState = _this.readyState;
+                    this.url = _this.url;
+                    this.withCredentials = _this.withCredentials;
+                    this.onopen = _this.onopen;
+                    this.onmessage = _this.onmessage;
+                    this.onerror = _this.onerror;
+                }
+            };
+        }
     }
 }
 EventSource.CONNECTING = 0;

@@ -20,8 +20,8 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
 import type { Constructor } from "./types.ts";
 import { createCloseEvent, createErrorEvent } from "./event.ts";
-import { isBun } from "./env.ts";
-import runtime from "./runtime.ts";
+import { isBun, isDeno } from "./env.ts";
+import runtime, { customInspect } from "./runtime.ts";
 import _try from "./try.ts";
 
 if (typeof MessageEvent !== "function" || runtime().identity === "workerd") {
@@ -799,16 +799,28 @@ export class EventSource extends EventTarget {
         );
     }
 
-    [Symbol.for("nodejs.util.inspect.custom")](): object {
+    [customInspect](): object | string {
         const _this = this;
-        return new class EventSource {
-            readyState = _this.readyState;
-            url = _this.url;
-            withCredentials = _this.withCredentials;
-            onopen = _this.onopen;
-            onmessage = _this.onmessage;
-            onerror = _this.onerror;
-        };
+
+        if (isDeno) {
+            return "EventSource " + Deno.inspect({
+                readyState: _this.readyState,
+                url: _this.url,
+                withCredentials: _this.withCredentials,
+                onopen: _this.onopen,
+                onmessage: _this.onmessage,
+                onerror: _this.onerror,
+            }, { colors: true });
+        } else {
+            return new class EventSource {
+                readyState = _this.readyState;
+                url = _this.url;
+                withCredentials = _this.withCredentials;
+                onopen = _this.onopen;
+                onmessage = _this.onmessage;
+                onerror = _this.onerror;
+            };
+        }
     }
 }
 fixStringTag(EventSource);
