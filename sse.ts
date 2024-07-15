@@ -612,7 +612,7 @@ export class EventSource extends EventTarget {
     get onerror(): ((this: EventSource, ev: ErrorEvent) => any) | null {
         return this[_onerror] ?? null;
     }
-    set onerror(value: ((this: EventSource, ev: Event) => any) | null) {
+    set onerror(value: ((this: EventSource, ev: ErrorEvent) => any) | null) {
         this[_onerror] = value;
     }
 
