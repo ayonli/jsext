@@ -2,14 +2,15 @@ import './external/event-target-polyfill/index.js';
 import { createCloseEvent, createErrorEvent } from './event.js';
 import { isBun } from './env.js';
 import runtime from './runtime.js';
+import _try from './try.js';
 
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
 if (typeof MessageEvent !== "function" || runtime().identity === "workerd") {
     // Worker environments does not implement or only partially implement the MessageEvent, 
     // we need to implement it ourselves.
     globalThis.MessageEvent = class MessageEvent extends Event {
         constructor(type, eventInitDict) {
-            var _q, _r, _s;
+            var _p, _q, _r;
             super(type, eventInitDict);
             this.data = undefined;
             this.lastEventId = "";
@@ -18,9 +19,9 @@ if (typeof MessageEvent !== "function" || runtime().identity === "workerd") {
             this.source = null;
             if (eventInitDict) {
                 this.data = eventInitDict.data;
-                this.lastEventId = (_q = eventInitDict.lastEventId) !== null && _q !== void 0 ? _q : "";
-                this.origin = (_r = eventInitDict.origin) !== null && _r !== void 0 ? _r : "";
-                this.ports = (_s = eventInitDict.ports) !== null && _s !== void 0 ? _s : [];
+                this.lastEventId = (_p = eventInitDict.lastEventId) !== null && _p !== void 0 ? _p : "";
+                this.origin = (_q = eventInitDict.origin) !== null && _q !== void 0 ? _q : "";
+                this.ports = (_r = eventInitDict.ports) !== null && _r !== void 0 ? _r : [];
             }
         }
         initMessageEvent(type, bubbles, cancelable, data, origin, lastEventId, source, ports) {
@@ -29,22 +30,36 @@ if (typeof MessageEvent !== "function" || runtime().identity === "workerd") {
         }
     };
 }
+const encoder = new TextEncoder();
 const SSEMarkClosed = new Set();
-const _lastEventId = Symbol.for("lastEventId");
 const _closed = Symbol.for("closed");
 const _request = Symbol.for("request");
 const _response = Symbol.for("response");
 const _writer = Symbol.for("writer");
 const _reader = Symbol.for("reader");
+const _lastEventId = Symbol.for("lastEventId");
 const _reconnectionTime = Symbol.for("reconnectionTime");
-const _readyState = Symbol.for("readyState");
-const _controller = Symbol.for("_controller");
-const _timer = Symbol.for("timer");
 const _retry = Symbol.for("retry");
+const _timer = Symbol.for("timer");
+const _controller = Symbol.for("_controller");
 const _onopen = Symbol.for("onopen");
 const _onerror = Symbol.for("onerror");
 const _onmessage = Symbol.for("onmessage");
-const encoder = new TextEncoder();
+function setReadonly(obj, name, value) {
+    Object.defineProperty(obj, name, {
+        configurable: true,
+        enumerable: false,
+        writable: false,
+        value,
+    });
+}
+function getReadonly(obj, name) {
+    var _p;
+    return (_p = Object.getOwnPropertyDescriptor(obj, name)) === null || _p === void 0 ? void 0 : _p.value;
+}
+function fixStringTag(ctor) {
+    setReadonly(ctor.prototype, Symbol.toStringTag, ctor.name);
+}
 /**
  * An SSE (server-sent events) implementation that can be used to send messages
  * to the client. This implementation is based on the `EventTarget` interface
@@ -105,20 +120,20 @@ const encoder = new TextEncoder();
  */
 class EventEndpoint extends EventTarget {
     constructor(request, ...args) {
-        var _q, _r, _s, _t, _u;
+        var _p, _q, _r, _s, _t;
         super();
         const isNodeRequest = "socket" in request && "socket" in args[0];
         let options;
         if (isNodeRequest) {
             const req = request;
-            this[_lastEventId] = String((_q = req.headers["last-event-id"]) !== null && _q !== void 0 ? _q : "");
-            options = (_r = args[1]) !== null && _r !== void 0 ? _r : {};
+            this[_lastEventId] = String((_p = req.headers["last-event-id"]) !== null && _p !== void 0 ? _p : "");
+            options = (_q = args[1]) !== null && _q !== void 0 ? _q : {};
         }
         else {
-            this[_lastEventId] = (_s = request.headers.get("Last-Event-ID")) !== null && _s !== void 0 ? _s : "";
-            options = (_t = args[0]) !== null && _t !== void 0 ? _t : {};
+            this[_lastEventId] = (_r = request.headers.get("Last-Event-ID")) !== null && _r !== void 0 ? _r : "";
+            options = (_s = args[0]) !== null && _s !== void 0 ? _s : {};
         }
-        this[_reconnectionTime] = (_u = options.reconnectionTime) !== null && _u !== void 0 ? _u : 0;
+        this[_reconnectionTime] = (_t = options.reconnectionTime) !== null && _t !== void 0 ? _t : 0;
         this[_closed] = this[_lastEventId]
             ? SSEMarkClosed.has(this[_lastEventId])
             : false;
@@ -187,7 +202,7 @@ class EventEndpoint extends EventTarget {
                             try {
                                 controller.close();
                             }
-                            catch (_q) { }
+                            catch (_p) { }
                             _this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
                             break;
                         }
@@ -295,7 +310,7 @@ class EventEndpoint extends EventTarget {
      * reconnects, the server will send a `204 No Content` response to the
      * client to instruct it to terminate the connection.
      *
-     * It is important to note that the server relies on the last event ID to
+     * It is important to note that the server depends on the last event ID to
      * identify the client for this purpose, so the server must send a globally
      * unique `lastEventId` to the client when sending messages.
      */
@@ -313,6 +328,7 @@ class EventEndpoint extends EventTarget {
         });
     }
 }
+fixStringTag(EventEndpoint);
 /**
  * @deprecated Use {@link EventEndpoint} instead.
  */
@@ -322,6 +338,9 @@ const SSE = EventEndpoint;
  * [EventSource](https://developer.mozilla.org/en-US/docs/Web/API/EventSource)
  * API that can be used in environments that do not have native support, such as
  * Node.js.
+ *
+ * NOTE: This API depends on the Fetch API, in Node.js, it requires Node.js
+ * v18.4.1 or above.
  *
  * @example
  * ```ts
@@ -347,37 +366,78 @@ const SSE = EventEndpoint;
  * ```
  */
 class EventSource extends EventTarget {
+    get url() {
+        var _p;
+        return (_p = getReadonly(this, "url")) !== null && _p !== void 0 ? _p : "";
+    }
+    get withCredentials() {
+        var _p;
+        return (_p = getReadonly(this, "withCredentials")) !== null && _p !== void 0 ? _p : false;
+    }
+    get readyState() {
+        var _p;
+        return (_p = getReadonly(this, "readyState")) !== null && _p !== void 0 ? _p : this.CONNECTING;
+    }
+    get onopen() {
+        var _p;
+        return (_p = this[_onopen]) !== null && _p !== void 0 ? _p : null;
+    }
+    set onopen(value) {
+        this[_onopen] = value;
+    }
+    get onmessage() {
+        var _p;
+        return (_p = this[_onmessage]) !== null && _p !== void 0 ? _p : null;
+    }
+    set onmessage(value) {
+        this[_onmessage] = value;
+    }
+    get onerror() {
+        var _p;
+        return (_p = this[_onerror]) !== null && _p !== void 0 ? _p : null;
+    }
+    set onerror(value) {
+        this[_onerror] = value;
+    }
     constructor(url, options = {}) {
-        var _q;
+        var _p;
         super();
         this[_a] = new AbortController();
         this[_b] = null;
         this[_c] = null;
         this[_d] = "";
         this[_e] = 0;
-        this[_f] = EventSource.CONNECTING;
+        this[_f] = 0;
         this[_g] = null;
-        this[_h] = 0;
+        this[_h] = null;
         this[_j] = null;
         this[_k] = null;
-        this[_l] = null;
         this.CONNECTING = EventSource.CONNECTING;
         this.OPEN = EventSource.OPEN;
         this.CLOSED = EventSource.CLOSED;
-        this.url = new URL(url, typeof location === "object" ? location.origin : undefined).href;
-        this.withCredentials = (_q = options === null || options === void 0 ? void 0 : options.withCredentials) !== null && _q !== void 0 ? _q : false;
-        this.connect().catch(() => { });
+        url = new URL(url, typeof location === "object" ? location.origin : undefined).href;
+        setReadonly(this, "url", url);
+        setReadonly(this, "withCredentials", (_p = options.withCredentials) !== null && _p !== void 0 ? _p : false);
+        setReadonly(this, "readyState", this.CONNECTING);
+        setReadonly(this, "CONNECTING", EventSource.CONNECTING);
+        setReadonly(this, "OPEN", EventSource.OPEN);
+        setReadonly(this, "CLOSED", EventSource.CLOSED);
+        this.connect().catch((err) => {
+            console.error(err);
+        });
     }
     async connect() {
-        var _q, _r, _s, _t, _u, _v;
-        if (this[_readyState] === this.CLOSED) {
+        var _p, _q, _r, _s, _t, _u;
+        if (this.readyState === this.CLOSED) {
             return;
         }
-        const connectedBefore = this[_readyState] === this.OPEN;
-        this[_readyState] = this.CONNECTING;
-        const headers = new Headers([["Accept", "text/event-stream"]]);
+        const connectedBefore = this.readyState === this.OPEN;
+        setReadonly(this, "readyState", this.CONNECTING);
+        const headers = {
+            "Accept": "text/event-stream",
+        };
         if (this[_lastEventId]) {
-            headers.set("Last-Event-ID", this[_lastEventId]);
+            headers["Last-Event-ID"] = this[_lastEventId];
         }
         this[_request] = new Request(this.url, {
             headers,
@@ -386,17 +446,17 @@ class EventSource extends EventTarget {
             cache: "no-store",
             signal: this[_controller].signal,
         });
-        const res = await fetch(this[_request]);
-        if (this[_readyState] === this.CLOSED) { // The connection is aborted
+        const [err, res] = await _try(fetch(this[_request]));
+        if (this.readyState === this.CLOSED) { // The connection is aborted
             return;
         }
-        if (res.type === "error") {
+        if (err || (res === null || res === void 0 ? void 0 : res.type) === "error") {
             if (!connectedBefore) { // The first attempt, fail the connection
-                this[_readyState] = this.CLOSED;
+                setReadonly(this, "readyState", this.CLOSED);
                 const event = createErrorEvent("error", {
                     error: new Error(`Failed to fetch '${this.url}'`),
                 });
-                (_q = this.onerror) === null || _q === void 0 ? void 0 : _q.call(this, event);
+                (_p = this.onerror) === null || _p === void 0 ? void 0 : _p.call(this, event);
                 this.dispatchEvent(event);
             }
             else { // During reconnection, try again
@@ -405,23 +465,23 @@ class EventSource extends EventTarget {
             return;
         }
         else if (res.status === 204) { // No more data, close the connection
-            this[_readyState] = this.CLOSED;
+            setReadonly(this, "readyState", this.CLOSED);
             return;
         }
         else if (res.status !== 200) {
-            this[_readyState] = this.CLOSED;
+            setReadonly(this, "readyState", this.CLOSED);
             const event = createErrorEvent("error", {
                 error: new Error(`The server responded with status ${res.status}.`),
             });
-            (_r = this.onerror) === null || _r === void 0 ? void 0 : _r.call(this, event);
+            (_q = this.onerror) === null || _q === void 0 ? void 0 : _q.call(this, event);
             this.dispatchEvent(event);
             return;
         }
-        else if (!((_s = res.headers.get("Content-Type")) === null || _s === void 0 ? void 0 : _s.startsWith("text/event-stream"))) {
+        else if (!((_r = res.headers.get("Content-Type")) === null || _r === void 0 ? void 0 : _r.startsWith("text/event-stream"))) {
             const event = createErrorEvent("error", {
                 error: new Error("The response is not an event stream."),
             });
-            (_t = this.onerror) === null || _t === void 0 ? void 0 : _t.call(this, event);
+            (_s = this.onerror) === null || _s === void 0 ? void 0 : _s.call(this, event);
             this.dispatchEvent(event);
             return;
         }
@@ -429,21 +489,21 @@ class EventSource extends EventTarget {
             const event = createErrorEvent("error", {
                 error: new Error("The response does not have a body."),
             });
-            (_u = this.onerror) === null || _u === void 0 ? void 0 : _u.call(this, event);
+            (_t = this.onerror) === null || _t === void 0 ? void 0 : _t.call(this, event);
             this.dispatchEvent(event);
             return;
         }
-        this[_readyState] = this.OPEN;
+        setReadonly(this, "readyState", this.OPEN);
         this[_reader] = res.body.getReader();
         if (!connectedBefore) {
             const event = new Event("open");
-            (_v = this.onopen) === null || _v === void 0 ? void 0 : _v.call(this, event);
+            (_u = this.onopen) === null || _u === void 0 ? void 0 : _u.call(this, event);
             this.dispatchEvent(event);
         }
         this.readMessages(new URL(res.url || this.url).origin).catch(() => { });
     }
     async readMessages(origin) {
-        var _q, _r, _s;
+        var _p, _q, _r;
         const reader = this[_reader];
         const decoder = new TextDecoder();
         let buffer = "";
@@ -451,11 +511,11 @@ class EventSource extends EventTarget {
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) {
-                    if (this[_readyState] !== this.CLOSED) {
+                    if (this.readyState !== this.CLOSED) {
                         const event = createErrorEvent("error", {
                             error: new Error("The connection is interrupted."),
                         });
-                        (_q = this.onerror) === null || _q === void 0 ? void 0 : _q.call(this, event);
+                        (_p = this.onerror) === null || _p === void 0 ? void 0 : _p.call(this, event);
                         this.dispatchEvent(event);
                         this.tryReconnect();
                     }
@@ -510,16 +570,16 @@ class EventSource extends EventTarget {
                             data,
                             origin,
                         });
-                        (_r = this.onmessage) === null || _r === void 0 ? void 0 : _r.call(this, event);
+                        (_q = this.onmessage) === null || _q === void 0 ? void 0 : _q.call(this, event);
                         this.dispatchEvent(event);
                     }
                 }
             }
         }
         catch (error) {
-            if (this[_readyState] !== this.CLOSED) {
+            if (this.readyState !== this.CLOSED) {
                 const event = createErrorEvent("error", { error });
-                (_s = this.onerror) === null || _s === void 0 ? void 0 : _s.call(this, event);
+                (_r = this.onerror) === null || _r === void 0 ? void 0 : _r.call(this, event);
                 this.dispatchEvent(event);
             }
         }
@@ -535,27 +595,6 @@ class EventSource extends EventTarget {
             }).catch(() => { });
         }, this[_reconnectionTime] || (1000 * Math.pow(2, this[_retry]++)));
     }
-    get readyState() {
-        return this[_readyState];
-    }
-    get onopen() {
-        return this[_onopen];
-    }
-    set onopen(value) {
-        this[_onopen] = value;
-    }
-    get onerror() {
-        return this[_onerror];
-    }
-    set onerror(value) {
-        this[_onerror] = value;
-    }
-    get onmessage() {
-        return this[_onmessage];
-    }
-    set onmessage(value) {
-        this[_onmessage] = value;
-    }
     /**
      * Closes the connection.
      */
@@ -564,17 +603,30 @@ class EventSource extends EventTarget {
             clearTimeout(this[_timer]);
             this[_timer] = null;
         }
-        this[_readyState] = this.CLOSED;
+        setReadonly(this, "readyState", this.CLOSED);
         this[_controller].abort();
     }
     addEventListener(event, listener, options) {
         return super.addEventListener(event, listener, options);
     }
+    [(_a = _controller, _b = _request, _c = _reader, _d = _lastEventId, _e = _reconnectionTime, _f = _retry, _g = _timer, _h = _onopen, _j = _onmessage, _k = _onerror, Symbol.for("nodejs.util.inspect.custom"))]() {
+        const _this = this;
+        return new class EventSource {
+            constructor() {
+                this.readyState = _this.readyState;
+                this.url = _this.url;
+                this.withCredentials = _this.withCredentials;
+                this.onopen = _this.onopen;
+                this.onmessage = _this.onmessage;
+                this.onerror = _this.onerror;
+            }
+        };
+    }
 }
-_a = _controller, _b = _request, _c = _reader, _d = _lastEventId, _e = _reconnectionTime, _f = _readyState, _g = _timer, _h = _retry, _j = _onopen, _k = _onerror, _l = _onmessage;
 EventSource.CONNECTING = 0;
 EventSource.OPEN = 1;
 EventSource.CLOSED = 2;
+fixStringTag(EventSource);
 /**
  * Unlike the {@link EventSource} API, which takes a URL and only supports GET
  * request, the {@link EventConsumer} API accepts a `Response` object and reads
@@ -598,6 +650,9 @@ EventSource.CLOSED = 2;
  *   received.
  * - custom events - Dispatched when a message with a custom event type is
  *   received.
+ *
+ * NOTE: This API depends on the Fetch API, in Node.js, it requires Node.js
+ * v18.4.1 or above.
  *
  * @example
  * ```ts
@@ -626,11 +681,11 @@ EventSource.CLOSED = 2;
  */
 class EventConsumer extends EventTarget {
     constructor(response) {
-        var _q;
+        var _p;
         super();
-        this[_m] = "";
-        this[_o] = 0;
-        this[_p] = false;
+        this[_l] = "";
+        this[_m] = 0;
+        this[_o] = false;
         if (!response.body) {
             throw new TypeError("The response does not have a body.");
         }
@@ -640,7 +695,7 @@ class EventConsumer extends EventTarget {
         else if (response.body.locked) {
             throw new TypeError("The response body is locked.");
         }
-        else if (!((_q = response.headers.get("Content-Type")) === null || _q === void 0 ? void 0 : _q.startsWith("text/event-stream"))) {
+        else if (!((_p = response.headers.get("Content-Type")) === null || _p === void 0 ? void 0 : _p.startsWith("text/event-stream"))) {
             throw new TypeError("The response is not an event stream.");
         }
         this[_reader] = response.body.getReader();
@@ -747,7 +802,8 @@ class EventConsumer extends EventTarget {
         return super.addEventListener(event, listener, options);
     }
 }
-_m = _lastEventId, _o = _reconnectionTime, _p = _closed;
+_l = _lastEventId, _m = _reconnectionTime, _o = _closed;
+fixStringTag(EventConsumer);
 /**
  * @deprecated Use {@link EventConsumer} instead.
  */

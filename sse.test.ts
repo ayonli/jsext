@@ -281,7 +281,7 @@ describe("sse", () => {
     });
 
     describe("EventEndpoint (Node.js APIs)", () => {
-        if (!isNode || typeof WritableStream === "undefined") {
+        if (!isNode || typeof fetch === "undefined") {
             return;
         }
 

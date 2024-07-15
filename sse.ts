@@ -18,9 +18,11 @@
 import "./external/event-target-polyfill/index.ts";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
+import type { Constructor } from "./types.ts";
 import { createCloseEvent, createErrorEvent } from "./event.ts";
 import { isBun } from "./env.ts";
 import runtime from "./runtime.ts";
+import _try from "./try.ts";
 
 if (typeof MessageEvent !== "function" || runtime().identity === "workerd") {
     // Worker environments does not implement or only partially implement the MessageEvent, 
@@ -59,23 +61,39 @@ if (typeof MessageEvent !== "function" || runtime().identity === "workerd") {
     };
 }
 
+const encoder = new TextEncoder();
 const SSEMarkClosed = new Set<string>();
-const _lastEventId = Symbol.for("lastEventId");
+
 const _closed = Symbol.for("closed");
 const _request = Symbol.for("request");
 const _response = Symbol.for("response");
 const _writer = Symbol.for("writer");
 const _reader = Symbol.for("reader");
+const _lastEventId = Symbol.for("lastEventId");
 const _reconnectionTime = Symbol.for("reconnectionTime");
-const _readyState = Symbol.for("readyState");
-const _controller = Symbol.for("_controller");
-const _timer = Symbol.for("timer");
 const _retry = Symbol.for("retry");
+const _timer = Symbol.for("timer");
+const _controller = Symbol.for("_controller");
 const _onopen = Symbol.for("onopen");
 const _onerror = Symbol.for("onerror");
 const _onmessage = Symbol.for("onmessage");
 
-const encoder = new TextEncoder();
+function setReadonly<T>(obj: any, name: string | symbol, value: T) {
+    Object.defineProperty(obj, name, {
+        configurable: true,
+        enumerable: false,
+        writable: false,
+        value,
+    });
+}
+
+function getReadonly<T>(obj: any, name: string | symbol): T | undefined {
+    return Object.getOwnPropertyDescriptor(obj, name)?.value;
+}
+
+function fixStringTag(ctor: Constructor): void {
+    setReadonly(ctor.prototype, Symbol.toStringTag, ctor.name);
+}
 
 /**
  * The options for the {@link EventEndpoint} constructor.
@@ -405,7 +423,7 @@ export class EventEndpoint extends EventTarget {
      * reconnects, the server will send a `204 No Content` response to the
      * client to instruct it to terminate the connection.
      * 
-     * It is important to note that the server relies on the last event ID to
+     * It is important to note that the server depends on the last event ID to
      * identify the client for this purpose, so the server must send a globally
      * unique `lastEventId` to the client when sending messages.
      */
@@ -423,6 +441,7 @@ export class EventEndpoint extends EventTarget {
         });
     }
 }
+fixStringTag(EventEndpoint);
 
 /**
  * @deprecated Use {@link EventEndpoint} instead.
@@ -439,6 +458,9 @@ export type SSEOptions = EventEndpointOptions;
  * [EventSource](https://developer.mozilla.org/en-US/docs/Web/API/EventSource)
  * API that can be used in environments that do not have native support, such as
  * Node.js.
+ * 
+ * NOTE: This API depends on the Fetch API, in Node.js, it requires Node.js
+ * v18.4.1 or above.
  * 
  * @example
  * ```ts
@@ -469,14 +491,11 @@ export class EventSource extends EventTarget {
     private [_reader]: ReadableStreamDefaultReader<Uint8Array> | null = null;
     private [_lastEventId]: string = "";
     private [_reconnectionTime]: number = 0;
-    private [_readyState]: number = EventSource.CONNECTING;
-    private [_timer]: number | NodeJS.Timeout | null = null;
     private [_retry]: number = 0;
+    private [_timer]: number | NodeJS.Timeout | null = null;
     private [_onopen]: ((this: EventSource, ev: Event) => any) | null = null;
-    private [_onerror]: ((this: EventSource, ev: Event) => any) | null = null;
     private [_onmessage]: ((this: EventSource, ev: MessageEvent<string>) => any) | null = null;
-    readonly url: string;
-    readonly withCredentials: boolean;
+    private [_onerror]: ((this: EventSource, ev: ErrorEvent) => any) | null = null;
 
     readonly CONNECTING = EventSource.CONNECTING;
     readonly OPEN = EventSource.OPEN;
@@ -486,26 +505,69 @@ export class EventSource extends EventTarget {
     static OPEN = 1 as const;
     static CLOSED = 2 as const;
 
+    get url(): string {
+        return getReadonly(this, "url") ?? "";
+    }
+
+    get withCredentials(): boolean {
+        return getReadonly(this, "withCredentials") ?? false;
+    }
+
+    get readyState(): number {
+        return getReadonly(this, "readyState") ?? this.CONNECTING;
+    }
+
+    get onopen(): ((this: EventSource, ev: Event) => any) | null {
+        return this[_onopen] ?? null;
+    }
+    set onopen(value: ((this: EventSource, ev: Event) => any) | null) {
+        this[_onopen] = value;
+    }
+
+    get onmessage(): ((this: EventSource, ev: MessageEvent<string>) => any) | null {
+        return this[_onmessage] ?? null;
+    }
+    set onmessage(value: ((this: EventSource, ev: MessageEvent<string>) => any) | null) {
+        this[_onmessage] = value;
+    }
+
+    get onerror(): ((this: EventSource, ev: ErrorEvent) => any) | null {
+        return this[_onerror] ?? null;
+    }
+    set onerror(value: ((this: EventSource, ev: Event) => any) | null) {
+        this[_onerror] = value;
+    }
+
     constructor(url: string, options: EventSourceInit = {}) {
         super();
-        this.url = new URL(url, typeof location === "object" ? location.origin : undefined).href;
-        this.withCredentials = options?.withCredentials ?? false;
-        this.connect().catch(() => { });
+        url = new URL(url, typeof location === "object" ? location.origin : undefined).href;
+
+        setReadonly(this, "url", url);
+        setReadonly(this, "withCredentials", options.withCredentials ?? false);
+        setReadonly(this, "readyState", this.CONNECTING);
+
+        setReadonly(this, "CONNECTING", EventSource.CONNECTING);
+        setReadonly(this, "OPEN", EventSource.OPEN);
+        setReadonly(this, "CLOSED", EventSource.CLOSED);
+
+        this.connect().catch((err) => {
+            console.error(err);
+        });
     }
 
     private async connect() {
-        if (this[_readyState] === this.CLOSED) {
+        if (this.readyState === this.CLOSED) {
             return;
         }
 
-        const connectedBefore = this[_readyState] === this.OPEN;
-        this[_readyState] = this.CONNECTING;
-        const headers = new Headers(
-            [["Accept", "text/event-stream"]],
-        );
+        const connectedBefore = this.readyState === this.OPEN;
+        setReadonly(this, "readyState", this.CONNECTING);
+        const headers: HeadersInit = {
+            "Accept": "text/event-stream",
+        };
 
         if (this[_lastEventId]) {
-            headers.set("Last-Event-ID", this[_lastEventId]);
+            headers["Last-Event-ID"] = this[_lastEventId];
         }
 
         this[_request] = new Request(this.url, {
@@ -516,15 +578,15 @@ export class EventSource extends EventTarget {
             signal: this[_controller].signal,
         });
 
-        const res = await fetch(this[_request]);
+        const [err, res] = await _try(fetch(this[_request]));
 
-        if (this[_readyState] === this.CLOSED) { // The connection is aborted
+        if (this.readyState === this.CLOSED) { // The connection is aborted
             return;
         }
 
-        if (res.type === "error") {
+        if (err || res?.type === "error") {
             if (!connectedBefore) { // The first attempt, fail the connection
-                this[_readyState] = this.CLOSED;
+                setReadonly(this, "readyState", this.CLOSED);
                 const event = createErrorEvent("error", {
                     error: new Error(`Failed to fetch '${this.url}'`),
                 });
@@ -535,10 +597,10 @@ export class EventSource extends EventTarget {
             }
             return;
         } else if (res.status === 204) { // No more data, close the connection
-            this[_readyState] = this.CLOSED;
+            setReadonly(this, "readyState", this.CLOSED);
             return;
         } else if (res.status !== 200) {
-            this[_readyState] = this.CLOSED;
+            setReadonly(this, "readyState", this.CLOSED);
             const event = createErrorEvent("error", {
                 error: new Error(`The server responded with status ${res.status}.`),
             });
@@ -561,7 +623,7 @@ export class EventSource extends EventTarget {
             return;
         }
 
-        this[_readyState] = this.OPEN;
+        setReadonly(this, "readyState", this.OPEN);
         this[_reader] = res.body!.getReader();
 
         if (!connectedBefore) {
@@ -583,7 +645,7 @@ export class EventSource extends EventTarget {
                 const { done, value } = await reader.read();
 
                 if (done) {
-                    if (this[_readyState] !== this.CLOSED) {
+                    if (this.readyState !== this.CLOSED) {
                         const event = createErrorEvent("error", {
                             error: new Error("The connection is interrupted."),
                         });
@@ -652,7 +714,7 @@ export class EventSource extends EventTarget {
                 }
             }
         } catch (error) {
-            if (this[_readyState] !== this.CLOSED) {
+            if (this.readyState !== this.CLOSED) {
                 const event = createErrorEvent("error", { error });
                 this.onerror?.call(this, event);
                 this.dispatchEvent(event);
@@ -673,31 +735,6 @@ export class EventSource extends EventTarget {
         }, this[_reconnectionTime] || (1_000 * Math.pow(2, this[_retry]++)));
     }
 
-    get readyState(): number {
-        return this[_readyState];
-    }
-
-    get onopen(): ((this: EventSource, ev: Event) => any) | null {
-        return this[_onopen];
-    }
-    set onopen(value: ((this: EventSource, ev: Event) => any) | null) {
-        this[_onopen] = value;
-    }
-
-    get onerror(): ((this: EventSource, ev: Event) => any) | null {
-        return this[_onerror];
-    }
-    set onerror(value: ((this: EventSource, ev: Event) => any) | null) {
-        this[_onerror] = value;
-    }
-
-    get onmessage(): ((this: EventSource, ev: MessageEvent<any>) => any) | null {
-        return this[_onmessage];
-    }
-    set onmessage(value: ((this: EventSource, ev: MessageEvent<any>) => any) | null) {
-        this[_onmessage] = value;
-    }
-
     /**
      * Closes the connection.
      */
@@ -706,7 +743,7 @@ export class EventSource extends EventTarget {
             clearTimeout(this[_timer]);
             this[_timer] = null;
         }
-        this[_readyState] = this.CLOSED;
+        setReadonly(this, "readyState", this.CLOSED);
         this[_controller].abort();
     }
 
@@ -761,7 +798,20 @@ export class EventSource extends EventTarget {
             options
         );
     }
+
+    [Symbol.for("nodejs.util.inspect.custom")](): object {
+        const _this = this;
+        return new class EventSource {
+            readyState = _this.readyState;
+            url = _this.url;
+            withCredentials = _this.withCredentials;
+            onopen = _this.onopen;
+            onmessage = _this.onmessage;
+            onerror = _this.onerror;
+        };
+    }
 }
+fixStringTag(EventSource);
 
 /**
  * Unlike the {@link EventSource} API, which takes a URL and only supports GET
@@ -786,6 +836,9 @@ export class EventSource extends EventTarget {
  *   received.
  * - custom events - Dispatched when a message with a custom event type is
  *   received.
+ * 
+ * NOTE: This API depends on the Fetch API, in Node.js, it requires Node.js
+ * v18.4.1 or above.
  * 
  * @example
  * ```ts
@@ -998,6 +1051,7 @@ export class EventConsumer extends EventTarget {
         );
     }
 }
+fixStringTag(EventConsumer);
 
 /**
  * @deprecated Use {@link EventConsumer} instead.
