@@ -467,8 +467,8 @@ async function saveFile(file, options = {}) {
  * user choose the location where the file will be saved. In others browsers,
  * the file will be saved to the default download location.
  *
- * NOTE: This function relies on the `ReadableStream` API, in Node.js, it
- * requires Node.js v16.5 or above.
+ * NOTE: This function depends on the Fetch API and Web Streams API, in Node.js,
+ * it requires Node.js v18.0 or above.
  *
  * @example
  * ```ts
@@ -522,12 +522,13 @@ async function downloadFile(url, options = {}) {
             throw new Error("Unsupported runtime");
         }
     }
+    if (typeof fetch !== "function") {
+        throw new Error("Unsupported runtime");
+    }
     const task = asyncTask();
     let signal = (_a = options.signal) !== null && _a !== void 0 ? _a : null;
     let result;
     let updateProgress;
-    let stream;
-    let size;
     if (options.showProgress) {
         const ctrl = new AbortController();
         signal = ctrl.signal;
@@ -542,61 +543,12 @@ async function downloadFile(url, options = {}) {
     else {
         result = task;
     }
-    if (typeof fetch === "function") {
-        const res = await fetch(src, { signal });
-        if (!res.ok) {
-            throw new Error(`Failed to download: ${src}`);
-        }
-        size = parseInt(res.headers.get("Content-Length") || "0", 10);
-        stream = res.body;
+    const res = await fetch(src, { signal });
+    if (!res.ok) {
+        throw new Error(`Failed to download: ${src}`);
     }
-    else if (isNodeLike) {
-        const task = asyncTask();
-        const handleHttpResponse = (res) => {
-            if (res.statusCode !== 200) {
-                task.reject(new Error(`Failed to download: ${src}`));
-                return;
-            }
-            else {
-                const { readable, writable } = new TransformStream();
-                const writer = writable.getWriter();
-                res.on("data", (chunk) => {
-                    writer.write(chunk).catch(err => task.reject(err));
-                }).once("end", () => {
-                    writer.close().catch(err => task.reject(err));
-                }).once("error", err => {
-                    writer.abort(err).catch(err => task.reject(err));
-                });
-                task.resolve({
-                    stream: readable,
-                    size: parseInt(res.headers["content-length"] || "0", 10),
-                });
-            }
-        };
-        const { hostname, port, pathname, search } = new URL(src);
-        if (/^https:\/\//i.test(src)) {
-            const https = await import('https');
-            https.get({
-                hostname,
-                port,
-                path: pathname + search,
-                signal: signal !== null && signal !== void 0 ? signal : undefined,
-            }, handleHttpResponse);
-        }
-        else {
-            const http = await import('http');
-            http.get({
-                hostname,
-                port,
-                path: pathname + search,
-                signal: signal !== null && signal !== void 0 ? signal : undefined,
-            }, handleHttpResponse);
-        }
-        ({ stream, size } = await task);
-    }
-    if (!stream) {
-        throw new Error("Unsupported runtime");
-    }
+    const size = parseInt(res.headers.get("Content-Length") || "0", 10);
+    let stream = res.body;
     if (options.onProgress || options.showProgress) {
         const { onProgress } = options;
         let loaded = 0;

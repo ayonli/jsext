@@ -1630,6 +1630,8 @@ async function utimes(path, atime, mtime) {
 /**
  * Creates a readable stream for the target file.
  *
+ * NOTE: In Node.js, this function requires Node.js v18.0 or above.
+ *
  * @example
  * ```ts
  * // with the default storage
@@ -1703,6 +1705,8 @@ async function readFileHandleAsStream(handle) {
 const readFileAsStream = createReadableStream;
 /**
  * Creates a writable stream for the target file.
+ *
+ * NOTE: In Node.js, this function requires Node.js v18.0 or above.
  *
  * @example
  * ```ts

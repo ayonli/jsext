@@ -3,7 +3,7 @@
  * Bun and Cloudflare Workers. This module is based on the `EventTarget`
  * interface and conforms the web standard.
  * 
- * NOTE: In Node.js, this module requires Node.js v15 or above.
+ * NOTE: In Node.js, this module requires Node.js v15.4 or above.
  * @module
  * @experimental
  */
@@ -41,9 +41,6 @@ const _connTasks = Symbol.for("connTasks");
  * 
  * The `socket` object is an async iterable object, which can be used in the
  * `for await...of` loop to read messages with backpressure support.
- * 
- * NOTE: In order to work in Node.js, install the `@ayonli/jsext` library from
- * NPM instead of JSR.
  * 
  * @example
  * ```ts

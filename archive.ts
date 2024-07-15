@@ -6,7 +6,7 @@
  * server and browser environments.
  * 
  * NOTE: This module depends on the Web Streams API, in Node.js, it requires
- * Node.js v16.5 or higher.
+ * Node.js v18.0 or above.
  * @module
  * @experimental
  */

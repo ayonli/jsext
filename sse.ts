@@ -9,8 +9,8 @@
  * Despite their names, these classes can be used in both the browser/client
  * and the server environments.
  * 
- * NOTE: This module depends on the Web Streams API, in Node.js, it requires
- * Node.js v16.5 or higher.
+ * NOTE: This module depends on the Fetch API and Web Streams API, in Node.js,
+ * it requires Node.js v18.0 or higher.
  * 
  * @module
  * @experimental

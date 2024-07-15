@@ -434,8 +434,8 @@ export function isREPL(): boolean {
  * Make the timer block the event loop from finishing again after it has been
  * unrefed.
  * 
- * Only available in Node.js/Bun and Deno, in the browser, this function is a
- * no-op.
+ * NOTE: This function is only available in Node.js, Deno and Bun, in other
+ * environments, it's a no-op.
  */
 export function refTimer(timer: NodeJS.Timeout | number): void {
     if (typeof timer === "object" && typeof timer.ref === "function") {
@@ -448,8 +448,8 @@ export function refTimer(timer: NodeJS.Timeout | number): void {
 /**
  * Make the timer not block the event loop from finishing.
  * 
- * Only available in Node.js/Bun and Deno, in the browser, this function is a
- * no-op.
+ * NOTE: This function is only available in Node.js, Deno and Bun, in other
+ * environments, it's a no-op.
  * 
  * @example
  * ```ts

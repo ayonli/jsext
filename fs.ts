@@ -1939,6 +1939,8 @@ export async function utimes(
 /**
  * Creates a readable stream for the target file.
  * 
+ * NOTE: In Node.js, this function requires Node.js v18.0 or above.
+ * 
  * @example
  * ```ts
  * // with the default storage
@@ -2025,6 +2027,8 @@ export const readFileAsStream = createReadableStream;
 
 /**
  * Creates a writable stream for the target file.
+ * 
+ * NOTE: In Node.js, this function requires Node.js v18.0 or above.
  * 
  * @example
  * ```ts
