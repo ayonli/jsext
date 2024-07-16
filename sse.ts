@@ -10,7 +10,7 @@
  * and the server environments.
  * 
  * NOTE: This module depends on the Fetch API and Web Streams API, in Node.js,
- * it requires Node.js v18.0 or higher.
+ * it requires Node.js v18.0 or above.
  * 
  * @module
  * @experimental
@@ -27,14 +27,14 @@ import _try from "./try.ts";
 if (typeof MessageEvent !== "function" || runtime().identity === "workerd") {
     // Worker environments does not implement or only partially implement the MessageEvent, 
     // we need to implement it ourselves.
-    globalThis.MessageEvent = class MessageEvent<T = any> extends Event implements MessageEvent<T> {
+    globalThis.MessageEvent = class MessageEvent<T = any> extends Event implements globalThis.MessageEvent<T> {
         readonly data: T = undefined as T;
         readonly lastEventId: string = "";
         readonly origin: string = "";
         readonly ports: ReadonlyArray<MessagePort> = [];
         readonly source: MessageEventSource | null = null;
 
-        constructor(type: string, eventInitDict?: MessageEventInit<T> | undefined) {
+        constructor(type: string, eventInitDict: MessageEventInit<T> | undefined = undefined) {
             super(type, eventInitDict);
 
             if (eventInitDict) {
@@ -47,13 +47,13 @@ if (typeof MessageEvent !== "function" || runtime().identity === "workerd") {
 
         initMessageEvent(
             type: string,
-            bubbles?: boolean,
-            cancelable?: boolean,
-            data?: any,
-            origin?: string,
-            lastEventId?: string,
-            source?: MessageEventSource | null,
-            ports?: MessagePort[]
+            bubbles = false,
+            cancelable = false,
+            data = null,
+            origin = "",
+            lastEventId = "",
+            source: MessageEventSource | null = null,
+            ports: MessagePort[] = []
         ): void {
             this.initEvent(type, bubbles ?? false, cancelable ?? false);
             Object.assign(this, { data, origin, lastEventId, source, ports });
@@ -535,15 +535,17 @@ export type SSEOptions = EventEndpointOptions;
 /**
  * This is an implementation of the
  * [EventSource](https://developer.mozilla.org/en-US/docs/Web/API/EventSource)
- * API that can be used in environments that do not have native support, such as
- * Node.js.
+ * API that serves as a polyfill in environments that do not have native support,
+ * such as Node.js.
  * 
- * NOTE: This API depends on the Fetch API, in Node.js, it requires Node.js
- * v18.4.1 or above.
+ * NOTE: This API depends on the Fetch API and Web Streams API, in Node.js, it
+ * requires Node.js v18.0 or above.
  * 
  * @example
  * ```ts
  * import { EventSource } from "@ayonli/jsext/sse";
+ * 
+ * globalThis.EventSource ??= EventSource;
  * 
  * const events = new EventSource("http://localhost:3000");
  * 
@@ -666,8 +668,8 @@ export class EventSource extends EventTarget {
                 const event = createErrorEvent("error", {
                     error: new Error(`Failed to fetch '${this.url}'`),
                 });
-                this.onerror?.call(this, event);
                 this.dispatchEvent(event);
+                this.onerror?.call(this, event);
             } else { // During reconnection, try again
                 this.tryReconnect();
             }
@@ -680,22 +682,22 @@ export class EventSource extends EventTarget {
             const event = createErrorEvent("error", {
                 error: new Error(`The server responded with status ${res.status}.`),
             });
-            this.onerror?.call(this, event);
             this.dispatchEvent(event);
+            this.onerror?.call(this, event);
             return;
         } else if (!res.headers.get("Content-Type")?.startsWith("text/event-stream")) {
             const event = createErrorEvent("error", {
                 error: new Error("The response is not an event stream."),
             });
-            this.onerror?.call(this, event);
             this.dispatchEvent(event);
+            this.onerror?.call(this, event);
             return;
         } else if (!res.body) {
             const event = createErrorEvent("error", {
                 error: new Error("The response does not have a body."),
             });
-            this.onerror?.call(this, event);
             this.dispatchEvent(event);
+            this.onerror?.call(this, event);
             return;
         }
 
@@ -703,8 +705,8 @@ export class EventSource extends EventTarget {
 
         if (!connectedBefore) {
             const event = new Event("open");
-            this.onopen?.call(this, event);
             this.dispatchEvent(event);
+            this.onopen?.call(this, event);
         }
 
         const origin = new URL(res.url || this.url).origin;
@@ -871,8 +873,8 @@ fixStringTag(EventSource);
  * - custom events - Dispatched when a message with a custom event type is
  *   received.
  * 
- * NOTE: This API depends on the Fetch API, in Node.js, it requires Node.js
- * v18.4.1 or above.
+ * NOTE: This API depends on the Fetch API and Web Streams API, in Node.js, it
+ * requires Node.js v18.0 or above.
  * 
  * @example
  * ```ts
