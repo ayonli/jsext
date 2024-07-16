@@ -152,21 +152,6 @@ export function encodeBase64(data: string | ArrayBufferLike | Uint8Array): strin
  * ```
  */
 export function decodeBase64(base64: string): Uint8Array {
-    if (typeof Buffer === "function" && typeof Buffer.from === "function") {
-        const buffer = Buffer.from(base64, "base64");
-        return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-    } else if (typeof atob === "function") {
-        const binStr = atob(base64);
-        const size = binStr.length;
-        const bytes = new Uint8Array(size);
-
-        for (let i = 0; i < size; i++) {
-            bytes[i] = binStr.charCodeAt(i);
-        }
-
-        return bytes;
-    }
-
     const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
     const bytes = new Uint8Array((base64.length * 3 / 4) - padding);
     let i = 0;
