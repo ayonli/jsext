@@ -4,6 +4,10 @@ import { decodeBase64, decodeHex, encodeBase64, encodeHex } from "./encoding.ts"
 import bytes, { text } from "./bytes.ts";
 import { random } from "./string.ts";
 
+const chars1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()[]{}_-+/='\";:,.<>?";
+const chars2 = "的一国在人了有中是年和大业不为发会工经上地市要个产这出行作生家以成到日民来我部对进多全建他公开们场展时理新方主企资实学报制政济用同于法高长现本月定化加动合品重关机分力自外者区能设后就等体下万元社过前面";
+const chars = chars1 + chars2;
+
 describe("encoding", () => {
     it("encodeHex", () => {
         const hex1 = encodeHex("Hello, World!");
@@ -21,6 +25,13 @@ describe("encoding", () => {
         const hex4 = encodeHex("你好，世界！");
         strictEqual(hex4, "e4bda0e5a5bdefbc8ce4b896e7958cefbc81");
         strictEqual(hex4, Buffer.from("你好，世界！").toString("hex"));
+
+        for (let i = 0; i < 100; i++) {
+            const original = random(16, chars);
+            const hex = encodeHex(original);
+
+            strictEqual(hex, Buffer.from(original).toString("hex"));
+        }
     });
 
     it("decodeHex", () => {
@@ -29,6 +40,14 @@ describe("encoding", () => {
 
         const data2 = decodeHex("e4bda0e5a5bdefbc8ce4b896e7958cefbc81");
         deepStrictEqual(data2, new Uint8Array(bytes("你好，世界！")));
+
+        for (let i = 0; i < 100; i++) {
+            const original = random(16, chars);
+            const hex = encodeHex(original);
+            const decoded = text(decodeHex(hex));
+
+            strictEqual(decoded, original);
+        }
     });
 
     it("encodeBase64", () => {
@@ -49,7 +68,7 @@ describe("encoding", () => {
         strictEqual(base644, Buffer.from("你好，世界！").toString("base64"));
 
         for (let i = 0; i < 100; i++) {
-            const original = random(16);
+            const original = random(16, chars);
             const base64 = encodeBase64(original);
 
             strictEqual(base64, Buffer.from(original).toString("base64"));
@@ -64,7 +83,7 @@ describe("encoding", () => {
         deepStrictEqual(data2, new Uint8Array(bytes("你好，世界！")));
 
         for (let i = 0; i < 100; i++) {
-            const original = random(16);
+            const original = random(16, chars);
             const base64 = encodeBase64(original);
             const decoded = text(decodeBase64(base64));
 
