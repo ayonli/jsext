@@ -152,8 +152,8 @@ export function encodeBase64(data: string | ArrayBufferLike | Uint8Array): strin
  * ```
  */
 export function decodeBase64(base64: string): Uint8Array {
-    base64 = base64.replace(/[=]+$/, "");
-    const bytes = new Uint8Array(base64.length * 3 / 4);
+    const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+    const bytes = new Uint8Array((base64.length * 3 / 4) - padding);
     let i = 0;
     let j = 0;
     let c: number;
@@ -168,9 +168,11 @@ export function decodeBase64(base64: string): Uint8Array {
         c3 = base64Chars.indexOf(base64[i++]!);
 
         bytes[j++] = (c << 2) | (c1 >> 4);
+        if (i > base64.length + padding) break;
         bytes[j++] = ((c1 & 0xf) << 4) | (c2 >> 2);
+        if (i > base64.length + padding) break;
         bytes[j++] = ((c2 & 0x3) << 6) | c3;
     }
 
-    return bytes.subarray(0, j - (base64.length % 4));
+    return bytes;
 }

@@ -1,7 +1,8 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { Buffer } from "node:buffer";
-import { decodeHex, encodeBase64, encodeHex } from "./encoding.ts";
-import bytes from "./bytes.ts";
+import { decodeBase64, decodeHex, encodeBase64, encodeHex } from "./encoding.ts";
+import bytes, { text } from "./bytes.ts";
+import { random } from "./string.ts";
 
 describe("encoding", () => {
     it("encodeHex", () => {
@@ -46,5 +47,28 @@ describe("encoding", () => {
         const base644 = encodeBase64("你好，世界！");
         strictEqual(base644, "5L2g5aW977yM5LiW55WM77yB");
         strictEqual(base644, Buffer.from("你好，世界！").toString("base64"));
+
+        for (let i = 0; i < 100; i++) {
+            const original = random(16);
+            const base64 = encodeBase64(original);
+
+            strictEqual(base64, Buffer.from(original).toString("base64"));
+        }
+    });
+
+    it("decodeBase64", () => {
+        const data1 = decodeBase64("SGVsbG8sIFdvcmxkIQ==");
+        deepStrictEqual(data1, new Uint8Array(bytes("Hello, World!")));
+
+        const data2 = decodeBase64("5L2g5aW977yM5LiW55WM77yB");
+        deepStrictEqual(data2, new Uint8Array(bytes("你好，世界！")));
+
+        for (let i = 0; i < 100; i++) {
+            const original = random(16);
+            const base64 = encodeBase64(original);
+            const decoded = text(decodeBase64(base64));
+
+            strictEqual(decoded, original);
+        }
     });
 });
