@@ -30,6 +30,14 @@
  * tsx node_modules/@ayonli/jsext/http.ts [--port PORT] [DIR]
  * tsx node_modules/@ayonli/jsext/http.ts <entry.ts>
  * ```
+ * 
+ * In Node.js, we can also do this:
+ * 
+ * ```sh
+ * tsx --import=@ayonli/jsext/http <entry.ts>
+ * # or
+ * node -r @ayonli/jsext/http <entry.js>
+ * ```
  * @module
  * @experimental
  */
@@ -835,7 +843,7 @@ export async function serveStatic(
 
 declare const Bun: any;
 
-if (isMain(import.meta)) {
+async function startServer(args: string[]) {
     const options = parseArgs(args, {
         alias: { p: "port" }
     });
@@ -845,27 +853,40 @@ if (isMain(import.meta)) {
     let filename = String(options[0] || ".");
     const ext = extname(filename);
 
-    if (isDeno || isBun || isNode) {
-        (async () => {
-            if (/^\.m?(js|ts)x?/.test(ext)) { // custom entry file
-                filename = resolve(filename);
-                const mod = await import(filename);
+    if (/^\.m?(js|ts)x?/.test(ext)) { // custom entry file
+        filename = resolve(filename);
+        const mod = await import(filename);
 
-                if (typeof mod.default === "object" && typeof mod.default.fetch === "function") {
-                    config = mod.default as ServeOptions;
-                    fetch = config.fetch!;
-                } else {
-                    throw new Error(
-                        "The entry file must have an `export default { fetch }` statement");
-                }
-            }
+        if (typeof mod.default === "object" && typeof mod.default.fetch === "function") {
+            config = mod.default as ServeOptions;
+            fetch = config.fetch!;
+        } else {
+            throw new Error(
+                "The entry file must have an `export default { fetch }` statement");
+        }
+    }
 
-            fetch ||= (req) => serveStatic(req, {
-                fsDir: filename,
-                listDir: true,
-            });
+    fetch ||= (req) => serveStatic(req, {
+        fsDir: filename,
+        listDir: true,
+    });
 
-            serve({ ...config, fetch, port });
-        })();
+    serve({ ...config, fetch, port });
+}
+
+if ((isDeno || isBun || isNode) && isMain(import.meta)) {
+    startServer(args);
+} else if (isNode && process.execArgv.some(arg => arg.endsWith("@ayonli/jsext/http"))) {
+    const options = parseArgs(process.execArgv, {
+        alias: { r: "require" },
+        lists: ["require", "import"],
+    });
+    const args = process.argv.slice(1);
+
+    if (args.length && (
+        (options["require"] as string[] | undefined)?.includes("@ayonli/jsext/http") ||
+        (options["import"] as string[] | undefined)?.includes("@ayonli/jsext/http")
+    )) {
+        startServer(args);
     }
 }

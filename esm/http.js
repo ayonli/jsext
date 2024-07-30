@@ -4,7 +4,7 @@ import { stripStart } from './string.js';
 import { isDeno, isBun, isNode } from './env.js';
 import './external/event-target-polyfill/index.js';
 import { isMain } from './module.js';
-import { extname, resolve, join } from './path.js';
+import { join, extname, resolve } from './path.js';
 import './cli/constants.js';
 import { parseArgs, args } from './cli/common.js';
 import { stat, exists, readDir, readFile, createReadableStream } from './fs.js';
@@ -50,9 +50,18 @@ import { startsWith } from './path/util.js';
  * tsx node_modules/@ayonli/jsext/http.ts [--port PORT] [DIR]
  * tsx node_modules/@ayonli/jsext/http.ts <entry.ts>
  * ```
+ *
+ * In Node.js, we can also do this:
+ *
+ * ```sh
+ * tsx --import=@ayonli/jsext/http <entry.ts>
+ * # or
+ * node -r @ayonli/jsext/http <entry.js>
+ * ```
  * @module
  * @experimental
  */
+var _a, _b;
 /**
  * Calculates the ETag for a given entity.
  *
@@ -789,7 +798,7 @@ async function serveStatic(req, options = {}) {
         });
     }
 }
-if (isMain(import.meta)) {
+async function startServer(args) {
     const options = parseArgs(args, {
         alias: { p: "port" }
     });
@@ -798,25 +807,35 @@ if (isMain(import.meta)) {
     let port = Number.isFinite(options["port"]) ? options["port"] : undefined;
     let filename = String(options[0] || ".");
     const ext = extname(filename);
-    if (isDeno || isBun || isNode) {
-        (async () => {
-            if (/^\.m?(js|ts)x?/.test(ext)) { // custom entry file
-                filename = resolve(filename);
-                const mod = await import(filename);
-                if (typeof mod.default === "object" && typeof mod.default.fetch === "function") {
-                    config = mod.default;
-                    fetch = config.fetch;
-                }
-                else {
-                    throw new Error("The entry file must have an `export default { fetch }` statement");
-                }
-            }
-            fetch || (fetch = (req) => serveStatic(req, {
-                fsDir: filename,
-                listDir: true,
-            }));
-            serve({ ...config, fetch, port });
-        })();
+    if (/^\.m?(js|ts)x?/.test(ext)) { // custom entry file
+        filename = resolve(filename);
+        const mod = await import(filename);
+        if (typeof mod.default === "object" && typeof mod.default.fetch === "function") {
+            config = mod.default;
+            fetch = config.fetch;
+        }
+        else {
+            throw new Error("The entry file must have an `export default { fetch }` statement");
+        }
+    }
+    fetch || (fetch = (req) => serveStatic(req, {
+        fsDir: filename,
+        listDir: true,
+    }));
+    serve({ ...config, fetch, port });
+}
+if ((isDeno || isBun || isNode) && isMain(import.meta)) {
+    startServer(args);
+}
+else if (isNode && process.execArgv.some(arg => arg.endsWith("@ayonli/jsext/http"))) {
+    const options = parseArgs(process.execArgv, {
+        alias: { r: "require" },
+        lists: ["require", "import"],
+    });
+    const args = process.argv.slice(1);
+    if (args.length && (((_a = options["require"]) === null || _a === void 0 ? void 0 : _a.includes("@ayonli/jsext/http")) ||
+        ((_b = options["import"]) === null || _b === void 0 ? void 0 : _b.includes("@ayonli/jsext/http")))) {
+        startServer(args);
     }
 }
 
