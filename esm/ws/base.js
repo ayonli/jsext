@@ -1,9 +1,10 @@
-import { asyncTask } from '../async.js';
+import '../external/event-target-polyfill/index.js';
 import chan from '../chan.js';
 import { fromErrorEvent } from '../error.js';
 
+var _a;
 const _source = Symbol.for("source");
-const _readyTask = Symbol.for("readyTask");
+const _ws = Symbol.for("ws");
 /**
  * This class represents a WebSocket connection on the server side.
  * Normally we don't create instances of this class directly, but rather use
@@ -28,51 +29,48 @@ const _readyTask = Symbol.for("readyTask");
 class WebSocketConnection extends EventTarget {
     constructor(source) {
         super();
+        this[_a] = null;
         this[_source] = source;
-        this[_readyTask] = asyncTask();
-        if (source.readyState === 1) {
-            this[_readyTask].resolve();
-        }
-        else if (typeof source.addEventListener === "function") {
-            source.addEventListener("open", () => {
-                this[_readyTask].resolve();
-            });
-        }
-        else {
-            source.onopen = () => {
-                this[_readyTask].resolve();
-            };
-        }
+        this[_source].then(ws => {
+            this[_ws] = ws;
+        });
     }
     /**
      * A promise that resolves when the connection is ready to send and receive
      * messages.
      */
     get ready() {
-        return this[_readyTask].then(() => this);
+        return this[_source].then(() => this);
     }
     /**
      * The current state of the WebSocket connection.
      */
     get readyState() {
-        return this[_source].readyState;
+        var _b, _c;
+        return (_c = (_b = this[_ws]) === null || _b === void 0 ? void 0 : _b.readyState) !== null && _c !== void 0 ? _c : 0;
     }
     /**
      * Sends data to the WebSocket client.
      */
     send(data) {
-        this[_source].send(data);
+        if (!this[_ws]) {
+            throw new Error("WebSocket connection is not ready");
+        }
+        this[_ws].send(data);
     }
     /**
      * Closes the WebSocket connection.
      */
     close(code, reason) {
-        this[_source].close(code, reason);
+        if (!this[_ws]) {
+            throw new Error("WebSocket connection is not ready");
+        }
+        this[_ws].close(code, reason);
     }
     addEventListener(event, listener, options) {
         return super.addEventListener(event, listener, options);
     }
-    async *[Symbol.asyncIterator]() {
+    async *[(_a = _ws, Symbol.asyncIterator)]() {
         const channel = chan(Infinity);
         this.addEventListener("message", ev => {
             channel.send(ev.data);

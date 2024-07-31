@@ -75,7 +75,7 @@ export interface RequestContext {
     /**
      * Upgrades the request to a WebSocket connection.
      */
-    upgradeWebSocket(): Promise<{ socket: WebSocketConnection; response: Response; }>;
+    upgradeWebSocket(): { socket: WebSocketConnection; response: Response; };
     /**
      * Prolongs the request's lifetime until the promise is resolved. Only
      * available in workers environments such as Cloudflare Workers.

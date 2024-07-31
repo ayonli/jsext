@@ -439,8 +439,8 @@ function toNodeResponse(res, nodeRes) {
  * import { serve } from "@ayonli/jsext/http";
  *
  * serve({
- *     async fetch(req, ctx) {
- *         const { socket, response } = await ctx.upgradeWebSocket();
+ *     fetch(req, ctx) {
+ *         const { socket, response } = ctx.upgradeWebSocket();
  *
  *         socket.ready.then(() => {
  *             socket.addEventListener("message", (event) => {

@@ -1,6 +1,6 @@
 import { createCloseEvent, createErrorEvent } from "../event.ts";
 import type { BunServer } from "../http/server.ts";
-import type { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike } from "../ws/base.ts";
+import { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike } from "../ws/base.ts";
 import type { IncomingMessage } from "node:http";
 
 export type { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike };
@@ -32,9 +32,9 @@ export class WebSocketServer {
         }
     }
 
-    upgrade(request: Request): Promise<{ socket: WebSocketConnection; response: Response; }>;
-    upgrade(request: IncomingMessage): Promise<{ socket: WebSocketConnection; }>;
-    async upgrade(request: Request | IncomingMessage): Promise<{ socket: WebSocketConnection; response: Response; }> {
+    upgrade(request: Request): { socket: WebSocketConnection; response: Response; };
+    upgrade(request: IncomingMessage): { socket: WebSocketConnection; };
+    upgrade(request: Request | IncomingMessage): { socket: WebSocketConnection; response: Response; } {
         if ("socket" in request) {
             throw new TypeError("Expected a Request instance");
         }
@@ -46,56 +46,59 @@ export class WebSocketServer {
             throw new Error("WebSocket is not supported in this environment");
         }
 
-        const { WebSocketConnection } = await import("../ws/base.ts");
         const handler = this[_handler];
         const clients = this[_clients];
 
         const [client, server] = Object.values(new WebSocketPair()) as [WebSocket, WebSocket & {
             accept: () => void;
         }];
-        const socket = new WebSocketConnection(server);
-
-        clients.set(request, socket);
-        server.accept();
-        server.addEventListener("message", ev => {
-            if (typeof ev.data === "string") {
-                socket.dispatchEvent(new MessageEvent("message", {
-                    data: ev.data,
-                }));
-            } else if (ev.data instanceof ArrayBuffer) {
-                socket.dispatchEvent(new MessageEvent("message", {
-                    data: new Uint8Array(ev.data),
-                }));
-            } else {
-                (ev.data as Blob).arrayBuffer().then(buffer => {
+        const socket = new WebSocketConnection(new Promise<WebSocketLike>(resolve => {
+            server.accept();
+            server.addEventListener("message", ev => {
+                if (typeof ev.data === "string") {
                     socket.dispatchEvent(new MessageEvent("message", {
-                        data: new Uint8Array(buffer),
+                        data: ev.data,
                     }));
-                }).catch(() => { });
-            }
-        });
-        server.addEventListener("close", ev => {
-            if (!ev.wasClean) {
-                socket.dispatchEvent(createErrorEvent("error", {
-                    error: new Error(`WebSocket connection closed: ${ev.reason} (${ev.code})`),
-                }));
-            }
-
-            clients.delete(request);
-            socket.dispatchEvent(createCloseEvent("close", {
-                code: ev.code,
-                reason: ev.reason,
-                wasClean: ev.wasClean,
-            }));
-        });
-
-        if (socket.readyState === 1) {
-            handler?.call(this, socket);
-        } else {
-            server.addEventListener("open", () => {
-                handler?.call(this, socket);
+                } else if (ev.data instanceof ArrayBuffer) {
+                    socket.dispatchEvent(new MessageEvent("message", {
+                        data: new Uint8Array(ev.data),
+                    }));
+                } else {
+                    (ev.data as Blob).arrayBuffer().then(buffer => {
+                        socket.dispatchEvent(new MessageEvent("message", {
+                            data: new Uint8Array(buffer),
+                        }));
+                    }).catch(() => { });
+                }
             });
-        }
+            server.addEventListener("close", ev => {
+                if (!ev.wasClean) {
+                    socket.dispatchEvent(createErrorEvent("error", {
+                        error: new Error(`WebSocket connection closed: ${ev.reason} (${ev.code})`),
+                    }));
+                }
+
+                clients.delete(request);
+                socket.dispatchEvent(createCloseEvent("close", {
+                    code: ev.code,
+                    reason: ev.reason,
+                    wasClean: ev.wasClean,
+                }));
+            });
+
+            if (server.readyState === 1) {
+                resolve(server);
+            } else {
+                server.addEventListener("open", () => {
+                    resolve(server);
+                });
+            }
+        }));
+
+        socket.ready.then(() => {
+            clients.set(request, socket);
+            handler?.call(this, socket);
+        });
 
         return {
             socket,

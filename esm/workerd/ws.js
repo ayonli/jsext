@@ -1,4 +1,5 @@
 import { createErrorEvent, createCloseEvent } from '../event.js';
+import { WebSocketConnection } from '../ws/base.js';
 
 var _a;
 const _handler = Symbol.for("handler");
@@ -18,7 +19,7 @@ class WebSocketServer {
             this[_handler] = args[0];
         }
     }
-    async upgrade(request) {
+    upgrade(request) {
         if ("socket" in request) {
             throw new TypeError("Expected a Request instance");
         }
@@ -29,53 +30,56 @@ class WebSocketServer {
         else if (typeof WebSocketPair !== "function") {
             throw new Error("WebSocket is not supported in this environment");
         }
-        const { WebSocketConnection } = await import('../ws/base.js');
         const handler = this[_handler];
         const clients = this[_clients];
         const [client, server] = Object.values(new WebSocketPair());
-        const socket = new WebSocketConnection(server);
-        clients.set(request, socket);
-        server.accept();
-        server.addEventListener("message", ev => {
-            if (typeof ev.data === "string") {
-                socket.dispatchEvent(new MessageEvent("message", {
-                    data: ev.data,
+        const socket = new WebSocketConnection(new Promise(resolve => {
+            server.accept();
+            server.addEventListener("message", ev => {
+                if (typeof ev.data === "string") {
+                    socket.dispatchEvent(new MessageEvent("message", {
+                        data: ev.data,
+                    }));
+                }
+                else if (ev.data instanceof ArrayBuffer) {
+                    socket.dispatchEvent(new MessageEvent("message", {
+                        data: new Uint8Array(ev.data),
+                    }));
+                }
+                else {
+                    ev.data.arrayBuffer().then(buffer => {
+                        socket.dispatchEvent(new MessageEvent("message", {
+                            data: new Uint8Array(buffer),
+                        }));
+                    }).catch(() => { });
+                }
+            });
+            server.addEventListener("close", ev => {
+                if (!ev.wasClean) {
+                    socket.dispatchEvent(createErrorEvent("error", {
+                        error: new Error(`WebSocket connection closed: ${ev.reason} (${ev.code})`),
+                    }));
+                }
+                clients.delete(request);
+                socket.dispatchEvent(createCloseEvent("close", {
+                    code: ev.code,
+                    reason: ev.reason,
+                    wasClean: ev.wasClean,
                 }));
-            }
-            else if (ev.data instanceof ArrayBuffer) {
-                socket.dispatchEvent(new MessageEvent("message", {
-                    data: new Uint8Array(ev.data),
-                }));
+            });
+            if (server.readyState === 1) {
+                resolve(server);
             }
             else {
-                ev.data.arrayBuffer().then(buffer => {
-                    socket.dispatchEvent(new MessageEvent("message", {
-                        data: new Uint8Array(buffer),
-                    }));
-                }).catch(() => { });
+                server.addEventListener("open", () => {
+                    resolve(server);
+                });
             }
-        });
-        server.addEventListener("close", ev => {
-            if (!ev.wasClean) {
-                socket.dispatchEvent(createErrorEvent("error", {
-                    error: new Error(`WebSocket connection closed: ${ev.reason} (${ev.code})`),
-                }));
-            }
-            clients.delete(request);
-            socket.dispatchEvent(createCloseEvent("close", {
-                code: ev.code,
-                reason: ev.reason,
-                wasClean: ev.wasClean,
-            }));
-        });
-        if (socket.readyState === 1) {
+        }));
+        socket.ready.then(() => {
+            clients.set(request, socket);
             handler === null || handler === void 0 ? void 0 : handler.call(this, socket);
-        }
-        else {
-            server.addEventListener("open", () => {
-                handler === null || handler === void 0 ? void 0 : handler.call(this, socket);
-            });
-        }
+        });
         return {
             socket,
             response: new Response(null, {

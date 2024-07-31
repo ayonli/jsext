@@ -1113,8 +1113,8 @@ describe("http", () => {
             this.timeout(5_000);
 
             const server = serve({
-                async fetch(_req, ctx) {
-                    const { socket, response } = await ctx.upgradeWebSocket();
+                fetch(_req, ctx) {
+                    const { socket, response } = ctx.upgradeWebSocket();
 
                     socket.ready.then(() => {
                         socket.send("Hello, World!");
@@ -1173,7 +1173,7 @@ describe("http", () => {
                         },
                     });
                 }).get("/ws", async (ctx) => {
-                    const { socket, response } = await ctx.env.upgradeWebSocket();
+                    const { socket, response } = ctx.env.upgradeWebSocket();
                     socket.ready.then(() => {
                         socket.send("Hello, World!");
                     });

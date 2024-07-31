@@ -1,11 +1,11 @@
-import { AsyncTask, asyncTask } from "../async.ts";
+import "../external/event-target-polyfill/index.ts";
 import chan from "../chan.ts";
 import { fromErrorEvent } from "../error.ts";
 import type { Ensured } from "../types.ts";
 import type { WebSocketServer } from "../ws.ts";
 
 const _source = Symbol.for("source");
-const _readyTask = Symbol.for("readyTask");
+const _ws = Symbol.for("ws");
 
 export type WebSocketLike = Ensured<Partial<WebSocket>, "readyState" | "close" | "send">;
 
@@ -31,25 +31,15 @@ export type WebSocketLike = Ensured<Partial<WebSocket>, "readyState" | "close" |
  * be used to ensure that the connection is ready before sending messages.
  */
 export class WebSocketConnection extends EventTarget implements AsyncIterable<string | Uint8Array> {
-    private [_source]: WebSocketLike;
-    private [_readyTask]: AsyncTask<void>;
+    private [_source]: Promise<WebSocketLike>;
+    private [_ws]: WebSocketLike | null = null;
 
-    constructor(source: WebSocketLike) {
+    constructor(source: Promise<WebSocketLike>) {
         super();
         this[_source] = source;
-        this[_readyTask] = asyncTask<void>();
-
-        if (source.readyState === 1) {
-            this[_readyTask].resolve();
-        } else if (typeof source.addEventListener === "function") {
-            source.addEventListener("open", () => {
-                this[_readyTask].resolve();
-            });
-        } else {
-            source.onopen = () => {
-                this[_readyTask].resolve();
-            };
-        }
+        this[_source].then(ws => {
+            this[_ws] = ws;
+        });
     }
 
     /**
@@ -57,28 +47,36 @@ export class WebSocketConnection extends EventTarget implements AsyncIterable<st
      * messages.
      */
     get ready(): Promise<this> {
-        return this[_readyTask].then(() => this);
+        return this[_source].then(() => this);
     }
 
     /**
      * The current state of the WebSocket connection.
      */
     get readyState(): number {
-        return this[_source].readyState;
+        return this[_ws]?.readyState ?? 0;
     }
 
     /**
      * Sends data to the WebSocket client.
      */
     send(data: string | ArrayBufferLike | ArrayBufferView): void {
-        this[_source].send(data);
+        if (!this[_ws]) {
+            throw new Error("WebSocket connection is not ready");
+        }
+
+        this[_ws].send(data);
     }
 
     /**
      * Closes the WebSocket connection.
      */
     close(code?: number | undefined, reason?: string | undefined): void {
-        this[_source].close(code, reason);
+        if (!this[_ws]) {
+            throw new Error("WebSocket connection is not ready");
+        }
+
+        this[_ws].close(code, reason);
     }
 
     /**

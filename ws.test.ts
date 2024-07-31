@@ -48,16 +48,16 @@ describe("ws", () => {
 
         if (isDeno) {
             const controller = new AbortController();
-            Deno.serve({ port, signal: controller.signal }, async req => {
-                const { response } = await wsServer.upgrade(req);
+            Deno.serve({ port, signal: controller.signal }, req => {
+                const { response } = wsServer.upgrade(req);
                 return response;
             });
             defer(() => controller.abort());
         } else if (isBun) {
             const server = Bun.serve({
                 port,
-                fetch: async (req: Request) => {
-                    const { response } = await wsServer.upgrade(req);
+                fetch: (req: Request) => {
+                    const { response } = wsServer.upgrade(req);
                     return response;
                 },
                 websocket: wsServer.bunListener,
@@ -65,8 +65,8 @@ describe("ws", () => {
             wsServer.bunBind(server);
             defer(() => server.stop(true));
         } else {
-            const server = http.createServer(async (req) => {
-                await wsServer.upgrade(req);
+            const server = http.createServer((req) => {
+                wsServer.upgrade(req);
             });
             server.listen(port);
             defer(() => server.close());
@@ -151,8 +151,8 @@ describe("ws", () => {
 
         if (isDeno) {
             const controller = new AbortController();
-            Deno.serve({ port, signal: controller.signal }, async req => {
-                const { socket, response } = await wsServer.upgrade(req);
+            Deno.serve({ port, signal: controller.signal }, req => {
+                const { socket, response } = wsServer.upgrade(req);
                 socket.ready.then(handle);
                 return response;
             });
@@ -160,8 +160,8 @@ describe("ws", () => {
         } else if (isBun) {
             const server = Bun.serve({
                 port,
-                fetch: async (req: Request) => {
-                    const { socket, response } = await wsServer.upgrade(req);
+                fetch: (req: Request) => {
+                    const { socket, response } = wsServer.upgrade(req);
                     socket.ready.then(handle);
                     return response;
                 },
@@ -173,14 +173,14 @@ describe("ws", () => {
             let server: http.Server;
 
             if (typeof Request === "function" && typeof Response === "function") {
-                server = http.createServer(withWeb(async (req) => {
-                    const { socket, response } = await wsServer.upgrade(req);
+                server = http.createServer(withWeb((req) => {
+                    const { socket, response } = wsServer.upgrade(req);
                     socket.ready.then(handle);
                     return response;
                 }));
             } else {
-                server = http.createServer(async (req) => {
-                    const { socket } = await wsServer.upgrade(req);
+                server = http.createServer((req) => {
+                    const { socket } = wsServer.upgrade(req);
                     socket.ready.then(handle);
                 });
             }
@@ -265,16 +265,16 @@ describe("ws", () => {
 
         if (isDeno) {
             const controller = new AbortController();
-            Deno.serve({ port, signal: controller.signal }, async req => {
-                const { response } = await wsServer.upgrade(req);
+            Deno.serve({ port, signal: controller.signal }, req => {
+                const { response } = wsServer.upgrade(req);
                 return response;
             });
             defer(() => controller.abort());
         } else if (isBun) {
             const server = Bun.serve({
                 port,
-                fetch: async (req: Request) => {
-                    const { response } = await wsServer.upgrade(req);
+                fetch: (req: Request) => {
+                    const { response } = wsServer.upgrade(req);
                     return response;
                 },
                 websocket: wsServer.bunListener,
@@ -285,13 +285,13 @@ describe("ws", () => {
             let server: http.Server;
 
             if (typeof Request === "function" && typeof Response === "function") {
-                server = http.createServer(withWeb(async (req) => {
-                    const { response } = await wsServer.upgrade(req);
+                server = http.createServer(withWeb((req) => {
+                    const { response } = wsServer.upgrade(req);
                     return response;
                 }));
             } else {
-                server = http.createServer(async (req) => {
-                    await wsServer.upgrade(req);
+                server = http.createServer((req) => {
+                    wsServer.upgrade(req);
                 });
             }
 
@@ -374,8 +374,8 @@ describe("ws", () => {
 
         const port = await randomPort();
         const app = new Hono()
-            .get("/", async (ctx) => {
-                const { response } = await wsServer.upgrade(ctx.req.raw);
+            .get("/", (ctx) => {
+                const { response } = wsServer.upgrade(ctx.req.raw);
                 return response;
             });
 

@@ -2,13 +2,12 @@ import { asyncTask } from './async.js';
 import { concat, text } from './bytes.js';
 import { createErrorEvent, createCloseEvent } from './event.js';
 import runtime from './runtime.js';
+import { WebSocketConnection } from './ws/base.js';
 
 /**
  * This module provides a unified WebSocket server interface for Node.js, Deno,
  * Bun and Cloudflare Workers. This module is based on the `EventTarget`
  * interface and conforms the web standard.
- *
- * NOTE: In Node.js, this module requires Node.js v15.4 or above.
  * @module
  * @experimental
  */
@@ -58,23 +57,23 @@ const _connTasks = Symbol.for("connTasks");
  *
  * // Node.js
  * import * as http from "node:http";
- * const httpServer = http.createServer(async (req) => {
- *      await wsServer.upgrade(req);
+ * const httpServer = http.createServer(req => {
+ *      wsServer.upgrade(req);
  * });
  * httpServer.listen(3000);
  *
  * // Node.js (withWeb)
  * import { withWeb } from "@ayonli/jsext/http";
- * const httpServer2 = http.createServer(withWeb(async (req) => {
- *      const { response } = await wsServer.upgrade(req);
+ * const httpServer2 = http.createServer(withWeb(req => {
+ *      const { response } = wsServer.upgrade(req);
  *      return response;
  * }));
  * httpServer2.listen(3001);
  *
  * // Bun
  * const bunServer = Bun.serve({
- *     async fetch(req) {
- *         const { response } = await wsServer.upgrade(req);
+ *     fetch(req) {
+ *         const { response } = wsServer.upgrade(req);
  *         return response;
  *     },
  *     websocket: wsServer.bunListener,
@@ -82,8 +81,8 @@ const _connTasks = Symbol.for("connTasks");
  * wsServer.bunBind(bunServer);
  *
  * // Deno
- * Deno.serve(async req => {
- *     const { response } = await wsServer.upgrade(req);
+ * Deno.serve(req => {
+ *     const { response } = wsServer.upgrade(req);
  *     return response;
  * });
  *
@@ -98,13 +97,13 @@ const _connTasks = Symbol.for("connTasks");
  *
  * @example
  * ```ts
- * // per-request connection handler (e.g. for Deno)
+ * // per-request connection handler (Deno example)
  * import { WebSocketServer } from "@ayonli/jsext/ws";
  *
  * const wsServer = new WebSocketServer();
  *
- * Deno.serve(async req => {
- *     const { socket, response } = await wsServer.upgrade(req);
+ * Deno.serve(req => {
+ *     const { socket, response } = wsServer.upgrade(req);
  *
  *     socket.ready.then(() => {
  *         console.log("WebSocket connection established.");
@@ -145,8 +144,8 @@ const _connTasks = Symbol.for("connTasks");
  *     console.log("WebSocket connection closed");
  * });
  *
- * Deno.serve(async req => {
- *     const { response } = await wsServer.upgrade(req);
+ * Deno.serve(req => {
+ *     const { response } = wsServer.upgrade(req);
  *     return response;
  * });
  * ```
@@ -169,14 +168,13 @@ class WebSocketServer {
             this[_handler] = args[0];
         }
     }
-    async upgrade(request) {
+    upgrade(request) {
         const upgradeHeader = "socket" in request
             ? request.headers["upgrade"]
             : request.headers.get("Upgrade");
         if (!upgradeHeader || upgradeHeader !== "websocket") {
             throw new TypeError("Expected Upgrade: websocket");
         }
-        const { WebSocketConnection } = await import('./ws/base.js');
         const handler = this[_handler];
         const clients = this[_clients];
         const { identity } = runtime();
@@ -187,42 +185,46 @@ class WebSocketServer {
             const { socket: ws, response } = Deno.upgradeWebSocket(request, {
                 idleTimeout: this.idleTimeout,
             });
-            const socket = new WebSocketConnection(ws);
-            clients.set(request, socket);
-            ws.binaryType = "arraybuffer";
-            ws.onmessage = (ev) => {
-                if (typeof ev.data === "string") {
-                    socket.dispatchEvent(new MessageEvent("message", {
-                        data: ev.data,
+            const socket = new WebSocketConnection(new Promise((resolve) => {
+                ws.binaryType = "arraybuffer";
+                ws.onmessage = (ev) => {
+                    if (typeof ev.data === "string") {
+                        socket.dispatchEvent(new MessageEvent("message", {
+                            data: ev.data,
+                        }));
+                    }
+                    else {
+                        socket.dispatchEvent(new MessageEvent("message", {
+                            data: new Uint8Array(ev.data),
+                        }));
+                    }
+                };
+                ws.onclose = (ev) => {
+                    if (!ev.wasClean) {
+                        socket.dispatchEvent(createErrorEvent("error", {
+                            error: new Error(`WebSocket connection closed: ${ev.reason} (${ev.code})`),
+                        }));
+                    }
+                    clients.delete(request);
+                    socket.dispatchEvent(createCloseEvent("close", {
+                        code: ev.code,
+                        reason: ev.reason,
+                        wasClean: ev.wasClean,
                     }));
+                };
+                if (ws.readyState === 1) {
+                    resolve(ws);
                 }
                 else {
-                    socket.dispatchEvent(new MessageEvent("message", {
-                        data: new Uint8Array(ev.data),
-                    }));
+                    ws.onopen = () => {
+                        resolve(ws);
+                    };
                 }
-            };
-            ws.onclose = (ev) => {
-                if (!ev.wasClean) {
-                    socket.dispatchEvent(createErrorEvent("error", {
-                        error: new Error(`WebSocket connection closed: ${ev.reason} (${ev.code})`),
-                    }));
-                }
-                clients.delete(request);
-                socket.dispatchEvent(createCloseEvent("close", {
-                    code: ev.code,
-                    reason: ev.reason,
-                    wasClean: ev.wasClean,
-                }));
-            };
-            if (socket.readyState === 1) {
+            }));
+            socket.ready.then(() => {
+                clients.set(request, socket);
                 handler === null || handler === void 0 ? void 0 : handler.call(this, socket);
-            }
-            else {
-                ws.onopen = () => {
-                    handler === null || handler === void 0 ? void 0 : handler.call(this, socket);
-                };
-            }
+            });
             return { socket, response };
         }
         else if (identity === "bun") {
@@ -239,8 +241,11 @@ class WebSocketServer {
             if (!ok) {
                 throw new Error("Failed to upgrade to WebSocket");
             }
-            const socket = await task;
-            handler === null || handler === void 0 ? void 0 : handler.call(this, socket);
+            const socket = new WebSocketConnection(task);
+            socket.ready.then(() => {
+                clients.set(request, socket);
+                handler === null || handler === void 0 ? void 0 : handler.call(this, socket);
+            });
             return {
                 socket,
                 response: new Response(null, {
@@ -254,6 +259,20 @@ class WebSocketServer {
             };
         }
         else if (identity === "node") {
+            const isNodeRequest = "socket" in request;
+            if (!isNodeRequest && Reflect.has(request, Symbol.for("incomingMessage"))) {
+                request = Reflect.get(request, Symbol.for("incomingMessage"));
+            }
+            if (!("socket" in request)) {
+                throw new TypeError("Expected an instance of http.IncomingMessage");
+            }
+            const { socket } = request;
+            const upgradeHeader = request.headers.upgrade;
+            if (!upgradeHeader || upgradeHeader !== "websocket") {
+                throw new TypeError("Expected Upgrade: websocket");
+            }
+            const handler = this[_handler];
+            const clients = this[_clients];
             if (!this[_wsServer]) {
                 this[_wsServer] = import('ws').then(({ WebSocketServer: WsServer }) => {
                     return new WsServer({
@@ -262,25 +281,8 @@ class WebSocketServer {
                     });
                 });
             }
-            const wsServer = await this[_wsServer];
-            return new Promise((resolve, reject) => {
-                const isNodeRequest = "socket" in request;
-                if (!isNodeRequest && Reflect.has(request, Symbol.for("incomingMessage"))) {
-                    request = Reflect.get(request, Symbol.for("incomingMessage"));
-                }
-                if (!("socket" in request)) {
-                    return reject(new TypeError("Expected an instance of http.IncomingMessage"));
-                }
-                const { socket } = request;
-                const upgradeHeader = request.headers.upgrade;
-                if (!upgradeHeader || upgradeHeader !== "websocket") {
-                    return reject(new TypeError("Expected Upgrade: websocket"));
-                }
-                const handler = this[_handler];
-                const clients = this[_clients];
+            const task = this[_wsServer].then(wsServer => new Promise((resolve) => {
                 wsServer.handleUpgrade(request, socket, Buffer.alloc(0), (ws) => {
-                    const client = new WebSocketConnection(ws);
-                    clients.set(request, client);
                     ws.on("message", (data, isBinary) => {
                         data = Array.isArray(data) ? concat(...data) : data;
                         let event;
@@ -317,30 +319,35 @@ class WebSocketServer {
                             wasClean: Reflect.get(ws, _errored) !== false,
                         }));
                     });
-                    handler === null || handler === void 0 ? void 0 : handler.call(this, client);
-                    if (!isNodeRequest && typeof Response === "function") {
-                        const response = new Response(null, {
-                            status: 200,
-                            statusText: "Switching Protocols",
-                            headers: new Headers({
-                                "Upgrade": "websocket",
-                                "Connection": "Upgrade",
-                            }),
-                        });
-                        // HACK: Node.js currently does not support setting the
-                        // status code to outside the range of 200 to 599. This
-                        // is a workaround to set the status code to 101.
-                        Object.defineProperty(response, "status", {
-                            configurable: true,
-                            value: 101,
-                        });
-                        resolve({ socket: client, response });
-                    }
-                    else {
-                        resolve({ socket: client });
-                    }
+                    resolve(ws);
                 });
+            }));
+            const client = new WebSocketConnection(task);
+            client.ready.then(() => {
+                clients.set(request, client);
+                handler === null || handler === void 0 ? void 0 : handler.call(this, client);
             });
+            if (!isNodeRequest && typeof Response === "function") {
+                const response = new Response(null, {
+                    status: 200,
+                    statusText: "Switching Protocols",
+                    headers: new Headers({
+                        "Upgrade": "websocket",
+                        "Connection": "Upgrade",
+                    }),
+                });
+                // HACK: Node.js currently does not support setting the
+                // status code to outside the range of 200 to 599. This
+                // is a workaround to set the status code to 101.
+                Object.defineProperty(response, "status", {
+                    configurable: true,
+                    value: 101,
+                });
+                return { socket: client, response };
+            }
+            else {
+                return { socket: client };
+            }
         }
         else {
             throw new TypeError("Unsupported runtime");
@@ -363,13 +370,10 @@ class WebSocketServer {
             perMessageDeflate: this.perMessageDeflate,
             open: async (ws) => {
                 const { request } = ws.data;
-                const { WebSocketConnection } = await import('./ws/base.js');
-                const client = new WebSocketConnection(ws);
-                clients.set(request, client);
                 const task = connTasks.get(request);
                 if (task) {
                     connTasks.delete(request);
-                    task.resolve(client);
+                    task.resolve(ws);
                 }
             },
             message: (ws, msg) => {
