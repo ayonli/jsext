@@ -135,13 +135,13 @@ const _connTasks = Symbol.for("connTasks");
  * 
  * @example
  * ```ts
- * // async iterable (e.g. for Deno)
+ * // async iterable
  * const wsServer = new WebSocketServer(async socket => {
  *     console.log("WebSocket connection established.");
  * 
  *     try {
  *         for await (const message of socket) {
- *             socket.send("received: " + event.data);
+ *             socket.send("received: " + message);
  *         }
  *     } catch (error) {
  *         console.error("WebSocket connection error:", error);
