@@ -1,5 +1,5 @@
 import { glob } from "glob";
-import { extname, join } from "node:path";
+import { extname, format, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -145,3 +145,7 @@ const config = [
 ];
 
 export default config;
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    writePackageJson().generateBundle({ dir: "types", format: "cjs" });
+}

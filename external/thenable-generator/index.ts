@@ -18,23 +18,29 @@ export interface ThenableGeneratorLike<T = unknown, TReturn = any, TNext = unkno
 
 export interface ThenableAsyncGeneratorLike<T = unknown, TReturn = any, TNext = unknown> extends PromiseLike<T>, Catchable<T>, Partial<AsyncGenerator<T, TReturn, TNext>> { }
 
-export type iThenableGeneratorFunction<T = unknown, TReturn = any, TNext = unknown, TArgs extends any[] = any[]> = (...args: TArgs) => ThenableGenerator<T, TReturn, TNext>;
+export type ThenableGeneratorFunction<T = unknown, TReturn = any, TNext = unknown, TArgs extends any[] = any[]> = (...args: TArgs) => ThenableGenerator<T, TReturn, TNext>;
 
-export type iThenableAsyncGeneratorFunction<T = unknown, TReturn = any, TNext = unknown, TArgs extends any[] = any[]> = (...args: TArgs) => ThenableAsyncGenerator<T, TReturn, TNext>;
+export type ThenableAsyncGeneratorFunction<T = unknown, TReturn = any, TNext = unknown, TArgs extends any[] = any[]> = (...args: TArgs) => ThenableAsyncGenerator<T, TReturn, TNext>;
 
-export interface ThenableGeneratorFunction<T = unknown, TReturn = any, TNext = unknown> {
-    (fn: Function): iThenableGeneratorFunction<T, TReturn, TNext> | iThenableAsyncGeneratorFunction<T, TReturn, TNext>;
-    new(fn: Function): iThenableGeneratorFunction<T, TReturn, TNext> | iThenableAsyncGeneratorFunction<T, TReturn, TNext>;
+export interface ThenableGeneratorFunctionConstructor<T = unknown, TReturn = any, TNext = unknown> {
+    (fn: Function): ThenableGeneratorFunction<T, TReturn, TNext> | ThenableAsyncGeneratorFunction<T, TReturn, TNext>;
+    new(fn: Function): ThenableGeneratorFunction<T, TReturn, TNext> | ThenableAsyncGeneratorFunction<T, TReturn, TNext>;
 
+    /**
+     * @deprecated
+     */
     create<T = unknown, TReturn = any, TNext = unknown, TArgs extends any[] = any[]>(
         fn: (...args: TArgs) => AsyncGenerator<T, TReturn, TNext> | AsyncIterable<T> | Promise<T>
-    ): iThenableAsyncGeneratorFunction<T, TReturn, TNext, TArgs>;
+    ): ThenableAsyncGeneratorFunction<T, TReturn, TNext, TArgs>;
+    /**
+     * @deprecated
+     */
     create<T = unknown, TReturn = any, TNext = unknown, TArgs extends any[] = any[]>(
         fn: (...args: TArgs) => Generator<T, TReturn, TNext> | Iterable<T> | T
-    ): iThenableGeneratorFunction<T, TReturn, TNext, TArgs>;
+    ): ThenableGeneratorFunction<T, TReturn, TNext, TArgs>;
 }
 
-export class Thenable<T = any> implements PromiseLike<T> {
+export class Thenable<T = any> implements PromiseLike<T>, Catchable<T> {
     protected [source]: any;
     protected [status]: "suspended" | "closed" | "erred";
     protected [result]: any;
@@ -183,7 +189,7 @@ export class ThenableAsyncGenerator<T = unknown, TReturn = any, TNext = unknown>
     }
 }
 
-export const ThenableGeneratorFunction: ThenableGeneratorFunction = (function (this: any, fn: Function) {
+export const ThenableGeneratorFunction: ThenableGeneratorFunctionConstructor = (function (this: any, fn: Function) {
     if (!(this instanceof ThenableGeneratorFunction)) {
         return new (<any>ThenableGeneratorFunction)(fn);
     }
@@ -212,15 +218,26 @@ export const ThenableGeneratorFunction: ThenableGeneratorFunction = (function (t
     return anonymous;
 }) as any;
 
-ThenableGeneratorFunction.create = function create(fn: Function) {
-    return new ThenableGeneratorFunction(fn as any) as any;
-};
-
 Object.setPrototypeOf(ThenableGeneratorFunction, Function);
 Object.setPrototypeOf(ThenableGeneratorFunction.prototype, Function.prototype);
 
-export const create = ThenableGeneratorFunction.create;
+/**
+ * Creates a generator that implements the `PromiseLike` interface so that it can
+ * be awaited in async contexts.
+ */
+export function create<T = unknown, TReturn = any, TNext = unknown, TArgs extends any[] = any[]>(
+    fn: (...args: TArgs) => AsyncGenerator<T, TReturn, TNext> | AsyncIterable<T> | Promise<T>
+): ThenableAsyncGeneratorFunction<T, TReturn, TNext, TArgs>;
+export function create<T = unknown, TReturn = any, TNext = unknown, TArgs extends any[] = any[]>(
+    fn: (...args: TArgs) => Generator<T, TReturn, TNext> | Iterable<T> | T
+): ThenableGeneratorFunction<T, TReturn, TNext, TArgs>;
+export function create(fn: Function) {
+    return new ThenableGeneratorFunction(fn);
+}
+
 export default create;
+
+ThenableGeneratorFunction.create = create;
 
 function isAsyncGenerator(obj: any) {
     return obj !== null

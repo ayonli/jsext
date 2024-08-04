@@ -1,5 +1,6 @@
 import "https://unpkg.com/mocha@10.2.0/mocha.js";
-import { dirname, fromFileUrl } from "https://deno.land/std@0.201.0/path/mod.ts";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { globber } from "https://deno.land/x/globber@0.1.0/mod.ts";
 
 (window as any).location = new URL("http://localhost:0");
@@ -7,7 +8,7 @@ mocha.setup({ ui: "bdd", reporter: "spec" });
 mocha.checkLeaks();
 
 const iterator = globber({
-    cwd: dirname(fromFileUrl(import.meta.url)),
+    cwd: dirname(fileURLToPath(import.meta.url)),
     include: ["**/*.test.ts"],
     exclude: [
         "node_modules/**/*",
