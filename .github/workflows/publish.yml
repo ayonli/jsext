@@ -15,9 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v2
-
       - uses: actions/setup-python@v5 
         with:
           python-version: '3.11' 
@@ -40,10 +37,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v2
-
       - uses: actions/setup-python@v5 
         with:
           python-version: '3.11' 
