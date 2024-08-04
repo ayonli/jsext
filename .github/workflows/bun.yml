@@ -22,5 +22,5 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
 
-      - run: npm install
+      - run: npm i
       - run: bun run test:bun
