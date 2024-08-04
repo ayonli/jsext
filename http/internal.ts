@@ -18,7 +18,7 @@ export function createContext(
         remoteAddress,
         createEventEndpoint: () => {
             const events = new EventEndpoint(request);
-            return { events, response: events.response! };
+            return { events, response: events.response };
         },
         upgradeWebSocket: () => ws.upgrade(request),
         ...rest,

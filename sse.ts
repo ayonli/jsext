@@ -165,16 +165,16 @@ export interface EventEndpointOptions {
  * server.listen(3000);
  * ```
  */
-export class EventEndpoint extends EventTarget {
+export class EventEndpoint<T extends Request | IncomingMessage | Http2ServerRequest = Request | IncomingMessage | Http2ServerRequest> extends EventTarget {
     private [_writer]: WritableStreamDefaultWriter<Uint8Array>;
     private [_response]: Response | null;
     private [_lastEventId]: string;
     private [_reconnectionTime]: number;
     private [_closed]: boolean;
 
-    constructor(request: Request, options?: EventEndpointOptions);
+    constructor(request: T, options?: EventEndpointOptions);
     constructor(
-        request: IncomingMessage | Http2ServerRequest,
+        request: T,
         response: ServerResponse | Http2ServerResponse,
         options?: EventEndpointOptions
     );
@@ -305,8 +305,8 @@ export class EventEndpoint extends EventTarget {
      * The response that will be sent to the client, only available when the
      * instance is created with the `Request` API.
      */
-    get response(): Response | null {
-        return this[_response];
+    get response(): T extends Request ? Response : null {
+        return this[_response] as any;
     }
 
     /**
@@ -315,12 +315,12 @@ export class EventEndpoint extends EventTarget {
      */
     override addEventListener(
         type: "close",
-        listener: (this: EventEndpoint, ev: CloseEvent) => void,
+        listener: (this: EventEndpoint<T>, ev: CloseEvent) => void,
         options?: boolean | AddEventListenerOptions
     ): void;
     override addEventListener(
         type: string,
-        listener: (this: EventEndpoint, event: Event) => any,
+        listener: (this: EventEndpoint<T>, event: Event) => any,
         options?: boolean | AddEventListenerOptions
     ): void;
     override addEventListener(

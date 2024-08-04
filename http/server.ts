@@ -71,7 +71,7 @@ export interface RequestContext {
      * Creates an SSE (server-sent events) endpoint for sending events to the
      * client.
      */
-    createEventEndpoint(): { events: EventEndpoint; response: Response; };
+    createEventEndpoint(): { events: EventEndpoint<Request>; response: Response; };
     /**
      * Upgrades the request to a WebSocket connection.
      */

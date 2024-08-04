@@ -62,7 +62,7 @@ describe("sse", () => {
                 Deno.serve({ port, signal: controller.signal }, req => {
                     const sse = new EventEndpoint(req);
                     task.resolve(sse);
-                    return sse.response!;
+                    return sse.response;
                 });
                 defer(() => controller.abort());
             } else if (isBun) {
@@ -71,7 +71,7 @@ describe("sse", () => {
                     fetch: async (req: Request) => {
                         const sse = new EventEndpoint(req);
                         task.resolve(sse);
-                        return sse.response!;
+                        return sse.response;
                     },
                 });
                 defer(() => server.stop(true));
@@ -80,7 +80,7 @@ describe("sse", () => {
                 const server = http.createServer(withWeb(async (req) => {
                     const sse = new EventEndpoint(req);
                     task.resolve(sse);
-                    return sse.response!;
+                    return sse.response;
                 }));
                 server.listen(port);
                 defer(() => server.close());
@@ -161,7 +161,7 @@ describe("sse", () => {
                 Deno.serve({ port, signal: controller.signal }, req => {
                     const sse = new EventEndpoint(req);
                     task.resolve(sse);
-                    return sse.response!;
+                    return sse.response;
                 });
                 defer(() => controller.abort());
             } else if (isBun) {
@@ -170,7 +170,7 @@ describe("sse", () => {
                     fetch: async (req: Request) => {
                         const sse = new EventEndpoint(req);
                         task.resolve(sse);
-                        return sse.response!;
+                        return sse.response;
                     },
                 });
                 defer(() => server.stop(true));
@@ -179,7 +179,7 @@ describe("sse", () => {
                 const server = http.createServer(withWeb(async (req) => {
                     const sse = new EventEndpoint(req);
                     task.resolve(sse);
-                    return sse.response!;
+                    return sse.response;
                 }));
                 server.listen(port);
                 defer(() => server.close());
@@ -226,7 +226,7 @@ describe("sse", () => {
                     });
 
                     task.resolve(sse);
-                    return sse.response!;
+                    return sse.response;
                 });
                 defer(() => controller.abort());
             } else if (isBun) {
@@ -240,7 +240,7 @@ describe("sse", () => {
                         });
 
                         task.resolve(sse);
-                        return sse.response!;
+                        return sse.response;
                     },
                 });
                 defer(() => server.stop(true));
@@ -254,7 +254,7 @@ describe("sse", () => {
                     });
 
                     task.resolve(sse);
-                    return sse.response!;
+                    return sse.response;
                 }));
                 server.listen(port);
                 defer(() => server.close());
