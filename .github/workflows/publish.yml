@@ -5,11 +5,10 @@ on:
 
 jobs:
   test-node:
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        runner: [ ubuntu-latest, windows-latest ]
         node-version: [14.x, 16.x, 18.x, 20.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
@@ -32,11 +31,10 @@ jobs:
       - run: npm run test
 
   test-tsx:
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        runner: [ ubuntu-latest, windows-latest ]
         node-version: [16.x, 18.x, 20.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
@@ -138,8 +136,30 @@ jobs:
       - run: npm i -D node-pty
       - run: npm run test:pty
 
+  test-windows:
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - run: npm i
+      - run: npm run test:tsx
+
   publish-npm:
-    needs: [test-node, test-tsx, test-bun, test-deno, test-jsdom, test-pty]
+    needs: [test-node, test-tsx, test-bun, test-deno, test-jsdom, test-pty, test-windows]
     runs-on: ubuntu-latest
 
     steps:
@@ -164,7 +184,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
 
   publish-jsr:
-    needs: [test-node, test-tsx, test-bun, test-deno, test-jsdom, test-pty]
+    needs: [test-node, test-tsx, test-bun, test-deno, test-jsdom, test-pty, test-windows]
     runs-on: ubuntu-latest
 
     permissions:
