@@ -97,7 +97,6 @@ jobs:
           cache: 'npm'
 
       - run: npm i
-      - run: npm i -D jsdom
       - run: npm run test:jsdom
 
   test-pty:
@@ -126,7 +125,6 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
       - run: npm i
-      - run: npm i -D node-pty
       - run: npm run test:pty
 
   test-windows:

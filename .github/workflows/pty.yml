@@ -36,5 +36,4 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
       - run: npm i
-      - run: npm i -D node-pty
       - run: npm run test:pty
