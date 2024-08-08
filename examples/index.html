@@ -285,6 +285,15 @@
             });
         }
     </script>
+    <script>
+        navigator.serviceWorker.register('./sw.js', {
+            type: "module",
+        }).then((registration) => {
+            console.log('Service Worker registered:', registration);
+        }).catch((error) => {
+            console.error('Service Worker registration failed:', error);
+        });
+    </script>
 </head>
 
 <body>
