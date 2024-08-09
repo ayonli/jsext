@@ -650,7 +650,6 @@ export class EventSource extends EventTarget {
 
         this[_request] = new Request(this.url, {
             headers,
-            mode: this.withCredentials ? "cors" : "same-origin",
             credentials: this.withCredentials ? "include" : "same-origin",
             cache: "no-store",
             signal: this[_controller].signal,
