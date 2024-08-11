@@ -8,6 +8,13 @@ import { WebSocketConnection } from './ws/base.js';
  * This module provides a unified WebSocket server interface for Node.js, Deno,
  * Bun and Cloudflare Workers. This module is based on the `EventTarget`
  * interface and conforms the web standard.
+ *
+ * **IMPORTANT**: The {@link WebSocketConnection} interface is an abstraction of
+ * the WebSocket on the server side, it's design is not consistent with the
+ * {@link WebSocket} API in the browser. For example, when receiving binary data,
+ * the `data` property is always a `Uint8Array` object, which is different from
+ * the `Blob` object (or `ArrayBuffer`) in the browser. In the future, we may
+ * provide a more consistent API, be aware of this when using this module.
  * @module
  * @experimental
  */
