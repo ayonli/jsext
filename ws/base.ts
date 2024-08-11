@@ -17,6 +17,8 @@ export type WebSocketLike = Ensured<Partial<WebSocket>, "readyState" | "close" |
  * 
  * **Events:**
  * 
+ * - `open` - Dispatched when the connection is ready.
+ * - `message` - Dispatched when a message is received.
  * - `error` - Dispatched when an error occurs, such as network failure. After
  *   this event is dispatched, the connection will be closed and the `close`
  *   event will be dispatched.
@@ -24,11 +26,6 @@ export type WebSocketLike = Ensured<Partial<WebSocket>, "readyState" | "close" |
  *   closed due to some error, the `error` event will be dispatched before this
  *   event, and the close event will have the `wasClean` set to `false`, and the
  *   `reason` property contains the error message, if any.
- * - `message` - Dispatched when a message is received.
- * 
- * There is no `open` event, because when an connection instance is created, the
- * connection may already be open. However, there is a `ready` promise that can
- * be used to ensure that the connection is ready before sending messages.
  */
 export class WebSocketConnection extends EventTarget implements AsyncIterable<string | Uint8Array> {
     private [_source]: Promise<WebSocketLike>;
@@ -45,6 +42,8 @@ export class WebSocketConnection extends EventTarget implements AsyncIterable<st
     /**
      * A promise that resolves when the connection is ready to send and receive
      * messages.
+     * 
+     * @deprecated Listen for the `open` event instead.
      */
     get ready(): Promise<this> {
         return this[_source].then(() => this);
@@ -80,6 +79,22 @@ export class WebSocketConnection extends EventTarget implements AsyncIterable<st
     }
 
     /**
+     * Adds an event listener that will be called when the connection is ready.
+     */
+    override addEventListener(
+        type: "open",
+        listener: (this: WebSocketConnection, ev: Event) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    /**
+     * Adds an event listener that will be called when a message is received.
+     */
+    override addEventListener(
+        type: "message",
+        listener: (this: WebSocketConnection, ev: MessageEvent<string | Uint8Array>) => void,
+        options?: boolean | AddEventListenerOptions
+    ): void;
+    /**
      * Adds an event listener that will be called when the connection is
      * interrupted. After this event is dispatched, the connection will be
      * closed and the `close` event will be dispatched.
@@ -99,14 +114,6 @@ export class WebSocketConnection extends EventTarget implements AsyncIterable<st
     override addEventListener(
         type: "close",
         listener: (this: WebSocketConnection, ev: CloseEvent) => void,
-        options?: boolean | AddEventListenerOptions
-    ): void;
-    /**
-     * Adds an event listener that will be called when a message is received.
-     */
-    override addEventListener(
-        type: "message",
-        listener: (this: WebSocketConnection, ev: MessageEvent<string | Uint8Array>) => void,
         options?: boolean | AddEventListenerOptions
     ): void;
     override addEventListener(

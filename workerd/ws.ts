@@ -98,6 +98,7 @@ export class WebSocketServer {
         socket.ready.then(() => {
             clients.set(request, socket);
             handler?.call(this, socket);
+            socket.dispatchEvent(new Event("open"));
         });
 
         return {

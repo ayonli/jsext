@@ -13,6 +13,8 @@ const _ws = Symbol.for("ws");
  *
  * **Events:**
  *
+ * - `open` - Dispatched when the connection is ready.
+ * - `message` - Dispatched when a message is received.
  * - `error` - Dispatched when an error occurs, such as network failure. After
  *   this event is dispatched, the connection will be closed and the `close`
  *   event will be dispatched.
@@ -20,11 +22,6 @@ const _ws = Symbol.for("ws");
  *   closed due to some error, the `error` event will be dispatched before this
  *   event, and the close event will have the `wasClean` set to `false`, and the
  *   `reason` property contains the error message, if any.
- * - `message` - Dispatched when a message is received.
- *
- * There is no `open` event, because when an connection instance is created, the
- * connection may already be open. However, there is a `ready` promise that can
- * be used to ensure that the connection is ready before sending messages.
  */
 class WebSocketConnection extends EventTarget {
     constructor(source) {
@@ -38,6 +35,8 @@ class WebSocketConnection extends EventTarget {
     /**
      * A promise that resolves when the connection is ready to send and receive
      * messages.
+     *
+     * @deprecated Listen for the `open` event instead.
      */
     get ready() {
         return this[_source].then(() => this);

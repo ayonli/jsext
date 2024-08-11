@@ -121,6 +121,7 @@ describe("ws", () => {
 
         const { WebSocketServer } = await import("./ws.ts");
 
+        let openEvent: Event | undefined;
         let errorEvent: ErrorEvent | undefined;
         let closeEvent: CloseEvent | undefined;
         const serverMessages: (string | Uint8Array)[] = [];
@@ -128,6 +129,10 @@ describe("ws", () => {
 
         const wsServer = new WebSocketServer();
         const handle = (socket: WebSocketConnection) => {
+            socket.addEventListener("open", (ev) => {
+                openEvent = ev;
+            });
+
             socket.addEventListener("message", (event) => {
                 if (typeof event.data === "string") {
                     serverMessages.push(event.data);
@@ -153,7 +158,7 @@ describe("ws", () => {
             const controller = new AbortController();
             Deno.serve({ port, signal: controller.signal }, req => {
                 const { socket, response } = wsServer.upgrade(req);
-                socket.ready.then(handle);
+                handle(socket);
                 return response;
             });
             defer(() => controller.abort());
@@ -162,7 +167,7 @@ describe("ws", () => {
                 port,
                 fetch: (req: Request) => {
                     const { socket, response } = wsServer.upgrade(req);
-                    socket.ready.then(handle);
+                    handle(socket);
                     return response;
                 },
                 websocket: wsServer.bunListener,
@@ -175,13 +180,13 @@ describe("ws", () => {
             if (typeof Request === "function" && typeof Response === "function") {
                 server = http.createServer(withWeb((req) => {
                     const { socket, response } = wsServer.upgrade(req);
-                    socket.ready.then(handle);
+                    handle(socket);
                     return response;
                 }));
             } else {
                 server = http.createServer((req) => {
                     const { socket } = wsServer.upgrade(req);
-                    socket.ready.then(handle);
+                    handle(socket);
                 });
             }
 
@@ -219,6 +224,7 @@ describe("ws", () => {
 
         await until(() => serverMessages.length === 2 && clientMessages.length === 2 && !!closeEvent);
 
+        strictEqual(openEvent?.type, "open");
         strictEqual(errorEvent, undefined);
         strictEqual(closeEvent?.type, "close");
         strictEqual(closeEvent?.wasClean, true);

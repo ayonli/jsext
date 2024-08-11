@@ -79,6 +79,7 @@ class WebSocketServer {
         socket.ready.then(() => {
             clients.set(request, socket);
             handler === null || handler === void 0 ? void 0 : handler.call(this, socket);
+            socket.dispatchEvent(new Event("open"));
         });
         return {
             socket,

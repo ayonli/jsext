@@ -8,12 +8,12 @@ serve({
         if (pathname === "/ws") {
             const { socket, response } = await ctx.upgradeWebSocket();
 
-            socket.ready.then(() => {
+            socket.addEventListener("open", () => {
                 socket.send(`Hello, ${ctx.remoteAddress?.address}!`);
+            });
 
-                socket.addEventListener("message", (event) => {
-                    console.log(event.data);
-                });
+            socket.addEventListener("message", (event) => {
+                console.log(event.data);
             });
 
             return response;

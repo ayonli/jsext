@@ -1116,7 +1116,7 @@ describe("http", () => {
                 fetch(_req, ctx) {
                     const { socket, response } = ctx.upgradeWebSocket();
 
-                    socket.ready.then(() => {
+                    socket.addEventListener("open", () => {
                         socket.send("Hello, World!");
                     });
 
@@ -1174,7 +1174,7 @@ describe("http", () => {
                     });
                 }).get("/ws", async (ctx) => {
                     const { socket, response } = ctx.env.upgradeWebSocket();
-                    socket.ready.then(() => {
+                    socket.addEventListener("open", () => {
                         socket.send("Hello, World!");
                     });
                     return response;

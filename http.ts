@@ -477,11 +477,9 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
  *     fetch(req, ctx) {
  *         const { socket, response } = ctx.upgradeWebSocket();
  * 
- *         socket.ready.then(() => {
- *             socket.addEventListener("message", (event) => {
- *                console.log(event.data);
- *                socket.send("Hello, Client!");
- *             });
+ *         socket.addEventListener("message", (event) => {
+ *             console.log(event.data);
+ *             socket.send("Hello, Client!");
  *         });
  * 
  *         return response;

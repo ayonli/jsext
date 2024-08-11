@@ -28,8 +28,9 @@ const _connTasks = Symbol.for("connTasks");
  *    in a central place.
  * 2. By using the `socket` object returned from the `upgrade` method to handle
  *    each connection in a more flexible way. However, at this stage, the
- *    connection may not be ready yet, and we need to wait for the `ready`
- *    promise to resolve before we can start sending messages.
+ *    connection may not be ready yet, and we need to listen the `open` event
+ *    or wait for the `ready` promise (deprecated) to resolve before we can
+ *    start sending messages.
  *
  * The `socket` object is an async iterable object, which can be used in the
  * `for await...of` loop to read messages with backpressure support.
@@ -105,20 +106,20 @@ const _connTasks = Symbol.for("connTasks");
  * Deno.serve(req => {
  *     const { socket, response } = wsServer.upgrade(req);
  *
- *     socket.ready.then(() => {
+ *     socket.addEventListener("open", () => {
  *         console.log("WebSocket connection established.");
+ *     });
  *
- *         socket.addEventListener("message", (event) => {
- *             socket.send("received: " + event.data);
- *         });
+ *     socket.addEventListener("message", (event) => {
+ *         socket.send("received: " + event.data);
+ *     });
  *
- *         socket.addEventListener("error", (event) => {
- *             console.error("WebSocket connection error:", event.error);
- *         });
+ *     socket.addEventListener("error", (event) => {
+ *         console.error("WebSocket connection error:", event.error);
+ *     });
  *
- *         socket.addEventListener("close", (event) => {
- *             console.log(`WebSocket connection closed, reason: ${event.reason}, code: ${event.code}`);
- *         });
+ *     socket.addEventListener("close", (event) => {
+ *         console.log(`WebSocket connection closed, reason: ${event.reason}, code: ${event.code}`);
  *     });
  *
  *     // The response should be returned immediately, otherwise the web socket
@@ -224,6 +225,7 @@ class WebSocketServer {
             socket.ready.then(() => {
                 clients.set(request, socket);
                 handler === null || handler === void 0 ? void 0 : handler.call(this, socket);
+                socket.dispatchEvent(new Event("open"));
             });
             return { socket, response };
         }
@@ -245,6 +247,7 @@ class WebSocketServer {
             socket.ready.then(() => {
                 clients.set(request, socket);
                 handler === null || handler === void 0 ? void 0 : handler.call(this, socket);
+                socket.dispatchEvent(new Event("open"));
             });
             return {
                 socket,
@@ -326,6 +329,7 @@ class WebSocketServer {
             client.ready.then(() => {
                 clients.set(request, client);
                 handler === null || handler === void 0 ? void 0 : handler.call(this, client);
+                client.dispatchEvent(new Event("open"));
             });
             if (!isNodeRequest && typeof Response === "function") {
                 const response = new Response(null, {
