@@ -469,7 +469,7 @@ function toNodeResponse(res, nodeRes) {
  */
 function serve(options) {
     var _a;
-    const type = isDeno || isBun ? options.type || "classic" : "classic";
+    const type = isDeno || isBun || isNode ? options.type || "classic" : "classic";
     const ws = new WebSocketServer(options.ws);
     const { fetch: handle, key, cert, onListen, headers } = options;
     const onError = (_a = options.onError) !== null && _a !== void 0 ? _a : ((err) => {
@@ -549,32 +549,38 @@ function serve(options) {
             }
         }
         else if (isNode) {
-            const reqListener = withWeb(withHeaders(async (req, info) => {
-                const ctx = createContext(req, { ws, ...info });
-                try {
-                    return await handle(req, ctx);
-                }
-                catch (err) {
-                    return await onError(err, req, ctx);
-                }
-            }, headers));
-            if (key && cert) {
-                const { createSecureServer } = await import('node:http2');
-                server = createSecureServer({ key, cert, allowHTTP1: true }, reqListener);
-            }
-            else {
-                const { createServer } = await import('node:http');
-                server = createServer(reqListener);
-            }
-            port || (port = await randomPort(8000, hostname));
-            await new Promise((resolve) => {
-                if (hostname && hostname !== "0.0.0.0") {
-                    server.listen(port, hostname, resolve);
+            if (type === "classic") {
+                const reqListener = withWeb(withHeaders(async (req, info) => {
+                    const ctx = createContext(req, { ws, ...info });
+                    try {
+                        return await handle(req, ctx);
+                    }
+                    catch (err) {
+                        return await onError(err, req, ctx);
+                    }
+                }, headers));
+                if (key && cert) {
+                    const { createSecureServer } = await import('node:http2');
+                    server = createSecureServer({ key, cert, allowHTTP1: true }, reqListener);
                 }
                 else {
-                    server.listen(port, resolve);
+                    const { createServer } = await import('node:http');
+                    server = createServer(reqListener);
                 }
-            });
+                port || (port = await randomPort(8000, hostname));
+                await new Promise((resolve) => {
+                    if (hostname && hostname !== "0.0.0.0") {
+                        server.listen(port, hostname, resolve);
+                    }
+                    else {
+                        server.listen(port, resolve);
+                    }
+                });
+            }
+            else {
+                hostname = "";
+                port = 0;
+            }
         }
         else if (typeof addEventListener === "function") {
             hostname = "";
@@ -622,7 +628,7 @@ function serve(options) {
  *
  * @example
  * ```toml
- * // wrangler.toml
+ * # wrangler.toml
  * [site]
  * bucket = "./assets"
  * ```
@@ -822,7 +828,7 @@ async function startServer(args) {
         fsDir: filename,
         listDir: true,
     }));
-    serve({ ...config, fetch, port });
+    serve({ ...config, fetch, port, type: "classic" });
 }
 if ((isDeno || isBun || isNode) && isMain(import.meta)) {
     startServer(args);

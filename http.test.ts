@@ -1236,19 +1236,13 @@ describe("http", () => {
             });
             defer(() => server.close(true));
 
-            if (isBun || isDeno) {
-                strictEqual(server.type, "module");
-                strictEqual(typeof server.fetch, "function");
-            } else {
-                strictEqual(server.type, "classic");
-                strictEqual(typeof server.fetch, "undefined");
-                return;
-            }
+            strictEqual(server.type, "module");
+            strictEqual(typeof server.fetch, "function");
 
             if (isBun) {
                 const _server = Bun.serve({
                     port,
-                    fetch: server.fetch,
+                    fetch: server.fetch!,
                 });
                 defer(() => _server.stop(true));
             } else if (isDeno) {
@@ -1263,6 +1257,12 @@ describe("http", () => {
                     });
                 });
                 defer(() => controller.abort());
+            } else if (isNode) {
+                const _server = serve({
+                    port,
+                    fetch: server.fetch!,
+                });
+                defer(() => _server.close(true));
             }
 
             await server.ready;

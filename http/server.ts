@@ -110,9 +110,10 @@ export interface ServeOptions {
      * service workers), while `module` means using the {@link Server} instance
      * as an ES module with the syntax `export default serve({ ... })`.
      * 
-     * NOTE: This option is only adjustable in Deno, Bun and Cloudflare Workers,
-     * in other environments, it will be ignored and will default to `classic`.
-     * It is recommended to set this option to `module` in Cloudflare Workers.
+     * NOTE: This option is only adjustable in Node.js, Deno, Bun and Cloudflare
+     * Workers, in other environments, it will be ignored and will default to
+     * `classic`. It is recommended to set this option to `module` in Cloudflare
+     * Workers.
      * 
      * @default "classic"
      */
@@ -312,7 +313,19 @@ export class Server {
                     websocket: ws.bunListener,
                 });
             }
-        } else if (!isNode && typeof addEventListener === "function") {
+        } else if (isNode) {
+            if (this.type === "classic") {
+                delete this.fetch;
+            } else {
+                this.fetch = withHeaders(async (request, ctx: RequestContext) => {
+                    try {
+                        return await handle(request, ctx);
+                    } catch (err) {
+                        return await onError(err, request, ctx);
+                    }
+                }, headers);
+            }
+        } else if (typeof addEventListener === "function") {
             if (this.type === "classic") {
                 let bindings: any;
 

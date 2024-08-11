@@ -83,7 +83,22 @@ class Server {
                 });
             }
         }
-        else if (!isNode && typeof addEventListener === "function") {
+        else if (isNode) {
+            if (this.type === "classic") {
+                delete this.fetch;
+            }
+            else {
+                this.fetch = withHeaders(async (request, ctx) => {
+                    try {
+                        return await handle(request, ctx);
+                    }
+                    catch (err) {
+                        return await onError(err, request, ctx);
+                    }
+                }, headers);
+            }
+        }
+        else if (typeof addEventListener === "function") {
             if (this.type === "classic") {
                 let bindings;
                 if (runtime().identity === "workerd") {
