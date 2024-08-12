@@ -278,9 +278,11 @@ function toWebRequest(req: IncomingMessage | Http2ServerRequest): Request {
         headers.set("Host", req.headers[":authority"] as string);
     }
 
+    const controller = new AbortController();
     const init: RequestInit = {
         method: req.method!,
         headers,
+        signal: controller.signal,
     };
     const cache = headers.get("Cache-Control");
     const mode = headers.get("Sec-Fetch-Mode");
@@ -324,6 +326,10 @@ function toWebRequest(req: IncomingMessage | Http2ServerRequest): Request {
         // @ts-ignore Node.js special
         init.duplex = "half";
     }
+
+    req.once("close", () => {
+        req.errored && controller.abort();
+    });
 
     const request = new Request(url, init);
 

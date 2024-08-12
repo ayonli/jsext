@@ -250,9 +250,11 @@ function toWebRequest(req) {
     if (req.headers[":authority"]) {
         headers.set("Host", req.headers[":authority"]);
     }
+    const controller = new AbortController();
     const init = {
         method: req.method,
         headers,
+        signal: controller.signal,
     };
     const cache = headers.get("Cache-Control");
     const mode = headers.get("Sec-Fetch-Mode");
@@ -295,6 +297,9 @@ function toWebRequest(req) {
         // @ts-ignore Node.js special
         init.duplex = "half";
     }
+    req.once("close", () => {
+        req.errored && controller.abort();
+    });
     const request = new Request(url, init);
     if (!req.headers[":authority"]) {
         Object.assign(request, {

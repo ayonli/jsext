@@ -22,6 +22,7 @@ import {
     verifyBasicAuth,
     withWeb,
 } from "./http.ts";
+import _try from "./try.ts";
 import func from "./func.ts";
 import { readFileAsText } from "./fs.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
@@ -1235,6 +1236,7 @@ describe("http", () => {
                 }
             });
             defer(() => server.close(true));
+            await server.ready;
 
             strictEqual(server.type, "module");
             strictEqual(typeof server.fetch, "function");
@@ -1346,6 +1348,50 @@ describe("http", () => {
             strictEqual(res.statusText, "OK");
             strictEqual(text, "Hello, World!");
             strictEqual(res.headers.get("X-Powered-By"), "JsExt");
+        }));
+
+        it("AbortSignal", func(async function (defer) {
+            if (typeof AbortSignal !== "function" ||
+                typeof AbortSignal.timeout !== "function" ||
+                isDeno // Deno currently does not support request cancellation.
+            ) {
+                this.skip();
+            }
+
+            const results: {
+                aborted: true;
+                reason: any;
+            }[] = [];
+            const server = serve({
+                async fetch(req) {
+                    req.signal.addEventListener("abort", () => {
+                        results.push({ aborted: true, reason: req.signal.reason });
+                    });
+
+                    await sleep(1000);
+                    return new Response("Hello, World!", {
+                        status: 200,
+                        statusText: "OK",
+                    });
+                },
+            });
+            defer(() => server.close(true));
+            await server.ready;
+
+            const [err, res1] = await _try(fetch(`http://localhost:${server.port}`, {
+                signal: AbortSignal.timeout(500),
+            }));
+            const res2 = await fetch(`http://localhost:${server.port}`);
+
+            strictEqual((err as DOMException)?.name, "TimeoutError");
+            strictEqual(res1, undefined);
+            strictEqual(res2.status, 200);
+            strictEqual(res2.statusText, "OK");
+            strictEqual(await res2.text(), "Hello, World!");
+            console.log(results);
+            strictEqual(results.length, 1);
+            strictEqual(results[0]!.aborted, true);
+            strictEqual((results[0]!.reason as DOMException)!.name, "AbortError");
         }));
     });
 
