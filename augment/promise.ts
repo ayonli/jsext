@@ -23,12 +23,15 @@ declare global {
          * 
          * This functions returns the same result as the test function when passed.
          */
-        until<T>(test: () => T | Promise<T>): Promise<T extends false | null | undefined ? never : T>;
+        until<T>(test: () => T | PromiseLike<T>): Promise<T extends false | null | undefined ? never : T>;
         /**
          * Runs multiple tasks concurrently and returns the result of the first task that
          * completes. The rest of the tasks will be aborted.
          */
-        select<T>(tasks: ((signal: AbortSignal) => Promise<T>)[]): Promise<T>;
+        select<T>(
+            tasks: (PromiseLike<T> | ((signal: AbortSignal) => PromiseLike<T>))[],
+            signal?: AbortSignal | undefined
+        ): Promise<T>;
     }
 }
 

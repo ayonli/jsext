@@ -227,7 +227,7 @@ export async function sleep(ms: number): Promise<void> {
  * ```
  */
 export async function until<T>(
-    test: () => T | Promise<T>
+    test: () => T | PromiseLike<T>
 ): Promise<T extends false | null | undefined ? never : T> {
     return new Promise((resolve) => {
         let ongoing = false;
@@ -255,6 +255,11 @@ export async function until<T>(
  * Runs multiple tasks concurrently and returns the result of the first task that
  * completes. The rest of the tasks will be aborted.
  * 
+ * @param tasks An array of promises or functions that return promises.
+ * @param signal A parent abort signal, if provided and aborted before any task
+ *  completes, the function will reject immediately with the abort reason and
+ *  cancel all the tasks.
+ * 
  * @example
  * ```ts
  * import { select } from "@ayonli/jsext/async";
@@ -262,15 +267,39 @@ export async function until<T>(
  * const result = await select([
  *     signal => fetch("https://example.com", { signal }),
  *     signal => fetch("https://example.org", { signal }),
+ *     fetch("https://example.net"), // This task cannot actually be aborted, but ignored
  * ]);
  * 
  * console.log(result);
  * ```
  */
-export async function select<T>(tasks: ((signal: AbortSignal) => Promise<T>)[]): Promise<T> {
+export async function select<T>(
+    tasks: (PromiseLike<T> | ((signal: AbortSignal) => PromiseLike<T>))[],
+    signal: AbortSignal | undefined = undefined
+): Promise<T> {
+    if (signal?.aborted) {
+        throw signal.reason;
+    }
+
     const ctrl = new AbortController();
-    const { signal } = ctrl;
-    const result = await Promise.race(tasks.map(fn => fn(signal)));
-    ctrl.abort();
-    return result;
+    const { signal: _signal } = ctrl;
+    const abort = ctrl.abort.bind(ctrl);
+    let _abort: () => void;
+    tasks = [...tasks];
+
+    if (signal) {
+        signal.addEventListener("abort", abort, { once: true });
+        tasks.push(new Promise((_, reject) => {
+            _abort = () => reject(signal.reason);
+            signal.addEventListener("abort", _abort, { once: true });
+        }));
+    }
+
+    return await Promise.race(tasks.map(task => {
+        return typeof task === "function" ? task(_signal) : task;
+    })).finally(() => {
+        _signal.aborted || abort();
+        _abort && signal!.removeEventListener("abort", _abort);
+        signal?.removeEventListener("abort", abort);
+    });
 }

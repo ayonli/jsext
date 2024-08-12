@@ -4,6 +4,7 @@ import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { asyncTask, abortable, sleep } from "./async.ts";
 import { isNodeBelow16 } from "./env.ts";
 import { as } from "./object.ts";
+import _try from "./try.ts";
 
 describe("async", () => {
     describe("asyncTask", () => {
@@ -238,46 +239,295 @@ describe("async", () => {
         });
     });
 
-    it("select", async function () {
+    describe("select", () => {
         if (isNodeBelow16) {
-            this.skip();
+            return;
         }
 
-        const aborted: number[] = [];
-        const result = await Promise.select([
-            async signal => {
-                let resolved = false;
-                signal.addEventListener("abort", () => {
-                    resolved || aborted.push(1);
-                });
+        it("functions", async () => {
+            let aborted: number[] = [];
+            const result = await Promise.select([
+                async signal => {
+                    let resolved = false;
+                    signal.addEventListener("abort", () => {
+                        resolved || aborted.push(1);
+                    });
 
-                await Promise.sleep(50);
+                    await Promise.sleep(50);
 
-                if (signal.aborted) {
-                    return 0;
-                }
+                    if (signal.aborted) {
+                        return 0;
+                    }
 
-                resolved = true;
-                return 1;
-            },
-            async signal => {
-                let resolved = false;
-                signal.addEventListener("abort", () => {
-                    resolved || aborted.push(2);
-                });
+                    resolved = true;
+                    return 1;
+                },
+                async signal => {
+                    let resolved = false;
+                    signal.addEventListener("abort", () => {
+                        resolved || aborted.push(2);
+                    });
 
-                await Promise.sleep(100);
+                    await Promise.sleep(100);
 
-                if (signal.aborted) {
-                    return 0;
-                }
+                    if (signal.aborted) {
+                        return 0;
+                    }
 
-                resolved = true;
-                return 2;
-            },
-        ]);
+                    resolved = true;
+                    return 2;
+                },
+            ]);
 
-        strictEqual(result, 1);
-        deepStrictEqual(aborted, [2]);
+            strictEqual(result, 1);
+            deepStrictEqual(aborted, [2]);
+
+            aborted = [];
+            const [err1, result1] = await _try(Promise.select([
+                async signal => {
+                    let resolved = false;
+                    signal.addEventListener("abort", () => {
+                        resolved || aborted.push(1);
+                    });
+
+                    await Promise.sleep(50);
+
+                    if (signal.aborted) {
+                        return 0;
+                    }
+
+                    resolved = true;
+                    throw new Error("error");
+                },
+                async signal => {
+                    let resolved = false;
+                    signal.addEventListener("abort", () => {
+                        resolved || aborted.push(2);
+                    });
+
+                    await Promise.sleep(100);
+
+                    if (signal.aborted) {
+                        return 0;
+                    }
+
+                    resolved = true;
+                    return 2;
+                },
+            ]));
+
+            strictEqual((err1 as Error)?.name, "Error");
+            strictEqual(result1, undefined);
+            deepStrictEqual(aborted, [2]);
+        });
+
+        it("with promises", async () => {
+            let aborted: number[] = [];
+            const result = await Promise.select([
+                async signal => {
+                    let resolved = false;
+                    signal.addEventListener("abort", () => {
+                        resolved || aborted.push(1);
+                    });
+
+                    await Promise.sleep(50);
+
+                    if (signal.aborted) {
+                        return 0;
+                    }
+
+                    resolved = true;
+                    return 1;
+                },
+                async signal => {
+                    let resolved = false;
+                    signal.addEventListener("abort", () => {
+                        resolved || aborted.push(2);
+                    });
+
+                    await Promise.sleep(100);
+
+                    if (signal.aborted) {
+                        return 0;
+                    }
+
+                    resolved = true;
+                    return 2;
+                },
+                new Promise<number>(resolve => {
+                    setTimeout(() => {
+                        resolve(3);
+                    });
+                }),
+            ]);
+
+            strictEqual(result, 3);
+            deepStrictEqual(aborted, [1, 2]);
+
+            aborted = [];
+            const [err1, result1] = await _try(Promise.select([
+                async signal => {
+                    let resolved = false;
+                    signal.addEventListener("abort", () => {
+                        resolved || aborted.push(1);
+                    });
+
+                    await Promise.sleep(50);
+
+                    if (signal.aborted) {
+                        return 0;
+                    }
+
+                    resolved = true;
+                    return 1;
+                },
+                async signal => {
+                    let resolved = false;
+                    signal.addEventListener("abort", () => {
+                        resolved || aborted.push(2);
+                    });
+
+                    await Promise.sleep(100);
+
+                    if (signal.aborted) {
+                        return 0;
+                    }
+
+                    resolved = true;
+                    return 2;
+                },
+                new Promise<number>((_, reject) => {
+                    setTimeout(() => {
+                        reject(new Error("error"));
+                    });
+                }),
+            ]));
+
+            strictEqual((err1 as Error)?.name, "Error");
+            strictEqual(result1, undefined);
+            deepStrictEqual(aborted, [1, 2]);
+        });
+
+        it("with parent signal", async () => {
+            let aborted: number[] = [];
+
+            const ctrl = new AbortController();
+            setTimeout(() => ctrl.abort(), 150);
+            const result = await Promise.select([
+                async signal => {
+                    let resolved = false;
+                    signal.addEventListener("abort", () => {
+                        resolved || aborted.push(1);
+                    });
+
+                    await Promise.sleep(50);
+
+                    if (signal.aborted) {
+                        return 0;
+                    }
+
+                    resolved = true;
+                    return 1;
+                },
+                async signal => {
+                    let resolved = false;
+                    signal.addEventListener("abort", () => {
+                        resolved || aborted.push(2);
+                    });
+
+                    await Promise.sleep(100);
+
+                    if (signal.aborted) {
+                        return 0;
+                    }
+
+                    resolved = true;
+                    return 2;
+                },
+            ], ctrl.signal);
+
+            strictEqual(result, 1);
+            deepStrictEqual(aborted, [2]);
+
+            aborted = [];
+            const ctrl1 = new AbortController();
+            setTimeout(() => ctrl1.abort(), 10);
+            const [err1, result1] = await _try(Promise.select([
+                async signal => {
+                    let resolved = false;
+                    signal.addEventListener("abort", () => {
+                        resolved || aborted.push(1);
+                    });
+
+                    await Promise.sleep(50);
+
+                    if (signal.aborted) {
+                        return 0;
+                    }
+
+                    resolved = true;
+                    return 1;
+                },
+                async signal => {
+                    let resolved = false;
+                    signal.addEventListener("abort", () => {
+                        resolved || aborted.push(2);
+                    });
+
+                    await Promise.sleep(100);
+
+                    if (signal.aborted) {
+                        return 0;
+                    }
+
+                    resolved = true;
+                    return 2;
+                },
+            ], ctrl1.signal));
+
+            strictEqual((err1 as Error)?.name, "AbortError");
+            strictEqual(result1, undefined);
+            deepStrictEqual(aborted, [1, 2]);
+
+            aborted = [];
+            const ctrl2 = new AbortController();
+            ctrl2.abort();
+            const [err2, result2] = await _try(Promise.select([
+                async signal => {
+                    let resolved = false;
+                    signal.addEventListener("abort", () => {
+                        resolved || aborted.push(1);
+                    });
+
+                    await Promise.sleep(50);
+
+                    if (signal.aborted) {
+                        return 0;
+                    }
+
+                    resolved = true;
+                    return 1;
+                },
+                async signal => {
+                    let resolved = false;
+                    signal.addEventListener("abort", () => {
+                        resolved || aborted.push(2);
+                    });
+
+                    await Promise.sleep(100);
+
+                    if (signal.aborted) {
+                        return 0;
+                    }
+
+                    resolved = true;
+                    return 2;
+                },
+            ], ctrl2.signal));
+
+            strictEqual((err2 as Error)?.name, "AbortError");
+            strictEqual(result2, undefined);
+            deepStrictEqual(aborted, []);
+        });
     });
 });

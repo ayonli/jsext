@@ -182,6 +182,11 @@ async function until(test) {
  * Runs multiple tasks concurrently and returns the result of the first task that
  * completes. The rest of the tasks will be aborted.
  *
+ * @param tasks An array of promises or functions that return promises.
+ * @param signal A parent abort signal, if provided and aborted before any task
+ *  completes, the function will reject immediately with the abort reason and
+ *  cancel all the tasks.
+ *
  * @example
  * ```ts
  * import { select } from "@ayonli/jsext/async";
@@ -189,17 +194,35 @@ async function until(test) {
  * const result = await select([
  *     signal => fetch("https://example.com", { signal }),
  *     signal => fetch("https://example.org", { signal }),
+ *     fetch("https://example.net"), // This task cannot actually be aborted, but ignored
  * ]);
  *
  * console.log(result);
  * ```
  */
-async function select(tasks) {
+async function select(tasks, signal = undefined) {
+    if (signal === null || signal === void 0 ? void 0 : signal.aborted) {
+        throw signal.reason;
+    }
     const ctrl = new AbortController();
-    const { signal } = ctrl;
-    const result = await Promise.race(tasks.map(fn => fn(signal)));
-    ctrl.abort();
-    return result;
+    const { signal: _signal } = ctrl;
+    const abort = ctrl.abort.bind(ctrl);
+    let _abort;
+    tasks = [...tasks];
+    if (signal) {
+        signal.addEventListener("abort", abort, { once: true });
+        tasks.push(new Promise((_, reject) => {
+            _abort = () => reject(signal.reason);
+            signal.addEventListener("abort", _abort, { once: true });
+        }));
+    }
+    return await Promise.race(tasks.map(task => {
+        return typeof task === "function" ? task(_signal) : task;
+    })).finally(() => {
+        _signal.aborted || abort();
+        _abort && signal.removeEventListener("abort", _abort);
+        signal === null || signal === void 0 ? void 0 : signal.removeEventListener("abort", abort);
+    });
 }
 
 export { abortable, after, asyncTask, select, sleep, timeout, until };
