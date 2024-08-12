@@ -118,36 +118,74 @@ export class WebSocketConnection extends EventTarget implements AsyncIterable<st
     ): void;
     override addEventListener(
         type: string,
-        listener: (this: WebSocketConnection, event: Event) => any,
+        listener: EventListenerOrEventListenerObject | null,
         options?: boolean | AddEventListenerOptions
     ): void;
     override addEventListener(
         event: string,
         listener: any,
-        options?: boolean | AddEventListenerOptions
+        options: boolean | AddEventListenerOptions | undefined = undefined
     ): void {
-        return super.addEventListener(
-            event,
-            listener as EventListenerOrEventListenerObject,
-            options
-        );
+        return super.addEventListener(event, listener, options);
+    }
+
+    override removeEventListener(
+        type: "open",
+        listener: (this: WebSocketConnection, ev: Event) => void,
+        options?: boolean | EventListenerOptions
+    ): void;
+    override removeEventListener(
+        type: "message",
+        listener: (this: WebSocketConnection, ev: MessageEvent<string | Uint8Array>) => void,
+        options?: boolean | EventListenerOptions
+    ): void;
+    override removeEventListener(
+        type: "error",
+        listener: (this: WebSocketConnection, ev: ErrorEvent) => void,
+        options?: boolean | EventListenerOptions
+    ): void;
+    override removeEventListener(
+        type: "close",
+        listener: (this: WebSocketConnection, ev: CloseEvent) => void,
+        options?: boolean | EventListenerOptions
+    ): void;
+    override removeEventListener(
+        type: string,
+        listener: EventListenerOrEventListenerObject | null,
+        options?: boolean | EventListenerOptions
+    ): void;
+    override removeEventListener(
+        event: string,
+        listener: any,
+        options: boolean | EventListenerOptions | undefined = undefined
+    ): void {
+        return super.removeEventListener(event, listener, options);
     }
 
     async *[Symbol.asyncIterator](): AsyncIterableIterator<string | Uint8Array> {
         const channel = chan<string | Uint8Array>(Infinity);
-
-        this.addEventListener("message", ev => {
+        const handleMessage = (ev: MessageEvent<string | Uint8Array>) => {
             channel.send(ev.data);
-        });
-        this.addEventListener("close", ev => {
+        };
+        const handleClose = (ev: CloseEvent) => {
             ev.wasClean && channel.close();
-        });
-        this.addEventListener("error", ev => {
+        };
+        const handleError = (ev: ErrorEvent) => {
             channel.close(fromErrorEvent(ev));
-        });
+        };
 
-        for await (const data of channel) {
-            yield data;
+        this.addEventListener("message", handleMessage);
+        this.addEventListener("close", handleClose);
+        this.addEventListener("error", handleError);
+
+        try {
+            for await (const data of channel) {
+                yield data;
+            }
+        } finally {
+            this.removeEventListener("message", handleMessage);
+            this.removeEventListener("close", handleClose);
+            this.removeEventListener("error", handleError);
         }
     }
 }

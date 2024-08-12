@@ -320,19 +320,33 @@ export class EventEndpoint<T extends Request | IncomingMessage | Http2ServerRequ
     ): void;
     override addEventListener(
         type: string,
-        listener: (this: EventEndpoint<T>, event: Event) => any,
+        listener: EventListenerOrEventListenerObject | null,
         options?: boolean | AddEventListenerOptions
     ): void;
     override addEventListener(
         event: string,
         listener: any,
-        options?: boolean | AddEventListenerOptions
+        options: boolean | AddEventListenerOptions | undefined = undefined
     ): void {
-        return super.addEventListener(
-            event,
-            listener as EventListenerOrEventListenerObject,
-            options
-        );
+        return super.addEventListener(event, listener, options);
+    }
+
+    override removeEventListener(
+        type: "close",
+        listener: (this: EventEndpoint<T>, ev: CloseEvent) => void,
+        options?: boolean | EventListenerOptions | undefined
+    ): void;
+    override removeEventListener(
+        type: string,
+        listener: EventListenerOrEventListenerObject | null,
+        options?: boolean | EventListenerOptions | undefined
+    ): void;
+    override removeEventListener(
+        type: string,
+        listener: any,
+        options: boolean | EventListenerOptions | undefined = undefined
+    ): void {
+        return super.removeEventListener(type, listener, options);
     }
 
     /**
@@ -807,19 +821,48 @@ export class EventSource extends EventTarget {
     ): void;
     override addEventListener(
         type: string,
-        listener: (this: EventSource, event: Event) => any,
+        listener: EventListenerOrEventListenerObject | null,
         options?: boolean | AddEventListenerOptions
     ): void;
     override addEventListener(
         event: string,
         listener: any,
-        options?: boolean | AddEventListenerOptions
+        options: boolean | AddEventListenerOptions | undefined = undefined
     ): void {
-        return super.addEventListener(
-            event,
-            listener as EventListenerOrEventListenerObject,
-            options
-        );
+        return super.addEventListener(event, listener, options);
+    }
+
+    override removeEventListener(
+        type: "open",
+        listener: (this: EventSource, ev: Event) => void,
+        options?: boolean | EventListenerOptions
+    ): void;
+    override removeEventListener(
+        type: "error",
+        listener: (this: EventSource, ev: ErrorEvent) => void,
+        options?: boolean | EventListenerOptions
+    ): void;
+    override removeEventListener(
+        type: "message",
+        listener: (this: EventSource, ev: MessageEvent<string>) => void,
+        options?: boolean | EventListenerOptions
+    ): void;
+    override removeEventListener(
+        type: string,
+        listener: (this: EventSource, event: MessageEvent<string>) => void,
+        options?: boolean | EventListenerOptions
+    ): void;
+    override removeEventListener(
+        type: string,
+        listener: EventListenerOrEventListenerObject | null,
+        options?: boolean | EventListenerOptions
+    ): void;
+    override removeEventListener(
+        type: string,
+        listener: any,
+        options: boolean | EventListenerOptions | undefined = undefined
+    ): void {
+        return super.removeEventListener(type, listener, options);
     }
 
     [customInspect](): object | string {
@@ -1016,19 +1059,48 @@ export class EventConsumer extends EventTarget {
     ): void;
     override addEventListener(
         type: string,
-        listener: (this: EventConsumer, event: Event) => any,
+        listener: EventListenerOrEventListenerObject | null,
         options?: boolean | AddEventListenerOptions
     ): void;
     override addEventListener(
         event: string,
         listener: any,
-        options?: boolean | AddEventListenerOptions
+        options: boolean | AddEventListenerOptions | undefined = undefined
     ): void {
-        return super.addEventListener(
-            event,
-            listener as EventListenerOrEventListenerObject,
-            options
-        );
+        return super.addEventListener(event, listener, options);
+    }
+
+    override removeEventListener(
+        type: "error",
+        listener: (this: EventConsumer, ev: ErrorEvent) => void,
+        options?: boolean | EventListenerOptions
+    ): void;
+    override removeEventListener(
+        type: "close",
+        listener: (this: EventConsumer, ev: CloseEvent) => void,
+        options?: boolean | EventListenerOptions
+    ): void;
+    override removeEventListener(
+        type: "message",
+        listener: (this: EventConsumer, ev: MessageEvent<string>) => void,
+        options?: boolean | EventListenerOptions
+    ): void;
+    override removeEventListener(
+        type: string,
+        listener: (this: EventConsumer, event: MessageEvent<string>) => void,
+        options?: boolean | EventListenerOptions
+    ): void;
+    override removeEventListener(
+        type: string,
+        listener: EventListenerOrEventListenerObject | null,
+        options?: boolean | EventListenerOptions
+    ): void;
+    override removeEventListener(
+        type: string,
+        listener: any,
+        options: boolean | EventListenerOptions | undefined = undefined
+    ): void {
+        return super.removeEventListener(type, listener, options);
     }
 }
 fixStringTag(EventConsumer);

@@ -220,10 +220,12 @@ describe("sse", () => {
                 const controller = new AbortController();
                 Deno.serve({ port, signal: controller.signal }, req => {
                     const sse = new EventEndpoint(req);
+                    const listener = (ev: CloseEvent) => {
+                        closeEvent = ev;
+                        sse.removeEventListener("close", listener);
+                    };
 
-                    sse.addEventListener("close", _ev => {
-                        closeEvent = _ev as CloseEvent;
-                    });
+                    sse.addEventListener("close", listener);
 
                     task.resolve(sse);
                     return sse.response;
@@ -234,10 +236,12 @@ describe("sse", () => {
                     port,
                     fetch: async (req: Request) => {
                         const sse = new EventEndpoint(req);
+                        const listener = (ev: CloseEvent) => {
+                            closeEvent = ev;
+                            sse.removeEventListener("close", listener);
+                        };
 
-                        sse.addEventListener("close", _ev => {
-                            closeEvent = _ev as CloseEvent;
-                        });
+                        sse.addEventListener("close", listener);
 
                         task.resolve(sse);
                         return sse.response;
@@ -248,10 +252,12 @@ describe("sse", () => {
                 const http = await import("node:http");
                 const server = http.createServer(withWeb(async (req) => {
                     const sse = new EventEndpoint(req);
+                    const listener = (ev: CloseEvent) => {
+                        closeEvent = ev;
+                        sse.removeEventListener("close", listener);
+                    };
 
-                    sse.addEventListener("close", _ev => {
-                        closeEvent = _ev as CloseEvent;
-                    });
+                    sse.addEventListener("close", listener);
 
                     task.resolve(sse);
                     return sse.response;
@@ -453,10 +459,12 @@ describe("sse", () => {
             const task = asyncTask<InstanceType<typeof EventEndpoint>>();
             const server = http.createServer((req, res) => {
                 const sse = new EventEndpoint(req, res);
+                const listener = (ev: CloseEvent) => {
+                    closeEvent = ev;
+                    sse.removeEventListener("close", listener);
+                };
 
-                sse.addEventListener("close", _ev => {
-                    closeEvent = _ev as CloseEvent;
-                });
+                sse.addEventListener("close", listener);
 
                 task.resolve(sse);
             });

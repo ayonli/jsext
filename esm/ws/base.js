@@ -66,22 +66,35 @@ class WebSocketConnection extends EventTarget {
         }
         this[_ws].close(code, reason);
     }
-    addEventListener(event, listener, options) {
+    addEventListener(event, listener, options = undefined) {
         return super.addEventListener(event, listener, options);
+    }
+    removeEventListener(event, listener, options = undefined) {
+        return super.removeEventListener(event, listener, options);
     }
     async *[(_a = _ws, Symbol.asyncIterator)]() {
         const channel = chan(Infinity);
-        this.addEventListener("message", ev => {
+        const handleMessage = (ev) => {
             channel.send(ev.data);
-        });
-        this.addEventListener("close", ev => {
+        };
+        const handleClose = (ev) => {
             ev.wasClean && channel.close();
-        });
-        this.addEventListener("error", ev => {
+        };
+        const handleError = (ev) => {
             channel.close(fromErrorEvent(ev));
-        });
-        for await (const data of channel) {
-            yield data;
+        };
+        this.addEventListener("message", handleMessage);
+        this.addEventListener("close", handleClose);
+        this.addEventListener("error", handleError);
+        try {
+            for await (const data of channel) {
+                yield data;
+            }
+        }
+        finally {
+            this.removeEventListener("message", handleMessage);
+            this.removeEventListener("close", handleClose);
+            this.removeEventListener("error", handleError);
         }
     }
 }

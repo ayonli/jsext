@@ -238,8 +238,11 @@ class EventEndpoint extends EventTarget {
     get response() {
         return this[_response];
     }
-    addEventListener(event, listener, options) {
+    addEventListener(event, listener, options = undefined) {
         return super.addEventListener(event, listener, options);
+    }
+    removeEventListener(type, listener, options = undefined) {
+        return super.removeEventListener(type, listener, options);
     }
     dispatchEvent(event) {
         if (event instanceof MessageEvent) {
@@ -621,8 +624,11 @@ class EventSource extends EventTarget {
         setReadonly(this, "readyState", this.CLOSED);
         this[_controller].abort();
     }
-    addEventListener(event, listener, options) {
+    addEventListener(event, listener, options = undefined) {
         return super.addEventListener(event, listener, options);
+    }
+    removeEventListener(type, listener, options = undefined) {
+        return super.removeEventListener(type, listener, options);
     }
     [(_a = _controller, _b = _request, _c = _lastEventId, _d = _reconnectionTime, _e = _retry, _f = _timer, _g = _onopen, _h = _onmessage, _j = _onerror, customInspect)]() {
         const _this = this;
@@ -777,8 +783,11 @@ class EventConsumer extends EventTarget {
     get closed() {
         return this[_closed];
     }
-    addEventListener(event, listener, options) {
+    addEventListener(event, listener, options = undefined) {
         return super.addEventListener(event, listener, options);
+    }
+    removeEventListener(type, listener, options = undefined) {
+        return super.removeEventListener(type, listener, options);
     }
 }
 _k = _lastEventId, _l = _reconnectionTime, _m = _closed;
