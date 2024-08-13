@@ -211,9 +211,13 @@ async function select(tasks, signal = undefined) {
     return await Promise.race(tasks.map(task => {
         return typeof task === "function" ? task(_signal) : task;
     })).finally(() => {
-        _signal.aborted || abort();
-        _abort && signal.removeEventListener("abort", _abort);
-        signal === null || signal === void 0 ? void 0 : signal.removeEventListener("abort", abort);
+        if (!_signal.aborted) {
+            abort();
+            if (signal) {
+                signal.removeEventListener("abort", abort);
+                signal.removeEventListener("abort", _abort);
+            }
+        }
     });
 }
 

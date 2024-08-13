@@ -291,8 +291,13 @@ export async function select<T>(
     return await Promise.race(tasks.map(task => {
         return typeof task === "function" ? task(_signal) : task;
     })).finally(() => {
-        _signal.aborted || abort();
-        _abort && signal!.removeEventListener("abort", _abort);
-        signal?.removeEventListener("abort", abort);
+        if (!_signal.aborted) {
+            abort();
+
+            if (signal) {
+                signal.removeEventListener("abort", abort);
+                signal.removeEventListener("abort", _abort);
+            }
+        }
     });
 }
