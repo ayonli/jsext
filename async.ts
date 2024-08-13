@@ -44,26 +44,6 @@ export function asyncTask<T>(): AsyncTask<T> {
 }
 
 /**
- * Try to resolve a promise with an abort signal.
- * 
- * **NOTE:** This function does not cancel the task itself, it only prematurely
- * breaks the current routine when the signal is aborted. In order to support
- * cancellation, the task must be designed to handle the abort signal itself.
- * 
- * @example
- * ```ts
- * import { abortable, sleep } from "@ayonli/jsext/async";
- * 
- * const task = sleep(1000);
- * const controller = new AbortController();
- * 
- * setTimeout(() => controller.abort(), 100);
- * 
- * await abortable(task, controller.signal); // throws AbortError after 100ms
- * ```
- */
-export function abortable<T>(task: PromiseLike<T>, signal: AbortSignal): Promise<T>;
-/**
  * Wraps an async iterable object with an abort signal.
  * 
  * @example
@@ -88,6 +68,29 @@ export function abortable<T>(task: PromiseLike<T>, signal: AbortSignal): Promise
  * ```
  */
 export function abortable<T>(task: AsyncIterable<T>, signal: AbortSignal): AsyncIterable<T>;
+/**
+ * Try to resolve a promise with an abort signal.
+ * 
+ * **NOTE:** This function does not cancel the task itself, it only prematurely
+ * breaks the current routine when the signal is aborted. In order to support
+ * cancellation, the task must be designed to handle the abort signal itself.
+ * 
+ * @deprecated This signature is confusing and doesn't  actually cancel the task,
+ * use {@link select} instead.
+ * 
+ * @example
+ * ```ts
+ * import { abortable, sleep } from "@ayonli/jsext/async";
+ * 
+ * const task = sleep(1000);
+ * const controller = new AbortController();
+ * 
+ * setTimeout(() => controller.abort(), 100);
+ * 
+ * await abortable(task, controller.signal); // throws AbortError after 100ms
+ * ```
+ */
+export function abortable<T>(task: PromiseLike<T>, signal: AbortSignal): Promise<T>;
 export function abortable<T>(
     task: PromiseLike<T> | AsyncIterable<T>,
     signal: AbortSignal
@@ -97,17 +100,7 @@ export function abortable<T>(
     ) {
         return abortableAsyncIterable(task as AsyncIterable<T>, signal);
     } else {
-        if (signal.aborted) {
-            return Promise.reject(signal.reason);
-        }
-
-        const aTask = asyncTask<never>();
-        const handleAbort = () => aTask.reject(signal.reason);
-        signal.addEventListener("abort", handleAbort, { once: true });
-
-        return Promise.race([task as PromiseLike<T>, aTask]).finally(() => {
-            signal.removeEventListener("abort", handleAbort);
-        });
+        return select([task as PromiseLike<T>], signal);
     }
 }
 

@@ -41,15 +41,7 @@ function abortable(task, signal) {
         return abortableAsyncIterable(task, signal);
     }
     else {
-        if (signal.aborted) {
-            return Promise.reject(signal.reason);
-        }
-        const aTask = asyncTask();
-        const handleAbort = () => aTask.reject(signal.reason);
-        signal.addEventListener("abort", handleAbort, { once: true });
-        return Promise.race([task, aTask]).finally(() => {
-            signal.removeEventListener("abort", handleAbort);
-        });
+        return select([task], signal);
     }
 }
 async function* abortableAsyncIterable(task, signal) {
