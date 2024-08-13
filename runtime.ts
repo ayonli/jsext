@@ -84,7 +84,7 @@ export interface RuntimeInfo {
  * 
  * // In Node.js
  * // {
- * //     type: "node",
+ * //     identity: "node",
  * //     version: "22.0.0",
  * //     fsSupport: true,
  * //     tsSupport: false,
@@ -93,7 +93,7 @@ export interface RuntimeInfo {
  * 
  * // In Deno
  * // {
- * //     type: "deno",
+ * //     identity: "deno",
  * //     version: "1.42.0",
  * //     fsSupport: true,
  * //     tsSupport: true,
@@ -102,7 +102,7 @@ export interface RuntimeInfo {
  * 
  * // In the browser (Chrome)
  * // {
- * //     type: "chrome",
+ * //     identity: "chrome",
  * //     version: "125.0.0.0",
  * //     fsSupport: true,
  * //     tsSupport: false,
