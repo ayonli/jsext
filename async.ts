@@ -321,7 +321,7 @@ export function abortWith(parent: AbortSignal) {
     const ctrl = new AbortController();
     const { signal } = ctrl;
     const abort = () => {
-        ctrl.abort(parent.reason);
+        signal.aborted || ctrl.abort(parent.reason);
     };
 
     parent.addEventListener("abort", abort, { once: true });

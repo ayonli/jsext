@@ -532,6 +532,10 @@ describe("async", () => {
     });
 
     describe("abortWith", () => {
+        if (typeof AbortController === "undefined") {
+            return;
+        }
+
         it("aborted by itself", () => {
             const ctrl1 = new AbortController();
             const ctrl2 = abortWith(ctrl1.signal);
