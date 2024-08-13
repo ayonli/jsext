@@ -1,7 +1,7 @@
 import "./augment.ts";
 import jsext from "./index.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { asyncTask, abortable, sleep } from "./async.ts";
+import { asyncTask, abortable, sleep, abortWith } from "./async.ts";
 import { isNodeBelow16 } from "./env.ts";
 import { as } from "./object.ts";
 import _try from "./try.ts";
@@ -528,6 +528,27 @@ describe("async", () => {
             strictEqual((err2 as Error)?.name, "AbortError");
             strictEqual(result2, undefined);
             deepStrictEqual(aborted, []);
+        });
+    });
+
+    describe("abortWith", () => {
+        it("aborted by itself", () => {
+            const ctrl1 = new AbortController();
+            const ctrl2 = abortWith(ctrl1.signal);
+
+            ctrl2.abort();
+            ok(ctrl2.signal.aborted);
+            ok(!ctrl1.signal.aborted);
+        });
+
+        it("aborted by parent", () => {
+            const ctrl1 = new AbortController();
+            const ctrl2 = abortWith(ctrl1.signal);
+
+            ctrl1.abort();
+            ok(ctrl1.signal.aborted);
+            ok(ctrl2.signal.aborted);
+            strictEqual(ctrl1.signal.reason, ctrl2.signal.reason);
         });
     });
 });

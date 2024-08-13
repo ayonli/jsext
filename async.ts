@@ -274,30 +274,60 @@ export async function select<T>(
         throw signal.reason;
     }
 
-    const ctrl = new AbortController();
+    const ctrl = signal ? abortWith(signal) : new AbortController();
     const { signal: _signal } = ctrl;
-    const abort = ctrl.abort.bind(ctrl);
-    let _abort: () => void;
-    tasks = [...tasks];
 
-    if (signal) {
-        signal.addEventListener("abort", abort, { once: true });
-        tasks.push(new Promise((_, reject) => {
-            _abort = () => reject(signal.reason);
-            signal.addEventListener("abort", _abort, { once: true });
-        }));
-    }
+    tasks = [
+        ...tasks,
+        new Promise((_, reject) => {
+            _signal.addEventListener("abort", () => {
+                reject(_signal.reason);
+            }, { once: true });
+        })
+    ];
 
     return await Promise.race(tasks.map(task => {
         return typeof task === "function" ? task(_signal) : task;
     })).finally(() => {
-        if (!_signal.aborted) {
-            abort();
-
-            if (signal) {
-                signal.removeEventListener("abort", abort);
-                signal.removeEventListener("abort", _abort);
-            }
-        }
+        _signal.aborted || ctrl.abort();
     });
+}
+
+/**
+ * Creates a new abort controller with a `parent` signal, the new abort signal
+ * will be aborted if the controller's `abort` method is called or when the
+ * parent signal is aborted, whichever happens first.
+ * 
+ * @example
+ * ```ts
+ * import { abortWith } from "@ayonli/jsext/async";
+ * 
+ * const parent = new AbortController();
+ * const child1 = abortWith(parent.signal);
+ * const child2 = abortWith(parent.signal);
+ * 
+ * child1.abort();
+ * 
+ * console.assert(child1.signal.aborted);
+ * console.assert(!parent.signal.aborted);
+ * 
+ * parent.abort();
+ * 
+ * console.assert(child2.signal.aborted);
+ * console.assert(child2.signal.reason === parent.signal.reason);
+ * ```
+ */
+export function abortWith(parent: AbortSignal) {
+    const ctrl = new AbortController();
+    const { signal } = ctrl;
+    const abort = () => {
+        ctrl.abort(parent.reason);
+    };
+
+    parent.addEventListener("abort", abort, { once: true });
+    signal.addEventListener("abort", () => {
+        parent.aborted || parent.removeEventListener("abort", abort);
+    });
+
+    return ctrl;
 }
