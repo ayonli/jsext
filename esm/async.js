@@ -67,6 +67,17 @@ async function* abortableAsyncIterable(task, signal) {
         }
     }
 }
+function createTimeoutError(ms) {
+    if (typeof DOMException === "function") {
+        return new DOMException(`operation timeout after ${ms}ms`, "TimeoutError");
+    }
+    else {
+        return new Exception(`operation timeout after ${ms}ms`, {
+            name: "TimeoutError",
+            code: 408,
+        });
+    }
+}
 /**
  * Try to resolve a promise with a timeout limit.
  *
@@ -83,10 +94,7 @@ async function timeout(task, ms) {
     const result = await Promise.race([
         task,
         new Promise((_, reject) => unrefTimer(setTimeout(() => {
-            reject(new Exception(`operation timeout after ${ms}ms`, {
-                name: "TimeoutError",
-                code: 408,
-            }));
+            reject(createTimeoutError(ms));
         }, ms)))
     ]);
     return result;
@@ -177,19 +185,41 @@ async function until(test) {
  * @param tasks An array of promises or functions that return promises.
  * @param signal A parent abort signal, if provided and aborted before any task
  *  completes, the function will reject immediately with the abort reason and
- *  cancel all the tasks.
+ *  cancel all tasks.
  *
  * @example
  * ```ts
+ * // fetch example
  * import { select } from "@ayonli/jsext/async";
  *
- * const result = await select([
+ * const res = await select([
  *     signal => fetch("https://example.com", { signal }),
  *     signal => fetch("https://example.org", { signal }),
  *     fetch("https://example.net"), // This task cannot actually be aborted, but ignored
  * ]);
  *
- * console.log(result);
+ * console.log(res); // the response from the first completed fetch
+ * ```
+ *
+ * @example
+ * ```ts
+ * // with parent signal
+ * import { select } from "@ayonli/jsext/async";
+ *
+ * const signal = AbortSignal.timeout(1000);
+ *
+ * try {
+ *     const res = await select([
+ *         signal => fetch("https://example.com", { signal }),
+ *         signal => fetch("https://example.org", { signal }),
+ *     ], signal);
+ * } catch (err) {
+ *     if ((err as Error).name === "TimeoutError") {
+ *         console.error(err); // Error: signal timed out
+ *     } else {
+ *         throw err;
+ *     }
+ * }
  * ```
  */
 async function select(tasks, signal = undefined) {
@@ -236,7 +266,7 @@ async function select(tasks, signal = undefined) {
  * console.assert(child2.signal.reason === parent.signal.reason);
  * ```
  */
-function abortWith(parent) {
+function abortWith(parent, options = undefined) {
     const ctrl = new AbortController();
     const { signal } = ctrl;
     const abort = () => {
@@ -246,6 +276,15 @@ function abortWith(parent) {
     signal.addEventListener("abort", () => {
         parent.aborted || parent.removeEventListener("abort", abort);
     });
+    if (options === null || options === void 0 ? void 0 : options.timeout) {
+        const { timeout } = options;
+        const timer = setTimeout(() => {
+            signal.aborted || ctrl.abort(createTimeoutError(timeout));
+        }, timeout);
+        signal.addEventListener("abort", () => {
+            clearTimeout(timer);
+        }, { once: true });
+    }
     return ctrl;
 }
 

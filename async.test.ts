@@ -537,22 +537,37 @@ describe("async", () => {
         }
 
         it("aborted by itself", () => {
-            const ctrl1 = new AbortController();
-            const ctrl2 = abortWith(ctrl1.signal);
+            const parent = new AbortController();
+            const child = abortWith(parent.signal);
 
-            ctrl2.abort();
-            ok(ctrl2.signal.aborted);
-            ok(!ctrl1.signal.aborted);
+            child.abort();
+
+            ok(!parent.signal.aborted);
+            ok(child.signal.aborted);
         });
 
         it("aborted by parent", () => {
-            const ctrl1 = new AbortController();
-            const ctrl2 = abortWith(ctrl1.signal);
+            const parent = new AbortController();
+            const child = abortWith(parent.signal);
 
-            ctrl1.abort();
-            ok(ctrl1.signal.aborted);
-            ok(ctrl2.signal.aborted);
-            strictEqual(ctrl1.signal.reason, ctrl2.signal.reason);
+            parent.abort();
+
+            ok(parent.signal.aborted);
+            ok(child.signal.aborted);
+            strictEqual(child.signal.reason, parent.signal.reason);
+        });
+
+        it("aborted by timeout", async () => {
+            const parent = new AbortController();
+            const child = abortWith(parent.signal, {
+                timeout: 50,
+            });
+
+            await Promise.sleep(100);
+
+            ok(!parent.signal.aborted);
+            ok(child.signal.aborted);
+            strictEqual((child.signal.reason as Error)?.name, "TimeoutError");
         });
     });
 });
