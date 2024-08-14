@@ -14,11 +14,15 @@ import {
     parseCookie,
     parseCookies,
     parseRange,
+    parseRequest,
+    parseResponse,
     randomPort,
     serve,
     serveStatic,
     stringifyCookie,
     stringifyCookies,
+    stringifyRequest,
+    stringifyResponse,
     verifyBasicAuth,
     withWeb,
 } from "./http.ts";
@@ -33,6 +37,119 @@ import { EventConsumer } from "./sse.ts";
 declare const Bun: any;
 
 describe("http", () => {
+    describe("parseRequest", () => {
+        if (typeof Request === "undefined") {
+            return;
+        }
+
+        it("GET example", () => {
+            const message = "GET /foo HTTP/1.1\r\nHost: example.com\r\n\r\n";
+            const req = parseRequest(message);
+
+            strictEqual(req.method, "GET");
+            strictEqual(req.url, "http://example.com/foo");
+            strictEqual(req.headers.get("host"), "example.com");
+        });
+
+        it("POST example", async () => {
+            const message = "POST /foo HTTP/1.1\r\n"
+                + "Host: example.com\r\n"
+                + "Content-Type: application/x-www-form-urlencoded\r\n"
+                + "Content-Length: 19\r\n"
+                + "\r\n"
+                + "foo=hello&bar=world";
+            const req = parseRequest(message);
+
+            strictEqual(req.method, "POST");
+            strictEqual(req.url, "http://example.com/foo");
+            strictEqual(req.headers.get("host"), "example.com");
+            strictEqual(req.headers.get("content-type"), "application/x-www-form-urlencoded");
+            strictEqual(req.headers.get("content-length"), "19");
+
+            const form = new URLSearchParams(await req.text());
+            strictEqual(form.get("foo"), "hello");
+            strictEqual(form.get("bar"), "world");
+        });
+    });
+
+    describe("parseResponse", () => {
+        if (typeof Response === "undefined") {
+            return;
+        }
+
+        it("200 OK example", async () => {
+            const message = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!";
+            const res = parseResponse(message);
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(res.headers.get("content-length"), "13");
+            strictEqual(await res.text(), "Hello, World!");
+        });
+
+        it("204 No Content example", async () => {
+            const message = "HTTP/1.1 204 No Content\r\nContent-Length: 0\r\n\r\n";
+            const res = parseResponse(message);
+
+            strictEqual(res.status, 204);
+            strictEqual(res.statusText, "No Content");
+            strictEqual(res.headers.get("content-length"), "0");
+            strictEqual(await res.text(), "");
+        });
+    });
+
+    describe("stringifyRequest", () => {
+        if (typeof Request === "undefined") {
+            return;
+        }
+
+        it("GET example", async () => {
+            const req = new Request("http://example.com/foo");
+            const message = await stringifyRequest(req);
+
+            strictEqual(message, "GET /foo HTTP/1.1\r\nHost: example.com\r\n\r\n");
+        });
+
+        it("POST example", async () => {
+            const req = new Request("http://example.com/foo", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: "foo=hello&bar=world",
+            });
+            const message = await stringifyRequest(req);
+
+            strictEqual(message, "POST /foo HTTP/1.1\r\n"
+                + "Host: example.com\r\n"
+                + "Content-Type: application/x-www-form-urlencoded\r\n"
+                + "Content-Length: 19\r\n"
+                + "\r\n"
+                + "foo=hello&bar=world");
+        });
+    });
+
+    describe("stringifyResponse", () => {
+        if (typeof Response === "undefined") {
+            return;
+        }
+
+        it("200 OK example", async () => {
+            const res = new Response("Hello, World!", {
+                headers: {
+                    "Content-Type": "text/plain",
+                }
+            });
+            const message = await stringifyResponse(res);
+
+            strictEqual(message, "HTTP/1.1 200 OK\r\n"
+                + "Content-Type: text/plain\r\n"
+                + "Content-Length: 13\r\n"
+                + "\r\n"
+                + "Hello, World!");
+        });
+    });
+
     describe("parseAccepts", () => {
         it("parse accept header", () => {
             const accept = parseAccepts("text/html,application/xhtml+xml;q=0.9");
