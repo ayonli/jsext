@@ -6,6 +6,8 @@ import {
     Cookie,
     RequestContext,
     etag,
+    getCookie,
+    getCookies,
     ifMatch,
     ifNoneMatch,
     parseAccepts,
@@ -19,6 +21,7 @@ import {
     randomPort,
     serve,
     serveStatic,
+    setCookie,
     stringifyCookie,
     stringifyCookies,
     stringifyRequest,
@@ -488,6 +491,113 @@ describe("http", () => {
         const cookie: Cookie = { name: "foo", value: "bar" };
         const cookies3 = stringifyCookies([cookie]);
         strictEqual(cookies3, "foo=bar");
+    });
+
+    describe("getCookies", () => {
+        it("Request", () => {
+            if (typeof Request === "undefined") {
+                return;
+            }
+
+            const headers = new Headers({
+                "Cookie": "foo=bar; baz=qux",
+            });
+            const req = new Request("http://example.com", { headers });
+            const cookies = getCookies(req);
+
+            deepStrictEqual(cookies, [
+                { name: "foo", value: "bar" },
+                { name: "baz", value: "qux" },
+            ] satisfies Cookie[]);
+            deepStrictEqual(getCookies(new Request("http://example.com")), []);
+        });
+
+        it("Response", () => {
+            if (typeof Response === "undefined") {
+                return;
+            }
+
+            const headers = new Headers([
+                ["Set-Cookie", "foo=bar; Expires=Wed, 09 Jun 2021 10:18:14 GMT"],
+                ["Set-Cookie", "baz=qux; Max-Age=3600"],
+            ]);
+            const res = new Response(null, { headers });
+            const cookies = getCookies(res);
+
+            deepStrictEqual(cookies, [
+                { name: "foo", value: "bar", expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT").valueOf() },
+                { name: "baz", value: "qux", maxAge: 3600 },
+            ] satisfies Cookie[]);
+        });
+    });
+
+    describe("getCookie", () => {
+        it("Request", () => {
+            if (typeof Request === "undefined") {
+                return;
+            }
+
+            const headers = new Headers({
+                "Cookie": "foo=bar; baz=qux",
+            });
+            const req = new Request("http://example.com", { headers });
+            const cookie = getCookie(req, "foo");
+            const cookie2 = getCookie(req, "hello");
+
+            deepStrictEqual(cookie, { name: "foo", value: "bar" } satisfies Cookie);
+            strictEqual(cookie2, null);
+        });
+
+        it("Response", () => {
+            if (typeof Response === "undefined") {
+                return;
+            }
+
+            const headers = new Headers([
+                ["Set-Cookie", "foo=bar; Expires=Wed, 09 Jun 2021 10:18:14 GMT"],
+                ["Set-Cookie", "baz=qux; Max-Age=3600"],
+            ]);
+            const res = new Response(null, { headers });
+            const cookie = getCookie(res, "foo");
+            const cookie1 = getCookie(res, "baz");
+            const cookie2 = getCookie(res, "hello");
+
+            deepStrictEqual(cookie, {
+                name: "foo",
+                value: "bar",
+                expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT").valueOf(),
+            } satisfies Cookie);
+            deepStrictEqual(cookie1, {
+                name: "baz",
+                value: "qux",
+                maxAge: 3600,
+            } satisfies Cookie);
+            strictEqual(cookie2, null);
+        });
+    });
+
+    it("setCookie", () => {
+        if (typeof Response === "undefined") {
+            return;
+        }
+
+        const headers = new Headers();
+        const res = new Response(null, { headers });
+        setCookie(res, {
+            name: "foo",
+            value: "bar",
+            expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT").valueOf(),
+        });
+        setCookie(res, {
+            name: "baz",
+            value: "qux",
+            maxAge: 3600,
+        });
+
+        deepStrictEqual(res.headers.getSetCookie(), [
+            "foo=bar; Expires=Wed, 09 Jun 2021 10:18:14 GMT",
+            "baz=qux; Max-Age=3600",
+        ]);
     });
 
     it("parseRange", () => {
@@ -1353,7 +1463,6 @@ describe("http", () => {
                 }
             });
             defer(() => server.close(true));
-            await server.ready;
 
             strictEqual(server.type, "module");
             strictEqual(typeof server.fetch, "function");
@@ -1382,6 +1491,7 @@ describe("http", () => {
                     fetch: server.fetch!,
                 });
                 defer(() => _server.close(true));
+                await _server.ready;
             }
 
             await server.ready;

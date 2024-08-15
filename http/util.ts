@@ -133,6 +133,7 @@ export function parseContentType(str: string): ContentType {
  * 
  * @sse https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie
  * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cookie
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/get
  */
 export interface Cookie {
     /**
@@ -307,7 +308,7 @@ export function stringifyCookie(cookie: Cookie): string {
  * Parses the `Cookie` header or the `document.cookie` property.
  */
 export function parseCookies(str: string): Cookie[] {
-    return str.split(/;\s*/g).reduce((cookies, part) => {
+    return !str ? [] : str.split(/;\s*/g).reduce((cookies, part) => {
         const [name, value] = part.split("=") as [string, string?];
 
         if (name && value !== undefined) {
@@ -324,6 +325,93 @@ export function parseCookies(str: string): Cookie[] {
  */
 export function stringifyCookies(cookies: Cookie[]): string {
     return cookies.map(({ name, value }) => `${name}=${value}`).join("; ");
+}
+
+/**
+ * Gets the cookies from the `Cookie` header of the request or the `Set-Cookie`
+ * header of the response.
+ * 
+ * @example
+ * ```ts
+ * import { getCookies, getCookie, setCookie } from "@ayonli/jsext/http";
+ * 
+ * export default {
+ *     fetch(req: Request) {
+ *         const cookies = getCookies(req);
+ *         console.log(cookies);
+ *         
+ *         const cookie = getCookie(req, "foo");
+ *         console.log(cookie);
+ * 
+ *         const res = new Response("Hello, World!");
+ *         setCookie(res, { name: "hello", value: "world" });
+ * 
+ *         return res;
+ *     }
+ * }
+ * ```
+ */
+export function getCookies(obj: Request | Response): Cookie[] {
+    if ("ok" in obj && "status" in obj) {
+        return obj.headers.getSetCookie().map(str => parseCookie(str));
+    } else {
+        return parseCookies(obj.headers.get("Cookie") ?? "");
+    }
+}
+
+/**
+ * Gets the cookie by the given `name` from the `Cookie` header of the request
+ * or the `Set-Cookie` header of the response.
+ * 
+ * @example
+ * ```ts
+ * import { getCookies, getCookie, setCookie } from "@ayonli/jsext/http";
+ * 
+ * export default {
+ *     fetch(req: Request) {
+ *         const cookies = getCookies(req);
+ *         console.log(cookies);
+ *         
+ *         const cookie = getCookie(req, "foo");
+ *         console.log(cookie);
+ * 
+ *         const res = new Response("Hello, World!");
+ *         setCookie(res, { name: "hello", value: "world" });
+ * 
+ *         return res;
+ *     }
+ * }
+ * ```
+ */
+export function getCookie(obj: Request | Response, name: string): Cookie | null {
+    return getCookies(obj).find(cookie => cookie.name === name) ?? null;
+}
+
+/**
+ * Sets a cookie in the `Set-Cookie` header of the response.
+ * 
+ * @example
+ * ```ts
+ * import { getCookies, getCookie, setCookie } from "@ayonli/jsext/http";
+ * 
+ * export default {
+ *     fetch(req: Request) {
+ *         const cookies = getCookies(req);
+ *         console.log(cookies);
+ *         
+ *         const cookie = getCookie(req, "foo");
+ *         console.log(cookie);
+ * 
+ *         const res = new Response("Hello, World!");
+ *         setCookie(res, { name: "hello", value: "world" });
+ * 
+ *         return res;
+ *     }
+ * }
+ * ```
+ */
+export function setCookie(res: Response, cookie: Cookie): void {
+    res.headers.append("Set-Cookie", stringifyCookie(cookie));
 }
 
 /**

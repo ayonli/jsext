@@ -183,7 +183,7 @@ function stringifyCookie(cookie) {
  * Parses the `Cookie` header or the `document.cookie` property.
  */
 function parseCookies(str) {
-    return str.split(/;\s*/g).reduce((cookies, part) => {
+    return !str ? [] : str.split(/;\s*/g).reduce((cookies, part) => {
         const [name, value] = part.split("=");
         if (name && value !== undefined) {
             cookies.push({ name, value });
@@ -197,6 +197,93 @@ function parseCookies(str) {
  */
 function stringifyCookies(cookies) {
     return cookies.map(({ name, value }) => `${name}=${value}`).join("; ");
+}
+/**
+ * Gets the cookies from the `Cookie` header of the request or the `Set-Cookie`
+ * header of the response.
+ *
+ * @example
+ * ```ts
+ * import { getCookies, getCookie, setCookie } from "@ayonli/jsext/http";
+ *
+ * export default {
+ *     fetch(req: Request) {
+ *         const cookies = getCookies(req);
+ *         console.log(cookies);
+ *
+ *         const cookie = getCookie(req, "foo");
+ *         console.log(cookie);
+ *
+ *         const res = new Response("Hello, World!");
+ *         setCookie(res, { name: "hello", value: "world" });
+ *
+ *         return res;
+ *     }
+ * }
+ * ```
+ */
+function getCookies(obj) {
+    var _a;
+    if ("ok" in obj && "status" in obj) {
+        return obj.headers.getSetCookie().map(str => parseCookie(str));
+    }
+    else {
+        return parseCookies((_a = obj.headers.get("Cookie")) !== null && _a !== void 0 ? _a : "");
+    }
+}
+/**
+ * Gets the cookie by the given `name` from the `Cookie` header of the request
+ * or the `Set-Cookie` header of the response.
+ *
+ * @example
+ * ```ts
+ * import { getCookies, getCookie, setCookie } from "@ayonli/jsext/http";
+ *
+ * export default {
+ *     fetch(req: Request) {
+ *         const cookies = getCookies(req);
+ *         console.log(cookies);
+ *
+ *         const cookie = getCookie(req, "foo");
+ *         console.log(cookie);
+ *
+ *         const res = new Response("Hello, World!");
+ *         setCookie(res, { name: "hello", value: "world" });
+ *
+ *         return res;
+ *     }
+ * }
+ * ```
+ */
+function getCookie(obj, name) {
+    var _a;
+    return (_a = getCookies(obj).find(cookie => cookie.name === name)) !== null && _a !== void 0 ? _a : null;
+}
+/**
+ * Sets a cookie in the `Set-Cookie` header of the response.
+ *
+ * @example
+ * ```ts
+ * import { getCookies, getCookie, setCookie } from "@ayonli/jsext/http";
+ *
+ * export default {
+ *     fetch(req: Request) {
+ *         const cookies = getCookies(req);
+ *         console.log(cookies);
+ *
+ *         const cookie = getCookie(req, "foo");
+ *         console.log(cookie);
+ *
+ *         const res = new Response("Hello, World!");
+ *         setCookie(res, { name: "hello", value: "world" });
+ *
+ *         return res;
+ *     }
+ * }
+ * ```
+ */
+function setCookie(res, cookie) {
+    res.headers.append("Set-Cookie", stringifyCookie(cookie));
 }
 /**
  * Parses the `Range` header.
@@ -660,5 +747,5 @@ async function stringifyResponse(res) {
     return message;
 }
 
-export { HTTP_METHODS, HTTP_STATUS, ifMatch, ifNoneMatch, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRange, parseRequest, parseResponse, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, verifyBasicAuth };
+export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, ifMatch, ifNoneMatch, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRange, parseRequest, parseResponse, setCookie, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, verifyBasicAuth };
 //# sourceMappingURL=util.js.map

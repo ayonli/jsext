@@ -12,7 +12,7 @@ import { sha256 } from './hash.js';
 import { Server } from './http/server.js';
 import { withHeaders, createContext, listenFetchEvent, respondDir } from './http/internal.js';
 import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
-export { HTTP_METHODS, HTTP_STATUS, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRequest, parseResponse, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, verifyBasicAuth } from './http/util.js';
+export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRequest, parseResponse, setCookie, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, verifyBasicAuth } from './http/util.js';
 import { as } from './object.js';
 import { readAsArray } from './reader.js';
 import { WebSocketServer } from './ws.js';
