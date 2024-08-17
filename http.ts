@@ -66,7 +66,7 @@ import { isMain } from "./module.ts";
 import { as } from "./object.ts";
 import { extname, join, resolve, startsWith } from "./path.ts";
 import { readAsArray } from "./reader.ts";
-import { stripStart } from "./string.ts";
+import { capitalize, stripStart } from "./string.ts";
 import { WebSocketServer } from "./ws.ts";
 
 export * from "./http/util.ts";
@@ -352,7 +352,7 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
         // Use `setHeader` to set headers instead of passing them to `writeHead`,
         // it seems in Deno, the headers are not written to the response if they
         // are passed to `writeHead`.
-        nodeRes.setHeader(key, value);
+        nodeRes.setHeader(capitalize(key, true), value);
     }
 
     if (nodeRes.req.httpVersion === "2.0") {

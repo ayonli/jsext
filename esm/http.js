@@ -1,8 +1,9 @@
 import { asyncTask } from './async.js';
 import bytes from './bytes.js';
-import { stripStart } from './string.js';
+import { capitalize, stripStart } from './string.js';
 import { isDeno, isBun, isNode } from './env.js';
 import './external/event-target-polyfill/index.js';
+export { parseUserAgent } from './http/user-agent.js';
 import { isMain } from './module.js';
 import { join, extname, resolve } from './path.js';
 import './cli/constants.js';
@@ -317,7 +318,7 @@ function toNodeResponse(res, nodeRes) {
         // Use `setHeader` to set headers instead of passing them to `writeHead`,
         // it seems in Deno, the headers are not written to the response if they
         // are passed to `writeHead`.
-        nodeRes.setHeader(key, value);
+        nodeRes.setHeader(capitalize(key, true), value);
     }
     if (nodeRes.req.httpVersion === "2.0") {
         nodeRes.writeHead(status);
