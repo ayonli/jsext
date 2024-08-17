@@ -1,5 +1,6 @@
 import bytes, { text } from '../bytes.js';
 import { capitalize } from '../string.js';
+export { parseUserAgent } from './user-agent.js';
 
 /**
  * Utility functions for handling HTTP related tasks, such as parsing headers.

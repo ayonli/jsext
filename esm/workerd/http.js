@@ -15,6 +15,7 @@ import { stripStart } from '../string.js';
 import { WebSocketServer } from './ws.js';
 import runtime from '../runtime.js';
 import { startsWith } from '../path/util.js';
+export { parseUserAgent } from '../http/user-agent.js';
 
 async function etag(data) {
     var _a;

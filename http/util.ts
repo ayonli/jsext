@@ -7,6 +7,8 @@
 import bytes, { text } from "../bytes.ts";
 import { capitalize } from "../string.ts";
 
+export * from "./user-agent.ts";
+
 /**
  * Represents the HTTP request `Accept`, `Accept-Encoding` and `Accept-Language`
  * headers.

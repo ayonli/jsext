@@ -15,6 +15,7 @@ import {
     isNodeLike,
 } from "./env.ts";
 import { createCloseEvent } from "./event.ts";
+import { parseUserAgent } from "./http/user-agent.ts";
 
 declare const Bun: any;
 declare function WorkerLocation(): void;
@@ -147,63 +148,41 @@ export default function runtime(): RuntimeInfo {
                 : undefined;
 
     if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
-        const ua = navigator.userAgent.match(/(Firefox|Edg?e|Safari|Chrom(e|ium))\/(\d+(\.\d+)+)/g);
+        const ua = parseUserAgent(navigator.userAgent);
 
-        if (ua) {
-            const list = ua.map(part => {
-                const [name, version] = part.split("/") as string[];
-                return { name, version };
-            });
-            const safari = list.find(({ name }) => name === "Safari");
-            const firefox = list.find(({ name }) => name === "Firefox");
-            const chrome = list.find(({ name }) => name === "Chrome" || name === "Chromium");
+        if (ua.runtime) {
+            const { identity, version } = ua.runtime;
 
-            if (safari && !chrome && !firefox) {
+            if (identity === "workerd") {
                 return {
-                    identity: "safari",
-                    version: safari!.version,
+                    identity,
+                    version,
                     fsSupport,
-                    tsSupport: false,
-                    worker,
-                };
-            } else if (firefox && !chrome && !safari) {
-                return {
-                    identity: "firefox",
-                    version: firefox!.version,
-                    fsSupport,
-                    tsSupport: false,
-                    worker,
-                };
-            } else if (chrome) {
-                return {
-                    identity: "chrome",
-                    version: chrome!.version,
-                    fsSupport,
-                    tsSupport: false,
-                    worker,
+                    tsSupport: (() => {
+                        try {
+                            throw new Error("Test error");
+                        } catch (err: any) {
+                            return /[\\/]\.?wrangler[\\/]/.test(err.stack!);
+                        }
+                    })(),
+                    worker: "service",
                 };
             } else {
                 return {
-                    identity: "unknown",
-                    version: undefined,
+                    identity,
+                    version,
                     fsSupport,
                     tsSupport: false,
                     worker,
                 };
             }
-        } else if (/Cloudflare[-\s]Workers?/i.test(navigator.userAgent)) {
+        } else {
             return {
-                identity: "workerd",
+                identity: "unknown",
                 version: undefined,
                 fsSupport,
-                tsSupport: (() => {
-                    try {
-                        throw new Error("Test error");
-                    } catch (err: any) {
-                        return /[\\/]\.?wrangler[\\/]/.test(err.stack!);
-                    }
-                })(),
-                worker: "service",
+                tsSupport: false,
+                worker,
             };
         }
     } else if (typeof WorkerLocation === "function" && globalThis.location instanceof WorkerLocation) {
@@ -268,25 +247,7 @@ export function platform(): WellknownPlatform | "unknown" {
             return process.platform as WellknownPlatform;
         }
     } else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
-        if (navigator.userAgent.includes("Macintosh")) {
-            return "darwin";
-        } else if (navigator.userAgent.includes("Windows")) {
-            return "windows";
-        } else if (navigator.userAgent.includes("Linux")) {
-            return "linux";
-        } else if (navigator.userAgent.includes("Android")) {
-            return "android";
-        } else if (navigator.userAgent.includes("FreeBSD")) {
-            return "freebsd";
-        } else if (navigator.userAgent.includes("OpenBSD")) {
-            return "openbsd";
-        } else if (navigator.userAgent.includes("NetBSD")) {
-            return "netbsd";
-        } else if (navigator.userAgent.includes("AIX")) {
-            return "aix";
-        } else if (navigator.userAgent.match(/SunOS|Solaris/)) {
-            return "solaris";
-        }
+        return parseUserAgent(navigator.userAgent).platform;
     }
 
     return "unknown";

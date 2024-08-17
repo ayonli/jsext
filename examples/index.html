@@ -76,8 +76,9 @@
             downloadFile,
         } from "@ayonli/jsext/dialog";
         import { getDirHandle } from "@ayonli/jsext/fs";
+        import { parseUserAgent } from "@ayonli/jsext/http";
         import { basename, extname } from "@ayonli/jsext/path";
-        import runtime, { isREPL, addUnhandledRejectionListener } from "@ayonli/jsext/runtime";
+        import runtime, { platform, addUnhandledRejectionListener } from "@ayonli/jsext/runtime";
 
         addEventListener("unhandledrejection", event => {
             console.error(event.reason);
@@ -272,8 +273,8 @@
             runtimeInfoBtn.addEventListener('click', async () => {
                 const info = {
                     ...runtime(),
-                    isREPL: isREPL(),
-                    ua: navigator.userAgent,
+                    platform: platform(),
+                    ua: parseUserAgent(navigator.userAgent),
                     stack: (() => {
                         const obj = {};
                         Error.captureStackTrace?.(obj);
@@ -286,13 +287,13 @@
         }
     </script>
     <script>
-        navigator.serviceWorker.register('./sw.js', {
-            type: "module",
-        }).then((registration) => {
-            console.log('Service Worker registered:', registration);
-        }).catch((error) => {
-            console.error('Service Worker registration failed:', error);
-        });
+        // navigator.serviceWorker.register('./sw.js', {
+        //     type: "module",
+        // }).then((registration) => {
+        //     console.log('Service Worker registered:', registration);
+        // }).catch((error) => {
+        //     console.error('Service Worker registration failed:', error);
+        // });
     </script>
 </head>
 

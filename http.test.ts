@@ -5,6 +5,7 @@ import {
     BasicAuthorization,
     Cookie,
     RequestContext,
+    UserAgentInfo,
     etag,
     getCookie,
     getCookies,
@@ -18,6 +19,7 @@ import {
     parseRange,
     parseRequest,
     parseResponse,
+    parseUserAgent,
     randomPort,
     serve,
     serveStatic,
@@ -598,6 +600,550 @@ describe("http", () => {
             "foo=bar; Expires=Wed, 09 Jun 2021 10:18:14 GMT",
             "baz=qux; Max-Age=3600",
         ]);
+    });
+
+    describe("parseUserAgent", () => {
+        it("Node.js", function () {
+            if (!isNode || typeof navigator === "undefined") {
+                this.skip();
+            }
+
+            const info = parseUserAgent(navigator.userAgent);
+
+            deepStrictEqual(info, {
+                name: "Node.js",
+                version: process.version.slice(1, 3),
+                runtime: {
+                    identity: "node",
+                    version: process.version.slice(1, 3),
+                },
+                platform: "unknown",
+                isMobile: false,
+                raw: navigator.userAgent,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Deno", function () {
+            if (!isDeno) {
+                this.skip();
+            }
+
+            const info = parseUserAgent(navigator.userAgent);
+            deepStrictEqual(info, {
+                name: "Deno",
+                version: Deno.version.deno,
+                runtime: {
+                    identity: "deno",
+                    version: Deno.version.deno,
+                },
+                platform: "unknown",
+                isMobile: false,
+                raw: navigator.userAgent,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Bun", function () {
+            if (!isBun) {
+                this.skip();
+            }
+
+            const info = parseUserAgent(navigator.userAgent);
+            deepStrictEqual(info, {
+                name: "Bun",
+                version: Bun.version,
+                runtime: {
+                    identity: "bun",
+                    version: Bun.version,
+                },
+                platform: "unknown",
+                isMobile: false,
+                raw: navigator.userAgent,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Cloudflare Workers", () => {
+            const ua = "Cloudflare-Workers";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Cloudflare-Workers",
+                version: undefined,
+                runtime: {
+                    identity: "workerd",
+                    version: undefined,
+                },
+                platform: "unknown",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("curl in Unix/Linux", () => {
+            const ua = "curl/7.68.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "curl",
+                version: "7.68.0",
+                runtime: undefined,
+                platform: "unknown",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("curl in Windows", () => {
+            const ua = "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.22621.2506";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "WindowsPowerShell",
+                version: "5.1.22621.2506",
+                runtime: undefined,
+                platform: "windows",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Safari in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Safari",
+                version: "605.1.15",
+                runtime: {
+                    identity: "safari",
+                    version: "605.1.15",
+                },
+                platform: "darwin",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Safari in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Safari",
+                version: "604.1",
+                runtime: {
+                    identity: "safari",
+                    version: "604.1",
+                },
+                platform: "darwin",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Chrome in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Chrome",
+                version: "127.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "127.0.0.0",
+                },
+                platform: "darwin",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Chrome in Windows", () => {
+            const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Chrome",
+                version: "127.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "127.0.0.0",
+                },
+                platform: "windows",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Chrome in Linux", () => {
+            const ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Chrome",
+                version: "126.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "126.0.0.0",
+                },
+                platform: "linux",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Chrome in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/114.0.5735.99 Mobile/15E148 Safari/604.1";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Chrome",
+                version: "114.0.5735.99",
+                runtime: {
+                    identity: "safari",
+                    version: "604.1",
+                },
+                platform: "darwin",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Chrome in Android", () => {
+            const ua = "Mozilla/5.0 (Linux; Android 11; Jelly2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.210 Mobile Safari/537.36";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Chrome",
+                version: "90.0.4430.210",
+                runtime: {
+                    identity: "chrome",
+                    version: "90.0.4430.210",
+                },
+                platform: "android",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Firefox in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:129.0) Gecko/20100101 Firefox/129.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Firefox",
+                version: "129.0",
+                runtime: {
+                    identity: "firefox",
+                    version: "129.0",
+                },
+                platform: "darwin",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Firefox in Windows", () => {
+            const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Firefox",
+                version: "129.0",
+                runtime: {
+                    identity: "firefox",
+                    version: "129.0",
+                },
+                platform: "windows",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Firefox in Linux", () => {
+            const ua = "Mozilla/5.0 (X11; Linux x86_64; rv:129.0) Gecko/20100101 Firefox/129.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Firefox",
+                version: "129.0",
+                runtime: {
+                    identity: "firefox",
+                    version: "129.0",
+                },
+                platform: "linux",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Firefox in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/129.1  Mobile/15E148 Safari/605.1.15";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Firefox",
+                version: "129.1",
+                runtime: {
+                    identity: "safari",
+                    version: "605.1.15",
+                },
+                platform: "darwin",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Firefox in Android", () => {
+            const ua = "Mozilla/5.0 (Android 11; Mobile; rv:129.0) Gecko/129.0 Firefox/129.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Firefox",
+                version: "129.0",
+                runtime: {
+                    identity: "firefox",
+                    version: "129.0",
+                },
+                platform: "android",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Edge in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/127.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Edge",
+                version: "127.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "126.0.0.0",
+                },
+                platform: "darwin",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Edge in Windows", () => {
+            const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Edge",
+                version: "125.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "125.0.0.0",
+                },
+                platform: "windows",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Edge in Linux", () => {
+            const ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Edge",
+                version: "127.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "127.0.0.0",
+                },
+                platform: "linux",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Edge in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/127.0.2651.102 Version/17.0 Mobile/15E148 Safari/604.1";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Edge",
+                version: "127.0.2651.102",
+                runtime: {
+                    identity: "safari",
+                    version: "604.1",
+                },
+                platform: "darwin",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Edge in Android", () => {
+            const ua = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36 EdgA/127.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Edge",
+                version: "127.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "127.0.0.0",
+                },
+                platform: "android",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Opera in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 OPR/112.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Opera",
+                version: "112.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "126.0.0.0",
+                },
+                platform: "darwin",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Opera in Windows", () => {
+            const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 OPR/112.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Opera",
+                version: "112.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "126.0.0.0",
+                },
+                platform: "windows",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Opera in Linux", () => {
+            const ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 OPR/112.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Opera",
+                version: "112.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "126.0.0.0",
+                },
+                platform: "linux",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Opera in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1 OPT/4.4.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Opera",
+                version: "4.4.0",
+                runtime: {
+                    identity: "safari",
+                    version: "604.1",
+                },
+                platform: "darwin",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Opera in Android", () => {
+            const ua = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36 OPR/83.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Opera",
+                version: "83.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "126.0.0.0",
+                },
+                platform: "android",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("DuckDuckGo in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15 Ddg/17.4.1";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "DuckDuckGo",
+                version: "17.4.1",
+                runtime: {
+                    identity: "safari",
+                    version: "605.1.15",
+                },
+                platform: "darwin",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Quark in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X; zh-cn) AppleWebKit/601.1.46 (KHTML, like Gecko) Mobile/21F90 Quark/7.2.0.2205 Mobile";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Quark",
+                version: "7.2.0.2205",
+                runtime: { identity: "safari", version: "601.1.46" },
+                platform: "darwin",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Quark in Android", () => {
+            const ua = "Mozilla/5.0 (Linux; U; Android 11; en-US; Jelly2 Build/RP1A.200720.011) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/100.0.4896.58 Quark/6.12.0.550 Mobile Safari/537.36";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Quark",
+                version: "6.12.0.550",
+                runtime: {
+                    identity: "chrome",
+                    version: "100.0.4896.58",
+                },
+                platform: "android",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Electron in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.89.1 Chrome/120.0.6099.291 Electron/28.2.8 Safari/537.36";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Electron",
+                version: "28.2.8",
+                runtime: {
+                    identity: "chrome",
+                    version: "120.0.6099.291",
+                },
+                platform: "darwin",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
     });
 
     it("parseRange", () => {
@@ -1667,7 +2213,6 @@ describe("http", () => {
             strictEqual(res2.status, 200);
             strictEqual(res2.statusText, "OK");
             strictEqual(await res2.text(), "Hello, World!");
-            console.log(results);
             strictEqual(results.length, 1);
             strictEqual(results[0]!.aborted, true);
             strictEqual((results[0]!.reason as DOMException)!.name, "AbortError");
