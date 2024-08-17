@@ -2,7 +2,7 @@
  * Parses the `User-Agent` header or the `navigator.userAgent` property.
  */
 function parseUserAgent(str) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     if (!str)
         throw new TypeError("The user agent string cannot be empty");
     const ua = {
@@ -63,6 +63,8 @@ function parseUserAgent(str) {
     const opera = matches.find(match => /Opera|OPR(iOS)?|OPT|OPR/i.test(match.name));
     const edge = matches.find(match => /Edg(e|A|iOS)?/i.test(match.name));
     const duckDuckGo = matches.find(match => /DuckDuckGo|Ddg(A|iOS)?/i.test(match.name));
+    const weChat = (_b = matches.find(match => /(Mac)?WeChat/i.test(match.name))) !== null && _b !== void 0 ? _b : matches.find(match => /MicroMessenger/i.test(match.name));
+    const dingTalk = str.match(/\b(DingTalk)\/(\d+(\.\d+)+)/);
     let node;
     let deno;
     let bun;
@@ -92,6 +94,14 @@ function parseUserAgent(str) {
             ua.name = "DuckDuckGo";
             ua.version = duckDuckGo.version;
         }
+        else if (weChat) {
+            ua.name = "WeChat";
+            ua.version = weChat.version;
+        }
+        else if (dingTalk) {
+            ua.name = "DingTalk";
+            ua.version = dingTalk[2];
+        }
         else {
             const last = matches[matches.length - 1];
             ua.name = last.name;
@@ -104,9 +114,17 @@ function parseUserAgent(str) {
             ua.name = "DuckDuckGo";
             ua.version = duckDuckGo.version;
         }
+        else if (weChat) {
+            ua.name = "WeChat";
+            ua.version = weChat.version;
+        }
+        else if (dingTalk) {
+            ua.name = "DingTalk";
+            ua.version = dingTalk[2];
+        }
         else {
             const index = matches.findIndex(match => match === safari);
-            const next = (_b = matches[index + 1]) !== null && _b !== void 0 ? _b : matches[matches.length - 1];
+            const next = (_c = matches[index + 1]) !== null && _c !== void 0 ? _c : matches[matches.length - 1];
             ua.name = next.name;
             ua.version = next.version;
         }
@@ -125,9 +143,17 @@ function parseUserAgent(str) {
             ua.name = "DuckDuckGo";
             ua.version = duckDuckGo.version;
         }
+        else if (weChat) {
+            ua.name = "WeChat";
+            ua.version = weChat.version;
+        }
+        else if (dingTalk) {
+            ua.name = "DingTalk";
+            ua.version = dingTalk[2];
+        }
         else {
             const index = matches.findIndex(match => match === chrome);
-            const next = (_c = matches[index + 1]) !== null && _c !== void 0 ? _c : matches[matches.length - 1];
+            const next = (_d = matches[index + 1]) !== null && _d !== void 0 ? _d : matches[matches.length - 1];
             if (next.name === "Safari") { // Chrome pretending to be Safari
                 ua.name = "Chrome";
                 ua.version = chrome.version;
@@ -141,7 +167,7 @@ function parseUserAgent(str) {
     else if (firefox && !chrome) {
         ua.runtime = { identity: "firefox", version: firefox.version };
         const index = matches.findIndex(match => match === firefox);
-        const next = (_d = matches[index + 1]) !== null && _d !== void 0 ? _d : matches[matches.length - 1];
+        const next = (_e = matches[index + 1]) !== null && _e !== void 0 ? _e : matches[matches.length - 1];
         if (next.name === "Safari") { // Firefox pretending to be Safari
             ua.name = "Firefox";
             ua.version = firefox.version;
@@ -173,6 +199,10 @@ function parseUserAgent(str) {
         ua.name = "Bun";
         ua.version = bun.version;
         ua.runtime = { identity: "bun", version: bun.version };
+    }
+    else if (dingTalk) {
+        ua.name = "DingTalk";
+        ua.version = dingTalk[2];
     }
     else {
         const last = matches[matches.length - 1];

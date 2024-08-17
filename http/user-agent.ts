@@ -102,6 +102,9 @@ export function parseUserAgent(str: string): UserAgentInfo {
     const opera = matches.find(match => /Opera|OPR(iOS)?|OPT|OPR/i.test(match.name));
     const edge = matches.find(match => /Edg(e|A|iOS)?/i.test(match.name));
     const duckDuckGo = matches.find(match => /DuckDuckGo|Ddg(A|iOS)?/i.test(match.name));
+    const weChat = matches.find(match => /(Mac)?WeChat/i.test(match.name))
+        ?? matches.find(match => /MicroMessenger/i.test(match.name));
+    const dingTalk = str.match(/\b(DingTalk)\/(\d+(\.\d+)+)/);
     let node: Match | undefined;
     let deno: Match | undefined;
     let bun: Match | undefined;
@@ -129,6 +132,12 @@ export function parseUserAgent(str: string): UserAgentInfo {
         } else if (duckDuckGo) {
             ua.name = "DuckDuckGo";
             ua.version = duckDuckGo.version;
+        } else if (weChat) {
+            ua.name = "WeChat";
+            ua.version = weChat.version;
+        } else if (dingTalk) {
+            ua.name = "DingTalk";
+            ua.version = dingTalk[2]!;
         } else {
             const last = matches[matches.length - 1]!;
             ua.name = last.name;
@@ -140,6 +149,12 @@ export function parseUserAgent(str: string): UserAgentInfo {
         if (duckDuckGo) {
             ua.name = "DuckDuckGo";
             ua.version = duckDuckGo.version;
+        } else if (weChat) {
+            ua.name = "WeChat";
+            ua.version = weChat.version;
+        } else if (dingTalk) {
+            ua.name = "DingTalk";
+            ua.version = dingTalk[2]!;
         } else {
             const index = matches.findIndex(match => match === safari);
             const next = matches[index + 1] ?? matches[matches.length - 1]!;
@@ -158,6 +173,12 @@ export function parseUserAgent(str: string): UserAgentInfo {
         } else if (duckDuckGo) {
             ua.name = "DuckDuckGo";
             ua.version = duckDuckGo.version;
+        } else if (weChat) {
+            ua.name = "WeChat";
+            ua.version = weChat.version;
+        } else if (dingTalk) {
+            ua.name = "DingTalk";
+            ua.version = dingTalk[2]!;
         } else {
             const index = matches.findIndex(match => match === chrome);
             const next = matches[index + 1] ?? matches[matches.length - 1]!;
@@ -200,6 +221,9 @@ export function parseUserAgent(str: string): UserAgentInfo {
         ua.name = "Bun";
         ua.version = bun.version;
         ua.runtime = { identity: "bun", version: bun.version };
+    } else if (dingTalk) {
+        ua.name = "DingTalk";
+        ua.version = dingTalk[2]!;
     } else {
         const last = matches[matches.length - 1]!;
         ua.name = last.name;

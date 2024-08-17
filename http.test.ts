@@ -1144,6 +1144,108 @@ describe("http", () => {
                 raw: ua,
             } satisfies UserAgentInfo);
         });
+
+        it("DingTalk in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/21F90 AliApp(DingTalk/7.1.15) com.laiwang.DingTalk/33435556 Channel/201200 language/en-CN UT4Aplus/0.0.6 WK";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "DingTalk",
+                version: "7.1.15",
+                runtime: {
+                    identity: "safari",
+                    version: "605.1.15",
+                },
+                platform: "darwin",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("DingTalk in Android", () => {
+            const ua = "Mozilla/5.0 (Linux; U; Android 11; zh-CN; Jelly2 Build/RP1A.200720.011) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/69.0.3497.100 UWS/3.22.0.36 Mobile Safari/537.36 AliApp(DingTalk/6.0.8) com.alibaba.android.rimet/14631539 Channel/1564716365480 language/en-US UT4Aplus/0.2.25 colorScheme/light";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "DingTalk",
+                version: "6.0.8",
+                runtime: {
+                    identity: "chrome",
+                    version: "69.0.3497.100",
+                },
+                platform: "android",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("WeChat in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 NetType/WIFI MicroMessenger/6.8.0(0x16080000) MacWechat/3.8.7(0x13080710) XWEB/1191 Flue";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "WeChat",
+                version: "3.8.7",
+                runtime: {
+                    identity: "chrome",
+                    version: "107.0.0.0",
+                },
+                platform: "darwin",
+                isMobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("WeChat in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.37(0x1800252f) NetType/WIFI Language/en";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "WeChat",
+                version: "8.0.37",
+                runtime: {
+                    identity: "safari",
+                    version: "605.1.15",
+                },
+                platform: "darwin",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("WeChat in Android", () => {
+            const ua = "Mozilla/5.0 (Linux; Android 11; Jelly2 Build/RP1A.200720.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/83.0.4103.120 Mobile Safari/537.36 MMWEBID/8683 MicroMessenger/8.0.50.2701(0x2800323E) WeChat/arm64 Weixin NetType/WIFI Language/en ABI/arm64";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "WeChat",
+                version: "8.0.50.2701",
+                runtime: {
+                    identity: "chrome",
+                    version: "83.0.4103.120",
+                },
+                platform: "android",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Lark in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5.1 Mobile/15E148 Safari/604.1 Lark/7.24.10 LarkLocale/en_US ChannelName/Feishu LKBrowserIdentifier/E5E0F149-4C4C-4344-9F9A-DE2421041BE0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Lark",
+                version: "7.24.10",
+                runtime: {
+                    identity: "safari",
+                    version: "604.1",
+                },
+                platform: "darwin",
+                isMobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
     });
 
     it("parseRange", () => {
