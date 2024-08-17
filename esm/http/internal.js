@@ -4,7 +4,44 @@ import runtime from '../runtime.js';
 import { EventEndpoint } from '../sse.js';
 import { dedent } from '../string.js';
 
-function createContext(request, props) {
+/**
+ * This is an internal module that provides utility functions for handling HTTP
+ * requests, mostly used by the `http.serve` and `http.serveStatic` functions.
+ *
+ * This module is exposed for advanced use cases such as when we want to
+ * implement a new `serve` function that behave like the existing one, e.g. for
+ * integrating with Vite dev server.
+ *
+ * @module
+ * @experimental
+ */
+/**
+ * Creates timing functions for measuring the request processing time. This
+ * function returns the timing functions and a `timers` map that associates
+ * to them.
+ */
+function createTimingFunctions() {
+    const timers = new Map();
+    return {
+        timers,
+        time: (name, description) => {
+            timers.set(name, { timeStart: Date.now(), description });
+        },
+        timeEnd: (name) => {
+            const metrics = timers.get(name);
+            if (metrics) {
+                metrics.timeEnd = Date.now();
+            }
+            else {
+                console.warn(`Timer '${name}' does not exist`);
+            }
+        },
+    };
+}
+/**
+ * Creates a request context object from the given `request` and properties.
+ */
+function createRequestContext(request, props) {
     const { ws, remoteAddress = null, ...rest } = props;
     return {
         remoteAddress,
@@ -16,6 +53,46 @@ function createContext(request, props) {
         ...rest,
     };
 }
+/**
+ * Patches the timing metrics to the response's headers.
+ */
+function patchTimingMetrics(response, timers) {
+    const total = timers.get("total");
+    let metrics = [...timers].filter(([label, metrics]) => {
+        return typeof metrics.timeEnd === "number" && label !== "total";
+    }).map(([name, metrics]) => {
+        const duration = metrics.timeEnd - metrics.timeStart;
+        let value = `${name};dur=${duration}`;
+        if (metrics.description) {
+            value += `;desc="${metrics.description}"`;
+        }
+        return value;
+    }).join(", ");
+    if (total && typeof total.timeEnd === "number") { // patch total timer at the end
+        const duration = total.timeEnd - total.timeStart;
+        const desc = total.description || "Total";
+        const totalValue = `total;dur=${duration};desc="${desc}"`;
+        if (metrics) {
+            metrics += `, ${totalValue}`;
+        }
+        else {
+            metrics = totalValue;
+        }
+    }
+    if (metrics) {
+        try {
+            response.headers.set("Server-Timing", metrics);
+        }
+        catch (_a) {
+            // Ignore
+        }
+    }
+    return response;
+}
+/**
+ * Returns a new request handler that wraps the given one so that we can add
+ * extra `headers` to the response.
+ */
 function withHeaders(handle, headers = undefined) {
     if (headers === undefined) {
         const { identity, version } = runtime();
@@ -31,8 +108,8 @@ function withHeaders(handle, headers = undefined) {
         }
         headers = { "Server": serverName };
     }
-    return (...args) => Promise.resolve(handle(...args))
-        .then((response) => {
+    return async (...args) => {
+        const response = await handle(...args);
         if (response.status === 101) {
             // WebSocket headers cannot be modified
             return response;
@@ -57,8 +134,12 @@ function withHeaders(handle, headers = undefined) {
             // In case the headers are immutable, ignore the error.
         }
         return response;
-    });
+    };
 }
+/**
+ * Adds a event listener to the `fetch` event in service workers that handles
+ * HTTP requests with the given options.
+ */
 function listenFetchEvent(options) {
     const { ws, fetch, headers, onError, bindings } = options;
     // @ts-ignore
@@ -66,24 +147,31 @@ function listenFetchEvent(options) {
         var _a, _b, _c;
         const { request } = event;
         const address = (_a = request.headers.get("cf-connecting-ip")) !== null && _a !== void 0 ? _a : (_b = event.client) === null || _b === void 0 ? void 0 : _b.address;
-        const ctx = createContext(request, {
+        const { timers, time, timeEnd } = createTimingFunctions();
+        const ctx = createRequestContext(request, {
             ws,
             remoteAddress: address ? {
                 family: address.includes(":") ? "IPv6" : "IPv4",
                 address: address,
                 port: 0,
             } : null,
+            time,
+            timeEnd,
             waitUntil: (_c = event.waitUntil) === null || _c === void 0 ? void 0 : _c.bind(event),
             bindings,
         });
         const _handle = withHeaders(fetch, headers);
         const _onError = withHeaders(onError, headers);
-        const response = Promise.resolve((_handle(request, ctx)))
+        const response = _handle(request, ctx)
+            .then(res => patchTimingMetrics(res, timers))
             .catch(err => _onError(err, request, ctx));
         event.respondWith(response);
     });
 }
-async function respondDir(entries, pathname, extraHeaders = {}) {
+/**
+ * Renders a directory listing page for the `pathname` with the given `entries`.
+ */
+async function renderDirPage(pathname, entries, extraHeaders = {}) {
     const list = [
         ...orderBy(entries.filter(e => e.kind === "directory"), e => e.name).map(e => e.name + "/"),
         ...orderBy(entries.filter(e => e.kind === "file"), e => e.name).map(e => e.name),
@@ -132,5 +220,5 @@ async function respondDir(entries, pathname, extraHeaders = {}) {
     });
 }
 
-export { createContext, listenFetchEvent, respondDir, withHeaders };
+export { createRequestContext, createTimingFunctions, listenFetchEvent, patchTimingMetrics, renderDirPage, withHeaders };
 //# sourceMappingURL=internal.js.map

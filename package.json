@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.9.58",
+    "version": "0.9.60",
     "description": "A JavaScript extension package for building strong and modern applications.",
     "type": "module",
     "exports": {
@@ -201,6 +201,13 @@
             "import": "./esm/http.js",
             "require": "./cjs/http.js",
             "default": "./http.ts"
+        },
+        "./http/internal": {
+            "types": "./types/http/internal.d.ts",
+            "bun": "./http/internal.ts",
+            "import": "./esm/http/internal.js",
+            "require": "./cjs/http/internal.js",
+            "default": "./http/internal.ts"
         },
         "./json": {
             "types": "./types/json.d.ts",

@@ -1384,6 +1384,58 @@ describe("http", () => {
             strictEqual(text, "Hello, World!");
         }));
 
+        it("timing metrics", func(async (defer) => {
+            const server = serve({
+                async fetch(req, ctx) {
+                    const { searchParams } = new URL(req.url);
+                    if (searchParams.has("withTotal")) {
+                        ctx.time("total");
+                    }
+
+                    ctx.time("db", "Database Query");
+                    await sleep(50);
+                    ctx.timeEnd("db");
+
+                    ctx.time("api");
+                    await sleep(100);
+                    ctx.timeEnd("api");
+
+                    // This will be ignored since it lacks a corresponding `timeEnd`.
+                    ctx.time("cache");
+
+                    if (searchParams.has("withTotal")) {
+                        ctx.timeEnd("total");
+                    }
+
+                    return new Response("Hello, World!");
+                }
+            });
+            defer(() => server.close(true));
+
+            strictEqual(server.type, "classic");
+            strictEqual(typeof server.fetch, "undefined");
+
+            await server.ready;
+            strictEqual(server.hostname, "0.0.0.0");
+            ok(server.port > 0);
+
+            const res1 = await fetch(`http://localhost:${server.port}`);
+            const text1 = await res1.text();
+            const metrics1 = res1.headers.get("Server-Timing");
+
+            strictEqual(res1.status, 200);
+            strictEqual(text1, "Hello, World!");
+            ok(/db;dur=\d{2};desc=\"Database Query\", api;dur=\d{2,3}/.test(metrics1 ?? ""));
+
+            const res2 = await fetch(`http://localhost:${server.port}?withTotal`);
+            const text2 = await res2.text();
+            const metrics2 = res2.headers.get("Server-Timing");
+
+            strictEqual(res2.status, 200);
+            strictEqual(text2, "Hello, World!");
+            ok(/db;dur=\d{2};desc=\"Database Query\", api;dur=\d{2,3}, total;dur=\d{3};desc=\"Total\"/.test(metrics2 ?? ""));
+        }));
+
         it("with Hono framework", func(async function (defer) {
             this.timeout(5_000);
 

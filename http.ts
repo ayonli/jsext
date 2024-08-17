@@ -60,7 +60,7 @@ import {
     ServeStaticOptions,
     Server
 } from "./http/server.ts";
-import { createContext, listenFetchEvent, respondDir, withHeaders } from "./http/internal.ts";
+import { createRequestContext, createTimingFunctions, listenFetchEvent, renderDirPage, withHeaders, patchTimingMetrics } from "./http/internal.ts";
 import { Range, ifMatch, ifNoneMatch, parseRange } from "./http/util.ts";
 import { isMain } from "./module.ts";
 import { as } from "./object.ts";
@@ -537,22 +537,26 @@ export function serve(options: ServeOptions): Server {
                     cert,
                     signal: controller.signal,
                     onListen: () => task.resolve(),
-                }, withHeaders(async (req, info) => {
-                    const ctx = createContext(req, {
+                }, (req, info) => {
+                    const { timers, time, timeEnd } = createTimingFunctions();
+                    const ctx = createRequestContext(req, {
                         ws,
                         remoteAddress: {
                             family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
                             address: info.remoteAddr.hostname,
                             port: info.remoteAddr.port,
                         },
+                        time,
+                        timeEnd,
                     });
 
-                    try {
-                        return await handle(req, ctx);
-                    } catch (err) {
-                        return await onError(err, req, ctx);
-                    }
-                }, headers));
+                    const _handle = withHeaders(handle, headers);
+                    const _onError = withHeaders(onError, headers);
+
+                    return _handle(req, ctx)
+                        .then(res => patchTimingMetrics(res, timers))
+                        .catch(err => _onError(err, req, ctx));
+                });
                 await task;
             } else {
                 hostname = "";
@@ -566,18 +570,22 @@ export function serve(options: ServeOptions): Server {
                     hostname,
                     port,
                     tls,
-                    fetch: withHeaders(async (req: Request, server: BunServer) => {
-                        const ctx = createContext(req, {
+                    fetch: (req: Request, server: BunServer) => {
+                        const { timers, time, timeEnd } = createTimingFunctions();
+                        const ctx = createRequestContext(req, {
                             ws,
                             remoteAddress: server.requestIP(req)!,
+                            time,
+                            timeEnd,
                         });
 
-                        try {
-                            return await handle(req, ctx);
-                        } catch (err) {
-                            return await onError(err, req, ctx);
-                        }
-                    }, headers),
+                        const _handle = withHeaders(handle, headers);
+                        const _onError = withHeaders(onError, headers);
+
+                        return _handle(req, ctx)
+                            .then(res => patchTimingMetrics(res, timers))
+                            .catch(err => _onError(err, req, ctx));
+                    },
                     websocket: ws.bunListener,
                 }) as BunServer;
 
@@ -588,15 +596,16 @@ export function serve(options: ServeOptions): Server {
             }
         } else if (isNode) {
             if (type === "classic") {
-                const reqListener = withWeb(withHeaders(async (req, info) => {
-                    const ctx = createContext(req, { ws, ...info });
+                const reqListener = withWeb((req, info) => {
+                    const { timers, time, timeEnd } = createTimingFunctions();
+                    const ctx = createRequestContext(req, { ws, ...info, time, timeEnd });
+                    const _handle = withHeaders(handle, headers);
+                    const _onError = withHeaders(onError, headers);
 
-                    try {
-                        return await handle(req, ctx);
-                    } catch (err) {
-                        return await onError(err, req, ctx);
-                    }
-                }, headers));
+                    return _handle(req, ctx)
+                        .then(res => patchTimingMetrics(res, timers))
+                        .catch(err => _onError(err, req, ctx));
+                });
 
                 if (key && cert) {
                     const { createSecureServer } = await import("node:http2");
@@ -726,7 +735,7 @@ export async function serveStatic(
                 return serveStatic(new Request(join(req.url, "index.htm"), req), options);
             } else if (options.listDir) {
                 const entries = await readAsArray(readDir(filename));
-                return respondDir(entries, pathname, extraHeaders);
+                return renderDirPage(pathname, entries, extraHeaders);
             } else {
                 return new Response("Forbidden", {
                     status: 403,
