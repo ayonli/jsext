@@ -5,8 +5,8 @@ import type { RuntimeInfo, WellknownPlatform } from "../runtime.ts";
  * 
  * Most browsers use the `User-Agent` or the `navigator.userAgent` string to
  * indicate what they are compatible instead of what they are made of. This
- * interface tries to represent the actual user agent information as precise as
- * possible.
+ * interface tries to represent the actual user agent information as accurate
+ * as possible.
  */
 export interface UserAgentInfo {
     /**
