@@ -28,6 +28,7 @@ import {
     stringifyCookies,
     stringifyRequest,
     stringifyResponse,
+    suggestResponseType,
     verifyBasicAuth,
     withWeb,
 } from "./http.ts";
@@ -2697,5 +2698,192 @@ describe("http", () => {
             strictEqual(res.statusText, "OK");
             ok(res.headers.get("Content-Type")?.includes("text/html"));
         }));
+    });
+
+    describe("suggestResponseType", () => {
+        it("text", () => {
+            const req0 = new Request("http://localhost");
+            const req1 = new Request("http://localhost", {
+                headers: {
+                    "Accept": "text/plain",
+                }
+            });
+            const req2 = new Request("http://localhost/script.js", {
+                headers: {
+                    "Sec-Fetch-Dest": "script",
+                }
+            });
+            const req3 = new Request("http://localhost/style.css", {
+                headers: {
+                    "Sec-Fetch-Dest": "style",
+                }
+            });
+            const req4 = new Request("http://localhost/track.vtt", {
+                headers: {
+                    "Sec-Fetch-Dest": "track",
+                }
+            });
+            const req5 = new Request("http://localhost", {
+                headers: {
+                    "Accept": "application/x-www-form-urlencoded",
+                }
+            });
+
+            strictEqual(suggestResponseType(req0), "text");
+            strictEqual(suggestResponseType(req1), "text");
+            strictEqual(suggestResponseType(req2), "text");
+            strictEqual(suggestResponseType(req3), "text");
+            strictEqual(suggestResponseType(req4), "text");
+            strictEqual(suggestResponseType(req5), "text");
+        });
+
+        it("html", () => {
+            const req1 = new Request("http://localhost", {
+                headers: {
+                    "Accept": "text/html",
+                }
+            });
+            const req2 = new Request("http://localhost", {
+                headers: {
+                    "Sec-Fetch-Dest": "document",
+                }
+            });
+            const req3 = new Request("http://localhost", {
+                headers: {
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9",
+                }
+            });
+
+            strictEqual(suggestResponseType(req1), "html");
+            strictEqual(suggestResponseType(req2), "html");
+            strictEqual(suggestResponseType(req3), "html");
+        });
+
+        it("xml", () => {
+            const req1 = new Request("http://localhost", {
+                headers: {
+                    "Accept": "text/xml",
+                }
+            });
+            const req2 = new Request("http://localhost", {
+                headers: {
+                    "Accept": "application/xml",
+                    "Sec-Fetch-Dest": "document",
+                }
+            });
+            const req3 = new Request("http://localhost", {
+                method: "POST",
+                headers: {
+                    "Accept": "*/*",
+                    "Content-Type": "application/xml",
+                },
+                body: `<xml><foo>hello</foo><bar>world</bar/></xml>`,
+            });
+
+            strictEqual(suggestResponseType(req1), "xml");
+            strictEqual(suggestResponseType(req2), "xml");
+            strictEqual(suggestResponseType(req3), "xml");
+        });
+
+        it("json", () => {
+            const req1 = new Request("http://localhost", {
+                headers: {
+                    "Accept": "application/json",
+                }
+            });
+            const req2 = new Request("http://localhost/manifest", {
+                headers: {
+                    "Sec-Fetch-Dest": "manifest",
+                }
+            });
+            const req3 = new Request("http://localhost", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ hello: "world" }),
+            });
+            const req4 = new Request("http://localhost", {
+                headers: {
+                    "Accept": "*/*",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+            });
+
+            strictEqual(suggestResponseType(req1), "json");
+            strictEqual(suggestResponseType(req2), "json");
+            strictEqual(suggestResponseType(req3), "json");
+            strictEqual(suggestResponseType(req4), "json");
+        });
+
+        it("stream", () => {
+            const req0 = new Request("http://localhost", {
+                headers: {
+                    "Accept": "text/event-stream",
+                }
+            });
+            const req1 = new Request("http://localhost", {
+                headers: {
+                    "Accept": "application/octet-stream",
+                }
+            });
+            const req2 = new Request("http://localhost", {
+                headers: {
+                    "Accept": "image/*",
+                }
+            });
+            const req3 = new Request("http://localhost", {
+                headers: {
+                    "Accept": "audio/*",
+                }
+            });
+            const req4 = new Request("http://localhost", {
+                headers: {
+                    "Accept": "video/*",
+                }
+            });
+            const req5 = new Request("http://localhost", {
+                headers: {
+                    "Sec-Fetch-Dest": "image",
+                }
+            });
+            const req6 = new Request("http://localhost", {
+                headers: {
+                    "Sec-Fetch-Dest": "audio",
+                }
+            });
+            const req7 = new Request("http://localhost", {
+                headers: {
+                    "Sec-Fetch-Dest": "video",
+                }
+            });
+            const req8 = new Request("http://localhost", {
+                headers: {
+                    "Accept": "multipart/form-data",
+                }
+            });
+
+            strictEqual(suggestResponseType(req0), "stream");
+            strictEqual(suggestResponseType(req1), "stream");
+            strictEqual(suggestResponseType(req2), "stream");
+            strictEqual(suggestResponseType(req3), "stream");
+            strictEqual(suggestResponseType(req4), "stream");
+            strictEqual(suggestResponseType(req5), "stream");
+            strictEqual(suggestResponseType(req6), "stream");
+            strictEqual(suggestResponseType(req7), "stream");
+            strictEqual(suggestResponseType(req8), "stream");
+        });
+
+        it("none", () => {
+            const req1 = new Request("http://localhost", {
+                method: "HEAD"
+            });
+            const req2 = new Request("http://localhost", {
+                method: "OPTIONS"
+            });
+
+            strictEqual(suggestResponseType(req1), "none");
+            strictEqual(suggestResponseType(req2), "none");
+        });
     });
 });

@@ -747,6 +747,93 @@ async function stringifyResponse(res) {
     message += "\r\n" + body;
     return message;
 }
+/**
+ * Gets the suggested response type for the request.
+ *
+ * This function checks the `Accept` or the `Content-Type` header of the request,
+ * or the request method, or other factors to determine the most suitable
+ * response type for the client.
+ *
+ * For example, when requesting an article which is stored in markdown, the
+ * server can respond an HTML page for the browser, a plain text for the
+ * terminal, or a JSON object for the API client.
+ *
+ * This function returns the following response types:
+ *
+ * - `text`: plain text content (default)
+ * - `html`: an HTML page
+ * - `xml`: an XML document
+ * - `json`: a JSON object
+ * - `stream`: text stream or binary stream, depending on the use case
+ * - `none`: no content should be sent, such as for a `HEAD` request
+ *
+ * @example
+ * ```ts
+ * import { suggestResponseType } from "@ayonli/jsext/http";
+ *
+ * export default {
+ *     async fetch(req: Request) {
+ *         const type = suggestResponseType(req);
+ *
+ *         if (type === "text") {
+ *              return new Response("Hello, World!");
+ *         } else if (type === "html") {
+ *              return new Response("<h1>Hello, World!</h1>", {
+ *                  headers: { "Content-Type": "text/html" },
+ *              });
+ *         } else if (type === "xml") {
+ *              return new Response("<xml><message>Hello, World!</message></xml>", {
+ *                  headers: { "Content-Type": "application/xml" },
+ *              });
+ *         } else if (type === "json") {
+ *              return new Response(JSON.stringify({ message: "Hello, World!" }), {
+ *                  headers: { "Content-Type": "application/json" },
+ *              });
+ *         } else {
+ *             return new Response(null, { status: 204 });
+ *         }
+ *     }
+ * }
+ * ```
+ */
+function suggestResponseType(req) {
+    var _a;
+    const accepts = req.headers.get("Accept");
+    const accept = accepts
+        ? (_a = parseAccepts(accepts).sort((a, b) => b.weight - a.weight)[0]) === null || _a === void 0 ? void 0 : _a.type
+        : null;
+    const acceptAll = !accept || accept === "*/*";
+    const contentType = req.headers.get("Content-Type");
+    const fetchDest = req.headers.get("Sec-Fetch-Dest") || req.destination;
+    const xhr = req.headers.get("X-Requested-With") === "XMLHttpRequest";
+    if (req.method === "HEAD" || req.method === "OPTIONS") {
+        return "none";
+    }
+    else if ((accept === null || accept === void 0 ? void 0 : accept.includes("text/event-stream"))
+        || (accept === null || accept === void 0 ? void 0 : accept.includes("application/octet-stream"))
+        || (accept === null || accept === void 0 ? void 0 : accept.includes("multipart/form-data"))
+        || /(image|audio|video)\//.test(accept !== null && accept !== void 0 ? accept : "")
+        || ["font", "image", "audio", "video", "object", "embed"].includes(fetchDest)) {
+        return "stream";
+    }
+    else if ((accept === null || accept === void 0 ? void 0 : accept.includes("/json"))
+        || (acceptAll && ((contentType === null || contentType === void 0 ? void 0 : contentType.includes("json")) || xhr))
+        || fetchDest === "manifest") {
+        return "json";
+    }
+    else if ((accept === null || accept === void 0 ? void 0 : accept.includes("/xml"))
+        || (acceptAll && (contentType === null || contentType === void 0 ? void 0 : contentType.includes("xml")))
+        || fetchDest === "xslt") {
+        return "xml";
+    }
+    else if ((accept === null || accept === void 0 ? void 0 : accept.includes("/html"))
+        || fetchDest === "document") {
+        return "html";
+    }
+    else {
+        return "text";
+    }
+}
 
-export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, ifMatch, ifNoneMatch, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRange, parseRequest, parseResponse, setCookie, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, verifyBasicAuth };
+export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, ifMatch, ifNoneMatch, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRange, parseRequest, parseResponse, setCookie, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth };
 //# sourceMappingURL=util.js.map

@@ -952,3 +952,92 @@ export async function stringifyResponse(res: Response): Promise<string> {
 
     return message;
 }
+
+/**
+ * Gets the suggested response type for the request.
+ * 
+ * This function checks the `Accept` or the `Content-Type` header of the request,
+ * or the request method, or other factors to determine the most suitable
+ * response type for the client.
+ * 
+ * For example, when requesting an article which is stored in markdown, the
+ * server can respond an HTML page for the browser, a plain text for the
+ * terminal, or a JSON object for the API client.
+ * 
+ * This function returns the following response types:
+ * 
+ * - `text`: plain text content (default)
+ * - `html`: an HTML page
+ * - `xml`: an XML document
+ * - `json`: a JSON object
+ * - `stream`: text stream or binary stream, depending on the use case
+ * - `none`: no content should be sent, such as for a `HEAD` request
+ * 
+ * @example
+ * ```ts
+ * import { suggestResponseType } from "@ayonli/jsext/http";
+ * 
+ * export default {
+ *     async fetch(req: Request) {
+ *         const type = suggestResponseType(req);
+ * 
+ *         if (type === "text") {
+ *              return new Response("Hello, World!");
+ *         } else if (type === "html") {
+ *              return new Response("<h1>Hello, World!</h1>", {
+ *                  headers: { "Content-Type": "text/html" },
+ *              });
+ *         } else if (type === "xml") {
+ *              return new Response("<xml><message>Hello, World!</message></xml>", {
+ *                  headers: { "Content-Type": "application/xml" },
+ *              });
+ *         } else if (type === "json") {
+ *              return new Response(JSON.stringify({ message: "Hello, World!" }), {
+ *                  headers: { "Content-Type": "application/json" },
+ *              });
+ *         } else {
+ *             return new Response(null, { status: 204 });
+ *         }
+ *     }
+ * }
+ * ```
+ */
+export function suggestResponseType(
+    req: Request
+): "text" | "html" | "xml" | "json" | "stream" | "none" {
+    const accepts = req.headers.get("Accept");
+    const accept = accepts
+        ? parseAccepts(accepts).sort((a, b) => b.weight - a.weight)[0]?.type
+        : null;
+    const acceptAll = !accept || accept === "*/*";
+    const contentType = req.headers.get("Content-Type");
+    const fetchDest = req.headers.get("Sec-Fetch-Dest") || req.destination;
+    const xhr = req.headers.get("X-Requested-With") === "XMLHttpRequest";
+
+    if (req.method === "HEAD" || req.method === "OPTIONS") {
+        return "none";
+    } else if (accept?.includes("text/event-stream")
+        || accept?.includes("application/octet-stream")
+        || accept?.includes("multipart/form-data")
+        || /(image|audio|video)\//.test(accept ?? "")
+        || ["font", "image", "audio", "video", "object", "embed"].includes(fetchDest)
+    ) {
+        return "stream";
+    } else if (accept?.includes("/json")
+        || (acceptAll && (contentType?.includes("json") || xhr))
+        || fetchDest === "manifest"
+    ) {
+        return "json";
+    } else if (accept?.includes("/xml")
+        || (acceptAll && contentType?.includes("xml"))
+        || fetchDest === "xslt"
+    ) {
+        return "xml";
+    } else if (accept?.includes("/html")
+        || fetchDest === "document"
+    ) {
+        return "html";
+    } else {
+        return "text";
+    }
+}

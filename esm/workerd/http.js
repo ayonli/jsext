@@ -8,7 +8,7 @@ import { sha256 } from '../hash/web.js';
 import { renderDirPage } from '../http/internal.js';
 import { Server } from '../http/server.js';
 import { parseRange, ifNoneMatch, ifMatch } from '../http/util.js';
-export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRequest, parseResponse, setCookie, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, verifyBasicAuth } from '../http/util.js';
+export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRequest, parseResponse, setCookie, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from '../http/util.js';
 import { join, extname } from '../path.js';
 import { readAsArray } from '../reader.js';
 import { stripStart } from '../string.js';
