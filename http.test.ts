@@ -5,7 +5,10 @@ import {
     BasicAuthorization,
     Cookie,
     RequestContext,
+    UserAgentInfo,
     etag,
+    getCookie,
+    getCookies,
     ifMatch,
     ifNoneMatch,
     parseAccepts,
@@ -14,11 +17,17 @@ import {
     parseCookie,
     parseCookies,
     parseRange,
+    parseRequest,
+    parseResponse,
+    parseUserAgent,
     randomPort,
     serve,
     serveStatic,
+    setCookie,
     stringifyCookie,
     stringifyCookies,
+    stringifyRequest,
+    stringifyResponse,
     verifyBasicAuth,
     withWeb,
 } from "./http.ts";
@@ -33,6 +42,119 @@ import { EventConsumer } from "./sse.ts";
 declare const Bun: any;
 
 describe("http", () => {
+    describe("parseRequest", () => {
+        if (typeof Request === "undefined") {
+            return;
+        }
+
+        it("GET example", () => {
+            const message = "GET /foo HTTP/1.1\r\nHost: example.com\r\n\r\n";
+            const req = parseRequest(message);
+
+            strictEqual(req.method, "GET");
+            strictEqual(req.url, "http://example.com/foo");
+            strictEqual(req.headers.get("host"), "example.com");
+        });
+
+        it("POST example", async () => {
+            const message = "POST /foo HTTP/1.1\r\n"
+                + "Host: example.com\r\n"
+                + "Content-Type: application/x-www-form-urlencoded\r\n"
+                + "Content-Length: 19\r\n"
+                + "\r\n"
+                + "foo=hello&bar=world";
+            const req = parseRequest(message);
+
+            strictEqual(req.method, "POST");
+            strictEqual(req.url, "http://example.com/foo");
+            strictEqual(req.headers.get("host"), "example.com");
+            strictEqual(req.headers.get("content-type"), "application/x-www-form-urlencoded");
+            strictEqual(req.headers.get("content-length"), "19");
+
+            const form = new URLSearchParams(await req.text());
+            strictEqual(form.get("foo"), "hello");
+            strictEqual(form.get("bar"), "world");
+        });
+    });
+
+    describe("parseResponse", () => {
+        if (typeof Response === "undefined") {
+            return;
+        }
+
+        it("200 OK example", async () => {
+            const message = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!";
+            const res = parseResponse(message);
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(res.headers.get("content-length"), "13");
+            strictEqual(await res.text(), "Hello, World!");
+        });
+
+        it("204 No Content example", async () => {
+            const message = "HTTP/1.1 204 No Content\r\nContent-Length: 0\r\n\r\n";
+            const res = parseResponse(message);
+
+            strictEqual(res.status, 204);
+            strictEqual(res.statusText, "No Content");
+            strictEqual(res.headers.get("content-length"), "0");
+            strictEqual(await res.text(), "");
+        });
+    });
+
+    describe("stringifyRequest", () => {
+        if (typeof Request === "undefined") {
+            return;
+        }
+
+        it("GET example", async () => {
+            const req = new Request("http://example.com/foo");
+            const message = await stringifyRequest(req);
+
+            strictEqual(message, "GET /foo HTTP/1.1\r\nHost: example.com\r\n\r\n");
+        });
+
+        it("POST example", async () => {
+            const req = new Request("http://example.com/foo", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: "foo=hello&bar=world",
+            });
+            const message = await stringifyRequest(req);
+
+            strictEqual(message, "POST /foo HTTP/1.1\r\n"
+                + "Host: example.com\r\n"
+                + "Content-Type: application/x-www-form-urlencoded\r\n"
+                + "Content-Length: 19\r\n"
+                + "\r\n"
+                + "foo=hello&bar=world");
+        });
+    });
+
+    describe("stringifyResponse", () => {
+        if (typeof Response === "undefined") {
+            return;
+        }
+
+        it("200 OK example", async () => {
+            const res = new Response("Hello, World!", {
+                headers: {
+                    "Content-Type": "text/plain",
+                }
+            });
+            const message = await stringifyResponse(res);
+
+            strictEqual(message, "HTTP/1.1 200 OK\r\n"
+                + "Content-Type: text/plain\r\n"
+                + "Content-Length: 13\r\n"
+                + "\r\n"
+                + "Hello, World!");
+        });
+    });
+
     describe("parseAccepts", () => {
         it("parse accept header", () => {
             const accept = parseAccepts("text/html,application/xhtml+xml;q=0.9");
@@ -371,6 +493,759 @@ describe("http", () => {
         const cookie: Cookie = { name: "foo", value: "bar" };
         const cookies3 = stringifyCookies([cookie]);
         strictEqual(cookies3, "foo=bar");
+    });
+
+    describe("getCookies", () => {
+        it("Request", () => {
+            if (typeof Request === "undefined") {
+                return;
+            }
+
+            const headers = new Headers({
+                "Cookie": "foo=bar; baz=qux",
+            });
+            const req = new Request("http://example.com", { headers });
+            const cookies = getCookies(req);
+
+            deepStrictEqual(cookies, [
+                { name: "foo", value: "bar" },
+                { name: "baz", value: "qux" },
+            ] satisfies Cookie[]);
+            deepStrictEqual(getCookies(new Request("http://example.com")), []);
+        });
+
+        it("Response", () => {
+            if (typeof Response === "undefined") {
+                return;
+            }
+
+            const headers = new Headers([
+                ["Set-Cookie", "foo=bar; Expires=Wed, 09 Jun 2021 10:18:14 GMT"],
+                ["Set-Cookie", "baz=qux; Max-Age=3600"],
+            ]);
+            const res = new Response(null, { headers });
+            const cookies = getCookies(res);
+
+            deepStrictEqual(cookies, [
+                { name: "foo", value: "bar", expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT").valueOf() },
+                { name: "baz", value: "qux", maxAge: 3600 },
+            ] satisfies Cookie[]);
+        });
+    });
+
+    describe("getCookie", () => {
+        it("Request", () => {
+            if (typeof Request === "undefined") {
+                return;
+            }
+
+            const headers = new Headers({
+                "Cookie": "foo=bar; baz=qux",
+            });
+            const req = new Request("http://example.com", { headers });
+            const cookie = getCookie(req, "foo");
+            const cookie2 = getCookie(req, "hello");
+
+            deepStrictEqual(cookie, { name: "foo", value: "bar" } satisfies Cookie);
+            strictEqual(cookie2, null);
+        });
+
+        it("Response", () => {
+            if (typeof Response === "undefined") {
+                return;
+            }
+
+            const headers = new Headers([
+                ["Set-Cookie", "foo=bar; Expires=Wed, 09 Jun 2021 10:18:14 GMT"],
+                ["Set-Cookie", "baz=qux; Max-Age=3600"],
+            ]);
+            const res = new Response(null, { headers });
+            const cookie = getCookie(res, "foo");
+            const cookie1 = getCookie(res, "baz");
+            const cookie2 = getCookie(res, "hello");
+
+            deepStrictEqual(cookie, {
+                name: "foo",
+                value: "bar",
+                expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT").valueOf(),
+            } satisfies Cookie);
+            deepStrictEqual(cookie1, {
+                name: "baz",
+                value: "qux",
+                maxAge: 3600,
+            } satisfies Cookie);
+            strictEqual(cookie2, null);
+        });
+    });
+
+    it("setCookie", () => {
+        if (typeof Response === "undefined") {
+            return;
+        }
+
+        const headers = new Headers();
+        const res = new Response(null, { headers });
+        setCookie(res, {
+            name: "foo",
+            value: "bar",
+            expires: new Date("Wed, 09 Jun 2021 10:18:14 GMT").valueOf(),
+        });
+        setCookie(res, {
+            name: "baz",
+            value: "qux",
+            maxAge: 3600,
+        });
+
+        deepStrictEqual(res.headers.getSetCookie(), [
+            "foo=bar; Expires=Wed, 09 Jun 2021 10:18:14 GMT",
+            "baz=qux; Max-Age=3600",
+        ]);
+    });
+
+    describe("parseUserAgent", () => {
+        it("Node.js", function () {
+            if (!isNode || typeof navigator === "undefined") {
+                this.skip();
+            }
+
+            const info = parseUserAgent(navigator.userAgent);
+
+            deepStrictEqual(info, {
+                name: "Node.js",
+                version: process.version.slice(1, 3),
+                runtime: {
+                    identity: "node",
+                    version: process.version.slice(1, 3),
+                },
+                platform: "unknown",
+                mobile: false,
+                raw: navigator.userAgent,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Deno", function () {
+            if (!isDeno) {
+                this.skip();
+            }
+
+            const info = parseUserAgent(navigator.userAgent);
+            deepStrictEqual(info, {
+                name: "Deno",
+                version: Deno.version.deno,
+                runtime: {
+                    identity: "deno",
+                    version: Deno.version.deno,
+                },
+                platform: "unknown",
+                mobile: false,
+                raw: navigator.userAgent,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Bun", function () {
+            if (!isBun) {
+                this.skip();
+            }
+
+            const info = parseUserAgent(navigator.userAgent);
+            deepStrictEqual(info, {
+                name: "Bun",
+                version: Bun.version,
+                runtime: {
+                    identity: "bun",
+                    version: Bun.version,
+                },
+                platform: "unknown",
+                mobile: false,
+                raw: navigator.userAgent,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Cloudflare Workers", () => {
+            const ua = "Cloudflare-Workers";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Cloudflare-Workers",
+                version: undefined,
+                runtime: {
+                    identity: "workerd",
+                    version: undefined,
+                },
+                platform: "unknown",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("curl in Unix/Linux", () => {
+            const ua = "curl/7.68.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "curl",
+                version: "7.68.0",
+                runtime: undefined,
+                platform: "unknown",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("curl in Windows", () => {
+            const ua = "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.22621.2506";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "WindowsPowerShell",
+                version: "5.1.22621.2506",
+                runtime: undefined,
+                platform: "windows",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Safari in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Safari",
+                version: "605.1.15",
+                runtime: {
+                    identity: "safari",
+                    version: "605.1.15",
+                },
+                platform: "darwin",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Safari in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Safari",
+                version: "604.1",
+                runtime: {
+                    identity: "safari",
+                    version: "604.1",
+                },
+                platform: "darwin",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Chrome in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Chrome",
+                version: "127.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "127.0.0.0",
+                },
+                platform: "darwin",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Chrome in Windows", () => {
+            const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Chrome",
+                version: "127.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "127.0.0.0",
+                },
+                platform: "windows",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Chrome in Linux", () => {
+            const ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Chrome",
+                version: "126.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "126.0.0.0",
+                },
+                platform: "linux",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Chrome in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/114.0.5735.99 Mobile/15E148 Safari/604.1";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Chrome",
+                version: "114.0.5735.99",
+                runtime: {
+                    identity: "safari",
+                    version: "604.1",
+                },
+                platform: "darwin",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Chrome in Android", () => {
+            const ua = "Mozilla/5.0 (Linux; Android 11; Jelly2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.210 Mobile Safari/537.36";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Chrome",
+                version: "90.0.4430.210",
+                runtime: {
+                    identity: "chrome",
+                    version: "90.0.4430.210",
+                },
+                platform: "android",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Firefox in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:129.0) Gecko/20100101 Firefox/129.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Firefox",
+                version: "129.0",
+                runtime: {
+                    identity: "firefox",
+                    version: "129.0",
+                },
+                platform: "darwin",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Firefox in Windows", () => {
+            const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Firefox",
+                version: "129.0",
+                runtime: {
+                    identity: "firefox",
+                    version: "129.0",
+                },
+                platform: "windows",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Firefox in Linux", () => {
+            const ua = "Mozilla/5.0 (X11; Linux x86_64; rv:129.0) Gecko/20100101 Firefox/129.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Firefox",
+                version: "129.0",
+                runtime: {
+                    identity: "firefox",
+                    version: "129.0",
+                },
+                platform: "linux",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Firefox in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/129.1  Mobile/15E148 Safari/605.1.15";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Firefox",
+                version: "129.1",
+                runtime: {
+                    identity: "safari",
+                    version: "605.1.15",
+                },
+                platform: "darwin",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Firefox in Android", () => {
+            const ua = "Mozilla/5.0 (Android 11; Mobile; rv:129.0) Gecko/129.0 Firefox/129.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Firefox",
+                version: "129.0",
+                runtime: {
+                    identity: "firefox",
+                    version: "129.0",
+                },
+                platform: "android",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Edge in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/127.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Edge",
+                version: "127.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "126.0.0.0",
+                },
+                platform: "darwin",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Edge in Windows", () => {
+            const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Edge",
+                version: "125.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "125.0.0.0",
+                },
+                platform: "windows",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Edge in Linux", () => {
+            const ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Edge",
+                version: "127.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "127.0.0.0",
+                },
+                platform: "linux",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Edge in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/127.0.2651.102 Version/17.0 Mobile/15E148 Safari/604.1";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Edge",
+                version: "127.0.2651.102",
+                runtime: {
+                    identity: "safari",
+                    version: "604.1",
+                },
+                platform: "darwin",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Edge in Android", () => {
+            const ua = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36 EdgA/127.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Edge",
+                version: "127.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "127.0.0.0",
+                },
+                platform: "android",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Opera in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 OPR/112.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Opera",
+                version: "112.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "126.0.0.0",
+                },
+                platform: "darwin",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Opera in Windows", () => {
+            const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 OPR/112.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Opera",
+                version: "112.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "126.0.0.0",
+                },
+                platform: "windows",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Opera in Linux", () => {
+            const ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 OPR/112.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Opera",
+                version: "112.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "126.0.0.0",
+                },
+                platform: "linux",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Opera in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1 OPT/4.4.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Opera",
+                version: "4.4.0",
+                runtime: {
+                    identity: "safari",
+                    version: "604.1",
+                },
+                platform: "darwin",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Opera in Android", () => {
+            const ua = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36 OPR/83.0.0.0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Opera",
+                version: "83.0.0.0",
+                runtime: {
+                    identity: "chrome",
+                    version: "126.0.0.0",
+                },
+                platform: "android",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("DuckDuckGo in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15 Ddg/17.4.1";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "DuckDuckGo",
+                version: "17.4.1",
+                runtime: {
+                    identity: "safari",
+                    version: "605.1.15",
+                },
+                platform: "darwin",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Quark in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X; zh-cn) AppleWebKit/601.1.46 (KHTML, like Gecko) Mobile/21F90 Quark/7.2.0.2205 Mobile";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Quark",
+                version: "7.2.0.2205",
+                runtime: { identity: "safari", version: "601.1.46" },
+                platform: "darwin",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Quark in Android", () => {
+            const ua = "Mozilla/5.0 (Linux; U; Android 11; en-US; Jelly2 Build/RP1A.200720.011) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/100.0.4896.58 Quark/6.12.0.550 Mobile Safari/537.36";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Quark",
+                version: "6.12.0.550",
+                runtime: {
+                    identity: "chrome",
+                    version: "100.0.4896.58",
+                },
+                platform: "android",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Electron in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.89.1 Chrome/120.0.6099.291 Electron/28.2.8 Safari/537.36";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Electron",
+                version: "28.2.8",
+                runtime: {
+                    identity: "chrome",
+                    version: "120.0.6099.291",
+                },
+                platform: "darwin",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("DingTalk in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/21F90 AliApp(DingTalk/7.1.15) com.laiwang.DingTalk/33435556 Channel/201200 language/en-CN UT4Aplus/0.0.6 WK";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "DingTalk",
+                version: "7.1.15",
+                runtime: {
+                    identity: "safari",
+                    version: "605.1.15",
+                },
+                platform: "darwin",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("DingTalk in Android", () => {
+            const ua = "Mozilla/5.0 (Linux; U; Android 11; zh-CN; Jelly2 Build/RP1A.200720.011) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/69.0.3497.100 UWS/3.22.0.36 Mobile Safari/537.36 AliApp(DingTalk/6.0.8) com.alibaba.android.rimet/14631539 Channel/1564716365480 language/en-US UT4Aplus/0.2.25 colorScheme/light";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "DingTalk",
+                version: "6.0.8",
+                runtime: {
+                    identity: "chrome",
+                    version: "69.0.3497.100",
+                },
+                platform: "android",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("WeChat in macOS", () => {
+            const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 NetType/WIFI MicroMessenger/6.8.0(0x16080000) MacWechat/3.8.7(0x13080710) XWEB/1191 Flue";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "WeChat",
+                version: "3.8.7",
+                runtime: {
+                    identity: "chrome",
+                    version: "107.0.0.0",
+                },
+                platform: "darwin",
+                mobile: false,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("WeChat in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.37(0x1800252f) NetType/WIFI Language/en";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "WeChat",
+                version: "8.0.37",
+                runtime: {
+                    identity: "safari",
+                    version: "605.1.15",
+                },
+                platform: "darwin",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("WeChat in Android", () => {
+            const ua = "Mozilla/5.0 (Linux; Android 11; Jelly2 Build/RP1A.200720.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/83.0.4103.120 Mobile Safari/537.36 MMWEBID/8683 MicroMessenger/8.0.50.2701(0x2800323E) WeChat/arm64 Weixin NetType/WIFI Language/en ABI/arm64";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "WeChat",
+                version: "8.0.50.2701",
+                runtime: {
+                    identity: "chrome",
+                    version: "83.0.4103.120",
+                },
+                platform: "android",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
+
+        it("Lark in iOS", () => {
+            const ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5.1 Mobile/15E148 Safari/604.1 Lark/7.24.10 LarkLocale/en_US ChannelName/Feishu LKBrowserIdentifier/E5E0F149-4C4C-4344-9F9A-DE2421041BE0";
+            const info = parseUserAgent(ua);
+
+            deepStrictEqual(info, {
+                name: "Lark",
+                version: "7.24.10",
+                runtime: {
+                    identity: "safari",
+                    version: "604.1",
+                },
+                platform: "darwin",
+                mobile: true,
+                raw: ua,
+            } satisfies UserAgentInfo);
+        });
     });
 
     it("parseRange", () => {
@@ -1157,6 +2032,58 @@ describe("http", () => {
             strictEqual(text, "Hello, World!");
         }));
 
+        it("timing metrics", func(async (defer) => {
+            const server = serve({
+                async fetch(req, ctx) {
+                    const { searchParams } = new URL(req.url);
+                    if (searchParams.has("withTotal")) {
+                        ctx.time("total");
+                    }
+
+                    ctx.time("db", "Database Query");
+                    await sleep(50);
+                    ctx.timeEnd("db");
+
+                    ctx.time("api");
+                    await sleep(100);
+                    ctx.timeEnd("api");
+
+                    // This will be ignored since it lacks a corresponding `timeEnd`.
+                    ctx.time("cache");
+
+                    if (searchParams.has("withTotal")) {
+                        ctx.timeEnd("total");
+                    }
+
+                    return new Response("Hello, World!");
+                }
+            });
+            defer(() => server.close(true));
+
+            strictEqual(server.type, "classic");
+            strictEqual(typeof server.fetch, "undefined");
+
+            await server.ready;
+            strictEqual(server.hostname, "0.0.0.0");
+            ok(server.port > 0);
+
+            const res1 = await fetch(`http://localhost:${server.port}`);
+            const text1 = await res1.text();
+            const metrics1 = res1.headers.get("Server-Timing");
+
+            strictEqual(res1.status, 200);
+            strictEqual(text1, "Hello, World!");
+            ok(/db;dur=\d{2};desc=\"Database Query\", api;dur=\d{2,3}/.test(metrics1 ?? ""));
+
+            const res2 = await fetch(`http://localhost:${server.port}?withTotal`);
+            const text2 = await res2.text();
+            const metrics2 = res2.headers.get("Server-Timing");
+
+            strictEqual(res2.status, 200);
+            strictEqual(text2, "Hello, World!");
+            ok(/db;dur=\d{2};desc=\"Database Query\", api;dur=\d{2,3}, total;dur=\d{3};desc=\"Total\"/.test(metrics2 ?? ""));
+        }));
+
         it("with Hono framework", func(async function (defer) {
             this.timeout(5_000);
 
@@ -1236,7 +2163,6 @@ describe("http", () => {
                 }
             });
             defer(() => server.close(true));
-            await server.ready;
 
             strictEqual(server.type, "module");
             strictEqual(typeof server.fetch, "function");
@@ -1265,6 +2191,7 @@ describe("http", () => {
                     fetch: server.fetch!,
                 });
                 defer(() => _server.close(true));
+                await _server.ready;
             }
 
             await server.ready;
@@ -1388,7 +2315,6 @@ describe("http", () => {
             strictEqual(res2.status, 200);
             strictEqual(res2.statusText, "OK");
             strictEqual(await res2.text(), "Hello, World!");
-            console.log(results);
             strictEqual(results.length, 1);
             strictEqual(results[0]!.aborted, true);
             strictEqual((results[0]!.reason as DOMException)!.name, "AbortError");

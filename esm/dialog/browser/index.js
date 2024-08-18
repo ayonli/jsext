@@ -44,7 +44,7 @@ async function progressInBrowser(message, fn, options) {
             return;
         }
         if (state.message) {
-            text.textContent = state.message;
+            text.innerHTML = state.message.replace(/ /g, "&nbsp;").replace(/\n/g, "<br />");
         }
         if (state.percent !== undefined) {
             setValue(state.percent);

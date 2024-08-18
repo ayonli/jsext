@@ -8,6 +8,9 @@ declare global {
          * **NOTE:** This function does not cancel the task itself, it only prematurely
          * breaks the current routine when the signal is aborted. In order to support
          * cancellation, the task must be designed to handle the abort signal itself.
+         * 
+         * @deprecated This signature is confusing and doesn't  actually cancel the task,
+         * use {@link select} instead.
          */
         abortable<T>(value: PromiseLike<T>, signal: AbortSignal): Promise<T>;
         /** Try to resolve a promise with a timeout limit. */

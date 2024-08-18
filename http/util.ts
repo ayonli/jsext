@@ -7,6 +7,8 @@
 import bytes, { text } from "../bytes.ts";
 import { capitalize } from "../string.ts";
 
+export * from "./user-agent.ts";
+
 /**
  * Represents the HTTP request `Accept`, `Accept-Encoding` and `Accept-Language`
  * headers.
@@ -133,6 +135,7 @@ export function parseContentType(str: string): ContentType {
  * 
  * @sse https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie
  * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cookie
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/get
  */
 export interface Cookie {
     /**
@@ -307,7 +310,7 @@ export function stringifyCookie(cookie: Cookie): string {
  * Parses the `Cookie` header or the `document.cookie` property.
  */
 export function parseCookies(str: string): Cookie[] {
-    return str.split(/;\s*/g).reduce((cookies, part) => {
+    return !str ? [] : str.split(/;\s*/g).reduce((cookies, part) => {
         const [name, value] = part.split("=") as [string, string?];
 
         if (name && value !== undefined) {
@@ -324,6 +327,93 @@ export function parseCookies(str: string): Cookie[] {
  */
 export function stringifyCookies(cookies: Cookie[]): string {
     return cookies.map(({ name, value }) => `${name}=${value}`).join("; ");
+}
+
+/**
+ * Gets the cookies from the `Cookie` header of the request or the `Set-Cookie`
+ * header of the response.
+ * 
+ * @example
+ * ```ts
+ * import { getCookies, getCookie, setCookie } from "@ayonli/jsext/http";
+ * 
+ * export default {
+ *     fetch(req: Request) {
+ *         const cookies = getCookies(req);
+ *         console.log(cookies);
+ *         
+ *         const cookie = getCookie(req, "foo");
+ *         console.log(cookie);
+ * 
+ *         const res = new Response("Hello, World!");
+ *         setCookie(res, { name: "hello", value: "world" });
+ * 
+ *         return res;
+ *     }
+ * }
+ * ```
+ */
+export function getCookies(obj: Request | Response): Cookie[] {
+    if ("ok" in obj && "status" in obj) {
+        return obj.headers.getSetCookie().map(str => parseCookie(str));
+    } else {
+        return parseCookies(obj.headers.get("Cookie") ?? "");
+    }
+}
+
+/**
+ * Gets the cookie by the given `name` from the `Cookie` header of the request
+ * or the `Set-Cookie` header of the response.
+ * 
+ * @example
+ * ```ts
+ * import { getCookies, getCookie, setCookie } from "@ayonli/jsext/http";
+ * 
+ * export default {
+ *     fetch(req: Request) {
+ *         const cookies = getCookies(req);
+ *         console.log(cookies);
+ *         
+ *         const cookie = getCookie(req, "foo");
+ *         console.log(cookie);
+ * 
+ *         const res = new Response("Hello, World!");
+ *         setCookie(res, { name: "hello", value: "world" });
+ * 
+ *         return res;
+ *     }
+ * }
+ * ```
+ */
+export function getCookie(obj: Request | Response, name: string): Cookie | null {
+    return getCookies(obj).find(cookie => cookie.name === name) ?? null;
+}
+
+/**
+ * Sets a cookie in the `Set-Cookie` header of the response.
+ * 
+ * @example
+ * ```ts
+ * import { getCookies, getCookie, setCookie } from "@ayonli/jsext/http";
+ * 
+ * export default {
+ *     fetch(req: Request) {
+ *         const cookies = getCookies(req);
+ *         console.log(cookies);
+ *         
+ *         const cookie = getCookie(req, "foo");
+ *         console.log(cookie);
+ * 
+ *         const res = new Response("Hello, World!");
+ *         setCookie(res, { name: "hello", value: "world" });
+ * 
+ *         return res;
+ *     }
+ * }
+ * ```
+ */
+export function setCookie(res: Response, cookie: Cookie): void {
+    res.headers.append("Set-Cookie", stringifyCookie(cookie));
 }
 
 /**
@@ -550,4 +640,315 @@ export async function verifyBasicAuth(
             "WWW-Authenticate": `Basic realm="${host}"`,
         },
     });
+}
+
+export const HTTP_METHODS = [
+    "GET",
+    "HEAD",
+    "POST",
+    "PUT",
+    "DELETE",
+    "CONNECT",
+    "OPTIONS",
+    "TRACE",
+    "PATCH",
+];
+export const HTTP_STATUS = {
+    200: "OK",
+    201: "Created",
+    202: "Accepted",
+    204: "No Content",
+    206: "Partial Content",
+    301: "Moved Permanently",
+    302: "Found",
+    304: "Not Modified",
+    400: "Bad Request",
+    401: "Unauthorized",
+    403: "Forbidden",
+    404: "Not Found",
+    405: "Method Not Allowed",
+    406: "Not Acceptable",
+    408: "Request Timeout",
+    409: "Conflict",
+    410: "Gone",
+    413: "Payload Too Large",
+    414: "URI Too Long",
+    415: "Unsupported Media Type",
+    416: "Range Not Satisfiable",
+    417: "Expectation Failed",
+    426: "Upgrade Required",
+    500: "Internal Server Error",
+    501: "Not Implemented",
+    502: "Bad Gateway",
+    503: "Service Unavailable",
+    504: "Gateway Timeout",
+    505: "HTTP Version Not Supported",
+};
+
+function parseMessage(message: string): { headers: Headers, body: string; } {
+    const headerEnd = message.indexOf("\r\n\r\n");
+    if (headerEnd === -1) {
+        throw new TypeError("Invalid message");
+    }
+
+    const headers = new Headers();
+    const headerLines = message.slice(0, headerEnd).split("\r\n");
+
+    for (let i = 0; i < headerLines.length; i++) {
+        const line = headerLines[i]!;
+        const lineNum = i + 1;
+        const index = line.indexOf(":");
+
+        if (index === -1) {
+            throw new SyntaxError("Invalid token in line " + lineNum);
+        }
+
+        const name = line.slice(0, index);
+        const value = line.slice(index + 1).trim();
+
+        try {
+            headers.append(name, value);
+        } catch {
+            throw new TypeError(`Invalid header name '${name}' in line ${lineNum}`);
+        }
+    }
+
+    const body = message.slice(headerEnd + 4);
+    return { headers, body };
+}
+
+/**
+ * Parses the text message as an HTTP request.
+ * 
+ * **NOTE:** This function only supports HTTP/1.1 protocol.
+ * 
+ * @example
+ * ```ts
+ * // GET example
+ * import { parseRequest } from "@ayonli/jsext/http";
+ * 
+ * const message = "GET /foo HTTP/1.1\r\nHost: example.com\r\n\r\n";
+ * const req = parseRequest(message);
+ * 
+ * console.log(req.method); // "GET"
+ * console.log(req.url); // "http://example.com/foo"
+ * console.log(req.headers.get("Host")); // "example.com"
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // POST example
+ * import { parseRequest } from "@ayonli/jsext/http";
+ * 
+ * const message = "POST /foo HTTP/1.1\r\n"
+ *     + "Host: example.com\r\n"
+ *     + "Content-Type: application/x-www-form-urlencoded\r\n"
+ *     + "Content-Length: 19\r\n"
+ *     + "\r\n"
+ *     + "foo=hello&bar=world";
+ * const req = parseRequest(message);
+ * 
+ * console.log(req.method); // "POST"
+ * console.log(req.url); // "http://example.com/foo"
+ * console.log(req.headers.get("Host")); // "example.com"
+ * 
+ * const form = new URLSearchParams(await req.text());
+ * 
+ * console.log(form.get("foo")); // "hello"
+ * console.log(form.get("bar")); // "world"
+ * ```
+ */
+export function parseRequest(message: string): Request {
+    let lineEnd = message.indexOf("\r\n");
+    if (lineEnd === -1) {
+        throw new TypeError("Invalid message");
+    }
+
+    const [method, url, version] = message.slice(0, lineEnd).split(/\s+/);
+
+    if (!method || !HTTP_METHODS.includes(method) ||
+        !url || !url.startsWith("/") ||
+        !version?.startsWith("HTTP/")
+    ) {
+        throw new TypeError("Invalid message");
+    } else if (version !== "HTTP/1.1") {
+        throw new TypeError("Unsupported HTTP version");
+    }
+
+    const { headers, body: _body } = parseMessage(message.slice(lineEnd + 2));
+    let body: string | null = _body;
+
+    if (method === "GET" || method === "HEAD") {
+        if (body) {
+            throw new TypeError("Request with GET/HEAD method cannot have body.");
+        } else {
+            body = null;
+        }
+    }
+
+    const host = headers.get("Host") ?? "";
+
+    return new Request("http://" + host + url, {
+        method,
+        headers,
+        body,
+    });
+}
+
+/**
+ * Parses the text message as an HTTP response.
+ * 
+ * @example
+ * ```ts
+ * import { parseResponse } from "@ayonli/jsext/http";
+ * 
+ * const message = "HTTP/1.1 200 OK\r\n"
+ *     + "Content-Type: text/plain\r\n"
+ *     + "Content-Length: 12\r\n"
+ *     + "\r\n"
+ *     + "Hello, World!";
+ * 
+ * const res = parseResponse(message);
+ * 
+ * console.log(res.status); // 200
+ * console.log(res.statusText); // "OK"
+ * console.log(res.headers.get("Content-Type")); // "text/plain"
+ * 
+ * const text = await res.text();
+ * console.log(text); // "Hello, World!"
+ * ```
+ */
+export function parseResponse(message: string): Response {
+    let lineEnd = message.indexOf("\r\n");
+    if (lineEnd === -1) {
+        throw new TypeError("Invalid message");
+    }
+
+    const [version, _status, ...statusTexts] = message.slice(0, lineEnd).split(/\s+/);
+    const statusText = statusTexts.join(" ");
+    let status: number;
+
+    if (!version?.startsWith("HTTP/") ||
+        !_status || !Number.isInteger((status = Number(_status))) ||
+        !statusText
+    ) {
+        throw new TypeError("Invalid message");
+    }
+
+    const { headers, body: _body } = parseMessage(message.slice(lineEnd + 2));
+    let body: string | null = _body;
+
+    if (status === 204 || status === 304) {
+        if (body) {
+            throw new SyntaxError("Response with 204 or 304 status cannot have body.");
+        } else {
+            body = null;
+        }
+    }
+
+    return new Response(body, {
+        status,
+        statusText,
+        headers,
+    });
+}
+
+/**
+ * Converts the request object to text format.
+ * 
+ * @example
+ * ```ts
+ * // GET example
+ * import { stringifyRequest } from "@ayonli/jsext/http";
+ * 
+ * const req = new Request("http://example.com/foo");
+ * const message = await stringifyRequest(req);
+ * 
+ * console.log(message);
+ * // "GET /foo HTTP/1.1\r\nHost: example.com\r\n\r\n"
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // POST example
+ * import { stringifyRequest } from "@ayonli/jsext/http";
+ * 
+ * const req = new Request("http://example.com/foo", {
+ *     method: "POST",
+ *     headers: {
+ *         "Content-Type": "application/x-www-form-urlencoded",
+ *     },
+ *     body: "foo=hello&bar=world",
+ * });
+ * const message = await stringifyRequest(req);
+ * 
+ * console.log(message);
+ * // "POST /foo HTTP/1.1\r\n" +
+ * // "Host: example.com\r\n" +
+ * // "Content-Type: application/x-www-form-urlencoded\r\n" +
+ * // "Content-Length: 19\r\n" +
+ * // "\r\n" +
+ * // "foo=hello&bar=world"
+ * ```
+ */
+export async function stringifyRequest(req: Request): Promise<string> {
+    const { host, pathname } = new URL(req.url);
+    let message = `${req.method} ${pathname} HTTP/1.1\r\n`;
+    let body = req.body ? await req.text() : "";
+
+    if (host && !req.headers.has("Host")) {
+        message += `Host: ${host}\r\n`;
+    }
+
+    for (const [name, value] of req.headers) {
+        message += `${capitalize(name, true)}: ${value}\r\n`;
+    }
+
+    if (body && !req.headers.has("Content-Length")) {
+        message += `Content-Length: ${bytes(body).length}\r\n`;
+    }
+
+    message += "\r\n" + body;
+
+    return message;
+}
+
+/**
+ * Converts the response object to text format.
+ * 
+ * @example
+ * ```ts
+ * import { stringifyResponse } from "@ayonli/jsext/http";
+ * 
+ * const res = new Response("Hello, World!", {
+ *     headers: {
+ *         "Content-Type": "text/plain",
+ *     },
+ * });
+ * const message = await stringifyResponse(res);
+ * 
+ * console.log(message);
+ * // "HTTP/1.1 200 OK\r\n" +
+ * // "Content-Type: text/plain\r\n" +
+ * // "Content-Length: 12\r\n" +
+ * // "\r\n" +
+ * // "Hello, World!"
+ * ```
+ */
+export async function stringifyResponse(res: Response): Promise<string> {
+    const statusText = res.statusText || (HTTP_STATUS as Record<number, string>)[res.status] || "";
+    let message = `HTTP/1.1 ${res.status} ${statusText}\r\n`;
+    let body = res.body ? await res.text() : "";
+
+    for (const [name, value] of res.headers) {
+        message += `${capitalize(name, true)}: ${value}\r\n`;
+    }
+
+    if (body && !res.headers.has("Content-Length")) {
+        message += `Content-Length: ${bytes(body).length}\r\n`;
+    }
+
+    message += "\r\n" + body;
+
+    return message;
 }

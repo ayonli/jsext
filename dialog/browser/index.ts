@@ -84,7 +84,7 @@ export async function progressInBrowser<T>(message: string, fn: ProgressFunc<T>,
         }
 
         if (state.message) {
-            text.textContent = state.message;
+            text.innerHTML = state.message.replace(/ /g, "&nbsp;").replace(/\n/g, "<br />");
         }
 
         if (state.percent !== undefined) {

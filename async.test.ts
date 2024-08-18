@@ -1,7 +1,7 @@
 import "./augment.ts";
 import jsext from "./index.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { asyncTask, abortable, sleep } from "./async.ts";
+import { asyncTask, abortable, sleep, abortWith } from "./async.ts";
 import { isNodeBelow16 } from "./env.ts";
 import { as } from "./object.ts";
 import _try from "./try.ts";
@@ -528,6 +528,46 @@ describe("async", () => {
             strictEqual((err2 as Error)?.name, "AbortError");
             strictEqual(result2, undefined);
             deepStrictEqual(aborted, []);
+        });
+    });
+
+    describe("abortWith", () => {
+        if (typeof AbortController === "undefined") {
+            return;
+        }
+
+        it("aborted by itself", () => {
+            const parent = new AbortController();
+            const child = abortWith(parent.signal);
+
+            child.abort();
+
+            ok(!parent.signal.aborted);
+            ok(child.signal.aborted);
+        });
+
+        it("aborted by parent", () => {
+            const parent = new AbortController();
+            const child = abortWith(parent.signal);
+
+            parent.abort();
+
+            ok(parent.signal.aborted);
+            ok(child.signal.aborted);
+            strictEqual(child.signal.reason, parent.signal.reason);
+        });
+
+        it("aborted by timeout", async () => {
+            const parent = new AbortController();
+            const child = abortWith(parent.signal, {
+                timeout: 50,
+            });
+
+            await Promise.sleep(100);
+
+            ok(!parent.signal.aborted);
+            ok(child.signal.aborted);
+            strictEqual((child.signal.reason as Error)?.name, "TimeoutError");
         });
     });
 });

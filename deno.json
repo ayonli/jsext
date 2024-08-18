@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.9.58",
+    "version": "0.9.60",
     "exports": {
         ".": "./index.ts",
         "./archive": "./archive.ts",
@@ -23,6 +23,7 @@
         "./func": "./func.ts",
         "./hash": "./hash.ts",
         "./http": "./http.ts",
+        "./http/internal": "./http/internal.ts",
         "./json": "./json.ts",
         "./lock": "./lock.ts",
         "./math": "./math.ts",

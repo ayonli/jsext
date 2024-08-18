@@ -1,7 +1,7 @@
 import { until } from '../async.js';
 import { isBun, isDeno, isNode } from '../env.js';
 import runtime, { env } from '../runtime.js';
-import { withHeaders, createContext, listenFetchEvent } from './internal.js';
+import { createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent, createTimingFunctions } from './internal.js';
 
 var _a, _b, _c;
 const _hostname = Symbol.for("hostname");
@@ -48,15 +48,20 @@ class Server {
                 delete this.fetch;
             }
             else {
-                this.fetch = withHeaders(async (request) => {
-                    const ctx = createContext(request, { ws, remoteAddress: null });
-                    try {
-                        return await handle(request, ctx);
-                    }
-                    catch (err) {
-                        return await onError(err, request, ctx);
-                    }
-                }, headers);
+                this.fetch = (req) => {
+                    const { timers, time, timeEnd } = createTimingFunctions();
+                    const ctx = createRequestContext(req, {
+                        ws,
+                        remoteAddress: null,
+                        time,
+                        timeEnd,
+                    });
+                    const _handle = withHeaders(handle, headers);
+                    const _onError = withHeaders(onError, headers);
+                    return _handle(req, ctx)
+                        .then(res => patchTimingMetrics(res, timers))
+                        .catch(err => _onError(err, req, ctx));
+                };
             }
         }
         else if (isBun) {
@@ -64,19 +69,21 @@ class Server {
                 delete this.fetch;
             }
             else {
-                this.fetch = withHeaders(async (request, server) => {
+                this.fetch = (req, server) => {
                     ws.bunBind(server);
-                    const ctx = createContext(request, {
+                    const { timers, time, timeEnd } = createTimingFunctions();
+                    const ctx = createRequestContext(req, {
                         ws,
-                        remoteAddress: server.requestIP(request),
+                        remoteAddress: server.requestIP(req),
+                        time,
+                        timeEnd,
                     });
-                    try {
-                        return await handle(request, ctx);
-                    }
-                    catch (err) {
-                        return await onError(err, request, ctx);
-                    }
-                }, headers);
+                    const _handle = withHeaders(handle, headers);
+                    const _onError = withHeaders(onError, headers);
+                    return _handle(req, ctx)
+                        .then(res => patchTimingMetrics(res, timers))
+                        .catch(err => _onError(err, req, ctx));
+                };
                 Object.assign(this, {
                     // Bun specific properties
                     websocket: ws.bunListener,
@@ -88,14 +95,12 @@ class Server {
                 delete this.fetch;
             }
             else {
-                this.fetch = withHeaders(async (request, ctx) => {
-                    try {
-                        return await handle(request, ctx);
-                    }
-                    catch (err) {
-                        return await onError(err, request, ctx);
-                    }
-                }, headers);
+                this.fetch = (req, ctx) => {
+                    const _handle = withHeaders(handle, headers);
+                    const _onError = withHeaders(onError, headers);
+                    return _handle(req, ctx)
+                        .catch(err => _onError(err, req, ctx));
+                };
             }
         }
         else if (typeof addEventListener === "function") {
@@ -114,29 +119,31 @@ class Server {
                 listenFetchEvent({ ws, fetch: handle, onError, headers, bindings });
             }
             else {
-                this.fetch = withHeaders(async (request, bindings, _ctx) => {
+                this.fetch = (req, bindings, _ctx) => {
                     var _d;
                     if (bindings && typeof bindings === "object" && !Array.isArray(bindings)) {
                         env(bindings);
                     }
-                    const address = request.headers.get("cf-connecting-ip");
-                    const ctx = createContext(request, {
+                    const address = req.headers.get("cf-connecting-ip");
+                    const { timers, time, timeEnd } = createTimingFunctions();
+                    const ctx = createRequestContext(req, {
                         ws,
                         remoteAddress: address ? {
                             family: address.includes(":") ? "IPv6" : "IPv4",
                             address: address,
                             port: 0,
                         } : null,
+                        time,
+                        timeEnd,
                         waitUntil: (_d = _ctx.waitUntil) === null || _d === void 0 ? void 0 : _d.bind(_ctx),
                         bindings,
                     });
-                    try {
-                        return await handle(request, ctx);
-                    }
-                    catch (err) {
-                        return await onError(err, request, ctx);
-                    }
-                }, headers);
+                    const _handle = withHeaders(handle, headers);
+                    const _onError = withHeaders(onError, headers);
+                    return _handle(req, ctx)
+                        .then(res => patchTimingMetrics(res, timers))
+                        .catch(err => _onError(err, req, ctx));
+                };
             }
         }
     }

@@ -1,5 +1,6 @@
 import { isDeno, isMainThread, isBun, isNode, isSharedWorker, isServiceWorker, isDedicatedWorker, isNodeLike } from './env.js';
 import { createCloseEvent } from './event.js';
+import { parseUserAgent } from './http/user-agent.js';
 
 /**
  * Utility functions to retrieve runtime information or configure runtime behaviors.
@@ -31,7 +32,7 @@ const WellknownRuntimes = [
  *
  * // In Node.js
  * // {
- * //     type: "node",
+ * //     identity: "node",
  * //     version: "22.0.0",
  * //     fsSupport: true,
  * //     tsSupport: false,
@@ -40,7 +41,7 @@ const WellknownRuntimes = [
  *
  * // In Deno
  * // {
- * //     type: "deno",
+ * //     identity: "deno",
  * //     version: "1.42.0",
  * //     fsSupport: true,
  * //     tsSupport: true,
@@ -49,7 +50,7 @@ const WellknownRuntimes = [
  *
  * // In the browser (Chrome)
  * // {
- * //     type: "chrome",
+ * //     identity: "chrome",
  * //     version: "125.0.0.0",
  * //     fsSupport: true,
  * //     tsSupport: false,
@@ -95,66 +96,42 @@ function runtime() {
             : isDedicatedWorker ? "dedicated"
                 : undefined;
     if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
-        const ua = navigator.userAgent.match(/(Firefox|Edg?e|Safari|Chrom(e|ium))\/(\d+(\.\d+)+)/g);
-        if (ua) {
-            const list = ua.map(part => {
-                const [name, version] = part.split("/");
-                return { name, version };
-            });
-            const safari = list.find(({ name }) => name === "Safari");
-            const firefox = list.find(({ name }) => name === "Firefox");
-            const chrome = list.find(({ name }) => name === "Chrome" || name === "Chromium");
-            if (safari && !chrome && !firefox) {
+        const ua = parseUserAgent(navigator.userAgent);
+        if (ua.runtime) {
+            const { identity, version } = ua.runtime;
+            if (identity === "workerd") {
                 return {
-                    identity: "safari",
-                    version: safari.version,
+                    identity,
+                    version,
                     fsSupport,
-                    tsSupport: false,
-                    worker,
-                };
-            }
-            else if (firefox && !chrome && !safari) {
-                return {
-                    identity: "firefox",
-                    version: firefox.version,
-                    fsSupport,
-                    tsSupport: false,
-                    worker,
-                };
-            }
-            else if (chrome) {
-                return {
-                    identity: "chrome",
-                    version: chrome.version,
-                    fsSupport,
-                    tsSupport: false,
-                    worker,
+                    tsSupport: (() => {
+                        try {
+                            throw new Error("Test error");
+                        }
+                        catch (err) {
+                            return /[\\/]\.?wrangler[\\/]/.test(err.stack);
+                        }
+                    })(),
+                    worker: "service",
                 };
             }
             else {
                 return {
-                    identity: "unknown",
-                    version: undefined,
+                    identity,
+                    version,
                     fsSupport,
                     tsSupport: false,
                     worker,
                 };
             }
         }
-        else if (/Cloudflare[-\s]Workers?/i.test(navigator.userAgent)) {
+        else {
             return {
-                identity: "workerd",
+                identity: "unknown",
                 version: undefined,
                 fsSupport,
-                tsSupport: (() => {
-                    try {
-                        throw new Error("Test error");
-                    }
-                    catch (err) {
-                        return /[\\/]\.?wrangler[\\/]/.test(err.stack);
-                    }
-                })(),
-                worker: "service",
+                tsSupport: false,
+                worker,
             };
         }
     }
@@ -211,33 +188,7 @@ function platform() {
         }
     }
     else if (typeof navigator === "object" && typeof navigator.userAgent === "string") {
-        if (navigator.userAgent.includes("Macintosh")) {
-            return "darwin";
-        }
-        else if (navigator.userAgent.includes("Windows")) {
-            return "windows";
-        }
-        else if (navigator.userAgent.includes("Linux")) {
-            return "linux";
-        }
-        else if (navigator.userAgent.includes("Android")) {
-            return "android";
-        }
-        else if (navigator.userAgent.includes("FreeBSD")) {
-            return "freebsd";
-        }
-        else if (navigator.userAgent.includes("OpenBSD")) {
-            return "openbsd";
-        }
-        else if (navigator.userAgent.includes("NetBSD")) {
-            return "netbsd";
-        }
-        else if (navigator.userAgent.includes("AIX")) {
-            return "aix";
-        }
-        else if (navigator.userAgent.match(/SunOS|Solaris/)) {
-            return "solaris";
-        }
+        return parseUserAgent(navigator.userAgent).platform;
     }
     return "unknown";
 }

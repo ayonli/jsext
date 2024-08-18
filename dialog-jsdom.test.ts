@@ -19,6 +19,10 @@ globalThis.matchMedia = window.matchMedia = (query) => {
     };
 };
 
+function html2text(html: string) {
+    return html.replace(/&nbsp;/g, " ");
+}
+
 describe("dialog", () => {
     if (!isBrowserWindow) {
         return;
@@ -31,7 +35,7 @@ describe("dialog", () => {
 
         const p = dialog.querySelector("p")!;
         ok(p !== null);
-        strictEqual(p.textContent, "Hello, World!");
+        strictEqual(html2text(p.innerHTML), "Hello, World!");
 
         const button = dialog.querySelector("button")!;
         ok(button !== null);
@@ -52,7 +56,7 @@ describe("dialog", () => {
 
             const p = dialog.querySelector("p")!;
             ok(p !== null);
-            strictEqual(p.textContent, "Are you sure?");
+            strictEqual(html2text(p.innerHTML), "Are you sure?");
 
             const buttons = dialog.querySelectorAll("button");
             strictEqual(buttons.length, 2);
@@ -75,7 +79,7 @@ describe("dialog", () => {
 
             const p = dialog.querySelector("p")!;
             ok(p !== null);
-            strictEqual(p.textContent, "Are you sure?");
+            strictEqual(html2text(p.innerHTML), "Are you sure?");
 
             const buttons = dialog.querySelectorAll("button");
             strictEqual(buttons.length, 2);
@@ -98,7 +102,7 @@ describe("dialog", () => {
 
             const p = dialog.querySelector("p")!;
             ok(p !== null);
-            strictEqual(p.textContent, "Are you sure?");
+            strictEqual(html2text(p.innerHTML), "Are you sure?");
 
             const buttons = dialog.querySelectorAll("button");
             strictEqual(buttons.length, 2);
@@ -124,7 +128,7 @@ describe("dialog", () => {
 
             const p = dialog.querySelector("p")!;
             ok(p !== null);
-            strictEqual(p.textContent, "What's your name?");
+            strictEqual(html2text(p.innerHTML), "What's your name?");
 
             const input = dialog.querySelector("input")!;
             ok(input !== null);
@@ -153,7 +157,7 @@ describe("dialog", () => {
 
             const p = dialog.querySelector("p")!;
             ok(p !== null);
-            strictEqual(p.textContent, "What's your password?");
+            strictEqual(html2text(p.innerHTML), "What's your password?");
 
             const input = dialog.querySelector("input")!;
             ok(input !== null);
@@ -182,7 +186,7 @@ describe("dialog", () => {
 
             const p = dialog.querySelector("p")!;
             ok(p !== null);
-            strictEqual(p.textContent, "What's your name?");
+            strictEqual(html2text(p.innerHTML), "What's your name?");
 
             const input = dialog.querySelector("input")!;
             ok(input !== null);
@@ -209,7 +213,7 @@ describe("dialog", () => {
 
             const p = dialog.querySelector("p")!;
             ok(p !== null);
-            strictEqual(p.textContent, "What's your name?");
+            strictEqual(html2text(p.innerHTML), "What's your name?");
 
             const input = dialog.querySelector("input")!;
             ok(input !== null);
@@ -236,7 +240,7 @@ describe("dialog", () => {
 
             const p = dialog.querySelector("p")!;
             ok(p !== null);
-            strictEqual(p.textContent, "What's your name?");
+            strictEqual(html2text(p.innerHTML), "What's your name?");
 
             const input = dialog.querySelector("input")!;
             ok(input !== null);
@@ -310,7 +314,7 @@ describe("dialog", () => {
             ok(button === null);
 
             await until(() => progressBar.value === 50);
-            strictEqual(p.textContent, "Halfway there...");
+            strictEqual(html2text(p.innerHTML), "Halfway there...");
 
             await until(() => !dialog.open);
             strictEqual(await job, "Success!");
@@ -340,7 +344,7 @@ describe("dialog", () => {
             strictEqual(progressBar.max, 100);
 
             await until(() => progressBar.value === 50);
-            strictEqual(p.textContent, "Halfway there...");
+            strictEqual(html2text(p.innerHTML), "Halfway there...");
 
             const cancelButton = dialog.querySelector("button")!;
             ok(cancelButton !== null);
@@ -374,7 +378,7 @@ describe("dialog", () => {
             strictEqual(progressBar.max, 100);
 
             await until(() => progressBar.value === 50);
-            strictEqual(p.textContent, "Halfway there...");
+            strictEqual(html2text(p.innerHTML), "Halfway there...");
 
             const cancelButton = dialog.querySelector("button")!;
             ok(cancelButton !== null);
