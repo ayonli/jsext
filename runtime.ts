@@ -52,7 +52,8 @@ export interface RuntimeInfo {
      */
     identity: WellknownRuntime | "unknown";
     /**
-     * The version of the runtime. This property is `undefined` when `type` is
+     * The version of the runtime. This property may be `undefined` if the
+     * runtime doesn't provide version information, or when the runtime is
      * `unknown`.
      */
     version?: string | undefined;

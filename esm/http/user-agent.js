@@ -10,7 +10,7 @@ function parseUserAgent(str) {
         version: undefined,
         runtime: undefined,
         platform: "unknown",
-        isMobile: /Mobile|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(str),
+        mobile: /Mobile/i.test(str),
         raw: str,
     };
     let matches = [...str.matchAll(/(\S+)\/(\d+(\.\d+)*)(\s\((.+?)\))?/g)].map((match) => {
@@ -68,10 +68,10 @@ function parseUserAgent(str) {
     let node;
     let deno;
     let bun;
-    if (ua.isMobile && ua.platform === "darwin" && !safari && !chrome && !firefox) {
+    if (ua.mobile && ua.platform === "darwin" && !safari && !chrome && !firefox) {
         safari = matches.find(match => match.name === "AppleWebKit"); // fallback to WebKit
     }
-    if (ua.isMobile && ua.platform === "darwin" && safari) {
+    if (ua.mobile && ua.platform === "darwin" && safari) {
         // In iOS and iPadOS, browsers are always Safari-based.
         ua.runtime = { identity: "safari", version: safari.version };
         if (opera) {
@@ -180,10 +180,12 @@ function parseUserAgent(str) {
     else if (edge) { // Old Edge
         ua.name = "Edge";
         ua.version = edge.version;
+        ua.runtime = { identity: "unknown", version: edge.version };
     }
     else if (duckDuckGo) {
         ua.name = "DuckDuckGo";
         ua.version = duckDuckGo.version;
+        ua.runtime = { identity: "unknown", version: duckDuckGo.version };
     }
     else if (node = matches.find(match => match.name === "Node.js")) {
         ua.name = "Node.js";

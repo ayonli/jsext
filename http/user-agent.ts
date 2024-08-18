@@ -2,6 +2,11 @@ import type { RuntimeInfo, WellknownPlatform } from "../runtime.ts";
 
 /**
  * Represents the user agent information.
+ * 
+ * Most browsers use the `User-Agent` or the `navigator.userAgent` string to
+ * indicate what they are compatible instead of what they are made of. This
+ * interface tries to represent the actual user agent information as precise as
+ * possible.
  */
 export interface UserAgentInfo {
     /**
@@ -11,12 +16,12 @@ export interface UserAgentInfo {
     name: string;
     /**
      * The version of the user agent, e.g. `127.0.0.0`. This value can be
-     * `undefined` if the version is not available.
+     * `undefined` if the version is not provided.
      */
     version?: string | undefined;
     /**
-     * Partial runtime information defined by the user agent, only available for
-     * wellknown user agents.
+     * JavaScript runtime information defined by the user agent, only available
+     * if the user agent is a browser or a JavaScript server runtime.
      */
     runtime?: Pick<RuntimeInfo, "identity" | "version"> | undefined;
     /**
@@ -25,9 +30,9 @@ export interface UserAgentInfo {
      */
     platform: WellknownPlatform | "unknown";
     /**
-     * Whether the user agent is running on a mobile device (includes tablets).
+     * Whether the user agent is running on a mobile device, includes tablets.
      */
-    isMobile: boolean;
+    mobile: boolean;
     /**
      * The original user agent string passed into {@link parseUserAgent}.
      */
@@ -46,7 +51,7 @@ export function parseUserAgent(str: string): UserAgentInfo {
         version: undefined,
         runtime: undefined,
         platform: "unknown",
-        isMobile: /Mobile|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(str),
+        mobile: /Mobile/i.test(str),
         raw: str,
     };
     type Match = {
@@ -109,11 +114,11 @@ export function parseUserAgent(str: string): UserAgentInfo {
     let deno: Match | undefined;
     let bun: Match | undefined;
 
-    if (ua.isMobile && ua.platform === "darwin" && !safari && !chrome && !firefox) {
+    if (ua.mobile && ua.platform === "darwin" && !safari && !chrome && !firefox) {
         safari = matches.find(match => match.name === "AppleWebKit"); // fallback to WebKit
     }
 
-    if (ua.isMobile && ua.platform === "darwin" && safari) {
+    if (ua.mobile && ua.platform === "darwin" && safari) {
         // In iOS and iPadOS, browsers are always Safari-based.
         ua.runtime = { identity: "safari", version: safari.version };
 
@@ -206,9 +211,11 @@ export function parseUserAgent(str: string): UserAgentInfo {
     } else if (edge) { // Old Edge
         ua.name = "Edge";
         ua.version = edge.version;
+        ua.runtime = { identity: "unknown", version: edge.version };
     } else if (duckDuckGo) {
         ua.name = "DuckDuckGo";
         ua.version = duckDuckGo.version;
+        ua.runtime = { identity: "unknown", version: duckDuckGo.version };
     } else if (node = matches.find(match => match.name === "Node.js")) {
         ua.name = "Node.js";
         ua.version = node.version;

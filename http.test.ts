@@ -618,7 +618,7 @@ describe("http", () => {
                     version: process.version.slice(1, 3),
                 },
                 platform: "unknown",
-                isMobile: false,
+                mobile: false,
                 raw: navigator.userAgent,
             } satisfies UserAgentInfo);
         });
@@ -637,7 +637,7 @@ describe("http", () => {
                     version: Deno.version.deno,
                 },
                 platform: "unknown",
-                isMobile: false,
+                mobile: false,
                 raw: navigator.userAgent,
             } satisfies UserAgentInfo);
         });
@@ -656,7 +656,7 @@ describe("http", () => {
                     version: Bun.version,
                 },
                 platform: "unknown",
-                isMobile: false,
+                mobile: false,
                 raw: navigator.userAgent,
             } satisfies UserAgentInfo);
         });
@@ -673,7 +673,7 @@ describe("http", () => {
                     version: undefined,
                 },
                 platform: "unknown",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -687,7 +687,7 @@ describe("http", () => {
                 version: "7.68.0",
                 runtime: undefined,
                 platform: "unknown",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -701,7 +701,7 @@ describe("http", () => {
                 version: "5.1.22621.2506",
                 runtime: undefined,
                 platform: "windows",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -718,7 +718,7 @@ describe("http", () => {
                     version: "605.1.15",
                 },
                 platform: "darwin",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -735,7 +735,7 @@ describe("http", () => {
                     version: "604.1",
                 },
                 platform: "darwin",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -752,7 +752,7 @@ describe("http", () => {
                     version: "127.0.0.0",
                 },
                 platform: "darwin",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -769,7 +769,7 @@ describe("http", () => {
                     version: "127.0.0.0",
                 },
                 platform: "windows",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -786,7 +786,7 @@ describe("http", () => {
                     version: "126.0.0.0",
                 },
                 platform: "linux",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -803,7 +803,7 @@ describe("http", () => {
                     version: "604.1",
                 },
                 platform: "darwin",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -820,7 +820,7 @@ describe("http", () => {
                     version: "90.0.4430.210",
                 },
                 platform: "android",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -837,7 +837,7 @@ describe("http", () => {
                     version: "129.0",
                 },
                 platform: "darwin",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -854,7 +854,7 @@ describe("http", () => {
                     version: "129.0",
                 },
                 platform: "windows",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -871,7 +871,7 @@ describe("http", () => {
                     version: "129.0",
                 },
                 platform: "linux",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -888,7 +888,7 @@ describe("http", () => {
                     version: "605.1.15",
                 },
                 platform: "darwin",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -905,7 +905,7 @@ describe("http", () => {
                     version: "129.0",
                 },
                 platform: "android",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -922,7 +922,7 @@ describe("http", () => {
                     version: "126.0.0.0",
                 },
                 platform: "darwin",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -939,7 +939,7 @@ describe("http", () => {
                     version: "125.0.0.0",
                 },
                 platform: "windows",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -956,7 +956,7 @@ describe("http", () => {
                     version: "127.0.0.0",
                 },
                 platform: "linux",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -973,7 +973,7 @@ describe("http", () => {
                     version: "604.1",
                 },
                 platform: "darwin",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -990,7 +990,7 @@ describe("http", () => {
                     version: "127.0.0.0",
                 },
                 platform: "android",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -1007,7 +1007,7 @@ describe("http", () => {
                     version: "126.0.0.0",
                 },
                 platform: "darwin",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -1024,7 +1024,7 @@ describe("http", () => {
                     version: "126.0.0.0",
                 },
                 platform: "windows",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -1041,7 +1041,7 @@ describe("http", () => {
                     version: "126.0.0.0",
                 },
                 platform: "linux",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -1058,7 +1058,7 @@ describe("http", () => {
                     version: "604.1",
                 },
                 platform: "darwin",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -1075,7 +1075,7 @@ describe("http", () => {
                     version: "126.0.0.0",
                 },
                 platform: "android",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -1092,7 +1092,7 @@ describe("http", () => {
                     version: "605.1.15",
                 },
                 platform: "darwin",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -1106,7 +1106,7 @@ describe("http", () => {
                 version: "7.2.0.2205",
                 runtime: { identity: "safari", version: "601.1.46" },
                 platform: "darwin",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -1123,7 +1123,7 @@ describe("http", () => {
                     version: "100.0.4896.58",
                 },
                 platform: "android",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -1140,7 +1140,7 @@ describe("http", () => {
                     version: "120.0.6099.291",
                 },
                 platform: "darwin",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -1157,7 +1157,7 @@ describe("http", () => {
                     version: "605.1.15",
                 },
                 platform: "darwin",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -1174,7 +1174,7 @@ describe("http", () => {
                     version: "69.0.3497.100",
                 },
                 platform: "android",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -1191,7 +1191,7 @@ describe("http", () => {
                     version: "107.0.0.0",
                 },
                 platform: "darwin",
-                isMobile: false,
+                mobile: false,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -1208,7 +1208,7 @@ describe("http", () => {
                     version: "605.1.15",
                 },
                 platform: "darwin",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -1225,7 +1225,7 @@ describe("http", () => {
                     version: "83.0.4103.120",
                 },
                 platform: "android",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
@@ -1242,7 +1242,7 @@ describe("http", () => {
                     version: "604.1",
                 },
                 platform: "darwin",
-                isMobile: true,
+                mobile: true,
                 raw: ua,
             } satisfies UserAgentInfo);
         });
