@@ -2701,6 +2701,10 @@ describe("http", () => {
     });
 
     describe("suggestResponseType", () => {
+        if (typeof Request !== "function") {
+            return;
+        }
+
         it("text", () => {
             const req0 = new Request("http://localhost");
             const req1 = new Request("http://localhost", {
@@ -2753,10 +2757,14 @@ describe("http", () => {
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9",
                 }
             });
+            const req4 = new Request("http://localhost/hello.html");
+            const req5 = new Request("http://localhost/hello.htm");
 
             strictEqual(suggestResponseType(req1), "html");
             strictEqual(suggestResponseType(req2), "html");
             strictEqual(suggestResponseType(req3), "html");
+            strictEqual(suggestResponseType(req4), "html");
+            strictEqual(suggestResponseType(req5), "html");
         });
 
         it("xml", () => {
@@ -2779,10 +2787,12 @@ describe("http", () => {
                 },
                 body: `<xml><foo>hello</foo><bar>world</bar/></xml>`,
             });
+            const req4 = new Request("http://localhost/hello.xml");
 
             strictEqual(suggestResponseType(req1), "xml");
             strictEqual(suggestResponseType(req2), "xml");
             strictEqual(suggestResponseType(req3), "xml");
+            strictEqual(suggestResponseType(req4), "xml");
         });
 
         it("json", () => {
@@ -2809,11 +2819,15 @@ describe("http", () => {
                     "X-Requested-With": "XMLHttpRequest",
                 },
             });
+            const req5 = new Request("http://localhost/api/hello");
+            const req6 = new Request("http://localhost/hello.json");
 
             strictEqual(suggestResponseType(req1), "json");
             strictEqual(suggestResponseType(req2), "json");
             strictEqual(suggestResponseType(req3), "json");
             strictEqual(suggestResponseType(req4), "json");
+            strictEqual(suggestResponseType(req5), "json");
+            strictEqual(suggestResponseType(req6), "json");
         });
 
         it("stream", () => {

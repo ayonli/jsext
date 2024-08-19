@@ -33,6 +33,9 @@ export interface Accept {
 /**
  * Parses the `Accept`, `Accept-Encoding` and `Accept-Language` headers.
  * 
+ * NOTE: This function automatically sorts the results by the q-factor value in
+ * descending order.
+ * 
  * @example
  * ```ts
  * import { parseAccepts } from "@ayonli/jsext/http";
@@ -1038,6 +1041,19 @@ export function suggestResponseType(
     ) {
         return "html";
     } else {
-        return "text";
+        const { pathname } = new URL(req.url);
+
+        if (pathname === "/api" ||
+            pathname.startsWith("/api/") ||
+            /\.json?$/i.test(pathname)
+        ) {
+            return "json";
+        } else if (/\.xml$/i.test(pathname)) {
+            return "xml";
+        } else if (/\.html?$/i.test(pathname)) {
+            return "html";
+        } else {
+            return "text";
+        }
     }
 }
