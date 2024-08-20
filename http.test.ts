@@ -611,6 +611,10 @@ describe("http", () => {
     });
 
     it("setFilename", () => {
+        if (typeof Response === "undefined") {
+            return;
+        }
+
         const headers = new Headers();
         setFilename(headers, "example.txt");
 
