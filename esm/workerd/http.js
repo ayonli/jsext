@@ -6,6 +6,7 @@ import { getMIME } from '../filetype.js';
 import { exists, readFile, readDir } from './fs.js';
 import { sha256 } from '../hash/web.js';
 import { renderDirPage } from '../http/internal.js';
+export { withWeb } from '../http/internal.js';
 import { Server } from '../http/server.js';
 import { parseRange, ifNoneMatch, ifMatch } from '../http/util.js';
 export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRequest, parseResponse, setCookie, setFilename, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from '../http/util.js';
@@ -35,9 +36,6 @@ async function etag(data) {
     return `${data.size.toString(16)}-${hash.slice(0, 27)}`;
 }
 async function randomPort(prefer = undefined) {
-    throw new Error("Unsupported runtime");
-}
-function withWeb(listener) {
     throw new Error("Unsupported runtime");
 }
 function serve(options) {
@@ -237,5 +235,5 @@ async function serveFile(data, options) {
     }
 }
 
-export { etag, ifMatch, ifNoneMatch, parseRange, randomPort, serve, serveStatic, withWeb };
+export { etag, ifMatch, ifNoneMatch, parseRange, randomPort, serve, serveStatic };
 //# sourceMappingURL=http.js.map

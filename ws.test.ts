@@ -5,7 +5,8 @@ import func from "./func.ts";
 import { type WebSocketConnection } from "./ws.ts";
 import bytes, { concat, text } from "./bytes.ts";
 import { until } from "./async.ts";
-import { randomPort, withWeb } from "./http.ts";
+import { randomPort } from "./http.ts";
+import { withWeb } from "./http/internal.ts";
 
 declare const Bun: any;
 

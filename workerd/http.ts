@@ -3,7 +3,7 @@ import { Exception } from "../error.ts";
 import { getMIME } from "../filetype.ts";
 import { FileInfo, exists, readDir, readFile } from "./fs.ts";
 import { sha256 } from "./hash.ts";
-import { renderDirPage } from "../http/internal.ts";
+import { renderDirPage, withWeb } from "../http/internal.ts";
 import {
     NetAddress,
     RequestContext,
@@ -22,6 +22,7 @@ import { KVNamespace } from "./types.ts";
 import { WebSocketServer } from "./ws.ts";
 import runtime from "../runtime.ts";
 
+export { withWeb };
 export * from "../http/util.ts";
 export type {
     NetAddress,
@@ -55,13 +56,6 @@ export async function etag(data: string | Uint8Array | FileInfo): Promise<string
 
 export async function randomPort(prefer: number | undefined = undefined): Promise<number> {
     void prefer;
-    throw new Error("Unsupported runtime");
-}
-
-export function withWeb(
-    listener: (req: Request) => void | Response | Promise<void | Response>
-): import("http").RequestListener {
-    void listener;
     throw new Error("Unsupported runtime");
 }
 

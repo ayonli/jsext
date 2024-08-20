@@ -31,8 +31,8 @@ import {
     stringifyResponse,
     suggestResponseType,
     verifyBasicAuth,
-    withWeb,
 } from "./http.ts";
+import { withWeb } from "./http/internal.ts";
 import _try from "./try.ts";
 import func from "./func.ts";
 import { readFileAsText } from "./fs.ts";

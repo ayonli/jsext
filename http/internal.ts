@@ -14,9 +14,11 @@ import { DirEntry } from "../fs.ts";
 import { join } from "../path.ts";
 import runtime from "../runtime.ts";
 import { EventEndpoint } from "../sse.ts";
-import { dedent } from "../string.ts";
-import type { FetchEvent, RequestContext, RequestErrorHandler, ServeOptions } from "./server.ts";
+import { capitalize, dedent } from "../string.ts";
+import type { FetchEvent, NetAddress, RequestContext, RequestErrorHandler, ServeOptions } from "./server.ts";
 import type { WebSocketServer } from "../ws.ts";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
 
 export interface TimingMetrics {
     timeStart: number;
@@ -278,4 +280,180 @@ export async function renderDirPage(
             "Content-Type": "text/html; charset=utf-8",
         },
     });
+}
+
+
+/**
+ * Creates a Node.js HTTP request listener with modern Web APIs.
+ * 
+ * NOTE: This function is only available in Node.js and requires Node.js v18.4.1
+ * or above.
+ * 
+ * @example
+ * ```ts
+ * import * as http from "node:http";
+ * import { withWeb } from "@ayonli/jsext/http";
+ * 
+ * const server = http.createServer(withWeb(async (req) => {
+ *     return new Response("Hello, World!");
+ * }));
+ * 
+ * server.listen(8000);
+ * ```
+ */
+export function withWeb(
+    listener: (req: Request, info: {
+        remoteAddress: NetAddress;
+    }) => void | Response | Promise<void | Response>
+): (req: IncomingMessage | Http2ServerRequest, res: ServerResponse | Http2ServerResponse) => void {
+    return async (nReq, nRes) => {
+        const remoteAddress: NetAddress = {
+            family: nReq.socket.remoteFamily as "IPv4" | "IPv6",
+            address: nReq.socket.remoteAddress!,
+            port: nReq.socket.remotePort!,
+        };
+        const req = toWebRequest(nReq);
+        const res = await listener(req, { remoteAddress });
+
+        if (!nRes.req) { // fix for Deno and Node.js below v15.7.0
+            Object.assign(nRes, { req: nReq });
+        }
+
+        if (res && !nRes.headersSent) {
+            if (res.status === 101) {
+                // When the status code is 101, it means the server is upgrading
+                // the connection to a different protocol, usually to WebSocket.
+                // In this case, the response shall be and may have already been
+                // written by the request socket. So we should not write the
+                // response again.
+                return;
+            }
+
+            toNodeResponse(res, nRes);
+        }
+    };
+}
+
+
+/**
+ * Transforms a Node.js HTTP request to a modern `Request` object.
+ */
+function toWebRequest(req: IncomingMessage | Http2ServerRequest): Request {
+    const protocol = (req.socket as any)["encrypted"] || req.headers[":scheme"] === "https"
+        ? "https" : "http";
+    const host = req.headers[":authority"] ?? req.headers["host"];
+    const url = new URL(req.url ?? "/", `${protocol}://${host}`);
+    const headers = new Headers(Object.fromEntries(Object.entries(req.headers).filter(([key]) => {
+        return typeof key === "string" && !key.startsWith(":");
+    })) as Record<string, string>);
+
+    if (req.headers[":authority"]) {
+        headers.set("Host", req.headers[":authority"] as string);
+    }
+
+    const controller = new AbortController();
+    const init: RequestInit = {
+        method: req.method!,
+        headers,
+        signal: controller.signal,
+    };
+    const cache = headers.get("Cache-Control");
+    const mode = headers.get("Sec-Fetch-Mode");
+    const referrer = headers.get("Referer");
+
+    if (cache === "no-cache") {
+        init.cache = "no-cache";
+    } else if (cache === "no-store") {
+        init.cache = "no-store";
+    } else if (cache === "only-if-cached" && mode === "same-origin") {
+        init.cache = "only-if-cached";
+    } else {
+        init.cache = "default";
+    }
+
+    if (mode === "no-cors") {
+        init.mode = "no-cors";
+    } else if (mode === "same-origin") {
+        init.mode = "same-origin";
+    } else {
+        init.mode = "cors";
+    }
+
+    if (referrer) {
+        init.referrer = referrer;
+    }
+
+    if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "OPTIONS") {
+        const { readable, writable } = new TransformStream();
+        const writer = writable.getWriter();
+
+        req.on("data", (chunk) => {
+            writer.write(chunk);
+        }).once("error", (err) => {
+            writer.abort(err);
+        }).once("end", () => {
+            writer.close();
+        });
+
+        init.body = readable;
+        // @ts-ignore Node.js special
+        init.duplex = "half";
+    }
+
+    req.once("close", () => {
+        req.errored && controller.abort();
+    });
+
+    const request = new Request(url, init);
+
+    if (!req.headers[":authority"]) {
+        Object.assign(request, {
+            [Symbol.for("incomingMessage")]: req,
+        });
+    }
+
+    return request;
+}
+
+/**
+ * Pipes a modern `Response` object to a Node.js HTTP response.
+ */
+function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResponse): void {
+    const { status, statusText, headers } = res;
+
+    for (const [key, value] of headers) {
+        // Use `setHeader` to set headers instead of passing them to `writeHead`,
+        // it seems in Deno, the headers are not written to the response if they
+        // are passed to `writeHead`.
+        nodeRes.setHeader(capitalize(key, true), value);
+    }
+
+    if (nodeRes.req.httpVersion === "2.0") {
+        nodeRes.writeHead(status);
+    } else {
+        nodeRes.writeHead(status, statusText);
+    }
+
+    if (!res.body) {
+        nodeRes.end();
+    } else {
+        res.body.pipeTo(new WritableStream({
+            start(controller) {
+                nodeRes.once("close", () => {
+                    controller.error();
+                }).once("error", (err) => {
+                    controller.error(err);
+                });
+            },
+            write(chunk) {
+                (nodeRes as ServerResponse).write(chunk);
+            },
+            close() {
+                nodeRes.end();
+            },
+            abort(err) {
+                nodeRes.destroy(err);
+            },
+        }));
+    }
 }
