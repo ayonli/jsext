@@ -266,6 +266,10 @@ function getCookie(obj, name) {
 /**
  * Sets a cookie in the `Set-Cookie` header of the response.
  *
+ * NOTE: This function can be used with both {@link Response} and {@link Headers}
+ * objects. However, when using with a `Headers` instance, make sure to set the
+ * cookie before the headers instance is used by the response object.
+ *
  * @example
  * ```ts
  * import { getCookies, getCookie, setCookie } from "@ayonli/jsext/http";
@@ -287,7 +291,48 @@ function getCookie(obj, name) {
  * ```
  */
 function setCookie(res, cookie) {
-    res.headers.append("Set-Cookie", stringifyCookie(cookie));
+    if (res instanceof Headers) {
+        res.append("Set-Cookie", stringifyCookie(cookie));
+    }
+    else {
+        res.headers.append("Set-Cookie", stringifyCookie(cookie));
+    }
+}
+/**
+ * Sets the `Content-Disposition` header with the given filename when the
+ * response is intended to be downloaded.
+ *
+ * This function encodes the filename with {@link encodeURIComponent} and sets
+ * both the `filename` and the `filename*` parameters in the header for maximum
+ * compatibility.
+ *
+ * NOTE: This function can be used with both {@link Response} and {@link Headers}
+ * objects. However, when using with a `Headers` instance, make sure to set the
+ * filename before the headers instance is used by the response object.
+ *
+ * @example
+ * ```ts
+ * import { setFilename } from "@ayonli/jsext/http";
+ *
+ * export default {
+ *     fetch(req: Request) {
+ *         const res = new Response("Hello, World!");
+ *         setFilename(res, "hello.txt");
+ *
+ *        return res;
+ *     }
+ * }
+ * ```
+ */
+function setFilename(res, filename) {
+    filename = encodeURIComponent(filename);
+    const disposition = `attachment; filename="${filename}"; filename*=UTF-8''${filename}`;
+    if (res instanceof Headers) {
+        res.set("Content-Disposition", disposition);
+    }
+    else {
+        res.headers.set("Content-Disposition", disposition);
+    }
 }
 /**
  * Parses the `Range` header.
@@ -852,5 +897,5 @@ function suggestResponseType(req) {
     }
 }
 
-export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, ifMatch, ifNoneMatch, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRange, parseRequest, parseResponse, setCookie, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth };
+export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, ifMatch, ifNoneMatch, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRange, parseRequest, parseResponse, setCookie, setFilename, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth };
 //# sourceMappingURL=util.js.map

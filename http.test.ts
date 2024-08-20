@@ -24,6 +24,7 @@ import {
     serve,
     serveStatic,
     setCookie,
+    setFilename,
     stringifyCookie,
     stringifyCookies,
     stringifyRequest,
@@ -585,6 +586,11 @@ describe("http", () => {
         }
 
         const headers = new Headers();
+        setCookie(headers, {
+            name: "hello",
+            value: "world",
+        });
+
         const res = new Response(null, { headers });
         setCookie(res, {
             name: "foo",
@@ -598,9 +604,24 @@ describe("http", () => {
         });
 
         deepStrictEqual(res.headers.getSetCookie(), [
+            "hello=world",
             "foo=bar; Expires=Wed, 09 Jun 2021 10:18:14 GMT",
             "baz=qux; Max-Age=3600",
         ]);
+    });
+
+    it("setFilename", () => {
+        const headers = new Headers();
+        setFilename(headers, "example.txt");
+
+        strictEqual(headers.get("Content-Disposition"),
+            "attachment; filename=\"example.txt\"; filename*=UTF-8''example.txt");
+
+        const res = new Response("Hello, World!");
+        setFilename(res, "你好.txt");
+
+        strictEqual(res.headers.get("Content-Disposition"),
+            "attachment; filename=\"%E4%BD%A0%E5%A5%BD.txt\"; filename*=UTF-8''%E4%BD%A0%E5%A5%BD.txt");
     });
 
     describe("parseUserAgent", () => {
