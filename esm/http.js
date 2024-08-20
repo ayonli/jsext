@@ -10,7 +10,7 @@ import './cli/constants.js';
 import { parseArgs, args } from './cli/common.js';
 import { stat, exists, readDir, readFile, createReadableStream } from './fs.js';
 import { sha256 } from './hash.js';
-import { withWeb as withWeb$1, createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent, renderDirPage, createTimingFunctions } from './http/internal.js';
+import { withWeb as withWeb$1, createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent, renderDirectoryPage, createTimingFunctions } from './http/internal.js';
 import { Server } from './http/server.js';
 import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
 export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRequest, parseResponse, setCookie, setFilename, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from './http/util.js';
@@ -543,7 +543,7 @@ async function serveStatic(req, options = {}) {
             }
             else if (options.listDir) {
                 const entries = await readAsArray(readDir(filename));
-                return renderDirPage(pathname, entries, extraHeaders);
+                return renderDirectoryPage(pathname, entries, extraHeaders);
             }
             else {
                 return new Response("Forbidden", {

@@ -54,7 +54,7 @@ import {
     createRequestContext,
     createTimingFunctions,
     listenFetchEvent,
-    renderDirPage,
+    renderDirectoryPage,
     withHeaders,
     patchTimingMetrics,
     withWeb as _withWeb,
@@ -573,7 +573,7 @@ export async function serveStatic(
                 return serveStatic(new Request(join(req.url, "index.htm"), req), options);
             } else if (options.listDir) {
                 const entries = await readAsArray(readDir(filename));
-                return renderDirPage(pathname, entries, extraHeaders);
+                return renderDirectoryPage(pathname, entries, extraHeaders);
             } else {
                 return new Response("Forbidden", {
                     status: 403,

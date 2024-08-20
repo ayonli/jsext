@@ -218,7 +218,7 @@ export function listenFetchEvent(options: Pick<ServeOptions, "fetch" | "headers"
 /**
  * Renders a directory listing page for the `pathname` with the given `entries`.
  */
-export async function renderDirPage(
+export async function renderDirectoryPage(
     pathname: string,
     entries: DirEntry[],
     extraHeaders: HeadersInit = {}

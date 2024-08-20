@@ -5,7 +5,7 @@ import '../external/event-target-polyfill/index.js';
 import { getMIME } from '../filetype.js';
 import { exists, readFile, readDir } from './fs.js';
 import { sha256 } from '../hash/web.js';
-import { renderDirPage } from '../http/internal.js';
+import { renderDirectoryPage } from '../http/internal.js';
 export { withWeb } from '../http/internal.js';
 import { Server } from '../http/server.js';
 import { parseRange, ifNoneMatch, ifMatch } from '../http/util.js';
@@ -96,7 +96,7 @@ async function serveStatic(req, options = {}) {
         }
         else if (options.listDir) {
             const entries = await readAsArray(readDir(filename, { root: kv }));
-            return renderDirPage(pathname, entries, extraHeaders);
+            return renderDirectoryPage(pathname, entries, extraHeaders);
         }
         else {
             return new Response("Forbidden", {

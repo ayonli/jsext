@@ -171,7 +171,7 @@ function listenFetchEvent(options) {
 /**
  * Renders a directory listing page for the `pathname` with the given `entries`.
  */
-async function renderDirPage(pathname, entries, extraHeaders = {}) {
+async function renderDirectoryPage(pathname, entries, extraHeaders = {}) {
     const list = [
         ...orderBy(entries.filter(e => e.kind === "directory"), e => e.name).map(e => e.name + "/"),
         ...orderBy(entries.filter(e => e.kind === "file"), e => e.name).map(e => e.name),
@@ -377,5 +377,5 @@ function toNodeResponse(res, nodeRes) {
     }
 }
 
-export { createRequestContext, createTimingFunctions, listenFetchEvent, patchTimingMetrics, renderDirPage, withHeaders, withWeb };
+export { createRequestContext, createTimingFunctions, listenFetchEvent, patchTimingMetrics, renderDirectoryPage, withHeaders, withWeb };
 //# sourceMappingURL=internal.js.map

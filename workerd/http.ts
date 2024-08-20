@@ -3,7 +3,7 @@ import { Exception } from "../error.ts";
 import { getMIME } from "../filetype.ts";
 import { FileInfo, exists, readDir, readFile } from "./fs.ts";
 import { sha256 } from "./hash.ts";
-import { renderDirPage, withWeb } from "../http/internal.ts";
+import { renderDirectoryPage, withWeb } from "../http/internal.ts";
 import {
     NetAddress,
     RequestContext,
@@ -125,7 +125,7 @@ export async function serveStatic(
             });
         } else if (options.listDir) {
             const entries = await readAsArray(readDir(filename, { root: kv }));
-            return renderDirPage(pathname, entries, extraHeaders);
+            return renderDirectoryPage(pathname, entries, extraHeaders);
         } else {
             return new Response("Forbidden", {
                 status: 403,
