@@ -304,7 +304,7 @@ export async function renderDirectoryPage(
 export function withWeb(
     listener: (req: Request, info: {
         remoteAddress: NetAddress;
-    }) => void | Response | Promise<void | Response>
+    }) => Response | Promise<Response>
 ): (req: IncomingMessage | Http2ServerRequest, res: ServerResponse | Http2ServerResponse) => void {
     return async (nReq, nRes) => {
         const remoteAddress: NetAddress = {
