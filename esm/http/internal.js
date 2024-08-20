@@ -228,7 +228,7 @@ async function renderDirectoryPage(pathname, entries, extraHeaders = {}) {
  * @example
  * ```ts
  * import * as http from "node:http";
- * import { withWeb } from "@ayonli/jsext/http";
+ * import { withWeb } from "@ayonli/jsext/http/internal";
  *
  * const server = http.createServer(withWeb(async (req) => {
  *     return new Response("Hello, World!");
