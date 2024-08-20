@@ -3,7 +3,8 @@ import { asyncTask, sleep, until } from "./async.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 import "./index.ts";
 import jsext from "./index.ts";
-import { randomPort, withWeb } from "./http.ts";
+import { randomPort } from "./http.ts";
+import { withWeb } from "./http/internal.ts";
 import { EventConsumer, EventEndpoint } from "./sse.ts";
 
 declare const Bun: any;

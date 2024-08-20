@@ -5,10 +5,11 @@ import '../external/event-target-polyfill/index.js';
 import { getMIME } from '../filetype.js';
 import { exists, readFile, readDir } from './fs.js';
 import { sha256 } from '../hash/web.js';
-import { renderDirPage } from '../http/internal.js';
+import { renderDirectoryPage } from '../http/internal.js';
+export { withWeb } from '../http/internal.js';
 import { Server } from '../http/server.js';
 import { parseRange, ifNoneMatch, ifMatch } from '../http/util.js';
-export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRequest, parseResponse, setCookie, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, verifyBasicAuth } from '../http/util.js';
+export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRequest, parseResponse, setCookie, setFilename, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from '../http/util.js';
 import { join, extname } from '../path.js';
 import { readAsArray } from '../reader.js';
 import { stripStart } from '../string.js';
@@ -35,9 +36,6 @@ async function etag(data) {
     return `${data.size.toString(16)}-${hash.slice(0, 27)}`;
 }
 async function randomPort(prefer = undefined) {
-    throw new Error("Unsupported runtime");
-}
-function withWeb(listener) {
     throw new Error("Unsupported runtime");
 }
 function serve(options) {
@@ -98,7 +96,7 @@ async function serveStatic(req, options = {}) {
         }
         else if (options.listDir) {
             const entries = await readAsArray(readDir(filename, { root: kv }));
-            return renderDirPage(pathname, entries, extraHeaders);
+            return renderDirectoryPage(pathname, entries, extraHeaders);
         }
         else {
             return new Response("Forbidden", {
@@ -237,5 +235,5 @@ async function serveFile(data, options) {
     }
 }
 
-export { etag, ifMatch, ifNoneMatch, parseRange, randomPort, serve, serveStatic, withWeb };
+export { etag, ifMatch, ifNoneMatch, parseRange, randomPort, serve, serveStatic };
 //# sourceMappingURL=http.js.map

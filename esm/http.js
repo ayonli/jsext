@@ -1,6 +1,6 @@
 import { asyncTask } from './async.js';
 import bytes from './bytes.js';
-import { capitalize, stripStart } from './string.js';
+import { stripStart } from './string.js';
 import { isDeno, isBun, isNode } from './env.js';
 import './external/event-target-polyfill/index.js';
 export { parseUserAgent } from './http/user-agent.js';
@@ -10,10 +10,10 @@ import './cli/constants.js';
 import { parseArgs, args } from './cli/common.js';
 import { stat, exists, readDir, readFile, createReadableStream } from './fs.js';
 import { sha256 } from './hash.js';
+import { withWeb as withWeb$1, createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent, renderDirectoryPage, createTimingFunctions } from './http/internal.js';
 import { Server } from './http/server.js';
-import { createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent, renderDirPage, createTimingFunctions } from './http/internal.js';
 import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
-export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRequest, parseResponse, setCookie, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, verifyBasicAuth } from './http/util.js';
+export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRequest, parseResponse, setCookie, setFilename, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from './http/util.js';
 import { as } from './object.js';
 import { readAsArray } from './reader.js';
 import { WebSocketServer } from './ws.js';
@@ -63,6 +63,10 @@ import { startsWith } from './path/util.js';
  * @experimental
  */
 var _a, _b;
+/**
+ * @deprecated This function has been moved to `@ayonli/jsext/http/internal`.
+ */
+const withWeb = withWeb$1;
 /**
  * Calculates the ETag for a given entity.
  *
@@ -191,163 +195,6 @@ async function randomPort(prefer = undefined, hostname = undefined) {
     }
     else {
         throw new Error("Unsupported runtime");
-    }
-}
-/**
- * Creates a Node.js HTTP request listener with modern Web APIs.
- *
- * NOTE: This function is only available in Node.js and requires Node.js v18.4.1
- * or above.
- *
- * @example
- * ```ts
- * import * as http from "node:http";
- * import { withWeb } from "@ayonli/jsext/http";
- *
- * const server = http.createServer(withWeb(async (req) => {
- *     return new Response("Hello, World!");
- * }));
- *
- * server.listen(8000);
- * ```
- */
-function withWeb(listener) {
-    return async (nReq, nRes) => {
-        const remoteAddress = {
-            family: nReq.socket.remoteFamily,
-            address: nReq.socket.remoteAddress,
-            port: nReq.socket.remotePort,
-        };
-        const req = toWebRequest(nReq);
-        const res = await listener(req, { remoteAddress });
-        if (!nRes.req) { // fix for Deno and Node.js below v15.7.0
-            Object.assign(nRes, { req: nReq });
-        }
-        if (res && !nRes.headersSent) {
-            if (res.status === 101) {
-                // When the status code is 101, it means the server is upgrading
-                // the connection to a different protocol, usually to WebSocket.
-                // In this case, the response shall be and may have already been
-                // written by the request socket. So we should not write the
-                // response again.
-                return;
-            }
-            toNodeResponse(res, nRes);
-        }
-    };
-}
-/**
- * Transforms a Node.js HTTP request to a modern `Request` object.
- */
-function toWebRequest(req) {
-    var _a, _b;
-    const protocol = req.socket["encrypted"] || req.headers[":scheme"] === "https"
-        ? "https" : "http";
-    const host = (_a = req.headers[":authority"]) !== null && _a !== void 0 ? _a : req.headers["host"];
-    const url = new URL((_b = req.url) !== null && _b !== void 0 ? _b : "/", `${protocol}://${host}`);
-    const headers = new Headers(Object.fromEntries(Object.entries(req.headers).filter(([key]) => {
-        return typeof key === "string" && !key.startsWith(":");
-    })));
-    if (req.headers[":authority"]) {
-        headers.set("Host", req.headers[":authority"]);
-    }
-    const controller = new AbortController();
-    const init = {
-        method: req.method,
-        headers,
-        signal: controller.signal,
-    };
-    const cache = headers.get("Cache-Control");
-    const mode = headers.get("Sec-Fetch-Mode");
-    const referrer = headers.get("Referer");
-    if (cache === "no-cache") {
-        init.cache = "no-cache";
-    }
-    else if (cache === "no-store") {
-        init.cache = "no-store";
-    }
-    else if (cache === "only-if-cached" && mode === "same-origin") {
-        init.cache = "only-if-cached";
-    }
-    else {
-        init.cache = "default";
-    }
-    if (mode === "no-cors") {
-        init.mode = "no-cors";
-    }
-    else if (mode === "same-origin") {
-        init.mode = "same-origin";
-    }
-    else {
-        init.mode = "cors";
-    }
-    if (referrer) {
-        init.referrer = referrer;
-    }
-    if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "OPTIONS") {
-        const { readable, writable } = new TransformStream();
-        const writer = writable.getWriter();
-        req.on("data", (chunk) => {
-            writer.write(chunk);
-        }).once("error", (err) => {
-            writer.abort(err);
-        }).once("end", () => {
-            writer.close();
-        });
-        init.body = readable;
-        // @ts-ignore Node.js special
-        init.duplex = "half";
-    }
-    req.once("close", () => {
-        req.errored && controller.abort();
-    });
-    const request = new Request(url, init);
-    if (!req.headers[":authority"]) {
-        Object.assign(request, {
-            [Symbol.for("incomingMessage")]: req,
-        });
-    }
-    return request;
-}
-/**
- * Pipes a modern `Response` object to a Node.js HTTP response.
- */
-function toNodeResponse(res, nodeRes) {
-    const { status, statusText, headers } = res;
-    for (const [key, value] of headers) {
-        // Use `setHeader` to set headers instead of passing them to `writeHead`,
-        // it seems in Deno, the headers are not written to the response if they
-        // are passed to `writeHead`.
-        nodeRes.setHeader(capitalize(key, true), value);
-    }
-    if (nodeRes.req.httpVersion === "2.0") {
-        nodeRes.writeHead(status);
-    }
-    else {
-        nodeRes.writeHead(status, statusText);
-    }
-    if (!res.body) {
-        nodeRes.end();
-    }
-    else {
-        res.body.pipeTo(new WritableStream({
-            start(controller) {
-                nodeRes.once("close", () => {
-                    controller.error();
-                }).once("error", (err) => {
-                    controller.error(err);
-                });
-            },
-            write(chunk) {
-                nodeRes.write(chunk);
-            },
-            close() {
-                nodeRes.end();
-            },
-            abort(err) {
-                nodeRes.destroy(err);
-            },
-        }));
     }
 }
 /**
@@ -696,7 +543,7 @@ async function serveStatic(req, options = {}) {
             }
             else if (options.listDir) {
                 const entries = await readAsArray(readDir(filename));
-                return renderDirPage(pathname, entries, extraHeaders);
+                return renderDirectoryPage(pathname, entries, extraHeaders);
             }
             else {
                 return new Response("Forbidden", {

@@ -33,6 +33,9 @@ export interface Accept {
 /**
  * Parses the `Accept`, `Accept-Encoding` and `Accept-Language` headers.
  * 
+ * NOTE: This function automatically sorts the results by the q-factor value in
+ * descending order.
+ * 
  * @example
  * ```ts
  * import { parseAccepts } from "@ayonli/jsext/http";
@@ -392,6 +395,10 @@ export function getCookie(obj: Request | Response, name: string): Cookie | null 
 /**
  * Sets a cookie in the `Set-Cookie` header of the response.
  * 
+ * NOTE: This function can be used with both {@link Response} and {@link Headers}
+ * objects. However, when using with a `Headers` instance, make sure to set the
+ * cookie before the headers instance is used by the response object.
+ * 
  * @example
  * ```ts
  * import { getCookies, getCookie, setCookie } from "@ayonli/jsext/http";
@@ -412,8 +419,49 @@ export function getCookie(obj: Request | Response, name: string): Cookie | null 
  * }
  * ```
  */
-export function setCookie(res: Response, cookie: Cookie): void {
-    res.headers.append("Set-Cookie", stringifyCookie(cookie));
+export function setCookie(res: Response | Headers, cookie: Cookie): void {
+    if (res instanceof Headers) {
+        res.append("Set-Cookie", stringifyCookie(cookie));
+    } else {
+        res.headers.append("Set-Cookie", stringifyCookie(cookie));
+    }
+}
+
+/**
+ * Sets the `Content-Disposition` header with the given filename when the
+ * response is intended to be downloaded.
+ * 
+ * This function encodes the filename with {@link encodeURIComponent} and sets
+ * both the `filename` and the `filename*` parameters in the header for maximum
+ * compatibility.
+ * 
+ * NOTE: This function can be used with both {@link Response} and {@link Headers}
+ * objects. However, when using with a `Headers` instance, make sure to set the
+ * filename before the headers instance is used by the response object.
+ * 
+ * @example
+ * ```ts
+ * import { setFilename } from "@ayonli/jsext/http";
+ * 
+ * export default {
+ *     fetch(req: Request) {
+ *         const res = new Response("Hello, World!");
+ *         setFilename(res, "hello.txt");
+ * 
+ *        return res;
+ *     }
+ * }
+ * ```
+ */
+export function setFilename(res: Response | Headers, filename: string): void {
+    filename = encodeURIComponent(filename);
+    const disposition = `attachment; filename="${filename}"; filename*=UTF-8''${filename}`;
+
+    if (res instanceof Headers) {
+        res.set("Content-Disposition", disposition);
+    } else {
+        res.headers.set("Content-Disposition", disposition);
+    }
 }
 
 /**
@@ -951,4 +999,106 @@ export async function stringifyResponse(res: Response): Promise<string> {
     message += "\r\n" + body;
 
     return message;
+}
+
+/**
+ * Gets the suggested response type for the request.
+ * 
+ * This function checks the `Accept` or the `Content-Type` header of the request,
+ * or the request method, or other factors to determine the most suitable
+ * response type for the client.
+ * 
+ * For example, when requesting an article which is stored in markdown, the
+ * server can respond an HTML page for the browser, a plain text for the
+ * terminal, or a JSON object for the API client.
+ * 
+ * This function returns the following response types:
+ * 
+ * - `text`: plain text content (default)
+ * - `html`: an HTML page
+ * - `xml`: an XML document
+ * - `json`: a JSON object
+ * - `stream`: text stream or binary stream, depending on the use case
+ * - `none`: no content should be sent, such as for a `HEAD` request
+ * 
+ * @example
+ * ```ts
+ * import { suggestResponseType } from "@ayonli/jsext/http";
+ * 
+ * export default {
+ *     async fetch(req: Request) {
+ *         const type = suggestResponseType(req);
+ * 
+ *         if (type === "text") {
+ *              return new Response("Hello, World!");
+ *         } else if (type === "html") {
+ *              return new Response("<h1>Hello, World!</h1>", {
+ *                  headers: { "Content-Type": "text/html" },
+ *              });
+ *         } else if (type === "xml") {
+ *              return new Response("<xml><message>Hello, World!</message></xml>", {
+ *                  headers: { "Content-Type": "application/xml" },
+ *              });
+ *         } else if (type === "json") {
+ *              return new Response(JSON.stringify({ message: "Hello, World!" }), {
+ *                  headers: { "Content-Type": "application/json" },
+ *              });
+ *         } else {
+ *             return new Response(null, { status: 204 });
+ *         }
+ *     }
+ * }
+ * ```
+ */
+export function suggestResponseType(
+    req: Request
+): "text" | "html" | "xml" | "json" | "stream" | "none" {
+    const accepts = req.headers.get("Accept");
+    const accept = accepts
+        ? parseAccepts(accepts).sort((a, b) => b.weight - a.weight)[0]?.type
+        : null;
+    const acceptAll = !accept || accept === "*/*";
+    const contentType = req.headers.get("Content-Type");
+    const fetchDest = req.headers.get("Sec-Fetch-Dest") || req.destination;
+    const xhr = req.headers.get("X-Requested-With") === "XMLHttpRequest";
+
+    if (req.method === "HEAD" || req.method === "OPTIONS") {
+        return "none";
+    } else if (accept?.includes("text/event-stream")
+        || accept?.includes("application/octet-stream")
+        || accept?.includes("multipart/form-data")
+        || /(image|audio|video)\//.test(accept ?? "")
+        || ["font", "image", "audio", "video", "object", "embed"].includes(fetchDest)
+    ) {
+        return "stream";
+    } else if (accept?.includes("/json")
+        || (acceptAll && (contentType?.includes("json") || xhr))
+        || fetchDest === "manifest"
+    ) {
+        return "json";
+    } else if (accept?.includes("/xml")
+        || (acceptAll && contentType?.includes("xml"))
+        || fetchDest === "xslt"
+    ) {
+        return "xml";
+    } else if (accept?.includes("/html")
+        || fetchDest === "document"
+    ) {
+        return "html";
+    } else {
+        const { pathname } = new URL(req.url);
+
+        if (pathname === "/api" ||
+            pathname.startsWith("/api/") ||
+            /\.json?$/i.test(pathname)
+        ) {
+            return "json";
+        } else if (/\.xml$/i.test(pathname)) {
+            return "xml";
+        } else if (/\.html?$/i.test(pathname)) {
+            return "html";
+        } else {
+            return "text";
+        }
+    }
 }

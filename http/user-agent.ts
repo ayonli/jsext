@@ -41,6 +41,20 @@ export interface UserAgentInfo {
 
 /**
  * Parses the `User-Agent` header or the `navigator.userAgent` property.
+ * 
+ * @example
+ * ```ts
+ * const ua = parseUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+ * console.log(ua);
+ * // {
+ * //     name: "Chrome",
+ * //     version: "91.0.4472.124",
+ * //     runtime: { identity: "chrome", version: "91.0.4472.124" },
+ * //     platform: "windows",
+ * //     mobile: false,
+ * //     raw: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+ * // }
+ * ```
  */
 export function parseUserAgent(str: string): UserAgentInfo {
     if (!str)
