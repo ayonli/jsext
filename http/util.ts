@@ -338,20 +338,14 @@ export function stringifyCookies(cookies: Cookie[]): string {
  * 
  * @example
  * ```ts
- * import { getCookies, getCookie, setCookie } from "@ayonli/jsext/http";
+ * import { getCookies } from "@ayonli/jsext/http";
  * 
  * export default {
  *     fetch(req: Request) {
  *         const cookies = getCookies(req);
  *         console.log(cookies);
- *         
- *         const cookie = getCookie(req, "foo");
- *         console.log(cookie);
  * 
- *         const res = new Response("Hello, World!");
- *         setCookie(res, { name: "hello", value: "world" });
- * 
- *         return res;
+ *         return new Response("Hello, World!");
  *     }
  * }
  * ```
@@ -370,20 +364,14 @@ export function getCookies(obj: Request | Response): Cookie[] {
  * 
  * @example
  * ```ts
- * import { getCookies, getCookie, setCookie } from "@ayonli/jsext/http";
+ * import { getCookie } from "@ayonli/jsext/http";
  * 
  * export default {
  *     fetch(req: Request) {
- *         const cookies = getCookies(req);
- *         console.log(cookies);
- *         
  *         const cookie = getCookie(req, "foo");
  *         console.log(cookie);
  * 
- *         const res = new Response("Hello, World!");
- *         setCookie(res, { name: "hello", value: "world" });
- * 
- *         return res;
+ *         return new Response("Hello, World!");
  *     }
  * }
  * ```
@@ -401,16 +389,10 @@ export function getCookie(obj: Request | Response, name: string): Cookie | null 
  * 
  * @example
  * ```ts
- * import { getCookies, getCookie, setCookie } from "@ayonli/jsext/http";
+ * import { setCookie } from "@ayonli/jsext/http";
  * 
  * export default {
  *     fetch(req: Request) {
- *         const cookies = getCookies(req);
- *         console.log(cookies);
- *         
- *         const cookie = getCookie(req, "foo");
- *         console.log(cookie);
- * 
  *         const res = new Response("Hello, World!");
  *         setCookie(res, { name: "hello", value: "world" });
  * 
