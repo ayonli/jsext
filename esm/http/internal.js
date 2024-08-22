@@ -15,15 +15,26 @@ import { dedent, capitalize } from '../string.js';
  * @module
  * @experimental
  */
+function sanitizeTimers(timers) {
+    const total = timers.get("total");
+    const _timers = new Map([...timers].filter(([name, metrics]) => !!metrics.timeEnd && name !== "total"));
+    if (!!(total === null || total === void 0 ? void 0 : total.timeEnd)) {
+        _timers.set("total", total);
+    }
+    return _timers;
+}
 /**
  * Creates timing functions for measuring the request processing time. This
  * function returns the timing functions and a `timers` map that associates
- * to them.
+ * with them.
  */
 function createTimingFunctions() {
     const timers = new Map();
     return {
         timers,
+        getTimers: (sanitize = false) => {
+            return sanitize ? sanitizeTimers(timers) : timers;
+        },
         time: (name, description) => {
             if (timers.has(name)) {
                 console.warn(`Timer '${name}' already exists`);
@@ -62,28 +73,17 @@ function createRequestContext(request, props) {
  * Patches the timing metrics to the response's headers.
  */
 function patchTimingMetrics(response, timers) {
-    const total = timers.get("total");
-    let metrics = [...timers].filter(([label, metrics]) => {
-        return typeof metrics.timeEnd === "number" && label !== "total";
-    }).map(([name, metrics]) => {
+    const metrics = [...sanitizeTimers(timers)].map(([name, metrics]) => {
         const duration = metrics.timeEnd - metrics.timeStart;
         let value = `${name};dur=${duration}`;
         if (metrics.description) {
             value += `;desc="${metrics.description}"`;
         }
+        else if (name === "total") {
+            value += `;desc="Total"`;
+        }
         return value;
     }).join(", ");
-    if (total && typeof total.timeEnd === "number") { // patch total timer at the end
-        const duration = total.timeEnd - total.timeStart;
-        const desc = total.description || "Total";
-        const totalValue = `total;dur=${duration};desc="${desc}"`;
-        if (metrics) {
-            metrics += `, ${totalValue}`;
-        }
-        else {
-            metrics = totalValue;
-        }
-    }
     if (metrics) {
         try {
             response.headers.set("Server-Timing", metrics);
@@ -152,7 +152,7 @@ function listenFetchEvent(options) {
         var _a, _b, _c;
         const { request } = event;
         const address = (_a = request.headers.get("cf-connecting-ip")) !== null && _a !== void 0 ? _a : (_b = event.client) === null || _b === void 0 ? void 0 : _b.address;
-        const { timers, time, timeEnd } = createTimingFunctions();
+        const { getTimers, time, timeEnd } = createTimingFunctions();
         const ctx = createRequestContext(request, {
             ws,
             remoteAddress: address ? {
@@ -168,7 +168,7 @@ function listenFetchEvent(options) {
         const _handle = withHeaders(fetch, headers);
         const _onError = withHeaders(onError, headers);
         const response = _handle(request, ctx)
-            .then(res => patchTimingMetrics(res, timers))
+            .then(res => patchTimingMetrics(res, getTimers()))
             .catch(err => _onError(err, request, ctx));
         event.respondWith(response);
     });

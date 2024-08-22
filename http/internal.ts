@@ -26,20 +26,47 @@ export interface TimingMetrics {
     description?: string | undefined;
 }
 
-export type TimingFunctions = Pick<RequestContext, "time" | "timeEnd">;
+export type TimingFunctions = Pick<RequestContext, "time" | "timeEnd"> & {
+    /**
+     * Returns the timers map associated with the timing functions. If
+     * `sanitize` is set, a new map is returned which excludes timers that have
+     * not ended yet, and will move the `total` timer to the end of the map if
+     * present.
+     */
+    getTimers: (sanitize?: boolean) => Map<string, TimingMetrics>;
+};
+
+function sanitizeTimers(timers: Map<string, TimingMetrics>): Map<string, TimingMetrics> {
+    const total = timers.get("total");
+    const _timers = new Map([...timers].filter(
+        ([name, metrics]) => !!metrics.timeEnd && name !== "total"
+    ));
+
+    if (!!total?.timeEnd) {
+        _timers.set("total", total);
+    }
+
+    return _timers;
+}
 
 /**
  * Creates timing functions for measuring the request processing time. This
  * function returns the timing functions and a `timers` map that associates
- * to them.
+ * with them.
  */
 export function createTimingFunctions(): TimingFunctions & {
+    /**
+     * @deprecated use `getTimers` instead.
+     */
     timers: Map<string, TimingMetrics>;
 } {
     const timers = new Map<string, TimingMetrics>();
 
     return {
         timers,
+        getTimers: (sanitize = false) => {
+            return sanitize ? sanitizeTimers(timers) : timers;
+        },
         time: (name: string, description?: string) => {
             if (timers.has(name)) {
                 console.warn(`Timer '${name}' already exists`);
@@ -64,7 +91,7 @@ export function createTimingFunctions(): TimingFunctions & {
  */
 export function createRequestContext(
     request: Request,
-    props: Pick<RequestContext, "remoteAddress" | "waitUntil" | "bindings"> & TimingFunctions & {
+    props: Pick<RequestContext, "remoteAddress" | "waitUntil" | "bindings" | "time" | "timeEnd"> & {
         ws: WebSocketServer;
     }
 ): RequestContext {
@@ -87,31 +114,18 @@ export function patchTimingMetrics(
     response: Response,
     timers: Map<string, TimingMetrics>
 ): Response {
-    const total = timers.get("total");
-    let metrics = [...timers].filter(([label, metrics]) => {
-        return typeof metrics.timeEnd === "number" && label !== "total";
-    }).map(([name, metrics]) => {
+    const metrics = [...sanitizeTimers(timers)].map(([name, metrics]) => {
         const duration = metrics.timeEnd! - metrics.timeStart;
         let value = `${name};dur=${duration}`;
 
         if (metrics.description) {
             value += `;desc="${metrics.description}"`;
+        } else if (name === "total") {
+            value += `;desc="Total"`;
         }
 
         return value;
     }).join(", ");
-
-    if (total && typeof total.timeEnd === "number") { // patch total timer at the end
-        const duration = total.timeEnd - total.timeStart;
-        const desc = total.description || "Total";
-        const totalValue = `total;dur=${duration};desc="${desc}"`;
-
-        if (metrics) {
-            metrics += `, ${totalValue}`;
-        } else {
-            metrics = totalValue;
-        }
-    }
 
     if (metrics) {
         try {
@@ -195,7 +209,7 @@ export function listenFetchEvent(options: Pick<ServeOptions, "fetch" | "headers"
         const { request } = event;
         const address = request.headers.get("cf-connecting-ip")
             ?? event.client?.address;
-        const { timers, time, timeEnd } = createTimingFunctions();
+        const { getTimers, time, timeEnd } = createTimingFunctions();
         const ctx = createRequestContext(request, {
             ws,
             remoteAddress: address ? {
@@ -212,7 +226,7 @@ export function listenFetchEvent(options: Pick<ServeOptions, "fetch" | "headers"
         const _handle = withHeaders(fetch, headers);
         const _onError = withHeaders(onError, headers);
         const response = _handle(request, ctx)
-            .then(res => patchTimingMetrics(res, timers))
+            .then(res => patchTimingMetrics(res, getTimers()))
             .catch(err => _onError(err, request, ctx));
 
         event.respondWith(response);

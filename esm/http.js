@@ -348,7 +348,7 @@ function serve(options) {
                     signal: controller.signal,
                     onListen: () => task.resolve(),
                 }, (req, info) => {
-                    const { timers, time, timeEnd } = createTimingFunctions();
+                    const { getTimers, time, timeEnd } = createTimingFunctions();
                     const ctx = createRequestContext(req, {
                         ws,
                         remoteAddress: {
@@ -362,7 +362,7 @@ function serve(options) {
                     const _handle = withHeaders(handle, headers);
                     const _onError = withHeaders(onError, headers);
                     return _handle(req, ctx)
-                        .then(res => patchTimingMetrics(res, timers))
+                        .then(res => patchTimingMetrics(res, getTimers()))
                         .catch(err => _onError(err, req, ctx));
                 });
                 await task;
@@ -381,7 +381,7 @@ function serve(options) {
                     port,
                     tls,
                     fetch: (req, server) => {
-                        const { timers, time, timeEnd } = createTimingFunctions();
+                        const { getTimers, time, timeEnd } = createTimingFunctions();
                         const ctx = createRequestContext(req, {
                             ws,
                             remoteAddress: server.requestIP(req),
@@ -391,7 +391,7 @@ function serve(options) {
                         const _handle = withHeaders(handle, headers);
                         const _onError = withHeaders(onError, headers);
                         return _handle(req, ctx)
-                            .then(res => patchTimingMetrics(res, timers))
+                            .then(res => patchTimingMetrics(res, getTimers()))
                             .catch(err => _onError(err, req, ctx));
                     },
                     websocket: ws.bunListener,
@@ -406,12 +406,12 @@ function serve(options) {
         else if (isNode) {
             if (type === "classic") {
                 const reqListener = withWeb((req, info) => {
-                    const { timers, time, timeEnd } = createTimingFunctions();
+                    const { getTimers, time, timeEnd } = createTimingFunctions();
                     const ctx = createRequestContext(req, { ws, ...info, time, timeEnd });
                     const _handle = withHeaders(handle, headers);
                     const _onError = withHeaders(onError, headers);
                     return _handle(req, ctx)
-                        .then(res => patchTimingMetrics(res, timers))
+                        .then(res => patchTimingMetrics(res, getTimers()))
                         .catch(err => _onError(err, req, ctx));
                 });
                 if (key && cert) {
