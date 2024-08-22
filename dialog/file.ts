@@ -40,7 +40,7 @@ export interface PickFileOptions extends FileDialogOptions {
  * Opens the file picker dialog and pick a file, this function returns the
  * file's path or a `FileSystemFileHandle` in the browser.
  * 
- * NOTE: Browser support is limited to the chromium family.
+ * NOTE: Browser support is limited to the chromium-based browsers.
  * 
  * @example
  * ```ts
@@ -129,7 +129,7 @@ export async function pickFile(
  * the paths or `FileSystemFileHandle` objects in the browser of the files
  * selected.
  * 
- * NOTE: Browser support is limited to the chromium family.
+ * NOTE: Browser support is limited to the chromium-based browsers.
  * 
  * @example
  * ```ts
@@ -184,7 +184,7 @@ export async function pickFiles(
  * Opens the file picker dialog and pick a directory, this function returns the
  * directory's path or `FileSystemDirectoryHandle` in the browser.
  * 
- * NOTE: Browser support is limited to the chromium family.
+ * NOTE: Browser support is limited to the chromium-based browsers.
  * 
  * @example
  * ```ts
@@ -496,9 +496,10 @@ export interface SaveFileOptions {
 /**
  * Saves a file to the file system.
  * 
- * In the CLI and chromium browsers, this function will open a dialog to let the
- * user choose the location where the file will be saved. In others browsers,
- * the file will be saved to the default download location.
+ * In the CLI, this function will open a dialog to let the user choose the
+ * location where the file will be saved. In the browser, the file will be saved
+ * to the default download location, or the browser will prompt the user to
+ * choose a location.
  * 
  * @example
  * ```ts
@@ -529,28 +530,6 @@ export async function saveFile(
     file: File | Blob | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array>,
     options: SaveFileOptions = {}
 ): Promise<void> {
-    if (typeof (globalThis as any)["showSaveFilePicker"] === "function") {
-        try {
-            const { browserPickFile } = await import("./browser/file.ts");
-            const handle = await browserPickFile(options.type, {
-                forSave: true,
-                defaultName: options.name || as(file, File)?.name,
-            });
-
-            if (handle) {
-                await writeFile(handle, file, pick(options, ["signal"]));
-            }
-
-            return;
-        } catch (err) {
-            // A `SecurityError` is typically thrown due to lack of user activation.
-            // We can ignore this error and fallback to the default download behavior.
-            if ((err as DOMException).name !== "SecurityError") {
-                throw err;
-            }
-        }
-    }
-
     if (isBrowserWindow) {
         const a = document.createElement("a");
 
@@ -620,9 +599,10 @@ export interface DownloadFileOptions extends SaveFileOptions {
 /**
  * Downloads the file of the given URL to the file system.
  * 
- * In the CLI and chromium browsers, this function will open a dialog to let the
- * user choose the location where the file will be saved. In others browsers,
- * the file will be saved to the default download location.
+ * In the CLI, this function will open a dialog to let the user choose the
+ * location where the file will be saved. In the browser, the file will be saved
+ * to the default download location, or the browser will prompt the user to
+ * choose a location.
  * 
  * NOTE: This function depends on the Fetch API and Web Streams API, in Node.js,
  * it requires Node.js v18.0 or above.
@@ -640,52 +620,26 @@ export async function downloadFile(
 ): Promise<void> {
     const src = typeof url === "object" ? url.href : url;
     const name = options.name || basename(src);
-    let dest: string | FileSystemFileHandle | null = null;
 
-    if (typeof (globalThis as any)["showSaveFilePicker"] === "function") {
-        try {
-            const { browserPickFile } = await import("./browser/file.ts");
-            dest = await browserPickFile(options.type, {
-                forSave: true,
-                defaultName: name,
-            });
-
-            if (!dest) // user canceled
-                return;
-        } catch (err) {
-            // A `SecurityError` is typically thrown due to lack of user activation.
-            // We can ignore this error and fallback to the default download behavior.
-            if ((err as DOMException).name !== "SecurityError") {
-                throw err;
-            }
-        }
-    }
-
-    if (!dest) {
-        if (isBrowserWindow) {
-            const a = document.createElement("a");
-            a.href = src;
-            a.download = name;
-            a.click();
-            return;
-        } else if (isDeno || isNodeLike) {
-            dest = await pickFile({
-                title: options.title,
-                type: options.type,
-                forSave: true,
-                defaultName: name,
-            }) as string | null;
-
-            if (!dest) // user canceled
-                return;
-        } else {
-            throw new Error("Unsupported runtime");
-        }
-    }
-
-    if (typeof fetch !== "function") {
+    if (isBrowserWindow) {
+        const a = document.createElement("a");
+        a.href = src;
+        a.download = name;
+        a.click();
+        return;
+    } else if (!isDeno && !isNodeLike || typeof fetch !== "function") {
         throw new Error("Unsupported runtime");
     }
+
+    const dest = await pickFile({
+        title: options.title,
+        type: options.type,
+        forSave: true,
+        defaultName: name,
+    }) as string | null;
+
+    if (!dest) // user canceled
+        return;
 
     const task = asyncTask<void>();
     let signal = options.signal ?? null;

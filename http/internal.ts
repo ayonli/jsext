@@ -41,7 +41,11 @@ export function createTimingFunctions(): TimingFunctions & {
     return {
         timers,
         time: (name: string, description?: string) => {
-            timers.set(name, { timeStart: Date.now(), description });
+            if (timers.has(name)) {
+                console.warn(`Timer '${name}' already exists`);
+            } else {
+                timers.set(name, { timeStart: Date.now(), description });
+            }
         },
         timeEnd: (name: string) => {
             const metrics = timers.get(name);
