@@ -268,6 +268,10 @@ async function select(tasks, signal = undefined) {
  */
 function abortWith(parent, options = undefined) {
     const ctrl = new AbortController();
+    if (parent.aborted) {
+        ctrl.abort(parent.reason);
+        return ctrl;
+    }
     const { signal } = ctrl;
     const abort = () => {
         signal.aborted || ctrl.abort(parent.reason);

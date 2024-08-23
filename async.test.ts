@@ -557,6 +557,16 @@ describe("async", () => {
             strictEqual(child.signal.reason, parent.signal.reason);
         });
 
+        it("aborted by an already aborted parent", () => {
+            const parent = new AbortController();
+            parent.abort();
+            const child = abortWith(parent.signal);
+
+            ok(parent.signal.aborted);
+            ok(child.signal.aborted);
+            strictEqual(child.signal.reason, parent.signal.reason);
+        });
+
         it("aborted by timeout", async () => {
             const parent = new AbortController();
             const child = abortWith(parent.signal, {

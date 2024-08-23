@@ -363,6 +363,12 @@ export function abortWith(
     options: AbortOptions | undefined = undefined
 ): AbortController {
     const ctrl = new AbortController();
+
+    if (parent.aborted) {
+        ctrl.abort(parent.reason);
+        return ctrl;
+    }
+
     const { signal } = ctrl;
     const abort = () => {
         signal.aborted || ctrl.abort(parent.reason);
