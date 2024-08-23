@@ -306,7 +306,7 @@ export class Server {
                 delete this.fetch;
             } else {
                 this.fetch = (req) => {
-                    const { timers, time, timeEnd } = createTimingFunctions();
+                    const { getTimers, time, timeEnd } = createTimingFunctions();
                     const ctx = createRequestContext(req, {
                         ws,
                         remoteAddress: null,
@@ -317,7 +317,7 @@ export class Server {
                     const _onError = withHeaders(onError, headers);
 
                     return _handle(req, ctx)
-                        .then(res => patchTimingMetrics(res, timers))
+                        .then(res => patchTimingMetrics(res, getTimers()))
                         .catch(err => _onError(err, req, ctx));
                 };
             }
@@ -328,7 +328,7 @@ export class Server {
                 this.fetch = (req, server: BunServer) => {
                     ws.bunBind(server);
 
-                    const { timers, time, timeEnd } = createTimingFunctions();
+                    const { getTimers, time, timeEnd } = createTimingFunctions();
                     const ctx = createRequestContext(req, {
                         ws,
                         remoteAddress: server.requestIP(req),
@@ -339,7 +339,7 @@ export class Server {
                     const _onError = withHeaders(onError, headers);
 
                     return _handle(req, ctx)
-                        .then(res => patchTimingMetrics(res, timers))
+                        .then(res => patchTimingMetrics(res, getTimers()))
                         .catch(err => _onError(err, req, ctx));
                 };
 
@@ -383,7 +383,7 @@ export class Server {
                     }
 
                     const address = req.headers.get("cf-connecting-ip");
-                    const { timers, time, timeEnd } = createTimingFunctions();
+                    const { getTimers, time, timeEnd } = createTimingFunctions();
                     const ctx = createRequestContext(req, {
                         ws,
                         remoteAddress: address ? {
@@ -401,7 +401,7 @@ export class Server {
                     const _onError = withHeaders(onError, headers);
 
                     return _handle(req, ctx)
-                        .then(res => patchTimingMetrics(res, timers))
+                        .then(res => patchTimingMetrics(res, getTimers()))
                         .catch(err => _onError(err, req, ctx));
                 };
             }
