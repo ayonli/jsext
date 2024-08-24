@@ -579,5 +579,54 @@ describe("async", () => {
             ok(child.signal.aborted);
             strictEqual((child.signal.reason as Error)?.name, "TimeoutError");
         });
+
+        it("secondary signature", async () => {
+            const parent0 = new AbortController();
+            const child0 = abortWith({
+                parent: parent0.signal,
+                timeout: 50,
+            });
+
+            child0.abort();
+            ok(!parent0.signal.aborted);
+            ok(child0.signal.aborted);
+
+            const parent1 = new AbortController();
+            const child1 = abortWith({
+                parent: parent1.signal,
+                timeout: 50,
+            });
+
+            parent1.abort();
+            ok(parent1.signal.aborted);
+            ok(child1.signal.aborted);
+            strictEqual(child1.signal.reason, parent1.signal.reason);
+
+            const parent2 = new AbortController();
+            parent2.abort();
+            const child2 = abortWith({
+                parent: parent2.signal,
+                timeout: 50,
+            });
+
+            ok(parent2.signal.aborted);
+            ok(child2.signal.aborted);
+            strictEqual(child2.signal.reason, parent2.signal.reason);
+
+            const parent3 = new AbortController();
+            const child3 = abortWith({
+                parent: parent3.signal,
+                timeout: 50,
+            });
+
+            await Promise.sleep(100);
+            ok(!parent3.signal.aborted);
+            ok(child3.signal.aborted);
+            strictEqual((child3.signal.reason as Error)?.name, "TimeoutError");
+
+            const [err, child4] = _try(() => abortWith({}));
+            strictEqual((err as Error)?.name, "TypeError");
+            strictEqual(child4, undefined);
+        });
     });
 });

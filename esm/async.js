@@ -242,46 +242,36 @@ async function select(tasks, signal = undefined) {
         _signal.aborted || ctrl.abort();
     });
 }
-/**
- * Creates a new abort controller with a `parent` signal, the new abort signal
- * will be aborted if the controller's `abort` method is called or when the
- * parent signal is aborted, whichever happens first.
- *
- * @example
- * ```ts
- * import { abortWith } from "@ayonli/jsext/async";
- *
- * const parent = new AbortController();
- * const child1 = abortWith(parent.signal);
- * const child2 = abortWith(parent.signal);
- *
- * child1.abort();
- *
- * console.assert(child1.signal.aborted);
- * console.assert(!parent.signal.aborted);
- *
- * parent.abort();
- *
- * console.assert(child2.signal.aborted);
- * console.assert(child2.signal.reason === parent.signal.reason);
- * ```
- */
-function abortWith(parent, options = undefined) {
-    const ctrl = new AbortController();
-    if (parent.aborted) {
-        ctrl.abort(parent.reason);
-        return ctrl;
+function abortWith(_parent, options = undefined) {
+    let parent;
+    let timeout;
+    if (_parent instanceof AbortSignal) {
+        parent = _parent;
+        timeout = options === null || options === void 0 ? void 0 : options.timeout;
     }
+    else if (_parent) {
+        parent = _parent.parent;
+        timeout = _parent.timeout;
+    }
+    if (!parent && !timeout) {
+        throw new TypeError("Must provide a parent signal or a timeout value, or both");
+    }
+    const ctrl = new AbortController();
     const { signal } = ctrl;
-    const abort = () => {
-        signal.aborted || ctrl.abort(parent.reason);
-    };
-    parent.addEventListener("abort", abort, { once: true });
-    signal.addEventListener("abort", () => {
-        parent.aborted || parent.removeEventListener("abort", abort);
-    });
-    if (options === null || options === void 0 ? void 0 : options.timeout) {
-        const { timeout } = options;
+    if (parent) {
+        if (parent.aborted) {
+            ctrl.abort(parent.reason);
+            return ctrl;
+        }
+        const abort = () => {
+            signal.aborted || ctrl.abort(parent.reason);
+        };
+        parent.addEventListener("abort", abort, { once: true });
+        signal.addEventListener("abort", () => {
+            parent.aborted || parent.removeEventListener("abort", abort);
+        });
+    }
+    if (timeout) {
         const timer = setTimeout(() => {
             signal.aborted || ctrl.abort(createTimeoutError(timeout));
         }, timeout);
