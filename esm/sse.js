@@ -156,12 +156,11 @@ class EventEndpoint extends EventTarget {
                     res.write(chunk);
                 },
                 close() {
-                    _this[_closed] = true;
                     res.closed || res.end();
+                    _this[_closed] = true;
                     _this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
                 },
                 abort(err) {
-                    _this[_closed] = true;
                     res.closed || res.destroy(err);
                 },
             });
@@ -203,6 +202,7 @@ class EventEndpoint extends EventTarget {
                                 controller.close();
                             }
                             catch (_o) { }
+                            _this[_closed] = true;
                             _this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
                             break;
                         }
@@ -210,7 +210,6 @@ class EventEndpoint extends EventTarget {
                     }
                 },
                 async cancel(reason) {
-                    _this[_closed] = true;
                     await reader.cancel(reason);
                 }
             });
@@ -482,7 +481,7 @@ class EventSource extends EventTarget {
         this.CONNECTING = EventSource.CONNECTING;
         this.OPEN = EventSource.OPEN;
         this.CLOSED = EventSource.CLOSED;
-        url = new URL(url, typeof location === "object" ? location.origin : undefined).href;
+        url = typeof url === "object" ? url.href : new URL(url, typeof location === "object" ? location.href : undefined).href;
         setReadonly(this, "url", url);
         setReadonly(this, "withCredentials", (_o = options.withCredentials) !== null && _o !== void 0 ? _o : false);
         setReadonly(this, "readyState", this.CONNECTING);
@@ -496,7 +495,6 @@ class EventSource extends EventTarget {
         if (this.readyState === this.CLOSED) {
             return;
         }
-        const connectedBefore = this.readyState === this.OPEN;
         setReadonly(this, "readyState", this.CONNECTING);
         const headers = {
             "Accept": "text/event-stream",
@@ -511,21 +509,13 @@ class EventSource extends EventTarget {
             signal: this[_controller].signal,
         });
         const [err, res] = await _try(fetch(this[_request]));
-        if (this.readyState === this.CLOSED) { // The connection is aborted
-            return;
-        }
         if (err || (res === null || res === void 0 ? void 0 : res.type) === "error") {
-            if (!connectedBefore) { // The first attempt, fail the connection
-                setReadonly(this, "readyState", this.CLOSED);
-                const event = createErrorEvent("error", {
-                    error: new Error(`Failed to fetch '${this.url}'`),
-                });
-                this.dispatchEvent(event);
-                (_o = this.onerror) === null || _o === void 0 ? void 0 : _o.call(this, event);
-            }
-            else { // During reconnection, try again
-                this.tryReconnect();
-            }
+            const event = createErrorEvent("error", {
+                error: err || new Error(`Failed to fetch '${this.url}'`),
+            });
+            this.dispatchEvent(event);
+            (_o = this.onerror) === null || _o === void 0 ? void 0 : _o.call(this, event);
+            this.tryReconnect();
             return;
         }
         else if (res.status === 204) { // No more data, close the connection
@@ -535,34 +525,35 @@ class EventSource extends EventTarget {
         else if (res.status !== 200) {
             setReadonly(this, "readyState", this.CLOSED);
             const event = createErrorEvent("error", {
-                error: new Error(`The server responded with status ${res.status}.`),
+                error: new TypeError(`The server responded with status ${res.status}.`),
             });
             this.dispatchEvent(event);
             (_p = this.onerror) === null || _p === void 0 ? void 0 : _p.call(this, event);
             return;
         }
         else if (!((_q = res.headers.get("Content-Type")) === null || _q === void 0 ? void 0 : _q.startsWith("text/event-stream"))) {
+            setReadonly(this, "readyState", this.CLOSED);
             const event = createErrorEvent("error", {
-                error: new Error("The response is not an event stream."),
+                error: new TypeError("The response is not an event stream."),
             });
             this.dispatchEvent(event);
             (_r = this.onerror) === null || _r === void 0 ? void 0 : _r.call(this, event);
             return;
         }
         else if (!res.body) {
+            setReadonly(this, "readyState", this.CLOSED);
             const event = createErrorEvent("error", {
-                error: new Error("The response does not have a body."),
+                error: new TypeError("The response does not have a body."),
             });
             this.dispatchEvent(event);
             (_s = this.onerror) === null || _s === void 0 ? void 0 : _s.call(this, event);
             return;
         }
         setReadonly(this, "readyState", this.OPEN);
-        if (!connectedBefore) {
-            const event = new Event("open");
-            this.dispatchEvent(event);
-            (_t = this.onopen) === null || _t === void 0 ? void 0 : _t.call(this, event);
-        }
+        this[_retry] = 0;
+        const event = new Event("open");
+        this.dispatchEvent(event);
+        (_t = this.onopen) === null || _t === void 0 ? void 0 : _t.call(this, event);
         const origin = new URL(res.url || this.url).origin;
         await readAndProcessResponse(res, {
             onId: (id) => {
@@ -587,6 +578,7 @@ class EventSource extends EventTarget {
                     const event = createErrorEvent("error", { error });
                     this.dispatchEvent(event);
                     (_o = this.onerror) === null || _o === void 0 ? void 0 : _o.call(this, event);
+                    this.tryReconnect();
                 }
             },
             onEnd: () => {
@@ -608,9 +600,7 @@ class EventSource extends EventTarget {
             this[_timer] = null;
         }
         this[_timer] = setTimeout(() => {
-            this.connect().then(() => {
-                this[_retry] = 0;
-            }).catch(() => { });
+            this.connect().catch(() => { });
         }, this[_reconnectionTime] || 1000 * Math.min(30, Math.pow(2, this[_retry]++)));
     }
     /**
