@@ -101,12 +101,8 @@ categories:
   arrays.
 - [async](https://jsr.io/@ayonli/jsext/doc/async/~) Functions for async/promise
   context handling.
-  - Historically, this module was named `promise`, but that name has been
-    deprecated.
 - [bytes](https://jsr.io/@ayonli/jsext/doc/bytes/~) Functions for dealing with
   byte arrays (`Uint8Array`).
-  - Historically, this module was named `uint8array`, but that name has been
-    deprecated.
 - [class](https://jsr.io/@ayonli/jsext/doc/class/~) Functions for dealing with
   classes.
 - [cli](https://jsr.io/@ayonli/jsext/doc/cli/~) (Experimental) Useful utility
@@ -139,14 +135,10 @@ categories:
   numbers.
 - [object](https://jsr.io/@ayonli/jsext/doc/object/~) Functions for dealing with
   objects.
-- [path](https://jsr.io/@ayonli/jsext/doc/path/~) (Experimental)
-  Platform-independent utility functions for dealing with file system paths and
-  URLs.
+- [path](https://jsr.io/@ayonli/jsext/doc/path/~) Platform-independent utility
+  functions for dealing with file system paths and URLs.
 - [reader](https://jsr.io/@ayonli/jsext/doc/reader/~) Utility functions for
   reading data from various types of source into various forms.
-  - Historically, there was a `read` module and a `realAll` module, but they
-    have been merged into this module as the `toAsyncIterable` function and the
-    `readAsArray` function.
 - [runtime](https://jsr.io/@ayonli/jsext/doc/runtime/~) (Experimental) Utility
   functions to retrieve runtime information or configure runtime behaviors.
 - [sse](https://jsr.io/@ayonli/jsext/doc/sse/~) (Experimental) Tools for

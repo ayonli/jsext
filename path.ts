@@ -5,7 +5,6 @@
  * The functions in this module are designed to be generic and work in any
  * runtime, whether server-side or browsers. They can be used for both system
  * paths and URLs.
- * @experimental
  * @module
  */
 
