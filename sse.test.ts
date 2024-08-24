@@ -951,6 +951,7 @@ describe("sse", () => {
                 }
             });
             defer(() => server.close(true));
+            await server.ready;
 
             const es = new EventSource("http://localhost:" + port);
             defer(() => es.close());
@@ -975,6 +976,7 @@ describe("sse", () => {
                 }
             });
             defer(() => server.close(true));
+            await server.ready;
 
             const es = new EventSource("http://localhost:" + port);
             defer(() => es.close());
@@ -999,6 +1001,7 @@ describe("sse", () => {
                 }
             });
             defer(() => server.close(true));
+            await server.ready;
 
             const es = new EventSource("http://localhost:" + port);
             defer(() => es.close());
