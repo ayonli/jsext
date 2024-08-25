@@ -34,9 +34,9 @@
  * In Node.js, we can also do this:
  * 
  * ```sh
- * tsx --import=@ayonli/jsext/http <entry.ts>
+ * tsx --import=@ayonli/jsext/http <entry.ts> [--port PORT] [--parallel [NUM]]
  * # or
- * node -r @ayonli/jsext/http <entry.js>
+ * node -r @ayonli/jsext/http <entry.js> [--port PORT] [--parallel [NUM]]
  * ```
  * @module
  * @experimental
