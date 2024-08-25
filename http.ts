@@ -44,6 +44,7 @@
 
 import type { Server as HttpServer } from "node:http";
 import type { Http2SecureServer } from "node:http2";
+import type { Worker } from "node:cluster";
 import { asyncTask } from "./async.ts";
 import bytes from "./bytes.ts";
 import { args, parseArgs } from "./cli.ts";
@@ -703,9 +704,10 @@ async function startServer(args: string[]) {
     const options = parseArgs(args, {
         alias: { p: "port" }
     });
+    const port = Number.isFinite(options["port"]) ? options["port"] as number : undefined;
+    const parallel = options["parallel"] as boolean | number | undefined;
     let config: Partial<ServeOptions> = {};
     let fetch: ServeOptions["fetch"];
-    let port = Number.isFinite(options["port"]) ? options["port"] as number : undefined;
     let filename = String(options[0] || ".");
     const ext = extname(filename);
 
@@ -727,7 +729,46 @@ async function startServer(args: string[]) {
         listDir: true,
     });
 
-    serve({ ...config, fetch, port, type: "classic" });
+    if (isNode) {
+        import("node:os").then(async ({ availableParallelism }) => {
+            const { default: cluster } = await import("node:cluster");
+
+            if (cluster.isPrimary && parallel) {
+                const _port = port || await randomPort(8000);
+                const max = typeof parallel === "number" ? parallel : availableParallelism();
+                const workers: (Worker | null)[] = new Array(max).fill(null);
+                const forkWorker = (i: number) => {
+                    const worker = cluster.fork({
+                        HTTP_PORT: String(_port),
+                    });
+                    workers[i] = worker;
+
+                    worker.once("exit", (code) => {
+                        workers[i] = null;
+
+                        if (code) {
+                            forkWorker(i);
+                        }
+                    });
+                };
+
+                for (let i = 0; i < max; i++) {
+                    forkWorker(i);
+                }
+            } else if (cluster.isWorker && process.env["HTTP_PORT"]) {
+                serve({
+                    ...config,
+                    fetch,
+                    port: Number(process.env["HTTP_PORT"]!),
+                    type: "classic",
+                });
+            } else {
+                serve({ ...config, fetch, port, type: "classic" });
+            }
+        });
+    } else {
+        serve({ ...config, fetch, port, type: "classic" });
+    }
 }
 
 if ((isDeno || isBun || isNode) && isMain(import.meta)) {

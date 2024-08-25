@@ -663,9 +663,10 @@ async function startServer(args) {
     const options = parseArgs(args, {
         alias: { p: "port" }
     });
+    const port = Number.isFinite(options["port"]) ? options["port"] : undefined;
+    const parallel = options["parallel"];
     let config = {};
     let fetch;
-    let port = Number.isFinite(options["port"]) ? options["port"] : undefined;
     let filename = String(options[0] || ".");
     const ext = extname(filename);
     if (/^\.m?(js|ts)x?/.test(ext)) { // custom entry file
@@ -683,7 +684,45 @@ async function startServer(args) {
         fsDir: filename,
         listDir: true,
     }));
-    serve({ ...config, fetch, port, type: "classic" });
+    if (isNode) {
+        import('node:os').then(async ({ availableParallelism }) => {
+            const { default: cluster } = await import('node:cluster');
+            if (cluster.isPrimary && parallel) {
+                const _port = port || await randomPort(8000);
+                const max = typeof parallel === "number" ? parallel : availableParallelism();
+                const workers = new Array(max).fill(null);
+                const forkWorker = (i) => {
+                    const worker = cluster.fork({
+                        HTTP_PORT: String(_port),
+                    });
+                    workers[i] = worker;
+                    worker.once("exit", (code) => {
+                        workers[i] = null;
+                        if (code) {
+                            forkWorker(i);
+                        }
+                    });
+                };
+                for (let i = 0; i < max; i++) {
+                    forkWorker(i);
+                }
+            }
+            else if (cluster.isWorker && process.env["HTTP_PORT"]) {
+                serve({
+                    ...config,
+                    fetch,
+                    port: Number(process.env["HTTP_PORT"]),
+                    type: "classic",
+                });
+            }
+            else {
+                serve({ ...config, fetch, port, type: "classic" });
+            }
+        });
+    }
+    else {
+        serve({ ...config, fetch, port, type: "classic" });
+    }
 }
 if ((isDeno || isBun || isNode) && isMain(import.meta)) {
     startServer(args);
