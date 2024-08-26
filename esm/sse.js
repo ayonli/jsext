@@ -145,6 +145,7 @@ class EventEndpoint extends EventTarget {
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
                 "Transfer-Encoding": "chunked",
+                "X-Accel-Buffering": "no", // For Nginx
             },
         };
         const _this = this;

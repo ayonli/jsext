@@ -208,6 +208,7 @@ export class EventEndpoint<T extends Request | IncomingMessage | Http2ServerRequ
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
                 "Transfer-Encoding": "chunked",
+                "X-Accel-Buffering": "no", // For Nginx
             },
         };
 
