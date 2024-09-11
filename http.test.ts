@@ -2480,7 +2480,7 @@ describe("http", () => {
             }
 
             const content = await readFileAsText("./examples/index.html");
-            const res = await fetch(`http://localhost:${port}/assets/`, { redirect: "manual" });
+            const res = await fetch(`http://localhost:${port}/assets/`);
             const text = await res.text();
 
             strictEqual(res.status, 200);
@@ -2646,6 +2646,46 @@ describe("http", () => {
             strictEqual(res4.status, 206);
             strictEqual(text4, content.slice(-500));
             strictEqual(res4.headers.get("Content-Range"), `bytes ${content.length - 500}-${content.length - 1}/${content.length}`);
+        }));
+
+        it("with Gzip", func(async (defer) => {
+            const port = await randomPort();
+
+            if (isDeno) {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async (req) => {
+                    return serveStatic(req, {
+                        fsDir: "./examples",
+                        urlPrefix: "/assets",
+                    });
+                });
+                defer(() => controller.abort());
+            } else {
+                const server = http.createServer(withWeb(async (req) => {
+                    return serveStatic(req, {
+                        fsDir: "./examples",
+                        urlPrefix: "/assets",
+                    });
+                }));
+                server.listen(port);
+                defer(() => server.close());
+            }
+
+            const content = await readFileAsText("./examples/index.html");
+            const res = await fetch(`http://localhost:${port}/assets/`, {
+                headers: {
+                    "Accept-Encoding": "gzip",
+                },
+            });
+            const text = await res.text();
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(text, content);
+
+            if (isNode) {
+                strictEqual(res.headers.get("Content-Encoding"), "gzip");
+            }
         }));
 
         it("with headers", func(async (defer) => {

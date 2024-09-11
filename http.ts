@@ -688,9 +688,18 @@ export async function serveStatic(
             headers,
         });
     } else {
-        headers.set("Content-Length", String(info.size));
+        let stream = createReadableStream(filename);
 
-        return new Response(createReadableStream(filename), {
+        if (req.headers.get("Accept-Encoding")?.includes("gzip") &&
+            typeof CompressionStream === "function"
+        ) {
+            stream = stream.pipeThrough(new CompressionStream("gzip"));
+            headers.set("Content-Encoding", "gzip");
+        } else {
+            headers.set("Content-Length", String(info.size));
+        }
+
+        return new Response(stream, {
             status: 200,
             statusText: "OK",
             headers,
@@ -727,6 +736,7 @@ async function startServer(args: string[]) {
     fetch ||= (req) => serveStatic(req, {
         fsDir: filename,
         listDir: true,
+        // gzip: true,
     });
 
     if (isNode) {
