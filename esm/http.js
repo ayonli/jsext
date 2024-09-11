@@ -489,7 +489,7 @@ function serve(options) {
  * ```
  */
 async function serveStatic(req, options = {}) {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e, _f;
     const extraHeaders = (_a = options.headers) !== null && _a !== void 0 ? _a : {};
     const dir = (_b = options.fsDir) !== null && _b !== void 0 ? _b : ".";
     const prefix = options.urlPrefix ? join(options.urlPrefix) : "";
@@ -567,7 +567,7 @@ async function serveStatic(req, options = {}) {
         try {
             range = parseRange(rangeValue);
         }
-        catch (_h) {
+        catch (_g) {
             return new Response("Invalid Range header", {
                 status: 416,
                 statusText: "Range Not Satisfiable",
@@ -651,16 +651,8 @@ async function serveStatic(req, options = {}) {
         });
     }
     else {
-        let stream = createReadableStream(filename);
-        if (((_g = req.headers.get("Accept-Encoding")) === null || _g === void 0 ? void 0 : _g.includes("gzip")) &&
-            typeof CompressionStream === "function") {
-            stream = stream.pipeThrough(new CompressionStream("gzip"));
-            headers.set("Content-Encoding", "gzip");
-        }
-        else {
-            headers.set("Content-Length", String(info.size));
-        }
-        return new Response(stream, {
+        headers.set("Content-Length", String(info.size));
+        return new Response(createReadableStream(filename), {
             status: 200,
             statusText: "OK",
             headers,

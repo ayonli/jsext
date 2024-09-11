@@ -347,7 +347,8 @@ export function withWeb(
                 return;
             }
 
-            toNodeResponse(res, nRes);
+            const gzip = req.headers.get("Accept-Encoding")?.includes("gzip") ?? false;
+            toNodeResponse(res, nRes, gzip);
         }
     };
 }
@@ -436,8 +437,10 @@ function toWebRequest(req: IncomingMessage | Http2ServerRequest): Request {
 /**
  * Pipes a modern `Response` object to a Node.js HTTP response.
  */
-function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResponse): void {
+function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResponse, gzip = false): void {
     const { status, statusText, headers } = res;
+    const length = res.body ? Number(headers.get("Content-Length") ?? 0) : 0;
+    let stream = res.body;
 
     for (const [key, value] of headers) {
         // Use `setHeader` to set headers instead of passing them to `writeHead`,
@@ -446,16 +449,37 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
         nodeRes.setHeader(capitalize(key, true), value);
     }
 
+    // Compress the response body with Gzip if the client supports it and the
+    // requirements are met.
+    if (stream && gzip && typeof CompressionStream === "function" &&
+        length > 20 &&
+        headers.has("Content-Type") &&
+        !headers.has("Content-Encoding") &&
+        !headers.has("Content-Range") &&
+        !headers.get("Cache-Control")?.includes("no-transform")
+    ) {
+        stream = stream.pipeThrough(new CompressionStream("gzip"));
+
+        nodeRes.removeHeader("Content-Length");
+        nodeRes.setHeader("Content-Encoding", "gzip");
+        nodeRes.setHeader("Vary", "Accept-Encoding");
+
+        const etag = headers.get("ETag");
+        if (etag && !etag.startsWith("W/")) {
+            nodeRes.setHeader("ETag", `W/${etag}`);
+        }
+    }
+
     if (nodeRes.req.httpVersion === "2.0") {
         nodeRes.writeHead(status);
     } else {
         nodeRes.writeHead(status, statusText);
     }
 
-    if (!res.body) {
+    if (!stream) {
         nodeRes.end();
     } else {
-        res.body.pipeTo(new WritableStream({
+        stream.pipeTo(new WritableStream({
             start(controller) {
                 nodeRes.once("close", () => {
                     controller.error();

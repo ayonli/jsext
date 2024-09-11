@@ -244,6 +244,7 @@ async function renderDirectoryPage(pathname, entries, extraHeaders = {}) {
  */
 function withWeb(listener) {
     return async (nReq, nRes) => {
+        var _a, _b;
         const remoteAddress = {
             family: nReq.socket.remoteFamily,
             address: nReq.socket.remoteAddress,
@@ -263,7 +264,8 @@ function withWeb(listener) {
                 // response again.
                 return;
             }
-            toNodeResponse(res, nRes);
+            const gzip = (_b = (_a = req.headers.get("Accept-Encoding")) === null || _a === void 0 ? void 0 : _a.includes("gzip")) !== null && _b !== void 0 ? _b : false;
+            toNodeResponse(res, nRes, gzip);
         }
     };
 }
@@ -343,13 +345,33 @@ function toWebRequest(req) {
 /**
  * Pipes a modern `Response` object to a Node.js HTTP response.
  */
-function toNodeResponse(res, nodeRes) {
+function toNodeResponse(res, nodeRes, gzip = false) {
+    var _a, _b;
     const { status, statusText, headers } = res;
+    const length = res.body ? Number((_a = headers.get("Content-Length")) !== null && _a !== void 0 ? _a : 0) : 0;
+    let stream = res.body;
     for (const [key, value] of headers) {
         // Use `setHeader` to set headers instead of passing them to `writeHead`,
         // it seems in Deno, the headers are not written to the response if they
         // are passed to `writeHead`.
         nodeRes.setHeader(capitalize(key, true), value);
+    }
+    // Compress the response body with Gzip if the client supports it and the
+    // requirements are met.
+    if (stream && gzip && typeof CompressionStream === "function" &&
+        length > 20 &&
+        headers.has("Content-Type") &&
+        !headers.has("Content-Encoding") &&
+        !headers.has("Content-Range") &&
+        !((_b = headers.get("Cache-Control")) === null || _b === void 0 ? void 0 : _b.includes("no-transform"))) {
+        stream = stream.pipeThrough(new CompressionStream("gzip"));
+        nodeRes.removeHeader("Content-Length");
+        nodeRes.setHeader("Content-Encoding", "gzip");
+        nodeRes.setHeader("Vary", "Accept-Encoding");
+        const etag = headers.get("ETag");
+        if (etag && !etag.startsWith("W/")) {
+            nodeRes.setHeader("ETag", `W/${etag}`);
+        }
     }
     if (nodeRes.req.httpVersion === "2.0") {
         nodeRes.writeHead(status);
@@ -357,11 +379,11 @@ function toNodeResponse(res, nodeRes) {
     else {
         nodeRes.writeHead(status, statusText);
     }
-    if (!res.body) {
+    if (!stream) {
         nodeRes.end();
     }
     else {
-        res.body.pipeTo(new WritableStream({
+        stream.pipeTo(new WritableStream({
             start(controller) {
                 nodeRes.once("close", () => {
                     controller.error();

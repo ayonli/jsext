@@ -688,18 +688,9 @@ export async function serveStatic(
             headers,
         });
     } else {
-        let stream = createReadableStream(filename);
+        headers.set("Content-Length", String(info.size));
 
-        if (req.headers.get("Accept-Encoding")?.includes("gzip") &&
-            typeof CompressionStream === "function"
-        ) {
-            stream = stream.pipeThrough(new CompressionStream("gzip"));
-            headers.set("Content-Encoding", "gzip");
-        } else {
-            headers.set("Content-Length", String(info.size));
-        }
-
-        return new Response(stream, {
+        return new Response(createReadableStream(filename), {
             status: 200,
             statusText: "OK",
             headers,
