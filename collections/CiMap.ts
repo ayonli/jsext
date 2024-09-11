@@ -15,7 +15,7 @@
  * ```
  */
 export default class CiMap<K extends string, V> extends Map<K, any> {
-    get [Symbol.toStringTag](): "CiMap" {
+    override get [Symbol.toStringTag](): "CiMap" {
         return "CiMap";
     }
 
