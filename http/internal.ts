@@ -348,7 +348,7 @@ export function withWeb(
             }
 
             const gzip = req.headers.get("Accept-Encoding")?.includes("gzip") ?? false;
-            toNodeResponse(res, nRes, gzip);
+            await toNodeResponse(res, nRes, gzip);
         }
     };
 }
@@ -437,9 +437,14 @@ function toWebRequest(req: IncomingMessage | Http2ServerRequest): Request {
 /**
  * Pipes a modern `Response` object to a Node.js HTTP response.
  */
-function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResponse, gzip = false): void {
+async function toNodeResponse(
+    res: Response,
+    nodeRes: ServerResponse | Http2ServerResponse,
+    gzip = false
+): Promise<void> {
     const { status, statusText, headers } = res;
     const length = res.body ? Number(headers.get("Content-Length") ?? 0) : 0;
+    const type = headers.get("Content-Type")?.split(";")[0];
     let stream = res.body;
 
     for (const [key, value] of headers) {
@@ -451,12 +456,13 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
 
     // Compress the response body with Gzip if the client supports it and the
     // requirements are met.
+    // See https://docs.deno.com/deploy/api/compression/
     if (stream && gzip && typeof CompressionStream === "function" &&
-        length > 20 &&
-        headers.has("Content-Type") &&
+        (length > 20 || !headers.has("Content-Length")) &&
         !headers.has("Content-Encoding") &&
         !headers.has("Content-Range") &&
-        !headers.get("Cache-Control")?.includes("no-transform")
+        !headers.get("Cache-Control")?.includes("no-transform") &&
+        (type && isCompressible(type))
     ) {
         stream = stream.pipeThrough(new CompressionStream("gzip"));
 
@@ -479,7 +485,7 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
     if (!stream) {
         nodeRes.end();
     } else {
-        stream.pipeTo(new WritableStream({
+        await stream.pipeTo(new WritableStream({
             start(controller) {
                 nodeRes.once("close", () => {
                     controller.error();
@@ -498,4 +504,9 @@ function toNodeResponse(res: Response, nodeRes: ServerResponse | Http2ServerResp
             },
         }));
     }
+}
+
+const re = /^text\/|^application\/(.+\+)?(json|yaml|toml|xml|javascript|dart|tar|fontobject|opentype)$|^font\/(otf|ttf)$|^image\/((x-ms-)?bmp|svg\+xml|(vnd\.microsoft\.|x-)icon)|vnd\.adobe\.photoshop/;
+function isCompressible(type: string): boolean {
+    return type !== "text/event-stream" && re.test(type);
 }

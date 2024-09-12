@@ -1,5 +1,5 @@
 import bytes, { text } from '../bytes.js';
-import { capitalize } from '../string.js';
+import { capitalize, stripEnd, stripStart } from '../string.js';
 export { parseUserAgent } from './user-agent.js';
 
 /**
@@ -413,7 +413,7 @@ function ifNoneMatch(value, etag) {
     if (value.trim() === "*") {
         return false;
     }
-    const tags = value.split(/\s*,\s*/).map((tag) => tag.startsWith("W/") ? tag.slice(2) : tag);
+    const tags = value.split(/\s*,\s*/).map((tag) => tag.startsWith("W/") ? stripEnd(stripStart(tag.slice(2), '"'), '"') : tag);
     return !tags.includes(etag);
 }
 /**

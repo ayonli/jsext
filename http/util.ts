@@ -5,7 +5,7 @@
  */
 
 import bytes, { text } from "../bytes.ts";
-import { capitalize } from "../string.ts";
+import { capitalize, stripEnd, stripStart } from "../string.ts";
 
 export * from "./user-agent.ts";
 
@@ -574,7 +574,7 @@ export function ifNoneMatch(value: string | null, etag: string): boolean {
     }
 
     const tags = value.split(/\s*,\s*/).map((tag) =>
-        tag.startsWith("W/") ? tag.slice(2) : tag
+        tag.startsWith("W/") ? stripEnd(stripStart(tag.slice(2), '"'), '"') : tag
     );
     return !tags.includes(etag);
 }
