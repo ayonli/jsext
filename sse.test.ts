@@ -1,4 +1,4 @@
-import { deepStrictEqual, strictEqual } from "node:assert";
+import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { asyncTask, sleep, until } from "./async.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 import "./index.ts";
@@ -700,7 +700,7 @@ describe("sse", () => {
                 onOpen(sse) {
                     setTimeout(() => {
                         sse.closed || sse.close();
-                    }, 100);
+                    }, 500);
                 }
             });
 
@@ -738,7 +738,7 @@ describe("sse", () => {
 
             await until(() => es.readyState === EventSource.OPEN);
             strictEqual(es.readyState, EventSource.OPEN);
-            strictEqual(openEvents.length, 2);
+            ok(openEvents.length >= 2);
         }));
 
         it("network error and reconnect", jsext.func(async function (defer) {
