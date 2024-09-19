@@ -123,33 +123,23 @@ function encodeBase64(data) {
  * import { decodeBase64 } from "@ayonli/jsext/encoding";
  *
  * const data = decodeBase64("SGVsbG8sIFdvcmxkIQ==");
- * console.log(new TextDecoder.decode(data)); // "Hello, World!"
+ * console.log(new TextDecoder().decode(data)); // "Hello, World!"
  *
  * const data2 = decodeBase64("5L2g5aW977yM5LiW55WM77yB");
- * console.log(new TextDecoder.decode(data2)); // "你好，世界！"
+ * console.log(new TextDecoder().decode(data2)); // "你好，世界！"
  * ```
  */
 function decodeBase64(base64) {
-    const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
-    const bytes = new Uint8Array((base64.length * 3 / 4) - padding);
-    let i = 0;
-    let j = 0;
-    let c;
-    let c1;
-    let c2;
-    let c3;
-    while (i < base64.length) {
-        c = base64Chars.indexOf(base64[i++]);
-        c1 = base64Chars.indexOf(base64[i++]);
-        c2 = base64Chars.indexOf(base64[i++]);
-        c3 = base64Chars.indexOf(base64[i++]);
-        bytes[j++] = (c << 2) | (c1 >> 4);
-        if (i > base64.length + padding)
-            break;
-        bytes[j++] = ((c1 & 0xf) << 4) | (c2 >> 2);
-        if (i > base64.length + padding)
-            break;
-        bytes[j++] = ((c2 & 0x3) << 6) | c3;
+    if (typeof Buffer === "function" && typeof Buffer.from === "function") {
+        const buf = Buffer.from(base64, "base64");
+        const buffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+        return new Uint8Array(buffer);
+    }
+    const binString = atob(base64);
+    const size = binString.length;
+    const bytes = new Uint8Array(size);
+    for (let i = 0; i < size; i++) {
+        bytes[i] = binString.charCodeAt(i);
     }
     return bytes;
 }
