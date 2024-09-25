@@ -3,7 +3,7 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { globber } from "https://deno.land/x/globber@0.1.0/mod.ts";
 
-(window as any).location = new URL("http://localhost:0");
+(globalThis as any).location = new URL("http://localhost");
 mocha.setup({ ui: "bdd", reporter: "spec" });
 mocha.checkLeaks();
 

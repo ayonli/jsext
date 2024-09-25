@@ -655,12 +655,13 @@ describe("http", () => {
             }
 
             const info = parseUserAgent(navigator.userAgent);
+            const version = Deno.version.deno.replace(/-rc\.\d+$/, "");
             deepStrictEqual(info, {
                 name: "Deno",
-                version: Deno.version.deno,
+                version,
                 runtime: {
                     identity: "deno",
-                    version: Deno.version.deno,
+                    version,
                 },
                 platform: "unknown",
                 mobile: false,
