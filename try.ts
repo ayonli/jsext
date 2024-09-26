@@ -173,11 +173,10 @@ export default function _try(fn: any, ...args: any[]) {
     // Implementation details should be ordered from complex to simple.
 
     if (returns instanceof ThenableAsyncGenerator) {
-        // special case
-        returns = (returns as PromiseLike<any>)
-            .then((value: any) => [null, value]);
+        // special case for `ThenableAsyncGenerator`
         return Promise.resolve(returns)
-            .catch((err: unknown) => [err, undefined]) as any;
+            .then((value: any) => [null, value])
+            .catch((err: unknown) => [err, undefined]);
     } else if (isAsyncGenerator(returns)) {
         // @ts-ignore
         return (async function* () {
@@ -234,10 +233,9 @@ export default function _try(fn: any, ...args: any[]) {
             return [null, result];
         })() as Generator<unknown, any, unknown>;
     } else if (typeof returns?.then === "function") {
-        returns = (returns as PromiseLike<any>)
-            .then((value: any) => [null, value]);
         return Promise.resolve(returns)
-            .catch((err: unknown) => [err, undefined]) as any;
+            .then((value: any) => [null, value])
+            .catch((err: unknown) => [err, undefined]);
     } else {
         return [null, returns];
     }
