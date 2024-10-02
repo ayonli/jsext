@@ -1,5 +1,5 @@
 import { abortable } from './async.js';
-import bytes, { text } from './bytes.js';
+import bytes from './bytes.js';
 import { isDeno, isNodeLike } from './env.js';
 import { as } from './object.js';
 import Exception from './error/Exception.js';
@@ -7,7 +7,7 @@ import './external/event-target-polyfill/index.js';
 import { getMIME } from './filetype.js';
 import { fixDirEntry, makeTree, fixFileType } from './fs/util.js';
 import { dirname, basename, extname, join } from './path.js';
-import { readAsArray } from './reader.js';
+import { readAsArray, readAsText } from './reader.js';
 import { platform } from './runtime.js';
 import { stripStart } from './string.js';
 import _try from './try.js';
@@ -777,7 +777,7 @@ async function readFile(target, options = {}) {
     }
 }
 /**
- * Reads the content of the given file as text with `utf-8` encoding.
+ * Reads the content of the given file as text.
  *
  * NOTE: This function can also be used in Cloudflare Workers.
  *
@@ -797,25 +797,19 @@ async function readFile(target, options = {}) {
  * const root = await window.showDirectoryPicker();
  * const text = await readFileAsText("/path/to/file.txt", { root });
  * ```
+ *
+ * @example
+ * ```ts
+ * // with a specific encoding
+ * import { readFileAsText } from "@ayonli/jsext/fs";
+ *
+ * const text = await readFileAsText("./examples/samples/gb2312.txt", { encoding: "gb2312" });
+ * ```
  */
 async function readFileAsText(target, options = {}) {
-    if (typeof target === "object") {
-        return text(await readFileHandle(target, options));
-    }
-    const filename = target;
-    if (isDeno) {
-        return await rawOp(Deno.readTextFile(filename, options));
-    }
-    else if (isNodeLike) {
-        const fs = await import('fs/promises');
-        return await rawOp(fs.readFile(filename, {
-            encoding: "utf-8",
-            signal: options.signal,
-        }));
-    }
-    else {
-        return text(await readFile(filename, options));
-    }
+    const { encoding, ...rest } = options;
+    const file = await readFile(target, rest);
+    return await readAsText(file, encoding);
 }
 /**
  * Reads the file as a `File` object.

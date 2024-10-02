@@ -54,7 +54,7 @@
  */
 
 import { abortable } from "./async.ts";
-import bytes, { text } from "./bytes.ts";
+import bytes from "./bytes.ts";
 import { isDeno, isNodeLike } from "./env.ts";
 import { Exception } from "./error.ts";
 import { getMIME } from "./filetype.ts";
@@ -62,7 +62,7 @@ import type { FileInfo, DirEntry, FileSystemOptions, DirTree } from "./fs/types.
 import { fixDirEntry, fixFileType, makeTree } from "./fs/util.ts";
 import { as } from "./object.ts";
 import { basename, dirname, extname, join, split } from "./path.ts";
-import { readAsArray, resolveByteStream, toAsyncIterable } from "./reader.ts";
+import { readAsArray, readAsText, resolveByteStream, toAsyncIterable } from "./reader.ts";
 import runtime, { platform } from "./runtime.ts";
 import { stripStart } from "./string.ts";
 import _try from "./try.ts";
@@ -901,7 +901,7 @@ export async function readFile(
 }
 
 /**
- * Reads the content of the given file as text with `utf-8` encoding.
+ * Reads the content of the given file as text.
  * 
  * NOTE: This function can also be used in Cloudflare Workers.
  * 
@@ -921,28 +921,22 @@ export async function readFile(
  * const root = await window.showDirectoryPicker();
  * const text = await readFileAsText("/path/to/file.txt", { root });
  * ```
+ * 
+ * @example
+ * ```ts
+ * // with a specific encoding
+ * import { readFileAsText } from "@ayonli/jsext/fs";
+ * 
+ * const text = await readFileAsText("./examples/samples/gb2312.txt", { encoding: "gb2312" });
+ * ```
  */
 export async function readFileAsText(
     target: string | FileSystemFileHandle,
-    options: ReadFileOptions = {}
+    options: ReadFileOptions & { encoding?: string; } = {}
 ): Promise<string> {
-    if (typeof target === "object") {
-        return text(await readFileHandle(target, options));
-    }
-
-    const filename = target;
-
-    if (isDeno) {
-        return await rawOp(Deno.readTextFile(filename, options));
-    } else if (isNodeLike) {
-        const fs = await import("fs/promises");
-        return await rawOp(fs.readFile(filename, {
-            encoding: "utf-8",
-            signal: options.signal,
-        }));
-    } else {
-        return text(await readFile(filename, options));
-    }
+    const { encoding, ...rest } = options;
+    const file = await readFile(target, rest);
+    return await readAsText(file, encoding);
 }
 
 /**

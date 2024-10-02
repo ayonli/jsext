@@ -250,6 +250,13 @@ describe("reader", () => {
 
             ok(text.length > 0);
         });
+
+        it("encoding", async () => {
+            const data = await readFile("./examples/samples/gb2312.txt");
+            const text = await readAsText(data, "gb2312");
+
+            strictEqual(text, "你好，世界！\n");
+        });
     });
 
     describe("readAsJSON", () => {
