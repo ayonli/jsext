@@ -478,8 +478,7 @@ describe("async", () => {
 
             await sleep(100);
             strictEqual(ctrl.signal.aborted, true);
-            strictEqual(signals.get(1)!.aborted, true);
-            strictEqual(signals.get(1)!.reason, ctrl.signal.reason);
+            strictEqual(signals.get(1)!.aborted, false);
 
             aborted = [];
             signals.clear();
@@ -526,8 +525,6 @@ describe("async", () => {
             deepStrictEqual(aborted, [1, 2]);
             strictEqual(signals.get(1)!.aborted, true);
             strictEqual(signals.get(2)!.aborted, true);
-            strictEqual(signals.get(1)!.reason, ctrl1.signal.reason);
-            strictEqual(signals.get(2)!.reason, ctrl1.signal.reason);
 
             aborted = [];
             signals.clear();

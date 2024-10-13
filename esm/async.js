@@ -239,17 +239,17 @@ async function select(tasks, signal = undefined) {
     const controllers = new Map();
     const result = await Promise.race(tasks.map((task, index) => {
         if (typeof task === "function") {
-            const ctrl = signal ? abortWith(signal) : new AbortController();
+            const ctrl = new AbortController();
             controllers.set(index, ctrl);
             task = task(ctrl.signal);
         }
         return Promise.resolve(task)
             .then(value => ({ index, value }))
-            .catch(reason => ({ index, reason, }));
+            .catch(reason => ({ index, reason }));
     }));
     for (const [index, ctrl] of controllers) {
         if (index !== result.index) {
-            ctrl.abort();
+            ctrl.signal.aborted || ctrl.abort();
         }
     }
     if ("reason" in result) {
