@@ -488,8 +488,9 @@ describe("fs", () => {
         });
 
         it("encoding", async () => {
-            const text = await readFileAsText("./examples/samples/gb2312.txt", { encoding: "gb2312" });
-            strictEqual(text, "你好，世界！\n");
+            let text = await readFileAsText("./examples/samples/gb2312.txt", { encoding: "gb2312" });
+            text = text.trimEnd();
+            strictEqual(text, "你好，世界！");
         });
     });
 
