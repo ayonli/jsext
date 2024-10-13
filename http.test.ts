@@ -1799,7 +1799,7 @@ describe("http", () => {
         it("custom address", func(async (defer) => {
             const port = await randomPort();
             const server = serve({
-                hostname: "localhost",
+                hostname: "127.0.0.1",
                 port,
                 async fetch(_req, ctx) {
                     return new Response("Hello, World!", {
@@ -1817,10 +1817,10 @@ describe("http", () => {
             strictEqual(typeof server.fetch, "undefined");
 
             await server.ready;
-            strictEqual(server.hostname, "localhost");
+            strictEqual(server.hostname, "127.0.0.1");
             strictEqual(server.port, port);
 
-            const res = await fetch(`http://localhost:${port}`);
+            const res = await fetch(`http://127.0.0.1:${port}`);
             const text = await res.text();
 
             strictEqual(res.status, 200);

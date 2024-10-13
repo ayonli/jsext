@@ -226,21 +226,38 @@ async function select(tasks, signal = undefined) {
     if (signal === null || signal === void 0 ? void 0 : signal.aborted) {
         throw signal.reason;
     }
-    const ctrl = signal ? abortWith(signal) : new AbortController();
-    const { signal: _signal } = ctrl;
-    tasks = [
-        ...tasks,
-        new Promise((_, reject) => {
-            _signal.addEventListener("abort", () => {
-                reject(_signal.reason);
-            }, { once: true });
-        })
-    ];
-    return await Promise.race(tasks.map(task => {
-        return typeof task === "function" ? task(_signal) : task;
-    })).finally(() => {
-        _signal.aborted || ctrl.abort();
-    });
+    if (signal) {
+        tasks = [
+            ...tasks,
+            new Promise((_, reject) => {
+                signal.addEventListener("abort", () => {
+                    reject(signal.reason);
+                }, { once: true });
+            })
+        ];
+    }
+    const controllers = new Map();
+    const result = await Promise.race(tasks.map((task, index) => {
+        if (typeof task === "function") {
+            const ctrl = signal ? abortWith(signal) : new AbortController();
+            controllers.set(index, ctrl);
+            task = task(ctrl.signal);
+        }
+        return Promise.resolve(task)
+            .then(value => ({ index, value }))
+            .catch(reason => ({ index, reason, }));
+    }));
+    for (const [index, ctrl] of controllers) {
+        if (index !== result.index) {
+            ctrl.abort();
+        }
+    }
+    if ("reason" in result) {
+        throw result.reason;
+    }
+    else {
+        return result.value;
+    }
 }
 function abortWith(_parent, options = undefined) {
     let parent;

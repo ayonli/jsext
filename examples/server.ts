@@ -1,12 +1,24 @@
+import { args, parseArgs } from "../cli.ts";
 import { serve, serveStatic } from "../http.ts";
 import { startsWith } from "../path.ts";
+import { addUnhandledRejectionListener } from "../runtime.ts";
+
+const options = parseArgs(args);
+
+addUnhandledRejectionListener(ev => {
+    ev.preventDefault();
+    console.log("reason", ev.reason);
+    console.log("promise", ev.promise);
+    console.log("\n");
+});
 
 serve({
+    port: Number(options.port || 8000),
     async fetch(request, ctx) {
         const { pathname } = new URL(request.url);
 
         if (pathname === "/ws") {
-            const { socket, response } = await ctx.upgradeWebSocket();
+            const { socket, response } = ctx.upgradeWebSocket();
 
             socket.addEventListener("open", () => {
                 socket.send(`Hello, ${ctx.remoteAddress?.address}!`);
@@ -28,6 +40,8 @@ serve({
                     lastEventId,
                 }));
             }, 5_000);
+
+            response.headers.set("Access-Control-Allow-Origin", "*");
 
             return response;
         } else if (startsWith(pathname, "/examples")) {

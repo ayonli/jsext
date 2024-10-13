@@ -304,23 +304,41 @@ export async function select<T>(
         throw signal.reason;
     }
 
-    const ctrl = signal ? abortWith(signal) : new AbortController();
-    const { signal: _signal } = ctrl;
+    if (signal) {
+        tasks = [
+            ...tasks,
+            new Promise((_, reject) => {
+                signal.addEventListener("abort", () => {
+                    reject(signal.reason);
+                }, { once: true });
+            })
+        ];
+    }
 
-    tasks = [
-        ...tasks,
-        new Promise((_, reject) => {
-            _signal.addEventListener("abort", () => {
-                reject(_signal.reason);
-            }, { once: true });
-        })
-    ];
+    const controllers = new Map<number, AbortController>();
+    const result = await Promise.race(tasks.map((task, index) => {
+        if (typeof task === "function") {
+            const ctrl = signal ? abortWith(signal) : new AbortController();
+            controllers.set(index, ctrl);
+            task = task(ctrl.signal);
+        }
 
-    return await Promise.race(tasks.map(task => {
-        return typeof task === "function" ? task(_signal) : task;
-    })).finally(() => {
-        _signal.aborted || ctrl.abort();
-    });
+        return Promise.resolve(task)
+            .then(value => ({ index, value }))
+            .catch(reason => ({ index, reason, }));
+    }));
+
+    for (const [index, ctrl] of controllers) {
+        if (index !== result.index) {
+            ctrl.abort();
+        }
+    }
+
+    if ("reason" in result) {
+        throw result.reason;
+    } else {
+        return result.value;
+    }
 }
 
 /**

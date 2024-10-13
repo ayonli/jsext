@@ -246,9 +246,11 @@ describe("async", () => {
 
         it("functions", async () => {
             let aborted: number[] = [];
+            const signals = new Map<number, AbortSignal>();
             const result = await Promise.select([
                 async signal => {
                     let resolved = false;
+                    signals.set(1, signal);
                     signal.addEventListener("abort", () => {
                         resolved || aborted.push(1);
                     });
@@ -264,6 +266,7 @@ describe("async", () => {
                 },
                 async signal => {
                     let resolved = false;
+                    signals.set(2, signal);
                     signal.addEventListener("abort", () => {
                         resolved || aborted.push(2);
                     });
@@ -281,11 +284,16 @@ describe("async", () => {
 
             strictEqual(result, 1);
             deepStrictEqual(aborted, [2]);
+            strictEqual(signals.get(1)!.aborted, false);
+            strictEqual(signals.get(2)!.aborted, true);
 
             aborted = [];
+            signals.clear();
+
             const [err1, result1] = await _try(Promise.select([
                 async signal => {
                     let resolved = false;
+                    signals.set(1, signal);
                     signal.addEventListener("abort", () => {
                         resolved || aborted.push(1);
                     });
@@ -301,6 +309,7 @@ describe("async", () => {
                 },
                 async signal => {
                     let resolved = false;
+                    signals.set(2, signal);
                     signal.addEventListener("abort", () => {
                         resolved || aborted.push(2);
                     });
@@ -319,13 +328,17 @@ describe("async", () => {
             strictEqual((err1 as Error)?.name, "Error");
             strictEqual(result1, undefined);
             deepStrictEqual(aborted, [2]);
+            strictEqual(signals.get(1)!.aborted, false);
+            strictEqual(signals.get(2)!.aborted, true);
         });
 
         it("with promises", async () => {
             let aborted: number[] = [];
+            const signals = new Map<number, AbortSignal>();
             const result = await Promise.select([
                 async signal => {
                     let resolved = false;
+                    signals.set(1, signal);
                     signal.addEventListener("abort", () => {
                         resolved || aborted.push(1);
                     });
@@ -341,6 +354,7 @@ describe("async", () => {
                 },
                 async signal => {
                     let resolved = false;
+                    signals.set(2, signal);
                     signal.addEventListener("abort", () => {
                         resolved || aborted.push(2);
                     });
@@ -363,11 +377,16 @@ describe("async", () => {
 
             strictEqual(result, 3);
             deepStrictEqual(aborted, [1, 2]);
+            strictEqual(signals.get(1)!.aborted, true);
+            strictEqual(signals.get(2)!.aborted, true);
 
             aborted = [];
+            signals.clear();
+
             const [err1, result1] = await _try(Promise.select([
                 async signal => {
                     let resolved = false;
+                    signals.set(1, signal);
                     signal.addEventListener("abort", () => {
                         resolved || aborted.push(1);
                     });
@@ -383,6 +402,7 @@ describe("async", () => {
                 },
                 async signal => {
                     let resolved = false;
+                    signals.set(2, signal);
                     signal.addEventListener("abort", () => {
                         resolved || aborted.push(2);
                     });
@@ -406,16 +426,20 @@ describe("async", () => {
             strictEqual((err1 as Error)?.name, "Error");
             strictEqual(result1, undefined);
             deepStrictEqual(aborted, [1, 2]);
+            strictEqual(signals.get(1)!.aborted, true);
+            strictEqual(signals.get(2)!.aborted, true);
         });
 
         it("with parent signal", async () => {
             let aborted: number[] = [];
+            const signals = new Map<number, AbortSignal>();
 
             const ctrl = new AbortController();
             setTimeout(() => ctrl.abort(), 150);
             const result = await Promise.select([
                 async signal => {
                     let resolved = false;
+                    signals.set(1, signal);
                     signal.addEventListener("abort", () => {
                         resolved || aborted.push(1);
                     });
@@ -431,6 +455,7 @@ describe("async", () => {
                 },
                 async signal => {
                     let resolved = false;
+                    signals.set(2, signal);
                     signal.addEventListener("abort", () => {
                         resolved || aborted.push(2);
                     });
@@ -448,13 +473,23 @@ describe("async", () => {
 
             strictEqual(result, 1);
             deepStrictEqual(aborted, [2]);
+            strictEqual(signals.get(1)!.aborted, false);
+            strictEqual(signals.get(2)!.aborted, true);
+
+            await sleep(100);
+            strictEqual(ctrl.signal.aborted, true);
+            strictEqual(signals.get(1)!.aborted, true);
+            strictEqual(signals.get(1)!.reason, ctrl.signal.reason);
 
             aborted = [];
+            signals.clear();
+
             const ctrl1 = new AbortController();
             setTimeout(() => ctrl1.abort(), 10);
             const [err1, result1] = await _try(Promise.select([
                 async signal => {
                     let resolved = false;
+                    signals.set(1, signal);
                     signal.addEventListener("abort", () => {
                         resolved || aborted.push(1);
                     });
@@ -470,6 +505,7 @@ describe("async", () => {
                 },
                 async signal => {
                     let resolved = false;
+                    signals.set(2, signal);
                     signal.addEventListener("abort", () => {
                         resolved || aborted.push(2);
                     });
@@ -488,13 +524,20 @@ describe("async", () => {
             strictEqual((err1 as Error)?.name, "AbortError");
             strictEqual(result1, undefined);
             deepStrictEqual(aborted, [1, 2]);
+            strictEqual(signals.get(1)!.aborted, true);
+            strictEqual(signals.get(2)!.aborted, true);
+            strictEqual(signals.get(1)!.reason, ctrl1.signal.reason);
+            strictEqual(signals.get(2)!.reason, ctrl1.signal.reason);
 
             aborted = [];
+            signals.clear();
+
             const ctrl2 = new AbortController();
             ctrl2.abort();
             const [err2, result2] = await _try(Promise.select([
                 async signal => {
                     let resolved = false;
+                    signals.set(1, signal);
                     signal.addEventListener("abort", () => {
                         resolved || aborted.push(1);
                     });
@@ -510,6 +553,7 @@ describe("async", () => {
                 },
                 async signal => {
                     let resolved = false;
+                    signals.set(2, signal);
                     signal.addEventListener("abort", () => {
                         resolved || aborted.push(2);
                     });
@@ -528,6 +572,7 @@ describe("async", () => {
             strictEqual((err2 as Error)?.name, "AbortError");
             strictEqual(result2, undefined);
             deepStrictEqual(aborted, []);
+            strictEqual(signals.size, 0);
         });
     });
 
