@@ -20,7 +20,7 @@ jobs:
           cache: 'npm'
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
 
-      - run: npm i
+      - run: bun install
       - run: bun run test:bun
