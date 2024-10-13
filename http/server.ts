@@ -13,7 +13,7 @@ export interface BunServer {
     fetch(request: Request | string): Response | Promise<Response>;
     ref(): void;
     requestIP(request: Request): { family: "IPv4" | "IPv6"; address: string; port: number; } | null;
-    stop(closeActiveConnections?: boolean): void;
+    stop(closeActiveConnections?: boolean): Promise<void>;
     unref(): void;
     upgrade<T = undefined>(
         request: Request,

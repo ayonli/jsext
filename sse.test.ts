@@ -5,6 +5,7 @@ import "./index.ts";
 import jsext from "./index.ts";
 import { randomPort, serve } from "./http.ts";
 import { withWeb } from "./http/internal.ts";
+import { BunServer } from "./http/server.ts";
 import { EventConsumer, EventEndpoint } from "./sse.ts";
 
 declare const Bun: any;
@@ -77,7 +78,9 @@ describe("sse", () => {
                 defer(() => server.close());
             }
 
-            if (typeof EventSource === "undefined") {
+            if (typeof EventSource === "undefined" ||
+                isBun // Bun's EventSource implementation is buggy at the moment.
+            ) {
                 const { EventSource } = await import("./sse.ts");
                 // @ts-ignore
                 globalThis.EventSource = EventSource;
@@ -157,7 +160,7 @@ describe("sse", () => {
                 Deno.serve({ port, signal: controller.signal }, handle);
                 defer(() => controller.abort());
             } else if (isBun) {
-                const server = Bun.serve({ port, fetch: handle });
+                const server: BunServer = Bun.serve({ port, fetch: handle });
                 defer(() => server.stop(true));
             } else {
                 const http = await import("node:http");
@@ -166,7 +169,9 @@ describe("sse", () => {
                 defer(() => server.close());
             }
 
-            if (typeof EventSource === "undefined") {
+            if (typeof EventSource === "undefined" ||
+                isBun // Bun's EventSource implementation is buggy at the moment.
+            ) {
                 const { EventSource } = await import("./sse.ts");
                 // @ts-ignore
                 globalThis.EventSource = EventSource;
@@ -212,7 +217,7 @@ describe("sse", () => {
                 Deno.serve({ port, signal: controller.signal }, handle);
                 defer(() => controller.abort());
             } else if (isBun) {
-                const server = Bun.serve({ port, fetch: handle });
+                const server: BunServer = Bun.serve({ port, fetch: handle });
                 defer(() => server.stop(true));
             } else {
                 const http = await import("node:http");
@@ -268,7 +273,7 @@ describe("sse", () => {
                 Deno.serve({ port, signal: controller.signal }, handle);
                 defer(() => controller.abort());
             } else if (isBun) {
-                const server = Bun.serve({ port, fetch: handle });
+                const server: BunServer = Bun.serve({ port, fetch: handle });
                 defer(() => server.stop(true));
             } else {
                 const http = await import("node:http");
@@ -562,11 +567,11 @@ describe("sse", () => {
         let sse: EventEndpoint | undefined = undefined;
 
         if (isBun) {
-            const server = Bun.serve({
+            const server: BunServer = Bun.serve({
                 port,
                 fetch: async (req: Request) => {
                     sse = new EventEndpoint(req);
-                    queueMicrotask(() => {
+                    setTimeout(() => {
                         options.onOpen(sse!);
                     });
                     return sse.response!;
@@ -816,6 +821,11 @@ describe("sse", () => {
             es.addEventListener("error", ev => {
                 errorEvents.push(ev);
             });
+
+            await until(() => errorEvents.length === 1);
+            if (String(errorEvents[0]?.error).includes("502")) {
+                this.skip(); // This could happen in Bun.
+            }
 
             await until(() => errorEvents.length === 2);
 

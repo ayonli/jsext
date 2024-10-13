@@ -21,6 +21,7 @@ import {
 } from "./reader.ts";
 import { randomPort } from "./http.ts";
 import { EventEndpoint } from "./sse.ts";
+import { isBun } from "./env.ts";
 
 describe("reader", () => {
     describe("readAsArray", () => {
@@ -251,7 +252,11 @@ describe("reader", () => {
             ok(text.length > 0);
         });
 
-        it("encoding", async () => {
+        it("encoding", async function () {
+            if (isBun) {
+                this.skip(); // Bun does not support gb2312 at the moment.
+            }
+
             const data = await readFile("./examples/samples/gb2312.txt");
             const text = (await readAsText(data, "gb2312")).trimEnd();
             strictEqual(text, "你好，世界！");
@@ -336,15 +341,15 @@ describe("reader", () => {
 
             const port = await randomPort();
             const server = await new Promise<http.Server>((resolve) => {
-                const server = http.createServer((req, res) => {
+                const server = http.createServer(async (req, res) => {
                     const sse = new EventEndpoint(req, res);
 
                     if (req.url === "/message") {
-                        sse.send("hello");
-                        sse.send("world");
+                        await sse.send("hello");
+                        await sse.send("world");
                     } else if (req.url === "/event") {
-                        sse.sendEvent("reply", "foo");
-                        sse.sendEvent("reply", "bar");
+                        await sse.sendEvent("reply", "foo");
+                        await sse.sendEvent("reply", "bar");
                     } else {
                         res.end();
                     }
@@ -355,10 +360,10 @@ describe("reader", () => {
                 server.close(resolve);
             }));
 
-            const dEventSource = typeof EventSource === "function"
-                ? EventSource
+            const EventSource = typeof globalThis.EventSource === "function"
+                ? globalThis.EventSource
                 : (await import("./sse.ts")).EventSource;
-            const es1 = new dEventSource(`http://localhost:${port}/message`) as EventSource;
+            const es1 = new EventSource(`http://localhost:${port}/message`) as EventSource;
             const messages: string[] = [];
 
             for await (const msg of toAsyncIterable(es1)) {
@@ -371,7 +376,7 @@ describe("reader", () => {
 
             deepStrictEqual(messages, ["hello", "world"]);
 
-            const es2 = new dEventSource(`http://localhost:${port}/event`) as EventSource;
+            const es2 = new EventSource(`http://localhost:${port}/event`) as EventSource;
             const replies: string[] = [];
 
             for await (const reply of toAsyncIterable(es2, { event: "reply" })) {
@@ -568,15 +573,15 @@ describe("reader", () => {
 
             const port = await randomPort();
             const server = await new Promise<http.Server>((resolve) => {
-                const server = http.createServer((req, res) => {
+                const server = http.createServer(async (req, res) => {
                     const sse = new EventEndpoint(req, res);
 
                     if (req.url === "/message") {
-                        sse.send("hello");
-                        sse.send("world");
+                        await sse.send("hello");
+                        await sse.send("world");
                     } else if (req.url === "/event") {
-                        sse.sendEvent("reply", "foo");
-                        sse.sendEvent("reply", "bar");
+                        await sse.sendEvent("reply", "foo");
+                        await sse.sendEvent("reply", "bar");
                     } else {
                         res.end();
                     }
@@ -587,10 +592,10 @@ describe("reader", () => {
                 server.close(resolve);
             }));
 
-            const dEventSource = typeof EventSource === "function"
-                ? EventSource
+            const EventSource = typeof globalThis.EventSource === "function"
+                ? globalThis.EventSource
                 : (await import("./sse.ts")).EventSource;
-            const es1 = new dEventSource(`http://localhost:${port}/message`) as EventSource;
+            const es1 = new EventSource(`http://localhost:${port}/message`) as EventSource;
             const messages: string[] = [];
 
             const reader1 = toReadableStream(es1).getReader();
@@ -607,7 +612,7 @@ describe("reader", () => {
 
             deepStrictEqual(messages, ["hello", "world"]);
 
-            const es2 = new dEventSource(`http://localhost:${port}/event`) as EventSource;
+            const es2 = new EventSource(`http://localhost:${port}/event`) as EventSource;
             const replies: string[] = [];
 
             const reader2 = toReadableStream(es2, { event: "reply" }).getReader();

@@ -4,9 +4,10 @@ import { isBun, isDeno } from "./env.ts";
 import func from "./func.ts";
 import { type WebSocketConnection } from "./ws.ts";
 import bytes, { concat, text } from "./bytes.ts";
-import { until } from "./async.ts";
+import { select, sleep, until } from "./async.ts";
 import { randomPort } from "./http.ts";
 import { withWeb } from "./http/internal.ts";
+import { BunServer } from "./http/server.ts";
 
 declare const Bun: any;
 
@@ -55,7 +56,7 @@ describe("ws", () => {
             });
             defer(() => controller.abort());
         } else if (isBun) {
-            const server = Bun.serve({
+            const server: BunServer = Bun.serve({
                 port,
                 fetch: (req: Request) => {
                     const { response } = wsServer.upgrade(req);
@@ -64,7 +65,7 @@ describe("ws", () => {
                 websocket: wsServer.bunListener,
             });
             wsServer.bunBind(server);
-            defer(() => server.stop(true));
+            defer(() => select([server.stop(true), sleep(100)]));
         } else {
             const server = http.createServer((req) => {
                 wsServer.upgrade(req);
@@ -164,7 +165,7 @@ describe("ws", () => {
             });
             defer(() => controller.abort());
         } else if (isBun) {
-            const server = Bun.serve({
+            const server: BunServer = Bun.serve({
                 port,
                 fetch: (req: Request) => {
                     const { socket, response } = wsServer.upgrade(req);
@@ -174,7 +175,7 @@ describe("ws", () => {
                 websocket: wsServer.bunListener,
             });
             wsServer.bunBind(server);
-            defer(() => server.stop(true));
+            defer(() => select([server.stop(true), sleep(100)]));
         } else {
             let server: http.Server;
 
@@ -278,7 +279,7 @@ describe("ws", () => {
             });
             defer(() => controller.abort());
         } else if (isBun) {
-            const server = Bun.serve({
+            const server: BunServer = Bun.serve({
                 port,
                 fetch: (req: Request) => {
                     const { response } = wsServer.upgrade(req);
@@ -287,7 +288,7 @@ describe("ws", () => {
                 websocket: wsServer.bunListener,
             });
             wsServer.bunBind(server);
-            defer(() => server.stop(true));
+            defer(() => select([server.stop(true), sleep(100)]));
         } else {
             let server: http.Server;
 
@@ -391,13 +392,13 @@ describe("ws", () => {
             Deno.serve({ port, signal: controller.signal }, app.fetch);
             defer(() => controller.abort());
         } else if (isBun) {
-            const server = Bun.serve({
+            const server: BunServer = Bun.serve({
                 port,
                 fetch: app.fetch,
                 websocket: wsServer.bunListener,
             });
             wsServer.bunBind(server);
-            defer(() => server.stop(true));
+            defer(() => select([server.stop(true), sleep(100)]));
         } else {
             const server = http.createServer(withWeb(app.fetch));
             server.listen(port);

@@ -487,7 +487,11 @@ describe("fs", () => {
             strictEqual(res, undefined);
         });
 
-        it("encoding", async () => {
+        it("encoding", async function () {
+            if (isBun) {
+                this.skip(); // Bun does not support gb2312 at the moment.
+            }
+
             let text = await readFileAsText("./examples/samples/gb2312.txt", { encoding: "gb2312" });
             text = text.trimEnd();
             strictEqual(text, "你好，世界！");

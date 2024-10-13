@@ -47,16 +47,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 21.x
-          cache: 'npm'
-
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
 
-      - run: npm i
+      - run: bun install
       - run: bun run test:bun
 
   test-deno:
@@ -112,7 +106,7 @@ jobs:
         with:
           deno-version: v1.x
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
       - run: npm i
       - run: npm run test:pty
 

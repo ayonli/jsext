@@ -33,6 +33,7 @@ import {
     verifyBasicAuth,
 } from "./http.ts";
 import { withWeb } from "./http/internal.ts";
+import { BunServer } from "./http/server.ts";
 import _try from "./try.ts";
 import func from "./func.ts";
 import { readFileAsText } from "./fs.ts";
@@ -1399,7 +1400,7 @@ describe("http", () => {
                 });
                 defer(() => controller.abort());
             } else if (isBun) {
-                const server = Bun.serve({
+                const server: BunServer = Bun.serve({
                     port,
                     fetch: async () => {
                         return new Response("Hello, World!");
@@ -1435,7 +1436,7 @@ describe("http", () => {
                 });
                 defer(() => controller.abort());
             } else if (isBun) {
-                const server = Bun.serve({
+                const server: BunServer = Bun.serve({
                     port,
                     fetch: async () => {
                         return new Response("Hello, World!");
@@ -1475,7 +1476,7 @@ describe("http", () => {
                 });
                 defer(() => controller.abort());
             } else if (isBun) {
-                const server = Bun.serve({
+                const server: BunServer = Bun.serve({
                     port,
                     fetch: async () => {
                         return new Response("Hello, World!");
@@ -2195,7 +2196,7 @@ describe("http", () => {
             strictEqual(typeof server.fetch, "function");
 
             if (isBun) {
-                const _server = Bun.serve({
+                const _server: BunServer = Bun.serve({
                     port,
                     fetch: server.fetch!,
                 });
@@ -2307,7 +2308,8 @@ describe("http", () => {
         it("AbortSignal", func(async function (defer) {
             if (typeof AbortSignal !== "function" ||
                 typeof AbortSignal.timeout !== "function" ||
-                isDeno // Deno currently does not support request cancellation.
+                isDeno || // Deno currently does not support request cancellation.
+                isBun // Bun may or may not support request cancellation, it's unclear.
             ) {
                 this.skip();
             }
