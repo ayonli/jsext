@@ -418,15 +418,21 @@ export function compare<T extends Numerable>(a: T, b: T): -1 | 0 | 1;
 export function compare<T extends Comparable>(a: T, b: T): -1 | 0 | 1;
 export function compare(a: any, b: any): -1 | 0 | 1 {
     if (typeof a !== typeof b) {
-        throw new TypeError("Cannot compare different types");
+        throw new TypeError("Cannot compare values of different types");
     } else if (typeof a === "string") {
         return a.localeCompare(b as string) as -1 | 0 | 1;
-    } else if (typeof a === "number" || typeof a === "bigint") {
-        return Object.is(a, b) ? 0 : a < b ? -1 : 1;
+    } else if (typeof a === "number") {
+        if (Object.is(a, NaN) || Object.is(b, NaN)) {
+            throw new TypeError("Cannot compare NaN");
+        }
+
+        return a === b ? 0 : a < b ? -1 : 1;
+    } else if (typeof a === "bigint") {
+        return a === b ? 0 : a < b ? -1 : 1;
     } else if (typeof a === "boolean") {
         return a === b ? 0 : a ? 1 : -1;
     } else if (typeof a !== "object" || a === null) {
-        throw new TypeError("Cannot compare non-comparable types");
+        throw new TypeError("Cannot compare values of non-comparable types");
     } else if (typeof a.compareTo === "function" && typeof b.compareTo === "function") {
         if (a.constructor === b.constructor || (a.constructor && b instanceof a.constructor)) {
             return (a as Comparable).compareTo(b as Comparable);
@@ -434,21 +440,21 @@ export function compare(a: any, b: any): -1 | 0 | 1 {
             const result = (b as Comparable).compareTo(a as Comparable);
             return result === 0 ? 0 : (-result as -1 | 1);
         } else {
-            throw new TypeError("Cannot compare different types");
+            throw new TypeError("Cannot compare values of different types");
         }
     } else if (typeof a.valueOf === "function" && typeof b.valueOf === "function") {
         const _a = a.valueOf();
         const _b = b.valueOf();
 
         if (typeof _a !== "number" || Object.is(_a, NaN)) {
-            throw new TypeError("The first argument cannot be coerced to a number");
+            throw new TypeError("The first value cannot be coerced to a number");
         } else if (typeof _b !== "number" || Object.is(_b, NaN)) {
-            throw new TypeError("The second argument cannot be coerced to a number");
+            throw new TypeError("The second value cannot be coerced to a number");
         } else {
             return compare(_a, _b);
         }
     } else {
-        throw new TypeError("Cannot compare non-comparable types");
+        throw new TypeError("Cannot compare values of non-comparable types");
     }
 }
 

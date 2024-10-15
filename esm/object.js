@@ -1,3 +1,4 @@
+import { TypedArray } from './types.js';
 import { isClass } from './class.js';
 
 /**
@@ -46,12 +47,12 @@ function hasOwn(obj, key) {
  * ```
  */
 function hasOwnMethod(obj, method) {
-    var _a;
+    var _c;
     const proto = Object.getPrototypeOf(obj);
     if (!proto || !hasOwn(proto, method)) {
         return false;
     }
-    return typeof ((_a = Object.getOwnPropertyDescriptor(proto, method)) === null || _a === void 0 ? void 0 : _a.value) === "function";
+    return typeof ((_c = Object.getOwnPropertyDescriptor(proto, method)) === null || _c === void 0 ? void 0 : _c.value) === "function";
 }
 function patch(target, ...sources) {
     for (const source of sources) {
@@ -141,7 +142,7 @@ function as(value, type) {
  * ```
  */
 function typeOf(value) {
-    var _a, _b;
+    var _c, _d;
     if (value === undefined) {
         return "undefined";
     }
@@ -153,7 +154,7 @@ function typeOf(value) {
         return isClass(value) ? "class" : "function";
     }
     else if (type === "object") {
-        return (_b = (_a = Object.getPrototypeOf(value)) === null || _a === void 0 ? void 0 : _a.constructor) !== null && _b !== void 0 ? _b : Object;
+        return (_d = (_c = Object.getPrototypeOf(value)) === null || _c === void 0 ? void 0 : _c.constructor) !== null && _d !== void 0 ? _d : Object;
     }
     else {
         return type;
@@ -191,6 +192,168 @@ function isPlainObject(value) {
         return false;
     const proto = Object.getPrototypeOf(value);
     return proto === null || proto.constructor === Object;
+}
+/**
+ * Performs a deep comparison between two values to see if they are equivalent.
+ *
+ * - Primitive values, `null`, and circular references are compared using the
+ *   `Object.is` function.
+ * - `String`, `Number` and `Boolean` object wrappers are coerced to their
+ *   primitive values before comparison.
+ * - The `constructor` of objects or the `[Symbol.toStringTag]` property must be
+ *   the same to be considered potentially equal.
+ * - The `name`, `message`, `stack`, `cause`, and `errors` properties of `Error`
+ *   instances are always compared, if there are other enumerable properties,
+ *   they are compared as well.
+ * - The `source`, `flags` and `lastIndex` of `RegExp` instances are always
+ *   compared, if there are other enumerable properties, they are compared as
+ *   well.
+ * - `Map` and `Set` items are compared unordered, if there are other enumerable
+ *   properties, they are compared as well.
+ * - Arrays and Typed Arrays are compared one by one by their indexes, if there
+ *   are other enumerable properties, they are compared as well.
+ * - Objects that implements the {@link Numerable} interface are compared using
+ *   the `valueOf` method.
+ * - Objects that implements the {@link Comparable} interface are compared using
+ *   the `compareTo` method.
+ * - Plain objects are compared by their own enumerable properties.
+ * - In others cases, values are compared using the `Object.is` function.
+ */
+function equals(a, b) {
+    return (function isEqual(a, b, parents = []) {
+        const aType = typeof a;
+        if (a === b || Object.is(a, b)) {
+            return true;
+        }
+        else if (aType !== typeof b) {
+            return false;
+        }
+        else if (aType !== "object"
+            || a === null
+            || b === null
+            || (parents.includes(a) && parents.includes(b))) {
+            return Object.is(a, b);
+        }
+        else if (a.constructor === String) {
+            return String(a) === String(b);
+        }
+        else if (a.constructor === Number) {
+            return Number(a) === Number(b);
+        }
+        else if (a.constructor === Boolean) {
+            return Boolean(a) === Boolean(b);
+        }
+        else if (a.constructor !== b.constructor
+            && a[Symbol.toStringTag] !== b[Symbol.toStringTag]) {
+            return false;
+        }
+        else if (a instanceof Error) {
+            const { name: aName, message: aMessage, stack: aStack, cause: aCause, errors: aErrors, ...aRest } = a;
+            const { name: bName, message: bMessage, stack: bStack, cause: bCause, errors: bErrors, ...bRest } = b;
+            return aName === bName
+                && aMessage === bMessage
+                && aStack === bStack
+                && isEqual(aCause, bCause, [...parents, a, b])
+                && isEqual(aErrors, bErrors, [...parents, a, b])
+                && isEqual(aRest, bRest, [...parents, a, b]);
+        }
+        else if (a instanceof RegExp) {
+            const { source: aSource, flags: aFlags, lastIndex: aLastIndex, ...aRest } = a;
+            const { source: bSource, flags: bFlags, lastIndex: bLastIndex, ...bRest } = b;
+            return aSource === bSource
+                && aFlags === bFlags
+                && aLastIndex === bLastIndex
+                && isEqual(aRest, bRest, [...parents, a, b]);
+        }
+        else if (a instanceof Map) {
+            const _parents = [...parents, a, b];
+            return a.size === b.size
+                && [...a].every(([key, value]) => isEqual(value, b.get(key), _parents))
+                && isEqual({ ...a }, { ...b }, _parents);
+        }
+        else if (a instanceof Set) {
+            return a.size === b.size
+                && [...a].every(value => b.has(value))
+                && isEqual({ ...a }, { ...b }, [...parents, a, b]);
+        }
+        else if (a instanceof Array || a instanceof TypedArray) {
+            const _parents = [...parents, a, b];
+            return a.length === b.length
+                && a.every((value, i) => isEqual(value, b[i], _parents))
+                && isEqual({ ...a }, { ...b }, _parents);
+        }
+        else if (Array.isArray(a)) {
+            const _parents = [...parents, a, b];
+            return Array.isArray(b)
+                && a.length === b.length
+                && a.every((value, i) => isEqual(value, b[i], _parents))
+                && isEqual({ ...a }, { ...b }, _parents);
+        }
+        else if (a.constructor === Object) {
+            const _parents = [...parents, a, b];
+            return Reflect.ownKeys(a).length === Reflect.ownKeys(b).length
+                && Reflect.ownKeys(a).every(key => isEqual(a[key], b[key], _parents));
+        }
+        else {
+            try {
+                return compare(a, b) === 0;
+            }
+            catch (_c) {
+                return Object.is(a, b);
+            }
+        }
+    })(a, b);
+}
+function compare(a, b) {
+    if (typeof a !== typeof b) {
+        throw new TypeError("Cannot compare values of different types");
+    }
+    else if (typeof a === "string") {
+        return a.localeCompare(b);
+    }
+    else if (typeof a === "number") {
+        if (Object.is(a, NaN) || Object.is(b, NaN)) {
+            throw new TypeError("Cannot compare NaN");
+        }
+        return a === b ? 0 : a < b ? -1 : 1;
+    }
+    else if (typeof a === "bigint") {
+        return a === b ? 0 : a < b ? -1 : 1;
+    }
+    else if (typeof a === "boolean") {
+        return a === b ? 0 : a ? 1 : -1;
+    }
+    else if (typeof a !== "object" || a === null) {
+        throw new TypeError("Cannot compare values of non-comparable types");
+    }
+    else if (typeof a.compareTo === "function" && typeof b.compareTo === "function") {
+        if (a.constructor === b.constructor || (a.constructor && b instanceof a.constructor)) {
+            return a.compareTo(b);
+        }
+        else if (b.constructor && a instanceof b.constructor) {
+            const result = b.compareTo(a);
+            return result === 0 ? 0 : -result;
+        }
+        else {
+            throw new TypeError("Cannot compare values of different types");
+        }
+    }
+    else if (typeof a.valueOf === "function" && typeof b.valueOf === "function") {
+        const _a = a.valueOf();
+        const _b = b.valueOf();
+        if (typeof _a !== "number" || Object.is(_a, NaN)) {
+            throw new TypeError("The first value cannot be coerced to a number");
+        }
+        else if (typeof _b !== "number" || Object.is(_b, NaN)) {
+            throw new TypeError("The second value cannot be coerced to a number");
+        }
+        else {
+            return compare(_a, _b);
+        }
+    }
+    else {
+        throw new TypeError("Cannot compare values of non-comparable types");
+    }
 }
 /**
  * Creates an object base on the original object but without any invalid values
@@ -342,10 +505,10 @@ function sortKeys(obj, deep = false) {
  * ```
  */
 function flatKeys(obj, depth = 1, options = {}) {
-    var _a;
+    var _c;
     const maxDepth = depth;
     const carrier = obj.constructor ? {} : Object.create(null);
-    const flatArrayIndices = (_a = options === null || options === void 0 ? void 0 : options.flatArrayIndices) !== null && _a !== void 0 ? _a : false;
+    const flatArrayIndices = (_c = options === null || options === void 0 ? void 0 : options.flatArrayIndices) !== null && _c !== void 0 ? _c : false;
     if (!isPlainObject(obj) && (!Array.isArray(obj) || !flatArrayIndices)) {
         return obj;
     }
@@ -472,5 +635,5 @@ function invert(record) {
     return Object.fromEntries(Object.entries(record).map(([key, value]) => [value, key]));
 }
 
-export { as, filterEntries, flatKeys, hasOwn, hasOwnMethod, invert, isPlainObject, isValid, mapEntries, omit, partitionEntries, patch, pick, sanitize, sortKeys, typeOf };
+export { as, compare, equals, filterEntries, flatKeys, hasOwn, hasOwnMethod, invert, isPlainObject, isValid, mapEntries, omit, partitionEntries, patch, pick, sanitize, sortKeys, typeOf };
 //# sourceMappingURL=object.js.map
