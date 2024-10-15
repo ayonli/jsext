@@ -3,7 +3,7 @@
  * @module
  */
 
-import { Constructor } from "./types.ts";
+import { Constructor, TypedArray } from "./types.ts";
 import { isClass } from "./class.ts";
 
 /**
@@ -290,6 +290,116 @@ export function isPlainObject(value: unknown): value is { [x: string | symbol]: 
 
     const proto = Object.getPrototypeOf(value);
     return proto === null || proto.constructor === Object;
+}
+
+/**
+ * Performs a deep comparison between two values to see if they are equivalent.
+ * 
+ * - Primitive values, `null`, `WeakMap`, `WeakSet` and circular references are
+ *   compared using `Object.is()`.
+ * - The `[Symbol.toStringTag]` property or the `constructor` of objects must be
+ *   the same to be considered potentially equal.
+ * - `String`, `Number` and `Boolean` object wrappers are compared both by their
+ *   primitive values and their enumerable properties.
+ * - `Date` instances are compared by their timestamps and enumerable properties.
+ * - The `name`, `message`, `stack`, `cause`, and `errors` properties of `Error`
+ *   instances are always compared, if there are other enumerable properties,
+ *   they are compared as well.
+ * - The `source`, `flags` and `lastIndex` of `RegExp` instances are always
+ *   compared, if there are other enumerable properties, they are compared as
+ *   well.
+ * - `Map` and `Set` items are compared unordered, if there are other enumerable
+ *   properties, they are compared as well.
+ * - Arrays and Typed Arrays are compared one by one by their indexes, if there
+ *   are other enumerable properties, they are compared as well.
+ * - In others cases, only enumerable own properties of objects are compared and
+ *   are compared unordered.
+ */
+export function equals(a: any, b: any): boolean {
+    return (function isEqual(a: any, b: any, parents: object[] = []): boolean {
+        const aType = typeof a;
+
+        if (a === b || Object.is(a, b)) {
+            return true;
+        } else if (aType !== typeof b) {
+            return false;
+        } else if (aType !== "object"
+            || a === null
+            || b === null
+            || a instanceof WeakMap
+            || a instanceof WeakSet
+            || b instanceof WeakMap
+            || b instanceof WeakSet
+            || (parents.includes(a) && parents.includes(b))
+        ) {
+            return Object.is(a, b);
+        } else if (a.constructor !== b.constructor
+            && a[Symbol.toStringTag] !== b[Symbol.toStringTag]
+        ) {
+            return false;
+        } else if (a.constructor === String) {
+            return String(a) === String(b) && isEqual({ ...a }, { ...b }, [...parents, a, b]);
+        } else if (a.constructor === Number || a instanceof Date) {
+            return Number(a) === Number(b) && isEqual({ ...a }, { ...b }, [...parents, a, b]);
+        } else if (a.constructor === Boolean) {
+            return Boolean(a) === Boolean(b) && isEqual({ ...a }, { ...b }, [...parents, a, b]);
+        } else if (a instanceof Error) {
+            const {
+                name: aName,
+                message: aMessage,
+                stack: aStack,
+                cause: aCause,
+                errors: aErrors,
+                ...aRest
+            } = a as Error & { cause?: any; errors?: Error[]; };
+            const {
+                name: bName,
+                message: bMessage,
+                stack: bStack,
+                cause: bCause,
+                errors: bErrors,
+                ...bRest
+            } = b as Error & { cause?: any; errors?: Error[]; };
+
+            return aName === bName
+                && aMessage === bMessage
+                && aStack === bStack
+                && isEqual(aCause, bCause, [...parents, a, b])
+                && isEqual(aErrors, bErrors, [...parents, a, b])
+                && isEqual(aRest, bRest, [...parents, a, b]);
+        } else if (a instanceof RegExp) {
+            const { source: aSource, flags: aFlags, lastIndex: aLastIndex, ...aRest } = a as RegExp;
+            const { source: bSource, flags: bFlags, lastIndex: bLastIndex, ...bRest } = b as RegExp;
+            return aSource === bSource
+                && aFlags === bFlags
+                && aLastIndex === bLastIndex
+                && isEqual(aRest, bRest, [...parents, a, b]);
+        } else if (a instanceof Map) {
+            const _parents = [...parents, a, b];
+            return a.size === (b as Map<any, any>).size
+                && [...a].every(([key, value]) => isEqual(value, (b as Map<any, any>).get(key), _parents))
+                && isEqual({ ...a }, { ...b }, _parents);
+        } else if (a instanceof Set) {
+            return a.size === (b as Set<any>).size
+                && [...a].every(value => (b as Set<any>).has(value))
+                && isEqual({ ...a }, { ...b }, [...parents, a, b]);
+        } else if (a instanceof Array || a instanceof TypedArray) {
+            const _parents = [...parents, a, b];
+            return a.length === (b as any[] | TypedArray).length
+                && a.every((value, i) => isEqual(value, (b as any[] | TypedArray)[i], _parents))
+                && isEqual({ ...a }, { ...b }, _parents);
+        } else if (Array.isArray(a)) {
+            const _parents = [...parents, a, b];
+            return Array.isArray(b)
+                && a.length === b.length
+                && (a as any[]).every((value, i) => isEqual(value, b[i], _parents))
+                && isEqual({ ...a }, { ...b }, _parents);;
+        } else {
+            const _parents = [...parents, a, b];
+            return Reflect.ownKeys(a).length === Reflect.ownKeys(b).length
+                && Reflect.ownKeys(a).every(key => isEqual(a[key], b[key], _parents));
+        }
+    })(a, b);
 }
 
 /**
