@@ -3,7 +3,7 @@
  * @module
  */
 
-import { Constructor, TypedArray } from "./types.ts";
+import { Comparable, Constructor, Numerable, TypedArray } from "./types.ts";
 import { isClass } from "./class.ts";
 
 /**
@@ -295,13 +295,12 @@ export function isPlainObject(value: unknown): value is { [x: string | symbol]: 
 /**
  * Performs a deep comparison between two values to see if they are equivalent.
  * 
- * - Primitive values, `null`, `WeakMap`, `WeakSet` and circular references are
- *   compared using `Object.is()`.
- * - The `[Symbol.toStringTag]` property or the `constructor` of objects must be
+ * - Primitive values, `null`, and circular references are compared using the
+ *   `Object.is` function.
+ * - `String`, `Number` and `Boolean` object wrappers are coerced to their
+ *   primitive values before comparison.
+ * - The `constructor` of objects or the `[Symbol.toStringTag]` property must be
  *   the same to be considered potentially equal.
- * - `String`, `Number` and `Boolean` object wrappers are compared both by their
- *   primitive values and their enumerable properties.
- * - `Date` instances are compared by their timestamps and enumerable properties.
  * - The `name`, `message`, `stack`, `cause`, and `errors` properties of `Error`
  *   instances are always compared, if there are other enumerable properties,
  *   they are compared as well.
@@ -312,8 +311,12 @@ export function isPlainObject(value: unknown): value is { [x: string | symbol]: 
  *   properties, they are compared as well.
  * - Arrays and Typed Arrays are compared one by one by their indexes, if there
  *   are other enumerable properties, they are compared as well.
- * - In others cases, only enumerable own properties of objects are compared and
- *   are compared unordered.
+ * - Objects that implements the {@link Numerable} interface are compared using
+ *   the `valueOf` method.
+ * - Objects that implements the {@link Comparable} interface are compared using
+ *   the `compareTo` method.
+ * - Plain objects are compared by their own enumerable properties.
+ * - In others cases, values are compared using the `Object.is` function.
  */
 export function equals(a: any, b: any): boolean {
     return (function isEqual(a: any, b: any, parents: object[] = []): boolean {
@@ -326,27 +329,19 @@ export function equals(a: any, b: any): boolean {
         } else if (aType !== "object"
             || a === null
             || b === null
-            || a instanceof WeakMap
-            || a instanceof WeakSet
-            || b instanceof WeakMap
-            || b instanceof WeakSet
-            || a instanceof ArrayBuffer
-            || b instanceof ArrayBuffer
-            || (typeof SharedArrayBuffer === "function" && a instanceof SharedArrayBuffer)
-            || (typeof SharedArrayBuffer === "function" && b instanceof SharedArrayBuffer)
             || (parents.includes(a) && parents.includes(b))
         ) {
             return Object.is(a, b);
+        } else if (a.constructor === String) {
+            return String(a) === String(b);
+        } else if (a.constructor === Number) {
+            return Number(a) === Number(b);
+        } else if (a.constructor === Boolean) {
+            return Boolean(a) === Boolean(b);
         } else if (a.constructor !== b.constructor
             && a[Symbol.toStringTag] !== b[Symbol.toStringTag]
         ) {
             return false;
-        } else if (a.constructor === String) {
-            return String(a) === String(b) && isEqual({ ...a }, { ...b }, [...parents, a, b]);
-        } else if (a.constructor === Number || a instanceof Date) {
-            return Number(a) === Number(b) && isEqual({ ...a }, { ...b }, [...parents, a, b]);
-        } else if (a.constructor === Boolean) {
-            return Boolean(a) === Boolean(b) && isEqual({ ...a }, { ...b }, [...parents, a, b]);
         } else if (a instanceof Error) {
             const {
                 name: aName,
@@ -398,12 +393,63 @@ export function equals(a: any, b: any): boolean {
                 && a.length === b.length
                 && (a as any[]).every((value, i) => isEqual(value, b[i], _parents))
                 && isEqual({ ...a }, { ...b }, _parents);;
-        } else {
+        } else if (a.constructor === Object) {
             const _parents = [...parents, a, b];
             return Reflect.ownKeys(a).length === Reflect.ownKeys(b).length
                 && Reflect.ownKeys(a).every(key => isEqual(a[key], b[key], _parents));
+        } else {
+            try {
+                return compare(a, b) === 0;
+            } catch {
+                return Object.is(a, b);
+            }
         }
     })(a, b);
+}
+
+/**
+ * Compares two values, returns `-1` if `a < b`, `0` if `a === b` and `1` if `a > b`.
+ */
+export function compare(a: string, b: string): -1 | 0 | 1;
+export function compare(a: number, b: number): -1 | 0 | 1;
+export function compare(a: bigint, b: bigint): -1 | 0 | 1;
+export function compare(a: boolean, b: boolean): -1 | 0 | 1;
+export function compare<T extends Numerable>(a: T, b: T): -1 | 0 | 1;
+export function compare<T extends Comparable>(a: T, b: T): -1 | 0 | 1;
+export function compare(a: any, b: any): -1 | 0 | 1 {
+    if (typeof a !== typeof b) {
+        throw new TypeError("Cannot compare different types");
+    } else if (typeof a === "string") {
+        return a.localeCompare(b as string) as -1 | 0 | 1;
+    } else if (typeof a === "number" || typeof a === "bigint") {
+        return Object.is(a, b) ? 0 : a < b ? -1 : 1;
+    } else if (typeof a === "boolean") {
+        return a === b ? 0 : a ? 1 : -1;
+    } else if (typeof a !== "object" || a === null) {
+        throw new TypeError("Cannot compare non-comparable types");
+    } else if (typeof a.compareTo === "function" && typeof b.compareTo === "function") {
+        if (a.constructor === b.constructor || (a.constructor && b instanceof a.constructor)) {
+            return (a as Comparable).compareTo(b as Comparable);
+        } else if (b.constructor && a instanceof b.constructor) {
+            const result = (b as Comparable).compareTo(a as Comparable);
+            return result === 0 ? 0 : (-result as -1 | 1);
+        } else {
+            throw new TypeError("Cannot compare different types");
+        }
+    } else if (typeof a.valueOf === "function" && typeof b.valueOf === "function") {
+        const _a = a.valueOf();
+        const _b = b.valueOf();
+
+        if (typeof _a !== "number" || Object.is(_a, NaN)) {
+            throw new TypeError("The first argument cannot be coerced to a number");
+        } else if (typeof _b !== "number" || Object.is(_b, NaN)) {
+            throw new TypeError("The second argument cannot be coerced to a number");
+        } else {
+            return compare(_a, _b);
+        }
+    } else {
+        throw new TypeError("Cannot compare non-comparable types");
+    }
 }
 
 /**

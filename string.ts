@@ -12,6 +12,8 @@ const _chars = chars;
 /**
  * Compares two strings, returns `-1` if `a < b`, `0` if `a === b` and `1` if `a > b`.
  * 
+ * NOTE: prefer using `String.prototype.localeCompare` instead.
+ * 
  * @example
  * ```ts
  * import { compare } from "@ayonli/jsext/string";

@@ -181,3 +181,26 @@ export type ValueOf<T> = T extends String ? string
     : T extends BigInt ? bigint
     : T extends Symbol ? symbol
     : T;
+
+/**
+ * This interface represents an value that can be coerced to a number.
+ */
+export interface Numerable {
+    valueOf(): number;
+}
+
+/**
+ * The `Comparable` interface is used to compare an object of the same class
+ * with an instance of that class, it provides ordering of data for objects of
+ * the user-defined class.
+ * 
+ * This interface is inspired by Java's `Comparable` interface.
+ */
+export interface Comparable {
+    /**
+     * Compares this object with another object for order. Returns `-1` if this
+     * object is less than the other object, `0` if they are equal, and `1` if
+     * this object is greater than the other object.
+     */
+    compareTo(other: this): -1 | 0 | 1;
+}
