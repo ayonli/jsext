@@ -330,6 +330,10 @@ export function equals(a: any, b: any): boolean {
             || a instanceof WeakSet
             || b instanceof WeakMap
             || b instanceof WeakSet
+            || a instanceof ArrayBuffer
+            || b instanceof ArrayBuffer
+            || (typeof SharedArrayBuffer === "function" && a instanceof SharedArrayBuffer)
+            || (typeof SharedArrayBuffer === "function" && b instanceof SharedArrayBuffer)
             || (parents.includes(a) && parents.includes(b))
         ) {
             return Object.is(a, b);
