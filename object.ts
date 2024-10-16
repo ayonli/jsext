@@ -2,7 +2,7 @@
  * Functions for dealing with objects.
  * @module
  */
-
+import { equals as bytesEquals } from "./bytes.ts";
 import { Comparable, Constructor, TypedArray } from "./types.ts";
 import { isClass } from "./class.ts";
 
@@ -417,31 +417,30 @@ export function compare(a: any, b: any): -1 | 0 | 1 {
 /**
  * Performs a deep comparison between two values to see if they are equivalent.
  * 
- * - Primitive values, `null`, and circular references are compared using the
- *   `Object.is` function.
- * - `String`, `Number` and `Boolean` object wrappers are coerced to their
- *   primitive values before comparison.
+ * - Primitive values, functions and circular references are compared using the
+ *   `===` operator or the `Object.is` function.
+ * - `String`, `Number` and `Boolean` object wrappers are compared both by their
+ *   primitive values and their constructors.
+ * - Objects should have the same `constructor` in order to be considered potentially
+ *   equal, unless they implement the {@link Comparable} interface.
  * - Plain objects are compared by their own enumerable properties, unless they
  *   implement the {@link Comparable} interface.
- * - For non-plain objects, their `constructor`s must be the same to be considered
- *   potentially equal, unless they implement the {@link Comparable} interface.
- * - Arrays and Typed Arrays are compared one by one by their indexes, if there
- *   are other enumerable properties, they are compared as well.
- * - For `RegExp` instances, the `source`, `flags` and `lastIndex` properties are
- *   compared.
- * - The `name`, `message`, `stack`, `cause`, and `errors` properties of `Error`
- *   instances are always compared, if there are other enumerable properties,
- *   they are compared as well.
- * - `Map` and `Set` items are compared unordered, if there are other enumerable
+ * - Arrays are compared one by one by their items, if there are other enumerable
  *   properties, they are compared as well.
+ * - {@link ArrayBuffer}s and views are compared by their underlying buffers, if
+ *   there are other enumerable properties, they are compared as well.
+ * - {@link RegExp} `source`, `flags` and `lastIndex` properties are always compared,
+ *   if there are other enumerable properties, they are compared as well.
+ * - {@link Error} `name`, `message`, `stack`, `cause`, and `errors` properties are
+ *   always compared, if there are other enumerable properties, they are compared
+ *   as well.
+ * - {@link Map} and {@link Set} items are compared unordered, if there are other
+ *   enumerable properties, they are compared as well.
  * - Objects that implements the {@link Comparable} interface are compared using
  *   the `compareTo` method.
  * - Objects that implements the `Symbol.toPrimitive("number")` or `valueOf(): number`
  *   method are coerced to numbers before comparing.
- * - In others cases, values are compared using the `Object.is` function.
- * 
- * NOTE: This function does not distinguish `{}` and `Object.create(null)` they're
- * treated as equal as plain objects.
+ * - In others cases, values are compared using the `===` operator.
  * 
  * @example
  * ```ts
@@ -470,13 +469,15 @@ export function equals(a: any, b: any): boolean {
             || b === null
             || (parents.includes(a) && parents.includes(b))
         ) {
-            return Object.is(a, b);
-        } else if (a.constructor === String) {
-            return String(a) === String(b);
-        } else if (a.constructor === Number) {
-            return Number(a) === Number(b);
-        } else if (a.constructor === Boolean) {
-            return Boolean(a) === Boolean(b);
+            return a === b;
+        } else if (a.constructor === String && b.constructor === String) {
+            return a.valueOf() === b.valueOf();
+        } else if (a.constructor === Number && b.constructor === Number) {
+            const _a = a.valueOf();
+            const _b = b.valueOf();
+            return _a === _b || Object.is(_a, _b);
+        } else if (a.constructor === Boolean && b.constructor === Boolean) {
+            return a.valueOf() === b.valueOf();
         } else if (typeof a.compareTo === "function" && typeof b.compareTo === "function") {
             try {
                 return compare(a, b) === 0;
@@ -484,16 +485,37 @@ export function equals(a: any, b: any): boolean {
                 return false;
             }
         } else if (isPlainObject(a) && isPlainObject(b)) {
+            if (a.constructor !== b.constructor) {
+                return false;
+            }
+
             const _parents = [...parents, a, b];
             return Reflect.ownKeys(a).length === Reflect.ownKeys(b).length
                 && Reflect.ownKeys(a).every(key => isEqual(a[key], b[key], _parents));
         } else if (a.constructor !== b.constructor) {
             return false;
-        } else if (a instanceof Array || a instanceof TypedArray) {
+        } else if (a instanceof Array) {
             const _parents = [...parents, a, b];
-            return a.length === (b as any[] | TypedArray).length
-                && a.every((value, i) => isEqual(value, (b as any[] | TypedArray)[i], _parents))
+            return a.length === (b as any[]).length
+                && a.every((value, i) => isEqual(value, (b as any[])[i], _parents))
                 && isEqual({ ...a }, { ...b }, _parents);
+        } else if (a instanceof ArrayBuffer) {
+            const _a = new Uint8Array(a);
+            const _b = new Uint8Array((b as ArrayBuffer));
+            return bytesEquals(_a, _b)
+                && isEqual({ ...a }, { ...b }, [...parents, a, b]);
+        } else if (ArrayBuffer.isView(a)) {
+            const _parents = [...parents, a, b];
+
+            if (a instanceof Uint8Array) {
+                return bytesEquals(a, b as Uint8Array)
+                    && isEqual({ ...a }, { ...b }, _parents);
+            } else {
+                const _a = new Uint8Array(a.buffer);
+                const _b = new Uint8Array((b as TypedArray).buffer);
+                return bytesEquals(_a, _b)
+                    && isEqual({ ...a }, { ...b }, _parents);
+            }
         } else if (a instanceof Error) {
             const {
                 name: aName,
@@ -538,7 +560,7 @@ export function equals(a: any, b: any): boolean {
             try {
                 return compare(a, b) === 0;
             } catch {
-                return Object.is(a, b);
+                return a === b;
             }
         }
     })(a, b);

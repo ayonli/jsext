@@ -1,3 +1,4 @@
+import '../bytes.js';
 import Exception from '../error/Exception.js';
 import '../external/event-target-polyfill/index.js';
 import { getMIME } from '../filetype.js';

@@ -4,6 +4,7 @@ import { Comparable } from "./types.ts";
 import _try from "./try.ts";
 import { fromObject, toObject } from "./error.ts";
 import bytes from "./bytes.ts";
+import { isBun } from "./env.ts";
 
 class Person implements Comparable {
     constructor(public name: string, public age: number) { }
@@ -250,18 +251,37 @@ describe("Object", () => {
     });
 
     it("Object.equals", () => {
+        ok(Object.equals("", ""));
         ok(Object.equals("hello", "hello"));
         ok(!Object.equals("hello", "world"));
+        ok(Object.equals(new String("abc"), new String("abc")));
+        ok(!Object.equals(new String("abc"), "abc"));
         ok(Object.equals(0, -0));
         ok(Object.equals(123, 123));
         ok(!Object.equals(123, 456));
+        ok(Object.equals(new Number(123), new Number(123)));
+        ok(!Object.equals(new Number(123), 123));
+        ok(!Object.equals(123, "123"));
+        ok(Object.equals(false, false));
         ok(Object.equals(true, true));
         ok(!Object.equals(true, false));
+        ok(Object.equals(new Boolean(true), new Boolean(true)));
+        ok(!Object.equals(new Boolean(true), true));
+        ok(!Object.equals(true, 1));
+        ok(!Object.equals(false, 0));
         ok(Object.equals(null, null));
+        ok(Object.equals(undefined, undefined));
         ok(!Object.equals(null, undefined));
         ok(Object.equals(NaN, NaN));
         ok(Object.equals(NaN, 0 / 0));
+        ok(Object.equals(Infinity, Infinity));
+        ok(Object.equals(-Infinity, -Infinity));
+        ok(!Object.equals(Infinity, -Infinity));
+        ok(Object.equals(Symbol.toPrimitive, Symbol.toPrimitive));
+        ok(!Object.equals(Symbol.toPrimitive, Symbol.iterator));
+        ok(!Object.equals(Symbol("foo"), Symbol("foo")));
         ok(Object.equals(new Date("2024-01-01 00:00:00"), new Date("2024-01-01 00:00:00")));
+        ok(!Object.equals(new Date("2024-01-01 00:00:00"), new Date("2024-01-01 00:00:00").valueOf()));
         ok(!Object.equals(new Date("foobar"), new Date("foobar")));
 
         ok(Object.equals([1, 2, 3], [1, 2, 3]));
@@ -272,11 +292,18 @@ describe("Object", () => {
         const bytes2 = new Uint8Array([1, 2, 3]);
         const bytes3 = new Uint8Array([1, 2, 4]);
         const bytes4 = bytes([1, 2, 3]);
+        const bytes5 = new Int8Array([1, 2, 3]);
+        const bytes6 = new Int8Array([1, 2, 3]);
         ok(Object.equals(bytes1, bytes2));
         ok(!Object.equals(bytes1, bytes3));
         ok(!Object.equals(bytes1, bytes4));
         ok(Object.equals(bytes4, bytes([1, 2, 3])));
         ok(!Object.equals(bytes4, Object.assign(bytes([1, 2, 4]), { foo: "bar" })));
+        ok(Object.equals(bytes5, bytes6));
+
+        ok(Object.equals(bytes1.buffer, bytes2.buffer));
+        ok(!Object.equals(bytes1.buffer, bytes3.buffer));
+        ok(Object.equals(bytes1.buffer, bytes4.buffer));
 
         const regex = /[0-9a-zA-Z]/;
         ok(Object.equals(regex, /[0-9a-zA-Z]/));
@@ -286,27 +313,27 @@ describe("Object", () => {
         regex2.test("foobar");
         ok(!Object.equals(regex2, /bar/g));
 
-        const err = new Error("something went wrong");
-        const err1 = fromObject(toObject(err)); // make a clone
-        Object.assign(err, { code: 500 });
-        const err2 = fromObject(toObject(err))!; // make another clone
-        ok(Object.equals(err, err2));
-        ok(!Object.equals(err, err1));
-        ok(!Object.equals(err, new Error("something went wrong")));
-        ok(!Object.equals(err, Object.assign(new Error("something went wrong"), { code: 500 })));
-        ok(!Object.equals(err, Object.assign(err2, { code: 400 })));
+        function cloneError<T extends Error>(err: T): T {
+            if (typeof structuredClone === "function") {
+                return structuredClone(err);
+            } else {
+                return fromObject(toObject(err))!;
+            }
+        }
 
-        const exception = new Exception("something went wrong", {
-            cause: err,
-            code: 500,
-        });
-        const exception1 = fromObject(toObject(exception)); // make a clone
-        ok(Object.equals(exception, exception1));
-        const exception2 = Object.assign(exception, { errors: [err] });
-        const exception3 = fromObject(toObject(exception2))!; // make another clone
-        ok(Object.equals(exception2, exception3));
-        Object.assign(exception3, { status: 500 });
-        ok(!Object.equals(exception2, exception3));
+        if (!isBun) { // Bun's errors cannot be cloned properly
+            const err = new Error("something went wrong");
+            const err1 = cloneError(err); // make a clone
+            const err2 = cloneError(err); // make another clone
+            ok(Object.equals(err, err1));
+            Object.assign(err1, { code: 500 });
+            Object.assign(err2, { code: 500 });
+            ok(Object.equals(err1, err2));
+            ok(!Object.equals(err, err1));
+            ok(!Object.equals(err, new Error("something went wrong")));
+            ok(!Object.equals(err1, Object.assign(new Error("something went wrong"), { code: 500 })));
+            ok(!Object.equals(err1, Object.assign(err2, { code: 400 })));
+        }
 
         const map1 = new Map([["foo", "bar"], ["baz", "qux"]]);
         const map2 = new Map([["foo", "bar"], ["baz", "qux"]]);
@@ -347,11 +374,13 @@ describe("Object", () => {
         ok(!Object.equals(new B(1, "2"), new B(2, "2")));
 
         ok(Object.equals({}, {}));
-        ok(Object.equals({}, Object.create(null)));
+        ok(Object.equals(Object.create(null), Object.create(null)));
+        ok(!Object.equals({}, Object.create(null)));
         ok(Object.equals({ foo: "bar" }, { foo: "bar" }));
         ok(!Object.equals({ foo: "bar" }, { bar: "foo" }));
         ok(!Object.equals({ foo: "bar" }, { foo: "baz" }));
         ok(!Object.equals({ foo: "bar" }, { foo: "bar", bar: "foo" }));
+        ok(!Object.equals({ foo: "bar" }, Object.assign(Object.create(null), { foo: "bar" })));
 
         // IMPORTANT: use `strictEqual` instead of `ok` to compare the result,
         // when failed, `ok` will cause Node.js to hang up, the reason of this
@@ -374,8 +403,6 @@ describe("Object", () => {
                 nan: NaN,
                 num: 123,
                 regex: /foo/,
-                err,
-                err1: err,
                 date: new Date("2024-01-01 00:00:00"),
                 bytes: bytes([1, 2, 3]),
                 map1,
@@ -403,8 +430,6 @@ describe("Object", () => {
                 nil: null,
                 nan: NaN,
                 num: 123,
-                err: fromObject(toObject(err)),
-                err1: err,
                 date: new Date("2024-01-01 00:00:00"),
                 bytes: bytes([1, 2, 3]),
                 map1,

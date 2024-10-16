@@ -122,31 +122,30 @@ declare global {
         /**
          * Performs a deep comparison between two values to see if they are equivalent.
          * 
-         * - Primitive values, `null`, and circular references are compared using the
-         *   `Object.is` function.
-         * - `String`, `Number` and `Boolean` object wrappers are coerced to their
-         *   primitive values before comparison.
+         * - Primitive values, functions and circular references are compared using the
+         *   `===` operator or the `Object.is` function.
+         * - `String`, `Number` and `Boolean` object wrappers are compared both by their
+         *   primitive values and their constructors.
+         * - Objects should have the same `constructor` in order to be considered potentially
+         *   equal, unless they implement the {@link Comparable} interface.
          * - Plain objects are compared by their own enumerable properties, unless they
          *   implement the {@link Comparable} interface.
-         * - For non-plain objects, their `constructor`s must be the same to be considered
-         *   potentially equal, unless they implement the {@link Comparable} interface.
-         * - Arrays and Typed Arrays are compared one by one by their indexes, if there
-         *   are other enumerable properties, they are compared as well.
-         * - For `RegExp` instances, the `source`, `flags` and `lastIndex` properties are
-         *   compared.
-         * - The `name`, `message`, `stack`, `cause`, and `errors` properties of `Error`
-         *   instances are always compared, if there are other enumerable properties,
-         *   they are compared as well.
-         * - `Map` and `Set` items are compared unordered, if there are other enumerable
+         * - Arrays are compared one by one by their items, if there are other enumerable
          *   properties, they are compared as well.
+         * - {@link ArrayBuffer}s and views are compared by their underlying buffers, if
+         *   there are other enumerable properties, they are compared as well.
+         * - {@link RegExp} `source`, `flags` and `lastIndex` properties are always compared,
+         *   if there are other enumerable properties, they are compared as well.
+         * - {@link Error} `name`, `message`, `stack`, `cause`, and `errors` properties are
+         *   always compared, if there are other enumerable properties, they are compared
+         *   as well.
+         * - {@link Map} and {@link Set} items are compared unordered, if there are other
+         *   enumerable properties, they are compared as well.
          * - Objects that implements the {@link Comparable} interface are compared using
          *   the `compareTo` method.
          * - Objects that implements the `Symbol.toPrimitive("number")` or `valueOf(): number`
          *   method are coerced to numbers before comparing.
-         * - In others cases, values are compared using the `Object.is` function.
-         * 
-         * NOTE: This function does not distinguish `{}` and `Object.create(null)` they're
-         * treated as equal as plain objects.
+         * - In others cases, values are compared using the `===` operator.
          */
         equals(a: any, b: any): boolean;
         /**
