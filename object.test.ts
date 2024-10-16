@@ -447,10 +447,12 @@ describe("Object", () => {
         const x: Record<string, any> = {};
         x["y"] = { x };
         const y = { b: { a } };
+        const z = { y: { a } };
 
         ok(Object.equals(a, b));
         ok(!Object.equals(a, x));
         ok(Object.equals(b, y));
+        ok(!Object.equals(b, z));
     });
 
     it("Object.typeOf", () => {
