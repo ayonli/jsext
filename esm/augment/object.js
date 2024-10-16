@@ -1,4 +1,4 @@
-import { hasOwn, hasOwnMethod, patch, pick, omit, as, typeOf, isValid, isPlainObject, sanitize, sortKeys, flatKeys, filterEntries, mapEntries, partitionEntries, invert } from '../object.js';
+import { hasOwn, hasOwnMethod, patch, pick, omit, as, typeOf, isValid, isPlainObject, compare, equals, sanitize, sortKeys, flatKeys, filterEntries, mapEntries, partitionEntries, invert } from '../object.js';
 
 if (!Object.hasOwn) {
     Object.hasOwn = hasOwn;
@@ -13,6 +13,8 @@ Object.as = as;
 Object.typeOf = typeOf;
 Object.isValid = isValid;
 Object.isPlainObject = isPlainObject;
+Object.compare = compare;
+Object.equals = equals;
 Object.sanitize = sanitize;
 Object.sortKeys = sortKeys;
 Object.flatKeys = flatKeys;

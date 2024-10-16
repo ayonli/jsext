@@ -306,6 +306,38 @@ export function isPlainObject(value: unknown): value is { [x: string | symbol]: 
  *   `Object.create(null)` of the same structure.
  * 
  * NOTE: `NaN` and `null` are not comparable.
+ * 
+ * @example
+ * ```ts
+ * // compare primitive values
+ * import { compare } from "@ayonli/jsext/object";
+ * 
+ * console.log(compare("a", "b")); // -1
+ * console.log(compare(2, 1)); // 1
+ * console.log(compare(1n, 1n)); // 0
+ * ```
+ * 
+ * @example
+ * ```
+ * // compare objects
+ * import { compare } from "@ayonli/jsext/object";
+ * import { Comparable } from "@ayonli/jsext/types"
+ * 
+ * class Person implements Comparable {
+ *     constructor(public name: string, public age: number) {}
+ * 
+ *     compareTo(other: Person): -1 | 0 | 1 {
+ *         return this.age === other.age ? 0 : this.age < other.age ? -1 : 1;
+ *     }
+ * }
+ * 
+ * const person1 = new Person("Alice", 25);
+ * const person2 = new Person("Bob", 30);
+ * const person3 = new Person("Charlie", 25);
+ * 
+ * console.log(compare(person1, person2)); // -1
+ * console.log(compare(person1, person3)); // 0
+ * ```
  */
 export function compare(a: string, b: string): -1 | 0 | 1;
 export function compare(a: number, b: number): -1 | 0 | 1;
@@ -410,6 +442,22 @@ export function compare(a: any, b: any): -1 | 0 | 1 {
  * 
  * NOTE: This function does not distinguish `{}` and `Object.create(null)` they're
  * treated as equal as plain objects.
+ * 
+ * @example
+ * ```ts
+ * import { equals } from "@ayonli/jsext/object";
+ * 
+ * console.log(equals("Hello", "Hello")); // true
+ * console.log(equals(42, 42)); // true
+ * console.log(equals([1, 2, 3], [1, 2, 3])); // true
+ * console.log(equals({ foo: "bar" }, { foo: "bar" })); // true
+ * 
+ * // deep comparison
+ * console.log(equals(
+ *     { foo: { bar: "baz" } },
+ *     { foo: { bar: "baz" } }
+ * )); // true
+ * ```
  */
 export function equals(a: any, b: any): boolean {
     return (function isEqual(a: any, b: any, parents: object[] = []): boolean {
