@@ -440,6 +440,17 @@ describe("Object", () => {
                 person2: new Member("Joe", 25, "User"),
             },
         }), true);
+
+        const a: Record<string, any> = {};
+        a["b"] = { a };
+        const b = { b: { a } };
+        const x: Record<string, any> = {};
+        x["y"] = { x };
+        const y = { b: { a } };
+
+        ok(Object.equals(a, b));
+        ok(!Object.equals(a, x));
+        ok(Object.equals(b, y));
     });
 
     it("Object.typeOf", () => {
