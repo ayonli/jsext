@@ -17,7 +17,10 @@ import {
     mapEntries,
     partitionEntries,
     invert,
+    compare,
+    equals,
 } from "../object.ts";
+import { Comparable } from "../types.ts";
 
 declare global {
     interface ObjectConstructor {
@@ -92,6 +95,60 @@ declare global {
          * the `Object` constructor or one with a `[[Prototype]]` of `null`.
          */
         isPlainObject(value: unknown): value is { [x: string | symbol]: any; };
+        /**
+         * Compares two values, returns `-1` if `a < b`, `0` if `a === b` and `1` if `a > b`.
+         * If the values are not comparable, a {@link TypeError} is thrown.
+         * 
+         * - Primitive types such as `string`, `number`, `bigint` and `boolean` are supported.
+         * - Objects that implement the {@link Comparable} interface are supported.
+         * - Objects that implement the `Symbol.toPrimitive("number")` or `valueOf(): number`
+         *   method are supported.
+         * - When primitive values are compared, they must be of the same type.
+         * - When objects are compared, they must be instances of the same class or one class is
+         *   a super class of the other, or the objects are created with an object literal or
+         *   `Object.create(null)` of the same structure.
+         * 
+         * NOTE: `NaN` and `null` are not comparable.
+         */
+        compare(a: string, b: string): -1 | 0 | 1;
+        compare(a: number, b: number): -1 | 0 | 1;
+        compare(a: bigint, b: bigint): -1 | 0 | 1;
+        compare(a: boolean, b: boolean): -1 | 0 | 1;
+        compare<T extends Comparable>(a: T, b: T): -1 | 0 | 1;
+        compare<T extends {
+            [Symbol.toPrimitive](hint: "string" | "number" | "default"): string | number;
+        }>(a: T, b: T): -1 | 0 | 1;
+        compare<T extends { valueOf(): number; }>(a: T, b: T): -1 | 0 | 1;
+        /**
+         * Performs a deep comparison between two values to see if they are equivalent.
+         * 
+         * - Primitive values, `null`, and circular references are compared using the
+         *   `Object.is` function.
+         * - `String`, `Number` and `Boolean` object wrappers are coerced to their
+         *   primitive values before comparison.
+         * - Plain objects are compared by their own enumerable properties, unless they
+         *   implement the {@link Comparable} interface.
+         * - For non-plain objects, their `constructor`s must be the same to be considered
+         *   potentially equal, unless they implement the {@link Comparable} interface.
+         * - Arrays and Typed Arrays are compared one by one by their indexes, if there
+         *   are other enumerable properties, they are compared as well.
+         * - For `RegExp` instances, the `source`, `flags` and `lastIndex` properties are
+         *   compared.
+         * - The `name`, `message`, `stack`, `cause`, and `errors` properties of `Error`
+         *   instances are always compared, if there are other enumerable properties,
+         *   they are compared as well.
+         * - `Map` and `Set` items are compared unordered, if there are other enumerable
+         *   properties, they are compared as well.
+         * - Objects that implements the {@link Comparable} interface are compared using
+         *   the `compareTo` method.
+         * - Objects that implements the `Symbol.toPrimitive("number")` or `valueOf(): number`
+         *   method are coerced to numbers before comparing.
+         * - In others cases, values are compared using the `Object.is` function.
+         * 
+         * NOTE: This function does not distinguish `{}` and `Object.create(null)` they're
+         * treated as equal as plain objects.
+         */
+        equals(a: any, b: any): boolean;
         /**
          * Creates an object base on the original object but without any invalid values
          * (except for `null`), and trims the value if it's a string.
@@ -185,6 +242,8 @@ Object.as = as;
 Object.typeOf = typeOf;
 Object.isValid = isValid;
 Object.isPlainObject = isPlainObject;
+Object.compare = compare;
+Object.equals = equals;
 Object.sanitize = sanitize;
 Object.sortKeys = sortKeys;
 Object.flatKeys = flatKeys;

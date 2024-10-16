@@ -183,13 +183,6 @@ export type ValueOf<T> = T extends String ? string
     : T;
 
 /**
- * This interface represents an value that can be coerced to a number.
- */
-export interface Numerable {
-    valueOf(): number;
-}
-
-/**
  * The `Comparable` interface is used to compare an object of the same class
  * with an instance of that class, it provides ordering of data for objects of
  * the user-defined class.
