@@ -194,15 +194,30 @@ function isPlainObject(value) {
     return proto === null || proto.constructor === Object;
 }
 function compare(a, b) {
-    if (typeof a !== typeof b) {
-        throw new TypeError("Cannot compare values of different types");
+    const result = doCompare(a, b);
+    if (typeof result === "number") {
+        return result;
+    }
+    else {
+        throw new TypeError(result.description);
+    }
+}
+const CompareTwoTypes = Symbol("Cannot compare values of different types");
+const ComparNonComparable = Symbol("Cannot compare non-comparable values");
+const CompareNaN = Symbol("Cannot compare NaN");
+function doCompare(a, b) {
+    if ((a === null && b === null) || (a === undefined && b === undefined)) {
+        return 0;
+    }
+    else if (typeof a !== typeof b) {
+        return CompareTwoTypes;
     }
     else if (typeof a === "string") {
         return a.localeCompare(b);
     }
     else if (typeof a === "number") {
         if (Object.is(a, NaN) || Object.is(b, NaN)) {
-            throw new TypeError("Cannot compare NaN");
+            return CompareNaN;
         }
         return a === b ? 0 : a < b ? -1 : 1;
     }
@@ -212,8 +227,8 @@ function compare(a, b) {
     else if (typeof a === "boolean") {
         return a === b ? 0 : a ? 1 : -1;
     }
-    else if (typeof a !== "object" || a === null) {
-        throw new TypeError("Cannot compare values of non-comparable types");
+    else if (typeof a !== "object") {
+        return ComparNonComparable;
     }
     else if (typeof a.compareTo === "function" && typeof b.compareTo === "function") {
         if (isPlainObject(a) && isPlainObject(b)) {
@@ -223,7 +238,7 @@ function compare(a, b) {
                 return a.compareTo(b);
             }
             else {
-                throw new TypeError("Cannot compare values of different types");
+                return CompareTwoTypes;
             }
         }
         else if (a.constructor === b.constructor) {
@@ -237,22 +252,39 @@ function compare(a, b) {
             return result === 0 ? 0 : -result;
         }
         else {
-            throw new TypeError("Cannot compare values of different types");
+            return CompareTwoTypes;
         }
     }
     else if (typeof a.valueOf === "function" && typeof b.valueOf === "function") {
-        const _a = a.valueOf();
-        const _b = b.valueOf();
-        if (typeof _a === typeof _b &&
-            ["string", "number", "bigint", "boolean"].includes(typeof _a)) {
-            return compare(_a, _b);
+        a = a.valueOf();
+        b = b.valueOf();
+        if ((a === null && b === null) || (a === undefined && b === undefined)) {
+            return 0;
+        }
+        else if (typeof a !== typeof b) {
+            return ComparNonComparable;
+        }
+        else if (typeof a === "string") {
+            return a.localeCompare(b);
+        }
+        else if (typeof a === "number") {
+            if (Object.is(a, NaN) || Object.is(b, NaN)) {
+                return ComparNonComparable;
+            }
+            return a === b ? 0 : a < b ? -1 : 1;
+        }
+        else if (typeof a === "bigint") {
+            return a === b ? 0 : a < b ? -1 : 1;
+        }
+        else if (typeof a === "boolean") {
+            return a === b ? 0 : a ? 1 : -1;
         }
         else {
-            throw new TypeError("Cannot compare values of non-comparable types");
+            return ComparNonComparable;
         }
     }
     else {
-        throw new TypeError("Cannot compare values of non-comparable types");
+        return ComparNonComparable;
     }
 }
 /**
@@ -279,8 +311,8 @@ function compare(a, b) {
  *   enumerable properties, they are compared as well.
  * - Objects that implements the {@link Comparable} interface are compared using
  *   the `compareTo` method.
- * - Objects whose `valueOf` method returns valid primitive values are also supported
- *   and use their primitive values for comparison.
+ * - Objects whose `valueOf` method returns primitive values other than `NaN` are
+ *   also supported and use their primitive values for comparison.
  * - In others cases, values are compared using the `===` operator.
  *
  * @example
@@ -300,112 +332,106 @@ function compare(a, b) {
  * ```
  */
 function equals(a, b) {
-    return (function isEqual(a, b, parents = []) {
-        if (a === b || Object.is(a, b)) {
+    return isEqual(a, b);
+}
+function isEqual(a, b, parents = []) {
+    if (a === b || Object.is(a, b)) {
+        return true;
+    }
+    else if (typeof a !== typeof b) {
+        return false;
+    }
+    else if (typeof a !== "object"
+        || a === null
+        || b === null
+        || (parents.includes(a) && parents.includes(b))) {
+        return a === b;
+    }
+    else if (a.constructor === String && b.constructor === String) {
+        return a.valueOf() === b.valueOf();
+    }
+    else if (a.constructor === Number && b.constructor === Number) {
+        const _a = a.valueOf();
+        const _b = b.valueOf();
+        return _a === _b || Object.is(_a, _b);
+    }
+    else if (a.constructor === Boolean && b.constructor === Boolean) {
+        return a.valueOf() === b.valueOf();
+    }
+    else if (typeof a.compareTo === "function" && typeof b.compareTo === "function") {
+        return doCompare(a, b) === 0;
+    }
+    else if (isPlainObject(a) && isPlainObject(b)) {
+        if (a.constructor !== b.constructor) {
+            return false; // `{}` and `Object.create(null)` are not equal
+        }
+        else if (doCompare(a, b) === 0) {
             return true;
         }
-        else if (typeof a !== typeof b) {
-            return false;
-        }
-        else if (typeof a !== "object"
-            || a === null
-            || b === null
-            || (parents.includes(a) && parents.includes(b))) {
-            return a === b;
-        }
-        else if (a.constructor === String && b.constructor === String) {
-            return a.valueOf() === b.valueOf();
-        }
-        else if (a.constructor === Number && b.constructor === Number) {
-            const _a = a.valueOf();
-            const _b = b.valueOf();
-            return _a === _b || Object.is(_a, _b);
-        }
-        else if (a.constructor === Boolean && b.constructor === Boolean) {
-            return a.valueOf() === b.valueOf();
-        }
-        else if (typeof a.compareTo === "function" && typeof b.compareTo === "function") {
-            try {
-                return compare(a, b) === 0;
-            }
-            catch (_c) {
-                return false;
-            }
-        }
-        else if (isPlainObject(a) && isPlainObject(b)) {
-            if (a.constructor !== b.constructor) {
-                return false;
-            }
-            const _parents = [...parents, a, b];
-            return Reflect.ownKeys(a).length === Reflect.ownKeys(b).length
-                && Reflect.ownKeys(a).every(key => isEqual(a[key], b[key], _parents));
-        }
-        else if (a.constructor !== b.constructor) {
-            return false;
-        }
-        else if (a instanceof Array) {
-            const _parents = [...parents, a, b];
-            return a.length === b.length
-                && a.every((value, i) => isEqual(value, b[i], _parents))
+        const _parents = [...parents, a, b];
+        return Reflect.ownKeys(a).length === Reflect.ownKeys(b).length
+            && Reflect.ownKeys(a).every(key => isEqual(a[key], b[key], _parents));
+    }
+    else if (a.constructor !== b.constructor) {
+        return false;
+    }
+    else if (a instanceof Array) {
+        const _parents = [...parents, a, b];
+        return a.length === b.length
+            && a.every((value, i) => isEqual(value, b[i], _parents))
+            && isEqual({ ...a }, { ...b }, _parents);
+    }
+    else if (a instanceof ArrayBuffer) {
+        const _a = new Uint8Array(a);
+        const _b = new Uint8Array(b);
+        return equals$1(_a, _b)
+            && isEqual({ ...a }, { ...b }, [...parents, a, b]);
+    }
+    else if (ArrayBuffer.isView(a)) {
+        const _parents = [...parents, a, b];
+        if (a instanceof Uint8Array) {
+            return equals$1(a, b)
                 && isEqual({ ...a }, { ...b }, _parents);
-        }
-        else if (a instanceof ArrayBuffer) {
-            const _a = new Uint8Array(a);
-            const _b = new Uint8Array(b);
-            return equals$1(_a, _b)
-                && isEqual({ ...a }, { ...b }, [...parents, a, b]);
-        }
-        else if (ArrayBuffer.isView(a)) {
-            const _parents = [...parents, a, b];
-            if (a instanceof Uint8Array) {
-                return equals$1(a, b)
-                    && isEqual({ ...a }, { ...b }, _parents);
-            }
-            else {
-                const _a = new Uint8Array(a.buffer);
-                const _b = new Uint8Array(b.buffer);
-                return equals$1(_a, _b)
-                    && isEqual({ ...a }, { ...b }, _parents);
-            }
-        }
-        else if (a instanceof Error) {
-            const { name: aName, message: aMessage, stack: aStack, cause: aCause, errors: aErrors, ...aRest } = a;
-            const { name: bName, message: bMessage, stack: bStack, cause: bCause, errors: bErrors, ...bRest } = b;
-            return aName === bName
-                && aMessage === bMessage
-                && aStack === bStack
-                && isEqual(aCause, bCause, [...parents, a, b])
-                && isEqual(aErrors, bErrors, [...parents, a, b])
-                && isEqual(aRest, bRest, [...parents, a, b]);
-        }
-        else if (a instanceof RegExp) {
-            const { source: aSource, flags: aFlags, lastIndex: aLastIndex, ...aRest } = a;
-            const { source: bSource, flags: bFlags, lastIndex: bLastIndex, ...bRest } = b;
-            return aSource === bSource
-                && aFlags === bFlags
-                && aLastIndex === bLastIndex
-                && isEqual(aRest, bRest, [...parents, a, b]);
-        }
-        else if (a instanceof Map) {
-            const _parents = [...parents, a, b];
-            return a.size === b.size
-                && [...a].every(([key, value]) => isEqual(value, b.get(key), _parents))
-                && isEqual({ ...a }, { ...b }, _parents);
-        }
-        else if (a instanceof Set) {
-            return a.size === b.size
-                && [...a].every(value => b.has(value))
-                && isEqual({ ...a }, { ...b }, [...parents, a, b]);
         }
         else {
-            try {
-                return compare(a, b) === 0;
-            }
-            catch (_d) {
-                return a === b;
-            }
+            const _a = new Uint8Array(a.buffer);
+            const _b = new Uint8Array(b.buffer);
+            return equals$1(_a, _b)
+                && isEqual({ ...a }, { ...b }, _parents);
         }
-    })(a, b);
+    }
+    else if (a instanceof Error) {
+        const { name: aName, message: aMessage, stack: aStack, cause: aCause, errors: aErrors, ...aRest } = a;
+        const { name: bName, message: bMessage, stack: bStack, cause: bCause, errors: bErrors, ...bRest } = b;
+        return aName === bName
+            && aMessage === bMessage
+            && aStack === bStack
+            && isEqual(aCause, bCause, [...parents, a, b])
+            && isEqual(aErrors, bErrors, [...parents, a, b])
+            && isEqual(aRest, bRest, [...parents, a, b]);
+    }
+    else if (a instanceof RegExp) {
+        const { source: aSource, flags: aFlags, lastIndex: aLastIndex, ...aRest } = a;
+        const { source: bSource, flags: bFlags, lastIndex: bLastIndex, ...bRest } = b;
+        return aSource === bSource
+            && aFlags === bFlags
+            && aLastIndex === bLastIndex
+            && isEqual(aRest, bRest, [...parents, a, b]);
+    }
+    else if (a instanceof Map) {
+        const _parents = [...parents, a, b];
+        return a.size === b.size
+            && [...a].every(([key, value]) => isEqual(value, b.get(key), _parents))
+            && isEqual({ ...a }, { ...b }, _parents);
+    }
+    else if (a instanceof Set) {
+        return a.size === b.size
+            && [...a].every(value => b.has(value))
+            && isEqual({ ...a }, { ...b }, [...parents, a, b]);
+    }
+    else {
+        return doCompare(a, b) === 0;
+    }
 }
 /**
  * Creates an object base on the original object but without any invalid values

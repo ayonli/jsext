@@ -31,6 +31,9 @@ declare global {
         /**
          * Performs a shallow compare to another array and see if it contains the same elements as
          * this array.
+         * 
+         * NOTE: This function only performs a shallow comparison, to compare nested objects
+         * in the array, use the `equals` function from `@ayonli/jsext/object` module instead.
          */
         equals(another: T[]): boolean;
         /** Checks if the array contains another array as a slice of its contents. */

@@ -215,6 +215,9 @@ describe("Object", () => {
         const [err] = _try(() => Object.compare(new Person("Jane", 25), new Employee("John", 30)));
         strictEqual(err instanceof TypeError, true);
 
+        strictEqual(Object.compare(null, null), 0);
+        strictEqual(Object.compare(undefined, undefined), 0);
+
         strictEqual(Object.compare({
             valueOf: () => "A",
         }, {
@@ -278,6 +281,17 @@ describe("Object", () => {
         }, {
             valueOf: () => false,
         }), 1);
+
+        strictEqual(Object.compare({
+            valueOf: () => null,
+        }, {
+            valueOf: () => null,
+        }), 0);
+        strictEqual(Object.compare({
+            valueOf: () => undefined,
+        }, {
+            valueOf: () => undefined,
+        }), 0);
     });
 
     it("Object.equals", () => {
@@ -483,6 +497,27 @@ describe("Object", () => {
         ok(!Object.equals(a, x));
         ok(Object.equals(b, y));
         ok(!Object.equals(b, z));
+
+        ok(Object.equals({
+            valueOf: () => null,
+        }, {
+            valueOf: () => null,
+        }));
+        ok(Object.equals({
+            valueOf: () => undefined,
+        }, {
+            valueOf: () => undefined,
+        }));
+        ok(!Object.equals({
+            valueOf: () => null,
+        }, {
+            valueOf: () => undefined,
+        }));
+        ok(!Object.equals({
+            valueOf: () => NaN,
+        }, {
+            valueOf: () => NaN,
+        }));
     });
 
     it("Object.typeOf", () => {

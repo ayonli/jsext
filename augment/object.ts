@@ -99,22 +99,25 @@ declare global {
          * Compares two values, returns `-1` if `a < b`, `0` if `a === b` and `1` if `a > b`.
          * If the values are not comparable, a {@link TypeError} is thrown.
          * 
-         * - Primitive types such as `string`, `number`, `bigint` and `boolean` are supported.
+         * - Primitive types such as `string`, `number`, `bigint`, `boolean`, `null`
+         *   and `undefined` are supported.
          * - Objects that implement the {@link Comparable} interface are supported.
-         * - Objects whose `valueOf` method returns valid primitive values are supported.
+         * - Objects whose `valueOf` method returns primitive values are supported.
          * - When primitive values are compared, they must be of the same type.
          * - When objects are compared, they must be instances of the same class or one class is
          *   a super class of the other, or the objects are created with an object literal or
          *   `Object.create(null)` of the same structure.
          * 
-         * NOTE: `NaN` and `null` are not comparable.
+         * NOTE: `NaN` is not comparable.
          */
         compare(a: string, b: string): -1 | 0 | 1;
         compare(a: number, b: number): -1 | 0 | 1;
         compare(a: bigint, b: bigint): -1 | 0 | 1;
         compare(a: boolean, b: boolean): -1 | 0 | 1;
+        compare(a: null, b: null): 0;
+        compare(a: undefined, b: undefined): 0;
         compare<T extends Comparable>(a: T, b: T): -1 | 0 | 1;
-        compare<T extends { valueOf(): string | number | bigint | boolean; }>(a: T, b: T): -1 | 0 | 1;
+        compare<T extends { valueOf(): string | number | bigint | boolean | null | undefined; }>(a: T, b: T): -1 | 0 | 1;
         /**
          * Performs a deep comparison between two values to see if they are equivalent.
          * 
@@ -139,8 +142,8 @@ declare global {
          *   enumerable properties, they are compared as well.
          * - Objects that implements the {@link Comparable} interface are compared using
          *   the `compareTo` method.
-         * - Objects whose `valueOf` method returns valid primitive values are also supported
-         *   and use their primitive values for comparison.
+         * - Objects whose `valueOf` method returns primitive values other than `NaN` are
+         *   also supported and use their primitive values for comparison.
          * - In others cases, values are compared using the `===` operator.
          */
         equals(a: any, b: any): boolean;
