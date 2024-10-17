@@ -240,31 +240,15 @@ function compare(a, b) {
             throw new TypeError("Cannot compare values of different types");
         }
     }
-    else if (typeof a[Symbol.toPrimitive] === "function"
-        && typeof b[Symbol.toPrimitive] === "function") {
-        const _a = a[Symbol.toPrimitive]("number");
-        const _b = b[Symbol.toPrimitive]("number");
-        if (typeof _a !== "number" || Object.is(_a, NaN)) {
-            throw new TypeError("The first value cannot be coerced to a number");
-        }
-        else if (typeof _b !== "number" || Object.is(_b, NaN)) {
-            throw new TypeError("The second value cannot be coerced to a number");
-        }
-        else {
-            return compare(_a, _b);
-        }
-    }
     else if (typeof a.valueOf === "function" && typeof b.valueOf === "function") {
         const _a = a.valueOf();
         const _b = b.valueOf();
-        if (typeof _a !== "number" || Object.is(_a, NaN)) {
-            throw new TypeError("The first value cannot be coerced to a number");
-        }
-        else if (typeof _b !== "number" || Object.is(_b, NaN)) {
-            throw new TypeError("The second value cannot be coerced to a number");
+        if (typeof _a === typeof _b &&
+            ["string", "number", "bigint", "boolean"].includes(typeof _a)) {
+            return compare(_a, _b);
         }
         else {
-            return compare(_a, _b);
+            throw new TypeError("Cannot compare values of non-comparable types");
         }
     }
     else {
@@ -295,8 +279,8 @@ function compare(a, b) {
  *   enumerable properties, they are compared as well.
  * - Objects that implements the {@link Comparable} interface are compared using
  *   the `compareTo` method.
- * - Objects that implements the `Symbol.toPrimitive("number")` or `valueOf(): number`
- *   method are coerced to numbers before comparing.
+ * - Objects whose `valueOf` method returns valid primitive values are also supported
+ *   and use their primitive values for comparison.
  * - In others cases, values are compared using the `===` operator.
  *
  * @example

@@ -101,8 +101,7 @@ declare global {
          * 
          * - Primitive types such as `string`, `number`, `bigint` and `boolean` are supported.
          * - Objects that implement the {@link Comparable} interface are supported.
-         * - Objects that implement the `Symbol.toPrimitive("number")` or `valueOf(): number`
-         *   method are supported.
+         * - Objects whose `valueOf` method returns valid primitive values are supported.
          * - When primitive values are compared, they must be of the same type.
          * - When objects are compared, they must be instances of the same class or one class is
          *   a super class of the other, or the objects are created with an object literal or
@@ -115,10 +114,7 @@ declare global {
         compare(a: bigint, b: bigint): -1 | 0 | 1;
         compare(a: boolean, b: boolean): -1 | 0 | 1;
         compare<T extends Comparable>(a: T, b: T): -1 | 0 | 1;
-        compare<T extends {
-            [Symbol.toPrimitive](hint: "string" | "number" | "default"): string | number;
-        }>(a: T, b: T): -1 | 0 | 1;
-        compare<T extends { valueOf(): number; }>(a: T, b: T): -1 | 0 | 1;
+        compare<T extends { valueOf(): string | number | bigint | boolean; }>(a: T, b: T): -1 | 0 | 1;
         /**
          * Performs a deep comparison between two values to see if they are equivalent.
          * 
@@ -143,8 +139,8 @@ declare global {
          *   enumerable properties, they are compared as well.
          * - Objects that implements the {@link Comparable} interface are compared using
          *   the `compareTo` method.
-         * - Objects that implements the `Symbol.toPrimitive("number")` or `valueOf(): number`
-         *   method are coerced to numbers before comparing.
+         * - Objects whose `valueOf` method returns valid primitive values are also supported
+         *   and use their primitive values for comparison.
          * - In others cases, values are compared using the `===` operator.
          */
         equals(a: any, b: any): boolean;

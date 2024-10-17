@@ -298,8 +298,7 @@ export function isPlainObject(value: unknown): value is { [x: string | symbol]: 
  * 
  * - Primitive types such as `string`, `number`, `bigint` and `boolean` are supported.
  * - Objects that implement the {@link Comparable} interface are supported.
- * - Objects that implement the `Symbol.toPrimitive("number")` or `valueOf(): number`
- *   method are supported.
+ * - Objects whose `valueOf` method returns valid primitive values are supported.
  * - When primitive values are compared, they must be of the same type.
  * - When objects are compared, they must be instances of the same class or one class is
  *   a super class of the other, or the objects are created with an object literal or
@@ -344,10 +343,7 @@ export function compare(a: number, b: number): -1 | 0 | 1;
 export function compare(a: bigint, b: bigint): -1 | 0 | 1;
 export function compare(a: boolean, b: boolean): -1 | 0 | 1;
 export function compare<T extends Comparable>(a: T, b: T): -1 | 0 | 1;
-export function compare<T extends {
-    [Symbol.toPrimitive](hint: "string" | "number" | "default"): string | number;
-}>(a: T, b: T): -1 | 0 | 1;
-export function compare<T extends { valueOf(): number; }>(a: T, b: T): -1 | 0 | 1;
+export function compare<T extends { valueOf(): string | number | bigint | boolean; }>(a: T, b: T): -1 | 0 | 1;
 export function compare(a: any, b: any): -1 | 0 | 1 {
     if (typeof a !== typeof b) {
         throw new TypeError("Cannot compare values of different types");
@@ -385,29 +381,16 @@ export function compare(a: any, b: any): -1 | 0 | 1 {
         } else {
             throw new TypeError("Cannot compare values of different types");
         }
-    } else if (typeof a[Symbol.toPrimitive] === "function"
-        && typeof b[Symbol.toPrimitive] === "function"
-    ) {
-        const _a = a[Symbol.toPrimitive]("number");
-        const _b = b[Symbol.toPrimitive]("number");
-
-        if (typeof _a !== "number" || Object.is(_a, NaN)) {
-            throw new TypeError("The first value cannot be coerced to a number");
-        } else if (typeof _b !== "number" || Object.is(_b, NaN)) {
-            throw new TypeError("The second value cannot be coerced to a number");
-        } else {
-            return compare(_a, _b);
-        }
     } else if (typeof a.valueOf === "function" && typeof b.valueOf === "function") {
         const _a = a.valueOf();
         const _b = b.valueOf();
 
-        if (typeof _a !== "number" || Object.is(_a, NaN)) {
-            throw new TypeError("The first value cannot be coerced to a number");
-        } else if (typeof _b !== "number" || Object.is(_b, NaN)) {
-            throw new TypeError("The second value cannot be coerced to a number");
-        } else {
+        if (typeof _a === typeof _b &&
+            ["string", "number", "bigint", "boolean"].includes(typeof _a)
+        ) {
             return compare(_a, _b);
+        } else {
+            throw new TypeError("Cannot compare values of non-comparable types");
         }
     } else {
         throw new TypeError("Cannot compare values of non-comparable types");
@@ -438,8 +421,8 @@ export function compare(a: any, b: any): -1 | 0 | 1 {
  *   enumerable properties, they are compared as well.
  * - Objects that implements the {@link Comparable} interface are compared using
  *   the `compareTo` method.
- * - Objects that implements the `Symbol.toPrimitive("number")` or `valueOf(): number`
- *   method are coerced to numbers before comparing.
+ * - Objects whose `valueOf` method returns valid primitive values are also supported
+ *   and use their primitive values for comparison.
  * - In others cases, values are compared using the `===` operator.
  * 
  * @example

@@ -187,11 +187,9 @@ describe("Object", () => {
         strictEqual(Object.compare(2, 1), 1);
         strictEqual(Object.compare(1, 1), 0);
 
-        if (typeof BigInt !== "undefined") {
-            strictEqual(Object.compare(BigInt(1), BigInt(2)), -1);
-            strictEqual(Object.compare(BigInt(2), BigInt(1)), 1);
-            strictEqual(Object.compare(BigInt(1), BigInt(1)), 0);
-        }
+        strictEqual(Object.compare(BigInt(1), BigInt(2)), -1);
+        strictEqual(Object.compare(BigInt(2), BigInt(1)), 1);
+        strictEqual(Object.compare(BigInt(1), BigInt(1)), 0);
 
         strictEqual(Object.compare(false, true), -1);
         strictEqual(Object.compare(true, true), 0);
@@ -218,19 +216,19 @@ describe("Object", () => {
         strictEqual(err instanceof TypeError, true);
 
         strictEqual(Object.compare({
-            [Symbol.toPrimitive]: () => 1,
+            valueOf: () => "A",
         }, {
-            [Symbol.toPrimitive]: () => 2,
+            valueOf: () => "B",
         }), -1);
         strictEqual(Object.compare({
-            [Symbol.toPrimitive]: () => 1,
+            valueOf: () => "A",
         }, {
-            [Symbol.toPrimitive]: () => 1,
+            valueOf: () => "A",
         }), 0);
         strictEqual(Object.compare({
-            [Symbol.toPrimitive]: () => 2,
+            valueOf: () => "B",
         }, {
-            [Symbol.toPrimitive]: () => 1,
+            valueOf: () => "A",
         }), 1);
 
         strictEqual(Object.compare({
@@ -247,6 +245,38 @@ describe("Object", () => {
             valueOf: () => 2,
         }, {
             valueOf: () => 1,
+        }), 1);
+
+        strictEqual(Object.compare({
+            valueOf: () => BigInt(1),
+        }, {
+            valueOf: () => BigInt(2),
+        }), -1);
+        strictEqual(Object.compare({
+            valueOf: () => BigInt(1),
+        }, {
+            valueOf: () => BigInt(1),
+        }), 0);
+        strictEqual(Object.compare({
+            valueOf: () => BigInt(2),
+        }, {
+            valueOf: () => BigInt(1),
+        }), 1);
+
+        strictEqual(Object.compare({
+            valueOf: () => false,
+        }, {
+            valueOf: () => true,
+        }), -1);
+        strictEqual(Object.compare({
+            valueOf: () => true,
+        }, {
+            valueOf: () => true,
+        }), 0);
+        strictEqual(Object.compare({
+            valueOf: () => true,
+        }, {
+            valueOf: () => false,
         }), 1);
     });
 
@@ -355,23 +385,23 @@ describe("Object", () => {
         ok(Object.equals(new Member("Jane", 25, "Admin"), new Person("Jane", 25)));
         ok(!Object.equals(new Person("Jane", 25), new Employee("Jane", 25)));
 
-        class A {
-            constructor(private value: number, readonly tag: string) { }
-            [Symbol.toPrimitive](hint: "string" | "number" | "default") {
-                return hint === "string" ? String(this.value) : this.value;
-            }
-        }
-        ok(Object.equals(new A(1, "1"), new A(1, "2")));
-        ok(!Object.equals(new A(1, "2"), new A(2, "2")));
-
-        class B {
+        class Foo {
             constructor(private value: number, readonly tag: string) { }
             valueOf() {
                 return this.value;
             }
         }
-        ok(Object.equals(new B(1, "1"), new B(1, "2")));
-        ok(!Object.equals(new B(1, "2"), new B(2, "2")));
+        ok(Object.equals(new Foo(1, "1"), new Foo(1, "2")));
+        ok(!Object.equals(new Foo(1, "2"), new Foo(2, "2")));
+
+        class Bar {
+            constructor(readonly tag: string) { }
+            valueOf() {
+                return this.tag;
+            }
+        }
+        ok(Object.equals(new Bar("1"), new Bar("1")));
+        ok(!Object.equals(new Bar("1"), new Bar("2")));
 
         ok(Object.equals({}, {}));
         ok(Object.equals(Object.create(null), Object.create(null)));
