@@ -186,6 +186,7 @@ describe("Object", () => {
         strictEqual(Object.compare(1, 2), -1);
         strictEqual(Object.compare(2, 1), 1);
         strictEqual(Object.compare(1, 1), 0);
+        strictEqual(Object.compare(0, -0), 0);
 
         strictEqual(Object.compare(BigInt(1), BigInt(2)), -1);
         strictEqual(Object.compare(BigInt(2), BigInt(1)), 1);
@@ -212,11 +213,21 @@ describe("Object", () => {
         strictEqual(Object.compare(new Member("Jane", 25, "Admin"), new Person("John", 30)), -1);
 
         // Cannot compare different types, even they have the same structure
-        const [err] = _try(() => Object.compare(new Person("Jane", 25), new Employee("John", 30)));
-        strictEqual(err instanceof TypeError, true);
+        const [err1] = _try(() => Object.compare(new Person("Jane", 25), new Employee("John", 30)));
+        strictEqual(err1 instanceof TypeError, true);
 
         strictEqual(Object.compare(null, null), 0);
         strictEqual(Object.compare(undefined, undefined), 0);
+        strictEqual(Object.compare(Symbol.for("foo"), Symbol.for("foo")), 0);
+        const obj = { foo: "hello", bar: "world" };
+        strictEqual(Object.compare(obj, obj), 0);
+        const arr = [1, 2, 3];
+        strictEqual(Object.compare(arr, arr), 0);
+        const fn = () => null;
+        strictEqual(Object.compare(fn, fn), 0);
+
+        const [err2] = _try(() => Object.compare(NaN, NaN));
+        strictEqual(err2 instanceof TypeError, true);
 
         strictEqual(Object.compare({
             valueOf: () => "A",
@@ -330,7 +341,6 @@ describe("Object", () => {
 
         ok(Object.equals([1, 2, 3], [1, 2, 3]));
         ok(!Object.equals([1, 2, 3], [1, 2, 4]));
-        ok(!Object.equals([1, 2, 3], Object.assign([1, 2, 3], { foo: "bar" })));
 
         const bytes1 = new Uint8Array([1, 2, 3]);
         const bytes2 = new Uint8Array([1, 2, 3]);
@@ -342,7 +352,6 @@ describe("Object", () => {
         ok(!Object.equals(bytes1, bytes3));
         ok(!Object.equals(bytes1, bytes4));
         ok(Object.equals(bytes4, bytes([1, 2, 3])));
-        ok(!Object.equals(bytes4, Object.assign(bytes([1, 2, 4]), { foo: "bar" })));
         ok(Object.equals(bytes5, bytes6));
 
         ok(Object.equals(bytes1.buffer, bytes2.buffer));
@@ -384,14 +393,12 @@ describe("Object", () => {
         const map3 = new Map([["foo", "bar"], ["baz", "quux"]]);
         ok(Object.equals(map1, map2));
         ok(!Object.equals(map1, map3));
-        ok(!Object.equals(map1, Object.assign(map2, { bar: "baz" })));
 
         const set1 = new Set(["foo", "bar", "baz"]);
         const set2 = new Set(["foo", "bar", "baz"]);
         const set3 = new Set(["foo", "bar", "qux"]);
         ok(Object.equals(set1, set2));
         ok(!Object.equals(set1, set3));
-        ok(!Object.equals(set1, Object.assign(set2, { foo: "bar" })));
 
         ok(Object.equals(new Person("Jane", 25), new Person("Joe", 25)));
         ok(!Object.equals(new Person("Jane", 25), new Person("John", 30)));

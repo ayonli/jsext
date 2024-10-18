@@ -305,7 +305,7 @@ export function isPlainObject(value: unknown): value is { [x: string | symbol]: 
  *   a super class of the other, or the objects are created with an object literal or
  *   `Object.create(null)` of the same structure.
  * 
- * NOTE: `NaN` is not comparable.
+ * `NaN` is not comparable and will throw an error if compared.
  * 
  * @example
  * ```ts
@@ -343,11 +343,10 @@ export function compare(a: string, b: string): -1 | 0 | 1;
 export function compare(a: number, b: number): -1 | 0 | 1;
 export function compare(a: bigint, b: bigint): -1 | 0 | 1;
 export function compare(a: boolean, b: boolean): -1 | 0 | 1;
-export function compare(a: null, b: null): 0;
-export function compare(a: undefined, b: undefined): 0;
 export function compare<T extends Comparable>(a: T, b: T): -1 | 0 | 1;
 export function compare<T extends { valueOf(): string | number | bigint | boolean; }>(a: T, b: T): -1 | 0 | 1;
-export function compare(a: any, b: any): -1 | 0 | 1 {
+export function compare(a: unknown, b: unknown): 0 | never;
+export function compare(a: any, b: any): -1 | 0 | 1 | never {
     const result = doCompare(a, b);
 
     if (typeof result === "number") {
@@ -362,7 +361,7 @@ const ComparNonComparable = Symbol("Cannot compare non-comparable values");
 const CompareNaN = Symbol("Cannot compare NaN");
 
 function doCompare(a: any, b: any): -1 | 0 | 1 | symbol {
-    if ((a === null && b === null) || (a === undefined && b === undefined)) {
+    if (a === b) {
         return 0;
     } else if (typeof a !== typeof b) {
         return CompareTwoTypes;
@@ -429,32 +428,31 @@ function doCompare(a: any, b: any): -1 | 0 | 1 | symbol {
 }
 
 /**
- * Performs a deep comparison between two values to see if they are equivalent.
+ * Performs a deep comparison between two values to see if they are equivalent
+ * or contain the same data.
  * 
  * - Primitive values, functions and circular references are compared using the
  *   `===` operator or the `Object.is` function.
- * - `String`, `Number` and `Boolean` object wrappers are compared both by their
- *   primitive values and their constructors.
+ * - Object wrappers such as `String`, `Number` and `Boolean` are compared both
+ *   by their primitive values and their constructors.
  * - Objects should have the same `constructor` in order to be considered potentially
  *   equal, unless they implement the {@link Comparable} interface.
  * - Plain objects are compared by their own enumerable properties, unless they
  *   implement the {@link Comparable} interface.
- * - Arrays are compared one by one by their items, if there are other enumerable
- *   properties, they are compared as well.
- * - {@link ArrayBuffer}s and views are compared by their underlying buffers, if
- *   there are other enumerable properties, they are compared as well.
- * - {@link RegExp} `source`, `flags` and `lastIndex` properties are always compared,
- *   if there are other enumerable properties, they are compared as well.
+ * - Arrays are compared one by one by their items.
+ * - {@link ArrayBuffer}s and views are compared by their underlying buffers.
+ * - {@link Map} and {@link Set} items are compared unordered.
+ * - {@link RegExp} `source`, `flags` and `lastIndex` properties are compared.
  * - {@link Error} `name`, `message`, `stack`, `cause`, and `errors` properties are
  *   always compared, if there are other enumerable properties, they are compared
  *   as well.
- * - {@link Map} and {@link Set} items are compared unordered, if there are other
- *   enumerable properties, they are compared as well.
  * - Objects that implements the {@link Comparable} interface are compared using
  *   the `compareTo` method.
  * - Objects whose `valueOf` method returns primitive values other than `NaN` are
  *   also supported and use their primitive values for comparison.
  * - In others cases, values are compared using the `===` operator.
+ * 
+ * NOTE: This function returns `true` if the two values are both `NaN`.
  * 
  * @example
  * ```ts
@@ -477,15 +475,13 @@ export function equals(a: any, b: any): boolean {
 }
 
 function isEqual(a: any, b: any, parents: object[] = []): boolean {
-    if (a === b || Object.is(a, b)) {
+    if (a === null || a === undefined) {
+        return a === b;
+    } else if (a === b || Object.is(a, b)) {
         return true;
     } else if (typeof a !== typeof b) {
         return false;
-    } else if (typeof a !== "object"
-        || a === null
-        || b === null
-        || (parents.includes(a) && parents.includes(b))
-    ) {
+    } else if (typeof a !== "object") {
         return a === b;
     } else if (a.constructor === String && b.constructor === String) {
         return a.valueOf() === b.valueOf();
@@ -495,42 +491,55 @@ function isEqual(a: any, b: any, parents: object[] = []): boolean {
         return _a === _b || Object.is(_a, _b);
     } else if (a.constructor === Boolean && b.constructor === Boolean) {
         return a.valueOf() === b.valueOf();
+    } else if ((parents.includes(a) && parents.includes(b))) {
+        return true;
     } else if (typeof a.compareTo === "function" && typeof b.compareTo === "function") {
         return doCompare(a, b) === 0;
+    } else if (a.constructor !== b.constructor) {
+        return false;
     } else if (isPlainObject(a) && isPlainObject(b)) {
-        if (a.constructor !== b.constructor) {
-            return false; // `{}` and `Object.create(null)` are not equal
-        } else if (doCompare(a, b) === 0) {
+        if (doCompare(a, b) === 0) {
             return true;
         }
 
+        const aKeys = Reflect.ownKeys(a);
+        const bKeys = Reflect.ownKeys(b);
+
+        if (aKeys.length !== bKeys.length) {
+            return false;
+        }
+
         const _parents = [...parents, a, b];
-        return Reflect.ownKeys(a).length === Reflect.ownKeys(b).length
-            && Reflect.ownKeys(a).every(key => isEqual(a[key], b[key], _parents));
-    } else if (a.constructor !== b.constructor) {
-        return false;
+        return aKeys.every(key => isEqual(a[key], b[key], _parents));
     } else if (a instanceof Array) {
         const _parents = [...parents, a, b];
         return a.length === (b as any[]).length
-            && a.every((value, i) => isEqual(value, (b as any[])[i], _parents))
-            && isEqual({ ...a }, { ...b }, _parents);
+            && a.every((value, i) => isEqual(value, (b as any[])[i], _parents));
     } else if (a instanceof ArrayBuffer) {
         const _a = new Uint8Array(a);
         const _b = new Uint8Array((b as ArrayBuffer));
-        return bytesEquals(_a, _b)
-            && isEqual({ ...a }, { ...b }, [...parents, a, b]);
+        return bytesEquals(_a, _b);
     } else if (ArrayBuffer.isView(a)) {
-        const _parents = [...parents, a, b];
-
         if (a instanceof Uint8Array) {
-            return bytesEquals(a, b as Uint8Array)
-                && isEqual({ ...a }, { ...b }, _parents);
+            return bytesEquals(a, b as Uint8Array);
         } else {
             const _a = new Uint8Array(a.buffer);
             const _b = new Uint8Array((b as TypedArray).buffer);
-            return bytesEquals(_a, _b)
-                && isEqual({ ...a }, { ...b }, _parents);
+            return bytesEquals(_a, _b);
         }
+    } else if (a instanceof Map) {
+        const _parents = [...parents, a, b];
+        return a.size === (b as Map<any, any>).size
+            && [...a].every(([key, value]) => isEqual(value, (b as Map<any, any>).get(key), _parents));
+    } else if (a instanceof Set) {
+        return a.size === (b as Set<any>).size
+            && [...a].every(value => (b as Set<any>).has(value));
+    } else if (a instanceof RegExp) {
+        const { source: aSource, flags: aFlags, lastIndex: aLastIndex } = a as RegExp;
+        const { source: bSource, flags: bFlags, lastIndex: bLastIndex } = b as RegExp;
+        return aSource === bSource
+            && aFlags === bFlags
+            && aLastIndex === bLastIndex;
     } else if (a instanceof Error) {
         const {
             name: aName,
@@ -555,22 +564,6 @@ function isEqual(a: any, b: any, parents: object[] = []): boolean {
             && isEqual(aCause, bCause, [...parents, a, b])
             && isEqual(aErrors, bErrors, [...parents, a, b])
             && isEqual(aRest, bRest, [...parents, a, b]);
-    } else if (a instanceof RegExp) {
-        const { source: aSource, flags: aFlags, lastIndex: aLastIndex, ...aRest } = a as RegExp;
-        const { source: bSource, flags: bFlags, lastIndex: bLastIndex, ...bRest } = b as RegExp;
-        return aSource === bSource
-            && aFlags === bFlags
-            && aLastIndex === bLastIndex
-            && isEqual(aRest, bRest, [...parents, a, b]);
-    } else if (a instanceof Map) {
-        const _parents = [...parents, a, b];
-        return a.size === (b as Map<any, any>).size
-            && [...a].every(([key, value]) => isEqual(value, (b as Map<any, any>).get(key), _parents))
-            && isEqual({ ...a }, { ...b }, _parents);
-    } else if (a instanceof Set) {
-        return a.size === (b as Set<any>).size
-            && [...a].every(value => (b as Set<any>).has(value))
-            && isEqual({ ...a }, { ...b }, [...parents, a, b]);
     } else {
         return doCompare(a, b) === 0;
     }

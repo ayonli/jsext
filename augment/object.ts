@@ -108,43 +108,43 @@ declare global {
          *   a super class of the other, or the objects are created with an object literal or
          *   `Object.create(null)` of the same structure.
          * 
-         * NOTE: `NaN` is not comparable.
+         * NOTE: `NaN` is not comparable and will throw an error if compared.
          */
         compare(a: string, b: string): -1 | 0 | 1;
         compare(a: number, b: number): -1 | 0 | 1;
         compare(a: bigint, b: bigint): -1 | 0 | 1;
         compare(a: boolean, b: boolean): -1 | 0 | 1;
-        compare(a: null, b: null): 0;
-        compare(a: undefined, b: undefined): 0;
         compare<T extends Comparable>(a: T, b: T): -1 | 0 | 1;
         compare<T extends { valueOf(): string | number | bigint | boolean | null | undefined; }>(a: T, b: T): -1 | 0 | 1;
+        compare(a: unknown, b: unknown): 0 | never;
         /**
          * Performs a deep comparison between two values to see if they are equivalent.
          * 
+         * Performs a deep comparison between two values to see if they are equivalent
+         * or contain the same data.
+         * 
          * - Primitive values, functions and circular references are compared using the
          *   `===` operator or the `Object.is` function.
-         * - `String`, `Number` and `Boolean` object wrappers are compared both by their
-         *   primitive values and their constructors.
+         * - Object wrappers such as `String`, `Number` and `Boolean` are compared both
+         *   by their primitive values and their constructors.
          * - Objects should have the same `constructor` in order to be considered potentially
          *   equal, unless they implement the {@link Comparable} interface.
          * - Plain objects are compared by their own enumerable properties, unless they
          *   implement the {@link Comparable} interface.
-         * - Arrays are compared one by one by their items, if there are other enumerable
-         *   properties, they are compared as well.
-         * - {@link ArrayBuffer}s and views are compared by their underlying buffers, if
-         *   there are other enumerable properties, they are compared as well.
-         * - {@link RegExp} `source`, `flags` and `lastIndex` properties are always compared,
-         *   if there are other enumerable properties, they are compared as well.
+         * - Arrays are compared one by one by their items.
+         * - {@link ArrayBuffer}s and views are compared by their underlying buffers.
+         * - {@link Map} and {@link Set} items are compared unordered.
+         * - {@link RegExp} `source`, `flags` and `lastIndex` properties are compared.
          * - {@link Error} `name`, `message`, `stack`, `cause`, and `errors` properties are
          *   always compared, if there are other enumerable properties, they are compared
          *   as well.
-         * - {@link Map} and {@link Set} items are compared unordered, if there are other
-         *   enumerable properties, they are compared as well.
          * - Objects that implements the {@link Comparable} interface are compared using
          *   the `compareTo` method.
          * - Objects whose `valueOf` method returns primitive values other than `NaN` are
          *   also supported and use their primitive values for comparison.
          * - In others cases, values are compared using the `===` operator.
+         * 
+         * NOTE: This function returns `true` if the two values are both `NaN`.
          */
         equals(a: any, b: any): boolean;
         /**
