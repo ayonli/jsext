@@ -446,6 +446,9 @@ function doCompare(a: any, b: any): -1 | 0 | 1 | symbol {
  * - {@link Error} `name`, `message`, `stack`, `cause`, and `errors` properties are
  *   always compared, if there are other enumerable properties, they are compared
  *   as well.
+ * - {@link URL} and {@link URLSearchParams} objects are compared by their string
+ *   representations.
+ * - {@link Headers} and {@link FormData} are compared by their entries unordered.
  * - Objects that implements the {@link Comparable} interface are compared using
  *   the `compareTo` method.
  * - Objects whose `valueOf` method returns primitive values other than `NaN` are
@@ -470,7 +473,7 @@ function doCompare(a: any, b: any): -1 | 0 | 1 | symbol {
  * )); // true
  * ```
  */
-export function equals(a: any, b: any): boolean {
+export function equals(a: unknown, b: unknown): boolean {
     return isEqual(a, b);
 }
 
@@ -497,7 +500,7 @@ function isEqual(a: any, b: any, parents: object[] = []): boolean {
         return doCompare(a, b) === 0;
     } else if (a.constructor !== b.constructor) {
         return false;
-    } else if (isPlainObject(a) && isPlainObject(b)) {
+    } else if (a.constructor === Object || !a.constructor) {
         if (doCompare(a, b) === 0) {
             return true;
         }
@@ -564,6 +567,49 @@ function isEqual(a: any, b: any, parents: object[] = []): boolean {
             && isEqual(aCause, bCause, [...parents, a, b])
             && isEqual(aErrors, bErrors, [...parents, a, b])
             && isEqual(aRest, bRest, [...parents, a, b]);
+    } else if (a instanceof URL) {
+        return a.href === (b as URL).href;
+    } else if (a instanceof URLSearchParams) {
+        return a.toString() === (b as URLSearchParams).toString();
+    } else if (typeof Headers === "function" && a instanceof Headers) {
+        const _b = b as Headers;
+        const aSetCookies = a.getSetCookie();
+        const bSetCookies = _b.getSetCookie();
+
+        if (aSetCookies.length !== bSetCookies.length) {
+            return false;
+        } else if (aSetCookies.length && aSetCookies.some(v => !bSetCookies.includes(v))) {
+            return false;
+        }
+
+        const aEntries = [...a].filter(([key]) => key !== "set-cookie");
+        const bEntries = [..._b].filter(([key]) => key !== "set-cookie");
+
+        return aEntries.length === bEntries.length
+            && aEntries.every(([key, value]) => value === _b.get(key));
+    } else if (typeof FormData === "function" && a instanceof FormData) {
+        const aEntries = [...a].reduce((map, [key, value]) => {
+            const list = map.get(key) ?? [];
+            list.push(value);
+            map.set(key, list);
+
+            return map;
+        }, new Map<string, (string | File)[]>());
+        const bEntries = [...(b as FormData)].reduce((map, [key, value]) => {
+            const list = map.get(key) ?? [];
+            list.push(value);
+            map.set(key, list);
+
+            return map;
+        }, new Map<string, (string | File)[]>());
+
+        return aEntries.size === bEntries.size
+            && [...aEntries].every(([key, values]) => {
+                const _values = bEntries.get(key);
+                return isEqual(values, _values);
+            });
+    } else if (typeof Storage === "function" && a instanceof Storage) {
+        return isEqual({ ...a }, { ...b });
     } else {
         return doCompare(a, b) === 0;
     }

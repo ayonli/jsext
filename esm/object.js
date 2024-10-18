@@ -206,7 +206,7 @@ const CompareTwoTypes = Symbol("Cannot compare values of different types");
 const ComparNonComparable = Symbol("Cannot compare non-comparable values");
 const CompareNaN = Symbol("Cannot compare NaN");
 function doCompare(a, b) {
-    if ((a === null && b === null) || (a === undefined && b === undefined)) {
+    if (a === b) {
         return 0;
     }
     else if (typeof a !== typeof b) {
@@ -288,32 +288,34 @@ function doCompare(a, b) {
     }
 }
 /**
- * Performs a deep comparison between two values to see if they are equivalent.
+ * Performs a deep comparison between two values to see if they are equivalent
+ * or contain the same data.
  *
  * - Primitive values, functions and circular references are compared using the
  *   `===` operator or the `Object.is` function.
- * - `String`, `Number` and `Boolean` object wrappers are compared both by their
- *   primitive values and their constructors.
+ * - Object wrappers such as `String`, `Number` and `Boolean` are compared both
+ *   by their primitive values and their constructors.
  * - Objects should have the same `constructor` in order to be considered potentially
  *   equal, unless they implement the {@link Comparable} interface.
  * - Plain objects are compared by their own enumerable properties, unless they
  *   implement the {@link Comparable} interface.
- * - Arrays are compared one by one by their items, if there are other enumerable
- *   properties, they are compared as well.
- * - {@link ArrayBuffer}s and views are compared by their underlying buffers, if
- *   there are other enumerable properties, they are compared as well.
- * - {@link RegExp} `source`, `flags` and `lastIndex` properties are always compared,
- *   if there are other enumerable properties, they are compared as well.
+ * - Arrays are compared one by one by their items.
+ * - {@link ArrayBuffer}s and views are compared by their underlying buffers.
+ * - {@link Map} and {@link Set} items are compared unordered.
+ * - {@link RegExp} `source`, `flags` and `lastIndex` properties are compared.
  * - {@link Error} `name`, `message`, `stack`, `cause`, and `errors` properties are
  *   always compared, if there are other enumerable properties, they are compared
  *   as well.
- * - {@link Map} and {@link Set} items are compared unordered, if there are other
- *   enumerable properties, they are compared as well.
+ * - {@link URL} and {@link URLSearchParams} objects are compared by their string
+ *   representations.
+ * - {@link Headers} and {@link FormData} are compared by their entries unordered.
  * - Objects that implements the {@link Comparable} interface are compared using
  *   the `compareTo` method.
  * - Objects whose `valueOf` method returns primitive values other than `NaN` are
  *   also supported and use their primitive values for comparison.
  * - In others cases, values are compared using the `===` operator.
+ *
+ * NOTE: This function returns `true` if the two values are both `NaN`.
  *
  * @example
  * ```ts
@@ -335,16 +337,16 @@ function equals(a, b) {
     return isEqual(a, b);
 }
 function isEqual(a, b, parents = []) {
-    if (a === b || Object.is(a, b)) {
+    if (a === null || a === undefined) {
+        return a === b;
+    }
+    else if (a === b || Object.is(a, b)) {
         return true;
     }
     else if (typeof a !== typeof b) {
         return false;
     }
-    else if (typeof a !== "object"
-        || a === null
-        || b === null
-        || (parents.includes(a) && parents.includes(b))) {
+    else if (typeof a !== "object") {
         return a === b;
     }
     else if (a.constructor === String && b.constructor === String) {
@@ -358,47 +360,62 @@ function isEqual(a, b, parents = []) {
     else if (a.constructor === Boolean && b.constructor === Boolean) {
         return a.valueOf() === b.valueOf();
     }
+    else if ((parents.includes(a) && parents.includes(b))) {
+        return true;
+    }
     else if (typeof a.compareTo === "function" && typeof b.compareTo === "function") {
         return doCompare(a, b) === 0;
-    }
-    else if (isPlainObject(a) && isPlainObject(b)) {
-        if (a.constructor !== b.constructor) {
-            return false; // `{}` and `Object.create(null)` are not equal
-        }
-        else if (doCompare(a, b) === 0) {
-            return true;
-        }
-        const _parents = [...parents, a, b];
-        return Reflect.ownKeys(a).length === Reflect.ownKeys(b).length
-            && Reflect.ownKeys(a).every(key => isEqual(a[key], b[key], _parents));
     }
     else if (a.constructor !== b.constructor) {
         return false;
     }
+    else if (a.constructor === Object || !a.constructor) {
+        if (doCompare(a, b) === 0) {
+            return true;
+        }
+        const aKeys = Reflect.ownKeys(a);
+        const bKeys = Reflect.ownKeys(b);
+        if (aKeys.length !== bKeys.length) {
+            return false;
+        }
+        const _parents = [...parents, a, b];
+        return aKeys.every(key => isEqual(a[key], b[key], _parents));
+    }
     else if (a instanceof Array) {
         const _parents = [...parents, a, b];
         return a.length === b.length
-            && a.every((value, i) => isEqual(value, b[i], _parents))
-            && isEqual({ ...a }, { ...b }, _parents);
+            && a.every((value, i) => isEqual(value, b[i], _parents));
     }
     else if (a instanceof ArrayBuffer) {
         const _a = new Uint8Array(a);
         const _b = new Uint8Array(b);
-        return equals$1(_a, _b)
-            && isEqual({ ...a }, { ...b }, [...parents, a, b]);
+        return equals$1(_a, _b);
     }
     else if (ArrayBuffer.isView(a)) {
-        const _parents = [...parents, a, b];
         if (a instanceof Uint8Array) {
-            return equals$1(a, b)
-                && isEqual({ ...a }, { ...b }, _parents);
+            return equals$1(a, b);
         }
         else {
             const _a = new Uint8Array(a.buffer);
             const _b = new Uint8Array(b.buffer);
-            return equals$1(_a, _b)
-                && isEqual({ ...a }, { ...b }, _parents);
+            return equals$1(_a, _b);
         }
+    }
+    else if (a instanceof Map) {
+        const _parents = [...parents, a, b];
+        return a.size === b.size
+            && [...a].every(([key, value]) => isEqual(value, b.get(key), _parents));
+    }
+    else if (a instanceof Set) {
+        return a.size === b.size
+            && [...a].every(value => b.has(value));
+    }
+    else if (a instanceof RegExp) {
+        const { source: aSource, flags: aFlags, lastIndex: aLastIndex } = a;
+        const { source: bSource, flags: bFlags, lastIndex: bLastIndex } = b;
+        return aSource === bSource
+            && aFlags === bFlags
+            && aLastIndex === bLastIndex;
     }
     else if (a instanceof Error) {
         const { name: aName, message: aMessage, stack: aStack, cause: aCause, errors: aErrors, ...aRest } = a;
@@ -410,24 +427,50 @@ function isEqual(a, b, parents = []) {
             && isEqual(aErrors, bErrors, [...parents, a, b])
             && isEqual(aRest, bRest, [...parents, a, b]);
     }
-    else if (a instanceof RegExp) {
-        const { source: aSource, flags: aFlags, lastIndex: aLastIndex, ...aRest } = a;
-        const { source: bSource, flags: bFlags, lastIndex: bLastIndex, ...bRest } = b;
-        return aSource === bSource
-            && aFlags === bFlags
-            && aLastIndex === bLastIndex
-            && isEqual(aRest, bRest, [...parents, a, b]);
+    else if (a instanceof URL) {
+        return a.href === b.href;
     }
-    else if (a instanceof Map) {
-        const _parents = [...parents, a, b];
-        return a.size === b.size
-            && [...a].every(([key, value]) => isEqual(value, b.get(key), _parents))
-            && isEqual({ ...a }, { ...b }, _parents);
+    else if (a instanceof URLSearchParams) {
+        return a.toString() === b.toString();
     }
-    else if (a instanceof Set) {
-        return a.size === b.size
-            && [...a].every(value => b.has(value))
-            && isEqual({ ...a }, { ...b }, [...parents, a, b]);
+    else if (typeof Headers === "function" && a instanceof Headers) {
+        const _b = b;
+        const aSetCookies = a.getSetCookie();
+        const bSetCookies = _b.getSetCookie();
+        if (aSetCookies.length !== bSetCookies.length) {
+            return false;
+        }
+        else if (aSetCookies.length && aSetCookies.some(v => !bSetCookies.includes(v))) {
+            return false;
+        }
+        const aEntries = [...a].filter(([key]) => key !== "set-cookie");
+        const bEntries = [..._b].filter(([key]) => key !== "set-cookie");
+        return aEntries.length === bEntries.length
+            && aEntries.every(([key, value]) => value === _b.get(key));
+    }
+    else if (typeof FormData === "function" && a instanceof FormData) {
+        const aEntries = [...a].reduce((map, [key, value]) => {
+            var _c;
+            const list = (_c = map.get(key)) !== null && _c !== void 0 ? _c : [];
+            list.push(value);
+            map.set(key, list);
+            return map;
+        }, new Map());
+        const bEntries = [...b].reduce((map, [key, value]) => {
+            var _c;
+            const list = (_c = map.get(key)) !== null && _c !== void 0 ? _c : [];
+            list.push(value);
+            map.set(key, list);
+            return map;
+        }, new Map());
+        return aEntries.size === bEntries.size
+            && [...aEntries].every(([key, values]) => {
+                const _values = bEntries.get(key);
+                return isEqual(values, _values);
+            });
+    }
+    else if (typeof Storage === "function" && a instanceof Storage) {
+        return isEqual({ ...a }, { ...b });
     }
     else {
         return doCompare(a, b) === 0;

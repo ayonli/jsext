@@ -138,6 +138,9 @@ declare global {
          * - {@link Error} `name`, `message`, `stack`, `cause`, and `errors` properties are
          *   always compared, if there are other enumerable properties, they are compared
          *   as well.
+         * - {@link URL} and {@link URLSearchParams} objects are compared by their string
+         *   representations.
+         * - {@link Headers} and {@link FormData} are compared by their entries unordered.
          * - Objects that implements the {@link Comparable} interface are compared using
          *   the `compareTo` method.
          * - Objects whose `valueOf` method returns primitive values other than `NaN` are
@@ -146,7 +149,7 @@ declare global {
          * 
          * NOTE: This function returns `true` if the two values are both `NaN`.
          */
-        equals(a: any, b: any): boolean;
+        equals(a: unknown, b: unknown): boolean;
         /**
          * Creates an object base on the original object but without any invalid values
          * (except for `null`), and trims the value if it's a string.

@@ -400,6 +400,95 @@ describe("Object", () => {
         ok(Object.equals(set1, set2));
         ok(!Object.equals(set1, set3));
 
+        ok(Object.equals(
+            new URL("https://github.com/ayonli/jsext"),
+            new URL("https://github.com/ayonli/jsext")
+        ));
+        ok(!Object.equals(
+            new URL("https://github.com/ayonli/jsext"),
+            new URL("http://github.com/ayonli/jsext")
+        ));
+
+        ok(Object.equals(
+            new URLSearchParams("?foo=bar&baz=qux"),
+            new URLSearchParams("?foo=bar&baz=qux")
+        ));
+        ok(!Object.equals(
+            new URLSearchParams("?foo=bar&baz=qux"),
+            new URLSearchParams("?foo=bar&baz=quux")
+        ));
+        ok(Object.equals(
+            new Headers([
+                ["accept", "application/json"],
+                ["content-type", "application/json"],
+                ["set-cookie", "foo=bar"],
+                ["set-cookie", "baz=qux"],
+            ]),
+            new Headers([
+                ["accept", "application/json"],
+                ["content-type", "application/json"],
+                ["set-cookie", "foo=bar"],
+                ["set-cookie", "baz=qux"],
+            ])
+        ));
+        ok(!Object.equals(
+            new Headers([
+                ["accept", "application/json"],
+                ["content-type", "application/json"],
+                ["set-cookie", "foo=bar"],
+                ["set-cookie", "baz=qux"],
+            ]),
+            new Headers([
+                ["accept", "application/json"],
+                ["content-type", "application/json"],
+                ["set-cookie", "foo=bar"],
+            ])
+        ));
+        ok(!Object.equals(
+            new Headers([
+                ["accept", "application/json"],
+                ["content-type", "application/json"],
+                ["set-cookie", "foo=bar"],
+                ["set-cookie", "baz=qux"],
+            ]),
+            new Headers([
+                ["accept", "application/xml"],
+                ["content-type", "application/xml"],
+                ["set-cookie", "foo=bar"],
+                ["set-cookie", "baz=qux"],
+            ])
+        ));
+        ok(!Object.equals(
+            new Headers([
+                ["accept", "application/json"],
+                ["content-type", "application/json"],
+            ]),
+            new Headers([
+                ["accept", "application/xml"],
+            ])
+        ));
+
+        const formData1 = new FormData();
+        const formData2 = new FormData();
+        const formData3 = new FormData();
+        formData1.append("foo", "hello");
+        formData1.append("bar", "world");
+        formData2.append("foo", "hello");
+        formData2.append("bar", "world");
+        formData3.append("foo", "hello");
+        formData3.append("baz", "world");
+        ok(Object.equals(formData1, formData2));
+        ok(!Object.equals(formData1, formData3));
+        const file = new File(["hello, world"], "hello.txt", { type: "text/plain" });
+        formData1.set("file", file);
+        formData2.set("file", file);
+        ok(Object.equals(formData1, formData2));
+        formData1.append("foo", "hi");
+        formData2.append("foo", "hi");
+        ok(Object.equals(formData1, formData2));
+        formData2.set("file", new File(["hello, world"], "hello.txt", { type: "text/plain" }));
+        ok(!Object.equals(formData1, formData2));
+
         ok(Object.equals(new Person("Jane", 25), new Person("Joe", 25)));
         ok(!Object.equals(new Person("Jane", 25), new Person("John", 30)));
         ok(Object.equals(new Person("Jane", 25), new Member("Jane", 25, "Admin")));
