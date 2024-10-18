@@ -483,7 +483,7 @@ describe("Object", () => {
             ok(Object.equals(formData1, formData2));
             ok(!Object.equals(formData1, formData3));
 
-            if (!isBun) {
+            if (!isBun && typeof File === "function") {
                 // Bun does not keep the original File instance.
                 const file = new File(["hello, world"], "hello.txt", { type: "text/plain" });
                 formData1.set("file", file);
@@ -495,7 +495,7 @@ describe("Object", () => {
             formData2.append("foo", "hi");
             ok(Object.equals(formData1, formData2));
 
-            if (!isBun) {
+            if (!isBun && typeof File === "function") {
                 formData2.set("file", new File(["hello, world"], "hello.txt", { type: "text/plain" }));
                 ok(!Object.equals(formData1, formData2));
             }
