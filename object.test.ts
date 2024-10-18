@@ -479,15 +479,23 @@ describe("Object", () => {
         formData3.append("baz", "world");
         ok(Object.equals(formData1, formData2));
         ok(!Object.equals(formData1, formData3));
-        const file = new File(["hello, world"], "hello.txt", { type: "text/plain" });
-        formData1.set("file", file);
-        formData2.set("file", file);
-        ok(Object.equals(formData1, formData2));
+
+        if (!isBun) {
+            // Bun does not keep the original File instance.
+            const file = new File(["hello, world"], "hello.txt", { type: "text/plain" });
+            formData1.set("file", file);
+            formData2.set("file", file);
+            ok(Object.equals(formData1, formData2));
+        }
+
         formData1.append("foo", "hi");
         formData2.append("foo", "hi");
         ok(Object.equals(formData1, formData2));
-        formData2.set("file", new File(["hello, world"], "hello.txt", { type: "text/plain" }));
-        ok(!Object.equals(formData1, formData2));
+
+        if (!isBun) {
+            formData2.set("file", new File(["hello, world"], "hello.txt", { type: "text/plain" }));
+            ok(!Object.equals(formData1, formData2));
+        }
 
         ok(Object.equals(new Person("Jane", 25), new Person("Joe", 25)));
         ok(!Object.equals(new Person("Jane", 25), new Person("John", 30)));
