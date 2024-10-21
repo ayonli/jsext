@@ -318,7 +318,7 @@ export function isPlainObject(value: unknown): value is { [x: string | symbol]: 
  * ```
  * 
  * @example
- * ```
+ * ```ts
  * // compare objects
  * import { compare } from "@ayonli/jsext/object";
  * import { Comparable } from "@ayonli/jsext/types"
