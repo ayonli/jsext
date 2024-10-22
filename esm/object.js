@@ -241,15 +241,9 @@ function doCompare(a, b) {
                 return CompareTwoTypes;
             }
         }
-        else if (a.constructor === b.constructor) {
+        else if (a.constructor === b.constructor
+            || getPrototypeBy(a, "compareTo") === getPrototypeBy(b, "compareTo")) {
             return a.compareTo(b);
-        }
-        else if (a.constructor && b instanceof a.constructor) {
-            return a.compareTo(b);
-        }
-        else if (b.constructor && a instanceof b.constructor) {
-            const result = b.compareTo(a);
-            return result === 0 ? 0 : -result;
         }
         else {
             return CompareTwoTypes;
@@ -286,6 +280,16 @@ function doCompare(a, b) {
     else {
         return ComparNonComparable;
     }
+}
+function getPrototypeBy(obj, prop) {
+    let proto = Object.getPrototypeOf(obj);
+    while (proto) {
+        if (hasOwn(proto, prop)) {
+            return proto;
+        }
+        proto = Object.getPrototypeOf(proto);
+    }
+    return null;
 }
 /**
  * Performs a deep comparison between two values to see if they are equivalent

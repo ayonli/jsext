@@ -9,7 +9,7 @@ import { isBun } from "./env.ts";
 class Person implements Comparable {
     constructor(public name: string, public age: number) { }
 
-    compareTo(other: this): -1 | 0 | 1 {
+    compareTo(other: Person): -1 | 0 | 1 {
         return this.age === other.age ? 0 : this.age < other.age ? -1 : 1;
     }
 }
@@ -18,6 +18,16 @@ class Member extends Person {
     constructor(name: string, age: number, public role: string) {
         super(name, age);
     }
+}
+
+class Guest extends Person {
+    constructor(name: string, age: number, public role: "Guest") {
+        super(name, age);
+    }
+
+    // override compareTo(other: Guest): -1 | 0 | 1 {
+    //     return super.compareTo(other);
+    // }
 }
 
 class Employee implements Comparable {
@@ -211,6 +221,18 @@ describe("Object", () => {
         strictEqual(Object.compare(new Member("John", 30, "User"), new Person("Jane", 25)), 1);
         strictEqual(Object.compare(new Member("Joe", 25, "User"), new Person("Jane", 25)), 0);
         strictEqual(Object.compare(new Member("Jane", 25, "Admin"), new Person("John", 30)), -1);
+
+        const alice = new Guest("Alice", 25, "Guest");
+        const john = new Guest("John", 25, "Guest");
+        const bob = new Member("Bob", 30, "User");
+        const lily = new Person("Lily", 25);
+        strictEqual(Object.compare(alice, john), 0);
+        strictEqual(Object.compare(alice, bob), -1);
+        strictEqual(Object.compare(bob, alice), 1);
+        strictEqual(Object.compare(alice, lily), 0);
+        // For TS checker
+        strictEqual(alice.compareTo(bob), -1);
+        strictEqual(bob.compareTo(alice), 1);
 
         // Cannot compare different types, even they have the same structure
         const [err1] = _try(() => Object.compare(new Person("Jane", 25), new Employee("John", 30)));
@@ -506,6 +528,14 @@ describe("Object", () => {
         ok(Object.equals(new Person("Jane", 25), new Member("Jane", 25, "Admin")));
         ok(Object.equals(new Member("Jane", 25, "Admin"), new Person("Jane", 25)));
         ok(!Object.equals(new Person("Jane", 25), new Employee("Jane", 25)));
+
+        const alice = new Guest("Alice", 25, "Guest");
+        const john = new Guest("John", 25, "Guest");
+        const bob = new Member("Bob", 30, "User");
+        const lily = new Person("Lily", 25);
+        ok(Object.equals(alice, john));
+        ok(Object.equals(alice, lily));
+        ok(!Object.equals(alice, bob));
 
         class Foo {
             constructor(private value: number, readonly tag: string) { }

@@ -389,13 +389,10 @@ function doCompare(a: any, b: any): -1 | 0 | 1 | symbol {
             } else {
                 return CompareTwoTypes;
             }
-        } else if (a.constructor === b.constructor) {
+        } else if (a.constructor === b.constructor
+            || getPrototypeBy(a, "compareTo") === getPrototypeBy(b, "compareTo")
+        ) {
             return (a as Comparable).compareTo(b as Comparable);
-        } else if (a.constructor && b instanceof a.constructor) {
-            return (a as Comparable).compareTo(b as Comparable);
-        } else if (b.constructor && a instanceof b.constructor) {
-            const result = (b as Comparable).compareTo(a as Comparable);
-            return result === 0 ? 0 : (-result as -1 | 1);
         } else {
             return CompareTwoTypes;
         }
@@ -425,6 +422,20 @@ function doCompare(a: any, b: any): -1 | 0 | 1 | symbol {
     } else {
         return ComparNonComparable;
     }
+}
+
+function getPrototypeBy(obj: any, prop: string): any {
+    let proto = Object.getPrototypeOf(obj);
+
+    while (proto) {
+        if (hasOwn(proto, prop)) {
+            return proto;
+        }
+
+        proto = Object.getPrototypeOf(proto);
+    }
+
+    return null;
 }
 
 /**
