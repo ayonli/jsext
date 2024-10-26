@@ -1,6 +1,6 @@
 /**
  * Decorator functions that can be used to validate the input and output of class
- * methods and guarantee type safety at runtime, includes `param`, `returns` and
+ * methods and guarantee type safety at runtime, include `param`, `returns` and
  * `throws`, based on [Zod](https://zod.dev).
  * @module
  */
