@@ -1,7 +1,10 @@
 import "./augment.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { isNode, isBun, isDeno } from "./env.ts";
+import { isBun, isDeno, isNode } from "./env.ts";
 import { pick } from "./object.ts";
+import { toFsPath } from "./path.ts";
+import { createErrorEvent } from "./event.ts";
+import process from "node:process";
 
 declare var AggregateError: new (errors: Error[], message?: string, options?: { cause: unknown; }) => Error & { errors: Error[]; };
 
@@ -295,24 +298,28 @@ describe("Error", () => {
     });
 
     it("Error.toErrorEvent", function () {
-        if (isNode) { // Node.js doesn't support ErrorEvent at the moment
-            this.skip();
-        }
-
         const err = new Error("something went wrong");
         const event = Error.toErrorEvent(err);
 
+        function normalize(filename: string) {
+            filename = toFsPath(filename);
+
+            if (/^[a-z]:/.test(filename)) {
+                filename = filename[0]!.toUpperCase() + filename.slice(1);
+            }
+
+            return filename;
+        }
+
         strictEqual(event.error, err);
         strictEqual(event.message, err.message);
-        strictEqual(
-            event.filename.replace(/^(file|https?):\/\//, ""),
-            import.meta.url.replace(/^(file|https?):\/\//, ""));
+        strictEqual(normalize(event.filename), toFsPath(import.meta.url));
 
-        if (isBun) { // Bun has issue to locate line number at the moment.
+        if (isBun || (isNode && process.platform === "win32")) { // Bun has issue to locate line number at the moment.
             ok(event.lineno > 0);
             ok(event.colno > 0);
         } else {
-            strictEqual(event.lineno, 302);
+            strictEqual(event.lineno, 301);
             strictEqual(event.colno, 21);
         }
 
@@ -326,15 +333,13 @@ describe("Error", () => {
 
         strictEqual(event2.error, err2);
         strictEqual(event2.message, err.message);
-        strictEqual(
-            event2.filename.replace(/^(file|https?):\/\//, ""),
-            import.meta.url.replace(/^(file|https?):\/\//, ""));
+        strictEqual(normalize(event2.filename), toFsPath(import.meta.url));
 
-        if (isBun) {
+        if (isBun || (isNode && process.platform === "win32")) {
             ok(event2.lineno > 0);
             ok(event2.colno > 0);
         } else {
-            strictEqual(event2.lineno, 319);
+            strictEqual(event2.lineno, 326);
             strictEqual(event2.colno, 22);
         }
 
@@ -355,14 +360,10 @@ describe("Error", () => {
     });
 
     it("Error.fromErrorEvent", function () {
-        if (isNode) { // Node.js doesn't support ErrorEvent at the moment
-            this.skip();
-        }
-
-        const filename = import.meta.url.replace(/^(file|https?):\/\//, "");
+        const filename = toFsPath(import.meta.url);
         const err = new Error("something went wrong");
 
-        const event = new ErrorEvent("error", {
+        const event = createErrorEvent("error", {
             error: err,
             message: err.message,
             filename,
@@ -373,7 +374,7 @@ describe("Error", () => {
         const err1 = Error.fromErrorEvent(event);
         strictEqual(err1, err);
 
-        const event2 = new ErrorEvent("error", {
+        const event2 = createErrorEvent("error", {
             message: err.message,
             filename,
             lineno: 363,
@@ -383,7 +384,7 @@ describe("Error", () => {
         strictEqual(err2?.message, err.message);
         strictEqual(err2?.stack, `Error: ${err.message}\n    at ${filename}:${363}:21`);
 
-        const event3 = new ErrorEvent("error", {
+        const event3 = createErrorEvent("error", {
             error: Error.toObject(err),
             message: err.message,
             filename,

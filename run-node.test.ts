@@ -3,7 +3,7 @@ import jsext from "./index.ts";
 import { range } from "./number.ts";
 import { fromObject } from "./error.ts";
 import { sum } from "./math.ts";
-import { isNode } from "./env.ts";
+import { isNodeLike } from "./env.ts";
 import { trim } from "./string.ts";
 import * as path from "node:path";
 
@@ -178,7 +178,7 @@ describe("jsext.run", () => {
 
     describe("child_process", async () => {
         it("CommonJS", async function () {
-            if (isNode && process.platform === "win32") {
+            if (isNodeLike && process.platform === "win32") {
                 this.skip();
             }
 
@@ -189,7 +189,7 @@ describe("jsext.run", () => {
         });
 
         it("ES Module", async function () {
-            if (isNode && process.platform === "win32") {
+            if (isNodeLike && process.platform === "win32") {
                 this.skip();
             }
 
@@ -200,7 +200,7 @@ describe("jsext.run", () => {
         });
 
         it("custom function", async function () {
-            if (isNode && process.platform === "win32") {
+            if (isNodeLike && process.platform === "win32") {
                 this.skip();
             }
 
@@ -212,7 +212,7 @@ describe("jsext.run", () => {
         });
 
         it("timeout", async function () {
-            if (isNode && process.platform === "win32") {
+            if (isNodeLike && process.platform === "win32") {
                 this.skip();
             }
 
@@ -233,7 +233,7 @@ describe("jsext.run", () => {
         });
 
         it("abort", async function () {
-            if (isNode && process.platform === "win32") {
+            if (isNodeLike && process.platform === "win32") {
                 this.skip();
             }
 
@@ -257,7 +257,7 @@ describe("jsext.run", () => {
         });
 
         it("iterate", async function () {
-            if (isNode && process.platform === "win32") {
+            if (isNodeLike && process.platform === "win32") {
                 this.skip();
             }
 
@@ -276,7 +276,7 @@ describe("jsext.run", () => {
         });
 
         it("keep alive", async function () {
-            if (isNode && process.platform === "win32") {
+            if (isNodeLike && process.platform === "win32") {
                 this.skip();
             }
 
@@ -301,7 +301,7 @@ describe("jsext.run", () => {
         });
 
         it("use channel", async function () {
-            if (isNode && process.platform === "win32") {
+            if (isNodeLike && process.platform === "win32") {
                 this.skip();
             }
 
@@ -348,7 +348,7 @@ describe("jsext.run", () => {
         });
 
         it("send unserializable", async function () {
-            if (isNode && process.platform === "win32") {
+            if (isNodeLike && process.platform === "win32") {
                 this.skip();
             }
 
@@ -373,7 +373,7 @@ describe("jsext.run", () => {
         });
 
         it("receive unserializable", async function () {
-            if (isNode && process.platform === "win32") {
+            if (isNodeLike && process.platform === "win32") {
                 this.skip();
             }
 
