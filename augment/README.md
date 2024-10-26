@@ -133,6 +133,8 @@ _These types are augmented to the global scope._
   - `typeOf<T>(value: T): TypeNames | Constructor<T>`
   - `isValid(value: unknown): boolean`
   - `isPlainObject(value: unknown): value is { [x: string | symbol]: any; }`
+  - `compare(a: unknown, b: unknown): -1 | 0 | 1`
+  - `equals(a: unknown, b: unknown): boolean`
   - `sanitize<T extends object>(obj: T, deep?: boolean, options?: { removeNulls?: boolean; removeEmptyStrings?: boolean; removeEmptyObjects?: boolean; removeArrayItems?: boolean; }): T`
   - `sortKeys<T extends object>(obj: T, deep?: boolean): T`
   - `flatKeys<T extends object>(obj: T, depth = 1, options?: { flatArrayIndices?: boolean; }): OmitChildrenNodes<T> & Record<string | number | symbol, any>`
