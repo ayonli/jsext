@@ -68,6 +68,7 @@ jobs:
         with:
           deno-version: v2.x
 
+      - run: deno install
       - run: deno run -A test-deno.ts
 
   test-jsdom:
