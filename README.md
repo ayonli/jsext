@@ -105,6 +105,8 @@ categories:
   byte arrays (`Uint8Array`).
 - [class](https://jsr.io/@ayonli/jsext/doc/class/~) Functions for dealing with
   classes.
+  - [decorators](https://jsr.io/@ayonli/jsext/doc/class/decorators/~) Decorators
+    to validate input/output data and guarantee type safety at runtime.
 - [cli](https://jsr.io/@ayonli/jsext/doc/cli/~) (Experimental) Useful utility
   functions for interacting with the terminal.
 - [collections](https://jsr.io/@ayonli/jsext/doc/collections/~) Additional

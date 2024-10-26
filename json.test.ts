@@ -1,6 +1,7 @@
 import "./augment.ts";
 import { deepStrictEqual, strictEqual } from "node:assert";
 import bytes, { ByteArray } from "./bytes.ts";
+import { isDeno } from "./env.ts";
 
 describe("JSON", () => {
     describe("JSON.parseAs", () => {
@@ -202,7 +203,11 @@ describe("JSON", () => {
         });
     });
 
-    it("@JSON.type", () => {
+    it("@JSON.type", function () {
+        if (isDeno) {
+            this.skip();
+        }
+
         class Example {
             @JSON.type(Date)
             bar: Date | undefined;

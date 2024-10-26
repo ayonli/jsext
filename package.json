@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.9.69",
+    "version": "0.9.70",
     "description": "A JavaScript extension package for building strong and modern applications.",
     "type": "module",
     "exports": {
@@ -77,6 +77,13 @@
             "import": "./esm/class.js",
             "require": "./cjs/class.js",
             "default": "./class.ts"
+        },
+        "./class/decorators": {
+            "types": "./types/class/decorators.d.ts",
+            "bun": "./class/decorators.ts",
+            "import": "./esm/class/decorators.js",
+            "require": "./cjs/class/decorators.js",
+            "default": "./class/decorators.ts"
         },
         "./cli": {
             "types": "./types/cli.d.ts",
@@ -576,7 +583,8 @@
     "dependencies": {
         "iconv-lite": "^0.6.3",
         "sudo-prompt": "^9.2.1",
-        "ws": "^8.17.0"
+        "ws": "^8.17.0",
+        "zod": "^3.23.8"
     },
     "devDependencies": {
         "@hono/node-server": "^1.11.2",

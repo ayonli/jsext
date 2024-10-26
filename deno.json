@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "0.9.69",
+    "version": "0.9.70",
     "exports": {
         ".": "./index.ts",
         "./archive": "./archive.ts",
@@ -9,6 +9,7 @@
         "./bytes": "./bytes.ts",
         "./chan": "./chan.ts",
         "./class": "./class.ts",
+        "./class/decorators": "./class/decorators.ts",
         "./cli": "./cli.ts",
         "./collections": "./collections.ts",
         "./debounce": "./debounce.ts",
@@ -49,13 +50,11 @@
         "./ws": "./ws.ts",
         "./worker.ts": "./worker.ts"
     },
-    "compilerOptions": {
-        "experimentalDecorators": true
-    },
     "imports": {
         "iconv-lite": "npm:iconv-lite@^0.6.3",
         "sudo-prompt": "npm:sudo-prompt@^9.2.1",
-        "ws": "npm:ws@^8.18.0"
+        "ws": "npm:ws@^8.18.0",
+        "zod": "npm:zod@^3.23.8"
     },
     "publish": {
         "include": [
