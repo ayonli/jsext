@@ -150,7 +150,7 @@ function param(arg1, arg2 = undefined) {
  * @example
  * ```ts
  * // regular function
- * import { returns } from "@ayonli/jsext/decorators";
+ * import { returns } from "@ayonli/jsext/class/decorators";
  * import { z } from "zod";
  *
  * class Calculator {
@@ -169,7 +169,7 @@ function param(arg1, arg2 = undefined) {
  * @example
  * ```ts
  * // async function
- * import { returns } from "@ayonli/jsext/decorators";
+ * import { returns } from "@ayonli/jsext/class/decorators";
  * import { z } from "zod";
  *
  * class Calculator {
@@ -207,7 +207,7 @@ function returns(type) {
  *
  * @example
  * ```ts
- * import { throws } from "@ayonli/jsext/decorators";
+ * import { throws } from "@ayonli/jsext/class/decorators";
  * import { z } from "zod";
  *
  * class Calculator {

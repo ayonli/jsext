@@ -154,7 +154,7 @@ function decorate(
  * 
  * @example
  * ```ts
- * import { param } from "@ayonli/jsext/decorators";
+ * import { param } from "@ayonli/jsext/class/decorators";
  * import { z } from "zod";
  * 
  * class Calculator {
@@ -215,7 +215,7 @@ export function param<T extends z.ZodType>(
  * @example
  * ```ts
  * // regular function
- * import { returns } from "@ayonli/jsext/decorators";
+ * import { returns } from "@ayonli/jsext/class/decorators";
  * import { z } from "zod";
  * 
  * class Calculator {
@@ -234,7 +234,7 @@ export function param<T extends z.ZodType>(
  * @example
  * ```ts
  * // async function
- * import { returns } from "@ayonli/jsext/decorators";
+ * import { returns } from "@ayonli/jsext/class/decorators";
  * import { z } from "zod";
  * 
  * class Calculator {
@@ -274,7 +274,7 @@ export function returns<T extends z.ZodType>(type: T): MethodDecorator {
  * 
  * @example
  * ```ts
- * import { throws } from "@ayonli/jsext/decorators";
+ * import { throws } from "@ayonli/jsext/class/decorators";
  * import { z } from "zod";
  * 
  * class Calculator {

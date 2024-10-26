@@ -1,10 +1,9 @@
 import "./augment.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { isBun, isDeno, isNode } from "./env.ts";
+import { isDeno } from "./env.ts";
 import { pick } from "./object.ts";
 import { toFsPath } from "./path.ts";
 import { createErrorEvent } from "./event.ts";
-import process from "node:process";
 
 declare var AggregateError: new (errors: Error[], message?: string, options?: { cause: unknown; }) => Error & { errors: Error[]; };
 
@@ -315,12 +314,12 @@ describe("Error", () => {
         strictEqual(event.message, err.message);
         strictEqual(normalize(event.filename), toFsPath(import.meta.url));
 
-        if (isBun || (isNode && process.platform === "win32")) { // Bun has issue to locate line number at the moment.
+        if (isDeno) {
+            strictEqual(event.lineno, 300);
+            strictEqual(event.colno, 21);
+        } else {
             ok(event.lineno > 0);
             ok(event.colno > 0);
-        } else {
-            strictEqual(event.lineno, 301);
-            strictEqual(event.colno, 21);
         }
 
         const err2 = new Error("something went wrong");
@@ -335,12 +334,12 @@ describe("Error", () => {
         strictEqual(event2.message, err.message);
         strictEqual(normalize(event2.filename), toFsPath(import.meta.url));
 
-        if (isBun || (isNode && process.platform === "win32")) {
+        if (isDeno) {
+            strictEqual(event2.lineno, 325);
+            strictEqual(event2.colno, 22);
+        } else {
             ok(event2.lineno > 0);
             ok(event2.colno > 0);
-        } else {
-            strictEqual(event2.lineno, 326);
-            strictEqual(event2.colno, 22);
         }
 
         // Even more edge scenarios
