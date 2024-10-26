@@ -8,7 +8,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      matrix:
+        runner: [ ubuntu-latest, windows-latest ]
 
     steps:
       - uses: actions/checkout@v4
