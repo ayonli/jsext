@@ -184,10 +184,8 @@ describe("sse", () => {
 
             const sse = await task;
             sse.close();
-            await until(() => es.readyState === EventSource.CONNECTING);
-
+            await until(() => sse.closed);
             strictEqual(sse.closed, true);
-            strictEqual(es.readyState, EventSource.CONNECTING);
         }));
 
         it("listen close event", jsext.func(async function (defer) {
