@@ -28,7 +28,7 @@ function refinedError(err: any, ctorOpt: Function) {
         const path = issue.path.join(".");
         const _message = issue.message[0]!.toLowerCase() + issue.message.slice(1);
         const message = `validation failed at ${path}: `
-            + _message.replace(/^input not instance\s/, "not an instance");
+            + _message.replace(/^input not instance of/, "not an instance of");
 
         // @ts-ignore cause is not available in new ECMA standard
         err = new TypeError(message, { cause: err });

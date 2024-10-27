@@ -133,7 +133,7 @@ describe("class/decorators", () => {
         strictEqual(res4, undefined);
         strictEqual((err4 as TypeError).name, "TypeError");
         strictEqual((err4 as TypeError).message,
-            "validation failed at thrown value: not an instanceof RangeError");
+            "validation failed at thrown value: not an instance of RangeError");
 
         const broadcaster = new Broadcaster();
 
@@ -143,7 +143,7 @@ describe("class/decorators", () => {
         strictEqual(res5, undefined);
         strictEqual((err5 as TypeError).name, "TypeError");
         strictEqual((err5 as TypeError).message,
-            "validation failed at thrown value: not an instanceof TypeError");
+            "validation failed at thrown value: not an instance of TypeError");
     });
 });
 
