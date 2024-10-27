@@ -270,7 +270,8 @@ export function returns<T extends z.ZodType>(type: T): MethodDecorator {
 }
 
 /**
- * A decorator that restrains the thrown value of the method.
+ * A decorator that restrains the thrown value of the method at runtime, based
+ * on [Zod](https://zod.dev).
  * 
  * @example
  * ```ts

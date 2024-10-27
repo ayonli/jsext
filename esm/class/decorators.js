@@ -203,7 +203,8 @@ function returns(type) {
     });
 }
 /**
- * A decorator that restrains the thrown value of the method.
+ * A decorator that restrains the thrown value of the method at runtime, based
+ * on [Zod](https://zod.dev).
  *
  * @example
  * ```ts
