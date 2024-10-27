@@ -752,11 +752,8 @@ export class EventSource extends EventTarget {
     }
 
     private tryReconnect() {
-        if (this[_timer]) {
-            clearTimeout(this[_timer]);
-            this[_timer] = null;
-        }
-
+        setReadonly(this, "readyState", this.CONNECTING);
+        this[_timer] && clearTimeout(this[_timer]);
         this[_timer] = setTimeout(() => {
             this.connect().catch(() => { });
         }, this[_reconnectionTime] || 1000 * Math.min(30, Math.pow(2, this[_retry]++)));
