@@ -89,7 +89,7 @@ export const EOL: "\n" | "\r\n" = (() => {
 })();
 
 async function resolveHomeDir(path: string): Promise<string> {
-    if (path.startsWith("~") && (isDeno || isNodeLike)) {
+    if (path[0] === "~" && (isDeno || isNodeLike)) {
         let homedir: string;
 
         if (isDeno) {
@@ -100,7 +100,7 @@ async function resolveHomeDir(path: string): Promise<string> {
             homedir = os.homedir();
         }
 
-        path = path.replace(/^~/, homedir);
+        path = homedir + path.slice(1);
     }
 
     return path;
