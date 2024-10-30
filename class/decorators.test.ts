@@ -65,7 +65,7 @@ describe("class/decorators", () => {
 
         const broadcaster = new Broadcaster();
 
-        deepStrictEqual(broadcaster.copy({
+        deepStrictEqual(Broadcaster.build({
             title: "Hello, World!",
             content: "Welcome to the world of decorators."
         }), {
@@ -74,7 +74,7 @@ describe("class/decorators", () => {
         });
 
         // @ts-ignore for testing
-        const [err4, res4] = _try(() => broadcaster.copy({
+        const [err4, res4] = _try(() => Broadcaster.build({
             title: "Hello, World!",
         }));
         strictEqual(res4, undefined);
@@ -83,7 +83,7 @@ describe("class/decorators", () => {
             "validation failed at return value.content: required");
 
         // @ts-ignore for testing
-        const [err5, res5] = _try(() => broadcaster.copy({
+        const [err5, res5] = _try(() => Broadcaster.build({
             title: "Hello, World!",
             // @ts-ignore for testing
             content: "123",
@@ -199,7 +199,7 @@ class Broadcaster {
 
     @param("news", News.partial())
     @returns(News)
-    copy(news: Partial<News>): News {
+    static build(news: Partial<News>): News {
         const _news = { ...news } as News;
 
         if (/^\d+$/.test(_news.title)) {
