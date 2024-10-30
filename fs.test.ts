@@ -1116,12 +1116,21 @@ describe("fs", () => {
             const src = "./fs.ts";
             const dest = "~/fs-ln.ts";
 
-            await link(src, dest);
-            defer(() => remove(dest));
+            try {
+                await link(src, dest);
+                defer(() => remove(dest));
 
-            const _stat = await stat(join(homedir, "fs-ln.ts"));
-            strictEqual(_stat.name, "fs-ln.ts");
-            strictEqual(_stat.kind, "file");
+                const _stat = await stat(join(homedir, "fs-ln.ts"));
+                strictEqual(_stat.name, "fs-ln.ts");
+                strictEqual(_stat.kind, "file");
+            } catch (err) {
+                const text = String(err).toLowerCase();
+                if (!text.includes("cross-device link") &&
+                    !text.includes("cannot move the file to a different disk")
+                ) {
+                    throw err;
+                }
+            }
         }));
     });
 
