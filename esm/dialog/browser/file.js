@@ -1,4 +1,4 @@
-import { getExtensions } from '../../filetype.js';
+import { getExtensions, getMIME } from '../../filetype.js';
 
 function htmlAcceptToFileFilters(accept) {
     const groups = [];
@@ -24,10 +24,11 @@ function htmlAcceptToFileFilters(accept) {
                     return undefined;
                 }
                 else {
+                    const mime = getMIME(type) || type;
                     return {
                         description: "",
                         accept: {
-                            [type]: getExtensions(type),
+                            [mime]: extensions,
                         },
                     };
                 }
@@ -71,9 +72,10 @@ function htmlAcceptToFileFilters(accept) {
                 };
             }
             else {
+                const mime = getMIME(group) || group;
                 return {
                     description: "",
-                    accept: { [group]: extensions },
+                    accept: { [mime]: extensions },
                 };
             }
         }
