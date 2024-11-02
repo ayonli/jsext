@@ -83,6 +83,21 @@ const EOL = (() => {
         return "\n";
     }
 })();
+async function resolveHomeDir(path) {
+    if (path[0] === "~" && (isDeno || isNodeLike)) {
+        let homedir;
+        if (isDeno) {
+            const os = await import('node:os');
+            homedir = os.homedir();
+        }
+        else {
+            const os = await import('os');
+            homedir = os.homedir();
+        }
+        path = homedir + path.slice(1);
+    }
+    return path;
+}
 function getErrorName(err) {
     if (err.constructor === Error) {
         return err.constructor.name;
@@ -395,7 +410,7 @@ async function stat(target, options = {}) {
             };
         }
     }
-    const path = target;
+    const path = await resolveHomeDir(target);
     if (isDeno) {
         const stat = await rawOp(options.followSymlink ? Deno.stat(path) : Deno.lstat(path));
         const kind = stat.isDirectory
@@ -518,6 +533,7 @@ async function stat(target, options = {}) {
  * ```
  */
 async function mkdir(path, options = {}) {
+    path = await resolveHomeDir(path);
     if (isDeno) {
         await rawOp(Deno.mkdir(path, options));
     }
@@ -615,7 +631,7 @@ async function* readDir(target, options = {}) {
         yield* readDirHandle(target, options);
         return;
     }
-    const path = target;
+    const path = await resolveHomeDir(target);
     if (isDeno) {
         yield* (async function* read(path, base) {
             try {
@@ -762,7 +778,7 @@ async function readFile(target, options = {}) {
     if (typeof target === "object") {
         return await readFileHandle(target, options);
     }
-    const filename = target;
+    const filename = await resolveHomeDir(target);
     if (isDeno) {
         return await rawOp(Deno.readFile(filename, options));
     }
@@ -920,7 +936,7 @@ async function writeFile(target, data, options = {}) {
     if (typeof target === "object") {
         return await writeFileHandle(target, data, options);
     }
-    const filename = target;
+    const filename = await resolveHomeDir(target);
     if (isDeno) {
         if (typeof data === "string") {
             return await rawOp(Deno.writeTextFile(filename, data, options));
@@ -1124,7 +1140,7 @@ async function truncate(target, size = 0, options = {}) {
     if (typeof target === "object") {
         return await truncateFileHandle(target, size);
     }
-    const filename = target;
+    const filename = await resolveHomeDir(target);
     if (isDeno) {
         await rawOp(Deno.truncate(filename, size));
     }
@@ -1176,6 +1192,7 @@ async function truncateFileHandle(handle, size = 0) {
  * ```
  */
 async function remove(path, options = {}) {
+    path = await resolveHomeDir(path);
     if (isDeno) {
         await rawOp(Deno.remove(path, options));
     }
@@ -1227,6 +1244,8 @@ async function remove(path, options = {}) {
  * ```
  */
 async function rename(oldPath, newPath, options = {}) {
+    oldPath = await resolveHomeDir(oldPath);
+    newPath = await resolveHomeDir(newPath);
     if (isDeno) {
         await rawOp(Deno.rename(oldPath, newPath));
     }
@@ -1247,6 +1266,8 @@ async function copy(src, dest, options = {}) {
     if (typeof src === "object" || typeof dest === "object") {
         return copyInBrowser(src, dest, { recursive: (_a = options === null || options === void 0 ? void 0 : options.recursive) !== null && _a !== void 0 ? _a : false });
     }
+    src = await resolveHomeDir(src);
+    dest = await resolveHomeDir(dest);
     if (isDeno || isNodeLike) {
         const oldStat = await stat(src, { followSymlink: true });
         const isDirSrc = oldStat.kind === "directory";
@@ -1468,6 +1489,8 @@ async function copyDirHandleToDirHandle(src, dest) {
  * ```
  */
 async function link(src, dest, options = {}) {
+    src = await resolveHomeDir(src);
+    dest = await resolveHomeDir(dest);
     if (isDeno) {
         if (options.symbolic) {
             if (platform() === "windows") {
@@ -1517,6 +1540,7 @@ async function link(src, dest, options = {}) {
  * ```
  */
 async function readLink(path) {
+    path = await resolveHomeDir(path);
     if (isDeno) {
         return await rawOp(Deno.readLink(path));
     }
@@ -1562,6 +1586,7 @@ async function readLink(path) {
  */
 async function chmod(path, mode) {
     if (platform() !== "windows") {
+        path = await resolveHomeDir(path);
         if (isDeno) {
             await rawOp(Deno.chmod(path, mode));
         }
@@ -1587,6 +1612,7 @@ async function chmod(path, mode) {
  */
 async function chown(path, uid, gid) {
     if (platform() !== "windows") {
+        path = await resolveHomeDir(path);
         if (isDeno) {
             await rawOp(Deno.chown(path, uid, gid));
         }
@@ -1613,6 +1639,7 @@ async function chown(path, uid, gid) {
  * ```
  */
 async function utimes(path, atime, mtime) {
+    path = await resolveHomeDir(path);
     if (isDeno) {
         await rawOp(Deno.utime(path, atime, mtime));
     }
@@ -1656,11 +1683,11 @@ function createReadableStream(target, options = {}) {
         if (typeof target === "object") {
             throw new TypeError("Expected a file path, got a file handle");
         }
-        const filename = target;
         let reader;
         return new ReadableStream({
             async start(controller) {
                 const fs = await import('fs');
+                const filename = await resolveHomeDir(target);
                 reader = fs.createReadStream(filename);
                 reader.on("data", (chunk) => {
                     const bytes = new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
@@ -1678,7 +1705,7 @@ function createReadableStream(target, options = {}) {
         if (typeof target === "object") {
             return await readFileHandleAsStream(target);
         }
-        const filename = target;
+        const filename = await resolveHomeDir(target);
         if (isDeno) {
             const file = await rawOp(Deno.open(filename, { read: true }));
             return file.readable;
@@ -1726,7 +1753,6 @@ const readFileAsStream = createReadableStream;
  * ```
  */
 function createWritableStream(target, options = {}) {
-    var _a;
     if (typeof target === "object") {
         const { readable, writable } = new TransformStream();
         createFileHandleWritableStream(target, options)
@@ -1736,7 +1762,14 @@ function createWritableStream(target, options = {}) {
     const filename = target;
     if (isDeno) {
         const { readable, writable } = new TransformStream();
-        Deno.open(filename, { write: true, create: true, append: (_a = options.append) !== null && _a !== void 0 ? _a : false })
+        resolveHomeDir(filename).then(filename => {
+            var _a;
+            return Deno.open(filename, {
+                write: true,
+                create: true,
+                append: (_a = options.append) !== null && _a !== void 0 ? _a : false,
+            });
+        })
             .then(file => file.writable)
             .then(stream => readable.pipeTo(stream));
         return writable;
@@ -1769,6 +1802,7 @@ function createNodeWritableStream(filename, options) {
         async start() {
             const { append, ...rest } = options;
             const { createWriteStream } = await import('fs');
+            filename = await resolveHomeDir(filename);
             dest = createWriteStream(filename, {
                 flags: append ? "a" : "w",
                 ...rest,

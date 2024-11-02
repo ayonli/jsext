@@ -4,16 +4,24 @@ import { getExtensions, getMIME, getUTI } from "./filetype.ts";
 
 describe("filetype", () => {
     it("getUTI", () => {
+        strictEqual(getUTI(".png"), "public.png");
+        strictEqual(getUTI("*.png"), "public.png");
+        strictEqual(getUTI("public.png"), "public.png");
+        strictEqual(getUTI("image/png"), "public.png");
+
         for (const [uti, values] of Object.entries(UTIMap)) {
             values.forEach(value => {
                 strictEqual(getUTI(value), uti);
             });
         }
-
-        strictEqual(getUTI("*.png"), "public.png");
     });
 
     it("getMIME", () => {
+        strictEqual(getMIME(".png"), "image/png");
+        strictEqual(getMIME("*.png"), "image/png");
+        strictEqual(getMIME("public.png"), "image/png");
+        strictEqual(getMIME("image/png"), "image/png");
+
         for (const [uti, values] of Object.entries(UTIMap)) {
             const mime = getMIME(uti);
 
@@ -21,11 +29,14 @@ describe("filetype", () => {
                 ok(values.some(value => value === mime));
             }
         }
-
-        strictEqual(getMIME(".png"), "image/png");
     });
 
     it("getExtensions", () => {
+        strictEqual(getExtensions(".png").join(","), ".png");
+        strictEqual(getExtensions("*.png").join(","), ".png");
+        strictEqual(getExtensions("image/png").join(","), ".png");
+        strictEqual(getExtensions("public.png").join(","), ".png");
+
         for (const [uti, values] of Object.entries(UTIMap)) {
             const extensions = getExtensions(uti).join(",");
             strictEqual(extensions, values.filter(v => v[0] === ".").join(","));
@@ -39,8 +50,6 @@ describe("filetype", () => {
                 strictEqual(extensions, values.filter(v => v[0] === ".").join(","));
             }
         }
-
-        strictEqual(getExtensions("*.png").join(","), ".png");
 
         deepStrictEqual(
             getExtensions("image/*").sort().join(","),

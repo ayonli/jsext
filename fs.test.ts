@@ -1,10 +1,11 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import fs from "node:fs/promises";
+import os from "node:os";
 import { isBun, isDeno } from "./env.ts";
 import jsext, { _try } from "./index.ts";
 import { readAsArray, readAsText } from "./reader.ts";
 import { platform } from "./runtime.ts";
-import { join, resolve, sep } from "./path.ts";
+import { basename, join, resolve, sep } from "./path.ts";
 import bytes, { equals } from "./bytes.ts";
 import {
     EOL,
@@ -19,7 +20,6 @@ import {
     readFile,
     readFileAsText,
     readFileAsFile,
-    readFileAsStream,
     readLink,
     readTree,
     remove,
@@ -34,6 +34,9 @@ import {
     DirEntry,
     DirTree,
 } from "./fs.ts";
+import { random } from "./string.ts";
+
+const homedir = os.homedir();
 
 describe("fs", () => {
     it("EOL", () => {
@@ -54,6 +57,11 @@ describe("fs", () => {
 
         it("directory", async () => {
             const ok = await exists("./fs");
+            strictEqual(ok, true);
+        });
+
+        it("~ support", async () => {
+            const ok = await exists("~");
             strictEqual(ok, true);
         });
     });
@@ -240,6 +248,48 @@ describe("fs", () => {
                 } as FileInfo);
             }
         }));
+
+        it("~ support", async () => {
+            const stat1 = await stat("~");
+
+            if (isDeno) {
+                const stat2 = await Deno.stat(homedir);
+                deepStrictEqual(stat1, {
+                    name: basename(homedir),
+                    kind: "directory",
+                    size: stat2.size,
+                    type: "",
+                    mtime: stat2.mtime,
+                    atime: stat2.atime,
+                    birthtime: stat2.birthtime,
+                    mode: stat2.mode ?? 0,
+                    uid: stat2.uid ?? 0,
+                    gid: stat2.gid ?? 0,
+                    isBlockDevice: false,
+                    isCharDevice: false,
+                    isFIFO: false,
+                    isSocket: false,
+                } as FileInfo);
+            } else {
+                const stat2 = await fs.stat(homedir);
+                deepStrictEqual(stat1, {
+                    name: basename(homedir),
+                    kind: "directory",
+                    size: stat2.size,
+                    type: "",
+                    mtime: stat2.mtime,
+                    atime: stat2.atime,
+                    birthtime: stat2.birthtime,
+                    mode: stat2.mode,
+                    uid: stat2.uid,
+                    gid: stat2.gid,
+                    isBlockDevice: false,
+                    isCharDevice: false,
+                    isFIFO: false,
+                    isSocket: false,
+                } as FileInfo);
+            }
+        });
     });
 
     describe("mkdir", () => {
@@ -276,6 +326,16 @@ describe("fs", () => {
                 const _stat = await fs.stat("./tmp");
                 strictEqual(_stat.mode & 0o755, 0o755);
             }
+        }));
+
+        it("~ support", jsext.func(async (defer) => {
+            const dir = "~/tmp_" + random(8);
+            await mkdir(dir);
+            defer(() => fs.rmdir(join(homedir, basename(dir)), { recursive: true }));
+
+            const _stat = await stat(dir);
+            strictEqual(_stat.name, basename(dir));
+            strictEqual(_stat.kind, "directory");
         }));
     });
 
@@ -314,6 +374,18 @@ describe("fs", () => {
                 const _stat = await fs.stat(path);
                 strictEqual(_stat.mode & 0o755, 0o755);
             }
+        }));
+
+        it("~ support", jsext.func(async (defer) => {
+            const parent = "tmp_" + random(8);
+            const _path = parent + "/a/b/c";
+            const dir = join("~", _path);
+            await ensureDir(dir);
+            defer(() => remove(join(homedir, parent), { recursive: true }));
+
+            const _stat = await stat(dir);
+            strictEqual(_stat.name, basename(dir));
+            strictEqual(_stat.kind, "directory");
         }));
     });
 
@@ -368,6 +440,15 @@ describe("fs", () => {
 
             const files = await readAsArray(readDir("./fs"));
             ok(files.some(file => file.name === "types-ln.ts" && file.kind === "symlink"));
+        }));
+
+        it("~ support", jsext.func(async (defer) => {
+            const dir = "~/tmp_" + random(8);
+            await mkdir(dir);
+            defer(() => remove(dir, { recursive: true }));
+
+            const files = await readAsArray(readDir("~"));
+            ok(files.some(file => file.name === basename(dir) && file.kind === "directory"));
         }));
     });
 
@@ -455,6 +536,20 @@ describe("fs", () => {
             strictEqual(err.name, "AbortError");
             strictEqual(res, undefined);
         });
+
+        it("~ support", jsext.func(async (defer) => {
+            const baseName = "tmp_" + random(8) + ".txt";
+            const filename = "~/" + baseName;
+            await writeFile(filename, "Hello, world!");
+            defer(() => remove(join(homedir, baseName)));
+
+            await exists(join(homedir, baseName));
+
+            const data = await readFile(filename);
+            const text = new TextDecoder().decode(data);
+
+            strictEqual(text, "Hello, world!");
+        }));
     });
 
     describe("readFileAsText", () => {
@@ -496,6 +591,18 @@ describe("fs", () => {
             text = text.trimEnd();
             strictEqual(text, "你好，世界！");
         });
+
+        it("~ support", jsext.func(async (defer) => {
+            const baseName = "tmp_" + random(8) + ".txt";
+            const filename = "~/" + baseName;
+            await writeFile(filename, "Hello, world!");
+            defer(() => remove(join(homedir, baseName)));
+
+            await exists(join(homedir, baseName));
+
+            const text = await readFileAsText(filename);
+            strictEqual(text, "Hello, world!");
+        }));
     });
 
     describe("readFileAsFile", () => {
@@ -539,21 +646,18 @@ describe("fs", () => {
             strictEqual(err.name, "AbortError");
             strictEqual(res, undefined);
         });
-    });
 
-    describe("readFileAsStream", () => {
-        if (typeof ReadableStream === "undefined") {
-            return;
-        }
+        it("~ support", jsext.func(async (defer) => {
+            const baseName = "tmp_" + random(8) + ".txt";
+            const filename = "~/" + baseName;
+            await writeFile(filename, "Hello, world!");
+            defer(() => remove(join(homedir, baseName)));
 
-        it("default", async () => {
-            const stream = readFileAsStream("./fs.ts");
-            ok(stream instanceof ReadableStream);
+            await exists(join(homedir, baseName));
 
-            const text = await readAsText(stream);
-            const _text = await readFileAsText("./fs.ts");
-            strictEqual(text, _text);
-        });
+            const file = await readFileAsFile(filename);
+            strictEqual(await file.text(), "Hello, world!");
+        }));
     });
 
     describe("writeFile", () => {
@@ -680,6 +784,15 @@ describe("fs", () => {
                 strictEqual(_stat.mode & 0o755, 0o755);
             }
         }));
+
+        it("~ support", jsext.func(async (defer) => {
+            const baseName = "tmp_" + random(8) + ".txt";
+            const filename = "~/" + baseName;
+            await writeFile(filename, "Hello, world!");
+            defer(() => remove(join(homedir, baseName)));
+
+            ok(await exists(join(homedir, baseName)));
+        }));
     });
 
     describe("writeLines", () => {
@@ -798,6 +911,18 @@ describe("fs", () => {
             const text = await readFileAsText(path);
             strictEqual(text, "Hello");
         }));
+
+        it("~ support", jsext.func(async (defer) => {
+            const baseName = "tmp_" + random(8) + ".txt";
+            const filename = "~/" + baseName;
+            await writeFile(filename, "Hello, world!");
+            defer(() => remove(join(homedir, baseName)));
+
+            await truncate(filename);
+
+            const text = await readFileAsText(filename);
+            strictEqual(text, "");
+        }));
     });
 
     describe("remove", () => {
@@ -818,6 +943,18 @@ describe("fs", () => {
 
             const ok = await exists(path);
             strictEqual(ok, false);
+        });
+
+        it("~ support", async () => {
+            const baseName = "tmp_" + random(8) + ".txt";
+            const filename = "~/" + baseName;
+            await writeFile(filename, "Hello, world!");
+
+            strictEqual(await exists(join(homedir, baseName)), true);
+
+            await remove(filename);
+
+            strictEqual(await exists(join(homedir, baseName)), false);
         });
     });
 
@@ -845,6 +982,20 @@ describe("fs", () => {
 
             strictEqual(await exists(src), false);
             strictEqual(await exists(dest), true);
+        }));
+
+        it("~ support", jsext.func(async (defer) => {
+            const baseName = "tmp_" + random(8);
+            const src = "~/" + baseName + ".txt";
+            const dest = "~/" + baseName + "1.txt";
+
+            await writeFile(src, "Hello, world!");
+            defer(() => remove(join(homedir, baseName + "1.txt")));
+
+            await rename(src, dest);
+
+            strictEqual(await exists(join(homedir, baseName + ".txt")), false);
+            strictEqual(await exists(join(homedir, baseName + "1.txt")), true);
         }));
     });
 
@@ -908,6 +1059,21 @@ describe("fs", () => {
             const destEntries = await readAsArray(readDir(dest, { recursive: true }));
             deepStrictEqual(srcEntries, destEntries);
         }));
+
+        it("~ support", jsext.func(async (defer) => {
+            const baseName = "tmp_" + random(8);
+            const src = "~/" + baseName + ".txt";
+            const dest = "~/" + baseName + "1.txt";
+
+            await writeFile(src, "Hello, world!");
+            defer(() => remove(src));
+            defer(() => remove(dest));
+
+            await copy(src, dest);
+
+            const text = await readFileAsText(dest);
+            strictEqual(text, "Hello, world!");
+        }));
     });
 
     describe("link & readLink", () => {
@@ -945,50 +1111,108 @@ describe("fs", () => {
             const destEntries = await readAsArray(readDir(dest));
             deepStrictEqual(srcEntries, destEntries);
         }));
+
+        it("~ support", jsext.func(async (defer) => {
+            const src = "./fs.ts";
+            const dest = "~/fs-ln.ts";
+
+            try {
+                await link(src, dest);
+                defer(() => remove(dest));
+
+                const _stat = await stat(join(homedir, "fs-ln.ts"));
+                strictEqual(_stat.name, "fs-ln.ts");
+                strictEqual(_stat.kind, "file");
+            } catch (err) {
+                const text = String(err).toLowerCase();
+                if (!text.includes("cross-device link") &&
+                    !text.includes("cannot move the file to a different disk")
+                ) {
+                    throw err;
+                }
+            }
+        }));
     });
 
-    it("chmod", jsext.func(async function (defer) {
-        if (platform() === "windows") {
-            this.skip();
-        }
+    describe("chmod", () => {
+        it("default", jsext.func(async function (defer) {
+            if (platform() === "windows") {
+                this.skip();
+            }
 
-        const path = "./tmp.txt";
-        await writeFile(path, "Hello, world!");
-        defer(() => remove(path));
+            const path = "./tmp.txt";
+            await writeFile(path, "Hello, world!");
+            defer(() => remove(path));
 
-        await chmod(path, 0o755);
+            await chmod(path, 0o755);
 
-        const _stat = await stat(path);
-        strictEqual(_stat.name, "tmp.txt");
-        strictEqual(_stat.kind, "file");
-        strictEqual(_stat.mode & 0o755, 0o755);
-    }));
+            const _stat = await stat(path);
+            strictEqual(_stat.name, "tmp.txt");
+            strictEqual(_stat.kind, "file");
+            strictEqual(_stat.mode & 0o755, 0o755);
+        }));
 
-    it("utimes", jsext.func(async (defer) => {
-        const path = "./tmp.txt";
-        await writeFile(path, "Hello, world!");
-        defer(() => remove(path));
+        it("~ support", jsext.func(async function (defer) {
+            if (platform() === "windows") {
+                this.skip();
+            }
 
-        const atime1 = new Date(0);
-        const mtime1 = new Date(0);
-        await utimes(path, atime1, mtime1);
+            const path = "~/tmp.txt";
+            await writeFile(path, "Hello, world!");
+            defer(() => remove(path));
 
-        const _stat1 = await stat(path);
-        strictEqual(_stat1.name, "tmp.txt");
-        strictEqual(_stat1.kind, "file");
-        deepStrictEqual(_stat1.atime, atime1);
-        deepStrictEqual(_stat1.mtime, mtime1);
+            await chmod(path, 0o755);
 
-        const atime2 = Math.floor(Date.now() / 1000);
-        const mtime2 = Math.floor(Date.now() / 1000);
-        await utimes(path, atime2, mtime2);
+            const _stat = await stat(join(homedir, "tmp.txt"));
+            strictEqual(_stat.name, "tmp.txt");
+            strictEqual(_stat.kind, "file");
+            strictEqual(_stat.mode & 0o755, 0o755);
+        }));
+    });
 
-        const _stat2 = await stat(path);
-        strictEqual(_stat2.name, "tmp.txt");
-        strictEqual(_stat2.kind, "file");
-        deepStrictEqual(_stat2.atime, new Date(atime2 * 1000));
-        deepStrictEqual(_stat2.mtime, new Date(mtime2 * 1000));
-    }));
+    describe("utimes", () => {
+        it("default", jsext.func(async (defer) => {
+            const path = "./tmp.txt";
+            await writeFile(path, "Hello, world!");
+            defer(() => remove(path));
+
+            const atime1 = new Date(0);
+            const mtime1 = new Date(0);
+            await utimes(path, atime1, mtime1);
+
+            const _stat1 = await stat(path);
+            strictEqual(_stat1.name, "tmp.txt");
+            strictEqual(_stat1.kind, "file");
+            deepStrictEqual(_stat1.atime, atime1);
+            deepStrictEqual(_stat1.mtime, mtime1);
+
+            const atime2 = Math.floor(Date.now() / 1000);
+            const mtime2 = Math.floor(Date.now() / 1000);
+            await utimes(path, atime2, mtime2);
+
+            const _stat2 = await stat(path);
+            strictEqual(_stat2.name, "tmp.txt");
+            strictEqual(_stat2.kind, "file");
+            deepStrictEqual(_stat2.atime, new Date(atime2 * 1000));
+            deepStrictEqual(_stat2.mtime, new Date(mtime2 * 1000));
+        }));
+
+        it("~ support", jsext.func(async (defer) => {
+            const path = "~/tmp.txt";
+            await writeFile(path, "Hello, world!");
+            defer(() => remove(path));
+
+            const atime1 = new Date(0);
+            const mtime1 = new Date(0);
+            await utimes(path, atime1, mtime1);
+
+            const _stat1 = await stat(join(homedir, "tmp.txt"));
+            strictEqual(_stat1.name, "tmp.txt");
+            strictEqual(_stat1.kind, "file");
+            deepStrictEqual(_stat1.atime, atime1);
+            deepStrictEqual(_stat1.mtime, mtime1);
+        }));
+    });
 
     describe("createReadableStream", () => {
         if (typeof ReadableStream === "undefined") {
@@ -1003,6 +1227,19 @@ describe("fs", () => {
             const _text = await readFileAsText("./fs.ts");
             strictEqual(text, _text);
         });
+
+        it("~ support", jsext.func(async (defer) => {
+            const dest = `~/fs_${random(8)}.ts`;
+            await copy("./fs.ts", dest);
+            defer(() => remove(dest));
+
+            const stream = createReadableStream(dest);
+            ok(stream instanceof ReadableStream);
+
+            const text = await readAsText(stream);
+            const _text = await readFileAsText("./fs.ts");
+            strictEqual(text, _text);
+        }));
     });
 
     describe("createWritableStream", async () => {
@@ -1014,11 +1251,28 @@ describe("fs", () => {
             const src = "./fs.ts";
             const dest = "./tmp.txt";
             const reader = createReadableStream(src);
-            const writer = createWritableStream("./tmp.txt");
+            const writer = createWritableStream(dest);
             defer(() => remove(dest));
 
             ok(writer instanceof WritableStream);
             await reader.pipeTo(writer);
+
+            const srcData = await readFile(src);
+            const destData = await readFile(dest);
+            ok(equals(srcData, destData));
+        }));
+
+        it("~ support", jsext.func(async (defer) => {
+            const src = "./fs.ts";
+            const dest = `~/fs_${random(8)}.ts`;
+            const reader = createReadableStream(src);
+            const writer = createWritableStream(dest);
+            defer(() => remove(dest));
+
+            ok(writer instanceof WritableStream);
+            await reader.pipeTo(writer);
+
+            strictEqual(await exists(join(homedir, basename(dest))), true);
 
             const srcData = await readFile(src);
             const destData = await readFile(dest);

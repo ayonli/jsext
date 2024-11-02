@@ -28,7 +28,7 @@ export function getUTI(type: string): string | undefined {
     }
 
     for (const [uti, values] of Object.entries(UTIMap)) {
-        if (values.includes(type)) {
+        if (uti === type || values.includes(type)) {
             return uti;
         }
     }
@@ -57,6 +57,8 @@ export function getMIME(type: string): string | undefined {
 
     if (!type) {
         return undefined;
+    } else if (type.includes("/")) {
+        return type;
     } else if (type[0] !== ".") {
         const values = UTIMap[type] || null;
         return values ? values.find(v => v.includes("/")) : undefined;
