@@ -193,7 +193,7 @@ export function chunk(str: string, length: number): string[] {
 }
 
 /**
- * Truncates the string to the given length (including the ending `...`).
+ * Truncates the string to the given length (including the padding `...`).
  * 
  * @example
  * ```ts
@@ -203,14 +203,27 @@ export function chunk(str: string, length: number): string[] {
  * console.log(truncate("hello world", 11)); // hello world
  * ```
  */
-export function truncate(str: string, length: number): string {
+export function truncate(
+    str: string,
+    length: number,
+    position: "end" | "middle" | "start" = "end"
+): string {
     if (length <= 0) {
         return "";
     } else if (length >= str.length) {
         return str;
     } else {
         length -= 3;
-        return str.slice(0, length) + "...";
+
+        if (position === "middle") {
+            const left = Math.ceil(length / 2);
+            const right = Math.floor(length / 2);
+            return str.slice(0, left) + "..." + str.slice(-right);
+        } else if (position === "start") {
+            return "..." + str.slice(-length);
+        } else {
+            return str.slice(0, length) + "...";
+        }
     }
 }
 

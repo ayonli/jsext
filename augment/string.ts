@@ -65,7 +65,7 @@ declare global {
         /** Breaks the string into smaller chunks according to the given length. */
         chunk(length: number): string[];
         /** Truncates the string to the given length (including the ending `...`). */
-        truncate(length: number): string;
+        truncate(length: number, position?: "end" | "middle" | "start"): string;
         /** Removes leading and trailing spaces or custom characters of the string. */
         trim(chars?: string): string;
         /** Removes trailing spaces or custom characters of the string. */
@@ -130,8 +130,8 @@ String.prototype.chunk = function chunk(length) {
     return _chunk(String(this), length);
 };
 
-String.prototype.truncate = function truncate(length) {
-    return _truncate(String(this), length);
+String.prototype.truncate = function truncate(length, position = "end") {
+    return _truncate(String(this), length, position);
 };
 
 String.prototype.trim = function trim(chars: string = "") {

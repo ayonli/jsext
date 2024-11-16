@@ -29,8 +29,8 @@ String.prototype.lines = function lines$1() {
 String.prototype.chunk = function chunk$1(length) {
     return chunk(String(this), length);
 };
-String.prototype.truncate = function truncate$1(length) {
-    return truncate(String(this), length);
+String.prototype.truncate = function truncate$1(length, position = "end") {
+    return truncate(String(this), length, position);
 };
 String.prototype.trim = function trim$1(chars = "") {
     return trim(String(this), chars);

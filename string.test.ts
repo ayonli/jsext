@@ -145,6 +145,15 @@ describe("String", () => {
         strictEqual(str.truncate(15), "Hello, World!");
         strictEqual(str.truncate(12), "Hello, Wo...");
         strictEqual(str.truncate(10), "Hello, ...");
+
+        strictEqual(str.truncate(15, "start"), "Hello, World!");
+        strictEqual(str.truncate(12, "start"), "...o, World!");
+        strictEqual(str.truncate(10, "start"), "... World!");
+
+        strictEqual(str.truncate(15, "middle"), "Hello, World!");
+        strictEqual(str.truncate(12, "middle"), "Hello...rld!");
+        strictEqual(str.truncate(10, "middle"), "Hell...ld!");
+
         strictEqual(str.truncate(-1), ""); // negative indexing isn't supported
     });
 

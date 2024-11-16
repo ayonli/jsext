@@ -179,7 +179,7 @@ function chunk(str, length) {
     return chunk$1(str, length);
 }
 /**
- * Truncates the string to the given length (including the ending `...`).
+ * Truncates the string to the given length (including the padding `...`).
  *
  * @example
  * ```ts
@@ -189,7 +189,7 @@ function chunk(str, length) {
  * console.log(truncate("hello world", 11)); // hello world
  * ```
  */
-function truncate(str, length) {
+function truncate(str, length, position = "end") {
     if (length <= 0) {
         return "";
     }
@@ -198,7 +198,17 @@ function truncate(str, length) {
     }
     else {
         length -= 3;
-        return str.slice(0, length) + "...";
+        if (position === "middle") {
+            const left = Math.ceil(length / 2);
+            const right = Math.floor(length / 2);
+            return str.slice(0, left) + "..." + str.slice(-right);
+        }
+        else if (position === "start") {
+            return "..." + str.slice(-length);
+        }
+        else {
+            return str.slice(0, length) + "...";
+        }
     }
 }
 const _trim = String.prototype.trim;
