@@ -1,8 +1,8 @@
 import { text } from "../bytes.ts";
 import {
-    type BufferSource,
     type DataSource,
     hash,
+    crc32,
     hmac,
     toBytes,
     sha1,
@@ -10,10 +10,10 @@ import {
     sha512,
 } from "../hash/web.ts";
 
-export type { BufferSource, DataSource };
+export type { DataSource };
 
 export default hash;
-export { hmac, sha1, sha256, sha512 };
+export { crc32, hmac, sha1, sha256, sha512 };
 
 export function md5(data: DataSource): Promise<ArrayBuffer>;
 export function md5(data: DataSource, encoding: "hex" | "base64"): Promise<string>;

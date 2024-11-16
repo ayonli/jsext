@@ -1,17 +1,6 @@
 import bytes, { text } from '../bytes.js';
 import { readAsArrayBuffer } from '../reader.js';
 
-function strHash(str) {
-    let hash = 5381;
-    let i = str.length;
-    while (i) {
-        hash = (hash * 33) ^ str.charCodeAt(--i);
-    }
-    /* JavaScript does bitwise operations (like XOR, above) on 32-bit signed
-     * integers. Since we want the results to be always positive, convert the
-     * signed int to an unsigned by doing an unsigned bitshift. */
-    return hash >>> 0;
-}
 /**
  * Calculates the hash of the given data.
  *
@@ -27,25 +16,82 @@ function strHash(str) {
  * ```
  */
 function hash(data) {
+    let str;
     if (typeof data === "string") {
-        return strHash(data);
+        str = data;
     }
     else if (data instanceof ArrayBuffer) {
-        const str = text(new Uint8Array(data));
-        return strHash(str);
+        str = text(new Uint8Array(data));
     }
     else if (data instanceof Uint8Array) {
-        const str = text(data);
-        return strHash(str);
+        str = text(data);
     }
     else if (ArrayBuffer.isView(data)) {
         const bytes = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-        const str = text(bytes);
-        return strHash(str);
+        str = text(bytes);
     }
     else {
         throw new TypeError("Unsupported data type");
     }
+    let hash = 5381;
+    let i = str.length;
+    while (i) {
+        hash = (hash * 33) ^ str.charCodeAt(--i);
+    }
+    /* JavaScript does bitwise operations (like XOR, above) on 32-bit signed
+     * integers. Since we want the results to be always positive, convert the
+     * signed int to an unsigned by doing an unsigned bitshift. */
+    return hash >>> 0;
+}
+const CRC32_TABLE = (() => {
+    const IEEE = 0xedb88320;
+    const table = new Uint32Array(256);
+    // Fill the table
+    for (let i = 0; i < 256; i++) {
+        let crc = i;
+        for (let j = 0; j < 8; j++) {
+            crc = crc & 1 ? IEEE ^ crc >>> 1 : crc >>> 1;
+        }
+        table[i] = crc;
+    }
+    return table;
+})();
+/**
+ * Calculates the CRC-32 hash of the given data.
+ *
+ * This function is based on IEEE polynomial, which is widely used by Ethernet
+ * (IEEE 802.3), v.42, fddi, gzip, zip, png and other technologies.
+ *
+ * @example
+ * ```ts
+ * import { crc32 } from "@ayonli/jsext/hash";
+ *
+ * console.log(crc32("Hello, World!")); // 3964322768
+ * console.log(crc32(new Uint8Array([1, 2, 3]))); // 1438416925
+ * ```
+ */
+function crc32(data) {
+    let crc = 0 ^ (-1);
+    let bin;
+    if (data instanceof Uint8Array) {
+        bin = data;
+    }
+    else if (typeof data === "string") {
+        bin = bytes(data);
+    }
+    else if (data instanceof ArrayBuffer) {
+        bin = new Uint8Array(data);
+    }
+    else if (ArrayBuffer.isView(data)) {
+        bin = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+    }
+    else {
+        throw new TypeError("Unsupported data type");
+    }
+    for (let i = 0; i < bin.length; i++) {
+        crc = CRC32_TABLE[(crc ^ bin[i]) & 0xff] ^ crc >>> 8;
+    }
+    return (crc ^ (-1)) >>> 0;
 }
 async function toBytes(data) {
     let bin;
@@ -133,5 +179,5 @@ async function hmac(algorithm, key, data, encoding = undefined) {
     }
 }
 
-export { hash, hmac, sha1, sha256, sha512, toBytes };
+export { crc32, hash, hmac, sha1, sha256, sha512, toBytes };
 //# sourceMappingURL=web.js.map

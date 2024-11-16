@@ -2,7 +2,7 @@ import { deepStrictEqual, strictEqual } from "node:assert";
 import { Buffer } from "node:buffer";
 import { createHmac } from "node:crypto";
 import bytes from "./bytes.ts";
-import hash, { sha1, sha256, sha512, md5, hmac } from "./hash.ts";
+import hash, { crc32, sha1, sha256, sha512, md5, hmac } from "./hash.ts";
 
 describe("hash", () => {
     describe("hash", () => {
@@ -16,6 +16,22 @@ describe("hash", () => {
 
         it("Uint8Array", () => {
             strictEqual(hash(bytes("hello world")), 2616892229);
+        });
+    });
+
+    describe("crc32", () => {
+        it("string", () => {
+            strictEqual(crc32("Hello, World!"), 3964322768);
+        });
+
+        it("ArrayBuffer", () => {
+            strictEqual(crc32(bytes("Hello, World!").buffer), 3964322768);
+            strictEqual(crc32(new Uint8Array([1, 2, 3]).buffer), 1438416925);
+        });
+
+        it("Uint8Array", () => {
+            strictEqual(crc32(bytes("Hello, World!")), 3964322768);
+            strictEqual(crc32(new Uint8Array([1, 2, 3])), 1438416925);
         });
     });
 

@@ -1,6 +1,7 @@
 import bytes from './bytes.js';
 import { isDeno, isNodeLike } from './env.js';
 import { hash, sha1 as sha1$1, sha256 as sha256$1, sha512 as sha512$1, hmac as hmac$1, toBytes } from './hash/web.js';
+export { crc32 } from './hash/web.js';
 
 /**
  * Simplified hash functions for various data types, based on the Web Crypto API

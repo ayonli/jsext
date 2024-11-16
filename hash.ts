@@ -7,9 +7,9 @@
 import bytes from "./bytes.ts";
 import { isDeno, isNodeLike } from "./env.ts";
 import {
-    type BufferSource,
     type DataSource,
     hash,
+    crc32,
     hmac as _hmac,
     toBytes,
     sha1 as _sha1,
@@ -17,9 +17,10 @@ import {
     sha512 as _sha512
 } from "./hash/web.ts";
 
-export type { BufferSource, DataSource };
+export type { DataSource };
 
 export default hash;
+export { crc32 };
 
 async function nodeHash(
     algorithm: "sha1" | "sha256" | "sha512" | "md5",
@@ -197,18 +198,18 @@ export async function md5(
 
 export async function hmac(
     algorithm: "sha1" | "sha256" | "sha512",
-    key: BufferSource,
+    key: string | BufferSource,
     data: DataSource
 ): Promise<ArrayBuffer>;
 export async function hmac(
     algorithm: "sha1" | "sha256" | "sha512",
-    key: BufferSource,
+    key: string | BufferSource,
     data: DataSource,
     encoding: "hex" | "base64"
 ): Promise<string>;
 export async function hmac(
     algorithm: "sha1" | "sha256" | "sha512",
-    key: BufferSource,
+    key: string | BufferSource,
     data: DataSource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
