@@ -609,6 +609,17 @@ describe("http", () => {
             "foo=bar; Expires=Wed, 09 Jun 2021 10:18:14 GMT",
             "baz=qux; Max-Age=3600",
         ]);
+
+        const req = new Request("http://example.com");
+        setCookie(req, {
+            name: "foo",
+            value: "bar",
+        });
+        setCookie(req, {
+            name: "baz",
+            value: "qux",
+        });
+        deepStrictEqual(req.headers.get("Cookie"), "foo=bar; baz=qux");
     });
 
     it("setFilename", () => {
