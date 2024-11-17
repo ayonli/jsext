@@ -10,11 +10,11 @@ import hash, {
     type DataSource,
     adler32,
     crc32,
-    hmac as _hmac,
     toBytesAsync,
     sha1 as _sha1,
     sha256 as _sha256,
-    sha512 as _sha512
+    sha512 as _sha512,
+    hmac as _hmac,
 } from "./hash/web.ts";
 
 export type { DataSource };
@@ -71,7 +71,7 @@ export async function sha1(
     data: DataSource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
-    if (typeof crypto === "object") {
+    if (typeof crypto === "object" && typeof crypto.subtle === "object") {
         return encoding ? _sha1(data, encoding) : _sha1(data);
     } else if (isDeno || isNodeLike) {
         return nodeHash("sha1", data, encoding);
@@ -109,7 +109,7 @@ export async function sha256(
     data: DataSource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
-    if (typeof crypto === "object") {
+    if (typeof crypto === "object" && typeof crypto.subtle === "object") {
         return encoding ? _sha256(data, encoding) : _sha256(data);
     } else if (isDeno || isNodeLike) {
         return nodeHash("sha256", data, encoding);
@@ -149,7 +149,7 @@ export async function sha512(
     data: DataSource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
-    if (typeof crypto === "object") {
+    if (typeof crypto === "object" && typeof crypto.subtle === "object") {
         return encoding ? _sha512(data, encoding) : _sha512(data);
     } else if (isDeno || isNodeLike) {
         return nodeHash("sha512", data, encoding);
@@ -213,7 +213,7 @@ export async function hmac(
     data: DataSource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
-    if (typeof crypto === "object") {
+    if (typeof crypto === "object" && typeof crypto.subtle === "object") {
         return encoding ? _hmac(algorithm, key, data, encoding) : _hmac(algorithm, key, data);
     } else if (isDeno || isNodeLike) {
         const crypto = await import("node:crypto");

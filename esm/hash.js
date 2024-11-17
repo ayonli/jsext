@@ -23,7 +23,7 @@ async function nodeHash(algorithm, data, encoding = undefined) {
     }
 }
 async function sha1(data, encoding = undefined) {
-    if (typeof crypto === "object") {
+    if (typeof crypto === "object" && typeof crypto.subtle === "object") {
         return encoding ? sha1$1(data, encoding) : sha1$1(data);
     }
     else if (isDeno || isNodeLike) {
@@ -34,7 +34,7 @@ async function sha1(data, encoding = undefined) {
     }
 }
 async function sha256(data, encoding = undefined) {
-    if (typeof crypto === "object") {
+    if (typeof crypto === "object" && typeof crypto.subtle === "object") {
         return encoding ? sha256$1(data, encoding) : sha256$1(data);
     }
     else if (isDeno || isNodeLike) {
@@ -45,7 +45,7 @@ async function sha256(data, encoding = undefined) {
     }
 }
 async function sha512(data, encoding = undefined) {
-    if (typeof crypto === "object") {
+    if (typeof crypto === "object" && typeof crypto.subtle === "object") {
         return encoding ? sha512$1(data, encoding) : sha512$1(data);
     }
     else if (isDeno || isNodeLike) {
@@ -64,7 +64,7 @@ async function md5(data, encoding = undefined) {
     }
 }
 async function hmac(algorithm, key, data, encoding = undefined) {
-    if (typeof crypto === "object") {
+    if (typeof crypto === "object" && typeof crypto.subtle === "object") {
         return encoding ? hmac$1(algorithm, key, data, encoding) : hmac$1(algorithm, key, data);
     }
     else if (isDeno || isNodeLike) {
