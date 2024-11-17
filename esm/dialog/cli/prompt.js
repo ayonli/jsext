@@ -1,11 +1,12 @@
-import { escape } from "./util.ts";
-import { dedent } from "../../string.ts";
-import { platform } from "../../runtime.ts";
-import { isWSL, lockStdin, powershell, run, which } from "../../cli.ts";
-import question from "./question.ts";
+import { escape } from './util.js';
+import { dedent } from '../../string.js';
+import { platform } from '../../runtime.js';
+import { run, powershell, which } from '../../cli.js';
+import question from './question.js';
+import { isWSL, lockStdin } from '../../cli/common.js';
 
-function createAppleScript(message: string, defaultValue = "", password = false) {
-    return dedent`
+function createAppleScript(message, defaultValue = "", password = false) {
+    return dedent `
         tell application (path to frontmost application as text)
             set response to display dialog "${escape(message)}" with title "Prompt"\
                 default answer "${escape(defaultValue)}"${password ? " hidden answer true" : ""}
@@ -13,9 +14,8 @@ function createAppleScript(message: string, defaultValue = "", password = false)
         end
         `;
 }
-
-function createPowerShellScript(message: string, defaultValue = "", password = false) {
-    return dedent`
+function createPowerShellScript(message, defaultValue = "", password = false) {
+    return dedent `
         Add-Type -AssemblyName System.Windows.Forms
         $form = New-Object System.Windows.Forms.Form
         $form.Text = 'Prompt'
@@ -72,71 +72,68 @@ function createPowerShellScript(message: string, defaultValue = "", password = f
         }
         `;
 }
-
-export default async function promptInTerminal(message: string, options: {
-    defaultValue?: string | undefined;
-    type?: "text" | "password";
-    mask?: string | undefined;
-    gui?: boolean;
-} = {}): Promise<string | null> {
-    if (options?.gui && platform() === "darwin") {
+async function prompt(message, options = {}) {
+    if ((options === null || options === void 0 ? void 0 : options.gui) && platform() === "darwin") {
         const { code, stdout, stderr } = await run("osascript", [
             "-e",
             createAppleScript(message, options.defaultValue, options.type === "password")
         ]);
-
         if (code) {
             if (stderr.includes("User canceled")) {
                 return null;
-            } else {
+            }
+            else {
                 throw new Error(stderr);
             }
-        } else {
+        }
+        else {
             return stdout.trim();
         }
-    } else if (options?.gui && (platform() === "windows" || isWSL())) {
-        const { code, stdout, stderr } = await powershell(
-            createPowerShellScript(message, options.defaultValue, options.type === "password")
-        );
-
+    }
+    else if ((options === null || options === void 0 ? void 0 : options.gui) && (platform() === "windows" || isWSL())) {
+        const { code, stdout, stderr } = await powershell(createPowerShellScript(message, options.defaultValue, options.type === "password"));
         if (code) {
             if (stderr.includes("User canceled")) {
                 return null;
-            } else {
+            }
+            else {
                 throw new Error(stderr);
             }
-        } else {
+        }
+        else {
             return stdout.trim();
         }
-    } else if (options?.gui && (platform() === "linux" || await which("zenity"))) {
+    }
+    else if ((options === null || options === void 0 ? void 0 : options.gui) && (platform() === "linux" || await which("zenity"))) {
         const args = [
             "--entry",
             "--title", "Prompt",
             "--width", "450",
         ];
-
         if (message) {
             args.push("--text", message);
         }
-
         if (options.defaultValue) {
             args.push("--entry-text", options.defaultValue);
         }
-
         if (options.type === "password") {
             args.push("--hide-text");
         }
-
         const { code, stdout, stderr } = await run("zenity", args);
-
         if (!code) {
             return stdout.trim();
-        } else if (code === 1) {
+        }
+        else if (code === 1) {
             return null;
-        } else {
+        }
+        else {
             throw new Error(stderr);
         }
-    } else {
+    }
+    else {
         return await lockStdin(() => question(message + " ", options));
     }
 }
+
+export { prompt as default };
+//# sourceMappingURL=prompt.js.map

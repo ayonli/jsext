@@ -87,39 +87,12 @@ export default async function progress<T>(
     fn: ProgressFunc<T>,
     onAbort: ProgressAbortHandler<T> | undefined = undefined
 ): Promise<T | null> {
-    const ctrl = new AbortController();
-    const signal = ctrl.signal;
-    let fallback: { value: T; } | null = null;
-    const abort = !onAbort ? undefined : async () => {
-        try {
-            const result = await onAbort();
-            fallback = { value: result };
-            ctrl.abort();
-        } catch (err) {
-            ctrl.abort(err);
-        }
-    };
-    const listenForAbort = !onAbort ? undefined : () => new Promise<T>((resolve, reject) => {
-        signal.addEventListener("abort", () => {
-            if (fallback) {
-                resolve(fallback.value);
-            } else {
-                reject(signal.reason);
-            }
-        });
-    });
-
     if (isBrowserWindow) {
-        const { progressInBrowser } = await import("./browser/index.ts");
-        return await progressInBrowser(message, fn, { signal, abort, listenForAbort });
+        const { progress } = await import("./web/index.ts");
+        return await progress(message, fn, onAbort);
     } else if (isDeno || isNodeLike) {
-        const { lockStdin } = await import("../cli.ts");
-        const { handleTerminalProgress } = await import("./terminal/progress.ts");
-        return await lockStdin(() => handleTerminalProgress(message, fn, {
-            signal,
-            abort,
-            listenForAbort,
-        }));
+        const { default: progress } = await import("./cli/progress.ts");
+        return await progress(message, fn, onAbort);
     } else {
         throw new Error("Unsupported runtime");
     }

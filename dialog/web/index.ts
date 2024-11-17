@@ -1,3 +1,11 @@
+/**
+ * The implementation of `dialog` module for the browser.
+ * 
+ * Normally, we should just use the `dialog` module, however, if we don't want
+ * to include other parts that are not needed in the browser, we can use this
+ * module instead.
+ * @module
+ */
 import CancelButton from "./CancelButton.ts";
 import Dialog, { closeDialog } from "./Dialog.ts";
 import Footer from "./Footer.ts";
@@ -5,9 +13,12 @@ import Input from "./Input.ts";
 import OkButton from "./OkButton.ts";
 import Progress from "./Progress.ts";
 import Text from "./Text.ts";
-import type { ProgressFunc, ProgressState } from "../../dialog.ts";
+import type { PromptOptions } from "../../dialog.ts";
+import type { ProgressAbortHandler, ProgressFunc, ProgressState } from "../progress.ts";
 
-export async function alertInBrowser(message: string) {
+export * from "./file.ts";
+
+export async function alert(message: string) {
     await new Promise<void>(resolve => {
         document.body.appendChild(
             Dialog(
@@ -24,7 +35,7 @@ export async function alertInBrowser(message: string) {
     });
 }
 
-export async function confirmInBrowser(message: string) {
+export async function confirm(message: string) {
     return new Promise<boolean>(resolve => {
         document.body.appendChild(
             Dialog(
@@ -42,10 +53,7 @@ export async function confirmInBrowser(message: string) {
     });
 }
 
-export async function promptInBrowser(message: string, options: {
-    type: "text" | "password";
-    defaultValue?: string | undefined;
-}) {
+export async function prompt(message: string, options: PromptOptions = {}) {
     const { type, defaultValue } = options;
     return new Promise<string | null>(resolve => {
         document.body.appendChild(
@@ -68,12 +76,32 @@ export async function promptInBrowser(message: string, options: {
     });
 }
 
-export async function progressInBrowser<T>(message: string, fn: ProgressFunc<T>, options: {
-    signal: AbortSignal;
-    abort?: (() => void) | undefined;
-    listenForAbort?: (() => Promise<T>) | undefined;
-}) {
-    const { signal, abort, listenForAbort } = options;
+export async function progress<T>(
+    message: string,
+    fn: ProgressFunc<T>,
+    onAbort: ProgressAbortHandler<T> | undefined = undefined
+) {
+    const ctrl = new AbortController();
+    const signal = ctrl.signal;
+    let fallback: { value: T; } | null = null;
+    const abort = !onAbort ? undefined : async () => {
+        try {
+            const result = await onAbort();
+            fallback = { value: result };
+            ctrl.abort();
+        } catch (err) {
+            ctrl.abort(err);
+        }
+    };
+    const listenForAbort = !onAbort ? undefined : () => new Promise<T>((resolve, reject) => {
+        signal.addEventListener("abort", () => {
+            if (fallback) {
+                resolve(fallback.value);
+            } else {
+                reject(signal.reason);
+            }
+        });
+    });
     const text = Text(message);
     const { element: progressBar, setValue } = Progress();
     const dialog = Dialog({ onCancel: abort }, text);

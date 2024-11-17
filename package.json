@@ -131,6 +131,20 @@
             "require": "./cjs/dialog.js",
             "default": "./dialog.ts"
         },
+        "./dialog/web": {
+            "types": "./types/dialog/web/index.d.ts",
+            "bun": "./dialog/web/index.ts",
+            "import": "./esm/dialog/web/index.js",
+            "require": "./cjs/dialog/web/index.js",
+            "default": "./dialog/web/index.ts"
+        },
+        "./dialog/cli": {
+            "types": "./types/dialog/cli.d.ts",
+            "bun": "./dialog/cli.ts",
+            "import": "./esm/dialog/cli.js",
+            "require": "./cjs/dialog/cli.js",
+            "default": "./dialog/cli.ts"
+        },
         "./encoding": {
             "types": "./types/encoding.d.ts",
             "bun": "./encoding.ts",

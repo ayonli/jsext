@@ -15,6 +15,8 @@
         "./debounce": "./debounce.ts",
         "./deprecate": "./deprecate.ts",
         "./dialog": "./dialog.ts",
+        "./dialog/web": "./dialog/web/index.ts",
+        "./dialog/cli": "./dialog/cli/index.ts",
         "./encoding": "./encoding.ts",
         "./error": "./error.ts",
         "./event": "./event.ts",

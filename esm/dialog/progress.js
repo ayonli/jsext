@@ -68,41 +68,13 @@ import { isBrowserWindow, isDeno, isNodeLike } from '../env.js';
  * ```
  */
 async function progress(message, fn, onAbort = undefined) {
-    const ctrl = new AbortController();
-    const signal = ctrl.signal;
-    let fallback = null;
-    const abort = !onAbort ? undefined : async () => {
-        try {
-            const result = await onAbort();
-            fallback = { value: result };
-            ctrl.abort();
-        }
-        catch (err) {
-            ctrl.abort(err);
-        }
-    };
-    const listenForAbort = !onAbort ? undefined : () => new Promise((resolve, reject) => {
-        signal.addEventListener("abort", () => {
-            if (fallback) {
-                resolve(fallback.value);
-            }
-            else {
-                reject(signal.reason);
-            }
-        });
-    });
     if (isBrowserWindow) {
-        const { progressInBrowser } = await import('./browser/index.js');
-        return await progressInBrowser(message, fn, { signal, abort, listenForAbort });
+        const { progress } = await import('./web/index.js');
+        return await progress(message, fn, onAbort);
     }
     else if (isDeno || isNodeLike) {
-        const { lockStdin } = await import('../cli.js');
-        const { handleTerminalProgress } = await import('./terminal/progress.js');
-        return await lockStdin(() => handleTerminalProgress(message, fn, {
-            signal,
-            abort,
-            listenForAbort,
-        }));
+        const { default: progress } = await import('./cli/progress.js');
+        return await progress(message, fn, onAbort);
     }
     else {
         throw new Error("Unsupported runtime");

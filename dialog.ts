@@ -5,37 +5,12 @@
  * @experimental
  * @module
  */
-
+import { isBrowserWindow, isDeno, isNodeLike } from "./env.ts";
 import progress from "./dialog/progress.ts";
 import type { ProgressState, ProgressFunc, ProgressAbortHandler } from "./dialog/progress.ts";
-import {
-    type FileDialogOptions,
-    type PickFileOptions,
-    type SaveFileOptions,
-    type DownloadFileOptions,
-    openFile,
-    openFiles,
-    openDirectory,
-    pickFile,
-    pickFiles,
-    pickDirectory,
-    saveFile,
-    downloadFile,
-} from "./dialog/file.ts";
-import { isBrowserWindow, isDeno, isNodeLike } from "./env.ts";
 
-export type { FileDialogOptions, PickFileOptions, SaveFileOptions, DownloadFileOptions };
-export {
-    openFile,
-    openFiles,
-    openDirectory,
-    pickFile,
-    pickFiles,
-    pickDirectory,
-    saveFile,
-    downloadFile,
-};
 export { progress, ProgressState, ProgressFunc, ProgressAbortHandler };
+export * from "./dialog/file.ts";
 
 /**
  * Options for dialog functions such as {@link alert}, {@link confirm} and
@@ -69,11 +44,11 @@ export interface DialogOptions {
  */
 export async function alert(message: string, options: DialogOptions = {}): Promise<void> {
     if (isBrowserWindow) {
-        const { alertInBrowser } = await import("./dialog/browser/index.ts");
-        await alertInBrowser(message);
+        const { alert } = await import("./dialog/web/index.ts");
+        await alert(message);
     } else if (isDeno || isNodeLike) {
-        const { default: alertInTerminal } = await import("./dialog/terminal/alert.ts");
-        await alertInTerminal(message, options);
+        const { default: alert } = await import("./dialog/cli/alert.ts");
+        await alert(message, options);
     } else {
         throw new Error("Unsupported runtime");
     }
@@ -96,11 +71,11 @@ export async function alert(message: string, options: DialogOptions = {}): Promi
  */
 export async function confirm(message: string, options: DialogOptions = {}): Promise<boolean> {
     if (isBrowserWindow) {
-        const { confirmInBrowser } = await import("./dialog/browser/index.ts");
-        return await confirmInBrowser(message);
+        const { confirm } = await import("./dialog/web/index.ts");
+        return await confirm(message);
     } else if (isDeno || isNodeLike) {
-        const { default: confirmInTerminal } = await import("./dialog/terminal/confirm.ts");
-        return await confirmInTerminal(message, options);
+        const { default: confirm } = await import("./dialog/cli/confirm.ts");
+        return await confirm(message, options);
     } else {
         throw new Error("Unsupported runtime");
     }
@@ -125,7 +100,7 @@ export interface PromptOptions extends DialogOptions {
      * 
      * This option is ignored when `gui` is `true`.
      */
-    mask?: string;
+    mask?: string | undefined;
 }
 
 /**
@@ -189,11 +164,11 @@ export async function prompt(
     const gui = typeof options === "object" ? (options.gui ?? false) : false;
 
     if (isBrowserWindow) {
-        const { promptInBrowser } = await import("./dialog/browser/index.ts");
-        return await promptInBrowser(message, { type, defaultValue });
+        const { prompt } = await import("./dialog/web/index.ts");
+        return await prompt(message, { type, defaultValue });
     } else if (isDeno || isNodeLike) {
-        const { default: promptInTerminal } = await import("./dialog/terminal/prompt.ts");
-        return await promptInTerminal(message, { defaultValue, type, mask, gui });
+        const { default: prompt } = await import("./dialog/cli/prompt.ts");
+        return await prompt(message, { defaultValue, type, mask, gui });
     } else {
         throw new Error("Unsupported runtime");
     }

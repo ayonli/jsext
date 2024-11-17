@@ -19,7 +19,7 @@ function createPowerShellScript(message: string) {
         `;
 }
 
-export default async function alertInTerminal(message: string, options: {
+export default async function alert(message: string, options: {
     gui?: boolean;
 } = {}): Promise<void> {
     if (options?.gui && platform() === "darwin") {

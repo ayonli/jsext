@@ -1,14 +1,4 @@
 import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
-import { platform } from "../runtime.ts";
-import { readAsObjectURL } from "../reader.ts";
-import { asyncTask } from "../async.ts";
-import { getExtensions } from "../filetype.ts";
-import { readDir, readFileAsFile, writeFile } from "../fs.ts";
-import { fixFileType } from "../fs/util.ts";
-import { as, pick } from "../object.ts";
-import { basename, join } from "../path.ts";
-import { createProgressEvent } from "../event.ts";
-import progress, { ProgressState } from "./progress.ts";
 
 /**
  * Options for file dialog functions, such as {@link pickFile} and
@@ -88,37 +78,11 @@ export async function pickFile(
     options: PickFileOptions = {}
 ): Promise<string | FileSystemFileHandle | null> {
     if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
-        const { browserPickFile } = await import("./browser/file.ts");
-        return await browserPickFile(options.type, {
-            forSave: options.forSave,
-            defaultName: options.defaultName,
-        });
+        const { pickFile } = await import("./web/file.ts");
+        return await pickFile(options);
     } else if (isDeno || isNodeLike) {
-        const { isWSL, which } = await import("../cli.ts");
-        const _platform = platform();
-
-        if (_platform === "darwin") {
-            const { macPickFile } = await import("./terminal/file/mac.ts");
-            return await macPickFile(options.title, {
-                type: options.type,
-                forSave: options?.forSave,
-                defaultName: options?.defaultName,
-            });
-        } else if (_platform === "windows" || isWSL()) {
-            const { windowsPickFile } = await import("./terminal/file/windows.ts");
-            return await windowsPickFile(options.title, {
-                type: options.type,
-                forSave: options?.forSave,
-                defaultName: options?.defaultName,
-            });
-        } else if (_platform === "linux" || await which("zenity")) {
-            const { linuxPickFile } = await import("./terminal/file/linux.ts");
-            return await linuxPickFile(options.title, {
-                type: options.type,
-                forSave: options?.forSave,
-                defaultName: options?.defaultName,
-            });
-        }
+        const { pickFile } = await import("./cli/file.ts");
+        return await pickFile(options);
     }
 
     throw new Error("Unsupported platform");
@@ -159,22 +123,11 @@ export async function pickFiles(
     options: FileDialogOptions = {}
 ): Promise<string[] | FileSystemFileHandle[]> {
     if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
-        const { browserPickFiles } = await import("./browser/file.ts");
-        return await browserPickFiles(options.type);
+        const { pickFiles } = await import("./web/file.ts");
+        return await pickFiles(options);
     } else if (isDeno || isNodeLike) {
-        const { isWSL, which } = await import("../cli.ts");
-        const _platform = platform();
-
-        if (_platform === "darwin") {
-            const { macPickFiles } = await import("./terminal/file/mac.ts");
-            return await macPickFiles(options.title, options.type);
-        } else if (_platform === "windows" || isWSL()) {
-            const { windowsPickFiles } = await import("./terminal/file/windows");
-            return await windowsPickFiles(options.title, options.type);
-        } else if (_platform === "linux" || await which("zenity")) {
-            const { linuxPickFiles } = await import("./terminal/file/linux.ts");
-            return await linuxPickFiles(options.title, options.type);
-        }
+        const { pickFiles } = await import("./cli/file.ts");
+        return await pickFiles(options);
     }
 
     throw new Error("Unsupported platform");
@@ -201,22 +154,11 @@ export async function pickDirectory(
     options: Pick<FileDialogOptions, "title"> = {}
 ): Promise<string | FileSystemDirectoryHandle | null> {
     if (typeof (globalThis as any)["showDirectoryPicker"] === "function") {
-        const { browserPickFolder } = await import("./browser/file.ts");
-        return await browserPickFolder();
+        const { pickDirectory } = await import("./web/file.ts");
+        return await pickDirectory();
     } else if (isDeno || isNodeLike) {
-        const { isWSL, which } = await import("../cli.ts");
-        const _platform = platform();
-
-        if (_platform === "darwin") {
-            const { macPickFolder } = await import("./terminal/file/mac.ts");
-            return await macPickFolder(options.title);
-        } else if (_platform === "windows" || isWSL()) {
-            const { windowsPickFolder } = await import("./terminal/file/windows.ts");
-            return await windowsPickFolder(options.title);
-        } else if (_platform === "linux" || await which("zenity")) {
-            const { linuxPickFolder } = await import("./terminal/file/linux.ts");
-            return await linuxPickFolder(options.title);
-        }
+        const { pickDirectory } = await import("./cli/file.ts");
+        return await pickDirectory(options);
     }
 
     throw new Error("Unsupported platform");
@@ -279,38 +221,12 @@ export async function openFile(options: FileDialogOptions & {
         return await openFiles({ title, type });
     }
 
-    if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
-        const { browserPickFile } = await import("./browser/file.ts");
-        const handle = await browserPickFile(type);
-        return handle ? await handle.getFile().then(fixFileType) : null;
-    } else if (isBrowserWindow) {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = type ?? "";
-
-        return await new Promise<File | File[] | null>(resolve => {
-            input.onchange = () => {
-                const file = input.files?.[0];
-                resolve(file ? fixFileType(file) : null);
-            };
-            input.oncancel = () => {
-                resolve(null);
-            };
-
-            if (typeof input.showPicker === "function") {
-                input.showPicker();
-            } else {
-                input.click();
-            }
-        });
+    if (isBrowserWindow) {
+        const { openFile } = await import("./web/file.ts");
+        return await openFile(options);
     } else if (isDeno || isNodeLike) {
-        let filename = await pickFile({ title, type }) as string | null;
-
-        if (filename) {
-            return await readFileAsFile(filename);
-        } else {
-            return null;
-        }
+        const { openFile } = await import("./cli/file.ts");
+        return await openFile(options);
     } else {
         throw new Error("Unsupported runtime");
     }
@@ -345,41 +261,12 @@ export async function openFile(options: FileDialogOptions & {
  * ```
  */
 export async function openFiles(options: FileDialogOptions = {}): Promise<File[]> {
-    if (typeof (globalThis as any)["showOpenFilePicker"] === "function") {
-        const { browserPickFiles } = await import("./browser/file.ts");
-        const handles = await browserPickFiles(options.type);
-        const files: File[] = [];
-
-        for (const handle of handles) {
-            const file = await handle.getFile();
-            files.push(fixFileType(file));
-        }
-
-        return files;
-    } else if (isBrowserWindow) {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.multiple = true;
-        input.accept = options.type || "";
-
-        return await new Promise<File[]>(resolve => {
-            input.onchange = () => {
-                const files = input.files;
-                resolve(files ? [...files].map(fixFileType) : []);
-            };
-            input.oncancel = () => {
-                resolve([]);
-            };
-
-            if (typeof input.showPicker === "function") {
-                input.showPicker();
-            } else {
-                input.click();
-            }
-        });
+    if (isBrowserWindow) {
+        const { openFiles } = await import("./web/file.ts");
+        return await openFiles(options);
     } else if (isDeno || isNodeLike) {
-        const filenames = await pickFiles(options) as string[];
-        return await Promise.all(filenames.map(path => readFileAsFile(path)));
+        const { openFiles } = await import("./cli/file.ts");
+        return await openFiles(options);
     } else {
         throw new Error("Unsupported runtime");
     }
@@ -402,77 +289,12 @@ export async function openFiles(options: FileDialogOptions = {}): Promise<File[]
 export async function openDirectory(
     options: Pick<FileDialogOptions, "title"> = {}
 ): Promise<File[]> {
-    if (typeof (globalThis as any)["showDirectoryPicker"] === "function") {
-        const { browserPickFolder } = await import("./browser/file.ts");
-        const dir = await browserPickFolder();
-        const files: File[] = [];
-
-        if (!dir) {
-            return files;
-        }
-
-        for await (const entry of readDir(dir, { recursive: true })) {
-            if (entry.kind === "file") {
-                const file = await (entry.handle as FileSystemFileHandle).getFile();
-
-                Object.defineProperty(file, "webkitRelativePath", {
-                    configurable: true,
-                    enumerable: true,
-                    writable: false,
-                    value: entry.relativePath.replace(/\\/g, "/"),
-                });
-
-                files.push(fixFileType(file));
-            }
-        }
-
-        return files;
-    } else if (isBrowserWindow) {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.webkitdirectory = true;
-
-        return await new Promise<File[]>(resolve => {
-            input.onchange = () => {
-                const files = input.files;
-                resolve(files ? [...files].map(fixFileType) : []);
-            };
-            input.oncancel = () => {
-                resolve([]);
-            };
-
-            if (typeof input.showPicker === "function") {
-                input.showPicker();
-            } else {
-                input.click();
-            }
-        });
+    if (isBrowserWindow) {
+        const { openDirectory } = await import("./web/file.ts");
+        return await openDirectory();
     } else if (isDeno || isNodeLike) {
-        const dirname = await pickDirectory(options) as string | null;
-
-        if (dirname) {
-            const files: File[] = [];
-
-            for await (const entry of readDir(dirname, { recursive: true })) {
-                if (entry.kind === "file") {
-                    const path = join(dirname, entry.relativePath);
-                    const file = await readFileAsFile(path);
-
-                    Object.defineProperty(file, "webkitRelativePath", {
-                        configurable: true,
-                        enumerable: true,
-                        writable: false,
-                        value: entry.relativePath.replace(/\\/g, "/"),
-                    });
-
-                    files.push(fixFileType(file));
-                }
-            }
-
-            return files;
-        } else {
-            return [];
-        }
+        const { openDirectory } = await import("./cli/file.ts");
+        return await openDirectory(options);
     } else {
         throw new Error("Unsupported runtime");
     }
@@ -531,49 +353,11 @@ export async function saveFile(
     options: SaveFileOptions = {}
 ): Promise<void> {
     if (isBrowserWindow) {
-        const a = document.createElement("a");
-
-        if (file instanceof ReadableStream) {
-            const type = options.type || "application/octet-stream";
-            a.href = await readAsObjectURL(file, type);
-            a.download = options.name || "Unnamed" + (getExtensions(type)[0] || "");
-        } else if (file instanceof File) {
-            a.href = URL.createObjectURL(file);
-            a.download = options.name || file.name || "Unnamed" + (getExtensions(file.type)[0] || "");
-        } else if (file instanceof Blob) {
-            a.href = URL.createObjectURL(file);
-            a.download = options.name || "Unnamed" + (getExtensions(file.type)[0] || "");
-        } else {
-            const type = options.type || "application/octet-stream";
-            const blob = new Blob([file], { type });
-            a.href = URL.createObjectURL(blob);
-            a.download = options.name || "Unnamed" + (getExtensions(type)[0] || "");
-        }
-
-        a.click();
+        const { saveFile } = await import("./web/file.ts");
+        return await saveFile(file, options);
     } else if (isDeno || isNodeLike) {
-        const { title } = options;
-        let filename: string | null | undefined;
-
-        if (typeof Blob === "function" && file instanceof Blob) {
-            filename = await pickFile({
-                title,
-                type: options.type || file.type,
-                forSave: true,
-                defaultName: options.name || as(file, File)?.name,
-            }) as string | null;
-        } else {
-            filename = await pickFile({
-                title,
-                type: options.type,
-                forSave: true,
-                defaultName: options.name,
-            }) as string | null;
-        }
-
-        if (filename) {
-            await writeFile(filename, file, pick(options, ["signal"]));
-        }
+        const { saveFile } = await import("./cli/file.ts");
+        return await saveFile(file, options);
     } else {
         throw new Error("Unsupported runtime");
     }
@@ -618,95 +402,13 @@ export async function downloadFile(
     url: string | URL,
     options: DownloadFileOptions = {}
 ): Promise<void> {
-    const src = typeof url === "object" ? url.href : url;
-    const name = options.name || basename(src);
-
     if (isBrowserWindow) {
-        const a = document.createElement("a");
-        a.href = src;
-        a.download = name;
-        a.click();
-        return;
+        const { downloadFile } = await import("./web/file.ts");
+        return downloadFile(url, options);
     } else if (!isDeno && !isNodeLike || typeof fetch !== "function") {
         throw new Error("Unsupported runtime");
     }
 
-    const dest = await pickFile({
-        title: options.title,
-        type: options.type,
-        forSave: true,
-        defaultName: name,
-    }) as string | null;
-
-    if (!dest) // user canceled
-        return;
-
-    const task = asyncTask<void>();
-    let signal = options.signal ?? null;
-    let result: Promise<void | null>;
-    let updateProgress: ((state: ProgressState) => void) | undefined;
-
-    if (options.showProgress) {
-        const ctrl = new AbortController();
-        signal = ctrl.signal;
-
-        result = progress("Downloading...", async (set) => {
-            updateProgress = set;
-            return await task;
-        }, () => {
-            ctrl.abort();
-            throw new Error("Download canceled");
-        });
-    } else {
-        result = task;
-    }
-
-    const res = await fetch(src, { signal });
-
-    if (!res.ok) {
-        throw new Error(`Failed to download: ${src}`);
-    }
-
-    const size = parseInt(res.headers.get("Content-Length") || "0", 10);
-    let stream = res.body!;
-
-    if (options.onProgress || options.showProgress) {
-        const { onProgress } = options;
-        let loaded = 0;
-
-        const transform = new TransformStream<Uint8Array, Uint8Array>({
-            transform(chunk, controller) {
-                controller.enqueue(chunk);
-                loaded += chunk.byteLength;
-
-                if (onProgress) {
-                    try {
-                        onProgress?.(createProgressEvent("progress", {
-                            lengthComputable: !!size,
-                            loaded,
-                            total: size ?? 0,
-                        }));
-                    } catch {
-                        // ignore
-                    }
-                }
-
-                if (updateProgress && size) {
-                    updateProgress({
-                        percent: loaded / size,
-                    });
-                }
-            },
-        });
-
-        stream = stream.pipeThrough(transform);
-    }
-
-    writeFile(dest, stream, { signal: signal! }).then(() => {
-        task.resolve();
-    }).catch(err => {
-        task.reject(err);
-    });
-
-    await result;
+    const { downloadFile } = await import("./cli/file.ts");
+    return downloadFile(url, options);
 }
