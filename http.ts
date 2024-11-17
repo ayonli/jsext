@@ -97,6 +97,9 @@ export type {
 /**
  * Calculates the ETag for a given entity.
  * 
+ * NOTE: This function shadows the one in the `http/util` module and provides
+ * support for old Node.js versions.
+ * 
  * @example
  * ```ts
  * import { stat } from "@ayonli/jsext/fs";

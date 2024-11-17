@@ -13,11 +13,12 @@ import { sha256 } from './hash.js';
 import { withWeb as withWeb$1, createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent, renderDirectoryPage, createTimingFunctions } from './http/internal.js';
 import { Server } from './http/server.js';
 import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
-export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRequest, parseResponse, setCookie, setFilename, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from './http/util.js';
+export { HTTP_METHODS, HTTP_STATUS, parseAccepts, parseBasicAuth, parseContentType, parseRequest, parseResponse, setFilename, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from './http/util.js';
 import { as } from './object.js';
 import { readAsArray } from './reader.js';
 import { WebSocketServer } from './ws.js';
 import { startsWith } from './path/util.js';
+export { getCookie, getCookies, parseCookie, parseCookies, setCookie, stringifyCookie, stringifyCookies } from './http/cookie.js';
 
 /**
  * Functions for handling HTTP related tasks, such as parsing headers and
@@ -69,6 +70,9 @@ var _a, _b;
 const withWeb = withWeb$1;
 /**
  * Calculates the ETag for a given entity.
+ *
+ * NOTE: This function shadows the one in the `http/util` module and provides
+ * support for old Node.js versions.
  *
  * @example
  * ```ts

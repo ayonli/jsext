@@ -1,8 +1,6 @@
-import bytes from "../bytes.ts";
 import { Exception } from "../error.ts";
 import { getMIME } from "../filetype.ts";
-import { FileInfo, exists, readDir, readFile } from "./fs.ts";
-import { sha256 } from "./hash.ts";
+import { exists, readDir, readFile } from "./fs.ts";
 import { renderDirectoryPage, withWeb } from "../http/internal.ts";
 import {
     NetAddress,
@@ -13,7 +11,7 @@ import {
     ServeStaticOptions,
     Server,
 } from "../http/server.ts";
-import { ifMatch, ifNoneMatch, parseRange, Range } from "../http/util.ts";
+import { etag, ifMatch, ifNoneMatch, parseRange, Range } from "../http/util.ts";
 import { as } from "../object.ts";
 import { extname, join, startsWith } from "../path.ts";
 import { readAsArray } from "../reader.ts";
@@ -33,26 +31,6 @@ export type {
     ServeStaticOptions,
     Server,
 };
-
-export async function etag(data: string | Uint8Array | FileInfo): Promise<string> {
-    if (typeof data === "string" || data instanceof Uint8Array) {
-        if (!data.length) {
-            // a short circuit for zero length entities
-            return `0-47DEQpj8HBSa+/TImW+5JCeuQeR`;
-        }
-
-        if (typeof data === "string") {
-            data = bytes(data);
-        }
-
-        const hash = await sha256(data, "base64");
-        return `${data.length.toString(16)}-${hash.slice(0, 27)}`;
-    }
-
-    const mtime = data.mtime ?? new Date();
-    const hash = await sha256(mtime.toISOString(), "base64");
-    return `${data.size.toString(16)}-${hash.slice(0, 27)}`;
-}
 
 export async function randomPort(prefer: number | undefined = undefined): Promise<number> {
     void prefer;

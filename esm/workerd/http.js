@@ -1,40 +1,22 @@
-import bytes from '../bytes.js';
 import { as } from '../object.js';
 import Exception from '../error/Exception.js';
 import '../external/event-target-polyfill/index.js';
 import { getMIME } from '../filetype.js';
 import { exists, readFile, readDir } from './fs.js';
-import { sha256 } from '../hash/web.js';
 import { renderDirectoryPage } from '../http/internal.js';
 export { withWeb } from '../http/internal.js';
 import { Server } from '../http/server.js';
-import { parseRange, ifNoneMatch, ifMatch } from '../http/util.js';
-export { HTTP_METHODS, HTTP_STATUS, getCookie, getCookies, parseAccepts, parseBasicAuth, parseContentType, parseCookie, parseCookies, parseRequest, parseResponse, setCookie, setFilename, stringifyCookie, stringifyCookies, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from '../http/util.js';
+import { parseRange, etag, ifNoneMatch, ifMatch } from '../http/util.js';
+export { HTTP_METHODS, HTTP_STATUS, parseAccepts, parseBasicAuth, parseContentType, parseRequest, parseResponse, setFilename, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from '../http/util.js';
 import { join, extname } from '../path.js';
 import { readAsArray } from '../reader.js';
 import { stripStart } from '../string.js';
 import { WebSocketServer } from './ws.js';
 import runtime from '../runtime.js';
 import { startsWith } from '../path/util.js';
+export { getCookie, getCookies, parseCookie, parseCookies, setCookie, stringifyCookie, stringifyCookies } from '../http/cookie.js';
 export { parseUserAgent } from '../http/user-agent.js';
 
-async function etag(data) {
-    var _a;
-    if (typeof data === "string" || data instanceof Uint8Array) {
-        if (!data.length) {
-            // a short circuit for zero length entities
-            return `0-47DEQpj8HBSa+/TImW+5JCeuQeR`;
-        }
-        if (typeof data === "string") {
-            data = bytes(data);
-        }
-        const hash = await sha256(data, "base64");
-        return `${data.length.toString(16)}-${hash.slice(0, 27)}`;
-    }
-    const mtime = (_a = data.mtime) !== null && _a !== void 0 ? _a : new Date();
-    const hash = await sha256(mtime.toISOString(), "base64");
-    return `${data.size.toString(16)}-${hash.slice(0, 27)}`;
-}
 async function randomPort(prefer = undefined) {
     throw new Error("Unsupported runtime");
 }

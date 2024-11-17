@@ -244,6 +244,13 @@
             "require": "./cjs/http/internal.js",
             "default": "./http/internal.ts"
         },
+        "./http/util": {
+            "types": "./types/http/util.d.ts",
+            "bun": "./http/util.ts",
+            "import": "./esm/http/util.js",
+            "require": "./cjs/http/util.js",
+            "default": "./http/util.ts"
+        },
         "./json": {
             "types": "./types/json.d.ts",
             "bun": "./json.ts",
