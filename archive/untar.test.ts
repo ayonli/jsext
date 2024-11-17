@@ -44,6 +44,11 @@ describe("archive/untar", () => {
                 kind: "file",
                 relativePath: "fs/util.ts",
             },
+            {
+                name: "web.ts",
+                kind: "file",
+                relativePath: "fs/web.ts",
+            },
         ] as Partial<TarEntry>[]);
     });
 
@@ -69,6 +74,11 @@ describe("archive/untar", () => {
                 name: "util.ts",
                 kind: "file",
                 relativePath: "fs/util.ts",
+            },
+            {
+                name: "web.ts",
+                kind: "file",
+                relativePath: "fs/web.ts",
             },
         ] as Partial<TarEntry>[]);
     });
@@ -98,6 +108,11 @@ describe("archive/untar", () => {
                 name: "util.ts",
                 kind: "file",
                 relativePath: join("fs", "util.ts"),
+            },
+            {
+                name: "web.ts",
+                kind: "file",
+                relativePath: join("fs", "web.ts"),
             },
         ] as Partial<DirEntry>[]);
 
@@ -143,6 +158,11 @@ describe("archive/untar", () => {
                 kind: "file",
                 relativePath: join("fs", "util.ts"),
             },
+            {
+                name: "web.ts",
+                kind: "file",
+                relativePath: join("fs", "web.ts"),
+            },
         ] as Partial<DirEntry>[]);
 
         for (const entry of entries) {
@@ -185,6 +205,11 @@ describe("archive/untar", () => {
                 kind: "file",
                 relativePath: join("fs", "util.ts"),
             },
+            {
+                name: "web.ts",
+                kind: "file",
+                relativePath: join("fs", "web.ts"),
+            }
         ] as Partial<DirEntry>[]);
 
         for (const entry of entries) {

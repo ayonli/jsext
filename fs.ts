@@ -53,33 +53,43 @@
  * @module
  */
 
-import { abortable } from "./async.ts";
 import bytes from "./bytes.ts";
 import { isDeno, isNodeLike } from "./env.ts";
 import { Exception } from "./error.ts";
 import { getMIME } from "./filetype.ts";
 import type { FileInfo, DirEntry, FileSystemOptions, DirTree } from "./fs/types.ts";
-import { fixDirEntry, fixFileType, makeTree } from "./fs/util.ts";
+import { fixDirEntry, makeTree, rawOp, wrapFsError } from "./fs/util.ts";
+import {
+    getDirHandle,
+    getFileHandle,
+    stat as webStat,
+    mkdir as webMakeDir,
+    readDir as webReadDir,
+    readFile as webReadFile,
+    readFileAsFile as webReadFileAsFile,
+    writeFile as webWriteFile,
+    truncate as webTruncate,
+    remove as webRemove,
+    rename as webRename,
+    copy as webCopy,
+    createReadableStream as webCreateReadableStream,
+    createWritableStream as webCreateWritableStream,
+} from "./fs/web.ts";
 import { as } from "./object.ts";
-import { basename, dirname, extname, join, split } from "./path.ts";
-import { readAsArray, readAsText, resolveByteStream, toAsyncIterable } from "./reader.ts";
+import { basename, extname, join } from "./path.ts";
+import { readAsArray, readAsText, resolveByteStream } from "./reader.ts";
 import runtime, { platform } from "./runtime.ts";
-import { stripStart } from "./string.ts";
 import _try from "./try.ts";
 
 export type { FileSystemOptions, FileInfo, DirEntry, DirTree };
-
-/**
- * @deprecated Use {@link FileSystemOptions} instead.
- */
-export type CommonOptions = FileSystemOptions;
+export { getDirHandle, getFileHandle };
 
 /**
  * Platform-specific end-of-line marker. The value is `\r\n` in Windows
  * server-side environments, and `\n` elsewhere.
  */
 export const EOL: "\n" | "\r\n" = (() => {
-    if (isDeno) {
+    if (typeof Deno === "object" && typeof Deno.build === "object") {
         return Deno.build.os === "windows" ? "\r\n" : "\n";
     } else if (typeof process === "object" && typeof process.platform === "string") {
         return process.platform === "win32" ? "\r\n" : "\n";
@@ -87,6 +97,11 @@ export const EOL: "\n" | "\r\n" = (() => {
         return "\n";
     }
 })();
+
+/**
+ * @deprecated Use {@link FileSystemOptions} instead.
+ */
+export type CommonOptions = FileSystemOptions;
 
 async function resolveHomeDir(path: string): Promise<string> {
     if (path[0] === "~" && (isDeno || isNodeLike)) {
@@ -106,109 +121,6 @@ async function resolveHomeDir(path: string): Promise<string> {
     return path;
 }
 
-function getErrorName(err: Error): string {
-    if (err.constructor === Error) {
-        return err.constructor.name;
-    } else {
-        return err.name;
-    }
-}
-
-/**
- * Wraps a raw file system error to a predefined error by this module.
- * 
- * @param type Used for `FileSystemHandle` operations.
- */
-function wrapFsError(
-    err: unknown,
-    type: "file" | "directory" | undefined = undefined
-): Exception | Error {
-    if (err instanceof Error && !(err instanceof Exception) && !(err instanceof TypeError)) {
-        const errName = getErrorName(err);
-        const errCode = (err as NodeJS.ErrnoException).code;
-
-        if (errName === "NotFoundError"
-            || errName === "NotFound"
-            || errCode === "ENOENT"
-            || errCode === "ENOTFOUND"
-        ) {
-            return new Exception(err.message, { name: "NotFoundError", code: 404, cause: err });
-        } else if (errName === "NotAllowedError"
-            || errName === "PermissionDenied"
-            || errName === "InvalidStateError"
-            || errName === "SecurityError"
-            || errName === "EACCES"
-            || errCode === "EPERM"
-            || errCode === "ERR_ACCESS_DENIED"
-        ) {
-            return new Exception(err.message, { name: "NotAllowedError", code: 403, cause: err });
-        } else if (errName === "AlreadyExists"
-            || errCode === "EEXIST"
-            || errCode === "ERR_FS_CP_EEXIST"
-        ) {
-            return new Exception(err.message, { name: "AlreadyExistsError", code: 409, cause: err });
-        } else if ((errName === "TypeMismatchError" && type === "file")
-            || errName === "IsADirectory"
-            || errCode === "EISDIR"
-            || errCode === "ERR_FS_EISDIR"
-        ) {
-            return new Exception(err.message, { name: "IsDirectoryError", code: 415, cause: err });
-        } else if ((errName === "TypeMismatchError" && type === "directory")
-            || errName === "NotADirectory"
-            || errCode === "ENOTDIR"
-        ) {
-            return new Exception(err.message, { name: "NotDirectoryError", code: 415, cause: err });
-        } else if (errName === "InvalidModificationError"
-            || errName === "NotSupported"
-            || errCode === "ENOTEMPTY"
-            || errCode === "ERR_FS_CP_EINVAL"
-            || errCode === "ERR_FS_CP_FIFO_PIPE"
-            || errCode === "ERR_FS_CP_DIR_TO_NON_DIR"
-            || errCode === "ERR_FS_CP_NON_DIR_TO_DIR"
-            || errCode === "ERR_FS_CP_SOCKET"
-            || errCode === "ERR_FS_CP_SYMLINK_TO_SUBDIRECTORY"
-            || errCode === "ERR_FS_CP_UNKNOWN"
-            || errCode === "ERR_FS_INVALID_SYMLINK_TYPE"
-        ) {
-            return new Exception(err.message, { name: "InvalidOperationError", code: 405, cause: err });
-        } else if (errName === "NoModificationAllowedError"
-            || errName === "Busy"
-            || errName === "TimedOut"
-            || errCode === "ERR_DIR_CONCURRENT_OPERATION"
-        ) {
-            return new Exception(errName, { name: "BusyError", code: 409, cause: err });
-        } else if (errName === "Interrupted" || errCode === "ERR_DIR_CLOSED") {
-            return new Exception(err.message, { name: "InterruptedError", code: 409, cause: err });
-        } else if (errName === "QuotaExceededError"
-            || errCode === "ERR_FS_FILE_TOO_LARGE"
-        ) {
-            return new Exception(err.message, { name: "FileTooLargeError", code: 413, cause: err });
-        } else if (errName === "FilesystemLoop") {
-            return new Exception(err.message, { name: "FilesystemLoopError", code: 508, cause: err });
-        } else {
-            return err;
-        }
-    } else if (err instanceof Error) {
-        return err;
-    } else if (typeof err === "string") {
-        return new Exception(err, { code: 500, cause: err });
-    } else {
-        return new Exception("Unknown error", { code: 500, cause: err });
-    }
-}
-
-/**
- * Wraps a raw file system operation so that when any error occurs, the error is
- * wrapped to a predefined error by this module.
- * 
- * @param type Only used for `FileSystemHandle` operations.
- */
-function rawOp<T>(op: Promise<T>, type: "file" | "directory" | undefined = undefined): Promise<T> {
-    return op.catch((err) => {
-        throw wrapFsError(err, type);
-    });
-}
-
 /**
  * Options for the {@link getDirHandle} function.
  */
@@ -225,70 +137,6 @@ export interface GetDirOptions extends FileSystemOptions {
 }
 
 /**
- * Obtains the directory handle of the given path.
- * 
- * NOTE: This function is only available in the browser.
- * 
- * NOTE: If the `path` is not provided or is empty, the root directory handle
- * will be returned.
- * 
- * @example
- * ```ts
- * // with the default storage
- * import { getDirHandle } from "@ayonli/jsext/fs";
- * 
- * const dir = await getDirHandle("/path/to/dir");
- * ```
- * 
- * @example
- * ```ts
- * // with a user-selected directory as root (Chromium only)
- * import { getDirHandle } from "@ayonli/jsext/fs";
- * 
- * const root = await window.showDirectoryPicker();
- * const dir = await getDirHandle("/path/to/dir", { root });
- * ```
- * 
- * @example
- * ```ts
- * // create the directory if not exist
- * import { getDirHandle } from "@ayonli/jsext/fs";
- * 
- * const dir = await getDirHandle("/path/to/dir", { create: true, recursive: true });
- * ```
- * 
- * @example
- * ```ts
- * // return the root directory handle
- * import { getDirHandle } from "@ayonli/jsext/fs";
- * 
- * const root = await getDirHandle();
- * ```
- */
-export async function getDirHandle(
-    path: string = "",
-    options: GetDirOptions = {}
-): Promise<FileSystemDirectoryHandle> {
-    if (typeof location === "object" && typeof location.origin === "string") {
-        path = stripStart(path, location.origin);
-    }
-
-    const { create = false, recursive = false } = options;
-    const paths = split(stripStart(path, "/")).filter(p => p !== ".");
-    const root = options.root ?? await rawOp(navigator.storage.getDirectory(), "directory");
-    let dir = root as FileSystemDirectoryHandle;
-
-    for (let i = 0; i < paths.length; i++) {
-        const _path = paths[i]!;
-        dir = await rawOp(dir.getDirectoryHandle(_path, {
-            create: create && (recursive || (i === paths.length - 1)),
-        }), "directory");
-    }
-
-    return dir;
-}
-
-/**
  * Options for the {@link getFileHandle} function.
  */
 export interface GetFileOptions extends FileSystemOptions {
@@ -296,48 +144,6 @@ export interface GetFileOptions extends FileSystemOptions {
      * Create the file if not exist.
      */
     create?: boolean;
-}
-
-/**
- * Obtains the file handle of the given path.
- * 
- * NOTE: This function is only available in the browser.
- * 
- * @example
- * ```ts
- * // with the default storage
- * import { getFileHandle } from "@ayonli/jsext/fs";
- * 
- * const file = await getFileHandle("/path/to/file.txt");
- * ```
- * 
- * @example
- * ```ts
- * // with a user-selected directory as root (Chromium only)
- * import { getFileHandle } from "@ayonli/jsext/fs";
- * 
- * const root = await window.showDirectoryPicker();
- * const file = await getFileHandle("/path/to/file.txt", { root });
- * ```
- * 
- * @example
- * ```ts
- * // create the file if not exist
- * import { getFileHandle } from "@ayonli/jsext/fs";
- * 
- * const file = await getFileHandle("/path/to/file.txt", { create: true });
- * ```
- */
-export async function getFileHandle(
-    path: string,
-    options: GetFileOptions = {}
-): Promise<FileSystemFileHandle> {
-    const dirPath = dirname(path);
-    const name = basename(path);
-    const dir = await getDirHandle(dirPath, { root: options.root });
-    return await rawOp(dir.getFileHandle(name, {
-        create: options.create ?? false,
-    }), "file");
 }
 
 /**
@@ -428,43 +234,8 @@ export async function stat(
     target: string | FileSystemFileHandle | FileSystemDirectoryHandle,
     options: StatOptions = {}
 ): Promise<FileInfo> {
-    if (typeof target === "object") {
-        if (target.kind === "file") {
-            const info = await rawOp(target.getFile(), "file");
-            return {
-                name: target.name,
-                kind: "file",
-                size: info.size,
-                type: info.type ?? getMIME(extname(target.name)) ?? "",
-                mtime: new Date(info.lastModified),
-                atime: null,
-                birthtime: null,
-                mode: 0,
-                uid: 0,
-                gid: 0,
-                isBlockDevice: false,
-                isCharDevice: false,
-                isFIFO: false,
-                isSocket: false,
-            };
-        } else {
-            return {
-                name: target.name,
-                kind: "directory",
-                size: 0,
-                type: "",
-                mtime: null,
-                atime: null,
-                birthtime: null,
-                mode: 0,
-                uid: 0,
-                gid: 0,
-                isBlockDevice: false,
-                isCharDevice: false,
-                isFIFO: false,
-                isSocket: false,
-            };
-        }
+    if (typeof target === "object" || !(isDeno || isNodeLike)) {
+        return await webStat(target, options);
     }
 
     const path = await resolveHomeDir(target);
@@ -493,7 +264,7 @@ export async function stat(
             isFIFO: stat.isFifo ?? false,
             isSocket: stat.isSocket ?? false,
         };
-    } else if (isNodeLike) {
+    } else {
         const fs = await import("fs/promises");
         const stat = await rawOp(options.followSymlink ? fs.stat(path) : fs.lstat(path));
         const kind = stat.isDirectory()
@@ -518,47 +289,6 @@ export async function stat(
             isFIFO: stat.isFIFO(),
             isSocket: stat.isSocket(),
         };
-    } else {
-        const [err, file] = await _try(getFileHandle(path, options));
-
-        if (file) {
-            const info = await rawOp(file.getFile(), "file");
-            return {
-                name: info.name,
-                kind: "file",
-                size: info.size,
-                type: info.type ?? getMIME(extname(info.name)) ?? "",
-                mtime: new Date(info.lastModified),
-                atime: null,
-                birthtime: null,
-                mode: 0,
-                uid: 0,
-                gid: 0,
-                isBlockDevice: false,
-                isCharDevice: false,
-                isFIFO: false,
-                isSocket: false,
-            };
-        } else if (as(err, Exception)?.name === "IsDirectoryError") {
-            return {
-                name: basename(path),
-                kind: "directory",
-                size: 0,
-                type: "",
-                mtime: null,
-                atime: null,
-                birthtime: null,
-                mode: 0,
-                uid: 0,
-                gid: 0,
-                isBlockDevice: false,
-                isCharDevice: false,
-                isFIFO: false,
-                isSocket: false,
-            };
-        } else {
-            throw err;
-        }
     }
 }
 
@@ -608,22 +338,17 @@ export interface MkdirOptions extends FileSystemOptions {
  * ```
  */
 export async function mkdir(path: string, options: MkdirOptions = {}): Promise<void> {
+    if (!(isDeno || isNodeLike)) {
+        return await webMakeDir(path, options);
+    }
+
     path = await resolveHomeDir(path);
 
     if (isDeno) {
         await rawOp(Deno.mkdir(path, options));
-    } else if (isNodeLike) {
+    } else {
         const fs = await import("fs/promises");
         await rawOp(fs.mkdir(path, options));
-    } else {
-        if (await exists(path, { root: options.root })) {
-            throw new Exception(`File or folder already exists, mkdir '${path}'`, {
-                name: "AlreadyExistsError",
-                code: 409,
-            });
-        }
-
-        await getDirHandle(path, { ...options, create: true });
     }
 }
 
@@ -718,8 +443,8 @@ export async function* readDir(
     target: string | FileSystemDirectoryHandle,
     options: ReadDirOptions = {}
 ): AsyncIterableIterator<DirEntry> {
-    if (typeof target === "object") {
-        yield* readDirHandle(target, options);
+    if (typeof target === "object" || !(isDeno || isNodeLike)) {
+        yield* webReadDir(target, options);
         return;
     }
 
@@ -749,7 +474,7 @@ export async function* readDir(
                 throw wrapFsError(err);
             }
         })(path, "");
-    } else if (isNodeLike) {
+    } else {
         const fs = await import("fs/promises");
 
         yield* (async function* read(path: string, base: string): AsyncIterableIterator<DirEntry> {
@@ -773,9 +498,6 @@ export async function* readDir(
                 }
             }
         })(path, "");
-    } else {
-        const dir = await getDirHandle(path, { root: options.root });
-        yield* readDirHandle(dir, options);
     }
 }
 
@@ -822,52 +544,6 @@ export async function readTree(
     return tree;
 }
 
-async function* readDirHandle(dir: FileSystemDirectoryHandle, options: {
-    base?: string,
-    recursive?: boolean;
-} = {}): AsyncIterableIterator<DirEntry> {
-    const { base = "", recursive = false } = options;
-    const entries = dir.entries();
-
-    for await (const [_, entry] of entries) {
-        const _entry = fixDirEntry({
-            name: entry.name,
-            kind: entry.kind,
-            relativePath: join(base, entry.name),
-            handle: entry as FileSystemFileHandle | FileSystemDirectoryHandle,
-        });
-
-        yield _entry;
-
-        if (recursive && entry.kind === "directory") {
-            yield* readDirHandle(entry as FileSystemDirectoryHandle, {
-                base: _entry.relativePath,
-                recursive,
-            });
-        }
-    }
-}
-
-async function readFileHandle(handle: FileSystemFileHandle, options: {
-    signal?: AbortSignal | undefined;
-}): Promise<Uint8Array> {
-    const file = await rawOp(handle.getFile(), "file");
-    const arr = new Uint8Array(file.size);
-    let offset = 0;
-    let reader = toAsyncIterable(file.stream());
-
-    if (options.signal) {
-        reader = abortable(reader, options.signal);
-    }
-
-    for await (const chunk of reader) {
-        arr.set(chunk, offset);
-        offset += chunk.length;
-    }
-
-    return arr;
-}
-
 /**
  * Options for file reading functions, such as {@link readFile},
  * {@link readFileAsText} and {@link readFileAsFile}.
@@ -902,21 +578,18 @@ export async function readFile(
     target: string | FileSystemFileHandle,
     options: ReadFileOptions = {}
 ): Promise<Uint8Array> {
-    if (typeof target === "object") {
-        return await readFileHandle(target, options);
+    if (typeof target === "object" || !(isDeno || isNodeLike)) {
+        return await webReadFile(target, options);
     }
 
     const filename = await resolveHomeDir(target);
 
     if (isDeno) {
         return await rawOp(Deno.readFile(filename, options));
-    } else if (isNodeLike) {
+    } else {
         const fs = await import("fs/promises");
         const buffer = await rawOp(fs.readFile(filename, options));
         return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-    } else {
-        const handle = await getFileHandle(filename, { root: options.root });
-        return await readFileHandle(handle, options);
     }
 }
 
@@ -985,34 +658,22 @@ export async function readFileAsFile(
     target: string | FileSystemFileHandle,
     options: ReadFileOptions = {}
 ): Promise<File> {
-    if (typeof target === "object") {
-        return await readFileHandleAsFile(target);
+    if (typeof target === "object" || !(isDeno || isNodeLike)) {
+        return await webReadFileAsFile(target, options);
     }
 
-    const filename = target;
+    const bytes = await readFile(target, options);
+    const type = getMIME(extname(target)) ?? "";
+    const file = new File([bytes], basename(target), { type });
 
-    if (isDeno || isNodeLike) {
-        const bytes = await readFile(filename, options);
-        const type = getMIME(extname(filename)) ?? "";
-        const file = new File([bytes], basename(filename), { type });
+    Object.defineProperty(file, "webkitRelativePath", {
+        configurable: true,
+        enumerable: true,
+        writable: false,
+        value: "",
+    });
 
-        Object.defineProperty(file, "webkitRelativePath", {
-            configurable: true,
-            enumerable: true,
-            writable: false,
-            value: "",
-        });
-
-        return file;
-    } else {
-        const handle = await getFileHandle(target, { root: options.root });
-        return await readFileHandleAsFile(handle);
-    }
-}
-
-async function readFileHandleAsFile(handle: FileSystemFileHandle): Promise<File> {
-    const file = await rawOp(handle.getFile(), "file");
-    return fixFileType(file);
+    return file;
 }
 
 /**
@@ -1094,8 +755,8 @@ export async function writeFile(
     data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
     options: WriteFileOptions = {}
 ): Promise<void> {
-    if (typeof target === "object") {
-        return await writeFileHandle(target, data, options);
+    if (typeof target === "object" || !(isDeno || isNodeLike)) {
+        return await webWriteFile(target, data, options);
     }
 
     const filename = await resolveHomeDir(target);
@@ -1114,7 +775,7 @@ export async function writeFile(
         } else if (data) {
             return await rawOp(Deno.writeFile(filename, data, options));
         }
-    } else if (isNodeLike) {
+    } else {
         if (typeof Blob === "function" && data instanceof Blob) {
             const reader = data.stream();
             const writer = createNodeWritableStream(filename, options);
@@ -1144,45 +805,6 @@ export async function writeFile(
                 ...rest,
             }));
         }
-    } else {
-        const handle = await getFileHandle(filename, { root: options.root, create: true });
-        return await writeFileHandle(handle, data, options);
-    }
-}
-
-async function writeFileHandle(
-    handle: FileSystemFileHandle,
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
-    options: {
-        append?: boolean;
-        signal?: AbortSignal;
-    }
-): Promise<void> {
-    const writer = await createFileHandleWritableStream(handle, options);
-
-    if (options.signal) {
-        const { signal } = options;
-
-        if (signal.aborted) {
-            throw signal.reason;
-        } else {
-            signal.addEventListener("abort", () => {
-                writer.abort(signal.reason);
-            });
-        }
-    }
-
-    try {
-        if (data instanceof Blob) {
-            await data.stream().pipeTo(writer);
-        } else if (data instanceof ReadableStream) {
-            await data.pipeTo(writer);
-        } else {
-            await writer.write(data);
-            await writer.close();
-        }
-    } catch (err) {
-        throw wrapFsError(err, "file");
     }
 }
 
@@ -1307,33 +929,17 @@ export async function truncate(
     size = 0,
     options: FileSystemOptions = {}
 ): Promise<void> {
-    if (typeof target === "object") {
-        return await truncateFileHandle(target, size);
+    if (typeof target === "object" || !(isDeno || isNodeLike)) {
+        return await webTruncate(target, size, options);
     }
 
     const filename = await resolveHomeDir(target);
 
     if (isDeno) {
         await rawOp(Deno.truncate(filename, size));
-    } else if (isNodeLike) {
+    } else {
         const fs = await import("fs/promises");
         await rawOp(fs.truncate(filename, size));
-    } else {
-        const handle = await getFileHandle(filename, { root: options.root });
-        await truncateFileHandle(handle, size);
-    }
-}
-
-async function truncateFileHandle(
-    handle: FileSystemFileHandle,
-    size: number = 0
-): Promise<void> {
-    try {
-        const writer = await handle.createWritable({ keepExistingData: true });
-        await writer.truncate(size);
-        await writer.close();
-    } catch (err) {
-        throw wrapFsError(err, "file");
     }
 }
 
@@ -1377,11 +983,15 @@ export interface RemoveOptions extends FileSystemOptions {
  * ```
  */
 export async function remove(path: string, options: RemoveOptions = {}): Promise<void> {
+    if (!(isDeno || isNodeLike)) {
+        return await webRemove(path, options);
+    }
+
     path = await resolveHomeDir(path);
 
     if (isDeno) {
         await rawOp(Deno.remove(path, options));
-    } else if (isNodeLike) {
+    } else {
         const fs = await import("fs/promises");
 
         if (typeof fs.rm === "function") {
@@ -1399,11 +1009,6 @@ export async function remove(path: string, options: RemoveOptions = {}): Promise
                 throw wrapFsError(err);
             }
         }
-    } else {
-        const parent = dirname(path);
-        const name = basename(path);
-        const dir = await getDirHandle(parent, { root: options.root });
-        await rawOp(dir.removeEntry(name, options), "directory");
     }
 }
 
@@ -1432,20 +1037,18 @@ export async function rename(
     newPath: string,
     options: FileSystemOptions = {}
 ): Promise<void> {
+    if (!(isDeno || isNodeLike)) {
+        return await webRename(oldPath, newPath, options);
+    }
+
     oldPath = await resolveHomeDir(oldPath);
     newPath = await resolveHomeDir(newPath);
 
     if (isDeno) {
         await rawOp(Deno.rename(oldPath, newPath));
-    } else if (isNodeLike) {
+    } else {
         const fs = await import("fs/promises");
         await rawOp(fs.rename(oldPath, newPath));
-    } else {
-        return await copyInBrowser(oldPath, newPath, {
-            root: options.root,
-            recursive: true,
-            move: true,
-        });
     }
 }
 
@@ -1547,228 +1150,79 @@ export async function copy(
     dest: string | FileSystemFileHandle | FileSystemDirectoryHandle,
     options: CopyOptions = {}
 ): Promise<void> {
-    if (typeof src === "object" || typeof dest === "object") {
-        return copyInBrowser(src, dest, { recursive: options?.recursive ?? false });
+    if (typeof src === "object" || typeof dest === "object" || !(isDeno || isNodeLike)) {
+        // @ts-ignore internal call
+        return await webCopy(src, dest, options);
     }
 
     src = await resolveHomeDir(src);
     dest = await resolveHomeDir(dest);
 
-    if (isDeno || isNodeLike) {
-        const oldStat = await stat(src, { followSymlink: true });
-        const isDirSrc = oldStat.kind === "directory";
-        let isDirDest = false;
+    const oldStat = await stat(src, { followSymlink: true });
+    const isDirSrc = oldStat.kind === "directory";
+    let isDirDest = false;
 
-        if (isDirSrc && !options.recursive) {
-            throw new Exception("Cannot copy a directory without the 'recursive' option", {
-                name: "InvalidOperationError",
-                code: 400,
-            });
-        }
-
-        try {
-            const newStat = await stat(dest, { followSymlink: true });
-            isDirDest = newStat.kind === "directory";
-
-            if (isDirSrc && !isDirDest) {
-                throw new Exception(`'${dest}' is not a directory`, {
-                    name: "NotDirectoryError",
-                    code: 415,
-                });
-            }
-        } catch {
-            if (isDirSrc) {
-                await mkdir(dest);
-                isDirDest = true;
-            }
-        }
-
-        if (isDeno) {
-            if (isDirSrc) {
-                const entries = readDir(src, { recursive: true });
-
-                for await (const entry of entries) {
-                    const _oldPath = join(src, entry.relativePath);
-                    const _newPath = join(dest, entry.relativePath);
-
-                    if (entry.kind === "directory") {
-                        await rawOp(Deno.mkdir(_newPath));
-                    } else {
-                        await rawOp(Deno.copyFile(_oldPath, _newPath));
-                    }
-                }
-            } else {
-                const _newPath = isDirDest ? join(dest, basename(src)) : dest;
-                await rawOp(Deno.copyFile(src, _newPath));
-            }
-        } else {
-            const fs = await import("fs/promises");
-
-            if (isDirSrc) {
-                const entries = readDir(src, { recursive: true });
-
-                for await (const entry of entries) {
-                    const _oldPath = join(src, entry.relativePath);
-                    const _newPath = join(dest, entry.relativePath);
-
-                    if (entry.kind === "directory") {
-                        await rawOp(fs.mkdir(_newPath));
-                    } else {
-                        await rawOp(fs.copyFile(_oldPath, _newPath));
-                    }
-                }
-            } else {
-                const _newPath = isDirDest ? join(dest, basename(src)) : dest;
-                await rawOp(fs.copyFile(src, _newPath));
-            }
-        }
-    } else {
-        return await copyInBrowser(src, dest, {
-            root: options.root,
-            recursive: options.recursive ?? false,
+    if (isDirSrc && !options.recursive) {
+        throw new Exception("Cannot copy a directory without the 'recursive' option", {
+            name: "InvalidOperationError",
+            code: 400,
         });
     }
-}
 
-async function copyInBrowser(
-    src: string | FileSystemFileHandle | FileSystemDirectoryHandle,
-    dest: string | FileSystemFileHandle | FileSystemDirectoryHandle,
-    options: FileSystemOptions & {
-        recursive?: boolean;
-        move?: boolean;
-    } = {}
-): Promise<void> {
-    if (typeof src === "object" && typeof dest !== "object") {
-        throw new TypeError("The destination must be a FileSystemHandle");
-    } else if (typeof dest === "object" && typeof src !== "object") {
-        throw new TypeError("The source must be a FileSystemHandle");
-    } else if (typeof src === "object" && typeof dest === "object") {
-        if (src.kind === "file") {
-            if (dest.kind === "file") {
-                return await copyFileHandleToFileHandle(src, dest);
-            } else {
-                return await copyFileHandleToDirHandle(src, dest);
-            }
-        } else if (dest.kind === "directory") {
-            if (!options.recursive) {
-                throw new Exception("Cannot copy a directory without the 'recursive' option", {
-                    name: "InvalidOperationError",
-                    code: 400,
-                });
-            }
+    try {
+        const newStat = await stat(dest, { followSymlink: true });
+        isDirDest = newStat.kind === "directory";
 
-            return await copyDirHandleToDirHandle(src, dest);
-        } else {
-            throw new Exception("The destination location is not a directory", {
+        if (isDirSrc && !isDirDest) {
+            throw new Exception(`'${dest}' is not a directory`, {
                 name: "NotDirectoryError",
                 code: 415,
             });
         }
+    } catch {
+        if (isDirSrc) {
+            await mkdir(dest);
+            isDirDest = true;
+        }
     }
 
-    const oldParent = dirname(src as string);
-    const oldName = basename(src as string);
+    if (isDeno) {
+        if (isDirSrc) {
+            const entries = readDir(src, { recursive: true });
 
-    let oldDir = await getDirHandle(oldParent, { root: options.root });
-    const [oldErr, oldFile] = await _try(rawOp(oldDir.getFileHandle(oldName), "file"));
+            for await (const entry of entries) {
+                const _oldPath = join(src, entry.relativePath);
+                const _newPath = join(dest, entry.relativePath);
 
-    if (oldFile) {
-        const newParent = dirname(dest as string);
-        const newName = basename(dest as string);
-        let newDir = await getDirHandle(newParent, { root: options.root });
-        const [newErr, newFile] = await _try(rawOp(newDir.getFileHandle(newName, {
-            create: true,
-        }), "file"));
-
-        if (newFile) {
-            await copyFileHandleToFileHandle(oldFile, newFile);
-
-            if (options.move) {
-                await rawOp(oldDir.removeEntry(oldName), "directory");
+                if (entry.kind === "directory") {
+                    await rawOp(Deno.mkdir(_newPath));
+                } else {
+                    await rawOp(Deno.copyFile(_oldPath, _newPath));
+                }
             }
-        } else if (as(newErr, Exception)?.name === "IsDirectoryError" && !options.move) {
-            // The destination is a directory, copy the file into the new path
-            // with the old name.
-            newDir = await rawOp(newDir.getDirectoryHandle(newName), "directory");
-            await copyFileHandleToDirHandle(oldFile, newDir);
         } else {
-            throw newErr;
-        }
-    } else if (as(oldErr, Exception)?.name === "IsDirectoryError") {
-        if (!options.recursive) {
-            throw new Exception("Cannot copy a directory without the 'recursive' option", {
-                name: "InvalidOperationError",
-                code: 400,
-            });
-        }
-
-        const parent = oldDir;
-        oldDir = await rawOp(oldDir.getDirectoryHandle(oldName), "directory");
-        const newDir = await getDirHandle(dest as string, { root: options.root, create: true });
-
-        await copyDirHandleToDirHandle(oldDir, newDir);
-
-        if (options.move) {
-            await rawOp(parent.removeEntry(oldName, { recursive: true }), "directory");
+            const _newPath = isDirDest ? join(dest, basename(src)) : dest;
+            await rawOp(Deno.copyFile(src, _newPath));
         }
     } else {
-        throw oldErr;
-    }
-}
+        const fs = await import("fs/promises");
 
-async function copyFileHandleToFileHandle(
-    src: FileSystemFileHandle,
-    dest: FileSystemFileHandle
-) {
-    try {
-        const srcFile = await src.getFile();
-        const destFile = await dest.createWritable();
-        await srcFile.stream().pipeTo(destFile);
-    } catch (err) {
-        throw wrapFsError(err, "file");
-    }
-}
+        if (isDirSrc) {
+            const entries = readDir(src, { recursive: true });
 
-async function copyFileHandleToDirHandle(
-    src: FileSystemFileHandle,
-    dest: FileSystemDirectoryHandle
-) {
-    try {
-        const srcFile = await src.getFile();
-        const newFile = await dest.getFileHandle(src.name, { create: true });
-        const destFile = await newFile.createWritable();
+            for await (const entry of entries) {
+                const _oldPath = join(src, entry.relativePath);
+                const _newPath = join(dest, entry.relativePath);
 
-        await srcFile.stream().pipeTo(destFile);
-    } catch (err) {
-        throw wrapFsError(err, "file");
-    }
-}
-
-async function copyDirHandleToDirHandle(
-    src: FileSystemDirectoryHandle,
-    dest: FileSystemDirectoryHandle
-) {
-    const entries = src.entries();
-
-    for await (const [_, entry] of entries) {
-        if (entry.kind === "file") {
-            try {
-                const oldFile = await (entry as FileSystemFileHandle).getFile();
-                const newFile = await dest.getFileHandle(entry.name, {
-                    create: true,
-                });
-                const reader = oldFile.stream();
-                const writer = await newFile.createWritable();
-
-                await reader.pipeTo(writer);
-            } catch (err) {
-                throw wrapFsError(err, "file");
+                if (entry.kind === "directory") {
+                    await rawOp(fs.mkdir(_newPath));
+                } else {
+                    await rawOp(fs.copyFile(_oldPath, _newPath));
+                }
             }
         } else {
-            const newSubDir = await rawOp(dest.getDirectoryHandle(entry.name, {
-                create: true,
-            }), "directory");
-            await copyDirHandleToDirHandle(entry as FileSystemDirectoryHandle, newSubDir);
+            const _newPath = isDirDest ? join(dest, basename(src)) : dest;
+            await rawOp(fs.copyFile(src, _newPath));
         }
     }
 }
@@ -2003,13 +1457,18 @@ export function createReadableStream(
     target: string | FileSystemFileHandle,
     options: FileSystemOptions = {}
 ): ReadableStream<Uint8Array> {
-    if (isNodeLike) {
-        if (typeof target === "object") {
-            throw new TypeError("Expected a file path, got a file handle");
-        }
+    if (typeof target === "object" || !(isDeno || isNodeLike)) {
+        return webCreateReadableStream(target, options);
+    }
 
+    if (isDeno) {
+        return resolveByteStream((async () => {
+            const filename = await resolveHomeDir(target);
+            const file = await rawOp(Deno.open(filename, { read: true }));
+            return file.readable;
+        })());
+    } else {
         let reader: import("fs").ReadStream;
-
         return new ReadableStream<Uint8Array>({
             async start(controller) {
                 const fs = await import("fs");
@@ -2028,29 +1487,6 @@ export function createReadableStream(
             },
         });
     }
-
-    return resolveByteStream((async () => {
-        if (typeof target === "object") {
-            return await readFileHandleAsStream(target);
-        }
-
-        const filename = await resolveHomeDir(target);
-
-        if (isDeno) {
-            const file = await rawOp(Deno.open(filename, { read: true }));
-            return file.readable;
-        } else {
-            const handle = await getFileHandle(filename, { root: options.root });
-            return await readFileHandleAsStream(handle);
-        }
-    })());
-}
-
-async function readFileHandleAsStream(
-    handle: FileSystemFileHandle
-): Promise<ReadableStream<Uint8Array>> {
-    const file = await rawOp(handle.getFile(), "file");
-    return file.stream();
 }
 
 /**
@@ -2090,11 +1526,8 @@ export function createWritableStream(
     target: string | FileSystemFileHandle,
     options: Omit<WriteFileOptions, "signal"> = {}
 ): WritableStream<Uint8Array> {
-    if (typeof target === "object") {
-        const { readable, writable } = new TransformStream();
-        createFileHandleWritableStream(target, options)
-            .then(stream => readable.pipeTo(stream));
-        return writable;
+    if (typeof target === "object" || !(isDeno || isNodeLike)) {
+        return webCreateWritableStream(target, options);
     }
 
     const filename = target;
@@ -2109,35 +1542,15 @@ export function createWritableStream(
             .then(file => file.writable)
             .then(stream => readable.pipeTo(stream));
         return writable;
-    } else if (isNodeLike) {
-        return createNodeWritableStream(filename, options);
     } else {
-        const { readable, writable } = new TransformStream();
-        getFileHandle(filename, { root: options.root, create: true })
-            .then(handle => createFileHandleWritableStream(handle, options))
-            .then(stream => readable.pipeTo(stream));
-        return writable;
+        return createNodeWritableStream(filename, options);
     }
-}
-
-async function createFileHandleWritableStream(handle: FileSystemFileHandle, options: {
-    append?: boolean;
-}): Promise<FileSystemWritableFileStream> {
-    const stream = await rawOp(handle.createWritable({
-        keepExistingData: options?.append ?? false,
-    }), "file");
-
-    if (options.append) {
-        const file = await rawOp(handle.getFile(), "file");
-        file.size && stream.seek(file.size);
-    }
-
-    return stream;
 }
 
 function createNodeWritableStream(filename: string, options: {
     append?: boolean;
     mode?: number;
+    signal?: AbortSignal;
 }): WritableStream<Uint8Array> {
     let dest: import("fs").WriteStream;
     return new WritableStream<Uint8Array>({

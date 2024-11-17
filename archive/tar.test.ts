@@ -34,6 +34,11 @@ describe("archive/tar", () => {
                 kind: "file",
                 relativePath: "fs/util.ts",
             },
+            {
+                name: "web.ts",
+                kind: "file",
+                relativePath: "fs/web.ts",
+            }
         ] as Partial<TarEntry>[]);
     });
 
@@ -60,6 +65,11 @@ describe("archive/tar", () => {
                 kind: "file",
                 relativePath: "fs/util.ts",
             },
+            {
+                name: "web.ts",
+                kind: "file",
+                relativePath: "fs/web.ts",
+            }
         ] as Partial<TarEntry>[]);
     }));
 
@@ -90,6 +100,11 @@ describe("archive/tar", () => {
                 kind: "file",
                 relativePath: "fs/util.ts",
             },
+            {
+                name: "web.ts",
+                kind: "file",
+                relativePath: "fs/web.ts",
+            }
         ] as Partial<TarEntry>[]);
     }));
 });

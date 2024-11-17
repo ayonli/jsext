@@ -1,5 +1,5 @@
 import { getExtensions, getMIME } from '../../filetype.js';
-import { readDir } from '../../fs.js';
+import { readDir } from '../../fs/web.js';
 import { fixFileType } from '../../fs/util.js';
 import { basename } from '../../path.js';
 import { readAsObjectURL } from '../../reader.js';

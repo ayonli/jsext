@@ -1,9 +1,113 @@
 import { orderBy, startsWith } from '../array.js';
-import { getMIME } from '../filetype.js';
 import { omit } from '../object.js';
+import Exception from '../error/Exception.js';
+import '../external/event-target-polyfill/index.js';
+import { getMIME } from '../filetype.js';
 import { extname, basename } from '../path.js';
 import { split } from '../path/util.js';
 
+function getErrorName(err) {
+    if (err.constructor === Error) {
+        return err.constructor.name;
+    }
+    else {
+        return err.name;
+    }
+}
+/**
+ * Wraps a raw file system error to a predefined error by this module.
+ *
+ * @param type Used for `FileSystemHandle` operations.
+ */
+function wrapFsError(err, type = undefined) {
+    if (err instanceof Error && !(err instanceof Exception) && !(err instanceof TypeError)) {
+        const errName = getErrorName(err);
+        const errCode = err.code;
+        if (errName === "NotFoundError"
+            || errName === "NotFound"
+            || errCode === "ENOENT"
+            || errCode === "ENOTFOUND") {
+            return new Exception(err.message, { name: "NotFoundError", code: 404, cause: err });
+        }
+        else if (errName === "NotAllowedError"
+            || errName === "PermissionDenied"
+            || errName === "InvalidStateError"
+            || errName === "SecurityError"
+            || errName === "EACCES"
+            || errCode === "EPERM"
+            || errCode === "ERR_ACCESS_DENIED") {
+            return new Exception(err.message, { name: "NotAllowedError", code: 403, cause: err });
+        }
+        else if (errName === "AlreadyExists"
+            || errCode === "EEXIST"
+            || errCode === "ERR_FS_CP_EEXIST") {
+            return new Exception(err.message, { name: "AlreadyExistsError", code: 409, cause: err });
+        }
+        else if ((errName === "TypeMismatchError" && type === "file")
+            || errName === "IsADirectory"
+            || errCode === "EISDIR"
+            || errCode === "ERR_FS_EISDIR") {
+            return new Exception(err.message, { name: "IsDirectoryError", code: 415, cause: err });
+        }
+        else if ((errName === "TypeMismatchError" && type === "directory")
+            || errName === "NotADirectory"
+            || errCode === "ENOTDIR") {
+            return new Exception(err.message, { name: "NotDirectoryError", code: 415, cause: err });
+        }
+        else if (errName === "InvalidModificationError"
+            || errName === "NotSupported"
+            || errCode === "ENOTEMPTY"
+            || errCode === "ERR_FS_CP_EINVAL"
+            || errCode === "ERR_FS_CP_FIFO_PIPE"
+            || errCode === "ERR_FS_CP_DIR_TO_NON_DIR"
+            || errCode === "ERR_FS_CP_NON_DIR_TO_DIR"
+            || errCode === "ERR_FS_CP_SOCKET"
+            || errCode === "ERR_FS_CP_SYMLINK_TO_SUBDIRECTORY"
+            || errCode === "ERR_FS_CP_UNKNOWN"
+            || errCode === "ERR_FS_INVALID_SYMLINK_TYPE") {
+            return new Exception(err.message, { name: "InvalidOperationError", code: 405, cause: err });
+        }
+        else if (errName === "NoModificationAllowedError"
+            || errName === "Busy"
+            || errName === "TimedOut"
+            || errCode === "ERR_DIR_CONCURRENT_OPERATION") {
+            return new Exception(errName, { name: "BusyError", code: 409, cause: err });
+        }
+        else if (errName === "Interrupted" || errCode === "ERR_DIR_CLOSED") {
+            return new Exception(err.message, { name: "InterruptedError", code: 409, cause: err });
+        }
+        else if (errName === "QuotaExceededError"
+            || errCode === "ERR_FS_FILE_TOO_LARGE") {
+            return new Exception(err.message, { name: "FileTooLargeError", code: 413, cause: err });
+        }
+        else if (errName === "FilesystemLoop") {
+            return new Exception(err.message, { name: "FilesystemLoopError", code: 508, cause: err });
+        }
+        else {
+            return err;
+        }
+    }
+    else if (err instanceof Error) {
+        return err;
+    }
+    else if (typeof err === "string") {
+        return new Exception(err, { code: 500, cause: err });
+    }
+    else {
+        return new Exception("Unknown error", { code: 500, cause: err });
+    }
+}
+/**
+ * Wraps a raw file system operation so that when any error occurs, the error is
+ * wrapped to a predefined error by this module.
+ *
+ * @param type Only used for `FileSystemHandle` operations.
+ */
+function rawOp(op, type = undefined) {
+    return op.catch((err) => {
+        throw wrapFsError(err, type);
+    });
+}
 function fixDirEntry(entry) {
     Object.defineProperty(entry, "path", {
         get() {
@@ -103,5 +207,5 @@ function makeTree(dir, entries, addPathProp = false) {
     return rooEntry;
 }
 
-export { fixDirEntry, fixFileType, makeTree };
+export { fixDirEntry, fixFileType, makeTree, rawOp, wrapFsError };
 //# sourceMappingURL=util.js.map

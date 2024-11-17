@@ -1,5 +1,5 @@
 import { getExtensions, getMIME } from "../../filetype.ts";
-import { readDir } from "../../fs.ts";
+import { readDir } from "../../fs/web.ts";
 import { fixFileType } from "../../fs/util.ts";
 import { basename } from "../../path.ts";
 import { readAsObjectURL } from "../../reader.ts";

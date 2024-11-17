@@ -198,6 +198,13 @@
             "require": "./cjs/fs.js",
             "default": "./fs.ts"
         },
+        "./fs/web": {
+            "types": "./types/fs/web.d.ts",
+            "bun": "./fs/web.ts",
+            "import": "./esm/fs/web.js",
+            "require": "./cjs/fs/web.js",
+            "default": "./fs/web.ts"
+        },
         "./func": {
             "types": "./types/func.d.ts",
             "bun": "./func.ts",

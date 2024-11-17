@@ -23,6 +23,7 @@
         "./example": "./example.ts",
         "./filetype": "./filetype.ts",
         "./fs": "./fs.ts",
+        "./fs/web": "./fs/web.ts",
         "./func": "./func.ts",
         "./hash": "./hash.ts",
         "./http": "./http.ts",
