@@ -2,9 +2,10 @@ import { text } from "../bytes.ts";
 import {
     type DataSource,
     hash,
+    adler32,
     crc32,
     hmac,
-    toBytes,
+    toBytesAsync,
     sha1,
     sha256,
     sha512,
@@ -13,7 +14,7 @@ import {
 export type { DataSource };
 
 export default hash;
-export { crc32, hmac, sha1, sha256, sha512 };
+export { adler32, crc32, hmac, sha1, sha256, sha512 };
 
 export function md5(data: DataSource): Promise<ArrayBuffer>;
 export function md5(data: DataSource, encoding: "hex" | "base64"): Promise<string>;
@@ -21,7 +22,7 @@ export async function md5(
     data: DataSource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
-    let bytes = await toBytes(data);
+    let bytes = await toBytesAsync(data);
     const hash = await crypto.subtle.digest("MD5", bytes);
 
     if (encoding === "hex") {

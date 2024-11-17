@@ -1,9 +1,9 @@
 import { text } from '../bytes.js';
-import { hash, toBytes } from '../hash/web.js';
-export { crc32, hmac, sha1, sha256, sha512 } from '../hash/web.js';
+import { hash, toBytesAsync } from '../hash/web.js';
+export { adler32, crc32, hmac, sha1, sha256, sha512 } from '../hash/web.js';
 
 async function md5(data, encoding = undefined) {
-    let bytes = await toBytes(data);
+    let bytes = await toBytesAsync(data);
     const hash = await crypto.subtle.digest("MD5", bytes);
     if (encoding === "hex") {
         return text(new Uint8Array(hash), "hex");

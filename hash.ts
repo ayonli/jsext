@@ -9,9 +9,10 @@ import { isDeno, isNodeLike } from "./env.ts";
 import {
     type DataSource,
     hash,
+    adler32,
     crc32,
     hmac as _hmac,
-    toBytes,
+    toBytesAsync,
     sha1 as _sha1,
     sha256 as _sha256,
     sha512 as _sha512
@@ -20,7 +21,7 @@ import {
 export type { DataSource };
 
 export default hash;
-export { crc32 };
+export { adler32, crc32 };
 
 async function nodeHash(
     algorithm: "sha1" | "sha256" | "sha512" | "md5",
@@ -28,7 +29,7 @@ async function nodeHash(
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<ArrayBuffer | string> {
     const crypto = await import("node:crypto");
-    const bytes = await toBytes(data);
+    const bytes = await toBytesAsync(data);
     const hash = crypto.createHash(algorithm);
 
     hash.update(bytes);
@@ -217,7 +218,7 @@ export async function hmac(
         return encoding ? _hmac(algorithm, key, data, encoding) : _hmac(algorithm, key, data);
     } else if (isDeno || isNodeLike) {
         const crypto = await import("node:crypto");
-        const binary = await toBytes(data);
+        const binary = await toBytesAsync(data);
         const hash = crypto.createHmac(algorithm, bytes(key));
 
         hash.update(binary);

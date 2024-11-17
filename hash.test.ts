@@ -2,7 +2,7 @@ import { deepStrictEqual, strictEqual } from "node:assert";
 import { Buffer } from "node:buffer";
 import { createHmac } from "node:crypto";
 import bytes from "./bytes.ts";
-import hash, { crc32, sha1, sha256, sha512, md5, hmac } from "./hash.ts";
+import hash, { adler32, crc32, sha1, sha256, sha512, md5, hmac } from "./hash.ts";
 
 describe("hash", () => {
     describe("hash", () => {
@@ -16,6 +16,23 @@ describe("hash", () => {
 
         it("Uint8Array", () => {
             strictEqual(hash(bytes("hello world")), 2616892229);
+        });
+    });
+
+    describe("adler32", () => {
+        it("string", () => {
+            strictEqual(adler32("Hello, World!"), 530449514);
+            strictEqual(adler32("World!", adler32("Hello, ")), 530449514);
+        });
+
+        it("ArrayBuffer", () => {
+            strictEqual(adler32(bytes("Hello, World!").buffer), 530449514);
+            strictEqual(adler32(new Uint8Array([1, 2, 3]).buffer), 851975);
+        });
+
+        it("Uint8Array", () => {
+            strictEqual(adler32(bytes("Hello, World!")), 530449514);
+            strictEqual(adler32(new Uint8Array([1, 2, 3])), 851975);
         });
     });
 

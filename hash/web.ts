@@ -4,7 +4,7 @@ import { readAsArrayBuffer } from "../reader.ts";
 export type DataSource = string | BufferSource | ReadableStream<Uint8Array> | Blob;
 
 /**
- * Calculates the hash of the given data.
+ * Calculates the hash of the given data, the result is a 32-bit unsigned integer.
  * 
  * This function uses the same algorithm as the [string-hash](https://www.npmjs.com/package/string-hash)
  * package, non-string data are converted to strings before hashing.
@@ -46,6 +46,47 @@ export function hash(data: string | BufferSource): number {
     return hash >>> 0;
 }
 
+/**
+ * Calculates the Adler-32 checksum of the given data, the result is a 32-bit
+ * unsigned integer.
+ * 
+ * Adler-32 checksum is used in zlib and libpng, it is similar to CRC32 but
+ * faster and less reliable.
+ * 
+ * @param previous The previous Adler-32 value, default is `1`. This is useful
+ * when calculating the checksum of a large data in chunks.
+ * 
+ * @example
+ * ```ts
+ * import { adler32 } from "@ayonli/jsext/hash";
+ * 
+ * console.log(adler32("Hello, World!")); // 530449514
+ * console.log(adler32(new Uint8Array([1, 2, 3]))); // 851975
+ * 
+ * // calculate chunks
+ * const chunks = ["Hello, ", "World!"];
+ * let checksum = 1;
+ * 
+ * for (const chunk of chunks) {
+ *     checksum = adler32(chunk, checksum);
+ * }
+ * 
+ * console.log(checksum); // 530449514
+ * ```
+ */
+export function adler32(data: string | BufferSource, previous = 1): number {
+    const bin = toBytes(data);
+    let a = previous & 0xffff;
+    let b = (previous >>> 16) & 0xffff;
+
+    for (let i = 0; i < bin.length; i++) {
+        a = (a + bin[i]!) % 65521;
+        b = (b + a) % 65521;
+    }
+
+    return ((b << 16) | a) >>> 0;
+}
+
 const CRC32_TABLE = (() => {
     const IEEE = 0xedb88320;
 
@@ -66,14 +107,14 @@ const CRC32_TABLE = (() => {
 })();
 
 /**
- * Calculates the CRC-32 hash of the given data, the result is a 32-bit unsigned
- * integer.
+ * Calculates the CRC-32 checksum of the given data, the result is a 32-bit
+ * unsigned integer.
  * 
  * This function is based on IEEE polynomial, which is widely used by Ethernet
  * (IEEE 802.3), v.42, fddi, gzip, zip, png and other technologies.
  * 
- * @param previous The previous CRC value, default is `0`. This is useful when
- * calculating the CRC of a large data in chunks.
+ * @param previous The previous checksum value, default is `0`. This is useful
+ * when calculating the CRC of a large data in chunks.
  * 
  * @example
  * ```ts
@@ -81,23 +122,20 @@ const CRC32_TABLE = (() => {
  * 
  * console.log(crc32("Hello, World!")); // 3964322768
  * console.log(crc32(new Uint8Array([1, 2, 3]))); // 1438416925
+ * 
+ * // calculate chunks
+ * const chunks = ["Hello, ", "World!"];
+ * let checksum = 0;
+ * 
+ * for (const chunk of chunks) {
+ *     checksum = crc32(chunk, checksum);
+ * }
+ *
+ * console.log(checksum); // 3964322768
  * ```
  */
 export function crc32(data: string | BufferSource, previous = 0): number {
-    let bin: Uint8Array;
-
-    if (data instanceof Uint8Array) {
-        bin = data;
-    } else if (typeof data === "string") {
-        bin = bytes(data);
-    } else if (data instanceof ArrayBuffer) {
-        bin = new Uint8Array(data);
-    } else if (ArrayBuffer.isView(data)) {
-        bin = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-    } else {
-        throw new TypeError("Unsupported data type");
-    }
-
+    const bin = toBytes(data);
     let crc = ~~previous ^ -1;
 
     for (let i = 0; i < bin.length; i++) {
@@ -107,26 +145,30 @@ export function crc32(data: string | BufferSource, previous = 0): number {
     return (crc ^ -1) >>> 0;
 }
 
-export async function toBytes(data: DataSource): Promise<Uint8Array> {
-    let bin: Uint8Array;
-
+function toBytes(data: string | BufferSource): Uint8Array {
     if (typeof data === "string") {
-        bin = bytes(data);
+        return bytes(data);
     } else if (data instanceof ArrayBuffer) {
-        bin = new Uint8Array(data);
+        return new Uint8Array(data);
     } else if (data instanceof Uint8Array) {
-        bin = data;
+        return data;
     } else if (ArrayBuffer.isView(data)) {
-        bin = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-    } else if (typeof ReadableStream === "function" && data instanceof ReadableStream) {
-        bin = new Uint8Array(await readAsArrayBuffer(data));
-    } else if (typeof Blob === "function" && data instanceof Blob) {
-        bin = new Uint8Array(await data.arrayBuffer());
+        return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
     } else {
         throw new TypeError("Unsupported data type");
     }
+}
 
-    return bin;
+export async function toBytesAsync(data: DataSource): Promise<Uint8Array> {
+    if (typeof data === "string" || data instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
+        return toBytes(data);
+    } else if (typeof ReadableStream === "function" && data instanceof ReadableStream) {
+        return new Uint8Array(await readAsArrayBuffer(data));
+    } else if (typeof Blob === "function" && data instanceof Blob) {
+        return new Uint8Array(await data.arrayBuffer());
+    } else {
+        throw new TypeError("Unsupported data type");
+    }
 }
 
 export function sha1(data: DataSource): Promise<ArrayBuffer>;
@@ -135,7 +177,7 @@ export async function sha1(
     data: DataSource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
-    const bytes = await toBytes(data);
+    const bytes = await toBytesAsync(data);
     const hash = await crypto.subtle.digest("SHA-1", bytes);
 
     if (encoding === "hex") {
@@ -153,7 +195,7 @@ export async function sha256(
     data: DataSource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
-    const bytes = await toBytes(data);
+    const bytes = await toBytesAsync(data);
     const hash = await crypto.subtle.digest("SHA-256", bytes);
 
     if (encoding === "hex") {
@@ -171,7 +213,7 @@ export async function sha512(
     data: DataSource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
-    const bytes = await toBytes(data);
+    const bytes = await toBytesAsync(data);
     const hash = await crypto.subtle.digest("SHA-512", bytes);
 
     if (encoding === "hex") {
@@ -208,7 +250,7 @@ export async function hmac(
             "sha512": "SHA-512",
         }[algorithm],
     }, false, ["sign"]);
-    const dataBytes = await toBytes(data);
+    const dataBytes = await toBytesAsync(data);
     const hash = await crypto.subtle.sign("HMAC", keyBuffer, dataBytes);
 
     if (encoding === "hex") {

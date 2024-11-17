@@ -1,7 +1,7 @@
 import bytes from './bytes.js';
 import { isDeno, isNodeLike } from './env.js';
-import { hash, sha1 as sha1$1, sha256 as sha256$1, sha512 as sha512$1, hmac as hmac$1, toBytes } from './hash/web.js';
-export { crc32 } from './hash/web.js';
+import { hash, sha1 as sha1$1, sha256 as sha256$1, sha512 as sha512$1, hmac as hmac$1, toBytesAsync } from './hash/web.js';
+export { adler32, crc32 } from './hash/web.js';
 
 /**
  * Simplified hash functions for various data types, based on the Web Crypto API
@@ -10,7 +10,7 @@ export { crc32 } from './hash/web.js';
  */
 async function nodeHash(algorithm, data, encoding = undefined) {
     const crypto = await import('node:crypto');
-    const bytes = await toBytes(data);
+    const bytes = await toBytesAsync(data);
     const hash = crypto.createHash(algorithm);
     hash.update(bytes);
     if (encoding) {
@@ -69,7 +69,7 @@ async function hmac(algorithm, key, data, encoding = undefined) {
     }
     else if (isDeno || isNodeLike) {
         const crypto = await import('node:crypto');
-        const binary = await toBytes(data);
+        const binary = await toBytesAsync(data);
         const hash = crypto.createHmac(algorithm, bytes(key));
         hash.update(binary);
         if (encoding) {
