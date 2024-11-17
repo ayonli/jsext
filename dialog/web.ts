@@ -18,7 +18,7 @@ import type { ProgressAbortHandler, ProgressFunc, ProgressState } from "./progre
 
 export * from "./web/file.ts";
 
-export async function alert(message: string) {
+export async function alert(message: string): Promise<void> {
     await new Promise<void>(resolve => {
         document.body.appendChild(
             Dialog(
@@ -35,7 +35,7 @@ export async function alert(message: string) {
     });
 }
 
-export async function confirm(message: string) {
+export async function confirm(message: string): Promise<boolean> {
     return new Promise<boolean>(resolve => {
         document.body.appendChild(
             Dialog(
@@ -53,7 +53,7 @@ export async function confirm(message: string) {
     });
 }
 
-export async function prompt(message: string, options: PromptOptions = {}) {
+export async function prompt(message: string, options: PromptOptions = {}): Promise<string | null> {
     const { type, defaultValue } = options;
     return new Promise<string | null>(resolve => {
         document.body.appendChild(
@@ -80,7 +80,7 @@ export async function progress<T>(
     message: string,
     fn: ProgressFunc<T>,
     onAbort: ProgressAbortHandler<T> | undefined = undefined
-) {
+): Promise<T | null> {
     const ctrl = new AbortController();
     const signal = ctrl.signal;
     let fallback: { value: T; } | null = null;
