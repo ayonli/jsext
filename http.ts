@@ -181,7 +181,7 @@ export async function randomPort(
             }
         }
     } else if (isNode) {
-        const { createServer, connect } = await import("net");
+        const { createServer, connect } = await import("node:net");
 
         if (prefer) {
             // In Node.js listening on a port used by another process may work,

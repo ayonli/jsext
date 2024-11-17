@@ -72,7 +72,7 @@ export async function run(cmd: string, args: string[]): Promise<CommandResult> {
             stderr: isWindows || isWslPs ? decode(Buffer.from(stderr), "cp936") : text(stderr),
         };
     } else if (isNodeLike) {
-        const { spawn } = await import("child_process");
+        const { spawn } = await import("node:child_process");
         const { decode } = await interop(import("iconv-lite"), false);
         const child = isWindows && PowerShellCommands.includes(cmd)
             ? spawn("powershell", ["-c", cmd, ...args.map(quote)])

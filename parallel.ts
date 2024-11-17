@@ -348,7 +348,7 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * 
  * The following environments are guaranteed to work:
  * 
- * - [x] Node.js v12+
+ * - [x] Node.js v14.18+
  * - [x] Deno v1.0+
  * - [x] Bun v1.0+
  * - [x] Modern browsers

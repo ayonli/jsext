@@ -98,16 +98,8 @@ export const EOL: "\n" | "\r\n" = (() => {
 
 async function resolveHomeDir(path: string): Promise<string> {
     if (path[0] === "~" && (isDeno || isNodeLike)) {
-        let homedir: string;
-
-        if (isDeno) {
-            const os = await import("node:os");
-            homedir = os.homedir();
-        } else {
-            const os = await import("os");
-            homedir = os.homedir();
-        }
-
+        const os = await import("node:os");
+        const homedir = os.homedir();
         path = homedir + path.slice(1);
     }
 
@@ -258,7 +250,7 @@ export async function stat(
             isSocket: stat.isSocket ?? false,
         };
     } else {
-        const fs = await import("fs/promises");
+        const fs = await import("node:fs/promises");
         const stat = await rawOp(options.followSymlink ? fs.stat(path) : fs.lstat(path));
         const kind = stat.isDirectory()
             ? "directory"
@@ -340,7 +332,7 @@ export async function mkdir(path: string, options: MkdirOptions = {}): Promise<v
     if (isDeno) {
         await rawOp(Deno.mkdir(path, options));
     } else {
-        const fs = await import("fs/promises");
+        const fs = await import("node:fs/promises");
         await rawOp(fs.mkdir(path, options));
     }
 }
@@ -468,7 +460,7 @@ export async function* readDir(
             }
         })(path, "");
     } else {
-        const fs = await import("fs/promises");
+        const fs = await import("node:fs/promises");
 
         yield* (async function* read(path: string, base: string): AsyncIterableIterator<DirEntry> {
             const entries = await rawOp(fs.readdir(path, { withFileTypes: true }));
@@ -580,7 +572,7 @@ export async function readFile(
     if (isDeno) {
         return await rawOp(Deno.readFile(filename, options));
     } else {
-        const fs = await import("fs/promises");
+        const fs = await import("node:fs/promises");
         const buffer = await rawOp(fs.readFile(filename, options));
         return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
     }
@@ -777,7 +769,7 @@ export async function writeFile(
             const writer = createNodeWritableStream(filename, options);
             await data.pipeTo(writer);
         } else {
-            const fs = await import("fs/promises");
+            const fs = await import("node:fs/promises");
             const { append, ...rest } = options;
             let _data: Uint8Array | string;
 
@@ -931,7 +923,7 @@ export async function truncate(
     if (isDeno) {
         await rawOp(Deno.truncate(filename, size));
     } else {
-        const fs = await import("fs/promises");
+        const fs = await import("node:fs/promises");
         await rawOp(fs.truncate(filename, size));
     }
 }
@@ -985,7 +977,7 @@ export async function remove(path: string, options: RemoveOptions = {}): Promise
     if (isDeno) {
         await rawOp(Deno.remove(path, options));
     } else {
-        const fs = await import("fs/promises");
+        const fs = await import("node:fs/promises");
 
         if (typeof fs.rm === "function") {
             await rawOp(fs.rm(path, options));
@@ -1040,7 +1032,7 @@ export async function rename(
     if (isDeno) {
         await rawOp(Deno.rename(oldPath, newPath));
     } else {
-        const fs = await import("fs/promises");
+        const fs = await import("node:fs/promises");
         await rawOp(fs.rename(oldPath, newPath));
     }
 }
@@ -1198,7 +1190,7 @@ export async function copy(
             await rawOp(Deno.copyFile(src, _newPath));
         }
     } else {
-        const fs = await import("fs/promises");
+        const fs = await import("node:fs/promises");
 
         if (isDirSrc) {
             const entries = readDir(src, { recursive: true });
@@ -1270,7 +1262,7 @@ export async function link(src: string, dest: string, options: LinkOptions = {})
             await rawOp(Deno.link(src, dest));
         }
     } else if (isNodeLike) {
-        const fs = await import("fs/promises");
+        const fs = await import("node:fs/promises");
 
         if (options.symbolic) {
             if (platform() === "windows") {
@@ -1306,7 +1298,7 @@ export async function readLink(path: string): Promise<string> {
     if (isDeno) {
         return await rawOp(Deno.readLink(path));
     } else if (isNodeLike) {
-        const fs = await import("fs/promises");
+        const fs = await import("node:fs/promises");
         return await rawOp(fs.readlink(path));
     } else {
         throw new Error("Unsupported runtime");
@@ -1352,7 +1344,7 @@ export async function chmod(path: string, mode: number): Promise<void> {
         if (isDeno) {
             await rawOp(Deno.chmod(path, mode));
         } else if (isNodeLike) {
-            const fs = await import("fs/promises");
+            const fs = await import("node:fs/promises");
             await rawOp(fs.chmod(path, mode));
         }
     }
@@ -1379,7 +1371,7 @@ export async function chown(path: string, uid: number, gid: number): Promise<voi
         if (isDeno) {
             await rawOp(Deno.chown(path, uid, gid));
         } else if (isNodeLike) {
-            const fs = await import("fs/promises");
+            const fs = await import("node:fs/promises");
             await rawOp(fs.chown(path, uid, gid));
         }
     }
@@ -1411,7 +1403,7 @@ export async function utimes(
     if (isDeno) {
         await rawOp(Deno.utime(path, atime, mtime));
     } else if (isNodeLike) {
-        const fs = await import("fs/promises");
+        const fs = await import("node:fs/promises");
         await rawOp(fs.utimes(path, atime, mtime));
     }
 }
@@ -1461,12 +1453,12 @@ export function createReadableStream(
             return file.readable;
         })());
     } else {
-        let reader: import("fs").ReadStream;
+        let reader: import("node:fs").ReadStream;
         return new ReadableStream<Uint8Array>({
             async start(controller) {
-                const fs = await import("fs");
-
+                const fs = await import("node:fs");
                 const filename = await resolveHomeDir(target as string);
+
                 reader = fs.createReadStream(filename);
                 reader.on("data", (chunk: Buffer) => {
                     const bytes = new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
@@ -1540,11 +1532,11 @@ function createNodeWritableStream(filename: string, options: {
     mode?: number;
     signal?: AbortSignal;
 }): WritableStream<Uint8Array> {
-    let dest: import("fs").WriteStream;
+    let dest: import("node:fs").WriteStream;
     return new WritableStream<Uint8Array>({
         async start() {
             const { append, ...rest } = options;
-            const { createWriteStream } = await import("fs");
+            const { createWriteStream } = await import("node:fs");
             filename = await resolveHomeDir(filename);
             dest = createWriteStream(filename, {
                 flags: append ? "a" : "w",

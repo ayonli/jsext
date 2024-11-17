@@ -19,7 +19,7 @@ const getMaxParallelism = (async () => {
         return navigator.hardwareConcurrency;
     }
     else if (isNode) {
-        const os = await import('os');
+        const os = await import('node:os');
         if (typeof os.availableParallelism === "function") {
             return os.availableParallelism();
         }
@@ -130,7 +130,7 @@ async function createWorker(options) {
     const entry = await getWorkerEntry(parallel);
     if (isNode || isBun) {
         if (adapter === "child_process") {
-            const { fork } = await import('child_process');
+            const { fork } = await import('node:child_process');
             const serialization = isNodeBelow14 ? "json" : "advanced";
             const worker = fork(entry, ["--worker-thread"], {
                 stdio: "inherit",
@@ -151,7 +151,7 @@ async function createWorker(options) {
             };
         }
         else if (isNode) {
-            const { Worker } = await import('worker_threads');
+            const { Worker } = await import('node:worker_threads');
             const worker = new Worker(entry, { argv: ["--worker-thread"] });
             const workerId = worker.threadId;
             await new Promise((resolve, reject) => {

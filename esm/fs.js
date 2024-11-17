@@ -81,15 +81,8 @@ const EOL = (() => {
 })();
 async function resolveHomeDir(path) {
     if (path[0] === "~" && (isDeno || isNodeLike)) {
-        let homedir;
-        if (isDeno) {
-            const os = await import('node:os');
-            homedir = os.homedir();
-        }
-        else {
-            const os = await import('os');
-            homedir = os.homedir();
-        }
+        const os = await import('node:os');
+        const homedir = os.homedir();
         path = homedir + path.slice(1);
     }
     return path;
@@ -197,7 +190,7 @@ async function stat(target, options = {}) {
         };
     }
     else {
-        const fs = await import('fs/promises');
+        const fs = await import('node:fs/promises');
         const stat = await rawOp(options.followSymlink ? fs.stat(path) : fs.lstat(path));
         const kind = stat.isDirectory()
             ? "directory"
@@ -259,7 +252,7 @@ async function mkdir(path, options = {}) {
         await rawOp(Deno.mkdir(path, options));
     }
     else {
-        const fs = await import('fs/promises');
+        const fs = await import('node:fs/promises');
         await rawOp(fs.mkdir(path, options));
     }
 }
@@ -369,7 +362,7 @@ async function* readDir(target, options = {}) {
         })(path, "");
     }
     else {
-        const fs = await import('fs/promises');
+        const fs = await import('node:fs/promises');
         yield* (async function* read(path, base) {
             const entries = await rawOp(fs.readdir(path, { withFileTypes: true }));
             for (const entry of entries) {
@@ -458,7 +451,7 @@ async function readFile(target, options = {}) {
         return await rawOp(Deno.readFile(filename, options));
     }
     else {
-        const fs = await import('fs/promises');
+        const fs = await import('node:fs/promises');
         const buffer = await rawOp(fs.readFile(filename, options));
         return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
     }
@@ -628,7 +621,7 @@ async function writeFile(target, data, options = {}) {
             await data.pipeTo(writer);
         }
         else {
-            const fs = await import('fs/promises');
+            const fs = await import('node:fs/promises');
             const { append, ...rest } = options;
             let _data;
             if (data instanceof ArrayBuffer) {
@@ -772,7 +765,7 @@ async function truncate(target, size = 0, options = {}) {
         await rawOp(Deno.truncate(filename, size));
     }
     else {
-        const fs = await import('fs/promises');
+        const fs = await import('node:fs/promises');
         await rawOp(fs.truncate(filename, size));
     }
 }
@@ -813,7 +806,7 @@ async function remove(path, options = {}) {
         await rawOp(Deno.remove(path, options));
     }
     else {
-        const fs = await import('fs/promises');
+        const fs = await import('node:fs/promises');
         if (typeof fs.rm === "function") {
             await rawOp(fs.rm(path, options));
         }
@@ -863,7 +856,7 @@ async function rename(oldPath, newPath, options = {}) {
         await rawOp(Deno.rename(oldPath, newPath));
     }
     else {
-        const fs = await import('fs/promises');
+        const fs = await import('node:fs/promises');
         await rawOp(fs.rename(oldPath, newPath));
     }
 }
@@ -919,7 +912,7 @@ async function copy(src, dest, options = {}) {
         }
     }
     else {
-        const fs = await import('fs/promises');
+        const fs = await import('node:fs/promises');
         if (isDirSrc) {
             const entries = readDir(src, { recursive: true });
             for await (const entry of entries) {
@@ -981,7 +974,7 @@ async function link(src, dest, options = {}) {
         }
     }
     else if (isNodeLike) {
-        const fs = await import('fs/promises');
+        const fs = await import('node:fs/promises');
         if (options.symbolic) {
             if (platform() === "windows") {
                 const _stat = await stat(src);
@@ -1018,7 +1011,7 @@ async function readLink(path) {
         return await rawOp(Deno.readLink(path));
     }
     else if (isNodeLike) {
-        const fs = await import('fs/promises');
+        const fs = await import('node:fs/promises');
         return await rawOp(fs.readlink(path));
     }
     else {
@@ -1064,7 +1057,7 @@ async function chmod(path, mode) {
             await rawOp(Deno.chmod(path, mode));
         }
         else if (isNodeLike) {
-            const fs = await import('fs/promises');
+            const fs = await import('node:fs/promises');
             await rawOp(fs.chmod(path, mode));
         }
     }
@@ -1090,7 +1083,7 @@ async function chown(path, uid, gid) {
             await rawOp(Deno.chown(path, uid, gid));
         }
         else if (isNodeLike) {
-            const fs = await import('fs/promises');
+            const fs = await import('node:fs/promises');
             await rawOp(fs.chown(path, uid, gid));
         }
     }
@@ -1117,7 +1110,7 @@ async function utimes(path, atime, mtime) {
         await rawOp(Deno.utime(path, atime, mtime));
     }
     else if (isNodeLike) {
-        const fs = await import('fs/promises');
+        const fs = await import('node:fs/promises');
         await rawOp(fs.utimes(path, atime, mtime));
     }
 }
@@ -1166,7 +1159,7 @@ function createReadableStream(target, options = {}) {
         let reader;
         return new ReadableStream({
             async start(controller) {
-                const fs = await import('fs');
+                const fs = await import('node:fs');
                 const filename = await resolveHomeDir(target);
                 reader = fs.createReadStream(filename);
                 reader.on("data", (chunk) => {
@@ -1238,7 +1231,7 @@ function createNodeWritableStream(filename, options) {
     return new WritableStream({
         async start() {
             const { append, ...rest } = options;
-            const { createWriteStream } = await import('fs');
+            const { createWriteStream } = await import('node:fs');
             filename = await resolveHomeDir(filename);
             dest = createWriteStream(filename, {
                 flags: append ? "a" : "w",
