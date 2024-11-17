@@ -1,7 +1,6 @@
 import { text } from "../bytes.ts";
-import {
+import hash, {
     type DataSource,
-    hash,
     adler32,
     crc32,
     hmac,

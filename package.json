@@ -221,6 +221,13 @@
             "require": "./cjs/hash.js",
             "default": "./hash.ts"
         },
+        "./hash/web": {
+            "types": "./types/hash/web.d.ts",
+            "bun": "./hash/web.ts",
+            "import": "./esm/hash/web.js",
+            "require": "./cjs/hash/web.js",
+            "default": "./hash/web.ts"
+        },
         "./http": {
             "types": "./types/http.d.ts",
             "bun": "./http.ts",

@@ -2,6 +2,14 @@ import bytes, { text } from '../bytes.js';
 import { readAsArrayBuffer } from '../reader.js';
 
 /**
+ * A slim version of the `hash` module for the browser.
+ *
+ * Normally, we should just use the `hash` module, however, if we don't want
+ * to include other parts that are not needed in the browser, we can use this
+ * module instead.
+ * @module
+ */
+/**
  * Calculates the hash of the given data, the result is a 32-bit unsigned integer.
  *
  * This function uses the same algorithm as the [string-hash](https://www.npmjs.com/package/string-hash)
@@ -222,5 +230,5 @@ async function hmac(algorithm, key, data, encoding = undefined) {
     }
 }
 
-export { adler32, crc32, hash, hmac, sha1, sha256, sha512, toBytesAsync };
+export { adler32, crc32, hash as default, hmac, sha1, sha256, sha512, toBytesAsync };
 //# sourceMappingURL=web.js.map

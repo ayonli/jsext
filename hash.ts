@@ -6,9 +6,8 @@
 
 import bytes from "./bytes.ts";
 import { isDeno, isNodeLike } from "./env.ts";
-import {
+import hash, {
     type DataSource,
-    hash,
     adler32,
     crc32,
     hmac as _hmac,

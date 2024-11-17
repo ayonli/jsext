@@ -1,5 +1,5 @@
 import { text } from '../bytes.js';
-import { hash, toBytesAsync } from '../hash/web.js';
+import hash, { toBytesAsync } from '../hash/web.js';
 export { adler32, crc32, hmac, sha1, sha256, sha512 } from '../hash/web.js';
 
 async function md5(data, encoding = undefined) {

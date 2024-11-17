@@ -1,3 +1,11 @@
+/**
+ * A slim version of the `hash` module for the browser.
+ * 
+ * Normally, we should just use the `hash` module, however, if we don't want
+ * to include other parts that are not needed in the browser, we can use this
+ * module instead.
+ * @module
+ */
 import bytes, { text } from "../bytes.ts";
 import { readAsArrayBuffer } from "../reader.ts";
 
@@ -17,7 +25,7 @@ export type DataSource = string | BufferSource | ReadableStream<Uint8Array> | Bl
  * console.log(hash(new Uint8Array([1, 2, 3]))); // 193378021
  * ```
  */
-export function hash(data: string | BufferSource): number {
+export default function hash(data: string | BufferSource): number {
     let str: string;
 
     if (typeof data === "string") {

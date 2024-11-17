@@ -26,6 +26,7 @@
         "./fs/web": "./fs/web.ts",
         "./func": "./func.ts",
         "./hash": "./hash.ts",
+        "./hash/web": "./hash/web.ts",
         "./http": "./http.ts",
         "./http/internal": "./http/internal.ts",
         "./json": "./json.ts",
