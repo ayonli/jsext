@@ -1,6 +1,7 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import jsext from "./index.ts";
-import { sequence } from "./number.ts";
+import { range } from "./number.ts";
+import { readAsArray } from "./reader.ts";
 import { sum } from "./math.ts";
 
 describe("jsext.run", () => {
@@ -93,11 +94,11 @@ describe("jsext.run", () => {
             fn: "twoTimesValues",
         });
 
-        for (const value of sequence(0, 9)) {
-            await channel.push({ value, done: value === 9 });
+        for (const value of range(0, 9)) {
+            await channel.send({ value, done: value === 9 });
         }
 
-        const results = (await jsext.readAll(channel)).map(item => item.value);
+        const results = (await readAsArray(channel)).map(item => item.value);
         deepStrictEqual(results, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]);
         strictEqual(await job.result(), 10);
 
@@ -109,8 +110,8 @@ describe("jsext.run", () => {
             fn: "threeTimesValues",
         });
 
-        for (const value of sequence(1, 10)) {
-            await channel2.push(value);
+        for (const value of range(1, 10)) {
+            await channel2.send(value);
         }
 
         const results2: number[] = [];

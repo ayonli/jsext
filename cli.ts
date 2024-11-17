@@ -9,23 +9,13 @@
 import { trimStart } from "./string.ts";
 import { text } from "./bytes.ts";
 import { isBrowserWindow, isBun, isDeno, isNodeLike, isSharedWorker, isDedicatedWorker } from "./env.ts";
-import runtime, { env, platform as runtimePlatform } from "./runtime.ts";
+import runtime, { env, platform } from "./runtime.ts";
 import { interop } from "./module.ts";
 import { basename } from "./path.ts";
 import { PowerShellCommands } from "./cli/constants.ts";
 import { isWSL, quote } from "./cli/common.ts";
 
 export * from "./cli/common.ts";
-
-/**
- * @deprecated use `runtime().tsSupport` from `@ayonli/jsext/runtime` module instead.
- */
-export const isTsRuntime: () => boolean = () => runtime().tsSupport;
-
-/**
- * @deprecated import `platform` from `@ayonli/jsext/runtime` module instead.
- */
-export const platform: () => string = runtimePlatform;
 
 /**
  * The result of command execution functions such as the {@link run},

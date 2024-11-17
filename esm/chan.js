@@ -168,14 +168,6 @@ class Channel {
     [Symbol.dispose]() {
         this.close();
     }
-    /** @deprecated This method is deprecated in favor of the `send()` method. */
-    push(data) {
-        return this.send(data);
-    }
-    /** @deprecated This method is deprecated in favor of the `recv()` method. */
-    pop() {
-        return this.recv();
-    }
 }
 /**
  * Inspired by Golang, cerates a {@link Channel} that can be used to transfer

@@ -192,35 +192,7 @@ export async function pickDirectory(
  * }
  * ```
  */
-export function openFile(options?: FileDialogOptions): Promise<File | null>;
-/**
- * Opens the file picker dialog and selects multiple files to open.
- * 
- * @deprecated use {@link openFiles} instead.
- */
-export function openFile(options: FileDialogOptions & {
-    multiple: true;
-}): Promise<File[]>;
-/**
- * Opens the directory picker dialog and selects all its files.
- * 
- * @deprecated use {@link openDirectory} instead.
- */
-export function openFile(options: Pick<FileDialogOptions, "title"> & {
-    directory: true;
-}): Promise<File[]>;
-export async function openFile(options: FileDialogOptions & {
-    multiple?: boolean;
-    directory?: boolean;
-} = {}): Promise<File | File[] | null> {
-    const { title = "", type = "", multiple = false, directory = false } = options;
-
-    if (directory) {
-        return await openDirectory({ title });
-    } else if (multiple) {
-        return await openFiles({ title, type });
-    }
-
+export async function openFile(options?: FileDialogOptions): Promise<File | null> {
     if (isBrowserWindow) {
         const { openFile } = await import("./web/file.ts");
         return await openFile(options);

@@ -7,19 +7,6 @@ import { parseUserAgent } from './http/user-agent.js';
  * @module
  */
 /**
- * @deprecated
- */
-const WellknownRuntimes = [
-    "node",
-    "deno",
-    "bun",
-    "workerd",
-    "fastly",
-    "chrome",
-    "firefox",
-    "safari",
-];
-/**
  * Returns the information of the runtime environment in which the program is
  * running.
  *
@@ -151,9 +138,6 @@ function runtime() {
         worker,
     };
 }
-/**
- * @deprecated
- */
 const WellknownPlatforms = [
     "darwin",
     "windows",
@@ -575,5 +559,5 @@ const customInspect = (() => {
     }
 })();
 
-export { WellknownPlatforms, WellknownRuntimes, addShutdownListener, addUnhandledRejectionListener, customInspect, runtime as default, env, isREPL, platform, refTimer, unrefTimer };
+export { addShutdownListener, addUnhandledRejectionListener, customInspect, runtime as default, env, isREPL, platform, refTimer, unrefTimer };
 //# sourceMappingURL=runtime.js.map

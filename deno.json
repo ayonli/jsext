@@ -41,8 +41,6 @@
         "./path": "./path.ts",
         "./pipe": "./pipe.ts",
         "./queue": "./queue.ts",
-        "./read": "./read.ts",
-        "./readAll": "./readAll.ts",
         "./reader": "./reader.ts",
         "./run": "./run.ts",
         "./runtime": "./runtime.ts",

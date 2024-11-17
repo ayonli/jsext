@@ -1,11 +1,12 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import jsext from "./index.ts";
-import { sequence } from "./number.ts";
+import { range } from "./number.ts";
 import { sum } from "./math.ts";
 import { pick } from "./object.ts";
 import Exception from "./error/Exception.ts";
 import * as path from "node:path";
 import { trim } from "./string.ts";
+import { readAsArray } from "./reader.ts";
 
 declare var Bun: any;
 declare var AggregateError: new (errors: Error[], message?: string, options?: { cause: unknown; }) => Error & { errors: Error[]; };
@@ -129,11 +130,11 @@ describe("jsext.parallel", () => {
         // @ts-ignore because allowJs is not turned on
         const length = mod.twoTimesValues(channel);
 
-        for (const value of sequence(0, 9)) {
+        for (const value of range(0, 9)) {
             await channel.send({ value, done: value === 9 });
         }
 
-        const results = (await jsext.readAll(channel)).map(item => item.value);
+        const results = (await readAsArray(channel)).map(item => item.value);
         deepStrictEqual(results, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]);
         strictEqual(await length, 10);
 
@@ -143,7 +144,7 @@ describe("jsext.parallel", () => {
         // @ts-ignore because allowJs is not turned on
         const _values2 = mod.threeTimesValues(channel2);
 
-        for (const value of sequence(1, 10)) {
+        for (const value of range(1, 10)) {
             await channel2.send(value);
         }
 
@@ -171,7 +172,7 @@ describe("jsext.parallel", () => {
         // @ts-ignore because allowJs is not turned on
         const _values3 = mod2.threeTimesValues(channel3);
 
-        for (const value of sequence(1, 10)) {
+        for (const value of range(1, 10)) {
             await channel3.send(value);
         }
 

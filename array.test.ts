@@ -130,13 +130,12 @@ describe("Array", () => {
         deepStrictEqual(arr3, arr1.slice().sort((a, b) => b - a));
     });
 
-    it("Array.prototype.uniq", () => {
+    it("Array.prototype.unique", () => {
         const list = [1, 2, 3, 4, 2, 3, 1].unique();
         deepStrictEqual(list, [1, 2, 3, 4]);
-        strictEqual(list.uniq, list.unique);
     });
 
-    it("Array.prototype.uniqBy", () => {
+    it("Array.prototype.uniqueBy", () => {
         type Item = { group: string; tag: string; };
         const arr: Item[] = [
             {
@@ -164,8 +163,6 @@ describe("Array", () => {
                 tag: "B",
             }
         ]);
-
-        strictEqual(arr.uniqBy, arr.uniqueBy);
     });
 
     it("Array.prototype.orderBy", () => {

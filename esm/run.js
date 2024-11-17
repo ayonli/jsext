@@ -476,20 +476,7 @@ async function run(script, args, options) {
      * If not set, use the same setting as {@link parallel.maxWorkers}.
      */
     run.maxWorkers = undefined;
-    /** @deprecated set {@link parallel.workerEntry} instead */
-    run.workerEntry = undefined;
 })(run || (run = {}));
-// backward compatibility
-Object.defineProperties(run, {
-    workerEntry: {
-        set(v) {
-            parallel.workerEntry = v;
-        },
-        get() {
-            return parallel.workerEntry;
-        },
-    },
-});
 var run$1 = run;
 
 export { run$1 as default };

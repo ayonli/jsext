@@ -1,4 +1,4 @@
-import { compare, random, dedent, count, capitalize, hyphenate, bytes, chars, words, lines, chunk, truncate, trim, trimEnd, trimStart, stripEnd, stripStart, byteLength, isAscii, isEmoji } from '../string.js';
+import { compare, random, dedent, count, capitalize, hyphenate, chars, words, lines, chunk, truncate, trim, trimEnd, trimStart, stripEnd, stripStart, byteLength, isAscii, isEmoji } from '../string.js';
 
 String.compare = compare;
 String.random = random;
@@ -13,9 +13,6 @@ String.prototype.capitalize = function capitalize$1(all) {
 };
 String.prototype.hyphenate = function capitalize() {
     return hyphenate(String(this));
-};
-String.prototype.bytes = function bytes$1() {
-    return bytes(String(this));
 };
 String.prototype.chars = function chars$1() {
     return chars(String(this));

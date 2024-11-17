@@ -1,5 +1,5 @@
 import { chunk as chunk$1 } from './array/base.js';
-import bytes$1 from './bytes.js';
+import bytes from './bytes.js';
 import { EMOJI_CHAR } from './string/constants.js';
 
 /**
@@ -105,13 +105,6 @@ function capitalize(str, all) {
  */
 function hyphenate(str) {
     return str.replace(/(\S)\s+(\S)/g, (_, $1, $2) => $1 + "-" + $2);
-}
-/**
- * Returns the bytes of the given string.
- * @deprecated use the `bytes` module instead.
- */
-function bytes(str) {
-    return bytes$1(str);
 }
 /**
  * Returns the characters of the string (emojis are supported).
@@ -347,7 +340,7 @@ function dedent(str, ...values) {
  * ```
  */
 function byteLength(str) {
-    return bytes$1(str).byteLength;
+    return bytes(str).byteLength;
 }
 /** Checks if all characters in the string are within the ASCII range. */
 function isAscii(str, printableOnly = false) {
@@ -358,5 +351,5 @@ function isEmoji(str) {
     return chars(str).every((char) => EMOJI_CHAR.test(char));
 }
 
-export { byteLength, bytes, capitalize, chars, chunk, compare, count, dedent, hyphenate, isAscii, isEmoji, lines, random, stripEnd, stripStart, trim, trimEnd, trimStart, truncate, words };
+export { byteLength, capitalize, chars, chunk, compare, count, dedent, hyphenate, isAscii, isEmoji, lines, random, stripEnd, stripStart, trim, trimEnd, trimStart, truncate, words };
 //# sourceMappingURL=string.js.map

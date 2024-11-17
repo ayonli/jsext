@@ -4,7 +4,7 @@
  */
 
 import { chunk as _chunk } from "./array/base.ts";
-import _bytes, { ByteArray } from "./bytes.ts";
+import _bytes from "./bytes.ts";
 import { EMOJI_CHAR } from "./string/constants.ts";
 
 const _chars = chars;
@@ -114,14 +114,6 @@ export function capitalize(str: string, all?: boolean): string {
  */
 export function hyphenate(str: string): string {
     return str.replace(/(\S)\s+(\S)/g, (_, $1, $2) => $1 + "-" + $2);
-}
-
-/**
- * Returns the bytes of the given string.
- * @deprecated use the `bytes` module instead.
- */
-export function bytes(str: string): ByteArray {
-    return _bytes(str);
 }
 
 /**

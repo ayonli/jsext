@@ -4,10 +4,6 @@
  */
 
 import { Constructor } from "./types.ts";
-import _mixin from "./mixin.ts";
-
-/** @deprecated import `mixin` from `@ayonli/jsext/mixin` instead. */
-export const mixin = _mixin;
 
 /**
  * Checks if a value is a class/constructor.

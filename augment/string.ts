@@ -1,4 +1,3 @@
-import type { ByteArray } from "../bytes.ts";
 import {
     compare,
     random,
@@ -7,7 +6,6 @@ import {
     count as _count,
     hyphenate as _hyphenate,
     truncate as _truncate,
-    bytes as _bytes,
     chars as _chars,
     words as _words,
     lines as _lines,
@@ -54,8 +52,6 @@ declare global {
         capitalize(all?: boolean): string;
         /** Replaces the spaces between non-empty characters of the string with hyphens (`-`). */
         hyphenate(): string;
-        /** Returns the bytes of the given string. */
-        bytes(): ByteArray;
         /** Returns the characters of the string (emojis are supported). */
         chars(): string[];
         /** Extracts words (in latin characters) from the string. */
@@ -108,10 +104,6 @@ String.prototype.capitalize = function capitalize(all) {
 
 String.prototype.hyphenate = function capitalize() {
     return _hyphenate(String(this));
-};
-
-String.prototype.bytes = function bytes() {
-    return _bytes(String(this));
 };
 
 String.prototype.chars = function chars() {

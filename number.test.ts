@@ -57,7 +57,6 @@ describe("Number", () => {
 
     it("Number.range", () => {
         deepStrictEqual([...Number.range(0, 9)], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
-        deepStrictEqual([...Number.sequence(0, 9, 2)], [0, 2, 4, 6, 8]);
     });
 
     it("Number.serial", () => {
@@ -72,22 +71,5 @@ describe("Number", () => {
         }
 
         deepStrictEqual(ids, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    });
-
-    it("Number.sequence", () => {
-        deepStrictEqual([...Number.sequence(0, 9)], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
-        deepStrictEqual([...Number.sequence(0, 9, 2)], [0, 2, 4, 6, 8]);
-
-        const numbers: number[] = [];
-
-        for (const num of Number.sequence(0, 2, 1, true)) {
-            numbers.push(num);
-
-            if (numbers.length === 9) {
-                break;
-            }
-        }
-
-        deepStrictEqual(numbers, [0, 1, 2, 0, 1, 2, 0, 1, 2]);
     });
 });

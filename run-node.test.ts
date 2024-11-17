@@ -6,6 +6,7 @@ import { sum } from "./math.ts";
 import { isNodeLike } from "./env.ts";
 import { trim } from "./string.ts";
 import * as path from "node:path";
+import { readAsArray } from "./reader.ts";
 
 declare var Bun: any;
 
@@ -98,7 +99,7 @@ describe("jsext.run", () => {
                 await channel.send({ value, done: value === 9 });
             }
 
-            const results = (await jsext.readAll(channel)).map(item => item.value);
+            const results = (await readAsArray(channel)).map(item => item.value);
             deepStrictEqual(results, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]);
             strictEqual(await job1.result(), 10);
 
@@ -315,7 +316,7 @@ describe("jsext.run", () => {
                 await channel.send({ value, done: value === 9 });
             }
 
-            const results = (await jsext.readAll(channel)).map(item => item.value);
+            const results = (await readAsArray(channel)).map(item => item.value);
             deepStrictEqual(results, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]);
             strictEqual(await job1.result(), 10);
 

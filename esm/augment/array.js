@@ -30,10 +30,10 @@ Array.prototype.split = function split$1(delimiter) {
 Array.prototype.chunk = function chunk$1(length) {
     return chunk(this, length);
 };
-Array.prototype.unique = Array.prototype.uniq = function unique$1() {
+Array.prototype.unique = function unique$1() {
     return unique(this);
 };
-Array.prototype.uniqueBy = Array.prototype.uniqBy = function uniqueBy$1(fn) {
+Array.prototype.uniqueBy = function uniqueBy$1(fn) {
     return uniqueBy(this, fn);
 };
 Array.prototype.shuffle = function shuffle$1() {

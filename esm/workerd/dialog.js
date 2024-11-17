@@ -19,7 +19,7 @@ async function pickFiles(options = {}) {
 async function pickDirectory(options = {}) {
     throw new Error("Unsupported runtime");
 }
-async function openFile(options = {}) {
+function openFile(options) {
     throw new Error("Unsupported runtime");
 }
 async function openFiles(options = {}) {

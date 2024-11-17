@@ -7,11 +7,6 @@ import { equals } from './path/util.js';
  * Utility functions for working with JavaScript modules.
  * @module
  */
-/**
- * @deprecated There was some misunderstanding of this function in the past, it
- * should not be used in the user space anymore.
- */
-const _getObjectURL = getObjectURL;
 function interop(module, strict = undefined) {
     if (typeof module === "function") {
         return module().then(mod => interop(mod, strict));
@@ -151,5 +146,5 @@ function importStylesheet(url) {
     return cache;
 }
 
-export { _getObjectURL as getObjectURL, importScript, importStylesheet, interop, isMain };
+export { importScript, importStylesheet, interop, isMain };
 //# sourceMappingURL=module.js.map

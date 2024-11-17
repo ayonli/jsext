@@ -1183,10 +1183,6 @@ function createReadableStream(target, options = {}) {
     }
 }
 /**
- * @deprecated use `createReadableStream` instead.
- */
-const readFileAsStream = createReadableStream;
-/**
  * Creates a writable stream for the target file.
  *
  * NOTE: In Node.js, this function requires Node.js v18.0 or above.
@@ -1265,5 +1261,5 @@ function createNodeWritableStream(filename, options) {
     });
 }
 
-export { EOL, chmod, chown, copy, createReadableStream, createWritableStream, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsFile, readFileAsStream, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };
+export { EOL, chmod, chown, copy, createReadableStream, createWritableStream, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsFile, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };
 //# sourceMappingURL=fs.js.map

@@ -57,7 +57,7 @@ import {
     renderDirectoryPage,
     withHeaders,
     patchTimingMetrics,
-    withWeb as _withWeb,
+    withWeb,
 } from "./http/internal.ts";
 import {
     BunServer,
@@ -76,11 +76,6 @@ import { extname, join, resolve, startsWith } from "./path.ts";
 import { readAsArray } from "./reader.ts";
 import { stripStart } from "./string.ts";
 import { WebSocketServer } from "./ws.ts";
-
-/**
- * @deprecated This function has been moved to `@ayonli/jsext/http/internal`.
- */
-export const withWeb = _withWeb;
 
 export * from "./http/util.ts";
 export type {

@@ -75,23 +75,7 @@ export async function pickDirectory(
     throw new Error("Unsupported runtime");
 }
 
-export function openFile(options?: FileDialogOptions): Promise<File | null>;
-/**
- * @deprecated use {@link openFiles} instead.
- */
-export function openFile(options: FileDialogOptions & {
-    multiple: true;
-}): Promise<File[]>;
-/**
- * @deprecated use {@link openDirectory} instead.
- */
-export function openFile(options: Pick<FileDialogOptions, "title"> & {
-    directory: true;
-}): Promise<File[]>;
-export async function openFile(options: FileDialogOptions & {
-    multiple?: boolean;
-    directory?: boolean;
-} = {}): Promise<File | File[] | null> {
+export function openFile(options?: FileDialogOptions): Promise<File | null> {
     void options;
     throw new Error("Unsupported runtime");
 }

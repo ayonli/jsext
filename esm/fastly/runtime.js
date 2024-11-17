@@ -1,5 +1,5 @@
 import { env as env$1 } from 'fastly:env';
-export { WellknownPlatforms, WellknownRuntimes, addShutdownListener, addUnhandledRejectionListener, customInspect, default, isREPL, platform, refTimer, unrefTimer } from '../runtime.js';
+export { addShutdownListener, addUnhandledRejectionListener, customInspect, default, isREPL, platform, refTimer, unrefTimer } from '../runtime.js';
 
 // @ts-ignore
 function env(name = undefined, value = undefined) {

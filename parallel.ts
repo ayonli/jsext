@@ -323,7 +323,7 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * const length = twoTimesValues(channel);
  * 
  * for (const value of range(0, 9)) {
- *     await channel.push({ value, done: value === 9 });
+ *     await channel.send({ value, done: value === 9 });
  * }
  * 
  * const results = (await readAll(channel)).map(item => item.value);

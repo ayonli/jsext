@@ -33,11 +33,6 @@ export interface DirEntry {
      */
     relativePath: string;
     /**
-     * @deprecated This property name confuses people, use `relativePath` instead,
-     * which is more accurate. This property will be removed in the future.
-     */
-    readonly path?: string;
-    /**
      * The raw file system handle of the entry, only available in the browser.
      */
     handle?: FileSystemFileHandle | FileSystemDirectoryHandle | undefined;

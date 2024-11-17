@@ -187,10 +187,6 @@ function unique(arr) {
     return [...new Set(arr)];
 }
 /**
- * @deprecated use `unique` instead.
- */
-const uniq = unique;
-/**
  * Returns a subset of the array that contains only unique items filtered by the
  * given callback function.
  *
@@ -223,10 +219,6 @@ function uniqueBy(arr, fn) {
     }
     return [...map.values()];
 }
-/**
- * @deprecated use `uniqueBy` instead.
- */
-const uniqBy = uniqueBy;
 /**
  * Reorganizes the elements in the array in random order.
  *
@@ -370,5 +362,5 @@ function partition(arr, predicate) {
     return [match, rest];
 }
 
-export { chunk, count, endsWith, equals, first, groupBy, includesSlice, keyBy, last, orderBy, partition, random, shuffle, split, startsWith, uniq, uniqBy, unique, uniqueBy };
+export { chunk, count, endsWith, equals, first, groupBy, includesSlice, keyBy, last, orderBy, partition, random, shuffle, split, startsWith, unique, uniqueBy };
 //# sourceMappingURL=array.js.map

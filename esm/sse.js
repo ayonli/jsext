@@ -396,10 +396,6 @@ async function readAndProcessResponse(response, handlers) {
     }
 }
 /**
- * @deprecated Use {@link EventEndpoint} instead.
- */
-const SSE = EventEndpoint;
-/**
  * This is an implementation of the
  * [EventSource](https://developer.mozilla.org/en-US/docs/Web/API/EventSource)
  * API that serves as a polyfill in environments that do not have native support,
@@ -781,10 +777,6 @@ class EventConsumer extends EventTarget {
 }
 _k = _lastEventId, _l = _reconnectionTime, _m = _closed;
 fixStringTag(EventConsumer);
-/**
- * @deprecated Use {@link EventConsumer} instead.
- */
-const EventClient = EventConsumer;
 
-export { EventClient, EventConsumer, EventEndpoint, EventSource, SSE };
+export { EventConsumer, EventEndpoint, EventSource };
 //# sourceMappingURL=sse.js.map

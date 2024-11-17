@@ -206,11 +206,6 @@ export function unique<T>(arr: T[]): T[] {
 }
 
 /**
- * @deprecated use `unique` instead.
- */
-export const uniq = unique;
-
-/**
  * Returns a subset of the array that contains only unique items filtered by the
  * given callback function.
  * 
@@ -248,11 +243,6 @@ export function uniqueBy<T, K extends string | number | symbol>(
 
     return [...map.values()];
 }
-
-/**
- * @deprecated use `uniqueBy` instead.
- */
-export const uniqBy = uniqueBy;
 
 /**
  * Reorganizes the elements in the array in random order.

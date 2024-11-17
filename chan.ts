@@ -177,16 +177,6 @@ export class Channel<T> implements AsyncIterable<T> {
     [Symbol.dispose]() {
         this.close();
     }
-
-    /** @deprecated This method is deprecated in favor of the `send()` method. */
-    push(data: T): Promise<void> {
-        return this.send(data);
-    }
-
-    /** @deprecated This method is deprecated in favor of the `recv()` method. */
-    pop(): Promise<T | undefined> {
-        return this.recv();
-    }
 }
 
 /**

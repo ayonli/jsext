@@ -534,16 +534,6 @@ async function readAndProcessResponse(
 }
 
 /**
- * @deprecated Use {@link EventEndpoint} instead.
- */
-export const SSE = EventEndpoint;
-
-/**
- * @deprecated Use {@link EventEndpointOptions} instead.
- */
-export type SSEOptions = EventEndpointOptions;
-
-/**
  * This is an implementation of the
  * [EventSource](https://developer.mozilla.org/en-US/docs/Web/API/EventSource)
  * API that serves as a polyfill in environments that do not have native support,
@@ -1089,8 +1079,3 @@ export class EventConsumer extends EventTarget {
     }
 }
 fixStringTag(EventConsumer);
-
-/**
- * @deprecated Use {@link EventConsumer} instead.
- */
-export const EventClient = EventConsumer;

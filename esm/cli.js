@@ -1,7 +1,7 @@
 import { trimStart } from './string.js';
 import { text } from './bytes.js';
 import { isDeno, isNodeLike, isBun, isBrowserWindow, isSharedWorker, isDedicatedWorker } from './env.js';
-import runtime, { platform as platform$1, env } from './runtime.js';
+import runtime, { platform, env } from './runtime.js';
 import { interop } from './module.js';
 import { basename } from './path.js';
 import { PowerShellCommands } from './cli/constants.js';
@@ -17,14 +17,6 @@ export { args, charWidth, getWindowSize, isTTY, isTypingInput, lockStdin, moveLe
  * @module
  * @experimental
  */
-/**
- * @deprecated use `runtime().tsSupport` from `@ayonli/jsext/runtime` module instead.
- */
-const isTsRuntime = () => runtime().tsSupport;
-/**
- * @deprecated import `platform` from `@ayonli/jsext/runtime` module instead.
- */
-const platform = platform$1;
 /**
  * Executes a command in the terminal and returns the exit code and outputs.
  *
@@ -312,5 +304,5 @@ async function edit(filename) {
         throw new Error(stderr || `Unable to open ${filename} in the editor.`);
 }
 
-export { edit, isTsRuntime, isWSL, platform, powershell, quote, run, sudo, which };
+export { edit, isWSL, powershell, quote, run, sudo, which };
 //# sourceMappingURL=cli.js.map

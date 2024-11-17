@@ -29,20 +29,6 @@ export type WellknownRuntime = "node"
     | "safari";
 
 /**
- * @deprecated
- */
-export const WellknownRuntimes: WellknownRuntime[] = [
-    "node",
-    "deno",
-    "bun",
-    "workerd",
-    "fastly",
-    "chrome",
-    "firefox",
-    "safari",
-];
-
-/**
  * The information of the runtime environment in which the program is running.
  */
 export interface RuntimeInfo {
@@ -214,10 +200,7 @@ export type WellknownPlatform = "darwin"
     | "aix"
     | "solaris";
 
-/**
- * @deprecated
- */
-export const WellknownPlatforms: WellknownPlatform[] = [
+const WellknownPlatforms: WellknownPlatform[] = [
     "darwin",
     "windows",
     "linux",

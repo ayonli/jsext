@@ -1,6 +1,5 @@
-import { abortable, timeout, after, sleep, until, select } from '../async.js';
+import { timeout, after, sleep, until, select } from '../async.js';
 
-Promise.abortable = abortable;
 Promise.timeout = timeout;
 Promise.after = after;
 Promise.sleep = sleep;

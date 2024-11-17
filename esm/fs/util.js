@@ -109,6 +109,7 @@ function rawOp(op, type = undefined) {
     });
 }
 function fixDirEntry(entry) {
+    // for backward compatibility
     Object.defineProperty(entry, "path", {
         get() {
             return entry.relativePath;

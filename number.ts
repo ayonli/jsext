@@ -124,9 +124,9 @@ export function serial(loop = false): Generator<number, void, unknown> {
 
 /**
  * Creates a generator that produces sequential numbers from `min` to `max` (inclusive).
- * @deprecated use {@link range} and {@link serial} instead.
+ * @inner
  */
-export function* sequence(
+function* sequence(
     min: number,
     max: number,
     step = 1,

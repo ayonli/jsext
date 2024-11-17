@@ -96,11 +96,6 @@ export const EOL: "\n" | "\r\n" = (() => {
     }
 })();
 
-/**
- * @deprecated Use {@link FileSystemOptions} instead.
- */
-export type CommonOptions = FileSystemOptions;
-
 async function resolveHomeDir(path: string): Promise<string> {
     if (path[0] === "~" && (isDeno || isNodeLike)) {
         let homedir: string;
@@ -1486,11 +1481,6 @@ export function createReadableStream(
         });
     }
 }
-
-/**
- * @deprecated use `createReadableStream` instead.
- */
-export const readFileAsStream = createReadableStream;
 
 /**
  * Creates a writable stream for the target file.

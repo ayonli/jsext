@@ -47,7 +47,7 @@ function serial(loop = false) {
 }
 /**
  * Creates a generator that produces sequential numbers from `min` to `max` (inclusive).
- * @deprecated use {@link range} and {@link serial} instead.
+ * @inner
  */
 function* sequence(min, max, step = 1, loop = false) {
     let id = min;
@@ -230,14 +230,6 @@ class Channel {
     }
     [Symbol.dispose]() {
         this.close();
-    }
-    /** @deprecated This method is deprecated in favor of the `send()` method. */
-    push(data) {
-        return this.send(data);
-    }
-    /** @deprecated This method is deprecated in favor of the `recv()` method. */
-    pop() {
-        return this.recv();
     }
 }
 

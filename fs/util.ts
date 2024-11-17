@@ -109,6 +109,7 @@ export function rawOp<T>(op: Promise<T>, type: "file" | "directory" | undefined 
 }
 
 export function fixDirEntry<T extends DirEntry>(entry: T): T {
+    // for backward compatibility
     Object.defineProperty(entry, "path", {
         get() {
             return entry.relativePath;

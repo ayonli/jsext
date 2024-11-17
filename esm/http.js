@@ -10,7 +10,7 @@ import './cli/constants.js';
 import { parseArgs, args } from './cli/common.js';
 import { stat, exists, readDir, readFile, createReadableStream } from './fs.js';
 import { sha256 } from './hash.js';
-import { withWeb as withWeb$1, createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent, renderDirectoryPage, createTimingFunctions } from './http/internal.js';
+import { createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent, renderDirectoryPage, createTimingFunctions, withWeb } from './http/internal.js';
 import { Server } from './http/server.js';
 import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
 export { HTTP_METHODS, HTTP_STATUS, parseAccepts, parseBasicAuth, parseContentType, parseRequest, parseResponse, setFilename, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from './http/util.js';
@@ -63,10 +63,6 @@ export { getCookie, getCookies, parseCookie, parseCookies, setCookie, stringifyC
  * @module
  */
 var _a, _b;
-/**
- * @deprecated This function has been moved to `@ayonli/jsext/http/internal`.
- */
-const withWeb = withWeb$1;
 /**
  * Calculates the ETag for a given entity.
  *
@@ -743,5 +739,5 @@ else if (isNode && process.execArgv.some(arg => arg.endsWith("@ayonli/jsext/http
     }
 }
 
-export { etag, ifMatch, ifNoneMatch, parseRange, randomPort, serve, serveStatic, withWeb };
+export { etag, ifMatch, ifNoneMatch, parseRange, randomPort, serve, serveStatic };
 //# sourceMappingURL=http.js.map

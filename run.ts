@@ -611,19 +611,6 @@ namespace run {
      * If not set, use the same setting as {@link parallel.maxWorkers}.
      */
     export var maxWorkers: number | undefined = undefined;
-    /** @deprecated set {@link parallel.workerEntry} instead */
-    export var workerEntry: string | undefined = undefined;
 }
-// backward compatibility
-Object.defineProperties(run, {
-    workerEntry: {
-        set(v) {
-            parallel.workerEntry = v;
-        },
-        get() {
-            return parallel.workerEntry;
-        },
-    },
-});
 
 export default run;

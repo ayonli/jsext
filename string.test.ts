@@ -104,12 +104,6 @@ describe("String", () => {
         strictEqual(" hello  world   ".hyphenate(), " hello-world   ");
     });
 
-    it("String.prototype.bytes", () => {
-        const encoder = new TextEncoder();
-        deepStrictEqual("Hello, World!".bytes().buffer, encoder.encode("Hello, World!").buffer);
-        deepStrictEqual("你好，世界！".bytes().buffer, encoder.encode("你好，世界！").buffer);
-    });
-
     it("String.prototype.chars", () => {
         deepStrictEqual("foo".chars(), ["f", "o", "o"]);
         deepStrictEqual("你好".chars(), ["你", "好"]);

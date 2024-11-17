@@ -115,7 +115,7 @@ function serial(loop = false) {
 }
 /**
  * Creates a generator that produces sequential numbers from `min` to `max` (inclusive).
- * @deprecated use {@link range} and {@link serial} instead.
+ * @inner
  */
 function* sequence(min, max, step = 1, loop = false) {
     let id = min;
@@ -132,5 +132,5 @@ function* sequence(min, max, step = 1, loop = false) {
     }
 }
 
-export { isBetween, isFloat, isNumeric, random, range, sequence, serial };
+export { isBetween, isFloat, isNumeric, random, range, serial };
 //# sourceMappingURL=number.js.map

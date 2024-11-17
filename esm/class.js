@@ -1,11 +1,7 @@
-import mixin$1 from './mixin.js';
-
 /**
  * This module includes functions for dealing with classes.
  * @module
  */
-/** @deprecated import `mixin` from `@ayonli/jsext/mixin` instead. */
-const mixin = mixin$1;
 /**
  * Checks if a value is a class/constructor.
  *
@@ -57,5 +53,5 @@ function isSubclassOf(ctor1, ctor2) {
         && ctor1.prototype instanceof ctor2;
 }
 
-export { isClass, isSubclassOf, mixin };
+export { isClass, isSubclassOf };
 //# sourceMappingURL=class.js.map

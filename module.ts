@@ -8,13 +8,6 @@ import { equals, extname } from "./path.ts";
 import { getObjectURL } from "./module/util.ts";
 
 /**
- * @deprecated There was some misunderstanding of this function in the past, it
- * should not be used in the user space anymore.
- */
-const _getObjectURL = getObjectURL;
-export { _getObjectURL as getObjectURL };
-
-/**
  * Performs interop on the given module. This functions is used to fix CommonJS
  * module imports in Node.js ES module files.
  * 

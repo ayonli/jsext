@@ -1,4 +1,4 @@
-import { isBetween, isFloat, isNumeric, random, range, serial, sequence } from "../number.ts";
+import { isBetween, isFloat, isNumeric, random, range, serial } from "../number.ts";
 
 declare global {
     interface NumberConstructor {
@@ -26,11 +26,6 @@ declare global {
          * @param loop Repeat the sequence when the end is reached.
          */
         serial(loop?: boolean): Generator<number, void, unknown>;
-        /**
-         * Creates a generator that produces sequential numbers from `min` to `max` (inclusive).
-         * @deprecated use {@link range} and {@link serial} instead.
-         */
-        sequence(min: number, max: number, step?: number, loop?: boolean): Generator<number, void, unknown>;
     }
 }
 
@@ -40,4 +35,3 @@ Number.isBetween = isBetween;
 Number.random = random;
 Number.range = range;
 Number.serial = serial;
-Number.sequence = sequence;

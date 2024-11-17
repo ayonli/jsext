@@ -129,14 +129,35 @@ async function pickDirectory(options = {}) {
     }
     throw new Error("Unsupported platform");
 }
-async function openFile(options = {}) {
-    const { title = "", type = "", multiple = false, directory = false } = options;
-    if (directory) {
-        return await openDirectory({ title });
-    }
-    else if (multiple) {
-        return await openFiles({ title, type });
-    }
+/**
+ * Opens the file picker dialog and selects a file to open.
+ *
+ * @example
+ * ```ts
+ * // default usage
+ * import { openFile } from "@ayonli/jsext/dialog";
+ *
+ * const file = await openFile();
+ *
+ * if (file) {
+ *     console.log(`You selected: ${file.name}`);
+ * }
+ * ```
+ *
+ * @example
+ * ```ts
+ * // filter by MIME type
+ * import { openFile } from "@ayonli/jsext/dialog";
+ *
+ * const file = await openFile({ type: "image/*" });
+ *
+ * if (file) {
+ *     console.log(`You selected: ${file.name}`);
+ *     console.assert(file.type.startsWith("image/"));
+ * }
+ * ```
+ */
+async function openFile(options) {
     if (isBrowserWindow) {
         const { openFile } = await import('./web/file.js');
         return await openFile(options);

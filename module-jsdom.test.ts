@@ -2,7 +2,7 @@ import { ok, strictEqual } from "node:assert";
 import { Server, createServer } from "node:http";
 import { createReadStream, existsSync } from "node:fs";
 import { isBrowserWindow } from "./env.ts";
-import { getObjectURL, importScript, importStylesheet } from "./module.ts";
+import { importScript, importStylesheet } from "./module.ts";
 import { extname, resolve as resolvePath } from "./path.ts";
 import { getMIME } from "./filetype.ts";
 import { until } from "./async.ts";
@@ -50,14 +50,6 @@ describe("module", () => {
 
     after(() => {
         server.close();
-    });
-
-    it("getObjectURL", async () => {
-        const url = `http://localhost:${port}/examples/worker.mjs`;
-        const _url = await getObjectURL(url);
-
-        ok(_url.startsWith("blob:"));
-        strictEqual(_url, await getObjectURL(url));
     });
 
     it("importScript", async () => {
