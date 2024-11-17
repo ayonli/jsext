@@ -4,7 +4,6 @@
  * NOTE: Despite the name of this module, many of its functions can also be used
  * in the browser environment.
  * @module
- * @experimental
  */
 import { isFullWidth, isWide } from "../external/code-point-utils/index.ts";
 import { byteLength, chars } from "../string.ts";

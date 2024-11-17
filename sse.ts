@@ -11,9 +11,7 @@
  * 
  * NOTE: This module depends on the Fetch API and Web Streams API, in Node.js,
  * it requires Node.js v18.0 or above.
- * 
  * @module
- * @experimental
  */
 import "./external/event-target-polyfill/index.ts";
 import type { IncomingMessage, ServerResponse } from "node:http";

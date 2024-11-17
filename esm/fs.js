@@ -62,8 +62,6 @@ import { resolveByteStream } from './reader/util.js';
  *   resolving the filename.
  *
  * Other errors may also be thrown by the runtime, such as `TypeError`.
- *
- * @experimental
  * @module
  */
 /**

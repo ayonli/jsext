@@ -61,7 +61,6 @@ export { getCookie, getCookies, parseCookie, parseCookies, setCookie, stringifyC
  * node -r @ayonli/jsext/http <entry.js> [--port PORT] [--parallel [NUM]]
  * ```
  * @module
- * @experimental
  */
 var _a, _b;
 /**

@@ -5,9 +5,7 @@
  * This module is exposed for advanced use cases such as when we want to
  * implement a new `serve` function that behave like the existing one, e.g. for
  * integrating with Vite dev server.
- * 
  * @module
- * @experimental
  */
 import { orderBy } from "../array.ts";
 import { join } from "../path.ts";

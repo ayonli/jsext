@@ -5,7 +5,6 @@ import { parseUserAgent } from './http/user-agent.js';
 /**
  * Utility functions to retrieve runtime information or configure runtime behaviors.
  * @module
- * @experimental
  */
 /**
  * @deprecated

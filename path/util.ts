@@ -16,7 +16,6 @@ export function isVolume(path: string, strict = false): boolean {
 
 /**
  * Checks if the given `path` is a Windows specific path.
- * @experimental
  * 
  * @example
  * ```ts
@@ -34,7 +33,6 @@ export function isWindowsPath(path: string): boolean {
 
 /**
  * Checks if the given `path` is a Posix specific path.
- * @experimental
  * 
  * @example
  * ```ts
@@ -49,7 +47,6 @@ export function isPosixPath(path: string): boolean {
 
 /**
  * Checks if the given `path` is a file system path.
- * @experimental
  * 
  * @example
  * ```ts
@@ -67,7 +64,6 @@ export function isFsPath(path: string): boolean {
 
 /**
  * Checks if the given string is a URL, whether standard or non-standard.
- * @experimental
  * 
  * @example
  * ```ts
@@ -87,7 +83,6 @@ export function isUrl(str: string): boolean {
 
 /**
  * Checks if the given string is a file URL, whether with or without `//`.
- * @experimental
  * 
  * @example
  * ```ts
@@ -110,7 +105,6 @@ export function isFileProtocol(path: string): boolean {
 
 /**
  * Checks if the given `path` is an absolute path.
- * @experimental
  * 
  * @example
  * ```ts
@@ -129,7 +123,6 @@ export function isAbsolute(path: string): boolean {
 
 /**
  * Splits the `path` into well-formed segments.
- * @experimental
  * 
  * @example
  * ```ts
@@ -285,8 +278,6 @@ function extractSegmentsForComparison(
  * hash string (if present). And is case-insensitive on Windows volume symbol
  * by default.
  * 
- * @experimental
- * 
  * @example
  * ```ts
  * import { contains } from "@ayonli/jsext/path";
@@ -320,7 +311,6 @@ export function contains(path: string, sub: string, options: PathCompareOptions 
  * This function is ignorant about the path separator, the query string and the
  * hash string (if present). And is case-insensitive on Windows volume symbol
  * by default.
- * @experimental
  * 
  * @example
  * ```ts
@@ -359,7 +349,6 @@ export function startsWith(path: string, sub: string, options: PathCompareOption
  * This function is ignorant about the path separator, the query string and the
  * hash string (if present). And is case-insensitive on Windows volume symbol
  * by default.
- * @experimental
  * 
  * @example
  * ```ts
@@ -392,7 +381,6 @@ export function endsWith(path: string, sub: string, options: PathCompareOptions 
  * This function is ignorant about the path separator, the query string and the
  * hash string (if present). And is case-insensitive on Windows volume symbol
  * by default.
- * @experimental
  * 
  * @example
  * ```ts

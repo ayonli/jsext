@@ -11,9 +11,7 @@ import { dedent, capitalize } from '../string.js';
  * This module is exposed for advanced use cases such as when we want to
  * implement a new `serve` function that behave like the existing one, e.g. for
  * integrating with Vite dev server.
- *
  * @module
- * @experimental
  */
 function sanitizeTimers(timers) {
     const total = timers.get("total");

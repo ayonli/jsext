@@ -84,7 +84,6 @@ export function cwd(): string {
 
 /**
  * Concatenates all given `segments` into a well-formed path.
- * @experimental
  * 
  * @example
  * ```ts
@@ -172,7 +171,6 @@ export function join(...segments: string[]): string {
  * 
  * Since Node.js implementation is not well-designed and this function is
  * identical as calling `join(path)`, so it is deprecated.
- * @experimental
  * 
  * @deprecated use {@link join} or {@link sanitize} instead.
  */
@@ -183,7 +181,6 @@ export function normalize(path: string): string {
 /**
  * Similar to {@link normalize}, but also remove the search string and hash
  * string if present.
- * @experimental
  * 
  * @example
  * ```ts
@@ -205,7 +202,6 @@ export function sanitize(path: string): string {
  * This function is similar to {@link join}, except it always returns an
  * absolute path based on the current working directory if the input segments
  * are not absolute by themselves.
- * @experimental
  */
 export function resolve(...segments: string[]): string {
     segments = segments.filter(s => s !== "");
@@ -221,7 +217,6 @@ export function resolve(...segments: string[]): string {
 
 /**
  * Returns the parent path of the given `path`.
- * @experimental
  * 
  * @example
  * ```ts
@@ -268,7 +263,6 @@ export function dirname(path: string): string {
 /**
  * Return the last portion of the given `path`. Trailing directory separators
  * are ignored, and optional `suffix` is removed.
- * @experimental
  * 
  * @example
  * ```ts
@@ -302,7 +296,6 @@ export function basename(path: string, suffix = ""): string {
 
 /**
  * Returns the extension of the `path` with leading period.
- * @experimental
  * 
  * @example
  * ```ts
@@ -328,7 +321,6 @@ export function extname(path: string): string {
 
 /**
  * Converts the given path to a file URL if it's not one already.
- * @experimental
  * 
  * @example
  * ```ts
@@ -352,7 +344,6 @@ export function toFileUrl(path: string): string {
 
 /**
  * Converts the given URL to a file system path if it's not one already.
- * @experimental
  * 
  * @example
  * ```ts

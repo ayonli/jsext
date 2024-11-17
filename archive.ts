@@ -8,7 +8,6 @@
  * NOTE: This module depends on the Web Streams API, in Node.js, it requires
  * Node.js v18.0 or above.
  * @module
- * @experimental
  */
 
 import Tarball, { type TarEntry, type TarTree } from "./archive/Tarball.ts";

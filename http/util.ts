@@ -1,7 +1,6 @@
 /**
  * Utility functions for handling HTTP related tasks, such as parsing headers.
  * @module
- * @experimental
  */
 import type { FileInfo } from "../fs/types.ts";
 import bytes, { text } from "../bytes.ts";

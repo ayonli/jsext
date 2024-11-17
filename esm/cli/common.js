@@ -15,7 +15,6 @@ export { ControlSequences } from './constants.js';
  * NOTE: Despite the name of this module, many of its functions can also be used
  * in the browser environment.
  * @module
- * @experimental
  */
 const NonTypingKeys = [
     ...Object.values(ControlKeys),

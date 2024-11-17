@@ -95,8 +95,8 @@ This package requires `compilerOptions.moduleResolution` set to `Bundler` or
 Each of these modules includes specific functions and classes for their target
 categories:
 
-- [archive](https://jsr.io/@ayonli/jsext/doc/archive/~) (Experimental) Collecting
-  files into an archive file, or extracting files from a archive file.
+- [archive](https://jsr.io/@ayonli/jsext/doc/archive/~) Collecting files into an
+  archive file, or extracting files from a archive file.
 - [array](https://jsr.io/@ayonli/jsext/doc/array/~) Functions for dealing with
   arrays.
 - [async](https://jsr.io/@ayonli/jsext/doc/async/~) Functions for async/promise
@@ -121,12 +121,12 @@ categories:
   events.
 - [filetype](https://jsr.io/@ayonli/jsext/doc/filetype/~) Functions to get file
   types in different fashions.
-- [fs](https://jsr.io/@ayonli/jsext/doc/fs/~) (Experimental) Universal file
-  system APIs for both server and browser applications.
+- [fs](https://jsr.io/@ayonli/jsext/doc/fs/~) Universal file system APIs for
+  both server and browser applications.
 - [hash](https://jsr.io/@ayonli/jsext/doc/hash/~) Simplified hash functions for
   various data types.
-- [http](https://jsr.io/@ayonli/jsext/doc/http/~) (Experimental) functions for
-  handling HTTP related tasks, such as parsing headers and serving HTTP requests.
+- [http](https://jsr.io/@ayonli/jsext/doc/http/~) Functions for handling HTTP
+  related tasks, such as parsing headers and serving HTTP requests.
 - [json](https://jsr.io/@ayonli/jsext/doc/json/~) Functions for parsing JSONs to
   specific structures.
 - [math](https://jsr.io/@ayonli/jsext/doc/math/~) Functions for mathematical
@@ -141,10 +141,10 @@ categories:
   functions for dealing with file system paths and URLs.
 - [reader](https://jsr.io/@ayonli/jsext/doc/reader/~) Utility functions for
   reading data from various types of source into various forms.
-- [runtime](https://jsr.io/@ayonli/jsext/doc/runtime/~) (Experimental) Utility
-  functions to retrieve runtime information or configure runtime behaviors.
-- [sse](https://jsr.io/@ayonli/jsext/doc/sse/~) (Experimental) Tools for
-  processing Server-sent Events requests and handling message events.
+- [runtime](https://jsr.io/@ayonli/jsext/doc/runtime/~) Utility functions to
+  retrieve runtime information or configure runtime behaviors.
+- [sse](https://jsr.io/@ayonli/jsext/doc/sse/~) Tools for processing Server-sent
+  Events requests and handling message events.
 - [string](https://jsr.io/@ayonli/jsext/doc/string/~) Functions for dealing with
   strings.
 - [types](https://jsr.io/@ayonli/jsext/doc/types/~) The missing builtin classes

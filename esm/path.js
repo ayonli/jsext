@@ -53,7 +53,6 @@ function cwd() {
 }
 /**
  * Concatenates all given `segments` into a well-formed path.
- * @experimental
  *
  * @example
  * ```ts
@@ -134,7 +133,6 @@ function join(...segments) {
  *
  * Since Node.js implementation is not well-designed and this function is
  * identical as calling `join(path)`, so it is deprecated.
- * @experimental
  *
  * @deprecated use {@link join} or {@link sanitize} instead.
  */
@@ -144,7 +142,6 @@ function normalize(path) {
 /**
  * Similar to {@link normalize}, but also remove the search string and hash
  * string if present.
- * @experimental
  *
  * @example
  * ```ts
@@ -165,7 +162,6 @@ function sanitize(path) {
  * This function is similar to {@link join}, except it always returns an
  * absolute path based on the current working directory if the input segments
  * are not absolute by themselves.
- * @experimental
  */
 function resolve(...segments) {
     segments = segments.filter(s => s !== "");
@@ -178,7 +174,6 @@ function resolve(...segments) {
 }
 /**
  * Returns the parent path of the given `path`.
- * @experimental
  *
  * @example
  * ```ts
@@ -228,7 +223,6 @@ function dirname(path) {
 /**
  * Return the last portion of the given `path`. Trailing directory separators
  * are ignored, and optional `suffix` is removed.
- * @experimental
  *
  * @example
  * ```ts
@@ -263,7 +257,6 @@ function basename(path, suffix = "") {
 }
 /**
  * Returns the extension of the `path` with leading period.
- * @experimental
  *
  * @example
  * ```ts
@@ -288,7 +281,6 @@ function extname(path) {
 }
 /**
  * Converts the given path to a file URL if it's not one already.
- * @experimental
  *
  * @example
  * ```ts
@@ -313,7 +305,6 @@ function toFileUrl(path) {
 }
 /**
  * Converts the given URL to a file system path if it's not one already.
- * @experimental
  *
  * @example
  * ```ts

@@ -9,7 +9,6 @@ function isVolume(path, strict = false) {
 }
 /**
  * Checks if the given `path` is a Windows specific path.
- * @experimental
  *
  * @example
  * ```ts
@@ -26,7 +25,6 @@ function isWindowsPath(path) {
 }
 /**
  * Checks if the given `path` is a Posix specific path.
- * @experimental
  *
  * @example
  * ```ts
@@ -40,7 +38,6 @@ function isPosixPath(path) {
 }
 /**
  * Checks if the given `path` is a file system path.
- * @experimental
  *
  * @example
  * ```ts
@@ -57,7 +54,6 @@ function isFsPath(path) {
 }
 /**
  * Checks if the given string is a URL, whether standard or non-standard.
- * @experimental
  *
  * @example
  * ```ts
@@ -76,7 +72,6 @@ function isUrl(str) {
 }
 /**
  * Checks if the given string is a file URL, whether with or without `//`.
- * @experimental
  *
  * @example
  * ```ts
@@ -97,7 +92,6 @@ function isFileProtocol(path) {
 }
 /**
  * Checks if the given `path` is an absolute path.
- * @experimental
  *
  * @example
  * ```ts
@@ -115,7 +109,6 @@ function isAbsolute(path) {
 }
 /**
  * Splits the `path` into well-formed segments.
- * @experimental
  *
  * @example
  * ```ts
@@ -252,8 +245,6 @@ function extractSegmentsForComparison(path, sub, options = {}) {
  * hash string (if present). And is case-insensitive on Windows volume symbol
  * by default.
  *
- * @experimental
- *
  * @example
  * ```ts
  * import { contains } from "@ayonli/jsext/path";
@@ -284,7 +275,6 @@ function contains(path, sub, options = {}) {
  * This function is ignorant about the path separator, the query string and the
  * hash string (if present). And is case-insensitive on Windows volume symbol
  * by default.
- * @experimental
  *
  * @example
  * ```ts
@@ -320,7 +310,6 @@ function startsWith(path, sub, options = {}) {
  * This function is ignorant about the path separator, the query string and the
  * hash string (if present). And is case-insensitive on Windows volume symbol
  * by default.
- * @experimental
  *
  * @example
  * ```ts
@@ -350,7 +339,6 @@ function endsWith(path, sub, options = {}) {
  * This function is ignorant about the path separator, the query string and the
  * hash string (if present). And is case-insensitive on Windows volume symbol
  * by default.
- * @experimental
  *
  * @example
  * ```ts

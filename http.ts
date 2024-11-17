@@ -39,7 +39,6 @@
  * node -r @ayonli/jsext/http <entry.js> [--port PORT] [--parallel [NUM]]
  * ```
  * @module
- * @experimental
  */
 
 import type { Server as HttpServer } from "node:http";
