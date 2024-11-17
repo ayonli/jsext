@@ -22,6 +22,7 @@ describe("hash", () => {
     describe("crc32", () => {
         it("string", () => {
             strictEqual(crc32("Hello, World!"), 3964322768);
+            strictEqual(crc32("World!", crc32("Hello, ")), 3964322768);
         });
 
         it("ArrayBuffer", () => {

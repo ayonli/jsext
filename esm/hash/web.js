@@ -57,10 +57,14 @@ const CRC32_TABLE = (() => {
     return table;
 })();
 /**
- * Calculates the CRC-32 hash of the given data.
+ * Calculates the CRC-32 hash of the given data, the result is a 32-bit unsigned
+ * integer.
  *
  * This function is based on IEEE polynomial, which is widely used by Ethernet
  * (IEEE 802.3), v.42, fddi, gzip, zip, png and other technologies.
+ *
+ * @param previous The previous CRC value, default is `0`. This is useful when
+ * calculating the CRC of a large data in chunks.
  *
  * @example
  * ```ts
@@ -70,8 +74,7 @@ const CRC32_TABLE = (() => {
  * console.log(crc32(new Uint8Array([1, 2, 3]))); // 1438416925
  * ```
  */
-function crc32(data) {
-    let crc = 0 ^ (-1);
+function crc32(data, previous = 0) {
     let bin;
     if (data instanceof Uint8Array) {
         bin = data;
@@ -88,10 +91,11 @@ function crc32(data) {
     else {
         throw new TypeError("Unsupported data type");
     }
+    let crc = ~~previous ^ -1;
     for (let i = 0; i < bin.length; i++) {
         crc = CRC32_TABLE[(crc ^ bin[i]) & 0xff] ^ crc >>> 8;
     }
-    return (crc ^ (-1)) >>> 0;
+    return (crc ^ -1) >>> 0;
 }
 async function toBytes(data) {
     let bin;
