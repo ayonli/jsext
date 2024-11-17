@@ -20,7 +20,6 @@
         "./encoding": "./encoding.ts",
         "./error": "./error.ts",
         "./event": "./event.ts",
-        "./example": "./example.ts",
         "./filetype": "./filetype.ts",
         "./fs": "./fs.ts",
         "./fs/web": "./fs/web.ts",
