@@ -2,12 +2,18 @@ import type { Server as HttpServer } from "node:http";
 import type { Http2SecureServer } from "node:http2";
 import type { serve, serveStatic } from "../http.ts";
 import type { EventEndpoint } from "../sse.ts";
+import type { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
+import type { KVNamespace } from "../workerd/types.ts";
 import { until } from "../async.ts";
 import { isBun, isDeno, isNode } from "../env.ts";
 import runtime, { env } from "../runtime.ts";
-import { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
-import { KVNamespace } from "../workerd/types.ts";
-import { createRequestContext, createTimingFunctions, listenFetchEvent, withHeaders, patchTimingMetrics } from "./internal.ts";
+import {
+    createRequestContext,
+    createTimingFunctions,
+    listenFetchEvent,
+    withHeaders,
+    patchTimingMetrics,
+} from "./internal.ts";
 
 export interface BunServer {
     fetch(request: Request | string): Response | Promise<Response>;

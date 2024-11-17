@@ -7,9 +7,9 @@
  */
 import { isBrowserWindow, isDeno, isNodeLike } from "./env.ts";
 import progress from "./dialog/progress.ts";
-import type { ProgressState, ProgressFunc, ProgressAbortHandler } from "./dialog/progress.ts";
 
-export { progress, ProgressState, ProgressFunc, ProgressAbortHandler };
+export { progress };
+export * from "./dialog/progress.ts";
 export * from "./dialog/file.ts";
 
 /**

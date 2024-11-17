@@ -3,7 +3,7 @@ import { Exception } from "../error.ts";
 import { getMIME } from "../filetype.ts";
 import { omit } from "../object.ts";
 import { basename, extname, split } from "../path.ts";
-import { DirEntry } from "./types.ts";
+import type { DirEntry } from "./types.ts";
 
 function getErrorName(err: Error): string {
     if (err.constructor === Error) {

@@ -6,12 +6,17 @@ import { fixFileType } from "../../fs/util.ts";
 import { as, pick } from "../../object.ts";
 import { basename, join } from "../../path.ts";
 import { platform } from "../../runtime.ts";
-import { ProgressState } from "../progress.ts";
+import type { ProgressState } from "../progress.ts";
 import progress from "./progress.ts";
 import { linuxPickFile, linuxPickFiles, linuxPickFolder } from "./file/linux.ts";
 import { macPickFile, macPickFiles, macPickFolder } from "./file/mac.ts";
 import { windowsPickFile, windowsPickFiles, windowsPickFolder } from "./file/windows.ts";
-import type { DownloadFileOptions, FileDialogOptions, PickFileOptions, SaveFileOptions } from "../file.ts";
+import type {
+    DownloadFileOptions,
+    FileDialogOptions,
+    PickFileOptions,
+    SaveFileOptions,
+} from "../file.ts";
 
 export async function pickFile(
     options: PickFileOptions = {}

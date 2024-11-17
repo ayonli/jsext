@@ -3,7 +3,12 @@ import { readDir } from "../../fs/web.ts";
 import { fixFileType } from "../../fs/util.ts";
 import { basename } from "../../path.ts";
 import { readAsObjectURL } from "../../reader.ts";
-import type { DownloadFileOptions, FileDialogOptions, PickFileOptions, SaveFileOptions } from "../file.ts";
+import type {
+    DownloadFileOptions,
+    FileDialogOptions,
+    PickFileOptions,
+    SaveFileOptions,
+} from "../file.ts";
 
 function htmlAcceptToFileFilters(accept: string): {
     description: string;

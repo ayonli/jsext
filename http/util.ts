@@ -3,9 +3,8 @@
  * @module
  * @experimental
  */
-
+import type { FileInfo } from "../fs/types.ts";
 import bytes, { text } from "../bytes.ts";
-import { FileInfo } from "../fs.ts";
 import { sha256 } from "../hash/web.ts";
 import { capitalize, stripEnd, stripStart } from "../string.ts";
 

@@ -5,11 +5,6 @@ export { getCookie, getCookies, parseCookie, parseCookies, setCookie, stringifyC
 export { parseUserAgent } from './user-agent.js';
 
 /**
- * Utility functions for handling HTTP related tasks, such as parsing headers.
- * @module
- * @experimental
- */
-/**
  * Parses the `Accept`, `Accept-Encoding` and `Accept-Language` headers.
  *
  * NOTE: This function automatically sorts the results by the q-factor value in

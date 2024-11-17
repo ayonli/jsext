@@ -10,11 +10,11 @@
  * @experimental
  */
 import { orderBy } from "../array.ts";
-import { DirEntry } from "../fs.ts";
 import { join } from "../path.ts";
 import runtime from "../runtime.ts";
 import { EventEndpoint } from "../sse.ts";
 import { capitalize, dedent } from "../string.ts";
+import type { DirEntry } from "../fs/types.ts";
 import type { FetchEvent, NetAddress, RequestContext, RequestErrorHandler, ServeOptions } from "./server.ts";
 import type { WebSocketServer } from "../ws.ts";
 import type { IncomingMessage, ServerResponse } from "node:http";
