@@ -118,11 +118,11 @@
             "default": "./dialog.ts"
         },
         "./dialog/web": {
-            "types": "./types/dialog/web/index.d.ts",
-            "bun": "./dialog/web/index.ts",
-            "import": "./esm/dialog/web/index.js",
-            "require": "./cjs/dialog/web/index.js",
-            "default": "./dialog/web/index.ts"
+            "types": "./types/dialog/web.d.ts",
+            "bun": "./dialog/web.ts",
+            "import": "./esm/dialog/web.js",
+            "require": "./cjs/dialog/web.js",
+            "default": "./dialog/web.ts"
         },
         "./dialog/cli": {
             "types": "./types/dialog/cli.d.ts",

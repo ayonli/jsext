@@ -44,7 +44,7 @@ export interface DialogOptions {
  */
 export async function alert(message: string, options: DialogOptions = {}): Promise<void> {
     if (isBrowserWindow) {
-        const { alert } = await import("./dialog/web/index.ts");
+        const { alert } = await import("./dialog/web.ts");
         await alert(message);
     } else if (isDeno || isNodeLike) {
         const { default: alert } = await import("./dialog/cli/alert.ts");
@@ -71,7 +71,7 @@ export async function alert(message: string, options: DialogOptions = {}): Promi
  */
 export async function confirm(message: string, options: DialogOptions = {}): Promise<boolean> {
     if (isBrowserWindow) {
-        const { confirm } = await import("./dialog/web/index.ts");
+        const { confirm } = await import("./dialog/web.ts");
         return await confirm(message);
     } else if (isDeno || isNodeLike) {
         const { default: confirm } = await import("./dialog/cli/confirm.ts");
@@ -164,7 +164,7 @@ export async function prompt(
     const gui = typeof options === "object" ? (options.gui ?? false) : false;
 
     if (isBrowserWindow) {
-        const { prompt } = await import("./dialog/web/index.ts");
+        const { prompt } = await import("./dialog/web.ts");
         return await prompt(message, { type, defaultValue });
     } else if (isDeno || isNodeLike) {
         const { default: prompt } = await import("./dialog/cli/prompt.ts");

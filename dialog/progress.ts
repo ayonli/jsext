@@ -88,7 +88,7 @@ export default async function progress<T>(
     onAbort: ProgressAbortHandler<T> | undefined = undefined
 ): Promise<T | null> {
     if (isBrowserWindow) {
-        const { progress } = await import("./web/index.ts");
+        const { progress } = await import("./web.ts");
         return await progress(message, fn, onAbort);
     } else if (isDeno || isNodeLike) {
         const { default: progress } = await import("./cli/progress.ts");

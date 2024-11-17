@@ -6,12 +6,12 @@
  * module instead.
  * @module
  */
-import alert from "./alert.ts";
-import confirm from "./confirm.ts";
-import prompt from "./prompt.ts";
-import progress from "./progress.ts";
+import alert from "./cli/alert.ts";
+import confirm from "./cli/confirm.ts";
+import prompt from "./cli/prompt.ts";
+import progress from "./cli/progress.ts";
 
-export * from "./file.ts";
+export * from "./cli/file.ts";
 
 export {
     alert,

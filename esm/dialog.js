@@ -22,7 +22,7 @@ export { downloadFile, openDirectory, openFile, openFiles, pickDirectory, pickFi
  */
 async function alert(message, options = {}) {
     if (isBrowserWindow) {
-        const { alert } = await import('./dialog/web/index.js');
+        const { alert } = await import('./dialog/web.js');
         await alert(message);
     }
     else if (isDeno || isNodeLike) {
@@ -50,7 +50,7 @@ async function alert(message, options = {}) {
  */
 async function confirm(message, options = {}) {
     if (isBrowserWindow) {
-        const { confirm } = await import('./dialog/web/index.js');
+        const { confirm } = await import('./dialog/web.js');
         return await confirm(message);
     }
     else if (isDeno || isNodeLike) {
@@ -74,7 +74,7 @@ async function prompt(message, options = "") {
         : undefined;
     const gui = typeof options === "object" ? ((_c = options.gui) !== null && _c !== void 0 ? _c : false) : false;
     if (isBrowserWindow) {
-        const { prompt } = await import('./dialog/web/index.js');
+        const { prompt } = await import('./dialog/web.js');
         return await prompt(message, { type, defaultValue });
     }
     else if (isDeno || isNodeLike) {

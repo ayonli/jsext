@@ -6,17 +6,17 @@
  * module instead.
  * @module
  */
-import CancelButton from "./CancelButton.ts";
-import Dialog, { closeDialog } from "./Dialog.ts";
-import Footer from "./Footer.ts";
-import Input from "./Input.ts";
-import OkButton from "./OkButton.ts";
-import Progress from "./Progress.ts";
-import Text from "./Text.ts";
-import type { PromptOptions } from "../../dialog.ts";
-import type { ProgressAbortHandler, ProgressFunc, ProgressState } from "../progress.ts";
+import CancelButton from "./web/CancelButton.ts";
+import Dialog, { closeDialog } from "./web/Dialog.ts";
+import Footer from "./web/Footer.ts";
+import Input from "./web/Input.ts";
+import OkButton from "./web/OkButton.ts";
+import Progress from "./web/Progress.ts";
+import Text from "./web/Text.ts";
+import type { PromptOptions } from "../dialog.ts";
+import type { ProgressAbortHandler, ProgressFunc, ProgressState } from "./progress.ts";
 
-export * from "./file.ts";
+export * from "./web/file.ts";
 
 export async function alert(message: string) {
     await new Promise<void>(resolve => {

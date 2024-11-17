@@ -69,7 +69,7 @@ import { isBrowserWindow, isDeno, isNodeLike } from '../env.js';
  */
 async function progress(message, fn, onAbort = undefined) {
     if (isBrowserWindow) {
-        const { progress } = await import('./web/index.js');
+        const { progress } = await import('./web.js');
         return await progress(message, fn, onAbort);
     }
     else if (isDeno || isNodeLike) {

@@ -1,11 +1,11 @@
-import CancelButton from './CancelButton.js';
-import Dialog, { closeDialog } from './Dialog.js';
-import Footer from './Footer.js';
-import Input from './Input.js';
-import OkButton from './OkButton.js';
-import Progress from './Progress.js';
-import Text from './Text.js';
-export { downloadFile, openDirectory, openFile, openFiles, pickDirectory, pickFile, pickFiles, saveFile } from './file.js';
+import CancelButton from './web/CancelButton.js';
+import Dialog, { closeDialog } from './web/Dialog.js';
+import Footer from './web/Footer.js';
+import Input from './web/Input.js';
+import OkButton from './web/OkButton.js';
+import Progress from './web/Progress.js';
+import Text from './web/Text.js';
+export { downloadFile, openDirectory, openFile, openFiles, pickDirectory, pickFile, pickFiles, saveFile } from './web/file.js';
 
 /**
  * The implementation of `dialog` module for the browser.
@@ -101,4 +101,4 @@ async function progress(message, fn, onAbort = undefined) {
 }
 
 export { alert, confirm, progress, prompt };
-//# sourceMappingURL=index.js.map
+//# sourceMappingURL=web.js.map
