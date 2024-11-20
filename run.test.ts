@@ -3,12 +3,14 @@ import jsext from "./index.ts";
 import { range } from "./number.ts";
 import { fromObject } from "./error.ts";
 import { sum } from "./math.ts";
-import { isNodeLike } from "./env.ts";
+import { isDeno, isNodeLike } from "./env.ts";
 import { trim } from "./string.ts";
 import * as path from "node:path";
 import { readAsArray } from "./reader.ts";
+import { toFsPath } from "./path.ts";
 
 declare var Bun: any;
+const __dirname = path.dirname(toFsPath(import.meta.url));
 
 describe("jsext.run", () => {
     describe("worker_threads", () => {
@@ -19,6 +21,20 @@ describe("jsext.run", () => {
 
         it("ES Module", async () => {
             const job = await jsext.run("examples/worker.mjs", ["World"]);
+            strictEqual(await job.result(), "Hello, World");
+        });
+
+        it("absolute filename", async function () {
+            if (isDeno) {
+                this.skip();
+            }
+
+            const job = await jsext.run(path.join(__dirname, "examples/worker.mjs"), ["World"]);
+            strictEqual(await job.result(), "Hello, World");
+        });
+
+        it("file URL", async () => {
+            const job = await jsext.run(new URL("examples/worker.mjs", import.meta.url).href, ["World"]);
             strictEqual(await job.result(), "Hello, World");
         });
 
@@ -195,6 +211,28 @@ describe("jsext.run", () => {
             }
 
             const job = await jsext.run("examples/worker.mjs", ["World"], {
+                adapter: "child_process",
+            });
+            strictEqual(await job.result(), "Hello, World");
+        });
+
+        it("absolute filename", async function () {
+            if ((isNodeLike && process.platform === "win32") || isDeno) {
+                this.skip();
+            }
+
+            const job = await jsext.run(path.join(__dirname, "examples/worker.mjs"), ["World"], {
+                adapter: "child_process",
+            });
+            strictEqual(await job.result(), "Hello, World");
+        });
+
+        it("File URL", async function () {
+            if (isNodeLike && process.platform === "win32") {
+                this.skip();
+            }
+
+            const job = await jsext.run(new URL("examples/worker.mjs", import.meta.url).href, ["World"], {
                 adapter: "child_process",
             });
             strictEqual(await job.result(), "Hello, World");
@@ -387,6 +425,50 @@ describe("jsext.run", () => {
             const [err] = await jsext.try(job.result());
 
             ok((err as DOMException)?.stack?.includes("examples/worker.mjs"));
+        });
+
+        it("nested with worker thread", async function () {
+            if (isNodeLike && process.platform === "win32") {
+                this.skip();
+            }
+
+            const job = await jsext.run<{
+                pid: number;
+                workerId: number;
+                result: string;
+            }>("examples/worker-nested.mjs", [], {
+                adapter: "child_process",
+            });
+
+            const result = await job.result();
+            strictEqual(typeof result, "object");
+            strictEqual(typeof result.workerId, "number");
+            strictEqual(typeof result.pid, "number");
+            strictEqual(result.result, "Hello, Alice");
+            ok(result.workerId > 0 && result.pid > 0 && result.workerId !== result.pid);
+        });
+
+        it("nested with child process", async function () {
+            if (isNodeLike && process.platform === "win32") {
+                this.skip();
+            }
+
+            const job = await jsext.run<{
+                pid: number;
+                workerId: number;
+                result: string;
+            }>("examples/worker-nested.mjs", [{
+                adapter: "child_process",
+            }], {
+                adapter: "child_process",
+            });
+
+            const result = await job.result();
+            strictEqual(typeof result, "object");
+            strictEqual(typeof result.workerId, "number");
+            strictEqual(typeof result.pid, "number");
+            strictEqual(result.result, "Hello, Alice");
+            ok(result.workerId > 0 && result.pid > 0 && result.workerId !== result.pid);
         });
     });
 });

@@ -3,7 +3,7 @@ import { toFsPath } from '../path.js';
 import { trim } from '../string.js';
 import { interop } from '../module.js';
 import { getObjectURL } from '../module/util.js';
-import { isFsPath } from '../path/util.js';
+import { isFsPath, isAbsolute } from '../path/util.js';
 
 const moduleCache = new Map();
 function sanitizeModuleId(id, strict = false) {
@@ -47,7 +47,7 @@ function sanitizeModuleId(id, strict = false) {
             }
         }
     }
-    if (!isFsPath(_id) && !strict) {
+    if (!strict && !isAbsolute(_id)) {
         _id = "./" + _id;
     }
     return _id;

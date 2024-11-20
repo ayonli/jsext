@@ -1,5 +1,5 @@
 import { isBun, isDeno, isNode } from "../env.ts";
-import { isFsPath, toFsPath } from "../path.ts";
+import { isAbsolute, isFsPath, toFsPath } from "../path.ts";
 import { trim } from "../string.ts";
 import { interop } from "../module.ts";
 import { getObjectURL } from "../module/util.ts";
@@ -46,7 +46,7 @@ export function sanitizeModuleId(id: string | (() => Promise<any>), strict = fal
         }
     }
 
-    if (!isFsPath(_id) && !strict) {
+    if (!strict && !isAbsolute(_id)) {
         _id = "./" + _id;
     }
 
