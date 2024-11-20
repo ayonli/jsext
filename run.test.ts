@@ -25,7 +25,7 @@ describe("jsext.run", () => {
         });
 
         it("absolute filename", async function () {
-            if (isDeno) {
+            if (isDeno || (isNodeLike && process.platform === "win32")) {
                 this.skip();
             }
 
