@@ -4,7 +4,7 @@ import { WebSocketServer } from "../ws.ts";
 const wsServer = new WebSocketServer();
 const httpServer = http.createServer(async (req, res) => {
     if (req.headers.upgrade === "websocket") {
-        const { socket } = await wsServer.upgrade(req);
+        const { socket } = wsServer.upgrade(req);
 
         console.log("client connected");
         socket.send("hello from server");

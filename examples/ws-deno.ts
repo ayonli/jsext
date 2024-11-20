@@ -4,7 +4,7 @@ import { WebSocketServer } from "../ws.ts";
 const wsServer = new WebSocketServer();
 Deno.serve({ port: 8000, }, async (req) => {
     if (req.headers.get("upgrade") === "websocket") {
-        const { socket, response } = await wsServer.upgrade(req);
+        const { socket, response } = wsServer.upgrade(req);
 
         console.log("client connected");
         socket.send("hello from server");
