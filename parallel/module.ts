@@ -30,20 +30,8 @@ export function sanitizeModuleId(id: string | (() => Promise<any>), strict = fal
         _id = id;
     }
 
-    if ((isNode || isBun) && isFsPath(_id)) {
-        if (!/\.[cm]?(js|ts|)x?$/.test(_id)) { // if omitted suffix, add suffix
-            _id += isBun ? ".ts" : ".js";
-        } else if (isNode) { // replace .ts/.mts/.cts to .js/.mjs/.cjs in Node.js
-            if (_id.endsWith(".ts")) {
-                _id = _id.slice(0, -3) + ".js";
-            } else if (_id.endsWith(".mts")) {
-                _id = _id.slice(0, -4) + ".mjs";
-            } else if (_id.endsWith(".cts")) { // rare, but should support
-                _id = _id.slice(0, -4) + ".cjs";
-            } else if (_id.endsWith(".tsx") || _id.endsWith(".jsx")) { // rare, but should support
-                _id = _id.slice(0, -4) + ".js";
-            }
-        }
+    if (isNode && isFsPath(_id) && !/\.[cm]?(js|ts|)x?$/.test(_id)) {
+        _id += ".js"; // In Node.js, if no suffix is provided, it fallback to .js
     }
 
     if (!strict && !isAbsolute(_id)) {

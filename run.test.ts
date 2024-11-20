@@ -238,6 +238,17 @@ describe("jsext.run", () => {
             strictEqual(await job.result(), "Hello, World");
         });
 
+        it("TS support", async function () {
+            if (isNodeLike && process.platform === "win32") {
+                this.skip();
+            }
+
+            const job = await jsext.run("examples/sum2.ts", [1, 2, 3, 4, 5, 6, 7, 8, 9], {
+                adapter: "child_process",
+            });
+            strictEqual(await job.result(), 45);
+        });
+
         it("custom function", async function () {
             if (isNodeLike && process.platform === "win32") {
                 this.skip();

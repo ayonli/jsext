@@ -66,6 +66,13 @@ export interface RunOptions {
      * it is more efficient and has better performance. However, if you need to
      * run nested workers, you must use `child_process` because `worker_threads`
      * does not support nested workers.
+     * 
+     * For users who use [tsx](https://www.npmjs.com/package/tsx) to run TypeScript
+     * directly in Node.js, the runtime is unable to use TypeScript directly in
+     * worker threads at the moment, to run TypeScript, we need to use
+     * `child_process` adapter.
+     * See [this issue](https://github.com/privatenumber/tsx/issues/354) for more
+     * information. 
      */
     adapter?: "worker_threads" | "child_process";
 }

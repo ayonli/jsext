@@ -324,9 +324,9 @@ function extractBaseUrl(stackTrace) {
  *
  * **Warn about TSX (the runtime):**
  *
- * For users who use `tsx` to run TypeScript directly in Node.js, the runtime is
- * unable to use TypeScript directly in worker threads at the moment, so this
- * function won't work in such a case.
+ * For users who use [tsx](https://www.npmjs.com/package/tsx) to run TypeScript
+ * directly in Node.js, the runtime is unable to use TypeScript directly in
+ * worker threads at the moment, so this function won't work in such a case.
  * See [this issue](https://github.com/privatenumber/tsx/issues/354) for more
  * information.
  */
