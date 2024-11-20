@@ -1,10 +1,10 @@
 import { text } from "../bytes.ts";
+import { toBytesAsync } from "../hash/util.ts";
 import hash, {
     type DataSource,
     adler32,
     crc32,
     hmac,
-    toBytesAsync,
     sha1,
     sha256,
     sha512,

@@ -6,11 +6,11 @@
 
 import bytes from "./bytes.ts";
 import { isDeno, isNodeLike } from "./env.ts";
+import { toBytesAsync } from "./hash/util.ts";
 import hash, {
     type DataSource,
     adler32,
     crc32,
-    toBytesAsync,
     sha1 as _sha1,
     sha256 as _sha256,
     sha512 as _sha512,

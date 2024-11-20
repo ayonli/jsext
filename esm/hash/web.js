@@ -1,5 +1,5 @@
 import bytes, { text } from '../bytes.js';
-import { readAsArrayBuffer } from '../reader.js';
+import { toBytes, toBytesAsync } from './util.js';
 
 /**
  * A slim version of the `hash` module for the browser.
@@ -138,37 +138,6 @@ function crc32(data, previous = 0) {
     }
     return (crc ^ -1) >>> 0;
 }
-function toBytes(data) {
-    if (typeof data === "string") {
-        return bytes(data);
-    }
-    else if (data instanceof ArrayBuffer) {
-        return new Uint8Array(data);
-    }
-    else if (data instanceof Uint8Array) {
-        return data;
-    }
-    else if (ArrayBuffer.isView(data)) {
-        return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-    }
-    else {
-        throw new TypeError("Unsupported data type");
-    }
-}
-async function toBytesAsync(data) {
-    if (typeof data === "string" || data instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
-        return toBytes(data);
-    }
-    else if (typeof ReadableStream === "function" && data instanceof ReadableStream) {
-        return new Uint8Array(await readAsArrayBuffer(data));
-    }
-    else if (typeof Blob === "function" && data instanceof Blob) {
-        return new Uint8Array(await data.arrayBuffer());
-    }
-    else {
-        throw new TypeError("Unsupported data type");
-    }
-}
 async function sha1(data, encoding = undefined) {
     const bytes = await toBytesAsync(data);
     const hash = await crypto.subtle.digest("SHA-1", bytes);
@@ -230,5 +199,5 @@ async function hmac(algorithm, key, data, encoding = undefined) {
     }
 }
 
-export { adler32, crc32, hash as default, hmac, sha1, sha256, sha512, toBytesAsync };
+export { adler32, crc32, hash as default, hmac, sha1, sha256, sha512 };
 //# sourceMappingURL=web.js.map
