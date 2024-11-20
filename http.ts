@@ -25,17 +25,13 @@
  * bun run node_modules/@ayonli/jsext/http.ts <entry.ts> [--parallel [NUM]]
  * ```
  * 
- * Node.js (tsx):
- * ```sh
- * tsx node_modules/@ayonli/jsext/http.ts [DIR] [--port PORT] [--parallel [NUM]]
- * tsx node_modules/@ayonli/jsext/http.ts <entry.ts> [--parallel [NUM]]
- * ```
- * 
- * In Node.js, we can also do this:
+ * Node.js:
  * 
  * ```sh
+ * tsx --import=@ayonli/jsext/http [DIR] [--port PORT] [--parallel [NUM]]
  * tsx --import=@ayonli/jsext/http <entry.ts> [--parallel [NUM]]
  * # or
+ * node -r @ayonli/jsext/http [DIR] [--port PORT] [--parallel [NUM]]
  * node -r @ayonli/jsext/http <entry.js> [--parallel [NUM]]
  * ```
  * @module
