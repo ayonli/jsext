@@ -43,22 +43,22 @@ export { getCookie, getCookies, parseCookie, parseCookies, setCookie, stringifyC
  *
  * Bun:
  * ```sh
- * bun run node_modules/@ayonli/jsext/http.ts [--port PORT] [DIR]
- * bun run node_modules/@ayonli/jsext/http.ts <entry.ts>
+ * bun run node_modules/@ayonli/jsext/http.ts [DIR] [--port PORT] [--parallel [NUM]]
+ * bun run node_modules/@ayonli/jsext/http.ts <entry.ts> [--parallel [NUM]]
  * ```
  *
  * Node.js (tsx):
  * ```sh
- * tsx node_modules/@ayonli/jsext/http.ts [--port PORT] [DIR]
- * tsx node_modules/@ayonli/jsext/http.ts <entry.ts>
+ * tsx node_modules/@ayonli/jsext/http.ts [DIR] [--port PORT] [--parallel [NUM]]
+ * tsx node_modules/@ayonli/jsext/http.ts <entry.ts> [--parallel [NUM]]
  * ```
  *
  * In Node.js, we can also do this:
  *
  * ```sh
- * tsx --import=@ayonli/jsext/http <entry.ts> [--port PORT] [--parallel [NUM]]
+ * tsx --import=@ayonli/jsext/http <entry.ts> [--parallel [NUM]]
  * # or
- * node -r @ayonli/jsext/http <entry.js> [--port PORT] [--parallel [NUM]]
+ * node -r @ayonli/jsext/http <entry.js> [--parallel [NUM]]
  * ```
  * @module
  */
@@ -684,18 +684,30 @@ async function startServer(args) {
         listDir: true,
         // gzip: true,
     }));
-    if (isNode) {
+    if (isNode || isBun) {
         import('node:os').then(async ({ availableParallelism }) => {
             const { default: cluster } = await import('node:cluster');
             if (cluster.isPrimary && parallel) {
-                const _port = port || await randomPort(8000);
                 const max = typeof parallel === "number" ? parallel : availableParallelism();
+                const _port = port || await randomPort(8000);
+                const hostname = config.hostname || "localhost";
+                const secure = !!config.key && !!config.cert;
                 const workers = new Array(max).fill(null);
                 const forkWorker = (i) => {
                     const worker = cluster.fork({
                         HTTP_PORT: String(_port),
                     });
-                    workers[i] = worker;
+                    workers[i] = { worker, ready: false };
+                    worker.on("message", (msg) => {
+                        if (msg === "ready") {
+                            workers[i].ready = true;
+                            if (workers.every(w => w === null || w === void 0 ? void 0 : w.ready)) {
+                                const protocol = secure ? "https" : "http";
+                                const origin = `${protocol}://${hostname}:${_port}`;
+                                console.log(`Server listening on ${origin} with ${max} workers`);
+                            }
+                        }
+                    });
                     worker.once("exit", (code) => {
                         workers[i] = null;
                         if (code) {
@@ -713,6 +725,11 @@ async function startServer(args) {
                     fetch,
                     port: Number(process.env["HTTP_PORT"]),
                     type: "classic",
+                    onListen: (info) => {
+                        var _a, _b;
+                        (_a = config.onListen) === null || _a === void 0 ? void 0 : _a.call(config, info);
+                        (_b = process.send) === null || _b === void 0 ? void 0 : _b.call(process, "ready");
+                    },
                 });
             }
             else {
