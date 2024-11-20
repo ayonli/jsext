@@ -3,7 +3,7 @@ import jsext from "./index.ts";
 import { range } from "./number.ts";
 import { fromObject } from "./error.ts";
 import { sum } from "./math.ts";
-import { isDeno, isNodeLike } from "./env.ts";
+import { isDeno, isNode, isNodeLike } from "./env.ts";
 import { trim } from "./string.ts";
 import * as path from "node:path";
 import { readAsArray } from "./reader.ts";
@@ -36,6 +36,15 @@ describe("jsext.run", () => {
         it("file URL", async () => {
             const job = await jsext.run(new URL("examples/worker.mjs", import.meta.url).href, ["World"]);
             strictEqual(await job.result(), "Hello, World");
+        });
+
+        it("TS supports", async function () {
+            if (isNode) {
+                this.skip();
+            }
+
+            const job = await jsext.run("examples/sum2.ts", [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+            strictEqual(await job.result(), 45);
         });
 
         it("custom function", async () => {
