@@ -15,7 +15,7 @@
         },
         "./archive": {
             "types": "./types/archive.d.ts",
-            "bun": "./archive.ts",
+            "bun": "./archive/bun.ts",
             "workerd": "./esm/workerd/archive.js",
             "fastly": "./esm/workerd/archive.js",
             "import": "./esm/archive.js",

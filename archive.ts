@@ -7,6 +7,10 @@
  * 
  * NOTE: This module depends on the Web Streams API, in Node.js, it requires
  * Node.js v18.0 or above.
+ * 
+ * NOTE: For Bun users, install this package from NPM instead of JSR, the NPM
+ * version provides a polyfill of the `CompressionStream` and `DecompressionStream`
+ * APIs, which is required for the gzip support.
  * @module
  */
 

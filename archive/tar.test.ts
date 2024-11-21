@@ -1,3 +1,4 @@
+import "../external/compression-stream-polyfill/index.ts";
 import { deepStrictEqual } from "node:assert";
 import tar from "./tar.ts";
 import { pick } from "../object.ts";
