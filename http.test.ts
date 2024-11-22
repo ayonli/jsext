@@ -2317,22 +2317,25 @@ describe("http", () => {
         }));
 
         it("AbortSignal", func(async function (defer) {
-            if (typeof AbortSignal !== "function" ||
-                typeof AbortSignal.timeout !== "function" ||
-                isDeno || // Deno currently does not support request cancellation.
-                isBun // Bun may or may not support request cancellation, it's unclear.
-            ) {
+            if (typeof AbortSignal !== "function" || typeof AbortSignal.timeout !== "function") {
                 this.skip();
             }
 
             const results: {
+                method: string;
+                url: string;
                 aborted: true;
                 reason: any;
             }[] = [];
             const server = serve({
                 async fetch(req) {
                     req.signal.addEventListener("abort", () => {
-                        results.push({ aborted: true, reason: req.signal.reason });
+                        results.push({
+                            method: req.method,
+                            url: req.url,
+                            aborted: true,
+                            reason: req.signal.reason,
+                        });
                     });
 
                     await sleep(1000);
@@ -2345,17 +2348,17 @@ describe("http", () => {
             defer(() => server.close(true));
             await server.ready;
 
-            const [err, res1] = await _try(fetch(`http://localhost:${server.port}`, {
+            const [err, res1] = await _try(fetch(`http://localhost:${server.port}?tag=1`, {
                 signal: AbortSignal.timeout(500),
             }));
-            const res2 = await fetch(`http://localhost:${server.port}`);
+            const res2 = await fetch(`http://localhost:${server.port}?tag=2`);
 
             strictEqual((err as DOMException)?.name, "TimeoutError");
             strictEqual(res1, undefined);
             strictEqual(res2.status, 200);
             strictEqual(res2.statusText, "OK");
             strictEqual(await res2.text(), "Hello, World!");
-            strictEqual(results.length, 1);
+            ok(results.length >= 1); // in Deno, signal is aborted even the response finished successfully.
             strictEqual(results[0]!.aborted, true);
             strictEqual((results[0]!.reason as DOMException)!.name, "AbortError");
         }));
