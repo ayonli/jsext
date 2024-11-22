@@ -1,7 +1,8 @@
 import { isNode, isBun, isDeno } from '../env.js';
 import { toFsPath } from '../path.js';
 import { trim } from '../string.js';
-import { interop } from '../module.js';
+import '../fs.js';
+import { interop } from '../module/web.js';
 import { getObjectURL } from '../module/util.js';
 import { isAbsolute, isFsPath } from '../path/util.js';
 

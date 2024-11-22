@@ -1,5 +1,6 @@
-import { deepStrictEqual, strictEqual } from "node:assert";
-import { interop } from "./module.ts";
+import { deepStrictEqual, ok, strictEqual } from "node:assert";
+import { importWasm, interop } from "./module.ts";
+import { readFile } from "./fs.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 import { run } from "./cli.ts";
 
@@ -119,6 +120,91 @@ describe("module", () => {
                 const { stdout } = await run("bun", ["run", "./examples/module/bar.cjs"]);
                 strictEqual(stdout.trim(), "bar.cjs is the main module");
             }
+        });
+    });
+
+    describe("importWasm", () => {
+        it("file path", async () => {
+            const module = await importWasm<{
+                timestamp: () => number;
+            }>("./examples/simple.wasm", {
+                time: {
+                    unix: () => {
+                        return Math.floor(Date.now() / 1000);
+                    },
+                },
+            });
+
+            ok(module.timestamp() > 0);
+
+            // test cache
+            const module2 = await importWasm<{
+                timestamp: () => number;
+            }>("./examples/simple.wasm", {
+                time: {
+                    unix: () => {
+                        return Math.floor(Date.now() / 1000);
+                    },
+                },
+            });
+
+            ok(module === module2);
+        });
+
+        it("file URL", async () => {
+            const module = await importWasm<{
+                timestamp: () => number;
+            }>(new URL("./examples/simple.wasm", import.meta.url), {
+                time: {
+                    unix: () => {
+                        return Math.floor(Date.now() / 1000);
+                    },
+                },
+            });
+
+            ok(module.timestamp() > 0);
+
+            // test cache
+            const module2 = await importWasm<{
+                timestamp: () => number;
+            }>(new URL("./examples/simple.wasm", import.meta.url).href, {
+                time: {
+                    unix: () => {
+                        return Math.floor(Date.now() / 1000);
+                    },
+                },
+            });
+
+            ok(module === module2);
+        });
+
+        it("WebAssembly.Module", async () => {
+            const bytes = await readFile("./examples/simple.wasm");
+            const _module = new WebAssembly.Module(bytes);
+            const module = await importWasm<{
+                timestamp: () => number;
+            }>(_module, {
+                time: {
+                    unix: () => {
+                        return Math.floor(Date.now() / 1000);
+                    },
+                },
+            });
+
+            ok(module.timestamp() > 0);
+
+            // test cache
+            const module2 = await importWasm<{
+                timestamp: () => number;
+            }>(_module, {
+                time: {
+                    unix: () => {
+                        return Math.floor(Date.now() / 1000);
+                    },
+                },
+            });
+
+            ok(module === module2);
         });
     });
 });
