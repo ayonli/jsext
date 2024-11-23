@@ -16,7 +16,7 @@ describe("archive/untar", () => {
         return;
     }
 
-    const dir = "./fs";
+    const dir = "./cli";
     const filename1 = "./archive.tar";
     const filename2 = "./archive.tar.gz";
 
@@ -31,24 +31,19 @@ describe("archive/untar", () => {
         const entries = [...tarball].map(entry => pick(entry, ["name", "kind", "relativePath"]));
         deepStrictEqual(orderBy(entries, e => e.relativePath), [
             {
-                name: "fs",
+                name: "cli",
                 kind: "directory",
-                relativePath: "fs",
+                relativePath: "cli",
             },
             {
-                name: "types.ts",
+                name: "common.ts",
                 kind: "file",
-                relativePath: "fs/types.ts",
+                relativePath: "cli/common.ts",
             },
             {
-                name: "util.ts",
+                name: "constants.ts",
                 kind: "file",
-                relativePath: "fs/util.ts",
-            },
-            {
-                name: "web.ts",
-                kind: "file",
-                relativePath: "fs/web.ts",
+                relativePath: "cli/constants.ts",
             },
         ] as Partial<TarEntry>[]);
     });
@@ -62,24 +57,19 @@ describe("archive/untar", () => {
         const entries = [...tarball].map(entry => pick(entry, ["name", "kind", "relativePath"]));
         deepStrictEqual(orderBy(entries, e => e.relativePath), [
             {
-                name: "fs",
+                name: "cli",
                 kind: "directory",
-                relativePath: "fs",
+                relativePath: "cli",
             },
             {
-                name: "types.ts",
+                name: "common.ts",
                 kind: "file",
-                relativePath: "fs/types.ts",
+                relativePath: "cli/common.ts",
             },
             {
-                name: "util.ts",
+                name: "constants.ts",
                 kind: "file",
-                relativePath: "fs/util.ts",
-            },
-            {
-                name: "web.ts",
-                kind: "file",
-                relativePath: "fs/web.ts",
+                relativePath: "cli/constants.ts",
             },
         ] as Partial<TarEntry>[]);
     });
@@ -96,24 +86,19 @@ describe("archive/untar", () => {
 
         deepStrictEqual(entries, [
             {
-                name: "fs",
+                name: "cli",
                 kind: "directory",
-                relativePath: "fs",
+                relativePath: "cli",
             },
             {
-                name: "types.ts",
+                name: "common.ts",
                 kind: "file",
-                relativePath: join("fs", "types.ts"),
+                relativePath: join("cli", "common.ts"),
             },
             {
-                name: "util.ts",
+                name: "constants.ts",
                 kind: "file",
-                relativePath: join("fs", "util.ts"),
-            },
-            {
-                name: "web.ts",
-                kind: "file",
-                relativePath: join("fs", "web.ts"),
+                relativePath: join("cli", "constants.ts"),
             },
         ] as Partial<DirEntry>[]);
 
@@ -145,24 +130,19 @@ describe("archive/untar", () => {
 
         deepStrictEqual(entries, [
             {
-                name: "fs",
+                name: "cli",
                 kind: "directory",
-                relativePath: "fs",
+                relativePath: "cli",
             },
             {
-                name: "types.ts",
+                name: "common.ts",
                 kind: "file",
-                relativePath: join("fs", "types.ts"),
+                relativePath: join("cli", "common.ts"),
             },
             {
-                name: "util.ts",
+                name: "constants.ts",
                 kind: "file",
-                relativePath: join("fs", "util.ts"),
-            },
-            {
-                name: "web.ts",
-                kind: "file",
-                relativePath: join("fs", "web.ts"),
+                relativePath: join("cli", "constants.ts"),
             },
         ] as Partial<DirEntry>[]);
 
@@ -192,25 +172,20 @@ describe("archive/untar", () => {
 
         deepStrictEqual(entries, [
             {
-                name: "fs",
+                name: "cli",
                 kind: "directory",
-                relativePath: "fs",
+                relativePath: "cli",
             },
             {
-                name: "types.ts",
+                name: "common.ts",
                 kind: "file",
-                relativePath: join("fs", "types.ts"),
+                relativePath: join("cli", "common.ts"),
             },
             {
-                name: "util.ts",
+                name: "constants.ts",
                 kind: "file",
-                relativePath: join("fs", "util.ts"),
+                relativePath: join("cli", "constants.ts"),
             },
-            {
-                name: "web.ts",
-                kind: "file",
-                relativePath: join("fs", "web.ts"),
-            }
         ] as Partial<DirEntry>[]);
 
         for (const entry of entries) {
@@ -292,24 +267,19 @@ describe("archive/untar", () => {
 
         deepStrictEqual(entries, [
             {
-                name: "fs",
+                name: "cli",
                 kind: "directory",
-                relativePath: "fs",
+                relativePath: "cli",
             },
             {
-                name: "types.ts",
+                name: "common.ts",
                 kind: "file",
-                relativePath: join("fs", "types.ts"),
+                relativePath: join("cli", "common.ts"),
             },
             {
-                name: "util.ts",
+                name: "constants.ts",
                 kind: "file",
-                relativePath: join("fs", "util.ts"),
-            },
-            {
-                name: "web.ts",
-                kind: "file",
-                relativePath: join("fs", "web.ts"),
+                relativePath: join("cli", "constants.ts"),
             },
         ] as Partial<DirEntry>[]);
 

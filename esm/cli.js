@@ -9,6 +9,8 @@ import { PowerShellCommands } from './cli/constants.js';
 export { ControlKeys, ControlSequences, FunctionKeys, NavigationKeys } from './cli/constants.js';
 import { isWSL, quote } from './cli/common.js';
 export { args, charWidth, getWindowSize, isTTY, isTypingInput, lockStdin, moveLeftBy, moveRightBy, parseArgs, readStdin, stringWidth, writeStdout, writeStdoutSync } from './cli/common.js';
+import { ensureFsTarget } from './fs/util.js';
+import { resolveHomeDir } from './fs/util/server.js';
 
 /**
  * Useful utility functions for interacting with the terminal.
@@ -225,6 +227,8 @@ async function which(cmd) {
  * ```
  */
 async function edit(filename) {
+    filename = ensureFsTarget(filename);
+    filename = await resolveHomeDir(filename);
     const match = filename.match(/(:|#L)(\d+)/);
     let line;
     if (match) {

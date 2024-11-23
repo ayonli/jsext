@@ -5,6 +5,7 @@ import Exception from './error/Exception.js';
 import './external/event-target-polyfill/index.js';
 import { getMIME } from './filetype.js';
 import { ensureFsTarget, rawOp, fixDirEntry, wrapFsError, makeTree } from './fs/util.js';
+import { resolveHomeDir } from './fs/util/server.js';
 import { stat as stat$1, mkdir as mkdir$1, readDir as readDir$1, readFile as readFile$1, readFileAsFile as readFileAsFile$1, writeFile as writeFile$1, truncate as truncate$1, remove as remove$1, rename as rename$1, copy as copy$1, createReadableStream as createReadableStream$1, createWritableStream as createWritableStream$1 } from './fs/web.js';
 export { getDirHandle, getFileHandle } from './fs/web.js';
 import { basename, extname, join } from './path.js';
@@ -79,14 +80,6 @@ const EOL = (() => {
         return "\n";
     }
 })();
-async function resolveHomeDir(path) {
-    if (path[0] === "~" && (isDeno || isNodeLike)) {
-        const os = await import('node:os');
-        const homedir = os.homedir();
-        path = homedir + path.slice(1);
-    }
-    return path;
-}
 /**
  * Checks if the given path exists.
  *

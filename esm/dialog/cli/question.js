@@ -6,6 +6,7 @@ import '../../fs.js';
 import '../../path.js';
 import { ControlKeys, NavigationKeys, ControlSequences } from '../../cli/constants.js';
 import { writeStdout, readStdin, moveLeftBy, moveRightBy, isTypingInput } from '../../cli/common.js';
+import '../../error/Exception.js';
 
 const { BS, CTRL_A, CTRL_C, CTRL_E, CR, DEL, ESC, LF } = ControlKeys;
 const { UP, DOWN, LEFT, RIGHT } = NavigationKeys;

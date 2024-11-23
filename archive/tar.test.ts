@@ -13,7 +13,7 @@ describe("archive/tar", () => {
         return;
     }
 
-    const dir = "./fs";
+    const dir = "./cli";
     const filename = "./archive.tar";
 
     it("create tarball instance", async () => {
@@ -21,25 +21,20 @@ describe("archive/tar", () => {
         const entries = [...tarball].map(entry => pick(entry, ["name", "kind", "relativePath"]));
         deepStrictEqual(orderBy(entries, e => e.relativePath), [
             {
-                name: "fs",
+                name: "cli",
                 kind: "directory",
-                relativePath: "fs",
+                relativePath: "cli",
             },
             {
-                name: "types.ts",
+                name: "common.ts",
                 kind: "file",
-                relativePath: "fs/types.ts",
+                relativePath: "cli/common.ts",
             },
             {
-                name: "util.ts",
+                name: "constants.ts",
                 kind: "file",
-                relativePath: "fs/util.ts",
+                relativePath: "cli/constants.ts",
             },
-            {
-                name: "web.ts",
-                kind: "file",
-                relativePath: "fs/web.ts",
-            }
         ] as Partial<TarEntry>[]);
     });
 
@@ -52,25 +47,20 @@ describe("archive/tar", () => {
         const entries = [...tarball].map(entry => pick(entry, ["name", "kind", "relativePath"]));
         deepStrictEqual(orderBy(entries, e => e.relativePath), [
             {
-                name: "fs",
+                name: "cli",
                 kind: "directory",
-                relativePath: "fs",
+                relativePath: "cli",
             },
             {
-                name: "types.ts",
+                name: "common.ts",
                 kind: "file",
-                relativePath: "fs/types.ts",
+                relativePath: "cli/common.ts",
             },
             {
-                name: "util.ts",
+                name: "constants.ts",
                 kind: "file",
-                relativePath: "fs/util.ts",
+                relativePath: "cli/constants.ts",
             },
-            {
-                name: "web.ts",
-                kind: "file",
-                relativePath: "fs/web.ts",
-            }
         ] as Partial<TarEntry>[]);
     }));
 
@@ -87,31 +77,26 @@ describe("archive/tar", () => {
         const entries = [...tarball].map(entry => pick(entry, ["name", "kind", "relativePath"]));
         deepStrictEqual(orderBy(entries, e => e.relativePath), [
             {
-                name: "fs",
+                name: "cli",
                 kind: "directory",
-                relativePath: "fs",
+                relativePath: "cli",
             },
             {
-                name: "types.ts",
+                name: "common.ts",
                 kind: "file",
-                relativePath: "fs/types.ts",
+                relativePath: "cli/common.ts",
             },
             {
-                name: "util.ts",
+                name: "constants.ts",
                 kind: "file",
-                relativePath: "fs/util.ts",
+                relativePath: "cli/constants.ts",
             },
-            {
-                name: "web.ts",
-                kind: "file",
-                relativePath: "fs/web.ts",
-            }
         ] as Partial<TarEntry>[]);
     }));
 
     it("create tarball file", func(async (defer) => {
         const filename = new URL("../archive.tar", import.meta.url);
-        await tar(new URL("../fs", import.meta.url), filename);
+        await tar(new URL("../cli", import.meta.url), filename);
         defer(() => remove(filename));
 
         const input = createReadableStream(filename);
@@ -119,25 +104,20 @@ describe("archive/tar", () => {
         const entries = [...tarball].map(entry => pick(entry, ["name", "kind", "relativePath"]));
         deepStrictEqual(orderBy(entries, e => e.relativePath), [
             {
-                name: "fs",
+                name: "cli",
                 kind: "directory",
-                relativePath: "fs",
+                relativePath: "cli",
             },
             {
-                name: "types.ts",
+                name: "common.ts",
                 kind: "file",
-                relativePath: "fs/types.ts",
+                relativePath: "cli/common.ts",
             },
             {
-                name: "util.ts",
+                name: "constants.ts",
                 kind: "file",
-                relativePath: "fs/util.ts",
+                relativePath: "cli/constants.ts",
             },
-            {
-                name: "web.ts",
-                kind: "file",
-                relativePath: "fs/web.ts",
-            }
         ] as Partial<TarEntry>[]);
     }));
 });

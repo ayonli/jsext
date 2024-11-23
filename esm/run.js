@@ -1,7 +1,7 @@
 import chan from './chan.js';
 import { isPlainObject } from './object.js';
 import { fromErrorEvent, fromObject } from './error.js';
-import { toFileUrl, cwd } from './path.js';
+import { toFsPath, toFileUrl, cwd } from './path.js';
 import { isNode, isBrowserWindow, isBun } from './env.js';
 import { sanitizeModuleId } from './parallel/module.js';
 import { isChannelMessage, handleChannelMessage } from './parallel/channel.js';
@@ -85,6 +85,14 @@ async function run(script, args, options) {
     var _a;
     if (!isNode && typeof Worker !== "function") {
         throw new Error("Unsupported runtime");
+    }
+    if (script instanceof URL) {
+        if (script.protocol !== "file:") {
+            script = toFsPath(script.href);
+        }
+        else {
+            script = script.href;
+        }
     }
     const maxWorkers = run.maxWorkers || parallel.maxWorkers || await getMaxParallelism;
     const fn = (options === null || options === void 0 ? void 0 : options.fn) || "default";

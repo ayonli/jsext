@@ -14,6 +14,8 @@ import { interop } from "./module.ts";
 import { basename } from "./path.ts";
 import { PowerShellCommands } from "./cli/constants.ts";
 import { isWSL, quote } from "./cli/common.ts";
+import { ensureFsTarget } from "./fs/util.ts";
+import { resolveHomeDir } from "./fs/util/server.ts";
 
 export * from "./cli/common.ts";
 
@@ -275,7 +277,9 @@ export async function which(cmd: string): Promise<string | null> {
  * await edit("path/to/file.txt:10"); // open the file at line 10
  * ```
  */
-export async function edit(filename: string): Promise<void> {
+export async function edit(filename: string | URL): Promise<void> {
+    filename = ensureFsTarget(filename);
+    filename = await resolveHomeDir(filename);
     const match = filename.match(/(:|#L)(\d+)/);
     let line: number | undefined;
 

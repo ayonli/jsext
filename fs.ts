@@ -57,6 +57,7 @@ import { Exception } from "./error.ts";
 import { getMIME } from "./filetype.ts";
 import type { FileInfo, DirEntry, FileSystemOptions, DirTree } from "./fs/types.ts";
 import { ensureFsTarget, fixDirEntry, makeTree, rawOp, wrapFsError } from "./fs/util.ts";
+import { resolveHomeDir } from "./fs/util/server.ts";
 import {
     getDirHandle,
     getFileHandle,
@@ -95,16 +96,6 @@ export const EOL: "\n" | "\r\n" = (() => {
         return "\n";
     }
 })();
-
-async function resolveHomeDir(path: string): Promise<string> {
-    if (path[0] === "~" && (isDeno || isNodeLike)) {
-        const os = await import("node:os");
-        const homedir = os.homedir();
-        path = homedir + path.slice(1);
-    }
-
-    return path;
-}
 
 /**
  * Options for the {@link getDirHandle} function.
