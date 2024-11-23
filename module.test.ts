@@ -164,7 +164,11 @@ describe("module", () => {
             ok(module === module2);
         });
 
-        it("http URL", func(async (defer) => {
+        it("http URL", func(async function (defer) {
+            if (typeof fetch !== "function") {
+                this.skip();
+            }
+
             const port = await randomPort(8000);
             const server = serve({
                 async fetch(req) {
