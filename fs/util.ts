@@ -2,8 +2,24 @@ import { orderBy, startsWith } from "../array.ts";
 import { Exception } from "../error.ts";
 import { getMIME } from "../filetype.ts";
 import { omit } from "../object.ts";
-import { basename, extname, split } from "../path.ts";
+import { basename, extname, isFileUrl, split, toFsPath } from "../path.ts";
 import type { DirEntry } from "./types.ts";
+
+export function ensureFsTarget<T extends string | URL | FileSystemFileHandle | FileSystemDirectoryHandle>(
+    path: T
+): string | Exclude<T, URL> {
+    if (path instanceof URL) {
+        if (path.protocol !== "file:") {
+            throw new TypeError("Only file URLs are supported");
+        } else {
+            return toFsPath(path.href) as Exclude<T, URL>;
+        }
+    } else if (typeof path === "string" && isFileUrl(path)) {
+        return toFsPath(path) as Exclude<T, URL>;
+    } else {
+        return path as Exclude<T, URL>;
+    }
+}
 
 function getErrorName(err: Error): string {
     if (err.constructor === Error) {

@@ -4,7 +4,7 @@ import { as } from './object.js';
 import Exception from './error/Exception.js';
 import './external/event-target-polyfill/index.js';
 import { getMIME } from './filetype.js';
-import { rawOp, fixDirEntry, wrapFsError, makeTree } from './fs/util.js';
+import { ensureFsTarget, rawOp, fixDirEntry, wrapFsError, makeTree } from './fs/util.js';
 import { stat as stat$1, mkdir as mkdir$1, readDir as readDir$1, readFile as readFile$1, readFileAsFile as readFileAsFile$1, writeFile as writeFile$1, truncate as truncate$1, remove as remove$1, rename as rename$1, copy as copy$1, createReadableStream as createReadableStream$1, createWritableStream as createWritableStream$1 } from './fs/web.js';
 export { getDirHandle, getFileHandle } from './fs/web.js';
 import { basename, extname, join } from './path.js';
@@ -161,6 +161,7 @@ async function exists(path, options = {}) {
  */
 async function stat(target, options = {}) {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t;
+    target = ensureFsTarget(target);
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         return await stat$1(target, options);
     }
@@ -244,6 +245,7 @@ async function stat(target, options = {}) {
  * ```
  */
 async function mkdir(path, options = {}) {
+    path = ensureFsTarget(path);
     if (!(isDeno || isNodeLike)) {
         return await mkdir$1(path, options);
     }
@@ -332,6 +334,7 @@ async function ensureDir(path, options = {}) {
  * ```
  */
 async function* readDir(target, options = {}) {
+    target = ensureFsTarget(target);
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         yield* readDir$1(target, options);
         return;
@@ -413,6 +416,7 @@ async function* readDir(target, options = {}) {
  * ```
  */
 async function readTree(target, options = {}) {
+    target = ensureFsTarget(target);
     const entries = (await readAsArray(readDir(target, { ...options, recursive: true })));
     const tree = makeTree(target, entries, true);
     if (!tree.handle && options.root) {
@@ -443,6 +447,7 @@ async function readTree(target, options = {}) {
  * ```
  */
 async function readFile(target, options = {}) {
+    target = ensureFsTarget(target);
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         return await readFile$1(target, options);
     }
@@ -515,6 +520,7 @@ async function readFileAsText(target, options = {}) {
  */
 async function readFileAsFile(target, options = {}) {
     var _a;
+    target = ensureFsTarget(target);
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         return await readFileAsFile$1(target, options);
     }
@@ -586,6 +592,7 @@ async function readFileAsFile(target, options = {}) {
  * ```
  */
 async function writeFile(target, data, options = {}) {
+    target = ensureFsTarget(target);
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         return await writeFile$1(target, data, options);
     }
@@ -757,6 +764,7 @@ async function writeLines(target, lines, options = {}) {
  * ```
  */
 async function truncate(target, size = 0, options = {}) {
+    target = ensureFsTarget(target);
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         return await truncate$1(target, size, options);
     }
@@ -798,6 +806,7 @@ async function truncate(target, size = 0, options = {}) {
  * ```
  */
 async function remove(path, options = {}) {
+    path = ensureFsTarget(path);
     if (!(isDeno || isNodeLike)) {
         return await remove$1(path, options);
     }
@@ -847,6 +856,8 @@ async function remove(path, options = {}) {
  * ```
  */
 async function rename(oldPath, newPath, options = {}) {
+    oldPath = ensureFsTarget(oldPath);
+    newPath = ensureFsTarget(newPath);
     if (!(isDeno || isNodeLike)) {
         return await rename$1(oldPath, newPath, options);
     }
@@ -861,6 +872,8 @@ async function rename(oldPath, newPath, options = {}) {
     }
 }
 async function copy(src, dest, options = {}) {
+    src = ensureFsTarget(src);
+    dest = ensureFsTarget(dest);
     if (typeof src === "object" || typeof dest === "object" || !(isDeno || isNodeLike)) {
         // @ts-ignore internal call
         return await copy$1(src, dest, options);
@@ -955,6 +968,8 @@ async function copy(src, dest, options = {}) {
  * ```
  */
 async function link(src, dest, options = {}) {
+    src = ensureFsTarget(src);
+    dest = ensureFsTarget(dest);
     src = await resolveHomeDir(src);
     dest = await resolveHomeDir(dest);
     if (isDeno) {
@@ -1006,6 +1021,7 @@ async function link(src, dest, options = {}) {
  * ```
  */
 async function readLink(path) {
+    path = ensureFsTarget(path);
     path = await resolveHomeDir(path);
     if (isDeno) {
         return await rawOp(Deno.readLink(path));
@@ -1052,6 +1068,7 @@ async function readLink(path) {
  */
 async function chmod(path, mode) {
     if (platform() !== "windows") {
+        path = ensureFsTarget(path);
         path = await resolveHomeDir(path);
         if (isDeno) {
             await rawOp(Deno.chmod(path, mode));
@@ -1078,6 +1095,7 @@ async function chmod(path, mode) {
  */
 async function chown(path, uid, gid) {
     if (platform() !== "windows") {
+        path = ensureFsTarget(path);
         path = await resolveHomeDir(path);
         if (isDeno) {
             await rawOp(Deno.chown(path, uid, gid));
@@ -1105,6 +1123,7 @@ async function chown(path, uid, gid) {
  * ```
  */
 async function utimes(path, atime, mtime) {
+    path = ensureFsTarget(path);
     path = await resolveHomeDir(path);
     if (isDeno) {
         await rawOp(Deno.utime(path, atime, mtime));
@@ -1145,6 +1164,7 @@ async function utimes(path, atime, mtime) {
  * ```
  */
 function createReadableStream(target, options = {}) {
+    target = ensureFsTarget(target);
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         return createReadableStream$1(target, options);
     }
@@ -1204,6 +1224,7 @@ function createReadableStream(target, options = {}) {
  * ```
  */
 function createWritableStream(target, options = {}) {
+    target = ensureFsTarget(target);
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         return createWritableStream$1(target, options);
     }

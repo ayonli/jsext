@@ -1,16 +1,23 @@
 import { readDir, stat, createReadableStream, createWritableStream } from '../fs.js';
-import { resolve, basename, join } from '../path.js';
+import { ensureFsTarget } from '../fs/util.js';
+import { toFsPath, resolve, basename, join } from '../path.js';
 import Tarball from './Tarball.js';
+import { isFileUrl } from '../path/util.js';
 
 async function tar(src, dest = {}, options = {}) {
     var _a, _b;
+    src = ensureFsTarget(src);
     let _dest = undefined;
     if (typeof dest === "string") {
+        dest = isFileUrl(dest) ? toFsPath(dest) : dest;
         _dest = options.root ? dest : resolve(dest);
     }
     else if (typeof dest === "object") {
         if (typeof FileSystemFileHandle === "function" && dest instanceof FileSystemFileHandle) {
             _dest = dest;
+        }
+        else if (dest instanceof URL) {
+            _dest = ensureFsTarget(dest);
         }
         else {
             options = dest;

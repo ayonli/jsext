@@ -14,7 +14,7 @@ import type {
 } from "../fs.ts";
 import type { FileSystemOptions, FileInfo, DirEntry, DirTree } from "../fs/types.ts";
 import { makeTree } from "../fs/util.ts";
-import { basename, extname, join } from "../path.ts";
+import { basename, extname, isFileUrl, join } from "../path.ts";
 import { readAsArray, readAsArrayBuffer } from "../reader.ts";
 import { KVNamespace } from "./types.ts";
 
@@ -50,6 +50,16 @@ export async function getFileHandle(
     throw new Error("Unsupported runtime");
 }
 
+function ensureFsTarget<T extends string | URL | FileSystemFileHandle | FileSystemDirectoryHandle>(
+    path: T
+): Exclude<T, URL> {
+    if (path instanceof URL || (typeof path === "string" && isFileUrl(path))) {
+        throw new TypeError("URL is not supported");
+    } else {
+        return path as Exclude<T, URL>;
+    }
+}
+
 function getKVStore(options: FileSystemOptions): KVNamespace {
     // @ts-ignore
     const kv = (options.root ?? globalThis["__STATIC_CONTENT"]) as KVNamespace | undefined;
@@ -82,8 +92,9 @@ function throwNotFoundError(filename: string, kind: "file" | "directory" = "file
     });
 }
 
-export async function exists(path: string, options: FileSystemOptions = {}): Promise<boolean> {
+export async function exists(path: string | URL, options: FileSystemOptions = {}): Promise<boolean> {
     void getKVStore(options);
+    path = ensureFsTarget(path);
     path = join(path);
 
     const manifest = await loadManifest;
@@ -98,9 +109,10 @@ export async function exists(path: string, options: FileSystemOptions = {}): Pro
 }
 
 export async function stat(
-    target: string | FileSystemFileHandle | FileSystemDirectoryHandle,
+    target: string | URL | FileSystemFileHandle | FileSystemDirectoryHandle,
     options: StatOptions = {}
 ): Promise<FileInfo> {
+    target = ensureFsTarget(target);
     const filename = join(target as string);
     const kv = getKVStore(options);
 
@@ -157,7 +169,7 @@ export async function mkdir(path: string, options: MkdirOptions = {}): Promise<v
 }
 
 export async function ensureDir(
-    path: string,
+    path: string | URL,
     options: Omit<MkdirOptions, "recursive"> = {}
 ): Promise<void> {
     void path, options;
@@ -165,7 +177,7 @@ export async function ensureDir(
 }
 
 export async function* readDir(
-    target: string | FileSystemDirectoryHandle,
+    target: string | URL | FileSystemDirectoryHandle,
     options: ReadDirOptions = {}
 ): AsyncIterableIterator<DirEntry> {
     void getKVStore(options);
@@ -173,6 +185,7 @@ export async function* readDir(
     const manifest = await loadManifest;
     const StaticFilenames = Object.keys(manifest);
 
+    target = ensureFsTarget(target);
     let dirPath = target as string;
 
     if (dirPath === "." || dirPath.endsWith("/")) {
@@ -239,17 +252,19 @@ export async function* readDir(
 }
 
 export async function readTree(
-    target: string | FileSystemDirectoryHandle,
+    target: string | URL | FileSystemDirectoryHandle,
     options: FileSystemOptions = {}
 ): Promise<DirTree> {
+    target = ensureFsTarget(target);
     const entries = (await readAsArray(readDir(target, { ...options, recursive: true })));
     return makeTree<DirEntry, DirTree>(target, entries, true);
 }
 
 export async function readFile(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     options: ReadFileOptions = {}
 ): Promise<Uint8Array> {
+    target = ensureFsTarget(target);
     const filename = target as string;
     const kv = getKVStore(options);
     const stream = await kv.get(filename, { type: "stream" });
@@ -266,9 +281,10 @@ export async function readFile(
 }
 
 export async function readFileAsText(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     options: ReadFileOptions = {}
 ): Promise<string> {
+    target = ensureFsTarget(target);
     const filename = target as string;
     const kv = getKVStore(options);
     const text = await kv.get(filename, { type: "text" });
@@ -281,9 +297,10 @@ export async function readFileAsText(
 }
 
 export async function readFileAsFile(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     options: ReadFileOptions = {}
 ): Promise<File> {
+    target = ensureFsTarget(target);
     const filename = target as string;
     const kv = getKVStore(options);
     const buffer = await kv.get(filename, { type: "arrayBuffer" });
@@ -307,7 +324,7 @@ export async function readFileAsFile(
 }
 
 export async function writeFile(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
     options: WriteFileOptions = {}
 ): Promise<void> {
@@ -316,7 +333,7 @@ export async function writeFile(
 }
 
 export async function writeLines(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     lines: string[],
     options: WriteFileOptions = {}
 ): Promise<void> {
@@ -325,7 +342,7 @@ export async function writeLines(
 }
 
 export async function truncate(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     size = 0,
     options: FileSystemOptions = {}
 ): Promise<void> {
@@ -333,21 +350,25 @@ export async function truncate(
     throw new Error("Unsupported runtime");
 }
 
-export async function remove(path: string, options: RemoveOptions = {}): Promise<void> {
+export async function remove(path: string | URL, options: RemoveOptions = {}): Promise<void> {
     void path, options;
     throw new Error("Unsupported runtime");
 }
 
 export async function rename(
-    oldPath: string,
-    newPath: string,
+    oldPath: string | URL,
+    newPath: string | URL,
     options: FileSystemOptions = {}
 ): Promise<void> {
     void oldPath, newPath, options;
     throw new Error("Unsupported runtime");
 }
 
-export async function copy(src: string, dest: string, options?: CopyOptions): Promise<void>;
+export async function copy(
+    src: string | URL,
+    dest: string | URL,
+    options?: CopyOptions
+): Promise<void>;
 export async function copy(
     src: FileSystemFileHandle,
     dest: FileSystemFileHandle | FileSystemDirectoryHandle
@@ -358,34 +379,38 @@ export async function copy(
     options?: Pick<CopyOptions, "recursive">
 ): Promise<void>;
 export async function copy(
-    src: string | FileSystemFileHandle | FileSystemDirectoryHandle,
-    dest: string | FileSystemFileHandle | FileSystemDirectoryHandle,
+    src: string | URL | FileSystemFileHandle | FileSystemDirectoryHandle,
+    dest: string | URL | FileSystemFileHandle | FileSystemDirectoryHandle,
     options: CopyOptions = {}
 ): Promise<void> {
     void src, dest, options;
     throw new Error("Unsupported runtime");
 }
 
-export async function link(src: string, dest: string, options: LinkOptions = {}): Promise<void> {
+export async function link(
+    src: string | URL,
+    dest: string | URL,
+    options: LinkOptions = {}
+): Promise<void> {
     void src, dest, options;
     throw new Error("Unsupported runtime");
 }
 
-export async function readLink(path: string): Promise<string> {
+export async function readLink(path: string | URL): Promise<string> {
     void path;
     throw new Error("Unsupported runtime");
 }
 
-export async function chmod(path: string, mode: number): Promise<void> {
+export async function chmod(path: string | URL, mode: number): Promise<void> {
     void path, mode;
 }
 
-export async function chown(path: string, uid: number, gid: number): Promise<void> {
+export async function chown(path: string | URL, uid: number, gid: number): Promise<void> {
     void path, uid, gid;
 }
 
 export async function utimes(
-    path: string,
+    path: string | URL,
     atime: number | Date,
     mtime: number | Date
 ): Promise<void> {
@@ -393,7 +418,7 @@ export async function utimes(
 }
 
 export function createReadableStream(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     options: FileSystemOptions = {}
 ): ReadableStream<Uint8Array> {
     void target, options;
@@ -401,7 +426,7 @@ export function createReadableStream(
 }
 
 export function createWritableStream(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     options: Omit<WriteFileOptions, "signal"> = {}
 ): WritableStream<Uint8Array> {
     void target, options;

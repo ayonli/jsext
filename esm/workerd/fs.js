@@ -5,6 +5,7 @@ import { getMIME } from '../filetype.js';
 import { makeTree } from '../fs/util.js';
 import { join, basename, extname } from '../path.js';
 import { readAsArray, readAsArrayBuffer } from '../reader.js';
+import { isFileUrl } from '../path/util.js';
 
 const EOL = "\n";
 async function getDirHandle(path, options = {}) {
@@ -12,6 +13,14 @@ async function getDirHandle(path, options = {}) {
 }
 async function getFileHandle(path, options = {}) {
     throw new Error("Unsupported runtime");
+}
+function ensureFsTarget(path) {
+    if (path instanceof URL || (typeof path === "string" && isFileUrl(path))) {
+        throw new TypeError("URL is not supported");
+    }
+    else {
+        return path;
+    }
 }
 function getKVStore(options) {
     var _a;
@@ -42,6 +51,7 @@ function throwNotFoundError(filename, kind = "file") {
 }
 async function exists(path, options = {}) {
     void getKVStore(options);
+    path = ensureFsTarget(path);
     path = join(path);
     const manifest = await loadManifest;
     const filenames = Object.keys(manifest);
@@ -55,6 +65,7 @@ async function exists(path, options = {}) {
 }
 async function stat(target, options = {}) {
     var _a;
+    target = ensureFsTarget(target);
     const filename = join(target);
     const kv = getKVStore(options);
     const manifest = await loadManifest;
@@ -113,6 +124,7 @@ async function* readDir(target, options = {}) {
     void getKVStore(options);
     const manifest = await loadManifest;
     const StaticFilenames = Object.keys(manifest);
+    target = ensureFsTarget(target);
     let dirPath = target;
     if (dirPath === "." || dirPath.endsWith("/")) {
         dirPath = dirPath.slice(0, -1);
@@ -170,10 +182,12 @@ async function* readDir(target, options = {}) {
     }
 }
 async function readTree(target, options = {}) {
+    target = ensureFsTarget(target);
     const entries = (await readAsArray(readDir(target, { ...options, recursive: true })));
     return makeTree(target, entries, true);
 }
 async function readFile(target, options = {}) {
+    target = ensureFsTarget(target);
     const filename = target;
     const kv = getKVStore(options);
     const stream = await kv.get(filename, { type: "stream" });
@@ -186,6 +200,7 @@ async function readFile(target, options = {}) {
     return new Uint8Array(buffer);
 }
 async function readFileAsText(target, options = {}) {
+    target = ensureFsTarget(target);
     const filename = target;
     const kv = getKVStore(options);
     const text = await kv.get(filename, { type: "text" });
@@ -198,6 +213,7 @@ async function readFileAsText(target, options = {}) {
 }
 async function readFileAsFile(target, options = {}) {
     var _a;
+    target = ensureFsTarget(target);
     const filename = target;
     const kv = getKVStore(options);
     const buffer = await kv.get(filename, { type: "arrayBuffer" });

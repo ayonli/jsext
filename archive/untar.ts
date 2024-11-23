@@ -2,8 +2,8 @@ import { concat as concatBytes } from "../bytes.ts";
 import { isDeno, isNodeLike } from "../env.ts";
 import { createProgressEvent } from "../event.ts";
 import { chmod, createReadableStream, createWritableStream, ensureDir, stat, utimes } from "../fs.ts";
-import { makeTree } from "../fs/util.ts";
-import { basename, dirname, join, resolve } from "../path.ts";
+import { ensureFsTarget, makeTree } from "../fs/util.ts";
+import { basename, dirname, isFileUrl, join, resolve, toFsPath } from "../path.ts";
 import { platform } from "../runtime.ts";
 import Tarball, { HEADER_LENGTH, TarEntry, TarTree, createEntry, parseHeader } from "./Tarball.ts";
 import { TarOptions } from "./tar.ts";
@@ -43,8 +43,8 @@ export interface UntarOptions extends TarOptions {
  * ```
  */
 export default function untar(
-    src: string | FileSystemFileHandle | ReadableStream<Uint8Array>,
-    dest: string | FileSystemDirectoryHandle,
+    src: string | URL | FileSystemFileHandle | ReadableStream<Uint8Array>,
+    dest: string | URL | FileSystemDirectoryHandle,
     options?: UntarOptions
 ): Promise<void>;
 /**
@@ -60,23 +60,27 @@ export default function untar(
  * ```
  */
 export default function untar(
-    src: string | FileSystemFileHandle | ReadableStream<Uint8Array>,
+    src: string | URL | FileSystemFileHandle | ReadableStream<Uint8Array>,
     options?: TarOptions
 ): Promise<Tarball>;
 export default async function untar(
-    src: string | FileSystemFileHandle | ReadableStream<Uint8Array>,
-    dest: string | FileSystemDirectoryHandle | UntarOptions = {},
+    src: string | URL | FileSystemFileHandle | ReadableStream<Uint8Array>,
+    dest: string | URL | FileSystemDirectoryHandle | UntarOptions = {},
     options: UntarOptions = {}
 ): Promise<Tarball | void> {
+    src = src instanceof ReadableStream ? src : ensureFsTarget(src);
     let _dest: string | FileSystemDirectoryHandle | undefined = undefined;
 
     if (typeof dest === "string") {
+        dest = isFileUrl(dest) ? toFsPath(dest) : dest;
         _dest = options.root ? dest : resolve(dest);
     } else if (typeof dest === "object") {
         if (typeof FileSystemDirectoryHandle === "function" &&
             dest instanceof FileSystemDirectoryHandle
         ) {
             _dest = dest;
+        } else if (dest instanceof URL) {
+            _dest = ensureFsTarget(dest);
         } else {
             options = dest as UntarOptions;
         }

@@ -1,6 +1,7 @@
 import { FileSystemOptions, FileInfo } from "../fs/types.ts";
 import { createReadableStream, stat, readDir, createWritableStream } from "../fs.ts";
-import { basename, join, resolve } from "../path.ts";
+import { ensureFsTarget } from "../fs/util.ts";
+import { basename, isFileUrl, join, resolve, toFsPath } from "../path.ts";
 import Tarball, { TarEntry } from "./Tarball.ts";
 
 /**
@@ -30,8 +31,8 @@ export interface TarOptions extends FileSystemOptions {
  * ```
  */
 export default function tar(
-    src: string | FileSystemDirectoryHandle,
-    dest: string | FileSystemFileHandle,
+    src: string | URL | FileSystemDirectoryHandle,
+    dest: string | URL | FileSystemFileHandle,
     options?: TarOptions
 ): Promise<void>;
 /**
@@ -49,21 +50,25 @@ export default function tar(
  * ```
  */
 export default function tar(
-    src: string | FileSystemDirectoryHandle,
+    src: string | URL | FileSystemDirectoryHandle,
     options?: FileSystemOptions
 ): Promise<Tarball>;
 export default async function tar(
-    src: string | FileSystemDirectoryHandle,
-    dest: string | FileSystemFileHandle | TarOptions = {},
+    src: string | URL | FileSystemDirectoryHandle,
+    dest: string | URL | FileSystemFileHandle | TarOptions = {},
     options: TarOptions = {}
 ): Promise<Tarball | void> {
+    src = ensureFsTarget(src);
     let _dest: string | FileSystemFileHandle | undefined = undefined;
 
     if (typeof dest === "string") {
+        dest = isFileUrl(dest) ? toFsPath(dest) : dest;
         _dest = options.root ? dest : resolve(dest);
     } else if (typeof dest === "object") {
         if (typeof FileSystemFileHandle === "function" && dest instanceof FileSystemFileHandle) {
             _dest = dest;
+        } else if (dest instanceof URL) {
+            _dest = ensureFsTarget(dest);
         } else {
             options = dest as TarOptions;
         }

@@ -2,21 +2,27 @@ import { concat } from '../bytes.js';
 import { isDeno, isNodeLike } from '../env.js';
 import { createProgressEvent } from '../event.js';
 import { createReadableStream, ensureDir, stat, createWritableStream, chmod, utimes } from '../fs.js';
-import { makeTree } from '../fs/util.js';
-import { resolve, join, dirname, basename } from '../path.js';
+import { ensureFsTarget, makeTree } from '../fs/util.js';
+import { toFsPath, resolve, join, dirname, basename } from '../path.js';
 import { platform } from '../runtime.js';
 import Tarball, { HEADER_LENGTH, parseHeader, createEntry } from './Tarball.js';
+import { isFileUrl } from '../path/util.js';
 
 async function untar(src, dest = {}, options = {}) {
     var _a;
+    src = src instanceof ReadableStream ? src : ensureFsTarget(src);
     let _dest = undefined;
     if (typeof dest === "string") {
+        dest = isFileUrl(dest) ? toFsPath(dest) : dest;
         _dest = options.root ? dest : resolve(dest);
     }
     else if (typeof dest === "object") {
         if (typeof FileSystemDirectoryHandle === "function" &&
             dest instanceof FileSystemDirectoryHandle) {
             _dest = dest;
+        }
+        else if (dest instanceof URL) {
+            _dest = ensureFsTarget(dest);
         }
         else {
             options = dest;

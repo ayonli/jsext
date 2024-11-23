@@ -108,4 +108,36 @@ describe("archive/tar", () => {
             }
         ] as Partial<TarEntry>[]);
     }));
+
+    it("create tarball file", func(async (defer) => {
+        const filename = new URL("../archive.tar", import.meta.url);
+        await tar(new URL("../fs", import.meta.url), filename);
+        defer(() => remove(filename));
+
+        const input = createReadableStream(filename);
+        const tarball = await Tarball.load(input);
+        const entries = [...tarball].map(entry => pick(entry, ["name", "kind", "relativePath"]));
+        deepStrictEqual(orderBy(entries, e => e.relativePath), [
+            {
+                name: "fs",
+                kind: "directory",
+                relativePath: "fs",
+            },
+            {
+                name: "types.ts",
+                kind: "file",
+                relativePath: "fs/types.ts",
+            },
+            {
+                name: "util.ts",
+                kind: "file",
+                relativePath: "fs/util.ts",
+            },
+            {
+                name: "web.ts",
+                kind: "file",
+                relativePath: "fs/web.ts",
+            }
+        ] as Partial<TarEntry>[]);
+    }));
 });

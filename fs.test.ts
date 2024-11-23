@@ -64,6 +64,18 @@ describe("fs", () => {
             const ok = await exists("~");
             strictEqual(ok, true);
         });
+
+        it("file URL support", async () => {
+            {
+                const ok = await exists(new URL("./fs.ts", import.meta.url));
+                strictEqual(ok, true);
+            }
+
+            {
+                const ok = await exists(new URL("./fs.ts", import.meta.url).href);
+                strictEqual(ok, true);
+            }
+        });
     });
 
     describe("stat", () => {
@@ -290,6 +302,48 @@ describe("fs", () => {
                 } as FileInfo);
             }
         });
+
+        it("file URL support", async () => {
+            const stat1 = await stat(new URL("./fs.ts", import.meta.url));
+
+            if (isDeno) {
+                const stat2 = await Deno.stat("./fs.ts");
+                deepStrictEqual(stat1, {
+                    name: "fs.ts",
+                    kind: "file",
+                    size: stat2.size,
+                    type: "video/mp2t",
+                    mtime: stat2.mtime,
+                    atime: stat2.atime,
+                    birthtime: stat2.birthtime,
+                    mode: stat2.mode ?? 0,
+                    uid: stat2.uid ?? 0,
+                    gid: stat2.gid ?? 0,
+                    isBlockDevice: false,
+                    isCharDevice: false,
+                    isFIFO: false,
+                    isSocket: false,
+                } as FileInfo);
+            } else {
+                const stat2 = await fs.stat("./fs.ts");
+                deepStrictEqual(stat1, {
+                    name: "fs.ts",
+                    kind: "file",
+                    size: stat2.size,
+                    type: "video/mp2t",
+                    mtime: stat2.mtime,
+                    atime: stat2.atime,
+                    birthtime: stat2.birthtime,
+                    mode: stat2.mode,
+                    uid: stat2.uid,
+                    gid: stat2.gid,
+                    isBlockDevice: false,
+                    isCharDevice: false,
+                    isFIFO: false,
+                    isSocket: false,
+                } as FileInfo);
+            }
+        });
     });
 
     describe("mkdir", () => {
@@ -337,6 +391,16 @@ describe("fs", () => {
             strictEqual(_stat.name, basename(dir));
             strictEqual(_stat.kind, "directory");
         }));
+
+        it("file URL support", jsext.func(async (defer) => {
+            const url = new URL("./tmp", import.meta.url);
+            await mkdir(url);
+            defer(() => fs.rmdir(url, { recursive: true }));
+
+            const _stat = await stat(url);
+            strictEqual(_stat.name, "tmp");
+            strictEqual(_stat.kind, "directory");
+        }));
     });
 
     describe("ensureDir", () => {
@@ -346,6 +410,9 @@ describe("fs", () => {
             defer(() => remove("./tmp", { recursive: true }));
 
             await ensureDir(path);
+            const _stat = await stat(path);
+            strictEqual(_stat.name, "c");
+            strictEqual(_stat.kind, "directory");
         }));
 
         it("create", jsext.func(async (defer) => {
@@ -385,6 +452,16 @@ describe("fs", () => {
 
             const _stat = await stat(dir);
             strictEqual(_stat.name, basename(dir));
+            strictEqual(_stat.kind, "directory");
+        }));
+
+        it("file URL support", jsext.func(async (defer) => {
+            const path = new URL("./tmp/a/b/c", import.meta.url);
+            await ensureDir(path);
+            defer(() => remove(new URL("./tmp", import.meta.url), { recursive: true }));
+
+            const _stat = await stat(path);
+            strictEqual(_stat.name, "c");
             strictEqual(_stat.kind, "directory");
         }));
     });
@@ -450,11 +527,79 @@ describe("fs", () => {
             const files = await readAsArray(readDir("~"));
             ok(files.some(file => file.name === basename(dir) && file.kind === "directory"));
         }));
+
+        it("file URL support", async () => {
+            const files = await readAsArray(readDir(new URL("./esm", import.meta.url)));
+
+            for (const file of files) {
+                ok(file.name && file.name !== "");
+                strictEqual(file.relativePath, file.name);
+
+                try {
+                    strictEqual(file.kind, "file");
+                } catch {
+                    strictEqual(file.kind, "directory");
+                }
+            }
+        });
     });
 
     describe("readTree", () => {
         it("default", jsext.func(async (defer) => {
             const root = "./tmp";
+            const dir1 = "./tmp/a";
+            const dir2 = "./tmp/b/c";
+            const file1 = "./tmp/d.txt";
+            const file2 = "./tmp/b/e.txt";
+
+            await mkdir(dir1, { recursive: true });
+            await mkdir(dir2, { recursive: true });
+            await writeFile(file1, "Hello, world!");
+            await writeFile(file2, "Hello, world!");
+            defer(() => remove(root, { recursive: true }));
+
+            const tree = await readTree(root);
+
+            deepStrictEqual(tree, {
+                name: "tmp",
+                kind: "directory",
+                relativePath: "",
+                children: [
+                    {
+                        name: "a",
+                        kind: "directory",
+                        relativePath: "a",
+                        children: [],
+                    },
+                    {
+                        name: "b",
+                        kind: "directory",
+                        relativePath: "b",
+                        children: [
+                            {
+                                name: "c",
+                                kind: "directory",
+                                relativePath: join("b", "c"),
+                                children: [],
+                            },
+                            {
+                                name: "e.txt",
+                                kind: "file",
+                                relativePath: join("b", "e.txt"),
+                            },
+                        ],
+                    },
+                    {
+                        name: "d.txt",
+                        kind: "file",
+                        relativePath: "d.txt",
+                    },
+                ],
+            } satisfies DirTree);
+        }));
+
+        it("file URL support", jsext.func(async (defer) => {
+            const root = new URL("./tmp", import.meta.url);
             const dir1 = "./tmp/a";
             const dir2 = "./tmp/b/c";
             const file1 = "./tmp/d.txt";
@@ -550,6 +695,18 @@ describe("fs", () => {
 
             strictEqual(text, "Hello, world!");
         }));
+
+        it("file URL support", async () => {
+            const data = await readFile(new URL("./fs.ts", import.meta.url));
+
+            if (isDeno) {
+                const _data = await Deno.readFile("./fs.ts");
+                ok(equals(data, _data));
+            } else {
+                const _data = await fs.readFile("./fs.ts");
+                ok(equals(data, _data));
+            }
+        });
     });
 
     describe("readFileAsText", () => {
@@ -603,6 +760,18 @@ describe("fs", () => {
             const text = await readFileAsText(filename);
             strictEqual(text, "Hello, world!");
         }));
+
+        it("file URL support", async () => {
+            const text = await readFileAsText(new URL("./fs.ts", import.meta.url));
+
+            if (isDeno) {
+                const _text = await Deno.readTextFile("./fs.ts");
+                strictEqual(text, _text);
+            } else {
+                const _text = await fs.readFile("./fs.ts", "utf8");
+                strictEqual(text, _text);
+            }
+        });
     });
 
     describe("readFileAsFile", () => {
@@ -658,6 +827,26 @@ describe("fs", () => {
             const file = await readFileAsFile(filename);
             strictEqual(await file.text(), "Hello, world!");
         }));
+
+        it("file URL support", async () => {
+            const file = await readFileAsFile(new URL("./fs.ts", import.meta.url));
+            let _file: File;
+
+            if (isDeno) {
+                _file = new File([await Deno.readFile("./fs.ts")], "fs.ts", {
+                    type: "video/mp2t"
+                });
+            } else {
+                _file = new File([await fs.readFile("./fs.ts")], "fs.ts", {
+                    type: "video/mp2t"
+                });
+            }
+
+            ok(file instanceof File);
+            strictEqual(file.name, _file.name);
+            strictEqual(file.size, _file.size);
+            strictEqual(file.type, _file.type);
+        });
     });
 
     describe("writeFile", () => {
@@ -669,7 +858,7 @@ describe("fs", () => {
 
         it("text", async () => {
             const output = "Hello, world!";
-            await writeFile("./tmp.txt", output);
+            await writeFile(path, output);
 
             const text = await readFileAsText(path);
             strictEqual(text, output);
@@ -677,7 +866,7 @@ describe("fs", () => {
 
         it("Uint8Array", async () => {
             const output = bytes("Hello, world!");
-            await writeFile("./tmp.txt", output);
+            await writeFile(path, output);
 
             const data = await readFile(path);
             ok(equals(data, output));
@@ -685,7 +874,7 @@ describe("fs", () => {
 
         it("ArrayBuffer", async () => {
             const output = bytes("Hello, world!");
-            await writeFile("./tmp.txt", output.buffer);
+            await writeFile(path, output.buffer);
 
             const data = await readFile(path);
             ok(equals(data, output));
@@ -693,7 +882,7 @@ describe("fs", () => {
 
         it("DataView", async () => {
             const output = new DataView(bytes("Hello, world!").buffer);
-            await writeFile("./tmp.txt", output);
+            await writeFile(path, output);
 
             const data = await readFile(path);
             ok(equals(data, bytes("Hello, world!")));
@@ -712,7 +901,7 @@ describe("fs", () => {
                 }
             });
 
-            await writeFile("./tmp.txt", stream);
+            await writeFile(path, stream);
 
             const data = await readFile(path);
             ok(equals(data, output));
@@ -724,7 +913,7 @@ describe("fs", () => {
             }
 
             const output = new Blob([bytes("Hello, world!")]);
-            await writeFile("./tmp.txt", output);
+            await writeFile(path, output);
 
             const data = await readFile(path);
             ok(equals(data, bytes("Hello, world!")));
@@ -736,7 +925,7 @@ describe("fs", () => {
             }
 
             const output = new File([bytes("Hello, world!")], "tmp.txt");
-            await writeFile("./tmp.txt", output);
+            await writeFile(path, output);
 
             const data = await readFile(path);
             ok(equals(data, bytes("Hello, world!")));
@@ -793,6 +982,15 @@ describe("fs", () => {
 
             ok(await exists(join(homedir, baseName)));
         }));
+
+        it("file URL support", async () => {
+            const path = new URL("./tmp.txt", import.meta.url);
+            const output = "Hello, world!";
+            await writeFile(path, output);
+
+            const text = await readFileAsText(path);
+            strictEqual(text, output);
+        });
     });
 
     describe("writeLines", () => {
@@ -923,12 +1121,24 @@ describe("fs", () => {
             const text = await readFileAsText(filename);
             strictEqual(text, "");
         }));
+
+        it("file URL support", jsext.func(async (defer) => {
+            const path = new URL("./tmp.txt", import.meta.url);
+            await writeFile(path, "Hello, world!");
+            defer(() => remove(path));
+
+            await truncate(path);
+
+            const text = await readFileAsText(path);
+            strictEqual(text, "");
+        }));
     });
 
     describe("remove", () => {
         it("default", async () => {
             const path = "./tmp.txt";
             await writeFile(path, "Hello, world!");
+            strictEqual(await exists(path), true);
             await remove(path);
 
             const ok = await exists(path);
@@ -939,6 +1149,7 @@ describe("fs", () => {
             const path = "./tmp";
             await mkdir(path);
             await writeFile(path + "/tmp.txt", "Hello, world!");
+            strictEqual(await exists(path + "/tmp.txt"), true);
             await remove(path, { recursive: true });
 
             const ok = await exists(path);
@@ -955,6 +1166,16 @@ describe("fs", () => {
             await remove(filename);
 
             strictEqual(await exists(join(homedir, baseName)), false);
+        });
+
+        it("file URL support", async () => {
+            const path = new URL("./tmp.txt", import.meta.url);
+            await writeFile(path, "Hello, world!");
+            strictEqual(await exists(path), true);
+            await remove(path);
+
+            const ok = await exists(path);
+            strictEqual(ok, false);
         });
     });
 
@@ -996,6 +1217,18 @@ describe("fs", () => {
 
             strictEqual(await exists(join(homedir, baseName + ".txt")), false);
             strictEqual(await exists(join(homedir, baseName + "1.txt")), true);
+        }));
+
+        it("file URL support", jsext.func(async (defer) => {
+            const src = new URL("./tmp.txt", import.meta.url);
+            const dest = new URL("./tmp1.txt", import.meta.url);
+
+            await writeFile(src, "Hello, world!");
+            await rename(src, dest);
+            defer(() => remove(dest));
+
+            strictEqual(await exists(src), false);
+            strictEqual(await exists(dest), true);
         }));
     });
 
@@ -1074,6 +1307,22 @@ describe("fs", () => {
             const text = await readFileAsText(dest);
             strictEqual(text, "Hello, world!");
         }));
+
+        it("file URL support", jsext.func(async (defer) => {
+            const src = new URL("./tmp.txt", import.meta.url);
+            const dest = new URL("./tmp1.txt", import.meta.url);
+
+            await writeFile(src, "Hello, world!");
+            await copy(src, dest);
+            defer(() => remove(src));
+            defer(() => remove(dest));
+
+            const text = await readFileAsText(src);
+            strictEqual(text, "Hello, world!");
+
+            const text2 = await readFileAsText(dest);
+            strictEqual(text2, "Hello, world!");
+        }));
     });
 
     describe("link & readLink", () => {
@@ -1132,6 +1381,18 @@ describe("fs", () => {
                 }
             }
         }));
+
+        it("file URL support", jsext.func(async (defer) => {
+            const src = new URL("./fs.ts", import.meta.url);
+            const dest = new URL("./fs-ln.ts", import.meta.url);
+
+            await link(src, dest);
+            defer(() => remove(dest));
+
+            const _stat = await stat(dest);
+            strictEqual(_stat.name, "fs-ln.ts");
+            strictEqual(_stat.kind, "file");
+        }));
     });
 
     describe("chmod", () => {
@@ -1164,6 +1425,23 @@ describe("fs", () => {
             await chmod(path, 0o755);
 
             const _stat = await stat(join(homedir, "tmp.txt"));
+            strictEqual(_stat.name, "tmp.txt");
+            strictEqual(_stat.kind, "file");
+            strictEqual(_stat.mode & 0o755, 0o755);
+        }));
+
+        it("file URL support", jsext.func(async function (defer) {
+            if (platform() === "windows") {
+                this.skip();
+            }
+
+            const path = new URL("./tmp.txt", import.meta.url);
+            await writeFile(path, "Hello, world!");
+            defer(() => remove(path));
+
+            await chmod(path, 0o755);
+
+            const _stat = await stat(path);
             strictEqual(_stat.name, "tmp.txt");
             strictEqual(_stat.kind, "file");
             strictEqual(_stat.mode & 0o755, 0o755);
@@ -1212,6 +1490,22 @@ describe("fs", () => {
             deepStrictEqual(_stat1.atime, atime1);
             deepStrictEqual(_stat1.mtime, mtime1);
         }));
+
+        it("file URL support", jsext.func(async (defer) => {
+            const path = new URL("./tmp.txt", import.meta.url);
+            await writeFile(path, "Hello, world!");
+            defer(() => remove(path));
+
+            const atime1 = new Date(0);
+            const mtime1 = new Date(0);
+            await utimes(path, atime1, mtime1);
+
+            const _stat1 = await stat(path);
+            strictEqual(_stat1.name, "tmp.txt");
+            strictEqual(_stat1.kind, "file");
+            deepStrictEqual(_stat1.atime, atime1);
+            deepStrictEqual(_stat1.mtime, mtime1);
+        }));
     });
 
     describe("createReadableStream", () => {
@@ -1240,6 +1534,16 @@ describe("fs", () => {
             const _text = await readFileAsText("./fs.ts");
             strictEqual(text, _text);
         }));
+
+        it("file URL support", async () => {
+            const path = new URL("./fs.ts", import.meta.url);
+            const stream = createReadableStream(path);
+            ok(stream instanceof ReadableStream);
+
+            const text = await readAsText(stream);
+            const _text = await readFileAsText(path);
+            strictEqual(text, _text);
+        });
     });
 
     describe("createWritableStream", async () => {
@@ -1273,6 +1577,21 @@ describe("fs", () => {
             await reader.pipeTo(writer);
 
             strictEqual(await exists(join(homedir, basename(dest))), true);
+
+            const srcData = await readFile(src);
+            const destData = await readFile(dest);
+            ok(equals(srcData, destData));
+        }));
+
+        it("file URL support", jsext.func(async (defer) => {
+            const src = new URL("./fs.ts", import.meta.url);
+            const dest = new URL("./tmp.txt", import.meta.url);
+            const reader = createReadableStream(src);
+            const writer = createWritableStream(dest);
+            defer(() => remove(dest));
+
+            ok(writer instanceof WritableStream);
+            await reader.pipeTo(writer);
 
             const srcData = await readFile(src);
             const destData = await readFile(dest);

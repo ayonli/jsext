@@ -56,7 +56,7 @@ import { isDeno, isNodeLike } from "./env.ts";
 import { Exception } from "./error.ts";
 import { getMIME } from "./filetype.ts";
 import type { FileInfo, DirEntry, FileSystemOptions, DirTree } from "./fs/types.ts";
-import { fixDirEntry, makeTree, rawOp, wrapFsError } from "./fs/util.ts";
+import { ensureFsTarget, fixDirEntry, makeTree, rawOp, wrapFsError } from "./fs/util.ts";
 import {
     getDirHandle,
     getFileHandle,
@@ -165,7 +165,7 @@ export interface GetFileOptions extends FileSystemOptions {
  * }
  * ```
  */
-export async function exists(path: string, options: FileSystemOptions = {}): Promise<boolean> {
+export async function exists(path: string | URL, options: FileSystemOptions = {}): Promise<boolean> {
     try {
         await stat(path, options);
         return true;
@@ -216,9 +216,11 @@ export interface StatOptions extends FileSystemOptions {
  * ```
  */
 export async function stat(
-    target: string | FileSystemFileHandle | FileSystemDirectoryHandle,
+    target: string | URL | FileSystemFileHandle | FileSystemDirectoryHandle,
     options: StatOptions = {}
 ): Promise<FileInfo> {
+    target = ensureFsTarget(target);
+
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         return await webStat(target, options);
     }
@@ -322,7 +324,9 @@ export interface MkdirOptions extends FileSystemOptions {
  * await mkdir("/path/to/dir", { recursive: true });
  * ```
  */
-export async function mkdir(path: string, options: MkdirOptions = {}): Promise<void> {
+export async function mkdir(path: string | URL, options: MkdirOptions = {}): Promise<void> {
+    path = ensureFsTarget(path);
+
     if (!(isDeno || isNodeLike)) {
         return await webMakeDir(path, options);
     }
@@ -358,7 +362,7 @@ export async function mkdir(path: string, options: MkdirOptions = {}): Promise<v
  * ```
  */
 export async function ensureDir(
-    path: string,
+    path: string | URL,
     options: Omit<MkdirOptions, "recursive"> = {}
 ): Promise<void> {
     if (await exists(path, options)) {
@@ -425,9 +429,11 @@ export interface ReadDirOptions extends FileSystemOptions {
  * ```
  */
 export async function* readDir(
-    target: string | FileSystemDirectoryHandle,
+    target: string | URL | FileSystemDirectoryHandle,
     options: ReadDirOptions = {}
 ): AsyncIterableIterator<DirEntry> {
+    target = ensureFsTarget(target);
+
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         yield* webReadDir(target, options);
         return;
@@ -516,9 +522,11 @@ export async function* readDir(
  * ```
  */
 export async function readTree(
-    target: string | FileSystemDirectoryHandle,
+    target: string | URL | FileSystemDirectoryHandle,
     options: FileSystemOptions = {}
 ): Promise<DirTree> {
+    target = ensureFsTarget(target);
+
     const entries = (await readAsArray(readDir(target, { ...options, recursive: true })));
     const tree = makeTree<DirEntry, DirTree>(target, entries, true);
 
@@ -560,9 +568,11 @@ export interface ReadFileOptions extends FileSystemOptions {
  * ```
  */
 export async function readFile(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     options: ReadFileOptions = {}
 ): Promise<Uint8Array> {
+    target = ensureFsTarget(target);
+
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         return await webReadFile(target, options);
     }
@@ -609,7 +619,7 @@ export async function readFile(
  * ```
  */
 export async function readFileAsText(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     options: ReadFileOptions & { encoding?: string; } = {}
 ): Promise<string> {
     const { encoding, ...rest } = options;
@@ -640,9 +650,11 @@ export async function readFileAsText(
  * ```
  */
 export async function readFileAsFile(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     options: ReadFileOptions = {}
 ): Promise<File> {
+    target = ensureFsTarget(target);
+
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         return await webReadFileAsFile(target, options);
     }
@@ -736,10 +748,12 @@ export interface WriteFileOptions extends FileSystemOptions {
  * ```
  */
 export async function writeFile(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
     options: WriteFileOptions = {}
 ): Promise<void> {
+    target = ensureFsTarget(target);
+
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         return await webWriteFile(target, data, options);
     }
@@ -831,7 +845,7 @@ export async function writeFile(
  * ```
  */
 export async function writeLines(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     lines: string[],
     options: WriteFileOptions = {}
 ): Promise<void> {
@@ -910,10 +924,12 @@ export async function writeLines(
  * ```
  */
 export async function truncate(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     size = 0,
     options: FileSystemOptions = {}
 ): Promise<void> {
+    target = ensureFsTarget(target);
+
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         return await webTruncate(target, size, options);
     }
@@ -967,7 +983,9 @@ export interface RemoveOptions extends FileSystemOptions {
  * await remove("/path/to/dir", { recursive: true });
  * ```
  */
-export async function remove(path: string, options: RemoveOptions = {}): Promise<void> {
+export async function remove(path: string | URL, options: RemoveOptions = {}): Promise<void> {
+    path = ensureFsTarget(path);
+
     if (!(isDeno || isNodeLike)) {
         return await webRemove(path, options);
     }
@@ -1018,10 +1036,13 @@ export async function remove(path: string, options: RemoveOptions = {}): Promise
  * ```
  */
 export async function rename(
-    oldPath: string,
-    newPath: string,
+    oldPath: string | URL,
+    newPath: string | URL,
     options: FileSystemOptions = {}
 ): Promise<void> {
+    oldPath = ensureFsTarget(oldPath);
+    newPath = ensureFsTarget(newPath);
+
     if (!(isDeno || isNodeLike)) {
         return await webRename(oldPath, newPath, options);
     }
@@ -1096,7 +1117,11 @@ export interface CopyOptions extends FileSystemOptions {
  * console.assert(await exists("/path/to/dir/file.txt"));
  * ```
  */
-export async function copy(src: string, dest: string, options?: CopyOptions): Promise<void>;
+export async function copy(
+    src: string | URL,
+    dest: string | URL,
+    options?: CopyOptions
+): Promise<void>;
 /**
  * @example
  * ```ts
@@ -1131,10 +1156,13 @@ export async function copy(
     options?: Pick<CopyOptions, "recursive">
 ): Promise<void>;
 export async function copy(
-    src: string | FileSystemFileHandle | FileSystemDirectoryHandle,
-    dest: string | FileSystemFileHandle | FileSystemDirectoryHandle,
+    src: string | URL | FileSystemFileHandle | FileSystemDirectoryHandle,
+    dest: string | URL | FileSystemFileHandle | FileSystemDirectoryHandle,
     options: CopyOptions = {}
 ): Promise<void> {
+    src = ensureFsTarget(src);
+    dest = ensureFsTarget(dest);
+
     if (typeof src === "object" || typeof dest === "object" || !(isDeno || isNodeLike)) {
         // @ts-ignore internal call
         return await webCopy(src, dest, options);
@@ -1244,7 +1272,13 @@ export interface LinkOptions {
  * await link("/path/to/file.txt", "/path/to/link.txt", { symbolic: true });
  * ```
  */
-export async function link(src: string, dest: string, options: LinkOptions = {}): Promise<void> {
+export async function link(
+    src: string | URL,
+    dest: string | URL,
+    options: LinkOptions = {}
+): Promise<void> {
+    src = ensureFsTarget(src);
+    dest = ensureFsTarget(dest);
     src = await resolveHomeDir(src);
     dest = await resolveHomeDir(dest);
 
@@ -1292,7 +1326,8 @@ export async function link(src: string, dest: string, options: LinkOptions = {})
  * console.log(dest);
  * ```
  */
-export async function readLink(path: string): Promise<string> {
+export async function readLink(path: string | URL): Promise<string> {
+    path = ensureFsTarget(path);
     path = await resolveHomeDir(path);
 
     if (isDeno) {
@@ -1337,8 +1372,9 @@ export async function readLink(path: string): Promise<string> {
  * await chmod("/path/to/file.txt", 0o644);
  * ```
  */
-export async function chmod(path: string, mode: number): Promise<void> {
+export async function chmod(path: string | URL, mode: number): Promise<void> {
     if (platform() !== "windows") {
+        path = ensureFsTarget(path);
         path = await resolveHomeDir(path);
 
         if (isDeno) {
@@ -1366,6 +1402,7 @@ export async function chmod(path: string, mode: number): Promise<void> {
  */
 export async function chown(path: string, uid: number, gid: number): Promise<void> {
     if (platform() !== "windows") {
+        path = ensureFsTarget(path);
         path = await resolveHomeDir(path);
 
         if (isDeno) {
@@ -1394,10 +1431,11 @@ export async function chown(path: string, uid: number, gid: number): Promise<voi
  * ```
  */
 export async function utimes(
-    path: string,
+    path: string | URL,
     atime: number | Date,
     mtime: number | Date
 ): Promise<void> {
+    path = ensureFsTarget(path);
     path = await resolveHomeDir(path);
 
     if (isDeno) {
@@ -1439,9 +1477,11 @@ export async function utimes(
  * ```
  */
 export function createReadableStream(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     options: FileSystemOptions = {}
 ): ReadableStream<Uint8Array> {
+    target = ensureFsTarget(target);
+
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         return webCreateReadableStream(target, options);
     }
@@ -1503,9 +1543,11 @@ export function createReadableStream(
  * ```
  */
 export function createWritableStream(
-    target: string | FileSystemFileHandle,
+    target: string | URL | FileSystemFileHandle,
     options: Omit<WriteFileOptions, "signal"> = {}
 ): WritableStream<Uint8Array> {
+    target = ensureFsTarget(target);
+
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         return webCreateWritableStream(target, options);
     }

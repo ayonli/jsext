@@ -3,9 +3,25 @@ import { omit } from '../object.js';
 import Exception from '../error/Exception.js';
 import '../external/event-target-polyfill/index.js';
 import { getMIME } from '../filetype.js';
-import { extname, basename } from '../path.js';
-import { split } from '../path/util.js';
+import { toFsPath, extname, basename } from '../path.js';
+import { isFileUrl, split } from '../path/util.js';
 
+function ensureFsTarget(path) {
+    if (path instanceof URL) {
+        if (path.protocol !== "file:") {
+            throw new TypeError("Only file URLs are supported");
+        }
+        else {
+            return toFsPath(path.href);
+        }
+    }
+    else if (typeof path === "string" && isFileUrl(path)) {
+        return toFsPath(path);
+    }
+    else {
+        return path;
+    }
+}
 function getErrorName(err) {
     if (err.constructor === Error) {
         return err.constructor.name;
@@ -208,5 +224,5 @@ function makeTree(dir, entries, addPathProp = false) {
     return rooEntry;
 }
 
-export { fixDirEntry, fixFileType, makeTree, rawOp, wrapFsError };
+export { ensureFsTarget, fixDirEntry, fixFileType, makeTree, rawOp, wrapFsError };
 //# sourceMappingURL=util.js.map

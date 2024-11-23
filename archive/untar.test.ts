@@ -278,4 +278,50 @@ describe("archive/untar", () => {
         ok(messages.length > 0);
         ok(messages.at(-1) === "Extracting: 100%");
     }));
+
+    it("file URL support", func(async (defer) => {
+        const filename = new URL("../archive.tar", import.meta.url);
+        const outDir = new URL("../tmp", import.meta.url);
+        await untar(filename, outDir);
+        defer(() => remove(outDir, { recursive: true }));
+
+        const _entries = await readAsArray(readDir(outDir, { recursive: true }));
+        const entries = orderBy(
+            _entries.map(entry => pick(entry, ["name", "kind", "relativePath"])),
+            e => e.relativePath);
+
+        deepStrictEqual(entries, [
+            {
+                name: "fs",
+                kind: "directory",
+                relativePath: "fs",
+            },
+            {
+                name: "types.ts",
+                kind: "file",
+                relativePath: join("fs", "types.ts"),
+            },
+            {
+                name: "util.ts",
+                kind: "file",
+                relativePath: join("fs", "util.ts"),
+            },
+            {
+                name: "web.ts",
+                kind: "file",
+                relativePath: join("fs", "web.ts"),
+            },
+        ] as Partial<DirEntry>[]);
+
+        for (const entry of entries) {
+            if (entry.kind === "file") {
+                const content1 = await readFileAsText(join(outDir.href, entry.relativePath));
+                const content2 = await readFileAsText(entry.relativePath);
+                strictEqual(content1, content2);
+            } else if (entry.kind === "directory") {
+                const ok = await exists(entry.relativePath);
+                strictEqual(ok, true);
+            }
+        }
+    }));
 });
