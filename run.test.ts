@@ -34,8 +34,15 @@ describe("jsext.run", () => {
         });
 
         it("file URL", async () => {
-            const job = await jsext.run(new URL("examples/worker.mjs", import.meta.url).href, ["World"]);
-            strictEqual(await job.result(), "Hello, World");
+            {
+                const job = await jsext.run(new URL("examples/worker.mjs", import.meta.url), ["World"]);
+                strictEqual(await job.result(), "Hello, World");
+            }
+
+            {
+                const job = await jsext.run(new URL("examples/worker.mjs", import.meta.url).href, ["World"]);
+                strictEqual(await job.result(), "Hello, World");
+            }
         });
 
         it("TS supports", async function () {
