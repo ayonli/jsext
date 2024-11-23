@@ -1,7 +1,10 @@
-import { deepStrictEqual, strictEqual } from "node:assert";
-import { interop } from "./module.ts";
+import { deepStrictEqual, ok, strictEqual } from "node:assert";
+import { importWasm, interop } from "./module.ts";
+import { readFile } from "./fs.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 import { run } from "./cli.ts";
+import { randomPort, serve, serveStatic } from "./http.ts";
+import func from "./func.ts";
 
 describe("module", () => {
     describe("interop", () => {
@@ -119,6 +122,109 @@ describe("module", () => {
                 const { stdout } = await run("bun", ["run", "./examples/module/bar.cjs"]);
                 strictEqual(stdout.trim(), "bar.cjs is the main module");
             }
+        });
+    });
+
+    describe("importWasm", () => {
+        it("file path", async () => {
+            const module = await importWasm<{
+                timestamp: () => number;
+            }>("./examples/convert.wasm", {
+                Date: { now: Date.now },
+            });
+
+            ok(module.timestamp() > 0);
+
+            // test cache
+            const module2 = await importWasm<{
+                timestamp: () => number;
+            }>("./examples/convert.wasm", {
+                Date: { now: Date.now },
+            });
+
+            ok(module === module2);
+        });
+
+        it("file URL", async () => {
+            const module = await importWasm<{
+                timestamp: () => number;
+            }>(new URL("./examples/convert.wasm", import.meta.url), {
+                Date: { now: Date.now },
+            });
+
+            ok(module.timestamp() > 0);
+
+            // test cache
+            const module2 = await importWasm<{
+                timestamp: () => number;
+            }>(new URL("./examples/convert.wasm", import.meta.url).href, {
+                Date: { now: Date.now },
+            });
+
+            ok(module === module2);
+        });
+
+        it("http URL", func(async function (defer) {
+            if (typeof fetch !== "function") {
+                this.skip();
+            }
+
+            const port = await randomPort(8000);
+            const server = serve({
+                async fetch(req) {
+                    const { pathname } = new URL(req.url);
+
+                    if (pathname === "/example" || pathname.startsWith("/example/")) {
+                        return await serveStatic(req, {
+                            fsDir: "./examples",
+                            urlPrefix: "/example",
+                        });
+                    }
+
+                    return new Response("Not Found", { status: 404 });
+                }
+            });
+            await server.ready;
+            defer(() => server.close(true));
+
+            const url = new URL(`http://localhost:${port}/example/convert.wasm`);
+            const module = await importWasm<{
+                timestamp: () => number;
+            }>(url, {
+                Date: { now: Date.now },
+            });
+
+            ok(module.timestamp() > 0);
+
+            // test cache
+            const module2 = await importWasm<{
+                timestamp: () => number;
+            }>(url.href, {
+                Date: { now: Date.now },
+            });
+
+            ok(module === module2);
+        }));
+
+        it("WebAssembly.Module", async () => {
+            const bytes = await readFile("./examples/convert.wasm");
+            const _module = new WebAssembly.Module(bytes);
+            const module = await importWasm<{
+                timestamp: () => number;
+            }>(_module, {
+                Date: { now: Date.now },
+            });
+
+            ok(module.timestamp() > 0);
+
+            // test cache
+            const module2 = await importWasm<{
+                timestamp: () => number;
+            }>(_module, {
+                Date: { now: Date.now },
+            });
+
+            ok(module === module2);
         });
     });
 });

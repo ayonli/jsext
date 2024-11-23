@@ -1,7 +1,8 @@
 import { args, parseArgs } from "../cli.ts";
 import { serve, serveStatic } from "../http.ts";
+import { importWasm } from "../module.ts";
 import { startsWith } from "../path.ts";
-import { addUnhandledRejectionListener } from "../runtime.ts";
+import runtime, { addUnhandledRejectionListener } from "../runtime.ts";
 
 const options = parseArgs(args);
 
@@ -15,9 +16,19 @@ addUnhandledRejectionListener(ev => {
 serve({
     port: Number(options.port || 8000),
     async fetch(request, ctx) {
+        console.log(new Date().toISOString(), request.method, request.url, ctx.remoteAddress?.address);
         const { pathname } = new URL(request.url);
 
-        if (pathname === "/ws") {
+        if (pathname === "/") {
+            if (runtime().identity === "workerd") {
+                return new Response("Hello, World!");
+            } else {
+                return serveStatic(request, {
+                    fsDir: ".",
+                    listDir: true,
+                });
+            }
+        } else if (pathname === "/ws") {
             const { socket, response } = ctx.upgradeWebSocket();
 
             socket.addEventListener("open", () => {
@@ -56,8 +67,31 @@ serve({
                 urlPrefix: "/esm",
                 listDir: true,
             });
+        } else if (startsWith(pathname, "/bundle")) {
+            return serveStatic(request, {
+                fsDir: "./bundle",
+                urlPrefix: "/bundle",
+                listDir: true,
+            });
+        } else if (pathname === "/timestamp") {
+            let module: string | WebAssembly.Module;
+
+            if (["bun", "workerd"].includes(runtime().identity)) {
+                // @ts-ignore
+                module = (await import("./convert.wasm")).default;
+            } else {
+                module = new URL("./convert.wasm", import.meta.url).href;
+            }
+
+            const { timestamp } = await importWasm<{
+                timestamp: () => number;
+            }>(module, {
+                Date: { now: Date.now },
+            });
+
+            return new Response(timestamp().toString());
         }
 
-        return new Response(`Hello, ${ctx.remoteAddress?.address}!`);
+        return new Response("Not Found", { status: 404 });
     },
 });

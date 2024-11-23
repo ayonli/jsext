@@ -48,11 +48,15 @@ class Server {
                 delete this.fetch;
             }
             else {
-                this.fetch = (req) => {
+                this.fetch = (req, info) => {
                     const { getTimers, time, timeEnd } = createTimingFunctions();
                     const ctx = createRequestContext(req, {
                         ws,
-                        remoteAddress: null,
+                        remoteAddress: !info ? null : {
+                            family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
+                            address: info.remoteAddr.hostname,
+                            port: info.remoteAddr.port,
+                        },
                         time,
                         timeEnd,
                     });

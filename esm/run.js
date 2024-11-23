@@ -9,6 +9,7 @@ import { getMaxParallelism, createWorker, wrapArgs, isCallResponse, unwrapReturn
 import parallel from './parallel.js';
 import { unrefTimer } from './runtime.js';
 import { asyncTask } from './async.js';
+import { isAbsolute } from './path/util.js';
 
 /**
  * Runs a script in another thread and abort at any time.
@@ -89,10 +90,10 @@ async function run(script, args, options) {
     const fn = (options === null || options === void 0 ? void 0 : options.fn) || "default";
     let modId = sanitizeModuleId(script);
     let baseUrl = undefined;
-    if (isBrowserWindow) {
+    if (isBrowserWindow) { // browser main thread
         baseUrl = location.href;
     }
-    else {
+    else if (!isAbsolute(modId)) {
         try {
             baseUrl = toFileUrl(cwd()) + "/"; // must ends with `/`
         }

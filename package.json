@@ -15,7 +15,7 @@
         },
         "./archive": {
             "types": "./types/archive.d.ts",
-            "bun": "./archive.ts",
+            "bun": "./archive/bun.ts",
             "workerd": "./esm/workerd/archive.js",
             "fastly": "./esm/workerd/archive.js",
             "import": "./esm/archive.js",
@@ -252,9 +252,18 @@
         "./module": {
             "types": "./types/module.d.ts",
             "bun": "./module.ts",
+            "workerd": "./esm/module/web.js",
+            "fastly": "./esm/module/web.js",
             "import": "./esm/module.js",
             "require": "./cjs/module.js",
             "default": "./module.ts"
+        },
+        "./module/web": {
+            "types": "./types/module/web.d.ts",
+            "bun": "./module/web.ts",
+            "import": "./esm/module/web.js",
+            "require": "./cjs/module/web.js",
+            "default": "./module/web.ts"
         },
         "./number": {
             "types": "./types/number.d.ts",

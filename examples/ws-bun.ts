@@ -6,7 +6,7 @@ const bunServer = Bun.serve({
     port: 8000,
     fetch: async (req: Request) => {
         if (req.headers.get("upgrade") === "websocket") {
-            const { socket, response } = await wsServer.upgrade(req);
+            const { socket, response } = wsServer.upgrade(req);
 
             console.log("client connected");
             socket.send("hello from server");

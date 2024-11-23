@@ -1,3 +1,4 @@
+import "../external/compression-stream-polyfill/index.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { stat, createReadableStream, createWritableStream, readFileAsText, remove, exists } from "../fs.ts";
 import Tarball, { type TarEntry, _entries, TarTree } from "../archive/Tarball.ts";

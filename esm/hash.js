@@ -1,6 +1,7 @@
 import bytes from './bytes.js';
 import { isDeno, isNodeLike } from './env.js';
-import hash, { sha1 as sha1$1, sha256 as sha256$1, sha512 as sha512$1, hmac as hmac$1, toBytesAsync } from './hash/web.js';
+import { toBytesAsync } from './hash/util.js';
+import hash, { sha1 as sha1$1, sha256 as sha256$1, sha512 as sha512$1, hmac as hmac$1 } from './hash/web.js';
 export { adler32, crc32 } from './hash/web.js';
 
 /**

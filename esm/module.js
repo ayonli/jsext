@@ -1,150 +1,112 @@
-import { isDedicatedWorker, isSharedWorker, isBrowserWindow } from './env.js';
-import { extname } from './path.js';
-import { getObjectURL } from './module/util.js';
-import { equals } from './path/util.js';
+import { isNodeLike, isDeno } from './env.js';
+import { createReadableStream, readFile } from './fs.js';
+import { toFsPath, resolve } from './path.js';
+import { importWasm as importWasm$1 } from './module/web.js';
+export { importScript, importStylesheet, interop, isMain } from './module/web.js';
+import { isUrl, isFileUrl } from './path/util.js';
 
 /**
  * Utility functions for working with JavaScript modules.
  * @module
  */
-function interop(module, strict = undefined) {
-    if (typeof module === "function") {
-        return module().then(mod => interop(mod, strict));
-    }
-    else if (module instanceof Promise) {
-        return module.then(mod => interop(mod, strict));
-    }
-    else if (typeof module === "object" && module !== null && !Array.isArray(module)) {
-        if (typeof module["default"] === "object" &&
-            module["default"] !== null &&
-            !Array.isArray(module["default"])) {
-            const hasEsModule = module["__esModule"] === true
-                || module["default"]["__esModule"] === true;
-            if (hasEsModule) {
-                return module["default"];
-            }
-            else if (strict) {
-                return module;
-            }
-            const moduleKeys = Object.getOwnPropertyNames(module)
-                .filter(x => x !== "default" && x !== "__esModule").sort();
-            const defaultKeys = Object.getOwnPropertyNames(module["default"])
-                .filter(x => x !== "default" && x !== "__esModule").sort();
-            if (String(moduleKeys) === String(defaultKeys)) {
-                return module["default"];
-            }
-            else if (strict === false && !moduleKeys.length) {
-                return module["default"];
-            }
-        }
-    }
-    return module;
-}
-function isMain(importMeta) {
-    if ("main" in importMeta && typeof importMeta["main"] === "boolean") {
-        return importMeta["main"];
-    }
-    if ("serviceWorker" in globalThis && "url" in importMeta) {
-        // @ts-ignore
-        return globalThis["serviceWorker"]["scriptURL"] === importMeta.url;
-    }
-    else if ((isDedicatedWorker || isSharedWorker)
-        && "url" in importMeta && typeof location === "object" && location) {
-        return importMeta.url === location.href;
-    }
-    if (typeof process === "object" && Array.isArray(process.argv) && process.argv.length) {
-        if (!process.argv[1]) {
-            // Node.js REPL or the program is executed by `node -e "code"`,
-            // or the program is executed by itself.
-            return ["<repl>", "[eval]"].includes(importMeta["id"]);
-        }
-        const filename = "url" in importMeta ? importMeta.url : importMeta["filename"];
-        const urlExt = extname(filename);
-        let entry = process.argv[1];
-        if (!extname(entry) && urlExt) {
-            // In Node.js, the extension name may be omitted when starting the script.
-            entry += urlExt;
-        }
-        return equals(filename, entry, { ignoreFileProtocol: true });
-    }
-    return false;
-}
-const importCache = new Map();
+const wasmCache = new Map();
 /**
- * Imports a script from the given URL to the current document, useful for
- * loading 3rd-party libraries dynamically in the browser.
+ * Imports a WebAssembly module from a URL or file path (relative to the current
+ * working directory if not absolute), or from a {@link WebAssembly.Module}
+ * object, returns the symbols exported by the module.
  *
- * NOTE: This function is only available in the browser.
+ * This function is available in both the browser and server runtimes such as
+ * Node.js, Deno, Bun and Cloudflare Workers.
  *
- * @example
+ * This function uses cache to avoid loading the same module multiple times.
+ *
+ * @param imports An object containing the values to be imported by the
+ * WebAssembly module, allowing passing values from JavaScript to WebAssembly.
+ *
  * ```ts
- * import { importScript } from "@ayonli/jsext/module";
+ * import { importWasm } from "@ayonli/jsext/module";
  *
- * await importScript("https://code.jquery.com/jquery-3.7.1.min.js");
+ * const { timestamp } = await importWasm<{
+ *     timestamp: () => number; // function exported by the WebAssembly module
+ * }>("./examples/convert.wasm", {
+ *     // JavaScript module and function passed into the WebAssembly module
+ *     Date: { now: Date.now },
+ * });
  *
- * console.assert(typeof jQuery === "function");
- * console.assert($ === jQuery);
+ * console.log("The current timestamp is:", timestamp());
  * ```
- */
-function importScript(url, options = {}) {
-    if (!isBrowserWindow) {
-        return Promise.reject(new Error("This function is only available in the browser."));
-    }
-    url = new URL(url, location.href).href;
-    let cache = importCache.get(url);
-    if (cache) {
-        return cache;
-    }
-    cache = new Promise((resolve, reject) => {
-        getObjectURL(url).then(_url => {
-            const script = document.createElement("script");
-            script.src = _url;
-            script.type = options.type === "module" ? "module" : "text/javascript";
-            script.setAttribute("data-src", url);
-            script.onload = () => setTimeout(resolve, 0);
-            script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
-            document.head.appendChild(script);
-        }).catch(reject);
-    });
-    importCache.set(url, cache);
-    return cache;
-}
-/**
- * Imports a stylesheet from the given URL to the current document, useful for
- * loading 3rd-party libraries dynamically in the browser.
  *
- * NOTE: This function is only available in the browser.
+ * The corresponding WebAssembly module `convert.wasm` in text format looks like
+ * this:
  *
- * @example
+ * ```wat
+ * ;; examples/convert.wat
+ * (module
+ *   (import "Date" "now" (func $now (result i32)))
+ *   (func (export "timestamp") (result i32)
+ *     call $now
+ *     ;; Convert to seconds
+ *     i32.const 1000
+ *     i32.div_u
+ *   )
+ * )
+ * ```
+ *
+ * NOTE: In Cloudflare Workers, this function cannot access the file system, we
+ * need to import the WebAssembly module with a `import` statement or with the
+ * `import()` function before we can use it. For example:
+ *
  * ```ts
- * import { importStylesheet } from "@ayonli/jsext/module";
+ * // In Cloudflare Workers
+ * import { importWasm } from "@ayonli/jsext/module";
+ * import wasmModule from "./examples/convert.wasm";
  *
- * await importStylesheet("https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css");
+ * const { timestamp } = await importWasm<{
+ *     timestamp: () => number; // function exported by the WebAssembly module
+ * }>(wasmModule, {
+ *     // JavaScript module and function passed into the WebAssembly module
+ *     Date: { now: Date.now },
+ * });
+ *
+ * console.log("The current timestamp is:", timestamp());
  * ```
+ *
+ * NOTE: Deno v2.1+ has built-in support for importing WebAssembly modules as
+ * JavaScript modules, it's recommended to use the built-in `import` statement
+ * to import WebAssembly modules directly for Deno programs.
  */
-function importStylesheet(url) {
-    if (!isBrowserWindow) {
-        return Promise.reject(new Error("This function is only available in the browser."));
+async function importWasm(module, imports = undefined) {
+    if ((!isNodeLike && !isDeno) ||
+        module instanceof WebAssembly.Module ||
+        (module instanceof URL && module.protocol !== "file:") ||
+        (typeof module === "string" && isUrl(module) && !isFileUrl(module))) {
+        return await importWasm$1(module, imports);
     }
-    url = new URL(url, location.href).href;
-    let cache = importCache.get(url);
-    if (cache) {
-        return cache;
+    const src = typeof module === "string" ? module : module.href;
+    const filename = isFileUrl(src) ? toFsPath(src) : resolve(src);
+    if (typeof WebAssembly.instantiateStreaming === "function") {
+        let cache = wasmCache.get(filename);
+        if (!cache) {
+            const stream = createReadableStream(filename);
+            cache = Promise.resolve(new Response(stream, {
+                headers: { "Content-Type": "application/wasm" },
+            })).then(res => WebAssembly.instantiateStreaming(res, imports))
+                .then(ins => ins.instance.exports);
+            wasmCache.set(filename, cache);
+        }
+        return await cache;
     }
-    cache = new Promise((resolve, reject) => {
-        getObjectURL(url, "text/css").then(_url => {
-            const link = document.createElement("link");
-            link.href = _url;
-            link.rel = "stylesheet";
-            link.setAttribute("data-src", url);
-            link.onload = () => setTimeout(resolve, 0);
-            link.onerror = () => reject(new Error(`Failed to load stylesheet: ${url}`));
-            document.head.appendChild(link);
-        }).catch(reject);
-    });
-    importCache.set(url, cache);
-    return cache;
+    else {
+        let cache = wasmCache.get(filename);
+        if (!cache) {
+            cache = readFile(filename)
+                .then(bytes => WebAssembly.instantiate(bytes, imports))
+                .then(ins => ins.instance.exports);
+            wasmCache.set(filename, cache);
+        }
+        return await cache;
+    }
 }
 
-export { importScript, importStylesheet, interop, isMain };
+export { importWasm };
 //# sourceMappingURL=module.js.map

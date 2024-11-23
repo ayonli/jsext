@@ -392,7 +392,7 @@ function isGenerator(obj) {
  * @param {any} obj
  * @returns {obj is AsyncGenerator}
  */
-function isAsyncGenerator(obj) {
+function isAsyncGenerator$1(obj) {
     return isAsyncIterableIterator(obj)
         && hasGeneratorSpecials(obj);
 }
@@ -856,124 +856,6 @@ function toFsPath(url) {
     }
 }
 
-const urlCache = new Map();
-/**
- * This function is primarily used to bypass the same-origin policy for Web
- * Workers in the browser, it downloads the script from the given URL and
- * converts it to an object URL which can be used by the `Worker` constructor.
- *
- * This function can also be used in other scenarios as it also corrects the
- * content-type of the response to ensure the script can be loaded properly.
- *
- * NOTE: This function is primarily designed for the browser, it has very little
- * use on the server side.
- */
-async function getObjectURL(src, mimeType = "text/javascript") {
-    var _a;
-    const isAbsolute = isUrl(src);
-    let cache = isAbsolute ? urlCache.get(src) : undefined;
-    if (cache) {
-        return cache;
-    }
-    // Use fetch to download the script and compose an object URL which can
-    // bypass the same-origin policy for web workers.
-    const res = await fetch(src);
-    if (!res.ok) {
-        throw new Error(`Failed to fetch resource: ${src}`);
-    }
-    let blob;
-    // JavaScript has more than one MIME types, so we just check it loosely.
-    const type = mimeType.includes("javascript") ? "javascript" : mimeType;
-    if ((_a = res.headers.get("content-type")) === null || _a === void 0 ? void 0 : _a.includes(type)) {
-        blob = await res.blob();
-    }
-    else {
-        // If the MIME type is not matched, we need to convert the response to
-        // a new Blob with the correct MIME type.
-        const buf = await res.arrayBuffer();
-        blob = new Blob([new Uint8Array(buf)], {
-            type: mimeType,
-        });
-    }
-    cache = URL.createObjectURL(blob);
-    isAbsolute && urlCache.set(src, cache);
-    return cache;
-}
-
-/**
- * Utility functions for working with JavaScript modules.
- * @module
- */
-function interop(module, strict = undefined) {
-    if (typeof module === "function") {
-        return module().then(mod => interop(mod, strict));
-    }
-    else if (module instanceof Promise) {
-        return module.then(mod => interop(mod, strict));
-    }
-    else if (typeof module === "object" && module !== null && !Array.isArray(module)) {
-        if (typeof module["default"] === "object" &&
-            module["default"] !== null &&
-            !Array.isArray(module["default"])) {
-            const hasEsModule = module["__esModule"] === true
-                || module["default"]["__esModule"] === true;
-            if (hasEsModule) {
-                return module["default"];
-            }
-            else if (strict) {
-                return module;
-            }
-            const moduleKeys = Object.getOwnPropertyNames(module)
-                .filter(x => x !== "default" && x !== "__esModule").sort();
-            const defaultKeys = Object.getOwnPropertyNames(module["default"])
-                .filter(x => x !== "default" && x !== "__esModule").sort();
-            if (String(moduleKeys) === String(defaultKeys)) {
-                return module["default"];
-            }
-            else if (strict === false && !moduleKeys.length) {
-                return module["default"];
-            }
-        }
-    }
-    return module;
-}
-
-const moduleCache = new Map();
-async function resolveModule(modId, baseUrl = undefined) {
-    let module;
-    if (isNode || isBun) {
-        const path = baseUrl ? toFsPath(new URL(modId, baseUrl).href) : modId;
-        module = await import(path);
-    }
-    else {
-        const url = new URL(modId, baseUrl).href;
-        module = moduleCache.get(url);
-        if (!module) {
-            if (isDeno) {
-                module = await import(url);
-                moduleCache.set(url, module);
-            }
-            else {
-                try {
-                    module = await import(url);
-                    moduleCache.set(url, module);
-                }
-                catch (err) {
-                    if (String(err).includes("Failed")) {
-                        const _url = await getObjectURL(url);
-                        module = await import(_url);
-                        moduleCache.set(url, module);
-                    }
-                    else {
-                        throw err;
-                    }
-                }
-            }
-        }
-    }
-    return interop(module);
-}
-
 /**
  * Functions for dealing with objects.
  * @module
@@ -1356,6 +1238,398 @@ function isAggregateError(value) {
         || (value instanceof Error && value.constructor.name === "AggregateError");
 }
 
+if (!Symbol.asyncIterator) {
+    Object.defineProperty(Symbol, "asyncIterator", {
+        value: Symbol("Symbol.asyncIterator")
+    });
+}
+const source = Symbol("GeneratorSource");
+const status = Symbol("GeneratorStatus");
+const result = Symbol("GeneratorResult");
+class Thenable {
+    constructor(_source) {
+        this[source] = _source;
+        this[status] = "suspended";
+        this[result] = void 0;
+    }
+    then(onfulfilled, onrejected) {
+        let res;
+        if (this[source] === undefined || this[status] === "closed") {
+            res = Promise.resolve(this[result]);
+        }
+        else if (this[status] === "erred") {
+            res = Promise.reject(this[source]);
+        }
+        else if (typeof this[source].then === "function") {
+            res = Promise.resolve(this[source]);
+        }
+        else if (typeof this[source].next === "function") {
+            res = processIterator(this[source]);
+        }
+        else {
+            res = Promise.resolve(this[source]);
+        }
+        this[status] = "closed";
+        return res
+            .then(value => (this[result] = value))
+            .then(onfulfilled, onrejected);
+    }
+    catch(onrejected) {
+        return Promise.resolve(this).then(null, onrejected);
+    }
+}
+class ThenableGenerator extends Thenable {
+    next(...args) {
+        const value = args[0];
+        let res;
+        if (this[source] === undefined || this[status] === "closed") {
+            res = { value: void 0, done: true };
+        }
+        else if (this[status] === "erred") {
+            return this.throw(this[source]);
+        }
+        else if (typeof this[source].next === "function") {
+            res = this[source].next(value);
+        }
+        else {
+            res = { value: this[source], done: true };
+        }
+        if (res.done === true) {
+            this[status] = "closed";
+            this[result] = res.value;
+        }
+        return res;
+    }
+    return(value) {
+        this[status] = "closed";
+        this[result] = value;
+        if (this[source] && typeof this[source].return === "function") {
+            return this[source].return(value);
+        }
+        else {
+            return { value, done: true };
+        }
+    }
+    throw(err) {
+        this[status] = "closed";
+        if (this[source] && typeof this[source].throw === "function") {
+            return this[source].throw(err);
+        }
+        else {
+            throw err;
+        }
+    }
+    [Symbol.iterator]() {
+        return this;
+    }
+    ;
+}
+class ThenableAsyncGenerator extends Thenable {
+    next(...args) {
+        const value = args[0];
+        let res;
+        if (this[source] === undefined || this[status] === "closed") {
+            res = Promise.resolve({ value: void 0, done: true });
+        }
+        else if (typeof this[source].next === "function") {
+            res = Promise.resolve(this[source].next(value));
+        }
+        else {
+            res = Promise.resolve(this[source]).then(value => {
+                return { value, done: true };
+            });
+        }
+        return res.then(res => {
+            if (res.done === true) {
+                this[status] = "closed";
+                this[result] = res.value;
+            }
+            return res;
+        });
+    }
+    return(value) {
+        this[status] = "closed";
+        // The input value may be a promise-like object, using Promise.resolve()
+        // to guarantee the value is resolved.
+        return Promise.resolve(value).then(value => {
+            this[result] = value;
+            if (this[source] && typeof this[source].return === "function") {
+                return Promise.resolve(this[source].return(value));
+            }
+            else {
+                return Promise.resolve({ value, done: true });
+            }
+        });
+    }
+    throw(err) {
+        this[status] = "closed";
+        if (this[source] && typeof this[source].throw === "function") {
+            return Promise.resolve(this[source].throw(err));
+        }
+        else {
+            return Promise.reject(err);
+        }
+    }
+    [Symbol.asyncIterator]() {
+        return this;
+    }
+}
+const ThenableGeneratorFunction = (function (fn) {
+    if (!(this instanceof ThenableGeneratorFunction)) {
+        return new ThenableGeneratorFunction(fn);
+    }
+    function anonymous(...args) {
+        try {
+            const source = fn.apply(this, args);
+            if (typeof source.then === "function" || isAsyncGenerator(source)) {
+                return new ThenableAsyncGenerator(source);
+            }
+            else {
+                return new ThenableGenerator(source);
+            }
+        }
+        catch (err) {
+            return Object.assign(new ThenableGenerator(err), {
+                [status]: "erred"
+            });
+        }
+    }
+    // HACK, let the returning function be an instance of
+    // ThenableGeneratorFunction.
+    anonymous.prototype = ThenableGeneratorFunction;
+    anonymous.__proto__ = this;
+    return anonymous;
+});
+Object.setPrototypeOf(ThenableGeneratorFunction, Function);
+Object.setPrototypeOf(ThenableGeneratorFunction.prototype, Function.prototype);
+function create(fn) {
+    return new ThenableGeneratorFunction(fn);
+}
+ThenableGeneratorFunction.create = create;
+function isAsyncGenerator(obj) {
+    return obj !== null
+        && typeof obj === "object"
+        && typeof obj.next === "function"
+        && typeof obj.return === "function"
+        && typeof obj.throw === "function"
+        && typeof obj[Symbol.asyncIterator] === "function";
+}
+function processIterator(iterator) {
+    return new Promise((resolve, reject) => {
+        function fulfilled(value) {
+            try {
+                step(iterator.next(value));
+            }
+            catch (e) {
+                reject(e);
+            }
+        }
+        function rejected(value) {
+            var _a;
+            try {
+                step((_a = iterator.throw) === null || _a === void 0 ? void 0 : _a.call(iterator, value));
+            }
+            catch (e) {
+                reject(e);
+            }
+        }
+        function step(item) {
+            Promise.resolve(item).then(result => {
+                result.done ? resolve(result.value) : new Promise(resolve => {
+                    resolve(result.value);
+                }).then(fulfilled, rejected);
+            });
+        }
+        step(iterator.next());
+    });
+}
+
+/**
+ * Universal file system APIs for both server and browser applications.
+ *
+ * This module is guaranteed to work in the following environments:
+ *
+ * - Node.js
+ * - Deno
+ * - Bun
+ * - Modern browsers
+ * - Cloudflare Workers (limited support and experimental)
+ *
+ * We can also use the {@link runtime} function to check whether the runtime
+ * has file system support. When `runtime().fsSupport` is `true`, this module
+ * should work properly.
+ *
+ * In most browsers, this module uses the
+ * [Origin Private File System](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system).
+ * In Chromium browsers, this module can also access the device's local file
+ * system via `window.showOpenFilePicker()` and `window.showDirectoryPicker()`.
+ *
+ * This module also provides limited support for Cloudflare Workers, however it
+ * requires setting the `[site].bucket` option in the `wrangler.toml` file. Only
+ * the reading functions are supported, such as {@link readFile} and
+ * {@link readDir}, these functions allow us reading static files in the workers,
+ * writing functions is not implemented at the moment. More details about
+ * serving static assets in Cloudflare Workers can be found here:
+ * [Add static assets to an existing Workers project](https://developers.cloudflare.com/workers/configuration/sites/start-from-worker/).
+ *
+ * **Errors:**
+ *
+ * When a file system operation fails, this module throws an {@link Exception}
+ * with one of the following names:
+ *
+ * - `NotFoundError`: The file or directory does not exist.
+ * - `NotAllowedError`: The operation is not allowed, such as being blocked by
+ *   the permission system.
+ * - `AlreadyExistsError`: The file or directory already exists.
+ * - `IsDirectoryError`: The path is a directory, not a file.
+ * - `NotDirectoryError`: The path is a file, not a directory.
+ * - `InvalidOperationError`: The operation is not supported, such as trying to
+ *   copy a directory without the `recursive` option.
+ * - `BusyError`: The file is busy, such as being locked by another program.
+ * - `InterruptedError`: The operation is interrupted by the underlying file
+ *   system.
+ * - `FileTooLargeError`: The file is too large, or the file system doesn't have
+ *   enough space to store the new content.
+ * - `FilesystemLoopError`:  Too many symbolic links were encountered when
+ *   resolving the filename.
+ *
+ * Other errors may also be thrown by the runtime, such as `TypeError`.
+ * @module
+ */
+/**
+ * Platform-specific end-of-line marker. The value is `\r\n` in Windows
+ * server-side environments, and `\n` elsewhere.
+ */
+(() => {
+    if (typeof Deno === "object" && typeof Deno.build === "object") {
+        return Deno.build.os === "windows" ? "\r\n" : "\n";
+    }
+    else if (typeof process === "object" && typeof process.platform === "string") {
+        return process.platform === "win32" ? "\r\n" : "\n";
+    }
+    else {
+        return "\n";
+    }
+})();
+
+const urlCache = new Map();
+/**
+ * This function is primarily used to bypass the same-origin policy for Web
+ * Workers in the browser, it downloads the script from the given URL and
+ * converts it to an object URL which can be used by the `Worker` constructor.
+ *
+ * This function can also be used in other scenarios as it also corrects the
+ * content-type of the response to ensure the script can be loaded properly.
+ *
+ * NOTE: This function is primarily designed for the browser, it has very little
+ * use on the server side.
+ */
+async function getObjectURL(src, mimeType = "text/javascript") {
+    var _a;
+    const isAbsolute = isUrl(src);
+    let cache = isAbsolute ? urlCache.get(src) : undefined;
+    if (cache) {
+        return cache;
+    }
+    // Use fetch to download the script and compose an object URL which can
+    // bypass the same-origin policy for web workers.
+    const res = await fetch(src);
+    if (!res.ok) {
+        throw new Error(`Failed to fetch resource: ${src}`);
+    }
+    let blob;
+    // JavaScript has more than one MIME types, so we just check it loosely.
+    const type = mimeType.includes("javascript") ? "javascript" : mimeType;
+    if ((_a = res.headers.get("content-type")) === null || _a === void 0 ? void 0 : _a.includes(type)) {
+        blob = await res.blob();
+    }
+    else {
+        // If the MIME type is not matched, we need to convert the response to
+        // a new Blob with the correct MIME type.
+        const buf = await res.arrayBuffer();
+        blob = new Blob([new Uint8Array(buf)], {
+            type: mimeType,
+        });
+    }
+    cache = URL.createObjectURL(blob);
+    isAbsolute && urlCache.set(src, cache);
+    return cache;
+}
+
+/**
+ * The `module` module purified for the web.
+ * @module
+ */
+function interop(module, strict = undefined) {
+    if (typeof module === "function") {
+        return module().then(mod => interop(mod, strict));
+    }
+    else if (module instanceof Promise) {
+        return module.then(mod => interop(mod, strict));
+    }
+    else if (typeof module === "object" && module !== null && !Array.isArray(module)) {
+        if (typeof module["default"] === "object" &&
+            module["default"] !== null &&
+            !Array.isArray(module["default"])) {
+            const hasEsModule = module["__esModule"] === true
+                || module["default"]["__esModule"] === true;
+            if (hasEsModule) {
+                return module["default"];
+            }
+            else if (strict) {
+                return module;
+            }
+            const moduleKeys = Object.getOwnPropertyNames(module)
+                .filter(x => x !== "default" && x !== "__esModule").sort();
+            const defaultKeys = Object.getOwnPropertyNames(module["default"])
+                .filter(x => x !== "default" && x !== "__esModule").sort();
+            if (String(moduleKeys) === String(defaultKeys)) {
+                return module["default"];
+            }
+            else if (strict === false && !moduleKeys.length) {
+                return module["default"];
+            }
+        }
+    }
+    return module;
+}
+
+const moduleCache = new Map();
+async function resolveModule(modId, baseUrl = undefined) {
+    let module;
+    if (isNode || isBun) {
+        const path = baseUrl ? toFsPath(new URL(modId, baseUrl).href) : modId;
+        module = await import(path);
+    }
+    else {
+        const url = new URL(modId, baseUrl).href;
+        module = moduleCache.get(url);
+        if (!module) {
+            if (isDeno) {
+                module = await import(url);
+                moduleCache.set(url, module);
+            }
+            else {
+                try {
+                    module = await import(url);
+                    moduleCache.set(url, module);
+                }
+                catch (err) {
+                    if (String(err).includes("Failed")) {
+                        const _url = await getObjectURL(url);
+                        module = await import(_url);
+                        moduleCache.set(url, module);
+                    }
+                    else {
+                        throw err;
+                    }
+                }
+            }
+        }
+    }
+    return interop(module);
+}
+
 const pendingTasks = new Map();
 /**
  * For some reason, in Node.js and Bun, when import expression throws an
@@ -1543,7 +1817,7 @@ async function handleCallRequest(msg, reply) {
         const req = msg;
         const module = await resolveModule(req.module);
         const returns = await module[req.fn](...req.args);
-        if (isAsyncGenerator(returns) || isGenerator(returns)) {
+        if (isAsyncGenerator$1(returns) || isGenerator(returns)) {
             if (req.taskId) {
                 pendingTasks.set(req.taskId, returns);
                 reply({ type: "gen", taskId: req.taskId });

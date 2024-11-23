@@ -7,6 +7,7 @@ import Exception from "./error/Exception.ts";
 import * as path from "node:path";
 import { trim } from "./string.ts";
 import { readAsArray } from "./reader.ts";
+import { isDeno } from "./env.ts";
 
 declare var Bun: any;
 declare var AggregateError: new (errors: Error[], message?: string, options?: { cause: unknown; }) => Error & { errors: Error[]; };
@@ -244,38 +245,69 @@ describe("jsext.parallel", () => {
             strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
         }
 
-        if (typeof Deno === "object" || typeof Bun === "object" || isTsx) {
+        if (typeof Deno === "object" || typeof Bun === "object") {
             // @ts-ignore because allowJs is not turned on
-            const { default: avg } = await import("./examples/avg.ts");
+            const { default: avg } = await import("./examples/avg2.ts");
             strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
         }
     });
 
     it("in worker", async () => {
-        const { default: avg } = jsext.parallel(() => import("./examples/avg.ts"));
+        // @ts-ignore because allowJs is not turned on
+        const { default: avg } = jsext.parallel(() => import("./examples/avg.js"));
         strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
+
+        if (typeof Deno === "object" || typeof Bun === "object") {
+            // @ts-ignore because allowJs is not turned on
+            const { default: avg } = jsext.parallel(() => import("./examples/avg2.ts"));
+            strictEqual(await avg(1, 2, 3, 4, 5, 6, 7, 8, 9), 5);
+        }
     });
 
-    if (typeof Deno !== "object") {
-        it("builtin module", async () => {
-            const mod2 = jsext.parallel(() => import("node:path"));
-            const dir = await mod2.dirname("/usr/bin/curl");
-            strictEqual(dir, "/usr/bin");
-        });
+    it("omit suffix", async function () {
+        if (isDeno) {
+            this.skip();
+        }
 
-        it("3-party module", async () => {
-            // @ts-ignore because allowJs is not turned on
-            const mod2 = jsext.parallel(() => import("glob"));
-            // @ts-ignore because allowJs is not turned on
-            const files = await mod2.sync("*.ts");
-            ok(files.length > 0);
-        });
+        // @ts-ignore because allowJs is not turned on
+        const { default: sum } = jsext.parallel(() => import("./examples/sum"));
+        strictEqual(await sum(1, 2, 3, 4, 5, 6, 7, 8, 9), 45);
 
-        it("traditional CommonJS", async () => {
+        if (typeof Bun === "object") {
+            const { default: sum } = jsext.parallel(() => import("./examples/sum2"));
+            strictEqual(await sum(1, 2, 3, 4, 5, 6, 7, 8, 9), 45);
+        }
+    });
+
+    it("builtin module", async () => {
+        const mod2 = jsext.parallel(() => import("node:path"));
+        const dir = await mod2.dirname("/usr/bin/curl");
+        strictEqual(dir, "/usr/bin");
+    });
+
+    it("3-party module", async function () {
+        if (isDeno) {
+            this.skip();
+        }
+
+        // @ts-ignore because allowJs is not turned on
+        const mod2 = jsext.parallel(() => import("glob"));
+        // @ts-ignore because allowJs is not turned on
+        const files = await mod2.sync("*.ts");
+        ok(files.length > 0);
+    });
+
+    it("CommonJS", async () => {
+        // @ts-ignore because allowJs is not turned on
+        const mod2 = jsext.parallel(() => import("./examples/worker.cjs"));
+        // @ts-ignore because allowJs is not turned on
+        strictEqual((await mod2.greet("World!")), "Hi, World!");
+
+        if (!isDeno) {
             // @ts-ignore because allowJs is not turned on
             const mod2 = jsext.parallel(() => import("string-hash"));
             // @ts-ignore because allowJs is not turned on
             ok((await mod2.default("Hello, World!")) > 0);
-        });
-    }
+        }
+    });
 });

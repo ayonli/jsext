@@ -7,7 +7,7 @@ import type { ChildProcess } from "node:child_process";
 import chan, { Channel } from "./chan.ts";
 import { isPlainObject } from "./object.ts";
 import { fromErrorEvent, fromObject } from "./error.ts";
-import { cwd, toFileUrl } from "./path.ts";
+import { cwd, isAbsolute, toFileUrl } from "./path.ts";
 import { isNode, isBun, isBrowserWindow } from "./env.ts";
 import { BunWorker, NodeWorker, CallRequest, CallResponse } from "./parallel/types.ts";
 import { sanitizeModuleId } from "./parallel/module.ts";
@@ -60,13 +60,19 @@ export interface RunOptions {
      * Choose whether to use `worker_threads` or `child_process` for running
      * the script. The default setting is `worker_threads`.
      * 
-     * In browsers and Deno, this option is ignored and will always use the web
-     * worker.
+     * In browsers, this option is ignored and will always use the web worker.
      * 
-     * @deprecated Always prefer `worker_threads` over `child_process` since it
-     * consumes less system resources and `child_process` may not work in
-     * Windows. `child_process` support may be removed in the future once
-     * considered thoroughly.
+     * Always prefer `worker_threads` over `child_process` if possible, because
+     * it is more efficient and has better performance. However, if you need to
+     * run nested workers, you must use `child_process` because `worker_threads`
+     * does not support nested workers.
+     * 
+     * For users who use [tsx](https://www.npmjs.com/package/tsx) to run TypeScript
+     * directly in Node.js, the runtime is unable to use TypeScript directly in
+     * worker threads at the moment, to run TypeScript, we need to use
+     * `child_process` adapter.
+     * See [this issue](https://github.com/privatenumber/tsx/issues/354) for more
+     * information. 
      */
     adapter?: "worker_threads" | "child_process";
 }
@@ -169,9 +175,9 @@ async function run<R, A extends any[] = any[]>(
     let modId = sanitizeModuleId(script);
     let baseUrl: string | undefined = undefined;
 
-    if (isBrowserWindow) {
+    if (isBrowserWindow) { // browser main thread
         baseUrl = location.href;
-    } else {
+    } else if (!isAbsolute(modId)) {
         try {
             baseUrl = toFileUrl(cwd()) + "/"; // must ends with `/`
         } catch { // `cwd()` may fail in unsupported environments or being rejected
