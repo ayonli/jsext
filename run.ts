@@ -7,7 +7,7 @@ import type { ChildProcess } from "node:child_process";
 import chan, { Channel } from "./chan.ts";
 import { isPlainObject } from "./object.ts";
 import { fromErrorEvent, fromObject } from "./error.ts";
-import { cwd, isAbsolute, toFileUrl, toFsPath } from "./path.ts";
+import { cwd, isAbsolute, toFileUrl } from "./path.ts";
 import { isNode, isBun, isBrowserWindow } from "./env.ts";
 import { BunWorker, NodeWorker, CallRequest, CallResponse } from "./parallel/types.ts";
 import { sanitizeModuleId } from "./parallel/module.ts";
@@ -170,14 +170,7 @@ async function run<R, A extends any[] = any[]>(
         throw new Error("Unsupported runtime");
     }
 
-    if (script instanceof URL) {
-        if (script.protocol !== "file:") {
-            script = toFsPath(script.href);
-        } else {
-            script = script.href;
-        }
-    }
-
+    script = typeof script === "string" ? script : script.href;
     const maxWorkers = run.maxWorkers || parallel.maxWorkers || await getMaxParallelism;
     const fn = options?.fn || "default";
     let modId = sanitizeModuleId(script);
