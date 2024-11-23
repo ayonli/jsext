@@ -23,7 +23,6 @@ const wasmCache = new Map();
  * @param imports An object containing the values to be imported by the
  * WebAssembly module, allowing passing values from JavaScript to WebAssembly.
  *
- * @example
  * ```ts
  * import { importWasm } from "@ayonli/jsext/module";
  *
@@ -40,7 +39,6 @@ const wasmCache = new Map();
  * The corresponding WebAssembly module `convert.wasm` in text format looks like
  * this:
  *
- * @example
  * ```wat
  * ;; examples/convert.wat
  * (module
@@ -58,7 +56,6 @@ const wasmCache = new Map();
  * need to import the WebAssembly module with a `import` statement or with the
  * `import()` function before we can use it. For example:
  *
- * @example
  * ```ts
  * // In Cloudflare Workers
  * import { importWasm } from "@ayonli/jsext/module";
