@@ -12,8 +12,8 @@ import { isUrl, isFileUrl } from './path/util.js';
 const wasmCache = new Map();
 /**
  * Imports a WebAssembly module from a URL or file path (relative to the current
- * working directory), or from a {@link WebAssembly.Module} object, returns the
- * symbols exported by the module.
+ * working directory if not absolute), or from a {@link WebAssembly.Module}
+ * object, returns the symbols exported by the module.
  *
  * This function is available in both the browser and server runtimes such as
  * Node.js, Deno, Bun and Cloudflare Workers.
@@ -34,6 +34,29 @@ const wasmCache = new Map();
  * const { timestamp } = await importWasm<{
  *     timestamp: () => number; // function exported by the WebAssembly module
  * }>("./examples/simple.wasm", {
+ *     time: { // JavaScript namespace and functions passed into the WebAssembly module
+ *         unix: () => {
+ *             return Math.floor(Date.now() / 1000);
+ *         },
+ *     },
+ * });
+ *
+ * console.log("The current timestamp is:", timestamp());
+ * ```
+ *
+ * NOTE: In Cloudflare Workers, this function cannot access the file system, we
+ * need to import the WebAssembly module with a `import` statement or with the
+ * `import()` function before we can use it. For example:
+ *
+ * @example
+ * ```ts
+ * // In Cloudflare Workers
+ * import { importWasm } from "@ayonli/jsext/module";
+ * import wasmModule from "./examples/simple.wasm";
+ *
+ * const { timestamp } = await importWasm<{
+ *     timestamp: () => number; // function exported by the WebAssembly module
+ * }>(wasmModule, {
  *     time: { // JavaScript namespace and functions passed into the WebAssembly module
  *         unix: () => {
  *             return Math.floor(Date.now() / 1000);

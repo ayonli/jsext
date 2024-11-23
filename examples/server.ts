@@ -1,7 +1,8 @@
 import { args, parseArgs } from "../cli.ts";
 import { serve, serveStatic } from "../http.ts";
+import { importWasm } from "../module.ts";
 import { startsWith } from "../path.ts";
-import { addUnhandledRejectionListener } from "../runtime.ts";
+import runtime, { addUnhandledRejectionListener } from "../runtime.ts";
 
 const options = parseArgs(args);
 
@@ -56,6 +57,33 @@ serve({
                 urlPrefix: "/esm",
                 listDir: true,
             });
+        } else if (startsWith(pathname, "/bundle")) {
+            return serveStatic(request, {
+                fsDir: "./bundle",
+                urlPrefix: "/bundle",
+                listDir: true,
+            });
+        } else if (pathname === "/timestamp") {
+            let module: string | WebAssembly.Module;
+
+            if (["bun", "workerd"].includes(runtime().identity)) {
+                // @ts-ignore
+                module = (await import("./simple.wasm")).default;
+            } else {
+                module = new URL("./simple.wasm", import.meta.url).href;
+            }
+
+            const { timestamp } = await importWasm<{
+                timestamp: () => number;
+            }>(module, {
+                time: {
+                    unix: () => {
+                        return Math.floor(Date.now() / 1000);
+                    },
+                }
+            });
+
+            return new Response(timestamp().toString());
         }
 
         return new Response(`Hello, ${ctx.remoteAddress?.address}!`);

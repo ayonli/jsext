@@ -297,6 +297,18 @@
                 });
                 alert(`The current timestamp is ${timestamp()}`);
             });
+
+            const importWasm2Btn = document.getElementById('import-wasm-2');
+            importWasm2Btn.addEventListener('click', async () => {
+                const res = await fetch("/timestamp");
+
+                if (res.ok) {
+                    const text = await res.text();
+                    alert(`The current timestamp is ${text}`);
+                } else {
+                    alert(`Failed to fetch timestamp: ${res.status} ${res.statusText}`);
+                }
+            });
         }
     </script>
     <script>
@@ -328,6 +340,7 @@
         <button id="extract-tarbell">Extract Tarball</button>
         <button id="runtime-info">Runtime Info</button>
         <button id="import-wasm">Import WASM</button>
+        <button id="import-wasm-2">Import WASM (server)</button>
     </div>
 </body>
 

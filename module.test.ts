@@ -3,6 +3,8 @@ import { importWasm, interop } from "./module.ts";
 import { readFile } from "./fs.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 import { run } from "./cli.ts";
+import { randomPort, serve, serveStatic } from "./http.ts";
+import func from "./func.ts";
 
 describe("module", () => {
     describe("interop", () => {
@@ -177,6 +179,52 @@ describe("module", () => {
 
             ok(module === module2);
         });
+
+        it("http URL", func(async (defer) => {
+            const port = await randomPort(8000);
+            const server = serve({
+                async fetch(req) {
+                    const { pathname } = new URL(req.url);
+
+                    if (pathname === "/example" || pathname.startsWith("/example/")) {
+                        return await serveStatic(req, {
+                            fsDir: "./examples",
+                            urlPrefix: "/example",
+                        });
+                    }
+
+                    return new Response("Not Found", { status: 404 });
+                }
+            });
+            await server.ready;
+            defer(() => server.close(true));
+
+            const url = new URL(`http://localhost:${port}/example/simple.wasm`);
+            const module = await importWasm<{
+                timestamp: () => number;
+            }>(url, {
+                time: {
+                    unix: () => {
+                        return Math.floor(Date.now() / 1000);
+                    },
+                },
+            });
+
+            ok(module.timestamp() > 0);
+
+            // test cache
+            const module2 = await importWasm<{
+                timestamp: () => number;
+            }>(url.href, {
+                time: {
+                    unix: () => {
+                        return Math.floor(Date.now() / 1000);
+                    },
+                },
+            });
+
+            ok(module === module2);
+        }));
 
         it("WebAssembly.Module", async () => {
             const bytes = await readFile("./examples/simple.wasm");
