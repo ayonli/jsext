@@ -129,12 +129,8 @@ describe("module", () => {
         it("file path", async () => {
             const module = await importWasm<{
                 timestamp: () => number;
-            }>("./examples/simple.wasm", {
-                time: {
-                    unix: () => {
-                        return Math.floor(Date.now() / 1000);
-                    },
-                },
+            }>("./examples/convert.wasm", {
+                Date: { now: Date.now },
             });
 
             ok(module.timestamp() > 0);
@@ -142,12 +138,8 @@ describe("module", () => {
             // test cache
             const module2 = await importWasm<{
                 timestamp: () => number;
-            }>("./examples/simple.wasm", {
-                time: {
-                    unix: () => {
-                        return Math.floor(Date.now() / 1000);
-                    },
-                },
+            }>("./examples/convert.wasm", {
+                Date: { now: Date.now },
             });
 
             ok(module === module2);
@@ -156,12 +148,8 @@ describe("module", () => {
         it("file URL", async () => {
             const module = await importWasm<{
                 timestamp: () => number;
-            }>(new URL("./examples/simple.wasm", import.meta.url), {
-                time: {
-                    unix: () => {
-                        return Math.floor(Date.now() / 1000);
-                    },
-                },
+            }>(new URL("./examples/convert.wasm", import.meta.url), {
+                Date: { now: Date.now },
             });
 
             ok(module.timestamp() > 0);
@@ -169,12 +157,8 @@ describe("module", () => {
             // test cache
             const module2 = await importWasm<{
                 timestamp: () => number;
-            }>(new URL("./examples/simple.wasm", import.meta.url).href, {
-                time: {
-                    unix: () => {
-                        return Math.floor(Date.now() / 1000);
-                    },
-                },
+            }>(new URL("./examples/convert.wasm", import.meta.url).href, {
+                Date: { now: Date.now },
             });
 
             ok(module === module2);
@@ -199,15 +183,11 @@ describe("module", () => {
             await server.ready;
             defer(() => server.close(true));
 
-            const url = new URL(`http://localhost:${port}/example/simple.wasm`);
+            const url = new URL(`http://localhost:${port}/example/convert.wasm`);
             const module = await importWasm<{
                 timestamp: () => number;
             }>(url, {
-                time: {
-                    unix: () => {
-                        return Math.floor(Date.now() / 1000);
-                    },
-                },
+                Date: { now: Date.now },
             });
 
             ok(module.timestamp() > 0);
@@ -216,27 +196,19 @@ describe("module", () => {
             const module2 = await importWasm<{
                 timestamp: () => number;
             }>(url.href, {
-                time: {
-                    unix: () => {
-                        return Math.floor(Date.now() / 1000);
-                    },
-                },
+                Date: { now: Date.now },
             });
 
             ok(module === module2);
         }));
 
         it("WebAssembly.Module", async () => {
-            const bytes = await readFile("./examples/simple.wasm");
+            const bytes = await readFile("./examples/convert.wasm");
             const _module = new WebAssembly.Module(bytes);
             const module = await importWasm<{
                 timestamp: () => number;
             }>(_module, {
-                time: {
-                    unix: () => {
-                        return Math.floor(Date.now() / 1000);
-                    },
-                },
+                Date: { now: Date.now },
             });
 
             ok(module.timestamp() > 0);
@@ -245,11 +217,7 @@ describe("module", () => {
             const module2 = await importWasm<{
                 timestamp: () => number;
             }>(_module, {
-                time: {
-                    unix: () => {
-                        return Math.floor(Date.now() / 1000);
-                    },
-                },
+                Date: { now: Date.now },
             });
 
             ok(module === module2);

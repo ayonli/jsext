@@ -22,10 +22,6 @@ const wasmCache = new Map<string | WebAssembly.Module, Promise<WebAssembly.Expor
  * 
  * This function uses cache to avoid loading the same module multiple times.
  * 
- * NOTE: Deno v2.1+ has built-in support for importing WebAssembly modules as
- * JavaScript modules, it's recommended to use the built-in `import` statement
- * to import WebAssembly modules directly for Deno programs.
- * 
  * @param imports An object containing the values to be imported by the
  * WebAssembly module, allowing passing values from JavaScript to WebAssembly.
  * 
@@ -35,15 +31,29 @@ const wasmCache = new Map<string | WebAssembly.Module, Promise<WebAssembly.Expor
  * 
  * const { timestamp } = await importWasm<{
  *     timestamp: () => number; // function exported by the WebAssembly module
- * }>("./examples/simple.wasm", {
- *     time: { // JavaScript namespace and functions passed into the WebAssembly module
- *         unix: () => {
- *             return Math.floor(Date.now() / 1000);
- *         },
- *     },
+ * }>("./examples/convert.wasm", {
+ *     // JavaScript module and function passed into the WebAssembly module
+ *     Date: { now: Date.now },
  * });
  * 
  * console.log("The current timestamp is:", timestamp());
+ * ```
+ * 
+ * The corresponding WebAssembly module `convert.wasm` in text format looks like
+ * this:
+ * 
+ * @example
+ * ```wat
+ * ;; examples/convert.wat
+ * (module
+ *   (import "Date" "now" (func $now (result i32)))
+ *   (func (export "timestamp") (result i32)
+ *     call $now
+ *     ;; Convert to seconds
+ *     i32.const 1000
+ *     i32.div_u
+ *   )
+ * )
  * ```
  * 
  * NOTE: In Cloudflare Workers, this function cannot access the file system, we
@@ -54,20 +64,21 @@ const wasmCache = new Map<string | WebAssembly.Module, Promise<WebAssembly.Expor
  * ```ts
  * // In Cloudflare Workers
  * import { importWasm } from "@ayonli/jsext/module";
- * import wasmModule from "./examples/simple.wasm";
+ * import wasmModule from "./examples/convert.wasm";
  * 
  * const { timestamp } = await importWasm<{
  *     timestamp: () => number; // function exported by the WebAssembly module
  * }>(wasmModule, {
- *     time: { // JavaScript namespace and functions passed into the WebAssembly module
- *         unix: () => {
- *             return Math.floor(Date.now() / 1000);
- *         },
- *     },
+ *     // JavaScript module and function passed into the WebAssembly module
+ *     Date: { now: Date.now },
  * });
  * 
  * console.log("The current timestamp is:", timestamp());
  * ```
+ * 
+ * NOTE: Deno v2.1+ has built-in support for importing WebAssembly modules as
+ * JavaScript modules, it's recommended to use the built-in `import` statement
+ * to import WebAssembly modules directly for Deno programs.
  */
 export async function importWasm<T extends WebAssembly.Exports>(
     module: string | URL | WebAssembly.Module,

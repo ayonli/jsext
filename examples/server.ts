@@ -16,9 +16,19 @@ addUnhandledRejectionListener(ev => {
 serve({
     port: Number(options.port || 8000),
     async fetch(request, ctx) {
+        console.log(new Date().toISOString(), request.method, request.url, ctx.remoteAddress?.address);
         const { pathname } = new URL(request.url);
 
-        if (pathname === "/ws") {
+        if (pathname === "/") {
+            if (runtime().identity === "workerd") {
+                return new Response("Hello, World!");
+            } else {
+                return serveStatic(request, {
+                    fsDir: ".",
+                    listDir: true,
+                });
+            }
+        } else if (pathname === "/ws") {
             const { socket, response } = ctx.upgradeWebSocket();
 
             socket.addEventListener("open", () => {
@@ -68,24 +78,20 @@ serve({
 
             if (["bun", "workerd"].includes(runtime().identity)) {
                 // @ts-ignore
-                module = (await import("./simple.wasm")).default;
+                module = (await import("./convert.wasm")).default;
             } else {
-                module = new URL("./simple.wasm", import.meta.url).href;
+                module = new URL("./convert.wasm", import.meta.url).href;
             }
 
             const { timestamp } = await importWasm<{
                 timestamp: () => number;
             }>(module, {
-                time: {
-                    unix: () => {
-                        return Math.floor(Date.now() / 1000);
-                    },
-                }
+                Date: { now: Date.now },
             });
 
             return new Response(timestamp().toString());
         }
 
-        return new Response(`Hello, ${ctx.remoteAddress?.address}!`);
+        return new Response("Not Found", { status: 404 });
     },
 });

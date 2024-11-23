@@ -288,12 +288,8 @@
 
             const importWasmBtn = document.getElementById('import-wasm');
             importWasmBtn.addEventListener('click', async () => {
-                const { timestamp } = await importWasm("./simple.wasm", {
-                    time: {
-                        unix: () => {
-                            return Math.floor(Date.now() / 1000);
-                        },
-                    },
+                const { timestamp } = await importWasm("./convert.wasm", {
+                    Date: { now: Date.now },
                 });
                 alert(`The current timestamp is ${timestamp()}`);
             });
