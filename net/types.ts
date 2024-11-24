@@ -1,31 +1,41 @@
+import type { connect } from "../net.ts";
+
 /**
  * Represents the network address of a connection peer.
  */
 export interface NetAddress {
     family: "IPv4" | "IPv6";
     /**
-     * The hostname of the remote peer.
-     */
-    hostname: string;
-    /**
      * @deprecated use `hostname` instead.
      */
     readonly address: string;
+    /**
+     * The hostname of the remote peer.
+     */
+    hostname: string;
     /**
      * The port number of the remote peer, or `0` if it's not available.
      */
     port: number;
 }
 
-export interface ConnectOptions {
-    hostname?: string;
-    port: number;
-}
+/**
+ * The options for {@link connect}.
+ */
+export type ConnectOptions = Pick<NetAddress, "hostname" | "port"> & {
+    /**
+     * Whether to enable TLS for the connection.
+     */
+    tls?: boolean;
+};
 
 const _impl = Symbol.for("impl");
 
+/**
+ * A socket represents a network connection, currently only supports TCP.
+ */
 export class Socket {
-    private [_impl]?: {
+    private [_impl]: {
         [K in keyof Socket]: Socket[K];
     };
 
@@ -36,38 +46,57 @@ export class Socket {
     }
 
     get localAddress(): NetAddress | null {
-        return this[_impl]!.localAddress ?? null;
+        return this[_impl].localAddress ?? null;
     }
 
     get remoteAddress(): NetAddress | null {
-        return this[_impl]!.remoteAddress ?? null;
+        return this[_impl].remoteAddress ?? null;
     }
 
-    get readable(): ReadableStream {
-        return this[_impl]!.readable;
+    /**
+     * The readable side of the socket.
+     */
+    get readable(): ReadableStream<Uint8Array> {
+        return this[_impl].readable;
     }
 
-    get writable(): WritableStream {
-        return this[_impl]!.writable;
+    /**
+     * The writable side of the socket.
+     */
+    get writable(): WritableStream<Uint8Array> {
+        return this[_impl].writable;
     }
 
+    /**
+     * A promise that resolves when the socket is closed, or rejects if the socket
+     * is closed with an error.
+     */
     get closed(): Promise<void> {
-        return this[_impl]!.closed;
+        return this[_impl].closed;
     }
 
+    /**
+     * Closes both the readable and writable sides of the socket.
+     */
     close(): Promise<void> {
-        return this[_impl]!.close();
+        return this[_impl].close();
     }
 
-    startTls(): Promise<Socket> {
-        return this[_impl]!.startTls();
-    }
-
+    /**
+     * Opposite of `unref()`, calling `ref()` on a previously unrefed socket will
+     * not let the program exit if it's the only socket left (the default behavior).
+     * If the socket is refed calling `ref()` again will have no effect.
+     */
     ref(): void {
-        return this[_impl]!.ref();
+        return this[_impl].ref();
     }
 
+    /**
+     * Calling `unref()` on a socket will allow the program to exit if this is
+     * the only active socket in the event system. If the socket is already
+     * unrefed calling `unref()` again will have no effect.
+     */
     unref(): void {
-        return this[_impl]!.unref();
+        return this[_impl].unref();
     }
 }

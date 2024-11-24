@@ -280,7 +280,6 @@ export class Server {
                     const ctx = createRequestContext(req, {
                         ws,
                         remoteAddress: info ? constructNetAddress({
-                            family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
                             hostname: info.remoteAddr.hostname,
                             port: info.remoteAddr.port,
                         }) : null,
@@ -307,7 +306,6 @@ export class Server {
                     const ctx = createRequestContext(req, {
                         ws,
                         remoteAddress: addr ? constructNetAddress({
-                            family: addr.family,
                             hostname: addr.address,
                             port: addr.port,
                         }) : null,
@@ -366,7 +364,6 @@ export class Server {
                     const ctx = createRequestContext(req, {
                         ws,
                         remoteAddress: address ? constructNetAddress({
-                            family: address.includes(":") ? "IPv6" : "IPv4",
                             hostname: address,
                             port: 0,
                         }) : null,
@@ -463,7 +460,9 @@ export class Server {
      * effect.
      */
     ref(): void {
-        this[_http].then(server => server?.ref?.());
+        this[_http].then(server => {
+            server?.ref?.();
+        });
     }
 
     /**
@@ -472,6 +471,8 @@ export class Server {
      * `unref`ed calling`unref()` again will have no effect.
      */
     unref(): void {
-        this[_http].then(server => server?.unref?.());
+        this[_http].then(server => {
+            server?.unref?.();
+        });
     }
 }

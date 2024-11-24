@@ -54,7 +54,6 @@ class Server {
                     const ctx = createRequestContext(req, {
                         ws,
                         remoteAddress: info ? constructNetAddress({
-                            family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
                             hostname: info.remoteAddr.hostname,
                             port: info.remoteAddr.port,
                         }) : null,
@@ -81,7 +80,6 @@ class Server {
                     const ctx = createRequestContext(req, {
                         ws,
                         remoteAddress: addr ? constructNetAddress({
-                            family: addr.family,
                             hostname: addr.address,
                             port: addr.port,
                         }) : null,
@@ -139,7 +137,6 @@ class Server {
                     const ctx = createRequestContext(req, {
                         ws,
                         remoteAddress: address ? constructNetAddress({
-                            family: address.includes(":") ? "IPv6" : "IPv4",
                             hostname: address,
                             port: 0,
                         }) : null,
@@ -225,7 +222,10 @@ class Server {
      * effect.
      */
     ref() {
-        this[_http].then(server => { var _d; return (_d = server === null || server === void 0 ? void 0 : server.ref) === null || _d === void 0 ? void 0 : _d.call(server); });
+        this[_http].then(server => {
+            var _d;
+            (_d = server === null || server === void 0 ? void 0 : server.ref) === null || _d === void 0 ? void 0 : _d.call(server);
+        });
     }
     /**
      * Calling `unref()` on a server will allow the program to exit if this is
@@ -233,7 +233,10 @@ class Server {
      * `unref`ed calling`unref()` again will have no effect.
      */
     unref() {
-        this[_http].then(server => { var _d; return (_d = server === null || server === void 0 ? void 0 : server.unref) === null || _d === void 0 ? void 0 : _d.call(server); });
+        this[_http].then(server => {
+            var _d;
+            (_d = server === null || server === void 0 ? void 0 : server.unref) === null || _d === void 0 ? void 0 : _d.call(server);
+        });
     }
 }
 _a = _hostname, _b = _port, _c = _controller;

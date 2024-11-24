@@ -3,7 +3,7 @@ import { isBun, isDeno, isNode } from "./env.ts";
 import { ConnectOptions, Socket } from "./net/types.ts";
 import { constructNetAddress } from "./net/util.ts";
 
-export * from "./net/types.ts";
+export type * from "./net/types.ts";
 
 /**
  * Returns a random port number that is available for listening.
@@ -98,63 +98,93 @@ export async function randomPort(
     }
 }
 
+/**
+ * This function provides a unified interface to connect to a TCP server in
+ * Node.js, Deno, Bun and Cloudflare Workers, with modern Web APIs.
+ * 
+ * NOTE: This module depends on the Web Streams API, in Node.js, it requires
+ * Node.js v18.0 or above.
+ * 
+ * @example
+ * ```ts
+ * import bytes from "@ayonli/jsext/bytes";
+ * import { readAsText } from "@ayonli/jsext/reader";
+ * import { connect } from "@ayonli/jsext/net";
+ * 
+ * const socket = await connect({ hostname: "example.com", port: 80 });
+ * const writer = socket.writable.getWriter();
+ * 
+ * await writer.write(bytes("GET / HTTP/1.1\r\n"));
+ * await writer.write(bytes("Accept: plain/html\r\n"));
+ * await writer.write(bytes("Host: example.com\r\n"));
+ * await writer.write(bytes("\r\n"));
+ * await writer.close();
+ * 
+ * const message = await readAsText(socket.readable);
+ * console.log(message);
+ * ```
+ */
 export async function connect(options: ConnectOptions): Promise<Socket> {
-    if (isDeno) {
-        const createSocket = (
-            impl: Deno.TcpConn | Deno.TlsConn,
-            startTls: () => Promise<Socket>
-        ) => {
-            const reader = impl.readable.getReader();
-            const closed = asyncTask<void>();
-            const localAddr = impl.localAddr as Deno.NetAddr;
-            const remoteAddr = impl.remoteAddr as Deno.NetAddr;
+    const { tls = false, ..._options } = options;
 
-            return new Socket({
-                localAddress: constructNetAddress({
-                    family: localAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                    hostname: localAddr.hostname,
-                    port: localAddr.port,
-                }),
-                remoteAddress: constructNetAddress({
-                    family: remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                    hostname: remoteAddr.hostname,
-                    port: remoteAddr.port,
-                }),
-                readable: new ReadableStream<Uint8Array>({
-                    async pull(controller) {
+    if (isDeno) {
+        const _socket = tls
+            ? await Deno.connectTls(_options)
+            : await Deno.connect(_options);
+        const localAddr = _socket.localAddr as Deno.NetAddr;
+        const remoteAddr = _socket.remoteAddr as Deno.NetAddr;
+        const closed = asyncTask<void>();
+        let closeCalled = false;
+
+        return new Socket({
+            localAddress: constructNetAddress({
+                hostname: localAddr.hostname,
+                port: localAddr.port,
+            }),
+            remoteAddress: constructNetAddress({
+                hostname: remoteAddr.hostname,
+                port: remoteAddr.port,
+            }),
+            readable: new ReadableStream<Uint8Array>({
+                async pull(controller) {
+                    try {
                         while (true) {
-                            const { done, value } = await reader.read();
-                            if (done) {
+                            const value = new Uint8Array(4096);
+                            const n = await _socket.read(value);
+
+                            if (n === null) {
                                 try { controller.close(); } catch { }
                                 closed.resolve();
                                 break;
                             }
 
-                            controller.enqueue(value);
+                            controller.enqueue(value.subarray(0, n));
                         }
-                    },
-                    async cancel(reason) {
-                        await reader.cancel(reason);
-                    },
-                }),
-                writable: impl.writable,
-                closed,
-                close: async () => {
-                    impl.close();
-                    await closed;
+                    } catch (err) {
+                        closeCalled ? closed.resolve() : closed.reject(err);
+                    }
                 },
-                startTls,
-                ref: impl.ref.bind(impl),
-                unref: impl.unref.bind(impl),
-            });
-        };
-
-        const _socket = await Deno.connect(options);
-        return createSocket(_socket, async () => {
-            const __socket = await Deno.startTls(_socket);
-            return createSocket(__socket, async () => {
-                throw new Error("TLS already started");
-            });
+                cancel(reason) {
+                    reason ? closed.reject(reason) : closed.resolve();
+                    return _socket.close();
+                },
+            }),
+            writable: new WritableStream<Uint8Array>({
+                async write(chunk) {
+                    await _socket.write(chunk);
+                },
+                async close() {
+                    await _socket.closeWrite();
+                },
+            }),
+            closed,
+            close: async () => {
+                closeCalled = true;
+                _socket.close();
+                await closed;
+            },
+            ref: _socket.ref.bind(_socket),
+            unref: _socket.unref.bind(_socket),
         });
     } else if (isBun) {
         const ready = asyncTask<void>();
@@ -166,6 +196,10 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
             start(controller) {
                 readCtrl = controller;
             },
+            cancel(reason) {
+                reason ? closed.reject(reason) : closed.resolve();
+                _socket.end();
+            },
         });
         const writable = new WritableStream<Uint8Array>({
             start(controller) {
@@ -175,30 +209,30 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
                 _socket.write(chunk);
             },
             close() {
-                _socket.end();
+                _socket.shutdown();
             },
         });
 
         const _socket = await Bun.connect({
-            ...options,
-            hostname: options.hostname || "localhost",
+            ..._options,
+            tls,
             socket: {
                 binaryType: "uint8array",
                 open() {
                     ready.resolve();
                 },
-                data(_socket: any, data: Uint8Array | Buffer) {
-                    readCtrl!.enqueue(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+                data(_socket, data: Uint8Array) {
+                    readCtrl!.enqueue(data);
+                },
+                error(_socket, error) {
+                    try { readCtrl!.error(error); } catch { }
+                    try { writeCtrl!.error(error); } catch { }
+                    closed.reject(error);
                 },
                 close() {
-                    readCtrl!.close();
-                    writeCtrl!.error();
+                    try { readCtrl!.close(); } catch { }
+                    try { writeCtrl!.error(); } catch { }
                     closed.resolve();
-                },
-                error(_socket: any, error: Error) {
-                    readCtrl!.error(error);
-                    writeCtrl!.error(error);
-                    closed.reject(error);
                 },
             }
         });
@@ -207,12 +241,10 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
 
         return new Socket({
             localAddress: constructNetAddress({
-                family: "IPv4",
                 hostname: "localhost",
                 port: _socket.localPort,
             }),
             remoteAddress: constructNetAddress({
-                family: _socket.remoteAddress.includes(":") ? "IPv6" : "IPv4",
                 hostname: _socket.remoteAddress,
                 port: options.port,
             }),
@@ -223,14 +255,13 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
                 _socket.end();
                 await closed;
             },
-            startTls: async () => {
-                throw new Error("TLS not supported");
-            },
             ref: () => _socket.ref(),
             unref: () => _socket.unref(),
         });
     } else if (isNode) {
         const { createConnection } = await import("node:net");
+        const { connect } = await import("node:tls");
+
         const ready = asyncTask<void>();
         const closed = asyncTask<void>();
         let readCtrl: ReadableStreamDefaultController<Uint8Array> | null = null;
@@ -240,6 +271,9 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
             start(controller) {
                 readCtrl = controller;
             },
+            cancel(reason) {
+                _socket.destroy(reason);
+            },
         });
         const writable = new WritableStream<Uint8Array>({
             start(controller) {
@@ -248,37 +282,48 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
             write(chunk) {
                 _socket.write(chunk);
             },
-            close() {
-                _socket.end();
+            async close() {
+                return new Promise<void>(resolve => {
+                    _socket.end(resolve);
+                });
             },
         });
 
-        const _socket = createConnection(options.port, options.hostname || "localhost");
+        const _socket = tls
+            ? connect({
+                ..._options,
+                rejectUnauthorized: false,
+            })
+            : createConnection({
+                host: options.hostname,
+                port: options.port,
+                localPort: 0,
+            });
         _socket.once("connect", () => {
             ready.resolve();
         }).on("data", data => {
             readCtrl!.enqueue(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
         }).once("error", (error) => {
-            readCtrl!.error(error);
-            writeCtrl!.error(error);
+            try { readCtrl!.error(error); } catch { }
+            try { writeCtrl!.error(error); } catch { }
             closed.reject(error);
             ready.reject(error);
         }).once("close", (hasError) => {
-            readCtrl!.close();
-            writeCtrl!.error();
-            hasError || closed.resolve();
+            if (!hasError) {
+                try { readCtrl!.close(); } catch { }
+                try { writeCtrl!.error(); } catch { }
+                closed.resolve();
+            }
         });
 
         await ready;
 
         return new Socket({
             localAddress: constructNetAddress({
-                family: "IPv4",
                 hostname: _socket.localAddress || "localhost",
                 port: _socket.localPort ?? 0,
             }),
             remoteAddress: constructNetAddress({
-                family: _socket.remoteFamily as "IPv4" | "IPv6",
                 hostname: _socket.remoteAddress!,
                 port: _socket.remotePort!,
             }),
@@ -286,11 +331,8 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
             writable,
             closed,
             close: async () => {
-                _socket.end();
+                _socket.destroy();
                 await closed;
-            },
-            startTls: async () => {
-                throw new Error("TLS not supported");
             },
             ref: () => _socket.ref(),
             unref: () => _socket.unref(),

@@ -155,7 +155,6 @@ function listenFetchEvent(options) {
         const ctx = createRequestContext(request, {
             ws,
             remoteAddress: address ? constructNetAddress({
-                family: address.includes(":") ? "IPv6" : "IPv4",
                 hostname: address,
                 port: 0,
             }) : null,
@@ -245,7 +244,6 @@ function withWeb(listener) {
     return async (nReq, nRes) => {
         var _a, _b;
         const remoteAddress = constructNetAddress({
-            family: nReq.socket.remoteFamily,
             hostname: nReq.socket.remoteAddress,
             port: nReq.socket.remotePort,
         });

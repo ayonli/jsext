@@ -262,8 +262,7 @@ declare namespace Bun {
         tls?: TLSOptions | TLSOptions[];
     }
 
-    interface WebSocketServeOptions<WebSocketDataType = undefined>
-        extends GenericServeOptions {
+    interface WebSocketServeOptions<WebSocketDataType = undefined> extends GenericServeOptions {
         /**
          * What port should the server listen on?
          * @default process.env.PORT || "3000"
@@ -1067,8 +1066,7 @@ declare namespace Bun {
         allowHalfOpen?: boolean;
     }
 
-    interface TCPSocketConnectOptions<Data = undefined>
-        extends SocketOptions<Data> {
+    interface TCPSocketConnectOptions<Data = undefined> extends SocketOptions<Data> {
         hostname: string;
         port: number;
         tls?: boolean;

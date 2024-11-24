@@ -1,7 +1,10 @@
-import { args, parseArgs } from "../cli.ts";
-import { serve, serveStatic } from "../http.ts";
+import bytes from "../bytes.ts";
+import { args, parseArgs } from "../workerd/cli.ts";
+import { parseResponse, serve, serveStatic } from "../workerd/http.ts";
 import { importWasm } from "../module.ts";
+import { connect } from "../workerd/net.ts";
 import { startsWith } from "../path.ts";
+import { readAsText } from "../reader.ts";
 import runtime, { addUnhandledRejectionListener } from "../runtime.ts";
 
 const options = parseArgs(args);
@@ -13,7 +16,8 @@ addUnhandledRejectionListener(ev => {
     console.log("\n");
 });
 
-serve({
+export default serve({
+    type: "module",
     port: Number(options.port || 8000),
     async fetch(request, ctx) {
         console.log(new Date().toISOString(), request.method, request.url, ctx.remoteAddress?.address);
@@ -90,6 +94,19 @@ serve({
             });
 
             return new Response(timestamp().toString());
+        } else if (pathname === "/connect") {
+            const socket = await connect({ hostname: "example.com", port: 443, tls: true });
+            const writer = socket.writable.getWriter();
+
+            await writer.write(bytes("GET / HTTP/1.1\r\n"));
+            await writer.write(bytes("Accept: plain/html\r\n"));
+            await writer.write(bytes("Host: example.com\r\n"));
+            await writer.write(bytes("\r\n"));
+            await writer.close();
+
+            const result = await readAsText(socket.readable);
+
+            return parseResponse(result);
         }
 
         return new Response("Not Found", { status: 404 });

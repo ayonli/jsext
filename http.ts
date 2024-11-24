@@ -289,7 +289,6 @@ export function serve(options: ServeOptions): Server {
                     const ctx = createRequestContext(req, {
                         ws,
                         remoteAddress: constructNetAddress({
-                            family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
                             hostname: info.remoteAddr.hostname,
                             port: info.remoteAddr.port,
                         }),
@@ -323,7 +322,6 @@ export function serve(options: ServeOptions): Server {
                         const ctx = createRequestContext(req, {
                             ws,
                             remoteAddress: addr ? constructNetAddress({
-                                family: addr.family,
                                 hostname: addr.address,
                                 port: addr.port,
                             }) : null,
