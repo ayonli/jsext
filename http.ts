@@ -56,8 +56,6 @@ import {
     withWeb,
 } from "./http/internal.ts";
 import {
-    BunServer,
-    NetAddress,
     RequestContext,
     RequestHandler,
     RequestErrorHandler,
@@ -67,6 +65,8 @@ import {
 } from "./http/server.ts";
 import { Range, ifMatch, ifNoneMatch, parseRange } from "./http/util.ts";
 import { isMain } from "./module.ts";
+import { NetAddress, randomPort as _randomPort } from "./net.ts";
+import { constructNetAddress } from "./net/util.ts";
 import { as } from "./object.ts";
 import { extname, join, resolve, startsWith } from "./path.ts";
 import { readAsArray } from "./reader.ts";
@@ -75,6 +75,9 @@ import { WebSocketServer } from "./ws.ts";
 
 export * from "./http/util.ts";
 export type {
+    /**
+     * @deprecated import from `@ayonli/jsext/net` instead.
+     */
     NetAddress,
     RequestContext,
     RequestHandler,
@@ -125,97 +128,9 @@ export async function etag(data: string | Uint8Array | FileInfo): Promise<string
 }
 
 /**
- * Returns a random port number that is available for listening.
- * 
- * NOTE: This function is not available in the browser and worker runtimes such
- * as Cloudflare Workers.
- * 
- * @param prefer The preferred port number to return if it is available,
- * otherwise a random port is returned.
- * 
- * @param hostname The hostname to bind the port to. Default is "0.0.0.0", only
- * used when `prefer` is set and not `0`.
+ * @deprecated Use `randomPort` from the `@ayonli/jsext/net` module instead.
  */
-export async function randomPort(
-    prefer: number | undefined = undefined,
-    hostname: string | undefined = undefined
-): Promise<number> {
-    hostname ||= "0.0.0.0";
-    if (isDeno) {
-        try {
-            const listener = Deno.listen({
-                hostname,
-                port: prefer ?? 0,
-            });
-            const { port } = listener.addr as Deno.NetAddr;
-            listener.close();
-            return Promise.resolve(port);
-        } catch (err) {
-            if (prefer) {
-                return randomPort(0);
-            } else {
-                throw err;
-            }
-        }
-    } else if (isBun) {
-        try {
-            const listener = Bun.listen({
-                hostname,
-                port: prefer ?? 0,
-                socket: {
-                    data: () => { },
-                },
-            }) as { port: number; stop: (force?: boolean) => void; };
-            const { port } = listener;
-            listener.stop(true);
-            return Promise.resolve(port);
-        } catch (err) {
-            if (prefer) {
-                return randomPort(0);
-            } else {
-                throw err;
-            }
-        }
-    } else if (isNode) {
-        const { createServer, connect } = await import("node:net");
-
-        if (prefer) {
-            // In Node.js listening on a port used by another process may work,
-            // so we don't use `listen` method to check if the port is available.
-            // Instead, we use the `connect` method to check if the port can be
-            // reached, if so, the port is open and we don't use it.
-            const isOpen = await new Promise<boolean>((resolve, reject) => {
-                const conn = connect(prefer, hostname === "0.0.0.0" ? "localhost" : hostname);
-                conn.once("connect", () => {
-                    conn.end();
-                    resolve(true);
-                }).once("error", (err) => {
-                    if ((err as any)["code"] === "ECONNREFUSED") {
-                        resolve(false);
-                    } else {
-                        reject(err);
-                    }
-                });
-            });
-
-            if (isOpen) {
-                return randomPort(0);
-            } else {
-                return prefer;
-            }
-        } else {
-            const server = createServer();
-            server.listen({ port: 0, exclusive: true });
-            const port = (server.address() as any).port as number;
-
-            return new Promise<number>((resolve, reject) => {
-                server.close(err => err ? reject(err) : resolve(port));
-            });
-        }
-    } else {
-        throw new Error("Unsupported runtime");
-    }
-}
+export const randomPort = _randomPort;
 
 /**
  * Serves HTTP requests with the given options.
@@ -355,7 +270,7 @@ export function serve(options: ServeOptions): Server {
         let hostname = options.hostname || "0.0.0.0";
         let port = options.port;
         let controller: AbortController | null = null;
-        let server: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null = null;
+        let server: HttpServer | Http2SecureServer | Deno.HttpServer | Bun.Server | null = null;
 
         if (isDeno) {
             if (type === "classic") {
@@ -373,11 +288,11 @@ export function serve(options: ServeOptions): Server {
                     const { getTimers, time, timeEnd } = createTimingFunctions();
                     const ctx = createRequestContext(req, {
                         ws,
-                        remoteAddress: {
+                        remoteAddress: constructNetAddress({
                             family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                            address: info.remoteAddr.hostname,
+                            hostname: info.remoteAddr.hostname,
                             port: info.remoteAddr.port,
-                        },
+                        }),
                         time,
                         timeEnd,
                     });
@@ -402,11 +317,16 @@ export function serve(options: ServeOptions): Server {
                     hostname,
                     port,
                     tls,
-                    fetch: (req: Request, server: BunServer) => {
+                    fetch: (req, server) => {
                         const { getTimers, time, timeEnd } = createTimingFunctions();
+                        const addr = server.requestIP(req);
                         const ctx = createRequestContext(req, {
                             ws,
-                            remoteAddress: server.requestIP(req)!,
+                            remoteAddress: addr ? constructNetAddress({
+                                family: addr.family,
+                                hostname: addr.address,
+                                port: addr.port,
+                            }) : null,
                             time,
                             timeEnd,
                         });
@@ -419,7 +339,7 @@ export function serve(options: ServeOptions): Server {
                             .catch(err => _onError(err, req, ctx));
                     },
                     websocket: ws.bunListener,
-                }) as BunServer;
+                });
 
                 ws.bunBind(server);
             } else {
@@ -690,8 +610,6 @@ export async function serveStatic(
         });
     }
 }
-
-declare const Bun: any;
 
 async function startServer(args: string[]) {
     const options = parseArgs(args, {

@@ -16,7 +16,6 @@ import {
 import { createCloseEvent } from "./event.ts";
 import { parseUserAgent } from "./http/user-agent.ts";
 
-declare const Bun: any;
 declare function WorkerLocation(): void;
 
 export type WellknownRuntime = "node"

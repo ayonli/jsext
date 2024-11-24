@@ -3,8 +3,6 @@ import * as util from "node:util";
 import runtime, { platform, env, customInspect, RuntimeInfo } from "./runtime.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
 
-declare const Bun: any;
-
 describe("runtime", () => {
     it("runtime", () => {
         if (isNode) {

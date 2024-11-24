@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "1.1.1",
+    "version": "1.2.0",
     "description": "A JavaScript extension package for building strong and modern applications.",
     "type": "module",
     "exports": {
@@ -265,6 +265,14 @@
             "require": "./cjs/module/web.js",
             "default": "./module/web.ts"
         },
+        "./net": {
+            "types": "./types/net.d.ts",
+            "bun": "./net.ts",
+            "workerd": "./esm/workerd/net.js",
+            "import": "./esm/net.js",
+            "require": "./cjs/net.js",
+            "default": "./net.ts"
+        },
         "./number": {
             "types": "./types/number.d.ts",
             "bun": "./number.ts",
@@ -517,6 +525,7 @@
         "zod": "^3.23.8"
     },
     "devDependencies": {
+        "@cloudflare/workers-types": "^4.20241112.0",
         "@hono/node-server": "^1.11.2",
         "@rollup/plugin-commonjs": "^25.0.4",
         "@rollup/plugin-node-resolve": "^15.2.1",
@@ -526,6 +535,7 @@
         "@types/mocha": "^10.0.1",
         "@types/node": "^20.6.0",
         "@types/ws": "^8.5.10",
+        "bun-types": "^1.1.36",
         "express": "^4.19.2",
         "glob": "^10.3.10",
         "global-jsdom": "^24.0.0",

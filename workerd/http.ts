@@ -3,7 +3,6 @@ import { getMIME } from "../filetype.ts";
 import { exists, readDir, readFile } from "./fs.ts";
 import { renderDirectoryPage, withWeb } from "../http/internal.ts";
 import {
-    NetAddress,
     RequestContext,
     RequestHandler,
     RequestErrorHandler,
@@ -12,6 +11,7 @@ import {
     Server,
 } from "../http/server.ts";
 import { etag, ifMatch, ifNoneMatch, parseRange, Range } from "../http/util.ts";
+import { NetAddress } from "../net/types.ts";
 import { as } from "../object.ts";
 import { extname, join, startsWith } from "../path.ts";
 import { readAsArray } from "../reader.ts";
@@ -23,6 +23,9 @@ import runtime from "../runtime.ts";
 export { withWeb };
 export * from "../http/util.ts";
 export type {
+    /**
+     * @deprecated import from `@ayonli/jsext/net` instead.
+     */
     NetAddress,
     RequestContext,
     RequestHandler,

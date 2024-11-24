@@ -3,6 +3,7 @@ import { join } from '../path.js';
 import runtime from '../runtime.js';
 import { EventEndpoint } from '../sse.js';
 import { dedent, capitalize } from '../string.js';
+import { constructNetAddress } from '../net/util.js';
 
 /**
  * This is an internal module that provides utility functions for handling HTTP
@@ -153,11 +154,11 @@ function listenFetchEvent(options) {
         const { getTimers, time, timeEnd } = createTimingFunctions();
         const ctx = createRequestContext(request, {
             ws,
-            remoteAddress: address ? {
+            remoteAddress: address ? constructNetAddress({
                 family: address.includes(":") ? "IPv6" : "IPv4",
-                address: address,
+                hostname: address,
                 port: 0,
-            } : null,
+            }) : null,
             time,
             timeEnd,
             waitUntil: (_c = event.waitUntil) === null || _c === void 0 ? void 0 : _c.bind(event),
@@ -243,11 +244,11 @@ async function renderDirectoryPage(pathname, entries, extraHeaders = {}) {
 function withWeb(listener) {
     return async (nReq, nRes) => {
         var _a, _b;
-        const remoteAddress = {
+        const remoteAddress = constructNetAddress({
             family: nReq.socket.remoteFamily,
-            address: nReq.socket.remoteAddress,
+            hostname: nReq.socket.remoteAddress,
             port: nReq.socket.remotePort,
-        };
+        });
         const req = toWebRequest(nReq);
         const res = await listener(req, { remoteAddress });
         if (!nRes.req) { // fix for Deno and Node.js below v15.7.0

@@ -56,6 +56,7 @@ function isExternal(id) {
         || id.startsWith("npm:")
         || id.startsWith("jsr:")
         || id.startsWith("fastly:")
+        || id.startsWith("cloudflare:")
         || id === "__STATIC_CONTENT_MANIFEST";
 }
 

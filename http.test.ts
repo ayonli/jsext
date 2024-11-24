@@ -33,7 +33,6 @@ import {
     verifyBasicAuth,
 } from "./http.ts";
 import { withWeb } from "./http/internal.ts";
-import { BunServer } from "./http/server.ts";
 import _try from "./try.ts";
 import func from "./func.ts";
 import { readFileAsText } from "./fs.ts";
@@ -41,8 +40,6 @@ import { isBun, isDeno, isNode } from "./env.ts";
 import { sleep } from "./async.ts";
 import { readAsJSON, readAsText } from "./reader.ts";
 import { EventConsumer } from "./sse.ts";
-
-declare const Bun: any;
 
 describe("http", () => {
     describe("parseRequest", () => {
@@ -1411,7 +1408,7 @@ describe("http", () => {
                 });
                 defer(() => controller.abort());
             } else if (isBun) {
-                const server: BunServer = Bun.serve({
+                const server = Bun.serve({
                     port,
                     fetch: async () => {
                         return new Response("Hello, World!");
@@ -1447,7 +1444,7 @@ describe("http", () => {
                 });
                 defer(() => controller.abort());
             } else if (isBun) {
-                const server: BunServer = Bun.serve({
+                const server = Bun.serve({
                     port,
                     fetch: async () => {
                         return new Response("Hello, World!");
@@ -1487,7 +1484,7 @@ describe("http", () => {
                 });
                 defer(() => controller.abort());
             } else if (isBun) {
-                const server: BunServer = Bun.serve({
+                const server = Bun.serve({
                     port,
                     fetch: async () => {
                         return new Response("Hello, World!");
@@ -2207,7 +2204,7 @@ describe("http", () => {
             strictEqual(typeof server.fetch, "function");
 
             if (isBun) {
-                const _server: BunServer = Bun.serve({
+                const _server = Bun.serve({
                     port,
                     fetch: server.fetch!,
                 });

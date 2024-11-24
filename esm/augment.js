@@ -13,6 +13,5 @@ import './augment/pipe.js';
 import './augment/types.js';
 import { customInspect } from './runtime.js';
 
-/// <reference types="./lib.deno.d.ts" />
 Object.defineProperty(Symbol, "customInspec", { value: customInspect });
 //# sourceMappingURL=augment.js.map

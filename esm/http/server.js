@@ -1,5 +1,6 @@
 import { until } from '../async.js';
 import { isBun, isDeno, isNode } from '../env.js';
+import { constructNetAddress } from '../net/util.js';
 import runtime, { env } from '../runtime.js';
 import { createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent, createTimingFunctions } from './internal.js';
 
@@ -52,11 +53,11 @@ class Server {
                     const { getTimers, time, timeEnd } = createTimingFunctions();
                     const ctx = createRequestContext(req, {
                         ws,
-                        remoteAddress: !info ? null : {
+                        remoteAddress: info ? constructNetAddress({
                             family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                            address: info.remoteAddr.hostname,
+                            hostname: info.remoteAddr.hostname,
                             port: info.remoteAddr.port,
-                        },
+                        }) : null,
                         time,
                         timeEnd,
                     });
@@ -76,9 +77,14 @@ class Server {
                 this.fetch = (req, server) => {
                     ws.bunBind(server);
                     const { getTimers, time, timeEnd } = createTimingFunctions();
+                    const addr = server.requestIP(req);
                     const ctx = createRequestContext(req, {
                         ws,
-                        remoteAddress: server.requestIP(req),
+                        remoteAddress: addr ? constructNetAddress({
+                            family: addr.family,
+                            hostname: addr.address,
+                            port: addr.port,
+                        }) : null,
                         time,
                         timeEnd,
                     });
@@ -132,11 +138,11 @@ class Server {
                     const { getTimers, time, timeEnd } = createTimingFunctions();
                     const ctx = createRequestContext(req, {
                         ws,
-                        remoteAddress: address ? {
+                        remoteAddress: address ? constructNetAddress({
                             family: address.includes(":") ? "IPv6" : "IPv4",
-                            address: address,
+                            hostname: address,
                             port: 0,
-                        } : null,
+                        }) : null,
                         time,
                         timeEnd,
                         waitUntil: (_d = _ctx.waitUntil) === null || _d === void 0 ? void 0 : _d.bind(_ctx),

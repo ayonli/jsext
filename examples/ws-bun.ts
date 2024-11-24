@@ -1,4 +1,3 @@
-declare const Bun: any;
 import { WebSocketServer } from "../ws.ts";
 
 const wsServer = new WebSocketServer();

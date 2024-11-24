@@ -17,7 +17,6 @@ import { AsyncTask, asyncTask } from "./async.ts";
 import { concat, text } from "./bytes.ts";
 import { createCloseEvent, createErrorEvent } from "./event.ts";
 import runtime from "./runtime.ts";
-import type { BunServer } from "./http/server.ts";
 import { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike } from "./ws/base.ts";
 import type { WebSocketServer as WsServer } from "ws";
 import type { IncomingMessage } from "node:http";
@@ -169,7 +168,7 @@ export class WebSocketServer {
     protected perMessageDeflate: boolean;
     protected [_handler]: WebSocketHandler | undefined;
     protected [_clients]: Map<Request | IncomingMessage, WebSocketConnection> = new Map();
-    private [_httpServer]: BunServer | undefined = undefined;
+    private [_httpServer]: Bun.Server | undefined = undefined;
     private [_wsServer]: Promise<WsServer> | null = null;
     private [_connTasks]: Map<Request, AsyncTask<WebSocketLike>> = new Map();
 
@@ -416,7 +415,7 @@ export class WebSocketServer {
     /**
      * Used in Bun, to bind the WebSocket server to the Bun server instance.
      */
-    bunBind(server: BunServer): void {
+    bunBind(server: Bun.Server): void {
         this[_httpServer] = server;
     }
 

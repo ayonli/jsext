@@ -4,12 +4,9 @@
  * @internal
  * @module
  */
-
 import { isNode, isBun } from "./env.ts";
 import { handleChannelMessage, isChannelMessage } from "./parallel/channel.ts";
 import { handleCallRequest, isCallRequest } from "./parallel/worker.ts";
-
-declare var Bun: any;
 
 if (isBun
     && Bun.isMainThread

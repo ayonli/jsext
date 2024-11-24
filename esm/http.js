@@ -16,6 +16,8 @@ import { createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent
 import { Server } from './http/server.js';
 import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
 export { HTTP_METHODS, HTTP_STATUS, parseAccepts, parseBasicAuth, parseContentType, parseRequest, parseResponse, setFilename, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from './http/util.js';
+import { randomPort as randomPort$1 } from './net.js';
+import { constructNetAddress } from './net/util.js';
 import { readAsArray } from './reader.js';
 import { WebSocketServer } from './ws.js';
 import { startsWith } from './path/util.js';
@@ -98,101 +100,9 @@ async function etag(data) {
     return `${data.size.toString(16)}-${hash.slice(0, 27)}`;
 }
 /**
- * Returns a random port number that is available for listening.
- *
- * NOTE: This function is not available in the browser and worker runtimes such
- * as Cloudflare Workers.
- *
- * @param prefer The preferred port number to return if it is available,
- * otherwise a random port is returned.
- *
- * @param hostname The hostname to bind the port to. Default is "0.0.0.0", only
- * used when `prefer` is set and not `0`.
+ * @deprecated Use `randomPort` from the `@ayonli/jsext/net` module instead.
  */
-async function randomPort(prefer = undefined, hostname = undefined) {
-    hostname || (hostname = "0.0.0.0");
-    if (isDeno) {
-        try {
-            const listener = Deno.listen({
-                hostname,
-                port: prefer !== null && prefer !== void 0 ? prefer : 0,
-            });
-            const { port } = listener.addr;
-            listener.close();
-            return Promise.resolve(port);
-        }
-        catch (err) {
-            if (prefer) {
-                return randomPort(0);
-            }
-            else {
-                throw err;
-            }
-        }
-    }
-    else if (isBun) {
-        try {
-            const listener = Bun.listen({
-                hostname,
-                port: prefer !== null && prefer !== void 0 ? prefer : 0,
-                socket: {
-                    data: () => { },
-                },
-            });
-            const { port } = listener;
-            listener.stop(true);
-            return Promise.resolve(port);
-        }
-        catch (err) {
-            if (prefer) {
-                return randomPort(0);
-            }
-            else {
-                throw err;
-            }
-        }
-    }
-    else if (isNode) {
-        const { createServer, connect } = await import('node:net');
-        if (prefer) {
-            // In Node.js listening on a port used by another process may work,
-            // so we don't use `listen` method to check if the port is available.
-            // Instead, we use the `connect` method to check if the port can be
-            // reached, if so, the port is open and we don't use it.
-            const isOpen = await new Promise((resolve, reject) => {
-                const conn = connect(prefer, hostname === "0.0.0.0" ? "localhost" : hostname);
-                conn.once("connect", () => {
-                    conn.end();
-                    resolve(true);
-                }).once("error", (err) => {
-                    if (err["code"] === "ECONNREFUSED") {
-                        resolve(false);
-                    }
-                    else {
-                        reject(err);
-                    }
-                });
-            });
-            if (isOpen) {
-                return randomPort(0);
-            }
-            else {
-                return prefer;
-            }
-        }
-        else {
-            const server = createServer();
-            server.listen({ port: 0, exclusive: true });
-            const port = server.address().port;
-            return new Promise((resolve, reject) => {
-                server.close(err => err ? reject(err) : resolve(port));
-            });
-        }
-    }
-    else {
-        throw new Error("Unsupported runtime");
-    }
-}
+const randomPort = randomPort$1;
 /**
  * Serves HTTP requests with the given options.
  *
@@ -347,11 +257,11 @@ function serve(options) {
                     const { getTimers, time, timeEnd } = createTimingFunctions();
                     const ctx = createRequestContext(req, {
                         ws,
-                        remoteAddress: {
+                        remoteAddress: constructNetAddress({
                             family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                            address: info.remoteAddr.hostname,
+                            hostname: info.remoteAddr.hostname,
                             port: info.remoteAddr.port,
-                        },
+                        }),
                         time,
                         timeEnd,
                     });
@@ -378,9 +288,14 @@ function serve(options) {
                     tls,
                     fetch: (req, server) => {
                         const { getTimers, time, timeEnd } = createTimingFunctions();
+                        const addr = server.requestIP(req);
                         const ctx = createRequestContext(req, {
                             ws,
-                            remoteAddress: server.requestIP(req),
+                            remoteAddress: addr ? constructNetAddress({
+                                family: addr.family,
+                                hostname: addr.address,
+                                port: addr.port,
+                            }) : null,
                             time,
                             timeEnd,
                         });

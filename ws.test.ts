@@ -7,9 +7,6 @@ import bytes, { concat, text } from "./bytes.ts";
 import { select, sleep, until } from "./async.ts";
 import { randomPort } from "./http.ts";
 import { withWeb } from "./http/internal.ts";
-import { BunServer } from "./http/server.ts";
-
-declare const Bun: any;
 
 describe("ws", () => {
     if (typeof MessageEvent === "undefined") {
@@ -56,7 +53,7 @@ describe("ws", () => {
             });
             defer(() => controller.abort());
         } else if (isBun) {
-            const server: BunServer = Bun.serve({
+            const server = Bun.serve({
                 port,
                 fetch: (req: Request) => {
                     const { response } = wsServer.upgrade(req);
@@ -165,7 +162,7 @@ describe("ws", () => {
             });
             defer(() => controller.abort());
         } else if (isBun) {
-            const server: BunServer = Bun.serve({
+            const server = Bun.serve({
                 port,
                 fetch: (req: Request) => {
                     const { socket, response } = wsServer.upgrade(req);
@@ -279,7 +276,7 @@ describe("ws", () => {
             });
             defer(() => controller.abort());
         } else if (isBun) {
-            const server: BunServer = Bun.serve({
+            const server = Bun.serve({
                 port,
                 fetch: (req: Request) => {
                     const { response } = wsServer.upgrade(req);
@@ -392,7 +389,7 @@ describe("ws", () => {
             Deno.serve({ port, signal: controller.signal }, app.fetch);
             defer(() => controller.abort());
         } else if (isBun) {
-            const server: BunServer = Bun.serve({
+            const server = Bun.serve({
                 port,
                 fetch: app.fetch,
                 websocket: wsServer.bunListener,

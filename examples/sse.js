@@ -1,4 +1,5 @@
 /// <reference path="../lib.deno.d.ts" />
+/// <reference path="../lib.bun.d.ts" />
 import runtime from "../esm/runtime.js";
 import { EventEndpoint, EventSource } from "../esm/sse.js";
 

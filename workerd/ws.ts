@@ -1,5 +1,4 @@
 import { createCloseEvent, createErrorEvent } from "../event.ts";
-import type { BunServer } from "../http/server.ts";
 import { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike } from "../ws/base.ts";
 import type { IncomingMessage } from "node:http";
 
@@ -9,7 +8,7 @@ const _handler = Symbol.for("handler");
 const _clients = Symbol.for("clients");
 
 declare var WebSocketPair: {
-    new(): [WebSocket, WebSocket & { accept: () => void; }];
+    new(): { 0: WebSocket, 1: WebSocket & { accept: () => void; }; };
 };
 
 export class WebSocketServer {
@@ -49,9 +48,7 @@ export class WebSocketServer {
         const handler = this[_handler];
         const clients = this[_clients];
 
-        const [client, server] = Object.values(new WebSocketPair()) as [WebSocket, WebSocket & {
-            accept: () => void;
-        }];
+        const { 0: client, 1: server } = new WebSocketPair();
         const socket = new WebSocketConnection(new Promise<WebSocketLike>(resolve => {
             server.accept();
             server.addEventListener("message", ev => {
@@ -116,7 +113,7 @@ export class WebSocketServer {
         };
     }
 
-    bunBind(server: BunServer): void {
+    bunBind(server: Bun.Server): void {
         void server;
     }
 

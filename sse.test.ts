@@ -5,10 +5,7 @@ import "./index.ts";
 import jsext from "./index.ts";
 import { randomPort, serve } from "./http.ts";
 import { withWeb } from "./http/internal.ts";
-import { BunServer } from "./http/server.ts";
 import { EventConsumer, EventEndpoint } from "./sse.ts";
-
-declare const Bun: any;
 
 describe("sse", () => {
     describe("EventEndpoint (Web APIs)", () => {
@@ -160,7 +157,7 @@ describe("sse", () => {
                 Deno.serve({ port, signal: controller.signal }, handle);
                 defer(() => controller.abort());
             } else if (isBun) {
-                const server: BunServer = Bun.serve({ port, fetch: handle });
+                const server = Bun.serve({ port, fetch: handle });
                 defer(() => server.stop(true));
             } else {
                 const http = await import("node:http");
@@ -215,7 +212,7 @@ describe("sse", () => {
                 Deno.serve({ port, signal: controller.signal }, handle);
                 defer(() => controller.abort());
             } else if (isBun) {
-                const server: BunServer = Bun.serve({ port, fetch: handle });
+                const server = Bun.serve({ port, fetch: handle });
                 defer(() => server.stop(true));
             } else {
                 const http = await import("node:http");
@@ -271,7 +268,7 @@ describe("sse", () => {
                 Deno.serve({ port, signal: controller.signal }, handle);
                 defer(() => controller.abort());
             } else if (isBun) {
-                const server: BunServer = Bun.serve({ port, fetch: handle });
+                const server = Bun.serve({ port, fetch: handle });
                 defer(() => server.stop(true));
             } else {
                 const http = await import("node:http");
@@ -565,7 +562,7 @@ describe("sse", () => {
         let sse: EventEndpoint | undefined = undefined;
 
         if (isBun) {
-            const server: BunServer = Bun.serve({
+            const server = Bun.serve({
                 port,
                 fetch: async (req: Request) => {
                     sse = new EventEndpoint(req);

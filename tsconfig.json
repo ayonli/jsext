@@ -20,9 +20,13 @@
         "exactOptionalPropertyTypes": true,
         "experimentalDecorators": true,
         "isolatedModules": true,
+        "skipLibCheck": true,
         "types": [
             "node",
-            "mocha"
+            "mocha",
+            "./lib.deno.d.ts",
+            "./lib.bun.d.ts",
+            "./lib.cloudflare.d.ts"
         ],
         "paths": {
             "npm:iconv-lite": [

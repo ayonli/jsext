@@ -9,7 +9,6 @@ import { trim } from "./string.ts";
 import { readAsArray } from "./reader.ts";
 import { isDeno } from "./env.ts";
 
-declare var Bun: any;
 declare var AggregateError: new (errors: Error[], message?: string, options?: { cause: unknown; }) => Error & { errors: Error[]; };
 
 const isTsx = globalThis["process"]?.env["npm_lifecycle_script"]?.match(/\btsx\b/) ? true : false;

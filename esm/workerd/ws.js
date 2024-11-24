@@ -32,7 +32,7 @@ class WebSocketServer {
         }
         const handler = this[_handler];
         const clients = this[_clients];
-        const [client, server] = Object.values(new WebSocketPair());
+        const { 0: client, 1: server } = new WebSocketPair();
         const socket = new WebSocketConnection(new Promise(resolve => {
             server.accept();
             server.addEventListener("message", ev => {

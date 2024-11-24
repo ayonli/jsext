@@ -3,8 +3,6 @@ import { readChannel, wireChannel } from "../deno/util.ts";
 import { default as handle } from "../deno/handler.ts";
 const { parallelHandle } = parallel(() => import("../deno/worker.ts"));
 
-declare var Bun: any;
-
 if (Bun.isMainThread) {
     if (process.argv.includes("--cluster=reverse-proxy")) {
         // This version causes 'segmentation fault`, cannot test.

@@ -1,11 +1,13 @@
 import type { Server as HttpServer } from "node:http";
 import type { Http2SecureServer } from "node:http2";
 import type { serve, serveStatic } from "../http.ts";
+import type { NetAddress } from "../net/types.ts";
 import type { EventEndpoint } from "../sse.ts";
 import type { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
 import type { KVNamespace } from "../workerd/types.ts";
 import { until } from "../async.ts";
 import { isBun, isDeno, isNode } from "../env.ts";
+import { constructNetAddress } from "../net/util.ts";
 import runtime, { env } from "../runtime.ts";
 import {
     createRequestContext,
@@ -15,29 +17,6 @@ import {
     patchTimingMetrics,
 } from "./internal.ts";
 
-export interface BunServer {
-    fetch(request: Request | string): Response | Promise<Response>;
-    ref(): void;
-    requestIP(request: Request): { family: "IPv4" | "IPv6"; address: string; port: number; } | null;
-    stop(closeActiveConnections?: boolean): Promise<void>;
-    unref(): void;
-    upgrade<T = undefined>(
-        request: Request,
-        options?: {
-            data?: T;
-            headers?: HeadersInit;
-        },
-    ): boolean;
-
-    readonly development: boolean;
-    readonly hostname: string;
-    readonly id: string;
-    readonly pendingRequests: number;
-    readonly pendingWebSockets: number;
-    readonly port: number;
-    readonly url: URL;
-}
-
 export interface FetchEvent extends Event {
     request: Request;
     respondWith(response: Response | Promise<Response>): void;
@@ -45,21 +24,6 @@ export interface FetchEvent extends Event {
     client?: {
         address: string;
     };
-}
-
-/**
- * Represents the network address of a connection peer.
- */
-export interface NetAddress {
-    family: "IPv4" | "IPv6";
-    /**
-     * The IP address of the remote peer.
-     */
-    address: string;
-    /**
-     * The port number of the remote peer, or `0` if it's not available.
-     */
-    port: number;
 }
 
 /**
@@ -257,7 +221,7 @@ export class Server {
     readonly type: "classic" | "module";
     private [_hostname] = "0.0.0.0";
     private [_port] = 0;
-    private [_http]: Promise<HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null>;
+    private [_http]: Promise<HttpServer | Http2SecureServer | Deno.HttpServer | Bun.Server | null>;
     private [_controller]: AbortController | null = null;
 
     /**
@@ -267,7 +231,7 @@ export class Server {
     fetch?: ((request: Request, env?: any, ctx?: any) => Response | Promise<Response>);
 
     constructor(impl: () => Promise<{
-        http: HttpServer | Http2SecureServer | Deno.HttpServer | BunServer | null;
+        http: HttpServer | Http2SecureServer | Deno.HttpServer | Bun.Server | null;
         hostname: string;
         port: number;
         controller: AbortController | null;
@@ -315,11 +279,11 @@ export class Server {
                     const { getTimers, time, timeEnd } = createTimingFunctions();
                     const ctx = createRequestContext(req, {
                         ws,
-                        remoteAddress: !info ? null : {
+                        remoteAddress: info ? constructNetAddress({
                             family: info.remoteAddr.hostname.includes(":") ? "IPv6" : "IPv4",
-                            address: info.remoteAddr.hostname,
+                            hostname: info.remoteAddr.hostname,
                             port: info.remoteAddr.port,
-                        },
+                        }) : null,
                         time,
                         timeEnd,
                     });
@@ -335,13 +299,18 @@ export class Server {
             if (this.type === "classic") {
                 delete this.fetch;
             } else {
-                this.fetch = (req, server: BunServer) => {
+                this.fetch = (req, server) => {
                     ws.bunBind(server);
 
                     const { getTimers, time, timeEnd } = createTimingFunctions();
+                    const addr = server.requestIP(req);
                     const ctx = createRequestContext(req, {
                         ws,
-                        remoteAddress: server.requestIP(req),
+                        remoteAddress: addr ? constructNetAddress({
+                            family: addr.family,
+                            hostname: addr.address,
+                            port: addr.port,
+                        }) : null,
                         time,
                         timeEnd,
                     });
@@ -396,11 +365,11 @@ export class Server {
                     const { getTimers, time, timeEnd } = createTimingFunctions();
                     const ctx = createRequestContext(req, {
                         ws,
-                        remoteAddress: address ? {
+                        remoteAddress: address ? constructNetAddress({
                             family: address.includes(":") ? "IPv6" : "IPv4",
-                            address: address,
+                            hostname: address,
                             port: 0,
-                        } : null,
+                        }) : null,
                         time,
                         timeEnd,
                         waitUntil: _ctx.waitUntil?.bind(_ctx),
@@ -458,7 +427,7 @@ export class Server {
             return;
 
         if (typeof server.stop === "function") {
-            const _server = server as BunServer;
+            const _server = server as Bun.Server;
 
             _server.stop(force);
             if (!force) {

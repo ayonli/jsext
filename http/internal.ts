@@ -13,7 +13,9 @@ import runtime from "../runtime.ts";
 import { EventEndpoint } from "../sse.ts";
 import { capitalize, dedent } from "../string.ts";
 import type { DirEntry } from "../fs/types.ts";
-import type { FetchEvent, NetAddress, RequestContext, RequestErrorHandler, ServeOptions } from "./server.ts";
+import type { NetAddress } from "../net/types.ts";
+import { constructNetAddress } from "../net/util.ts";
+import type { FetchEvent, RequestContext, RequestErrorHandler, ServeOptions } from "./server.ts";
 import type { WebSocketServer } from "../ws.ts";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
@@ -210,11 +212,11 @@ export function listenFetchEvent(options: Pick<ServeOptions, "fetch" | "headers"
         const { getTimers, time, timeEnd } = createTimingFunctions();
         const ctx = createRequestContext(request, {
             ws,
-            remoteAddress: address ? {
+            remoteAddress: address ? constructNetAddress({
                 family: address.includes(":") ? "IPv6" : "IPv4",
-                address: address,
+                hostname: address,
                 port: 0,
-            } : null,
+            }) : null,
             time,
             timeEnd,
             waitUntil: event.waitUntil?.bind(event),
@@ -323,11 +325,11 @@ export function withWeb(
     }) => Response | Promise<Response>
 ): (req: IncomingMessage | Http2ServerRequest, res: ServerResponse | Http2ServerResponse) => void {
     return async (nReq, nRes) => {
-        const remoteAddress: NetAddress = {
+        const remoteAddress: NetAddress = constructNetAddress({
             family: nReq.socket.remoteFamily as "IPv4" | "IPv6",
-            address: nReq.socket.remoteAddress!,
+            hostname: nReq.socket.remoteAddress!,
             port: nReq.socket.remotePort!,
-        };
+        });
         const req = toWebRequest(nReq);
         const res = await listener(req, { remoteAddress });
 

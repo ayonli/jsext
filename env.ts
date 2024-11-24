@@ -1,6 +1,5 @@
 export const id = Symbol.for("id");
 
-declare const Bun: any;
 declare const WorkerGlobalScope: Function | undefined;
 declare const DedicatedWorkerGlobalScope: Function | undefined;
 declare const ServiceWorkerGlobalScope: Function | undefined;
