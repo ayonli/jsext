@@ -60,15 +60,6 @@
         "ws": "npm:ws@^8.18.0",
         "zod": "npm:zod@^3.23.8"
     },
-    "compilerOptions": {
-        "types": [
-            "node",
-            "mocha",
-            "./lib.deno.d.ts",
-            "./lib.bun.d.ts",
-            "./lib.cloudflare.d.ts"
-        ]
-    },
     "publish": {
         "include": [
             "deno.json",
@@ -89,7 +80,7 @@
             "!workerd/types.ts",
             "worker-node.ts",
             "test-deno.ts",
-            "lib.deno.d.ts",
+            "lib.*.d.ts",
             "bundle.ts",
             "mixins.ts",
             "examples/*",
