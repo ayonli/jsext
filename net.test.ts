@@ -116,5 +116,12 @@ describe("net", () => {
             strictEqual(text.match(/Example Domain/)?.[0], "Example Domain");
             strictEqual(await socket.closed, undefined);
         });
+
+        it("connection error", async () => {
+            const port = await randomPort();
+            const [err, socket] = await _try(connect({ hostname: "127.0.0.1", port }));
+            strictEqual(err instanceof Error, true);
+            strictEqual(socket, undefined);
+        });
     });
 });

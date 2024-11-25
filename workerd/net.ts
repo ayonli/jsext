@@ -4,6 +4,14 @@ import { constructNetAddress } from "../net/util.ts";
 
 export type * from "../net/types.ts";
 
+export async function randomPort(
+    prefer: number | undefined = undefined,
+    hostname: string | undefined = undefined
+): Promise<number> {
+    void prefer, hostname;
+    throw new Error("Unsupported runtime");
+}
+
 export async function connect(options: ConnectOptions): Promise<Socket> {
     const { tls = false, ..._options } = options;
     const impl = _connect(_options, {

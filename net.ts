@@ -161,6 +161,7 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
                             controller.enqueue(value.subarray(0, n));
                         }
                     } catch (err) {
+                        try { controller.error(err); } catch { }
                         closeCalled ? closed.resolve() : closed.reject(err);
                     }
                 },

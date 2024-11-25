@@ -2,6 +2,9 @@ import { connect as connect$1 } from 'cloudflare:sockets';
 import { Socket } from '../net/types.js';
 import { constructNetAddress } from '../net/util.js';
 
+async function randomPort(prefer = undefined, hostname = undefined) {
+    throw new Error("Unsupported runtime");
+}
 async function connect(options) {
     const { tls = false, ..._options } = options;
     const impl = connect$1(_options, {
@@ -33,5 +36,5 @@ async function connect(options) {
     });
 }
 
-export { connect };
+export { connect, randomPort };
 //# sourceMappingURL=net.js.map

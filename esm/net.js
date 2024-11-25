@@ -163,6 +163,10 @@ async function connect(options) {
                         }
                     }
                     catch (err) {
+                        try {
+                            controller.error(err);
+                        }
+                        catch (_b) { }
                         closeCalled ? closed.resolve() : closed.reject(err);
                     }
                 },
