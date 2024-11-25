@@ -167,15 +167,15 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
                 },
                 cancel(reason) {
                     reason ? closed.reject(reason) : closed.resolve();
-                    return _socket.close();
+                    _socket.close();
                 },
             }),
             writable: new WritableStream<Uint8Array>({
                 async write(chunk) {
                     await _socket.write(chunk);
                 },
-                async close() {
-                    await _socket.closeWrite();
+                close() {
+                    return _socket.closeWrite();
                 },
             }),
             closed,
@@ -281,9 +281,13 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
                 writeCtrl = controller;
             },
             write(chunk) {
-                _socket.write(chunk);
+                return new Promise<void>((resolve, reject) => {
+                    _socket.write(chunk, err => {
+                        err ? reject(err) : resolve();
+                    });
+                });
             },
-            async close() {
+            close() {
                 return new Promise<void>(resolve => {
                     _socket.end(resolve);
                 });
