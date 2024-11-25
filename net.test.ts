@@ -134,7 +134,11 @@ describe("net", () => {
             strictEqual(socket, undefined);
         });
 
-        it("unix socket", func(async (defer) => {
+        it("unix socket", func(async function (defer) {
+            if (isDeno && platform() === "windows") {
+                this.skip(); // TODO: Deno does not support Unix domain socket on Windows
+            }
+
             const path = platform() === "windows"
                 ? "\\\\?\\pipe\\test.sock"
                 : "/tmp/test.sock";

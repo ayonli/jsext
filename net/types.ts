@@ -104,7 +104,7 @@ export class Socket {
 }
 
 export class TcpSocket extends Socket {
-    protected [_impl]: ToDict<TcpSocket>;
+    protected override[_impl]: ToDict<TcpSocket>;
 
     constructor(impl: ToDict<TcpSocket>) {
         super(impl);
