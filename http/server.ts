@@ -1,4 +1,4 @@
-import type { Server as HttpServer } from "node:http";
+import type { Server as NodeHttpServer } from "node:http";
 import type { Http2SecureServer } from "node:http2";
 import type { serve, serveStatic } from "../http.ts";
 import type { NetAddress } from "../net/types.ts";
@@ -102,7 +102,7 @@ export interface ServeOptions {
     /**
      * Instructs how the server should be deployed. `classic` means {@link serve}
      * will start the server itself (or use `addEventListener("fetch")` in
-     * service workers), while `module` means using the {@link Server} instance
+     * service workers), while `module` means using the {@link HttpServer} instance
      * as an ES module with the syntax `export default serve({ ... })`.
      * 
      * NOTE: This option is only adjustable in Node.js, Deno, Bun and Cloudflare
@@ -217,11 +217,11 @@ const _controller = Symbol.for("controller");
 /**
  * A unified HTTP server interface.
  */
-export class Server {
+export class HttpServer {
     readonly type: "classic" | "module";
     private [_hostname] = "0.0.0.0";
     private [_port] = 0;
-    private [_http]: Promise<HttpServer | Http2SecureServer | Deno.HttpServer | Bun.Server | null>;
+    private [_http]: Promise<NodeHttpServer | Http2SecureServer | Deno.HttpServer | Bun.Server | null>;
     private [_controller]: AbortController | null = null;
 
     /**
@@ -231,7 +231,7 @@ export class Server {
     fetch?: ((request: Request, env?: any, ctx?: any) => Response | Promise<Response>);
 
     constructor(impl: () => Promise<{
-        http: HttpServer | Http2SecureServer | Deno.HttpServer | Bun.Server | null;
+        http: NodeHttpServer | Http2SecureServer | Deno.HttpServer | Bun.Server | null;
         hostname: string;
         port: number;
         controller: AbortController | null;
@@ -441,7 +441,7 @@ export class Server {
 
             await _server.finished;
         } else if (typeof server.close === "function") {
-            const _server = server as HttpServer | Http2SecureServer;
+            const _server = server as NodeHttpServer | Http2SecureServer;
 
             await new Promise<void>((resolve, reject) => {
                 _server.close((err) => err ? reject(err) : resolve());

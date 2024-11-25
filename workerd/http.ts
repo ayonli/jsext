@@ -8,7 +8,7 @@ import {
     RequestErrorHandler,
     ServeOptions,
     ServeStaticOptions,
-    Server,
+    HttpServer,
 } from "../http/server.ts";
 import { etag, ifMatch, ifNoneMatch, parseRange, Range } from "../http/util.ts";
 import { NetAddress } from "../net/types.ts";
@@ -32,7 +32,11 @@ export type {
     RequestErrorHandler,
     ServeOptions,
     ServeStaticOptions,
-    Server,
+    HttpServer,
+    /**
+     * @deprecated use `HttpServer` instead.
+     */
+    HttpServer as Server,
 };
 
 export async function randomPort(prefer: number | undefined = undefined): Promise<number> {
@@ -40,14 +44,14 @@ export async function randomPort(prefer: number | undefined = undefined): Promis
     throw new Error("Unsupported runtime");
 }
 
-export function serve(options: ServeOptions): Server {
+export function serve(options: ServeOptions): HttpServer {
     const { identity } = runtime();
     const type = identity === "workerd" ? options.type || "classic" : "classic";
     const ws = new WebSocketServer(options.ws);
     const { fetch, onError, onListen, headers } = options;
 
     // @ts-ignore
-    return new Server(async () => {
+    return new HttpServer(async () => {
         return { http: null, hostname: "", port: 0 };
     }, { type, fetch, onError, onListen, ws, headers });
 }

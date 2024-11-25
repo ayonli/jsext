@@ -37,7 +37,7 @@
  * @module
  */
 
-import type { Server as HttpServer } from "node:http";
+import type { Server as NodeHttpServer } from "node:http";
 import type { Http2SecureServer } from "node:http2";
 import type { Worker } from "node:cluster";
 import { asyncTask } from "./async.ts";
@@ -61,7 +61,7 @@ import {
     RequestErrorHandler,
     ServeOptions,
     ServeStaticOptions,
-    Server
+    HttpServer
 } from "./http/server.ts";
 import { Range, ifMatch, ifNoneMatch, parseRange } from "./http/util.ts";
 import { isMain } from "./module.ts";
@@ -84,7 +84,11 @@ export type {
     RequestErrorHandler,
     ServeOptions,
     ServeStaticOptions,
-    Server,
+    HttpServer,
+    /**
+     * @deprecated use `HttpServer` instead.
+     */
+    HttpServer as Server,
 };
 
 /**
@@ -253,7 +257,7 @@ export const randomPort = _randomPort;
  * });
  * ```
  */
-export function serve(options: ServeOptions): Server {
+export function serve(options: ServeOptions): HttpServer {
     const type = isDeno || isBun || isNode ? options.type || "classic" : "classic";
     const ws = new WebSocketServer(options.ws);
     const { fetch: handle, key, cert, onListen, headers } = options;
@@ -266,11 +270,11 @@ export function serve(options: ServeOptions): Server {
         });
     });
 
-    return new Server(async () => {
+    return new HttpServer(async () => {
         let hostname = options.hostname || "0.0.0.0";
         let port = options.port;
         let controller: AbortController | null = null;
-        let server: HttpServer | Http2SecureServer | Deno.HttpServer | Bun.Server | null = null;
+        let server: NodeHttpServer | Http2SecureServer | Deno.HttpServer | Bun.Server | null = null;
 
         if (isDeno) {
             if (type === "classic") {
@@ -368,9 +372,9 @@ export function serve(options: ServeOptions): Server {
                 port ||= await randomPort(8000, hostname);
                 await new Promise<void>((resolve) => {
                     if (hostname && hostname !== "0.0.0.0") {
-                        (server as HttpServer | Http2SecureServer).listen(port, hostname, resolve);
+                        (server as NodeHttpServer | Http2SecureServer).listen(port, hostname, resolve);
                     } else {
-                        (server as HttpServer | Http2SecureServer).listen(port, resolve);
+                        (server as NodeHttpServer | Http2SecureServer).listen(port, resolve);
                     }
                 });
             } else {
