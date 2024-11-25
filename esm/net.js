@@ -256,17 +256,7 @@ async function connectUnix(options) {
     const { path } = options;
     if (isDeno) {
         const _socket = await Deno.connect({ transport: "unix", path });
-        const localAddr = _socket.localAddr;
-        const remoteAddr = _socket.remoteAddr;
-        return new UnixSocket({
-            localAddress: {
-                path: localAddr.path,
-            },
-            remoteAddress: {
-                path: remoteAddr.path,
-            },
-            ...denoToSocket(_socket),
-        });
+        return new UnixSocket(denoToSocket(_socket));
     }
     else if (isBun) {
         const ready = asyncTask();
@@ -329,12 +319,6 @@ async function connectUnix(options) {
         });
         await ready;
         return new UnixSocket({
-            localAddress: {
-                path: _socket.remoteAddress,
-            },
-            remoteAddress: {
-                path: _socket.remoteAddress,
-            },
             readable,
             writable,
             closed,
@@ -350,15 +334,7 @@ async function connectUnix(options) {
         const { createConnection } = await import('node:net');
         const _socket = createConnection({ path });
         const props = await nodeToSocket(_socket);
-        const socket = new UnixSocket({
-            localAddress: {
-                path: _socket.localAddress,
-            },
-            remoteAddress: {
-                path: _socket.remoteAddress,
-            },
-            ...props,
-        });
+        const socket = new UnixSocket(props);
         return socket;
     }
     else {

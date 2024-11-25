@@ -183,6 +183,9 @@ class HttpServer {
      *
      * NOTE: In Node.js, the `force` parameter is only available for HTTP
      * servers, it has no effect on HTTP2 servers.
+     *
+     * NOTE: This function only works in Node.js, Deno and Bun, it is a no-op in
+     * other environments.
      */
     async close(force = false) {
         const server = await this[_http];
@@ -220,6 +223,9 @@ class HttpServer {
      * will _not_ let the program exit if it's the only server left (the default
      * behavior). If the server is `ref`ed calling `ref()` again will have no
      * effect.
+     *
+     * NOTE: This function only works in Node.js, Deno and Bun, it is a no-op in
+     * other environments.
      */
     ref() {
         this[_http].then(server => {
@@ -231,6 +237,9 @@ class HttpServer {
      * Calling `unref()` on a server will allow the program to exit if this is
      * the only active server in the event system. If the server is already
      * `unref`ed calling`unref()` again will have no effect.
+     *
+     * NOTE: This function only works in Node.js, Deno and Bun, it is a no-op in
+     * other environments.
      */
     unref() {
         this[_http].then(server => {

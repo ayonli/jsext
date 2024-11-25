@@ -7,7 +7,7 @@ async function randomPort(prefer = undefined, hostname = undefined) {
 }
 async function connect(options) {
     if ("path" in options) {
-        throw new Error("Unsupported runtime");
+        throw new Error("Unix domain socket is not supported in this runtime");
     }
     const { tls = false, ..._options } = options;
     const impl = connect$1(_options, {

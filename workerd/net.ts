@@ -1,5 +1,5 @@
 import { connect as _connect } from "cloudflare:sockets";
-import { ConnectOptions, TcpSocket, UnixAddress, UnixSocket } from "../net/types.ts";
+import { ConnectOptions, TcpSocket, UnixConnectOptions, UnixSocket } from "../net/types.ts";
 import { constructNetAddress } from "../net/util.ts";
 
 export type * from "../net/types.ts";
@@ -13,10 +13,10 @@ export async function randomPort(
 }
 
 export async function connect(options: ConnectOptions): Promise<TcpSocket>;
-export async function connect(options: UnixAddress): Promise<UnixSocket>;
-export async function connect(options: ConnectOptions | UnixAddress): Promise<TcpSocket | UnixSocket> {
+export async function connect(options: UnixConnectOptions): Promise<UnixSocket>;
+export async function connect(options: ConnectOptions | UnixConnectOptions): Promise<TcpSocket | UnixSocket> {
     if ("path" in options) {
-        throw new Error("Unsupported runtime");
+        throw new Error("Unix domain socket is not supported in this runtime");
     }
 
     const { tls = false, ..._options } = options;

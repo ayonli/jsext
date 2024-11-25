@@ -1,4 +1,5 @@
 import type { connect } from "../net.ts";
+import { ToDict } from "../types.ts";
 
 /**
  * Represents the network address of a connection peer.
@@ -20,13 +21,6 @@ export interface NetAddress {
 }
 
 /**
- * Represents a Unix domain socket address.
- */
-export interface UnixAddress {
-    path: string;
-}
-
-/**
  * The options for {@link connect}.
  */
 export type ConnectOptions = Pick<NetAddress, "hostname" | "port"> & {
@@ -36,28 +30,23 @@ export type ConnectOptions = Pick<NetAddress, "hostname" | "port"> & {
     tls?: boolean;
 };
 
+/**
+ * Represents a Unix domain socket address.
+ */
+export interface UnixConnectOptions {
+    path: string;
+}
+
 const _impl = Symbol.for("impl");
 
 /**
  * A socket represents a network connection, currently only supports TCP.
  */
-export class Socket<A extends NetAddress | UnixAddress> {
-    protected [_impl]: {
-        [K in keyof Socket<A>]: Socket<A>[K];
-    };
+export class Socket {
+    protected [_impl]: ToDict<Socket>;
 
-    constructor(impl: {
-        [K in keyof Socket<A>]: Socket<A>[K];
-    }) {
+    constructor(impl: ToDict<Socket>) {
         this[_impl] = impl;
-    }
-
-    get localAddress(): A | null {
-        return this[_impl].localAddress ?? null;
-    }
-
-    get remoteAddress(): A | null {
-        return this[_impl].remoteAddress ?? null;
     }
 
     /**
@@ -93,6 +82,9 @@ export class Socket<A extends NetAddress | UnixAddress> {
      * Opposite of `unref()`, calling `ref()` on a previously unrefed socket will
      * not let the program exit if it's the only socket left (the default behavior).
      * If the socket is refed calling `ref()` again will have no effect.
+     * 
+     * NOTE: This function only works in Node.js, Deno and Bun, it is a no-op in
+     * other environments.
      */
     ref(): void {
         return this[_impl].ref();
@@ -102,42 +94,48 @@ export class Socket<A extends NetAddress | UnixAddress> {
      * Calling `unref()` on a socket will allow the program to exit if this is
      * the only active socket in the event system. If the socket is already
      * unrefed calling `unref()` again will have no effect.
+     * 
+     * NOTE: This function only works in Node.js, Deno and Bun, it is a no-op in
+     * other environments.
      */
     unref(): void {
         return this[_impl].unref();
     }
 }
 
-export class TcpSocket extends Socket<NetAddress> {
-    protected [_impl]: {
-        [K in keyof TcpSocket]: TcpSocket[K];
-    };
+export class TcpSocket extends Socket {
+    protected [_impl]: ToDict<TcpSocket>;
 
-    constructor(impl: {
-        [K in keyof TcpSocket]: TcpSocket[K];
-    }) {
+    constructor(impl: ToDict<TcpSocket>) {
         super(impl);
         this[_impl] = impl;
     }
 
+    get localAddress(): NetAddress | null {
+        return this[_impl].localAddress ?? null;
+    }
+
+    get remoteAddress(): NetAddress | null {
+        return this[_impl].remoteAddress ?? null;
+    }
+
+    /**
+     * Enable/disable keep-alive functionality.
+     * 
+     * NOTE: This function is a no-op in Cloudflare Workers and Deno with TLS enabled.
+     */
     setKeepAlive(keepAlive: boolean | undefined = undefined): void {
         return this[_impl].setKeepAlive(keepAlive);
     }
 
+    /**
+     * Enable/disable the use of Nagle's algorithm.
+     * 
+     * NOTE: This function is a no-op in Cloudflare Workers and Deno with TLS enabled.
+     */
     setNoDelay(noDelay: boolean | undefined = undefined): void {
         return this[_impl].setNoDelay(noDelay);
     }
 }
 
-export class UnixSocket extends Socket<UnixAddress> {
-    protected [_impl]: {
-        [K in keyof UnixSocket]: UnixSocket[K];
-    };
-
-    constructor(impl: {
-        [K in keyof UnixSocket]: UnixSocket[K];
-    }) {
-        super(impl);
-        this[_impl] = impl;
-    }
-}
+export class UnixSocket extends Socket { }

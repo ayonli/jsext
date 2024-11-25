@@ -197,3 +197,14 @@ export interface Comparable {
      */
     compareTo(other: this): -1 | 0 | 1;
 }
+
+/**
+ * This utility type is used to convert an interface to a plain object type,
+ * which will remove all non-enumerable members.
+ * 
+ * NOTE: This type is experimental, use it with caution.
+ * @experimental
+ */
+export type ToDict<T> = {
+    [K in keyof T]: T[K];
+};

@@ -6,14 +6,6 @@ class Socket {
     constructor(impl) {
         this[_impl] = impl;
     }
-    get localAddress() {
-        var _a;
-        return (_a = this[_impl].localAddress) !== null && _a !== void 0 ? _a : null;
-    }
-    get remoteAddress() {
-        var _a;
-        return (_a = this[_impl].remoteAddress) !== null && _a !== void 0 ? _a : null;
-    }
     /**
      * The readable side of the socket.
      */
@@ -43,6 +35,9 @@ class Socket {
      * Opposite of `unref()`, calling `ref()` on a previously unrefed socket will
      * not let the program exit if it's the only socket left (the default behavior).
      * If the socket is refed calling `ref()` again will have no effect.
+     *
+     * NOTE: This function only works in Node.js, Deno and Bun, it is a no-op in
+     * other environments.
      */
     ref() {
         return this[_impl].ref();
@@ -51,6 +46,9 @@ class Socket {
      * Calling `unref()` on a socket will allow the program to exit if this is
      * the only active socket in the event system. If the socket is already
      * unrefed calling `unref()` again will have no effect.
+     *
+     * NOTE: This function only works in Node.js, Deno and Bun, it is a no-op in
+     * other environments.
      */
     unref() {
         return this[_impl].unref();
@@ -61,18 +59,32 @@ class TcpSocket extends Socket {
         super(impl);
         this[_impl] = impl;
     }
+    get localAddress() {
+        var _a;
+        return (_a = this[_impl].localAddress) !== null && _a !== void 0 ? _a : null;
+    }
+    get remoteAddress() {
+        var _a;
+        return (_a = this[_impl].remoteAddress) !== null && _a !== void 0 ? _a : null;
+    }
+    /**
+     * Enable/disable keep-alive functionality.
+     *
+     * NOTE: This function is a no-op in Cloudflare Workers and Deno with TLS enabled.
+     */
     setKeepAlive(keepAlive = undefined) {
         return this[_impl].setKeepAlive(keepAlive);
     }
+    /**
+     * Enable/disable the use of Nagle's algorithm.
+     *
+     * NOTE: This function is a no-op in Cloudflare Workers and Deno with TLS enabled.
+     */
     setNoDelay(noDelay = undefined) {
         return this[_impl].setNoDelay(noDelay);
     }
 }
 class UnixSocket extends Socket {
-    constructor(impl) {
-        super(impl);
-        this[_impl] = impl;
-    }
 }
 
 export { Socket, TcpSocket, UnixSocket };

@@ -1,6 +1,7 @@
 import { asyncTask } from "./async.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
-import { ConnectOptions, NetAddress, Socket, TcpSocket, UnixAddress, UnixSocket } from "./net/types.ts";
+import { ToDict } from "./types.ts";
+import { ConnectOptions, Socket, TcpSocket, UnixConnectOptions, UnixSocket } from "./net/types.ts";
 import { constructNetAddress } from "./net/util.ts";
 import type { Socket as NodeSocket } from "node:net";
 import type { TLSSocket } from "node:tls";
@@ -127,8 +128,8 @@ export async function randomPort(
  * ```
  */
 export async function connect(options: ConnectOptions): Promise<TcpSocket>;
-export async function connect(options: UnixAddress): Promise<UnixSocket>;
-export function connect(options: ConnectOptions | UnixAddress): Promise<TcpSocket | UnixSocket> {
+export async function connect(options: UnixConnectOptions): Promise<UnixSocket>;
+export function connect(options: ConnectOptions | UnixConnectOptions): Promise<TcpSocket | UnixSocket> {
     if ("path" in options) {
         return connectUnix(options);
     } else {
@@ -158,12 +159,12 @@ async function connectTcp(options: ConnectOptions): Promise<TcpSocket> {
             ...denoToSocket(_socket),
             setKeepAlive: (keepAlive) => {
                 if ("setKeepAlive" in _socket) {
-                    (_socket as Deno.TcpConn).setKeepAlive(keepAlive);
+                    _socket.setKeepAlive(keepAlive);
                 }
             },
             setNoDelay: (noDelay) => {
                 if ("setNoDelay" in _socket) {
-                    (_socket as Deno.TcpConn).setNoDelay(noDelay);
+                    _socket.setNoDelay(noDelay);
                 }
             },
         });
@@ -274,23 +275,12 @@ async function connectTcp(options: ConnectOptions): Promise<TcpSocket> {
     }
 }
 
-async function connectUnix(options: UnixAddress): Promise<UnixSocket> {
+async function connectUnix(options: UnixConnectOptions): Promise<UnixSocket> {
     const { path } = options;
 
     if (isDeno) {
         const _socket = await Deno.connect({ transport: "unix", path });
-        const localAddr = _socket.localAddr as Deno.UnixAddr;
-        const remoteAddr = _socket.remoteAddr as Deno.UnixAddr;
-
-        return new UnixSocket({
-            localAddress: {
-                path: localAddr.path,
-            },
-            remoteAddress: {
-                path: remoteAddr.path,
-            },
-            ...denoToSocket(_socket),
-        });
+        return new UnixSocket(denoToSocket(_socket));
     } else if (isBun) {
         const ready = asyncTask<void>();
         const closed = asyncTask<void>();
@@ -344,12 +334,6 @@ async function connectUnix(options: UnixAddress): Promise<UnixSocket> {
         await ready;
 
         return new UnixSocket({
-            localAddress: {
-                path: _socket.remoteAddress,
-            },
-            remoteAddress: {
-                path: _socket.remoteAddress,
-            },
             readable,
             writable,
             closed,
@@ -365,15 +349,7 @@ async function connectUnix(options: UnixAddress): Promise<UnixSocket> {
 
         const _socket = createConnection({ path });
         const props = await nodeToSocket(_socket);
-        const socket = new UnixSocket({
-            localAddress: {
-                path: _socket.localAddress!,
-            },
-            remoteAddress: {
-                path: _socket.remoteAddress!,
-            },
-            ...props,
-        });
+        const socket = new UnixSocket(props);
 
         return socket;
     } else {
@@ -383,7 +359,7 @@ async function connectUnix(options: UnixAddress): Promise<UnixSocket> {
 
 function denoToSocket(
     socket: Deno.TcpConn | Deno.TcpConn | Deno.UnixConn
-): Omit<Socket<NetAddress | UnixAddress>, "localAddress" | "remoteAddress"> {
+): ToDict<Socket> {
     const closed = asyncTask<void>();
     let closeCalled = false;
 
@@ -434,7 +410,7 @@ function denoToSocket(
 
 async function nodeToSocket(
     _socket: NodeSocket | TLSSocket
-): Promise<Omit<Socket<NetAddress | UnixAddress>, "localAddress" | "remoteAddress">> {
+): Promise<ToDict<Socket>> {
     const ready = asyncTask<void>();
     const closed = asyncTask<void>();
     let readCtrl: ReadableStreamDefaultController<Uint8Array> | null = null;
