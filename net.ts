@@ -1,7 +1,9 @@
 import { asyncTask } from "./async.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
-import { ConnectOptions, Socket } from "./net/types.ts";
+import { ConnectOptions, NetAddress, Socket, TcpSocket, UnixAddress, UnixSocket } from "./net/types.ts";
 import { constructNetAddress } from "./net/util.ts";
+import type { Socket as NodeSocket } from "node:net";
+import type { TLSSocket } from "node:tls";
 
 export type * from "./net/types.ts";
 
@@ -124,7 +126,17 @@ export async function randomPort(
  * console.log(message);
  * ```
  */
-export async function connect(options: ConnectOptions): Promise<Socket> {
+export async function connect(options: ConnectOptions): Promise<TcpSocket>;
+export async function connect(options: UnixAddress): Promise<UnixSocket>;
+export function connect(options: ConnectOptions | UnixAddress): Promise<TcpSocket | UnixSocket> {
+    if ("path" in options) {
+        return connectUnix(options);
+    } else {
+        return connectTcp(options);
+    }
+}
+
+async function connectTcp(options: ConnectOptions): Promise<TcpSocket> {
     const { tls = false, ..._options } = options;
 
     if (isDeno) {
@@ -133,10 +145,8 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
             : await Deno.connect(_options);
         const localAddr = _socket.localAddr as Deno.NetAddr;
         const remoteAddr = _socket.remoteAddr as Deno.NetAddr;
-        const closed = asyncTask<void>();
-        let closeCalled = false;
 
-        return new Socket({
+        return new TcpSocket({
             localAddress: constructNetAddress({
                 hostname: localAddr.hostname,
                 port: localAddr.port,
@@ -145,47 +155,17 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
                 hostname: remoteAddr.hostname,
                 port: remoteAddr.port,
             }),
-            readable: new ReadableStream<Uint8Array>({
-                async pull(controller) {
-                    try {
-                        while (true) {
-                            const value = new Uint8Array(4096);
-                            const n = await _socket.read(value);
-
-                            if (n === null) {
-                                try { controller.close(); } catch { }
-                                closed.resolve();
-                                break;
-                            }
-
-                            controller.enqueue(value.subarray(0, n));
-                        }
-                    } catch (err) {
-                        try { controller.error(err); } catch { }
-                        closeCalled ? closed.resolve() : closed.reject(err);
-                    }
-                },
-                cancel(reason) {
-                    reason ? closed.reject(reason) : closed.resolve();
-                    _socket.close();
-                },
-            }),
-            writable: new WritableStream<Uint8Array>({
-                async write(chunk) {
-                    await _socket.write(chunk);
-                },
-                close() {
-                    return _socket.closeWrite();
-                },
-            }),
-            closed,
-            close: async () => {
-                closeCalled = true;
-                _socket.close();
-                await closed;
+            ...denoToSocket(_socket),
+            setKeepAlive: (keepAlive) => {
+                if ("setKeepAlive" in _socket) {
+                    (_socket as Deno.TcpConn).setKeepAlive(keepAlive);
+                }
             },
-            ref: _socket.ref.bind(_socket),
-            unref: _socket.unref.bind(_socket),
+            setNoDelay: (noDelay) => {
+                if ("setNoDelay" in _socket) {
+                    (_socket as Deno.TcpConn).setNoDelay(noDelay);
+                }
+            },
         });
     } else if (isBun) {
         const ready = asyncTask<void>();
@@ -240,7 +220,7 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
 
         await ready;
 
-        return new Socket({
+        return new TcpSocket({
             localAddress: constructNetAddress({
                 hostname: "localhost",
                 port: _socket.localPort,
@@ -258,11 +238,60 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
             },
             ref: () => _socket.ref(),
             unref: () => _socket.unref(),
+            setKeepAlive: _socket.setKeepAlive.bind(_socket),
+            setNoDelay: _socket.setNoDelay.bind(_socket),
         });
     } else if (isNode) {
         const { createConnection } = await import("node:net");
         const { connect } = await import("node:tls");
 
+        const _socket = tls ? connect({
+            ..._options,
+            rejectUnauthorized: false,
+        }) : createConnection({
+            host: options.hostname,
+            port: options.port,
+            localPort: 0,
+        });
+        const props = await nodeToSocket(_socket);
+        const socket = new TcpSocket({
+            localAddress: constructNetAddress({
+                hostname: _socket.localAddress || "localhost",
+                port: _socket.localPort ?? 0,
+            }),
+            remoteAddress: constructNetAddress({
+                hostname: _socket.remoteAddress!,
+                port: _socket.remotePort!,
+            }),
+            ...props,
+            setKeepAlive: _socket.setKeepAlive.bind(_socket),
+            setNoDelay: _socket.setNoDelay.bind(_socket),
+        });
+
+        return socket;
+    } else {
+        throw new Error("Unsupported runtime");
+    }
+}
+
+async function connectUnix(options: UnixAddress): Promise<UnixSocket> {
+    const { path } = options;
+
+    if (isDeno) {
+        const _socket = await Deno.connect({ transport: "unix", path });
+        const localAddr = _socket.localAddr as Deno.UnixAddr;
+        const remoteAddr = _socket.remoteAddr as Deno.UnixAddr;
+
+        return new UnixSocket({
+            localAddress: {
+                path: localAddr.path,
+            },
+            remoteAddress: {
+                path: remoteAddr.path,
+            },
+            ...denoToSocket(_socket),
+        });
+    } else if (isBun) {
         const ready = asyncTask<void>();
         const closed = asyncTask<void>();
         let readCtrl: ReadableStreamDefaultController<Uint8Array> | null = null;
@@ -273,7 +302,8 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
                 readCtrl = controller;
             },
             cancel(reason) {
-                _socket.destroy(reason);
+                reason ? closed.reject(reason) : closed.resolve();
+                _socket.end();
             },
         });
         const writable = new WritableStream<Uint8Array>({
@@ -281,68 +311,189 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
                 writeCtrl = controller;
             },
             write(chunk) {
-                return new Promise<void>((resolve, reject) => {
-                    _socket.write(chunk, err => {
-                        err ? reject(err) : resolve();
-                    });
-                });
+                _socket.write(chunk);
             },
             close() {
-                return new Promise<void>(resolve => {
-                    _socket.end(resolve);
-                });
+                _socket.shutdown();
             },
         });
 
-        const _socket = tls
-            ? connect({
-                ..._options,
-                rejectUnauthorized: false,
-            })
-            : createConnection({
-                host: options.hostname,
-                port: options.port,
-                localPort: 0,
-            });
-        _socket.once("connect", () => {
-            ready.resolve();
-        }).on("data", data => {
-            readCtrl!.enqueue(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
-        }).once("error", (error) => {
-            try { readCtrl!.error(error); } catch { }
-            try { writeCtrl!.error(error); } catch { }
-            closed.reject(error);
-            ready.reject(error);
-        }).once("close", (hasError) => {
-            if (!hasError) {
-                try { readCtrl!.close(); } catch { }
-                try { writeCtrl!.error(); } catch { }
-                closed.resolve();
+        const _socket = await Bun.connect({
+            unix: path,
+            socket: {
+                binaryType: "uint8array",
+                open() {
+                    ready.resolve();
+                },
+                data(_socket, data: Uint8Array) {
+                    readCtrl!.enqueue(data);
+                },
+                error(_socket, error) {
+                    try { readCtrl!.error(error); } catch { }
+                    try { writeCtrl!.error(error); } catch { }
+                    closed.reject(error);
+                },
+                close() {
+                    try { readCtrl!.close(); } catch { }
+                    try { writeCtrl!.error(); } catch { }
+                    closed.resolve();
+                },
             }
         });
 
         await ready;
 
-        return new Socket({
-            localAddress: constructNetAddress({
-                hostname: _socket.localAddress || "localhost",
-                port: _socket.localPort ?? 0,
-            }),
-            remoteAddress: constructNetAddress({
-                hostname: _socket.remoteAddress!,
-                port: _socket.remotePort!,
-            }),
+        return new UnixSocket({
+            localAddress: {
+                path: _socket.remoteAddress,
+            },
+            remoteAddress: {
+                path: _socket.remoteAddress,
+            },
             readable,
             writable,
             closed,
             close: async () => {
-                _socket.destroy();
+                _socket.end();
                 await closed;
             },
             ref: () => _socket.ref(),
             unref: () => _socket.unref(),
         });
+    } else if (isNode) {
+        const { createConnection } = await import("node:net");
+
+        const _socket = createConnection({ path });
+        const props = await nodeToSocket(_socket);
+        const socket = new UnixSocket({
+            localAddress: {
+                path: _socket.localAddress!,
+            },
+            remoteAddress: {
+                path: _socket.remoteAddress!,
+            },
+            ...props,
+        });
+
+        return socket;
     } else {
         throw new Error("Unsupported runtime");
     }
+}
+
+function denoToSocket(
+    socket: Deno.TcpConn | Deno.TcpConn | Deno.UnixConn
+): Omit<Socket<NetAddress | UnixAddress>, "localAddress" | "remoteAddress"> {
+    const closed = asyncTask<void>();
+    let closeCalled = false;
+
+    return {
+        readable: new ReadableStream<Uint8Array>({
+            async pull(controller) {
+                try {
+                    while (true) {
+                        const value = new Uint8Array(4096);
+                        const n = await socket.read(value);
+
+                        if (n === null) {
+                            try { controller.close(); } catch { }
+                            closed.resolve();
+                            break;
+                        }
+
+                        controller.enqueue(value.subarray(0, n));
+                    }
+                } catch (err) {
+                    try { controller.error(err); } catch { }
+                    closeCalled ? closed.resolve() : closed.reject(err);
+                }
+            },
+            cancel(reason) {
+                reason ? closed.reject(reason) : closed.resolve();
+                socket.close();
+            },
+        }),
+        writable: new WritableStream<Uint8Array>({
+            async write(chunk) {
+                await socket.write(chunk);
+            },
+            close() {
+                return socket.closeWrite();
+            },
+        }),
+        closed,
+        close: async () => {
+            closeCalled = true;
+            socket.close();
+            await closed;
+        },
+        ref: socket.ref.bind(socket),
+        unref: socket.unref.bind(socket),
+    };
+}
+
+async function nodeToSocket(
+    _socket: NodeSocket | TLSSocket
+): Promise<Omit<Socket<NetAddress | UnixAddress>, "localAddress" | "remoteAddress">> {
+    const ready = asyncTask<void>();
+    const closed = asyncTask<void>();
+    let readCtrl: ReadableStreamDefaultController<Uint8Array> | null = null;
+    let writeCtrl: WritableStreamDefaultController | null = null;
+
+    const readable = new ReadableStream<Uint8Array>({
+        start(controller) {
+            readCtrl = controller;
+        },
+        cancel(reason) {
+            _socket.destroy(reason);
+        },
+    });
+    const writable = new WritableStream<Uint8Array>({
+        start(controller) {
+            writeCtrl = controller;
+        },
+        write(chunk) {
+            return new Promise<void>((resolve, reject) => {
+                _socket.write(chunk, err => {
+                    err ? reject(err) : resolve();
+                });
+            });
+        },
+        close() {
+            return new Promise<void>(resolve => {
+                _socket.end(resolve);
+            });
+        },
+    });
+
+    _socket.once("connect", () => {
+        ready.resolve();
+    }).on("data", data => {
+        readCtrl!.enqueue(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+    }).once("error", (error) => {
+        try { readCtrl!.error(error); } catch { }
+        try { writeCtrl!.error(error); } catch { }
+        closed.reject(error);
+        ready.reject(error);
+    }).once("close", (hasError) => {
+        if (!hasError) {
+            try { readCtrl!.close(); } catch { }
+            try { writeCtrl!.error(); } catch { }
+            closed.resolve();
+        }
+    });
+
+    await ready;
+
+    return {
+        readable,
+        writable,
+        closed,
+        close: async () => {
+            _socket.destroy();
+            await closed;
+        },
+        ref: () => _socket.ref(),
+        unref: () => _socket.unref(),
+    };
 }

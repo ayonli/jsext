@@ -20,6 +20,13 @@ export interface NetAddress {
 }
 
 /**
+ * Represents a Unix domain socket address.
+ */
+export interface UnixAddress {
+    path: string;
+}
+
+/**
  * The options for {@link connect}.
  */
 export type ConnectOptions = Pick<NetAddress, "hostname" | "port"> & {
@@ -34,22 +41,22 @@ const _impl = Symbol.for("impl");
 /**
  * A socket represents a network connection, currently only supports TCP.
  */
-export class Socket {
-    private [_impl]: {
-        [K in keyof Socket]: Socket[K];
+export class Socket<A extends NetAddress | UnixAddress> {
+    protected [_impl]: {
+        [K in keyof Socket<A>]: Socket<A>[K];
     };
 
     constructor(impl: {
-        [K in keyof Socket]: Socket[K];
+        [K in keyof Socket<A>]: Socket<A>[K];
     }) {
         this[_impl] = impl;
     }
 
-    get localAddress(): NetAddress | null {
+    get localAddress(): A | null {
         return this[_impl].localAddress ?? null;
     }
 
-    get remoteAddress(): NetAddress | null {
+    get remoteAddress(): A | null {
         return this[_impl].remoteAddress ?? null;
     }
 
@@ -98,5 +105,39 @@ export class Socket {
      */
     unref(): void {
         return this[_impl].unref();
+    }
+}
+
+export class TcpSocket extends Socket<NetAddress> {
+    protected [_impl]: {
+        [K in keyof TcpSocket]: TcpSocket[K];
+    };
+
+    constructor(impl: {
+        [K in keyof TcpSocket]: TcpSocket[K];
+    }) {
+        super(impl);
+        this[_impl] = impl;
+    }
+
+    setKeepAlive(keepAlive: boolean | undefined = undefined): void {
+        return this[_impl].setKeepAlive(keepAlive);
+    }
+
+    setNoDelay(noDelay: boolean | undefined = undefined): void {
+        return this[_impl].setNoDelay(noDelay);
+    }
+}
+
+export class UnixSocket extends Socket<UnixAddress> {
+    protected [_impl]: {
+        [K in keyof UnixSocket]: UnixSocket[K];
+    };
+
+    constructor(impl: {
+        [K in keyof UnixSocket]: UnixSocket[K];
+    }) {
+        super(impl);
+        this[_impl] = impl;
     }
 }

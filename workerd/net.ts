@@ -1,5 +1,5 @@
 import { connect as _connect } from "cloudflare:sockets";
-import { ConnectOptions, Socket } from "../net/types.ts";
+import { ConnectOptions, TcpSocket, UnixAddress, UnixSocket } from "../net/types.ts";
 import { constructNetAddress } from "../net/util.ts";
 
 export type * from "../net/types.ts";
@@ -12,7 +12,13 @@ export async function randomPort(
     throw new Error("Unsupported runtime");
 }
 
-export async function connect(options: ConnectOptions): Promise<Socket> {
+export async function connect(options: ConnectOptions): Promise<TcpSocket>;
+export async function connect(options: UnixAddress): Promise<UnixSocket>;
+export async function connect(options: ConnectOptions | UnixAddress): Promise<TcpSocket | UnixSocket> {
+    if ("path" in options) {
+        throw new Error("Unsupported runtime");
+    }
+
     const { tls = false, ..._options } = options;
     const impl = _connect(_options, {
         secureTransport: tls ? "on" : "off",
@@ -26,7 +32,7 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
         ? new URL("http://" + info.remoteAddress)
         : null;
 
-    return new Socket({
+    return new TcpSocket({
         localAddress: localAddr ? constructNetAddress({
             hostname: localAddr.hostname,
             port: localAddr.port ? Number(localAddr.port) : 0,
@@ -41,5 +47,7 @@ export async function connect(options: ConnectOptions): Promise<Socket> {
         close: impl.close.bind(impl),
         ref: () => void 0,
         unref: () => void 0,
+        setKeepAlive: (keepAlive: boolean | undefined = undefined) => void keepAlive,
+        setNoDelay: (noDelay: boolean | undefined = undefined) => void noDelay,
     });
 }

@@ -1074,6 +1074,11 @@ declare namespace Bun {
         allowHalfOpen?: boolean;
     }
 
+    interface UnixSocketOptions<Data = undefined> extends SocketOptions<Data> {
+        tls?: TLSOptions;
+        unix: string;
+    }
+
     /**
      * Create a TCP server that listens on a port
      *
@@ -1091,5 +1096,8 @@ declare namespace Bun {
 
     function connect<Data = undefined>(
         options: TCPSocketConnectOptions<Data>,
+    ): Promise<Socket<Data>>;
+    function connect<Data = undefined>(
+        options: UnixSocketOptions<Data>,
     ): Promise<Socket<Data>>;
 }

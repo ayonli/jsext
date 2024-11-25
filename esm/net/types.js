@@ -56,6 +56,24 @@ class Socket {
         return this[_impl].unref();
     }
 }
+class TcpSocket extends Socket {
+    constructor(impl) {
+        super(impl);
+        this[_impl] = impl;
+    }
+    setKeepAlive(keepAlive = undefined) {
+        return this[_impl].setKeepAlive(keepAlive);
+    }
+    setNoDelay(noDelay = undefined) {
+        return this[_impl].setNoDelay(noDelay);
+    }
+}
+class UnixSocket extends Socket {
+    constructor(impl) {
+        super(impl);
+        this[_impl] = impl;
+    }
+}
 
-export { Socket };
+export { Socket, TcpSocket, UnixSocket };
 //# sourceMappingURL=types.js.map

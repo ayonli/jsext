@@ -1,11 +1,14 @@
 import { connect as connect$1 } from 'cloudflare:sockets';
-import { Socket } from '../net/types.js';
+import { TcpSocket } from '../net/types.js';
 import { constructNetAddress } from '../net/util.js';
 
 async function randomPort(prefer = undefined, hostname = undefined) {
     throw new Error("Unsupported runtime");
 }
 async function connect(options) {
+    if ("path" in options) {
+        throw new Error("Unsupported runtime");
+    }
     const { tls = false, ..._options } = options;
     const impl = connect$1(_options, {
         secureTransport: tls ? "on" : "off",
@@ -18,7 +21,7 @@ async function connect(options) {
     const remoteAddr = info.remoteAddress
         ? new URL("http://" + info.remoteAddress)
         : null;
-    return new Socket({
+    return new TcpSocket({
         localAddress: localAddr ? constructNetAddress({
             hostname: localAddr.hostname,
             port: localAddr.port ? Number(localAddr.port) : 0,
@@ -33,6 +36,8 @@ async function connect(options) {
         close: impl.close.bind(impl),
         ref: () => void 0,
         unref: () => void 0,
+        setKeepAlive: (keepAlive = undefined) => void keepAlive,
+        setNoDelay: (noDelay = undefined) => void noDelay,
     });
 }
 
