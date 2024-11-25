@@ -5,7 +5,7 @@ import { getMIME } from '../filetype.js';
 import { exists, readFile, readDir } from './fs.js';
 import { renderDirectoryPage } from '../http/internal.js';
 export { withWeb } from '../http/internal.js';
-import { Server } from '../http/server.js';
+import { HttpServer } from '../http/server.js';
 import { parseRange, etag, ifNoneMatch, ifMatch } from '../http/util.js';
 export { HTTP_METHODS, HTTP_STATUS, parseAccepts, parseBasicAuth, parseContentType, parseRequest, parseResponse, setFilename, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from '../http/util.js';
 import { join, extname } from '../path.js';
@@ -26,7 +26,7 @@ function serve(options) {
     const ws = new WebSocketServer(options.ws);
     const { fetch, onError, onListen, headers } = options;
     // @ts-ignore
-    return new Server(async () => {
+    return new HttpServer(async () => {
         return { http: null, hostname: "", port: 0 };
     }, { type, fetch, onError, onListen, ws, headers });
 }

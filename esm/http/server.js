@@ -12,7 +12,7 @@ const _controller = Symbol.for("controller");
 /**
  * A unified HTTP server interface.
  */
-class Server {
+class HttpServer {
     constructor(impl, options) {
         var _d, _e, _f;
         this[_a] = "0.0.0.0";
@@ -241,5 +241,5 @@ class Server {
 }
 _a = _hostname, _b = _port, _c = _controller;
 
-export { Server };
+export { HttpServer };
 //# sourceMappingURL=server.js.map

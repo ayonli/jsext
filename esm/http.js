@@ -13,7 +13,7 @@ import { as } from './object.js';
 import './error/Exception.js';
 import { sha256 } from './hash.js';
 import { createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent, renderDirectoryPage, createTimingFunctions, withWeb } from './http/internal.js';
-import { Server } from './http/server.js';
+import { HttpServer } from './http/server.js';
 import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
 export { HTTP_METHODS, HTTP_STATUS, parseAccepts, parseBasicAuth, parseContentType, parseRequest, parseResponse, setFilename, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from './http/util.js';
 import { randomPort as randomPort$1 } from './net.js';
@@ -236,7 +236,7 @@ function serve(options) {
             statusText: "Internal Server Error",
         });
     });
-    return new Server(async () => {
+    return new HttpServer(async () => {
         let hostname = options.hostname || "0.0.0.0";
         let port = options.port;
         let controller = null;
