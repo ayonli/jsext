@@ -1,22 +1,10 @@
 const _impl = Symbol.for("impl");
 /**
- * A socket represents a network connection, currently only supports TCP.
+ * A socket represents an open transport to a remote peer.
  */
 class Socket {
     constructor(impl) {
         this[_impl] = impl;
-    }
-    /**
-     * The readable side of the socket.
-     */
-    get readable() {
-        return this[_impl].readable;
-    }
-    /**
-     * The writable side of the socket.
-     */
-    get writable() {
-        return this[_impl].writable;
     }
     /**
      * A promise that resolves when the socket is closed, or rejects if the socket
@@ -54,7 +42,29 @@ class Socket {
         return this[_impl].unref();
     }
 }
-class TcpSocket extends Socket {
+/**
+ * A socket stream represents a connection to a remote peer with a `readable`
+ * stream and a `writable` stream.
+ */
+class SocketStream extends Socket {
+    constructor(impl) {
+        super(impl);
+        this[_impl] = impl;
+    }
+    /**
+     * The readable side of the socket.
+     */
+    get readable() {
+        return this[_impl].readable;
+    }
+    /**
+     * The writable side of the socket.
+     */
+    get writable() {
+        return this[_impl].writable;
+    }
+}
+class TcpSocketStream extends SocketStream {
     constructor(impl) {
         super(impl);
         this[_impl] = impl;
@@ -84,8 +94,55 @@ class TcpSocket extends Socket {
         return this[_impl].setNoDelay(noDelay);
     }
 }
-class UnixSocket extends Socket {
+class UnixSocketStream extends SocketStream {
+}
+class UdpSocket extends Socket {
+    constructor(impl) {
+        super(impl);
+        this[_impl] = impl;
+    }
+    get localAddress() {
+        return this[_impl].localAddress;
+    }
+    receive() {
+        return this[_impl].receive();
+    }
+    send(data, to) {
+        return this[_impl].send(data, to);
+    }
+    /**
+     * Connects the socket to a remote peer so that future communications will
+     * only be with that peer.
+     *
+     * This function returns a `UdpSocketStream` instance that comes with a
+     * `readable` stream and a `writable` stream, which gives a more convenient
+     * interface that is similar to TCP sockets.
+     *
+     * Once connected, the `send` and `receive` methods of the original socket
+     * will be disabled.
+     */
+    connect(to) {
+        return this[_impl].connect(to);
+    }
+}
+class UdpSocketStream extends Socket {
+    constructor(impl) {
+        super(impl);
+        this[_impl] = impl;
+    }
+    get localAddress() {
+        return this[_impl].localAddress;
+    }
+    get remoteAddress() {
+        return this[_impl].remoteAddress;
+    }
+    get readable() {
+        return this[_impl].readable;
+    }
+    get writable() {
+        return this[_impl].writable;
+    }
 }
 
-export { Socket, TcpSocket, UnixSocket };
+export { Socket, SocketStream, TcpSocketStream, UdpSocket, UdpSocketStream, UnixSocketStream };
 //# sourceMappingURL=types.js.map

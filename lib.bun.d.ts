@@ -1079,6 +1079,21 @@ declare namespace Bun {
         unix: string;
     }
 
+    interface SocketAddress {
+        /**
+         * The IP address of the client.
+         */
+        address: string;
+        /**
+         * The port of the client.
+         */
+        port: number;
+        /**
+         * The IP family ("IPv4" or "IPv6").
+         */
+        family: "IPv4" | "IPv6";
+    }
+
     /**
      * Create a TCP server that listens on a port
      *
@@ -1100,4 +1115,97 @@ declare namespace Bun {
     function connect<Data = undefined>(
         options: UnixSocketOptions<Data>,
     ): Promise<Socket<Data>>;
+
+    namespace udp {
+        type Data = string | ArrayBufferView | ArrayBufferLike;
+
+        export interface SocketHandler<DataBinaryType extends BinaryType> {
+            data?(
+                socket: Socket<DataBinaryType>,
+                data: BinaryTypeList[DataBinaryType],
+                port: number,
+                address: string,
+            ): void | Promise<void>;
+            drain?(socket: Socket<DataBinaryType>): void | Promise<void>;
+            error?(
+                socket: Socket<DataBinaryType>,
+                error: Error,
+            ): void | Promise<void>;
+        }
+
+        export interface ConnectedSocketHandler<DataBinaryType extends BinaryType> {
+            data?(
+                socket: ConnectedSocket<DataBinaryType>,
+                data: BinaryTypeList[DataBinaryType],
+                port: number,
+                address: string,
+            ): void | Promise<void>;
+            drain?(socket: ConnectedSocket<DataBinaryType>): void | Promise<void>;
+            error?(
+                socket: ConnectedSocket<DataBinaryType>,
+                error: Error,
+            ): void | Promise<void>;
+        }
+
+        export interface SocketOptions<DataBinaryType extends BinaryType> {
+            hostname?: string;
+            port?: number;
+            binaryType?: DataBinaryType;
+            socket?: SocketHandler<DataBinaryType>;
+        }
+
+        export interface ConnectSocketOptions<DataBinaryType extends BinaryType> {
+            hostname?: string;
+            port?: number;
+            binaryType?: DataBinaryType;
+            socket?: ConnectedSocketHandler<DataBinaryType>;
+            connect: {
+                hostname: string;
+                port: number;
+            };
+        }
+
+        export interface BaseUDPSocket {
+            readonly hostname: string;
+            readonly port: number;
+            readonly address: SocketAddress;
+            readonly binaryType: BinaryType;
+            readonly closed: boolean;
+            ref(): void;
+            unref(): void;
+            close(): void;
+        }
+
+        export interface ConnectedSocket<DataBinaryType extends BinaryType>
+            extends BaseUDPSocket {
+            readonly remoteAddress: SocketAddress;
+            sendMany(packets: readonly Data[]): number;
+            send(data: Data): boolean;
+            reload(handler: ConnectedSocketHandler<DataBinaryType>): void;
+        }
+
+        export interface Socket<DataBinaryType extends BinaryType>
+            extends BaseUDPSocket {
+            sendMany(packets: readonly (Data | string | number)[]): number;
+            send(data: Data, port: number, address: string): boolean;
+            reload(handler: SocketHandler<DataBinaryType>): void;
+        }
+    }
+
+    /**
+     * Create a UDP socket
+     *
+     * @param options The options to use when creating the server
+     * @param options.socket The socket handler to use
+     * @param options.hostname The hostname to listen on
+     * @param options.port The port to listen on
+     * @param options.binaryType The binary type to use for the socket
+     * @param options.connect The hostname and port to connect to
+     */
+    export function udpSocket<DataBinaryType extends BinaryType = "buffer">(
+        options: udp.SocketOptions<DataBinaryType>,
+    ): Promise<udp.Socket<DataBinaryType>>;
+    export function udpSocket<DataBinaryType extends BinaryType = "buffer">(
+        options: udp.ConnectSocketOptions<DataBinaryType>,
+    ): Promise<udp.ConnectedSocket<DataBinaryType>>;
 }

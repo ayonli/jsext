@@ -1,7 +1,8 @@
 import { asyncTask } from './async.js';
-import { isDeno, isBun, isNode } from './env.js';
-import { TcpSocket, UnixSocket } from './net/types.js';
+import { isDeno, isBun, isNode, isNodeLike } from './env.js';
+import { TcpSocketStream, UnixSocketStream, UdpSocket, UdpSocketStream } from './net/types.js';
 import { constructNetAddress } from './net/util.js';
+import chan from './chan.js';
 
 /**
  * Returns a random port number that is available for listening.
@@ -100,7 +101,10 @@ async function randomPort(prefer = undefined, hostname = undefined) {
     }
 }
 function connect(options) {
-    if ("path" in options) {
+    if (options.transport === "udp") {
+        return connectUdp(options);
+    }
+    else if (options.transport === "unix" || "path" in options) {
         return connectUnix(options);
     }
     else {
@@ -115,7 +119,7 @@ async function connectTcp(options) {
             ? await Deno.connectTls(_options)
             : await Deno.connect(_options);
         const { localAddr, remoteAddr } = _socket;
-        return new TcpSocket({
+        return new TcpSocketStream({
             localAddress: constructNetAddress({
                 hostname: localAddr.hostname,
                 port: localAddr.port,
@@ -198,7 +202,7 @@ async function connectTcp(options) {
             }
         });
         await ready;
-        return new TcpSocket({
+        return new TcpSocketStream({
             localAddress: constructNetAddress({
                 hostname: "localhost",
                 port: _socket.localPort,
@@ -240,7 +244,7 @@ async function connectTcp(options) {
             localPort: 0,
         });
         const props = await nodeToSocket(_socket);
-        const socket = new TcpSocket({
+        const socket = new TcpSocketStream({
             localAddress: constructNetAddress({
                 hostname: _socket.localAddress || "localhost",
                 port: (_a = _socket.localPort) !== null && _a !== void 0 ? _a : 0,
@@ -263,7 +267,7 @@ async function connectUnix(options) {
     const { path } = options;
     if (isDeno) {
         const _socket = await Deno.connect({ transport: "unix", path });
-        return new UnixSocket(denoToSocket(_socket));
+        return new UnixSocketStream(denoToSocket(_socket));
     }
     else if (isBun) {
         const ready = asyncTask();
@@ -325,7 +329,7 @@ async function connectUnix(options) {
             }
         });
         await ready;
-        return new UnixSocket({
+        return new UnixSocketStream({
             readable,
             writable,
             closed,
@@ -341,7 +345,7 @@ async function connectUnix(options) {
         const { createConnection } = await import('node:net');
         const _socket = createConnection({ path });
         const props = await nodeToSocket(_socket);
-        const socket = new UnixSocket(props);
+        const socket = new UnixSocketStream(props);
         return socket;
     }
     else {
@@ -471,6 +475,174 @@ async function nodeToSocket(_socket) {
         unref: () => _socket.unref(),
     };
 }
+async function connectUdp(remoteAddress) {
+    const socket = await bindUdp();
+    return socket.connect(remoteAddress);
+}
+/**
+ * This function provides a unified interface to bind a UDP socket in Node.js,
+ * Deno and Bun, based on modern Web APIs.
+ *
+ * NOTE: This module depends on the Web Streams API, in Node.js, it requires
+ * Node.js v18.0 or above.
+ */
+async function bindUdp(localAddress = {}) {
+    // if (isDeno) {
+    //     const _socket = Deno.listenDatagram({
+    //         hostname: localAddress.hostname ?? "0.0.0.0",
+    //         port: localAddress.port ?? 0,
+    //         transport: "udp",
+    //     });
+    //     const addr = _socket.addr as Deno.NetAddr;
+    //     const closed = asyncTask<void>();
+    var _a;
+    //     return new UdpSocket({
+    //         localAddress: constructNetAddress({
+    //             hostname: addr.hostname,
+    //             port: addr.port,
+    //         }),
+    //         closed,
+    //         close: async () => {
+    //             _socket.close();
+    //             await closed;
+    //         },
+    //         ref: () => void 0,
+    //         unref: () => void 0,
+    //         receive: async () => {
+    //             try {
+    //                 const [data, addr] = await _socket.receive();
+    //                 return [data, {
+    //                     hostname: (addr as Deno.NetAddr).hostname,
+    //                     port: (addr as Deno.NetAddr).port,
+    //                 }];
+    //             } catch (err) {
+    //                 closed.reject(err);
+    //                 try { _socket.close(); } catch { }
+    //                 throw err;
+    //             }
+    //         },
+    //         send: (data, remoteAddress) => {
+    //             return _socket.send(data, { transport: "udp", ...remoteAddress });
+    //         },
+    //         connect: (remoteAddress) => {
+    //             void remoteAddress;
+    //             throw new Error("Deno does not support UDP connection at the moment");
+    //         },
+    //     });
+    // } else if (isNodeLike) {
+    if (isDeno || isNodeLike) {
+        const { createSocket } = await import('node:dgram');
+        const _socket = createSocket(((_a = localAddress.hostname) === null || _a === void 0 ? void 0 : _a.includes(":")) ? "udp6" : "udp4");
+        let connected = false;
+        const closed = asyncTask();
+        const channel = chan();
+        await new Promise(resolve => {
+            _socket.bind(localAddress.port, localAddress.hostname, resolve);
+        });
+        _socket.once("message", (data, rinfo) => {
+            channel.send([new Uint8Array(data.buffer, data.byteOffset, data.byteLength), {
+                    hostname: rinfo.address,
+                    port: rinfo.port,
+                }]).catch(() => { });
+        }).once("error", err => {
+            channel.close(err);
+            closed.reject(err);
+        }).once("close", () => {
+            channel.close();
+            closed.resolve();
+        });
+        const localAddr = _socket.address();
+        const props = {
+            localAddress: constructNetAddress({
+                hostname: localAddr.address,
+                port: localAddr.port,
+            }),
+            closed,
+            close: () => new Promise(resolve => _socket.close(resolve)),
+            ref: _socket.ref.bind(_socket),
+            unref: _socket.unref.bind(_socket),
+        };
+        return new UdpSocket({
+            ...props,
+            receive: async () => {
+                if (connected) {
+                    throw new Error("Socket is connected");
+                }
+                const msg = await channel.recv();
+                if (msg) {
+                    return msg;
+                }
+                else {
+                    throw new Error("Socket is closed");
+                }
+            },
+            send: (data, remoteAddress) => {
+                if (connected) {
+                    throw new Error("Socket is connected");
+                }
+                return new Promise((resolve, reject) => {
+                    _socket.send(data, remoteAddress.port, remoteAddress.hostname, (err, n) => {
+                        err ? reject(err) : resolve(n);
+                    });
+                });
+            },
+            connect: (remoteAddress) => {
+                return new Promise(resolve => {
+                    connected = true;
+                    channel.close(new Error("Socket is connected"));
+                    _socket.removeAllListeners("message");
+                    _socket.connect(remoteAddress.port, remoteAddress.hostname, () => {
+                        const localAddr = _socket.address();
+                        const remoteAddr = _socket.remoteAddress();
+                        let writeCtrl = null;
+                        resolve(new UdpSocketStream({
+                            ...props,
+                            localAddress: constructNetAddress({
+                                hostname: localAddr.address,
+                                port: localAddr.port,
+                            }),
+                            remoteAddress: constructNetAddress({
+                                hostname: remoteAddr.address,
+                                port: remoteAddr.port,
+                            }),
+                            readable: new ReadableStream({
+                                start(controller) {
+                                    _socket.on("message", (data, _rinfo) => {
+                                        controller.enqueue(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+                                    });
+                                },
+                                cancel() {
+                                    _socket.close();
+                                },
+                            }),
+                            writable: new WritableStream({
+                                start(controller) {
+                                    writeCtrl = controller;
+                                },
+                                write(chunk) {
+                                    return new Promise((resolve, reject) => {
+                                        _socket.send(chunk, err => {
+                                            err ? reject(err) : resolve();
+                                        });
+                                    });
+                                },
+                                close() {
+                                    writeCtrl.error();
+                                },
+                                abort(reason) {
+                                    writeCtrl === null || writeCtrl === void 0 ? void 0 : writeCtrl.error(reason);
+                                },
+                            }),
+                        }));
+                    });
+                });
+            },
+        });
+    }
+    else {
+        throw new Error("Unsupported runtime");
+    }
+}
 
-export { connect, randomPort };
+export { bindUdp, connect, randomPort };
 //# sourceMappingURL=net.js.map

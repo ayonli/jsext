@@ -1,5 +1,14 @@
 import { connect as _connect } from "cloudflare:sockets";
-import { ConnectOptions, TcpSocket, UnixConnectOptions, UnixSocket } from "../net/types.ts";
+import {
+    ConnectOptions,
+    TcpSocketStream,
+    UdpBindOptions,
+    UdpConnectOptions,
+    UdpSocket,
+    UdpSocketStream,
+    UnixConnectOptions,
+    UnixSocketStream,
+} from "../net/types.ts";
 import { constructNetAddress } from "../net/util.ts";
 
 export type * from "../net/types.ts";
@@ -12,11 +21,16 @@ export async function randomPort(
     throw new Error("Unsupported runtime");
 }
 
-export async function connect(options: ConnectOptions): Promise<TcpSocket>;
-export async function connect(options: UnixConnectOptions): Promise<UnixSocket>;
-export async function connect(options: ConnectOptions | UnixConnectOptions): Promise<TcpSocket | UnixSocket> {
+export async function connect(options: ConnectOptions): Promise<TcpSocketStream>;
+export async function connect(options: UnixConnectOptions): Promise<UnixSocketStream>;
+export async function connect(options: UdpConnectOptions): Promise<UnixSocketStream>;
+export async function connect(
+    options: ConnectOptions | UnixConnectOptions | UdpConnectOptions
+): Promise<TcpSocketStream | UnixSocketStream | UdpSocketStream> {
     if ("path" in options) {
         throw new Error("Unix domain socket is not supported in this runtime");
+    } else if (options.transport === "udp") {
+        throw new Error("UDP socket is not supported in this runtime");
     }
 
     const { tls = false, ..._options } = options;
@@ -32,7 +46,7 @@ export async function connect(options: ConnectOptions | UnixConnectOptions): Pro
         ? new URL("http://" + info.remoteAddress)
         : null;
 
-    return new TcpSocket({
+    return new TcpSocketStream({
         localAddress: localAddr ? constructNetAddress({
             hostname: localAddr.hostname,
             port: localAddr.port ? Number(localAddr.port) : 0,
@@ -50,4 +64,9 @@ export async function connect(options: ConnectOptions | UnixConnectOptions): Pro
         setKeepAlive: (keepAlive: boolean | undefined = undefined) => void keepAlive,
         setNoDelay: (noDelay: boolean | undefined = undefined) => void noDelay,
     });
+}
+
+export async function bindUdp(options: UdpBindOptions): Promise<UdpSocket> {
+    void options;
+    throw new Error("Unsupported runtime");
 }

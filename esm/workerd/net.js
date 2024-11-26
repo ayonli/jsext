@@ -1,5 +1,5 @@
 import { connect as connect$1 } from 'cloudflare:sockets';
-import { TcpSocket } from '../net/types.js';
+import { TcpSocketStream } from '../net/types.js';
 import { constructNetAddress } from '../net/util.js';
 
 async function randomPort(prefer = undefined, hostname = undefined) {
@@ -8,6 +8,9 @@ async function randomPort(prefer = undefined, hostname = undefined) {
 async function connect(options) {
     if ("path" in options) {
         throw new Error("Unix domain socket is not supported in this runtime");
+    }
+    else if (options.transport === "udp") {
+        throw new Error("UDP socket is not supported in this runtime");
     }
     const { tls = false, ..._options } = options;
     const impl = connect$1(_options, {
@@ -21,7 +24,7 @@ async function connect(options) {
     const remoteAddr = info.remoteAddress
         ? new URL("http://" + info.remoteAddress)
         : null;
-    return new TcpSocket({
+    return new TcpSocketStream({
         localAddress: localAddr ? constructNetAddress({
             hostname: localAddr.hostname,
             port: localAddr.port ? Number(localAddr.port) : 0,
@@ -40,6 +43,9 @@ async function connect(options) {
         setNoDelay: (noDelay = undefined) => void noDelay,
     });
 }
+async function bindUdp(options) {
+    throw new Error("Unsupported runtime");
+}
 
-export { connect, randomPort };
+export { bindUdp, connect, randomPort };
 //# sourceMappingURL=net.js.map

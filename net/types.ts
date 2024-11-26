@@ -23,7 +23,16 @@ export interface NetAddress {
 /**
  * The options for {@link connect}.
  */
-export type ConnectOptions = Pick<NetAddress, "hostname" | "port"> & {
+export interface ConnectOptions {
+    transport?: "tcp";
+    /**
+     * The hostname of the remote peer.
+     */
+    hostname: string;
+    /**
+     * The port number of the remote peer.
+     */
+    port: number;
     /**
      * Whether to enable TLS for the connection.
      */
@@ -33,34 +42,40 @@ export type ConnectOptions = Pick<NetAddress, "hostname" | "port"> & {
 /**
  * Represents a Unix domain socket address.
  */
-export interface UnixConnectOptions {
+export type UnixConnectOptions = {
+    transport?: "unix";
     path: string;
-}
+};
+
+export type UdpAddress = Pick<NetAddress, "hostname" | "port">;
+
+export type UdpConnectOptions = UdpAddress & {
+    transport: "udp";
+};
+
+export type UdpBindOptions = {
+    /**
+     * The hostname to be bound, if not provided, the system will try to listen
+     * on all available addresses.
+     */
+    hostname?: string;
+    /**
+     * The port number to be bound, if not provided, the system will assign a
+     * random port.
+     */
+    port?: number;
+};
 
 const _impl = Symbol.for("impl");
 
 /**
- * A socket represents a network connection, currently only supports TCP.
+ * A socket represents an open transport to a remote peer.
  */
 export class Socket {
     protected [_impl]: ToDict<Socket>;
 
     constructor(impl: ToDict<Socket>) {
         this[_impl] = impl;
-    }
-
-    /**
-     * The readable side of the socket.
-     */
-    get readable(): ReadableStream<Uint8Array> {
-        return this[_impl].readable;
-    }
-
-    /**
-     * The writable side of the socket.
-     */
-    get writable(): WritableStream<Uint8Array> {
-        return this[_impl].writable;
     }
 
     /**
@@ -103,10 +118,37 @@ export class Socket {
     }
 }
 
-export class TcpSocket extends Socket {
-    protected override[_impl]: ToDict<TcpSocket>;
+/**
+ * A socket stream represents a connection to a remote peer with a `readable`
+ * stream and a `writable` stream.
+ */
+export class SocketStream extends Socket implements TransformStream<Uint8Array, Uint8Array> {
+    protected override[_impl]: ToDict<SocketStream>;
 
-    constructor(impl: ToDict<TcpSocket>) {
+    constructor(impl: ToDict<SocketStream>) {
+        super(impl);
+        this[_impl] = impl;
+    }
+
+    /**
+     * The readable side of the socket.
+     */
+    get readable(): ReadableStream<Uint8Array> {
+        return this[_impl].readable;
+    }
+
+    /**
+     * The writable side of the socket.
+     */
+    get writable(): WritableStream<Uint8Array> {
+        return this[_impl].writable;
+    }
+}
+
+export class TcpSocketStream extends SocketStream {
+    protected override[_impl]: ToDict<TcpSocketStream>;
+
+    constructor(impl: ToDict<TcpSocketStream>) {
         super(impl);
         this[_impl] = impl;
     }
@@ -138,4 +180,65 @@ export class TcpSocket extends Socket {
     }
 }
 
-export class UnixSocket extends Socket { }
+export class UnixSocketStream extends SocketStream { }
+
+export class UdpSocket extends Socket {
+    protected override[_impl]: ToDict<UdpSocket>;
+
+    constructor(impl: ToDict<UdpSocket>) {
+        super(impl);
+        this[_impl] = impl;
+    }
+
+    get localAddress(): NetAddress | null {
+        return this[_impl].localAddress;
+    }
+
+    receive(): Promise<[Uint8Array, UdpAddress]> {
+        return this[_impl].receive();
+    }
+
+    send(data: Uint8Array, to: UdpAddress): Promise<number> {
+        return this[_impl].send(data, to);
+    }
+
+    /**
+     * Connects the socket to a remote peer so that future communications will
+     * only be with that peer.
+     * 
+     * This function returns a `UdpSocketStream` instance that comes with a
+     * `readable` stream and a `writable` stream, which gives a more convenient
+     * interface that is similar to TCP sockets.
+     * 
+     * Once connected, the `send` and `receive` methods of the original socket
+     * will be disabled.
+     */
+    connect(to: UdpAddress): Promise<UdpSocketStream> {
+        return this[_impl].connect(to);
+    }
+}
+
+export class UdpSocketStream extends Socket {
+    protected override[_impl]: ToDict<UdpSocketStream>;
+
+    constructor(impl: ToDict<UdpSocketStream>) {
+        super(impl);
+        this[_impl] = impl;
+    }
+
+    get localAddress(): NetAddress | null {
+        return this[_impl].localAddress;
+    }
+
+    get remoteAddress(): NetAddress {
+        return this[_impl].remoteAddress;
+    }
+
+    get readable(): ReadableStream<Uint8Array> {
+        return this[_impl].readable;
+    }
+
+    get writable(): WritableStream<Uint8Array> {
+        return this[_impl].writable;
+    }
+}
