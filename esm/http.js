@@ -243,10 +243,10 @@ function serve(options) {
         let server = null;
         if (isDeno) {
             if (type === "classic") {
-                port || (port = await randomPort(8000, hostname));
+                port !== null && port !== void 0 ? port : (port = await randomPort(8000, hostname));
                 controller = new AbortController();
                 const task = asyncTask();
-                server = Deno.serve({
+                const _server = server = Deno.serve({
                     hostname,
                     port,
                     key,
@@ -271,6 +271,8 @@ function serve(options) {
                         .catch(err => _onError(err, req, ctx));
                 });
                 await task;
+                hostname = _server.addr.hostname;
+                port = _server.addr.port;
             }
             else {
                 hostname = "";
@@ -280,8 +282,8 @@ function serve(options) {
         else if (isBun) {
             if (type === "classic") {
                 const tls = key && cert ? { key, cert } : undefined;
-                port || (port = await randomPort(8000, hostname));
-                server = Bun.serve({
+                port !== null && port !== void 0 ? port : (port = await randomPort(8000, hostname));
+                const _server = server = Bun.serve({
                     hostname,
                     port,
                     tls,
@@ -306,6 +308,8 @@ function serve(options) {
                     websocket: ws.bunListener,
                 });
                 ws.bunBind(server);
+                hostname = _server.hostname;
+                port = _server.port;
             }
             else {
                 hostname = "0.0.0.0";
@@ -331,15 +335,19 @@ function serve(options) {
                     const { createServer } = await import('node:http');
                     server = createServer(reqListener);
                 }
-                port || (port = await randomPort(8000, hostname));
+                const _server = server;
+                port !== null && port !== void 0 ? port : (port = await randomPort(8000, hostname));
                 await new Promise((resolve) => {
                     if (hostname && hostname !== "0.0.0.0") {
-                        server.listen(port, hostname, resolve);
+                        _server.listen(port, hostname, resolve);
                     }
                     else {
-                        server.listen(port, resolve);
+                        _server.listen(port, resolve);
                     }
                 });
+                const address = _server.address();
+                hostname || (hostname = address.address);
+                port = address.port;
             }
             else {
                 hostname = "";

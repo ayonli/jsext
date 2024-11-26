@@ -1794,7 +1794,38 @@ describe("http", () => {
 
             await server.ready;
             strictEqual(server.hostname, "0.0.0.0");
-            ok(server.port > 0);
+            strictEqual(server.port, 8000);
+
+            const res = await fetch(`http://localhost:${server.port}`);
+            const text = await res.text();
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(text, "Hello, World!");
+            ok(!!res.headers.get("X-Client-IP"));
+        }));
+
+        it("random port", func(async (defer) => {
+            const server = serve({
+                port: 0,
+                async fetch(_req, ctx) {
+                    return new Response("Hello, World!", {
+                        status: 200,
+                        statusText: "OK",
+                        headers: {
+                            "X-Client-IP": ctx.remoteAddress?.address || "",
+                        },
+                    });
+                }
+            });
+            defer(() => server.close(true));
+
+            strictEqual(server.type, "classic");
+            strictEqual(typeof server.fetch, "undefined");
+
+            await server.ready;
+            const port = server.port;
+            ok(port > 0);
 
             const res = await fetch(`http://localhost:${server.port}`);
             const text = await res.text();

@@ -144,8 +144,7 @@ async function connectTcp(options: ConnectOptions): Promise<TcpSocket> {
         const _socket = tls
             ? await Deno.connectTls(_options)
             : await Deno.connect(_options);
-        const localAddr = _socket.localAddr as Deno.NetAddr;
-        const remoteAddr = _socket.remoteAddr as Deno.NetAddr;
+        const { localAddr, remoteAddr } = _socket;
 
         return new TcpSocket({
             localAddress: constructNetAddress({
@@ -239,8 +238,16 @@ async function connectTcp(options: ConnectOptions): Promise<TcpSocket> {
             },
             ref: () => _socket.ref(),
             unref: () => _socket.unref(),
-            setKeepAlive: _socket.setKeepAlive.bind(_socket),
-            setNoDelay: _socket.setNoDelay.bind(_socket),
+            setKeepAlive: (keepAlive) => {
+                if ("setKeepAlive" in _socket) {
+                    _socket.setKeepAlive(keepAlive);
+                }
+            },
+            setNoDelay: (noDelay) => {
+                if ("setNoDelay" in _socket) {
+                    _socket.setNoDelay(noDelay);
+                }
+            },
         });
     } else if (isNode) {
         const { createConnection } = await import("node:net");
@@ -358,7 +365,7 @@ async function connectUnix(options: UnixConnectOptions): Promise<UnixSocket> {
 }
 
 function denoToSocket(
-    socket: Deno.TcpConn | Deno.TcpConn | Deno.UnixConn
+    socket: Deno.TcpConn | Deno.TlsConn | Deno.UnixConn
 ): ToDict<Socket> {
     const closed = asyncTask<void>();
     let closeCalled = false;

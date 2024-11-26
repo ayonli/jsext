@@ -39,6 +39,7 @@
 
 import type { Server as NodeHttpServer } from "node:http";
 import type { Http2SecureServer } from "node:http2";
+import type { AddressInfo } from "node:net";
 import type { Worker } from "node:cluster";
 import { asyncTask } from "./async.ts";
 import bytes from "./bytes.ts";
@@ -278,10 +279,10 @@ export function serve(options: ServeOptions): HttpServer {
 
         if (isDeno) {
             if (type === "classic") {
-                port ||= await randomPort(8000, hostname);
+                port ??= await randomPort(8000, hostname);
                 controller = new AbortController();
                 const task = asyncTask<void>();
-                server = Deno.serve({
+                const _server = server = Deno.serve({
                     hostname,
                     port,
                     key,
@@ -308,6 +309,9 @@ export function serve(options: ServeOptions): HttpServer {
                         .catch(err => _onError(err, req, ctx));
                 });
                 await task;
+
+                hostname = _server.addr.hostname;
+                port = _server.addr.port;
             } else {
                 hostname = "";
                 port = 0;
@@ -315,8 +319,8 @@ export function serve(options: ServeOptions): HttpServer {
         } else if (isBun) {
             if (type === "classic") {
                 const tls = key && cert ? { key, cert } : undefined;
-                port ||= await randomPort(8000, hostname);
-                server = Bun.serve({
+                port ??= await randomPort(8000, hostname);
+                const _server = server = Bun.serve({
                     hostname,
                     port,
                     tls,
@@ -344,6 +348,8 @@ export function serve(options: ServeOptions): HttpServer {
                 });
 
                 ws.bunBind(server);
+                hostname = _server.hostname;
+                port = _server.port;
             } else {
                 hostname = "0.0.0.0";
                 port = 3000;
@@ -369,14 +375,19 @@ export function serve(options: ServeOptions): HttpServer {
                     server = createServer(reqListener);
                 }
 
-                port ||= await randomPort(8000, hostname);
+                const _server = server as NodeHttpServer | Http2SecureServer;
+                port ??= await randomPort(8000, hostname);
                 await new Promise<void>((resolve) => {
                     if (hostname && hostname !== "0.0.0.0") {
-                        (server as NodeHttpServer | Http2SecureServer).listen(port, hostname, resolve);
+                        _server.listen(port, hostname, resolve);
                     } else {
-                        (server as NodeHttpServer | Http2SecureServer).listen(port, resolve);
+                        _server.listen(port, resolve);
                     }
                 });
+
+                const address = _server.address() as AddressInfo;
+                hostname ||= address.address;
+                port = address.port;
             } else {
                 hostname = "";
                 port = 0;

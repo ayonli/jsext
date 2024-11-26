@@ -114,8 +114,7 @@ async function connectTcp(options) {
         const _socket = tls
             ? await Deno.connectTls(_options)
             : await Deno.connect(_options);
-        const localAddr = _socket.localAddr;
-        const remoteAddr = _socket.remoteAddr;
+        const { localAddr, remoteAddr } = _socket;
         return new TcpSocket({
             localAddress: constructNetAddress({
                 hostname: localAddr.hostname,
@@ -217,8 +216,16 @@ async function connectTcp(options) {
             },
             ref: () => _socket.ref(),
             unref: () => _socket.unref(),
-            setKeepAlive: _socket.setKeepAlive.bind(_socket),
-            setNoDelay: _socket.setNoDelay.bind(_socket),
+            setKeepAlive: (keepAlive) => {
+                if ("setKeepAlive" in _socket) {
+                    _socket.setKeepAlive(keepAlive);
+                }
+            },
+            setNoDelay: (noDelay) => {
+                if ("setNoDelay" in _socket) {
+                    _socket.setNoDelay(noDelay);
+                }
+            },
         });
     }
     else if (isNode) {

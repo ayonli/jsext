@@ -125,7 +125,8 @@ export interface ServeOptions {
     hostname?: string | undefined;
     /**
      * The port to listen on. If not set, the server will first try to use the
-     * `8000` port, and if it's not available, it will use a random port.
+     * `8000` port, and if it's not available, it will use a random port. We can
+     * also set this option to `0` to use a random port.
      * 
      * NOTE: This option is ignored in workers or when the `type` is `module`.
      */
@@ -275,7 +276,7 @@ export class HttpServer {
             if (this.type === "classic") {
                 delete this.fetch;
             } else {
-                this.fetch = (req, info: Deno.ServeHandlerInfo | undefined) => {
+                this.fetch = (req, info: Deno.ServeHandlerInfo<Deno.NetAddr> | undefined) => {
                     const { getTimers, time, timeEnd } = createTimingFunctions();
                     const ctx = createRequestContext(req, {
                         ws,
