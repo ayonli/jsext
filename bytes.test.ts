@@ -6,6 +6,7 @@ import bytes, {
     copy,
     equals,
     includesSlice,
+    indexOfSlice,
     startsWith,
     endsWith,
     split,
@@ -277,6 +278,28 @@ describe("bytes", () => {
             strictEqual(includesSlice(buf, Buffer.from([2, 3, 4])), true);
             strictEqual(includesSlice(buf, Buffer.from([2, 3, 4, 5])), true);
             strictEqual(includesSlice(buf, Buffer.from([2, 3, 4, 5, 6])), false);
+        }
+    });
+
+    it("indexOfSlice", () => {
+        const arr = new Uint8Array([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
+        strictEqual(indexOfSlice(arr, new Uint8Array([2, 3, 4])), 2);
+        strictEqual(indexOfSlice(arr, new Uint8Array([2, 3, 4, 5])), 2);
+        strictEqual(indexOfSlice(arr, new Uint8Array([2, 3, 4, 5, 6])), -1);
+        strictEqual(indexOfSlice(arr, new Uint8Array([2, 3, 4]), 3), -1);
+
+        const _bytes = bytes([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
+        strictEqual(indexOfSlice(_bytes, new ByteArray([2, 3, 4])), 2);
+        strictEqual(indexOfSlice(_bytes, new ByteArray([2, 3, 4, 5])), 2);
+        strictEqual(indexOfSlice(_bytes, new ByteArray([2, 3, 4, 5, 6])), -1);
+        strictEqual(indexOfSlice(_bytes, new ByteArray([2, 3, 4]), 3), -1);
+
+        if (typeof Buffer === "function") {
+            const buf = Buffer.from([0, 1, 2, 3, 4, 5, 4, 3, 2, 1]);
+            strictEqual(indexOfSlice(buf, Buffer.from([2, 3, 4])), 2);
+            strictEqual(indexOfSlice(buf, Buffer.from([2, 3, 4, 5])), 2);
+            strictEqual(indexOfSlice(buf, Buffer.from([2, 3, 4, 5, 6])), -1);
+            strictEqual(indexOfSlice(buf, Buffer.from([2, 3, 4]), 3), -1);
         }
     });
 
