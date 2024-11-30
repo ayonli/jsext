@@ -101,6 +101,40 @@ describe("http", () => {
             strictEqual(res.headers.get("content-length"), "0");
             strictEqual(await res.text(), "");
         });
+
+        it("no statusText example", async () => {
+            const message = "HTTP/1.1 200\r\nContent-Length: 13\r\n\r\nHello, World!";
+            const res = parseResponse(message);
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "");
+            strictEqual(res.headers.get("content-length"), "13");
+            strictEqual(await res.text(), "Hello, World!");
+        });
+
+        it("chunked example", async () => {
+            const message = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n"
+                + "5\r\nHello\r\n"
+                + "7\r\n, World\r\n"
+                + "0\r\n\r\n";
+            const res = parseResponse(message);
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(res.headers.get("transfer-encoding"), "chunked");
+            strictEqual(await res.text(), "Hello, World");
+        });
+
+        it("chunked example (Chinese)", async () => {
+            const message = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n"
+                + "12\r\n你好，世界！\r\n";
+            const res = parseResponse(message);
+
+            strictEqual(res.status, 200);
+            strictEqual(res.statusText, "OK");
+            strictEqual(res.headers.get("transfer-encoding"), "chunked");
+            strictEqual(await res.text(), "你好，世界！");
+        });
     });
 
     describe("stringifyRequest", () => {
@@ -141,6 +175,7 @@ describe("http", () => {
 
         it("200 OK example", async () => {
             const res = new Response("Hello, World!", {
+                statusText: "OK",
                 headers: {
                     "Content-Type": "text/plain",
                 }
@@ -148,6 +183,21 @@ describe("http", () => {
             const message = await stringifyResponse(res);
 
             strictEqual(message, "HTTP/1.1 200 OK\r\n"
+                + "Content-Type: text/plain\r\n"
+                + "Content-Length: 13\r\n"
+                + "\r\n"
+                + "Hello, World!");
+        });
+
+        it("200 example (no statusText)", async () => {
+            const res = new Response("Hello, World!", {
+                headers: {
+                    "Content-Type": "text/plain",
+                }
+            });
+            const message = await stringifyResponse(res);
+
+            strictEqual(message, "HTTP/1.1 200\r\n"
                 + "Content-Type: text/plain\r\n"
                 + "Content-Length: 13\r\n"
                 + "\r\n"

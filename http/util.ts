@@ -3,7 +3,7 @@
  * @module
  */
 import type { FileInfo } from "../fs/types.ts";
-import bytes, { text } from "../bytes.ts";
+import bytes, { concat, indexOfSlice, text } from "../bytes.ts";
 import { sha256 } from "../hash/web.ts";
 import { capitalize, stripEnd, stripStart } from "../string.ts";
 
@@ -480,7 +480,7 @@ export const HTTP_STATUS = {
     505: "HTTP Version Not Supported",
 };
 
-function parseMessage(message: string): { headers: Headers, body: string; } {
+function parseMessage(message: string): { headers: Headers, body: string | Uint8Array; } {
     const headerEnd = message.indexOf("\r\n\r\n");
     if (headerEnd === -1) {
         throw new TypeError("Invalid message");
@@ -508,7 +508,44 @@ function parseMessage(message: string): { headers: Headers, body: string; } {
         }
     }
 
-    const body = message.slice(headerEnd + 4);
+    let body: string | Uint8Array = message.slice(headerEnd + 4);
+
+    if (headers.get("Transfer-Encoding") === "chunked") {
+        const decoder = new TextDecoder();
+        const encoder = new TextEncoder();
+        const lineBreak = encoder.encode("\r\n");
+        const chunks: Uint8Array[] = [];
+        let bodyBytes = encoder.encode(body);
+
+        while (bodyBytes.length) {
+            const lineEnd = indexOfSlice(bodyBytes, lineBreak);
+            if (lineEnd === -1) {
+                throw new TypeError("Invalid chunked body");
+            }
+
+            const length = parseInt(decoder.decode(bodyBytes.subarray(0, lineEnd)), 16);
+            if (!Number.isInteger(length) || length < 0) {
+                throw new TypeError("Invalid chunk length");
+            }
+
+            if (length === 0) { // end of chunked body
+                break;
+            }
+
+            const chunkStart = lineEnd + 2;
+            const chunkEnd = chunkStart + length;
+            const chunk = bodyBytes.subarray(chunkStart, chunkEnd);
+            if (chunk.length !== length) {
+                throw new TypeError("Invalid chunk");
+            }
+
+            chunks.push(chunk);
+            bodyBytes = bodyBytes.subarray(chunkEnd + 2);
+        }
+
+        body = concat(...chunks);
+    }
+
     return { headers, body };
 }
 
@@ -516,6 +553,8 @@ function parseMessage(message: string): { headers: Headers, body: string; } {
  * Parses the text message as an HTTP request.
  * 
  * **NOTE:** This function only supports HTTP/1.1 protocol.
+ * 
+ * @experimental This function is experimental and may have some bugs.
  * 
  * @example
  * ```ts
@@ -571,7 +610,7 @@ export function parseRequest(message: string): Request {
     }
 
     const { headers, body: _body } = parseMessage(message.slice(lineEnd + 2));
-    let body: string | null = _body;
+    let body: string | Uint8Array | null = _body;
 
     if (method === "GET" || method === "HEAD") {
         if (body) {
@@ -592,6 +631,8 @@ export function parseRequest(message: string): Request {
 
 /**
  * Parses the text message as an HTTP response.
+ * 
+ * @experimental This function is experimental and may have some bugs.
  * 
  * @example
  * ```ts
@@ -624,14 +665,13 @@ export function parseResponse(message: string): Response {
     let status: number;
 
     if (!version?.startsWith("HTTP/") ||
-        !_status || !Number.isInteger((status = Number(_status))) ||
-        !statusText
+        !_status || !Number.isInteger((status = Number(_status)))
     ) {
         throw new TypeError("Invalid message");
     }
 
     const { headers, body: _body } = parseMessage(message.slice(lineEnd + 2));
-    let body: string | null = _body;
+    let body: string | Uint8Array | null = _body;
 
     if (status === 204 || status === 304) {
         if (body) {
@@ -716,6 +756,8 @@ export async function stringifyRequest(req: Request): Promise<string> {
  * import { stringifyResponse } from "@ayonli/jsext/http";
  * 
  * const res = new Response("Hello, World!", {
+ *     status: 200,
+ *     statusText: "OK",
  *     headers: {
  *         "Content-Type": "text/plain",
  *     },
@@ -731,8 +773,8 @@ export async function stringifyRequest(req: Request): Promise<string> {
  * ```
  */
 export async function stringifyResponse(res: Response): Promise<string> {
-    const statusText = res.statusText || (HTTP_STATUS as Record<number, string>)[res.status] || "";
-    let message = `HTTP/1.1 ${res.status} ${statusText}\r\n`;
+    const statusText = res.statusText;
+    let message = `HTTP/1.1 ${res.status}${statusText ? " " + statusText : ""}\r\n`;
     let body = res.body ? await res.text() : "";
 
     for (const [name, value] of res.headers) {
