@@ -205,6 +205,8 @@ export interface Comparable {
  * NOTE: This type is experimental, use it with caution.
  * @experimental
  */
-export type ToDict<T> = {
-    [K in keyof T]: T[K];
-};
+export type ToDict<T> = Pick<T, EnumerableKeys<T>>;
+
+export type EnumerableKeys<T> = {
+    [K in keyof T]: K extends symbol ? never : K;
+}[keyof T];

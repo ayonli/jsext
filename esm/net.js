@@ -291,10 +291,7 @@ async function connectTcp(options) {
             readable,
             writable,
             closed,
-            close: async () => {
-                closeStreams();
-                await closed;
-            },
+            close: closeStreams,
             ref: () => _socket.ref(),
             unref: () => _socket.unref(),
             setKeepAlive: (keepAlive) => {
@@ -396,10 +393,7 @@ async function connectUnix(options) {
             readable,
             writable,
             closed,
-            close: async () => {
-                closeStreams();
-                await closed;
-            },
+            close: closeStreams,
             ref: () => _socket.ref(),
             unref: () => _socket.unref(),
         });
@@ -479,12 +473,9 @@ async function nodeToSocket(socket) {
         readable,
         writable,
         closed,
-        close: async () => {
-            socket.destroy();
-            await closed;
-        },
-        ref: () => socket.ref(),
-        unref: () => socket.unref(),
+        close: () => void socket.destroy(),
+        ref: () => void socket.ref(),
+        unref: () => void socket.unref(),
     };
 }
 function denoToSocket(socket) {
@@ -557,10 +548,9 @@ function denoToSocket(socket) {
             },
         }),
         closed,
-        close: async () => {
+        close: () => {
             closeCalled = true;
             closeStreams();
-            await closed;
         },
         ref: socket.ref.bind(socket),
         unref: socket.unref.bind(socket),
@@ -593,10 +583,7 @@ async function udpSocket(localAddress = {}) {
     //             port: addr.port,
     //         }),
     //         closed,
-    //         close: async () => {
-    //             _socket.close();
-    //             await closed;
-    //         },
+    //         close: _socket.close.bind(_socket),
     //         ref: () => void 0,
     //         unref: () => void 0,
     //         receive: async () => {
@@ -651,7 +638,7 @@ async function udpSocket(localAddress = {}) {
                 port: localAddr.port,
             },
             closed,
-            close: () => new Promise(resolve => _socket.close(resolve)),
+            close: () => void _socket.close(),
             ref: _socket.ref.bind(_socket),
             unref: _socket.unref.bind(_socket),
             joinMulticast: _socket.addMembership.bind(_socket),

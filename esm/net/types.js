@@ -42,6 +42,9 @@ class Socket {
     unref() {
         return this[_impl].unref();
     }
+    [Symbol.dispose]() {
+        return this.close();
+    }
 }
 /**
  * A socket stream represents a connection to a remote peer with a `readable`

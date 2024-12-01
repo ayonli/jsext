@@ -56,7 +56,7 @@ const _impl = Symbol.for("impl");
 /**
  * A socket represents an open transport to a remote peer.
  */
-export class Socket {
+export class Socket implements Disposable {
     protected [_impl]: ToDict<Socket>;
 
     constructor(impl: ToDict<Socket>) {
@@ -75,7 +75,7 @@ export class Socket {
      * Closes the socket immediately, if there are any queued data, they will be
      * discarded.
      */
-    close(): Promise<void> {
+    close(): void {
         return this[_impl].close();
     }
 
@@ -101,6 +101,10 @@ export class Socket {
      */
     unref(): void {
         return this[_impl].unref();
+    }
+
+    [Symbol.dispose](): void {
+        return this.close();
     }
 }
 

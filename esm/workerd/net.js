@@ -44,7 +44,7 @@ async function connect(options) {
         readable: impl.readable,
         writable: impl.writable,
         closed: impl.closed,
-        close: impl.close.bind(impl),
+        close: () => void impl.close().catch(() => void 0),
         ref: () => void 0,
         unref: () => void 0,
         setKeepAlive: (keepAlive = undefined) => void keepAlive,

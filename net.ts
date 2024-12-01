@@ -326,10 +326,7 @@ async function connectTcp(options: TcpConnectOptions): Promise<TcpSocketStream> 
             readable,
             writable,
             closed,
-            close: async () => {
-                closeStreams();
-                await closed;
-            },
+            close: closeStreams,
             ref: () => _socket.ref(),
             unref: () => _socket.unref(),
             setKeepAlive: (keepAlive) => {
@@ -420,10 +417,7 @@ async function connectUnix(options: UnixConnectOptions): Promise<UnixSocketStrea
             readable,
             writable,
             closed,
-            close: async () => {
-                closeStreams();
-                await closed;
-            },
+            close: closeStreams,
             ref: () => _socket.ref(),
             unref: () => _socket.unref(),
         });
@@ -494,12 +488,9 @@ async function nodeToSocket(
         readable,
         writable,
         closed,
-        close: async () => {
-            socket.destroy();
-            await closed;
-        },
-        ref: () => socket.ref(),
-        unref: () => socket.unref(),
+        close: () => void socket.destroy(),
+        ref: () => void socket.ref(),
+        unref: () => void socket.unref(),
     };
 }
 
@@ -559,10 +550,9 @@ function denoToSocket(
             },
         }),
         closed,
-        close: async () => {
+        close: () => {
             closeCalled = true;
             closeStreams();
-            await closed;
         },
         ref: socket.ref.bind(socket),
         unref: socket.unref.bind(socket),
@@ -597,10 +587,7 @@ export async function udpSocket(localAddress: UdpBindOptions = {}): Promise<UdpS
     //             port: addr.port,
     //         }),
     //         closed,
-    //         close: async () => {
-    //             _socket.close();
-    //             await closed;
-    //         },
+    //         close: _socket.close.bind(_socket),
     //         ref: () => void 0,
     //         unref: () => void 0,
     //         receive: async () => {
@@ -652,13 +639,13 @@ export async function udpSocket(localAddress: UdpBindOptions = {}): Promise<UdpS
         });
 
         const localAddr = _socket.address();
-        const props: Omit<UdpSocket, "receive" | "send" | "connect"> = {
+        const props: Omit<ToDict<UdpSocket>, "receive" | "send" | "connect"> = {
             localAddress: {
                 hostname: localAddr.address,
                 port: localAddr.port,
             },
             closed,
-            close: () => new Promise<void>(resolve => _socket.close(resolve)),
+            close: () => void _socket.close(),
             ref: _socket.ref.bind(_socket),
             unref: _socket.unref.bind(_socket),
             joinMulticast: _socket.addMembership.bind(_socket),

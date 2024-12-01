@@ -183,7 +183,7 @@ describe("net", () => {
             await writer.write(bytes("Accept: plain/html\r\n"));
             await writer.write(bytes("Host: example.com\r\n"));
             await writer.write(bytes("\r\n"));
-            await socket.close();
+            socket.close();
 
             strictEqual(await socket.closed, undefined);
 
@@ -398,7 +398,7 @@ describe("net", () => {
                 port: 0,
             });
 
-            await server.close();
+            server.close();
             strictEqual(await server.closed, undefined);
 
             const [err1] = await _try(server.receive());
@@ -458,7 +458,7 @@ describe("net", () => {
                 })).connect(server.localAddress);
                 defer(() => server.close());
 
-                await client.close();
+                client.close();
                 strictEqual(await client.closed, undefined);
 
                 const [err1, res1] = await _try(client.readable.getReader().read());
