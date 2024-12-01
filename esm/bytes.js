@@ -224,6 +224,42 @@ function includesSlice(arr, slice) {
     return includeSlice(arr, slice);
 }
 /**
+ * Returns the index of the first occurrence of the slice in the byte array, or
+ * -1 if it is not present. Optionally, we can specify where to start the search
+ * by providing the `start` parameter.
+ *
+ * @example
+ * ```ts
+ * import { indexOfSlice } from "@ayonli/jsext/bytes";
+ *
+ * const arr = new Uint8Array([1, 2, 3, 4, 5]);
+ * const slice = new Uint8Array([3, 4]);
+ *
+ * console.log(indexOfSlice(arr, slice)); // 2
+ * console.log(indexOfSlice(arr, slice, 3)); // -1, starts searching from index 3
+ * ```
+ */
+function indexOfSlice(arr, slice, start = 0) {
+    if (start < 0) {
+        start = Math.max(0, arr.length + start);
+    }
+    const limit = arr.length - slice.length;
+    const s = slice[0];
+    for (let i = start; i <= limit; i++) {
+        if (arr[i] !== s) {
+            continue;
+        }
+        let j = 1;
+        while (j < slice.length && arr[i + j] === slice[j]) {
+            j++;
+        }
+        if (j === slice.length) {
+            return i;
+        }
+    }
+    return -1;
+}
+/**
  * Checks if the byte array starts with the given prefix.
  *
  * @example
@@ -296,5 +332,5 @@ function chunk(arr, length) {
     return chunk$1(arr, length);
 }
 
-export { ByteArray, chunk, compare, concat, copy, bytes as default, endsWith, equals, includesSlice, split, startsWith, text };
+export { ByteArray, chunk, compare, concat, copy, bytes as default, endsWith, equals, includesSlice, indexOfSlice, split, startsWith, text };
 //# sourceMappingURL=bytes.js.map

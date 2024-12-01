@@ -3,7 +3,7 @@ import { join } from '../path.js';
 import runtime from '../runtime.js';
 import { EventEndpoint } from '../sse.js';
 import { dedent, capitalize } from '../string.js';
-import { constructNetAddress } from '../net/util.js';
+import { constructNetAddress } from './server.js';
 
 /**
  * This is an internal module that provides utility functions for handling HTTP

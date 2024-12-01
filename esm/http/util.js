@@ -1,4 +1,4 @@
-import bytes, { text } from '../bytes.js';
+import bytes, { text, indexOfSlice, concat } from '../bytes.js';
 import { sha256 } from '../hash/web.js';
 import { stripEnd, stripStart, capitalize } from '../string.js';
 export { getCookie, getCookies, parseCookie, parseCookies, setCookie, stringifyCookie, stringifyCookies } from './cookie.js';
@@ -398,13 +398,44 @@ function parseMessage(message) {
             throw new TypeError(`Invalid header name '${name}' in line ${lineNum}`);
         }
     }
-    const body = message.slice(headerEnd + 4);
+    let body = message.slice(headerEnd + 4);
+    if (headers.get("Transfer-Encoding") === "chunked") {
+        const decoder = new TextDecoder();
+        const encoder = new TextEncoder();
+        const lineBreak = encoder.encode("\r\n");
+        const chunks = [];
+        let bodyBytes = encoder.encode(body);
+        while (bodyBytes.length) {
+            const lineEnd = indexOfSlice(bodyBytes, lineBreak);
+            if (lineEnd === -1) {
+                throw new TypeError("Invalid chunked body");
+            }
+            const length = parseInt(decoder.decode(bodyBytes.subarray(0, lineEnd)), 16);
+            if (!Number.isInteger(length) || length < 0) {
+                throw new TypeError("Invalid chunk length");
+            }
+            if (length === 0) { // end of chunked body
+                break;
+            }
+            const chunkStart = lineEnd + 2;
+            const chunkEnd = chunkStart + length;
+            const chunk = bodyBytes.subarray(chunkStart, chunkEnd);
+            if (chunk.length !== length) {
+                throw new TypeError("Invalid chunk");
+            }
+            chunks.push(chunk);
+            bodyBytes = bodyBytes.subarray(chunkEnd + 2);
+        }
+        body = concat(...chunks);
+    }
     return { headers, body };
 }
 /**
  * Parses the text message as an HTTP request.
  *
  * **NOTE:** This function only supports HTTP/1.1 protocol.
+ *
+ * @experimental This function is experimental and may have some bugs.
  *
  * @example
  * ```ts
@@ -477,6 +508,8 @@ function parseRequest(message) {
 /**
  * Parses the text message as an HTTP response.
  *
+ * @experimental This function is experimental and may have some bugs.
+ *
  * @example
  * ```ts
  * import { parseResponse } from "@ayonli/jsext/http";
@@ -506,8 +539,7 @@ function parseResponse(message) {
     const statusText = statusTexts.join(" ");
     let status;
     if (!(version === null || version === void 0 ? void 0 : version.startsWith("HTTP/")) ||
-        !_status || !Number.isInteger((status = Number(_status))) ||
-        !statusText) {
+        !_status || !Number.isInteger((status = Number(_status)))) {
         throw new TypeError("Invalid message");
     }
     const { headers, body: _body } = parseMessage(message.slice(lineEnd + 2));
@@ -588,6 +620,8 @@ async function stringifyRequest(req) {
  * import { stringifyResponse } from "@ayonli/jsext/http";
  *
  * const res = new Response("Hello, World!", {
+ *     status: 200,
+ *     statusText: "OK",
  *     headers: {
  *         "Content-Type": "text/plain",
  *     },
@@ -603,8 +637,8 @@ async function stringifyRequest(req) {
  * ```
  */
 async function stringifyResponse(res) {
-    const statusText = res.statusText || HTTP_STATUS[res.status] || "";
-    let message = `HTTP/1.1 ${res.status} ${statusText}\r\n`;
+    const statusText = res.statusText;
+    let message = `HTTP/1.1 ${res.status}${statusText ? " " + statusText : ""}\r\n`;
     let body = res.body ? await res.text() : "";
     for (const [name, value] of res.headers) {
         message += `${capitalize(name, true)}: ${value}\r\n`;

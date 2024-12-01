@@ -1,14 +1,14 @@
-import { ok, strictEqual } from "node:assert";
+import { deepStrictEqual, ok, strictEqual } from "node:assert";
+import { createServer } from "node:net";
 import bytes from "./bytes.ts";
-import { connect, randomPort } from "./net.ts";
+import { connect, randomPort, udpSocket } from "./net.ts";
 import { parseResponse } from "./http.ts";
 import { readAsText } from "./reader.ts";
 import _try from "./try.ts";
 import func from "./func.ts";
-import { isDeno } from "./env.ts";
+import { isBun, isDeno } from "./env.ts";
 import { platform } from "./runtime.ts";
 import { remove } from "./fs.ts";
-import { createServer } from "node:net";
 
 describe("net", () => {
     describe("connect", () => {
@@ -16,16 +16,16 @@ describe("net", () => {
             return;
         }
 
-        it("connect and half close (close the writable stream)", async () => {
+        it("connect and half close (close the writable stream)", async function () {
+            this.timeout(5000);
             const socket = await connect({ hostname: "example.com", port: 80 });
+
             ok(socket.localAddress !== null);
-            ok(socket.localAddress!.family === "IPv4");
-            ok(!!socket.localAddress!.hostname);
-            ok(socket.localAddress!.port > 0);
+            ok(!!socket.localAddress.hostname);
+            ok(socket.localAddress.port > 0);
             ok(socket.remoteAddress !== null);
-            ok(socket.remoteAddress!.family === "IPv4");
             ok(!!socket.remoteAddress!.hostname);
-            ok(socket.remoteAddress!.port === 80);
+            strictEqual(socket.remoteAddress.port, 80);
 
             const writer = socket.writable.getWriter();
             await writer.write(bytes("GET / HTTP/1.1\r\n"));
@@ -41,9 +41,18 @@ describe("net", () => {
             strictEqual(res.ok, true);
             strictEqual(text.match(/Example Domain/)?.[0], "Example Domain");
             strictEqual(await socket.closed, undefined);
+
+            const [err1, res1] = await _try(socket.readable.getReader().read());
+            strictEqual(err1, null);
+            deepStrictEqual(res1, { done: true, value: undefined });
+
+            const [err2, res2] = await _try(writer.write(new Uint8Array()));
+            ok(String(err2).includes("TypeError") && String(err2).includes("closed"));
+            strictEqual(res2, undefined);
         });
 
-        it("close socket", async () => {
+        it("close socket (both readable and writable)", async function () {
+            this.timeout(5000);
             const socket = await connect({ hostname: "example.com", port: 80 });
             const writer = socket.writable.getWriter();
 
@@ -54,9 +63,18 @@ describe("net", () => {
             await socket.close();
 
             strictEqual(await socket.closed, undefined);
+
+            const [err1, res1] = await _try(socket.readable.getReader().read());
+            strictEqual(err1, null);
+            deepStrictEqual(res1, { done: true, value: undefined });
+
+            const [err2, res2] = await _try(writer.write(new Uint8Array()));
+            strictEqual(String(err2), "TypeError: The stream is closed");
+            strictEqual(res2, undefined);
         });
 
-        it("close the readable stream (no reason)", async () => {
+        it("close the readable stream (no reason)", async function () {
+            this.timeout(5000);
             const socket = await connect({ hostname: "example.com", port: 80 });
             const writer = socket.writable.getWriter();
 
@@ -67,9 +85,18 @@ describe("net", () => {
 
             await socket.readable.cancel();
             strictEqual(await socket.closed, undefined);
+
+            const [err1, res1] = await _try(socket.readable.getReader().read());
+            strictEqual(err1, null);
+            deepStrictEqual(res1, { done: true, value: undefined });
+
+            const [err2, res2] = await _try(writer.write(new Uint8Array()));
+            strictEqual(String(err2), "TypeError: The stream is closed");
+            strictEqual(res2, undefined);
         });
 
-        it("close the readable stream (with reason)", async () => {
+        it("close the readable stream (with reason)", async function () {
+            this.timeout(5000);
             const socket = await connect({ hostname: "example.com", port: 80 });
             const writer = socket.writable.getWriter();
 
@@ -80,8 +107,15 @@ describe("net", () => {
 
             await socket.readable.cancel(new Error("User canceled"));
             const [err] = await _try(socket.closed);
-
             strictEqual(String(err), "Error: User canceled");
+
+            const [err1, res1] = await _try(socket.readable.getReader().read());
+            strictEqual(err1, null);
+            deepStrictEqual(res1, { done: true, value: undefined });
+
+            const [err2, res2] = await _try(writer.write(new Uint8Array()));
+            strictEqual(String(err2), "TypeError: The stream is closed");
+            strictEqual(res2, undefined);
         });
 
         it("close by server", func(async (defer) => {
@@ -102,11 +136,21 @@ describe("net", () => {
             const [err, res] = await _try(socket.closed);
             strictEqual(err, null);
             strictEqual(res, undefined);
+
+            const [err1, res1] = await _try(socket.readable.getReader().read());
+            strictEqual(err1, null);
+            deepStrictEqual(res1, { done: true, value: undefined });
+
+            const [err2, res2] = await _try(socket.writable.getWriter().write(new Uint8Array()));
+            strictEqual(String(err2), "TypeError: The stream is closed");
+            strictEqual(res2, undefined);
         }));
 
         it("TLS support", async function () {
             if (!isDeno) {
                 this.skip(); // TODO: Currently only Deno successfully passes this test
+            } else {
+                this.timeout(5000);
             }
 
             const socket = await connect({ hostname: "example.com", port: 443, tls: true });
@@ -162,5 +206,197 @@ describe("net", () => {
             const text = await readAsText(socket.readable);
             strictEqual(text, "Hello, world!");
         }));
+
+        it("udp socket", func(async (defer) => {
+            const server = await udpSocket({
+                hostname: "127.0.0.1",
+                port: 0,
+            });
+            const client = await connect({
+                transport: "udp",
+                ...server.localAddress,
+            });
+            defer(() => server.close());
+            defer(() => client.close());
+
+            const reader = client.readable.getReader();
+            const writer = client.writable.getWriter();
+
+            await writer.write(bytes("Hello, Server!"));
+            await writer.close();
+
+            const [clientMsg, clientAddr] = await server.receive();
+            deepStrictEqual(clientMsg, new Uint8Array(bytes("Hello, Server!")));
+
+            if (isDeno || isBun) { // Deno and Bun currently don't connect UDP correctly
+                strictEqual(clientAddr.port, client.localAddress.port);
+            } else {
+                deepStrictEqual(clientAddr, client.localAddress);
+            }
+
+            await server.send(bytes("Hello, Client!"), clientAddr);
+
+            const { value, done } = await reader.read();
+            strictEqual(done, false);
+            deepStrictEqual(value, new Uint8Array(bytes("Hello, Client!")));
+        }));
+    });
+
+    describe("udpSocket", () => {
+        if (typeof ReadableStream === "undefined") {
+            return;
+        }
+
+        it("bind socket", func(async (defer) => {
+            const server = await udpSocket({
+                hostname: "127.0.0.1",
+                port: 0,
+            });
+            const client = await udpSocket();
+            defer(() => server.close());
+            defer(() => client.close());
+
+            await client.send(bytes("Hello, Server!"), server.localAddress);
+
+            const [clientMsg, clientAddr] = await server.receive();
+            strictEqual(clientAddr.port, client.localAddress.port);
+            deepStrictEqual(clientMsg, new Uint8Array(bytes("Hello, Server!")));
+
+            await server.send(bytes("Hello, Client!"), clientAddr);
+
+            const [serverMsg, serverAddr] = await client.receive();
+            strictEqual(serverAddr.port, server.localAddress.port);
+            deepStrictEqual(serverMsg, new Uint8Array(bytes("Hello, Client!")));
+        }));
+
+        it("close socket", async function () {
+            const server = await udpSocket({
+                hostname: "127.0.0.1",
+                port: 0,
+            });
+
+            await server.close();
+            strictEqual(await server.closed, undefined);
+
+            const [err1] = await _try(server.receive());
+            strictEqual(String(err1), "TypeError: The socket is closed");
+
+            const [err2] = await _try(server.send(new Uint8Array(), server.localAddress));
+            strictEqual(String(err2), "TypeError: The socket is closed");
+        });
+
+        describe("connection", () => {
+            it("connect and half close (close the writable stream)", func(async function (defer) {
+                const server = await udpSocket({
+                    hostname: "127.0.0.1",
+                    port: 0,
+                });
+                const client = await (await udpSocket({
+                    hostname: "127.0.0.1",
+                    port: 0,
+                })).connect(server.localAddress);
+                defer(() => server.close());
+                defer(() => client.close());
+
+                const reader = client.readable.getReader();
+                const writer = client.writable.getWriter();
+
+                await writer.write(bytes("Hello, Server!"));
+                await writer.close();
+
+                const [clientMsg, clientAddr] = await server.receive();
+                deepStrictEqual(clientMsg, new Uint8Array(bytes("Hello, Server!")));
+
+                if (isDeno || isBun) { // Deno and Bun currently don't connect UDP correctly
+                    strictEqual(clientAddr.port, client.localAddress.port);
+                } else {
+                    deepStrictEqual(clientAddr, client.localAddress);
+                }
+
+                await server.send(bytes("Hello, Client!"), clientAddr);
+
+                const { value, done } = await reader.read();
+                strictEqual(done, false);
+                deepStrictEqual(value, new Uint8Array(bytes("Hello, Client!")));
+
+                const [err, res] = await _try(writer.write(new Uint8Array()));
+                ok(String(err).includes("TypeError") && String(err).includes("closed"));
+                strictEqual(res, undefined);
+            }));
+
+            it("close socket (both readable and writable)", func(async function (defer) {
+                const server = await udpSocket({
+                    hostname: "127.0.0.1",
+                    port: 0,
+                });
+                const client = await (await udpSocket({
+                    hostname: "127.0.0.1",
+                    port: 0,
+                })).connect(server.localAddress);
+                defer(() => server.close());
+
+                await client.close();
+                strictEqual(await client.closed, undefined);
+
+                const [err1, res1] = await _try(client.readable.getReader().read());
+                strictEqual(err1, null);
+                deepStrictEqual(res1, { done: true, value: undefined });
+
+                const [err2, res2] = await _try(client.writable.getWriter().write(new Uint8Array()));
+                strictEqual(String(err2), "TypeError: The stream is closed");
+                strictEqual(res2, undefined);
+            }));
+
+            it("close the readable stream (no reason)", func(async function (defer) {
+                const server = await udpSocket({
+                    hostname: "127.0.0.1",
+                    port: 0,
+                });
+                const client = await (await udpSocket({
+                    hostname: "127.0.0.1",
+                    port: 0,
+                })).connect(server.localAddress);
+                defer(() => server.close());
+
+                const reader = client.readable.getReader();
+
+                await reader.cancel();
+                strictEqual(await client.closed, undefined);
+
+                const [err1, res1] = await _try(reader.read());
+                strictEqual(err1, null);
+                deepStrictEqual(res1, { done: true, value: undefined });
+
+                const [err2, res2] = await _try(client.writable.getWriter().write(new Uint8Array()));
+                strictEqual(String(err2), "TypeError: The stream is closed");
+                strictEqual(res2, undefined);
+            }));
+
+            it("close the readable stream (with reason)", func(async function (defer) {
+                const server = await udpSocket({
+                    hostname: "127.0.0.1",
+                    port: 0,
+                });
+                const client = await (await udpSocket({
+                    hostname: "127.0.0.1",
+                    port: 0,
+                })).connect(server.localAddress);
+                defer(() => server.close());
+
+                const reader = client.readable.getReader();
+
+                await reader.cancel(new Error("User canceled"));
+                const [err] = await _try(client.closed);
+                strictEqual(String(err), "Error: User canceled");
+
+                const [err1, res1] = await _try(reader.read());
+                strictEqual(err1, null);
+                deepStrictEqual(res1, { done: true, value: undefined });
+
+                const [err2, res2] = await _try(client.writable.getWriter().write(new Uint8Array()));
+                strictEqual(String(err2), "TypeError: The stream is closed");
+                strictEqual(res2, undefined);
+            }));
+        });
     });
 });

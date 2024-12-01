@@ -1,13 +1,12 @@
 import type { Server as NodeHttpServer } from "node:http";
 import type { Http2SecureServer } from "node:http2";
 import type { serve, serveStatic } from "../http.ts";
-import type { NetAddress } from "../net/types.ts";
+import type { NetAddress as INetAddress } from "../net/types.ts";
 import type { EventEndpoint } from "../sse.ts";
 import type { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
 import type { KVNamespace } from "../workerd/types.ts";
 import { until } from "../async.ts";
 import { isBun, isDeno, isNode } from "../env.ts";
-import { constructNetAddress } from "../net/util.ts";
 import runtime, { env } from "../runtime.ts";
 import {
     createRequestContext,
@@ -16,6 +15,44 @@ import {
     withHeaders,
     patchTimingMetrics,
 } from "./internal.ts";
+
+export function constructNetAddress(addr: Omit<NetAddress, "family" | "address">): NetAddress {
+    Object.assign(addr, {
+        family: addr.hostname.includes(":") ? "IPv6" : "IPv4",
+    } as Partial<NetAddress>);
+
+    Object.defineProperty(addr, "address", {
+        enumerable: false,
+        get() {
+            return this.hostname;
+        },
+    });
+
+    return addr as NetAddress;
+}
+
+
+/**
+ * @deprecated use `NetAddress` from `@ayonli/jsext/net` instead.
+ */
+export interface NetAddress extends INetAddress {
+    /**
+     * @deprecated Don't use this property, it will be removed in the next version.
+     */
+    family: "IPv4" | "IPv6";
+    /**
+     * @deprecated Use `hostname` instead.
+     */
+    readonly address: string;
+    /**
+     * The hostname of the remote peer.
+     */
+    hostname: string;
+    /**
+     * The port number of the remote peer, or `0` if it's not available.
+     */
+    port: number;
+}
 
 export interface FetchEvent extends Event {
     request: Request;

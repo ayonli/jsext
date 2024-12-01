@@ -13,9 +13,8 @@ import runtime from "../runtime.ts";
 import { EventEndpoint } from "../sse.ts";
 import { capitalize, dedent } from "../string.ts";
 import type { DirEntry } from "../fs/types.ts";
-import type { NetAddress } from "../net/types.ts";
-import { constructNetAddress } from "../net/util.ts";
-import type { FetchEvent, RequestContext, RequestErrorHandler, ServeOptions } from "./server.ts";
+import { constructNetAddress } from "./server.ts";
+import type { NetAddress, FetchEvent, RequestContext, RequestErrorHandler, ServeOptions } from "./server.ts";
 import type { WebSocketServer } from "../ws.ts";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
@@ -56,7 +55,7 @@ function sanitizeTimers(timers: Map<string, TimingMetrics>): Map<string, TimingM
  */
 export function createTimingFunctions(): TimingFunctions & {
     /**
-     * @deprecated use `getTimers` instead.
+     * @deprecated Use `getTimers` instead.
      */
     timers: Map<string, TimingMetrics>;
 } {

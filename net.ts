@@ -1,11 +1,24 @@
+/**
+ * Functions for working with the network, such as connecting to a TCP server,
+ * binding a UDP socket, etc.
+ * 
+ * This module is designed to provide a unified interface to work with network
+ * in Node.js, Deno, Bun (and Cloudflare Workers for limited support), based on
+ * modern Web APIs. It does not work in the browser.
+ * 
+ * NOTE: This module depends on the Web Streams API, in Node.js, it requires
+ * Node.js v18.0 or above.
+ * @module
+ * @experimental
+ */
 import { asyncTask } from "./async.ts";
 import { isBun, isDeno, isNode, isNodeLike } from "./env.ts";
 import { ToDict } from "./types.ts";
 import {
-    ConnectOptions,
+    NetAddress,
     SocketStream,
+    TcpConnectOptions,
     TcpSocketStream,
-    UdpAddress,
     UdpBindOptions,
     UdpConnectOptions,
     UdpSocket,
@@ -13,7 +26,6 @@ import {
     UnixConnectOptions,
     UnixSocketStream,
 } from "./net/types.ts";
-import { constructNetAddress } from "./net/util.ts";
 import type { Socket as NodeSocket } from "node:net";
 import type { TLSSocket } from "node:tls";
 import chan from "./chan.ts";
@@ -140,11 +152,11 @@ export async function randomPort(
  * console.log(message);
  * ```
  */
-export async function connect(options: ConnectOptions): Promise<TcpSocketStream>;
+export async function connect(options: TcpConnectOptions): Promise<TcpSocketStream>;
 export async function connect(options: UnixConnectOptions): Promise<UnixSocketStream>;
-export async function connect(options: UdpConnectOptions): Promise<UnixSocketStream>;
+export async function connect(options: UdpConnectOptions): Promise<UdpSocketStream>;
 export function connect(
-    options: ConnectOptions | UnixConnectOptions | UdpConnectOptions
+    options: TcpConnectOptions | UnixConnectOptions | UdpConnectOptions
 ): Promise<TcpSocketStream | UnixSocketStream | UdpSocketStream> {
     if (options.transport === "udp") {
         return connectUdp(options);
@@ -155,24 +167,51 @@ export function connect(
     }
 }
 
-async function connectTcp(options: ConnectOptions): Promise<TcpSocketStream> {
+async function connectTcp(options: TcpConnectOptions): Promise<TcpSocketStream> {
     const { tls = false, ..._options } = options;
 
-    if (isDeno) {
+    if (isNode) {
+        const { createConnection } = await import("node:net");
+        const { connect } = await import("node:tls");
+
+        const _socket = tls ? connect({
+            ..._options,
+            rejectUnauthorized: false,
+        }) : createConnection({
+            host: options.hostname,
+            port: options.port,
+            localPort: 0,
+        });
+        const props = await nodeToSocket(_socket);
+
+        return new TcpSocketStream({
+            localAddress: {
+                hostname: _socket.localAddress || "localhost",
+                port: _socket.localPort ?? 0,
+            },
+            remoteAddress: {
+                hostname: _socket.remoteAddress!,
+                port: _socket.remotePort!,
+            },
+            ...props,
+            setKeepAlive: _socket.setKeepAlive.bind(_socket),
+            setNoDelay: _socket.setNoDelay.bind(_socket),
+        });
+    } else if (isDeno) {
         const _socket = tls
             ? await Deno.connectTls(_options)
             : await Deno.connect(_options);
         const { localAddr, remoteAddr } = _socket;
 
         return new TcpSocketStream({
-            localAddress: constructNetAddress({
+            localAddress: {
                 hostname: localAddr.hostname,
                 port: localAddr.port,
-            }),
-            remoteAddress: constructNetAddress({
+            },
+            remoteAddress: {
                 hostname: remoteAddr.hostname,
                 port: remoteAddr.port,
-            }),
+            },
             ...denoToSocket(_socket),
             setKeepAlive: (keepAlive) => {
                 if ("setKeepAlive" in _socket) {
@@ -190,6 +229,11 @@ async function connectTcp(options: ConnectOptions): Promise<TcpSocketStream> {
         const closed = asyncTask<void>();
         let readCtrl: ReadableStreamDefaultController<Uint8Array> | null = null;
         let writeCtrl: WritableStreamDefaultController | null = null;
+        const closeStreams = () => {
+            try { _socket.terminate(); } catch { }
+            try { readCtrl?.close(); } catch { }
+            try { writeCtrl?.error(new TypeError("The stream is closed")); } catch { }
+        };
 
         const readable = new ReadableStream<Uint8Array>({
             start(controller) {
@@ -197,7 +241,7 @@ async function connectTcp(options: ConnectOptions): Promise<TcpSocketStream> {
             },
             cancel(reason) {
                 reason ? closed.reject(reason) : closed.resolve();
-                _socket.end();
+                closeStreams();
             },
         });
         const writable = new WritableStream<Uint8Array>({
@@ -208,6 +252,7 @@ async function connectTcp(options: ConnectOptions): Promise<TcpSocketStream> {
                 _socket.write(chunk);
             },
             close() {
+                writeCtrl!.error(new TypeError("The stream is closed"));
                 _socket.shutdown();
             },
         });
@@ -229,8 +274,7 @@ async function connectTcp(options: ConnectOptions): Promise<TcpSocketStream> {
                     closed.reject(error);
                 },
                 close() {
-                    try { readCtrl!.close(); } catch { }
-                    try { writeCtrl!.error(); } catch { }
+                    closeStreams();
                     closed.resolve();
                 },
             }
@@ -239,19 +283,19 @@ async function connectTcp(options: ConnectOptions): Promise<TcpSocketStream> {
         await ready;
 
         return new TcpSocketStream({
-            localAddress: constructNetAddress({
+            localAddress: {
                 hostname: "localhost",
                 port: _socket.localPort,
-            }),
-            remoteAddress: constructNetAddress({
+            },
+            remoteAddress: {
                 hostname: _socket.remoteAddress,
                 port: options.port,
-            }),
+            },
             readable,
             writable,
             closed,
             close: async () => {
-                _socket.end();
+                closeStreams();
                 await closed;
             },
             ref: () => _socket.ref(),
@@ -267,34 +311,6 @@ async function connectTcp(options: ConnectOptions): Promise<TcpSocketStream> {
                 }
             },
         });
-    } else if (isNode) {
-        const { createConnection } = await import("node:net");
-        const { connect } = await import("node:tls");
-
-        const _socket = tls ? connect({
-            ..._options,
-            rejectUnauthorized: false,
-        }) : createConnection({
-            host: options.hostname,
-            port: options.port,
-            localPort: 0,
-        });
-        const props = await nodeToSocket(_socket);
-        const socket = new TcpSocketStream({
-            localAddress: constructNetAddress({
-                hostname: _socket.localAddress || "localhost",
-                port: _socket.localPort ?? 0,
-            }),
-            remoteAddress: constructNetAddress({
-                hostname: _socket.remoteAddress!,
-                port: _socket.remotePort!,
-            }),
-            ...props,
-            setKeepAlive: _socket.setKeepAlive.bind(_socket),
-            setNoDelay: _socket.setNoDelay.bind(_socket),
-        });
-
-        return socket;
     } else {
         throw new Error("Unsupported runtime");
     }
@@ -303,7 +319,13 @@ async function connectTcp(options: ConnectOptions): Promise<TcpSocketStream> {
 async function connectUnix(options: UnixConnectOptions): Promise<UnixSocketStream> {
     const { path } = options;
 
-    if (isDeno) {
+    if (isNode) {
+        const { createConnection } = await import("node:net");
+        const _socket = createConnection({ path });
+        const props = await nodeToSocket(_socket);
+
+        return new UnixSocketStream(props);
+    } else if (isDeno) {
         const _socket = await Deno.connect({ transport: "unix", path });
         return new UnixSocketStream(denoToSocket(_socket));
     } else if (isBun) {
@@ -311,6 +333,11 @@ async function connectUnix(options: UnixConnectOptions): Promise<UnixSocketStrea
         const closed = asyncTask<void>();
         let readCtrl: ReadableStreamDefaultController<Uint8Array> | null = null;
         let writeCtrl: WritableStreamDefaultController | null = null;
+        const closeStreams = () => {
+            try { _socket.terminate(); } catch { }
+            try { readCtrl?.close(); } catch { }
+            try { writeCtrl?.error(new TypeError("The stream is closed")); } catch { }
+        };
 
         const readable = new ReadableStream<Uint8Array>({
             start(controller) {
@@ -318,7 +345,7 @@ async function connectUnix(options: UnixConnectOptions): Promise<UnixSocketStrea
             },
             cancel(reason) {
                 reason ? closed.reject(reason) : closed.resolve();
-                _socket.end();
+                closeStreams();
             },
         });
         const writable = new WritableStream<Uint8Array>({
@@ -349,8 +376,7 @@ async function connectUnix(options: UnixConnectOptions): Promise<UnixSocketStrea
                     closed.reject(error);
                 },
                 close() {
-                    try { readCtrl!.close(); } catch { }
-                    try { writeCtrl!.error(); } catch { }
+                    closeStreams();
                     closed.resolve();
                 },
             }
@@ -363,90 +389,37 @@ async function connectUnix(options: UnixConnectOptions): Promise<UnixSocketStrea
             writable,
             closed,
             close: async () => {
-                _socket.end();
+                closeStreams();
                 await closed;
             },
             ref: () => _socket.ref(),
             unref: () => _socket.unref(),
         });
-    } else if (isNode) {
-        const { createConnection } = await import("node:net");
-
-        const _socket = createConnection({ path });
-        const props = await nodeToSocket(_socket);
-        const socket = new UnixSocketStream(props);
-
-        return socket;
     } else {
         throw new Error("Unsupported runtime");
     }
 }
 
-function denoToSocket(
-    socket: Deno.TcpConn | Deno.TlsConn | Deno.UnixConn
-): ToDict<SocketStream> {
-    const closed = asyncTask<void>();
-    let closeCalled = false;
-
-    return {
-        readable: new ReadableStream<Uint8Array>({
-            async pull(controller) {
-                try {
-                    while (true) {
-                        const value = new Uint8Array(4096);
-                        const n = await socket.read(value);
-
-                        if (n === null) {
-                            try { controller.close(); } catch { }
-                            closed.resolve();
-                            break;
-                        }
-
-                        controller.enqueue(value.subarray(0, n));
-                    }
-                } catch (err) {
-                    try { controller.error(err); } catch { }
-                    closeCalled ? closed.resolve() : closed.reject(err);
-                }
-            },
-            cancel(reason) {
-                reason ? closed.reject(reason) : closed.resolve();
-                socket.close();
-            },
-        }),
-        writable: new WritableStream<Uint8Array>({
-            async write(chunk) {
-                await socket.write(chunk);
-            },
-            close() {
-                return socket.closeWrite();
-            },
-        }),
-        closed,
-        close: async () => {
-            closeCalled = true;
-            socket.close();
-            await closed;
-        },
-        ref: socket.ref.bind(socket),
-        unref: socket.unref.bind(socket),
-    };
-}
-
 async function nodeToSocket(
-    _socket: NodeSocket | TLSSocket
+    socket: NodeSocket | TLSSocket
 ): Promise<ToDict<SocketStream>> {
     const ready = asyncTask<void>();
     const closed = asyncTask<void>();
     let readCtrl: ReadableStreamDefaultController<Uint8Array> | null = null;
     let writeCtrl: WritableStreamDefaultController | null = null;
+    const closeStreams = () => {
+        try { socket.destroyed || socket.destroy(); } catch { }
+        try { readCtrl?.close(); } catch { }
+        try { writeCtrl?.error(new TypeError("The stream is closed")); } catch { }
+    };
 
     const readable = new ReadableStream<Uint8Array>({
         start(controller) {
             readCtrl = controller;
         },
         cancel(reason) {
-            _socket.destroy(reason);
+            reason ? closed.reject(reason) : closed.resolve();
+            closeStreams();
         },
     });
     const writable = new WritableStream<Uint8Array>({
@@ -455,19 +428,19 @@ async function nodeToSocket(
         },
         write(chunk) {
             return new Promise<void>((resolve, reject) => {
-                _socket.write(chunk, err => {
+                socket.write(chunk, err => {
                     err ? reject(err) : resolve();
                 });
             });
         },
         close() {
             return new Promise<void>(resolve => {
-                _socket.end(resolve);
+                socket.end(resolve);
             });
         },
     });
 
-    _socket.once("connect", () => {
+    socket.once("connect", () => {
         ready.resolve();
     }).on("data", data => {
         readCtrl!.enqueue(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
@@ -478,8 +451,7 @@ async function nodeToSocket(
         ready.reject(error);
     }).once("close", (hasError) => {
         if (!hasError) {
-            try { readCtrl!.close(); } catch { }
-            try { writeCtrl!.error(); } catch { }
+            closeStreams();
             closed.resolve();
         }
     });
@@ -491,16 +463,82 @@ async function nodeToSocket(
         writable,
         closed,
         close: async () => {
-            _socket.destroy();
+            socket.destroy();
             await closed;
         },
-        ref: () => _socket.ref(),
-        unref: () => _socket.unref(),
+        ref: () => socket.ref(),
+        unref: () => socket.unref(),
     };
 }
 
-async function connectUdp(remoteAddress: UdpAddress): Promise<UdpSocketStream> {
-    const socket = await bindUdp();
+function denoToSocket(
+    socket: Deno.TcpConn | Deno.TlsConn | Deno.UnixConn
+): ToDict<SocketStream> {
+    const closed = asyncTask<void>();
+    let closeCalled = false;
+    let readCtrl: ReadableStreamDefaultController<Uint8Array> | null = null;
+    let writeCtrl: WritableStreamDefaultController | null = null;
+    const closeStreams = () => {
+        try { socket.close(); } catch { }
+        try { readCtrl?.close(); } catch { }
+        try { writeCtrl?.error(new TypeError("The stream is closed")); } catch { }
+    };
+
+    return {
+        readable: new ReadableStream<Uint8Array>({
+            start(controller) {
+                readCtrl = controller;
+            },
+            async pull(readCtrl) {
+                try {
+                    while (true) {
+                        const value = new Uint8Array(4096);
+                        const n = await socket.read(value);
+
+                        if (n === null) {
+                            closeStreams();
+                            closed.resolve();
+                            break;
+                        }
+
+                        readCtrl.enqueue(value.subarray(0, n));
+                    }
+                } catch (err) {
+                    try { socket.close(); } catch { }
+                    try { readCtrl.error(err); } catch { }
+                    try { writeCtrl?.error(err); } catch { }
+                    closeCalled ? closed.resolve() : closed.reject(err);
+                }
+            },
+            cancel(reason) {
+                reason ? closed.reject(reason) : closed.resolve();
+                closeStreams();
+            },
+        }),
+        writable: new WritableStream<Uint8Array>({
+            start(controller) {
+                writeCtrl = controller;
+            },
+            async write(chunk) {
+                await socket.write(chunk);
+            },
+            close() {
+                return socket.closeWrite();
+            },
+        }),
+        closed,
+        close: async () => {
+            closeCalled = true;
+            closeStreams();
+            await closed;
+        },
+        ref: socket.ref.bind(socket),
+        unref: socket.unref.bind(socket),
+    };
+}
+
+async function connectUdp(remoteAddress: NetAddress): Promise<UdpSocketStream> {
+    const socket = await udpSocket();
     return socket.connect(remoteAddress);
 }
 
@@ -511,7 +549,7 @@ async function connectUdp(remoteAddress: UdpAddress): Promise<UdpSocketStream> {
  * NOTE: This module depends on the Web Streams API, in Node.js, it requires
  * Node.js v18.0 or above.
  */
-export async function bindUdp(localAddress: UdpBindOptions = {}): Promise<UdpSocket> {
+export async function udpSocket(localAddress: UdpBindOptions = {}): Promise<UdpSocket> {
     // if (isDeno) {
     //     const _socket = Deno.listenDatagram({
     //         hostname: localAddress.hostname ?? "0.0.0.0",
@@ -558,9 +596,10 @@ export async function bindUdp(localAddress: UdpBindOptions = {}): Promise<UdpSoc
     if (isDeno || isNodeLike) {
         const { createSocket } = await import("node:dgram");
         const _socket = createSocket(localAddress.hostname?.includes(":") ? "udp6" : "udp4");
-        let connected = false;
+        let isConnected = false;
+        let isClosed = false;
         const closed = asyncTask<void>();
-        const channel = chan<[Uint8Array, UdpAddress]>();
+        const channel = chan<[Uint8Array, NetAddress]>();
 
         await new Promise<void>(resolve => {
             _socket.bind(localAddress.port, localAddress.hostname, resolve);
@@ -575,16 +614,17 @@ export async function bindUdp(localAddress: UdpBindOptions = {}): Promise<UdpSoc
             channel.close(err);
             closed.reject(err);
         }).once("close", () => {
+            isClosed = true;
             channel.close();
             closed.resolve();
         });
 
         const localAddr = _socket.address();
         const props: Pick<UdpSocket, "localAddress" | "closed" | "close" | "ref" | "unref"> = {
-            localAddress: constructNetAddress({
+            localAddress: {
                 hostname: localAddr.address,
                 port: localAddr.port,
-            }),
+            },
             closed,
             close: () => new Promise<void>(resolve => _socket.close(resolve)),
             ref: _socket.ref.bind(_socket),
@@ -594,20 +634,24 @@ export async function bindUdp(localAddress: UdpBindOptions = {}): Promise<UdpSoc
         return new UdpSocket({
             ...props,
             receive: async () => {
-                if (connected) {
-                    throw new Error("Socket is connected");
+                if (isConnected) {
+                    throw new TypeError("The socket is connected");
+                } else if (isClosed) {
+                    throw new TypeError("The socket is closed");
                 }
 
                 const msg = await channel.recv();
                 if (msg) {
                     return msg;
                 } else {
-                    throw new Error("Socket is closed");
+                    throw new TypeError("The socket is closed");
                 }
             },
-            send: (data, remoteAddress) => {
-                if (connected) {
-                    throw new Error("Socket is connected");
+            send: async (data, remoteAddress) => {
+                if (isConnected) {
+                    throw new TypeError("The socket is connected");
+                } else if (isClosed) {
+                    throw new TypeError("The socket is closed");
                 }
 
                 return new Promise<number>((resolve, reject) => {
@@ -618,37 +662,57 @@ export async function bindUdp(localAddress: UdpBindOptions = {}): Promise<UdpSoc
             },
             connect: (remoteAddress) => {
                 return new Promise<UdpSocketStream>(resolve => {
-                    connected = true;
-                    channel.close(new Error("Socket is connected"));
-                    _socket.removeAllListeners("message");
-
+                    isConnected = true;
                     _socket.connect(remoteAddress.port, remoteAddress.hostname, () => {
                         const localAddr = _socket.address();
                         const remoteAddr = _socket.remoteAddress();
+                        let readCtrl: ReadableStreamDefaultController<Uint8Array> | null = null;
                         let writeCtrl: WritableStreamDefaultController | null = null;
+                        const closeStreams = () => {
+                            channel.close();
+                            try { _socket.close(); } catch { }
+                            try { readCtrl?.close(); } catch { }
+                            try { writeCtrl?.error(new TypeError("The stream is closed")); } catch { }
+                        };
 
                         resolve(new UdpSocketStream({
                             ...props,
-                            localAddress: constructNetAddress({
+                            localAddress: {
                                 hostname: localAddr.address,
                                 port: localAddr.port,
-                            }),
-                            remoteAddress: constructNetAddress({
+                            },
+                            remoteAddress: {
                                 hostname: remoteAddr.address,
                                 port: remoteAddr.port,
-                            }),
+                            },
                             readable: new ReadableStream<Uint8Array>({
                                 start(controller) {
-                                    _socket.on("message", (data, _rinfo) => {
-                                        controller.enqueue(new Uint8Array(
-                                            data.buffer,
-                                            data.byteOffset,
-                                            data.byteLength
-                                        ));
-                                    });
+                                    readCtrl = controller;
                                 },
-                                cancel() {
-                                    _socket.close();
+                                async pull(readCtrl) {
+                                    try {
+                                        while (true) {
+                                            const msg = await channel.recv();
+
+                                            if (msg === undefined) {
+                                                closeStreams();
+                                                closed.resolve();
+                                                break;
+                                            }
+
+                                            readCtrl.enqueue(msg[0]);
+                                        }
+                                    } catch (err) {
+                                        channel.close(err as Error);
+                                        try { _socket.close(); } catch { }
+                                        try { readCtrl.error(err); } catch { }
+                                        try { writeCtrl?.error(err); } catch { }
+                                        isClosed ? closed.resolve() : closed.reject(err);
+                                    }
+                                },
+                                cancel(reason) {
+                                    reason ? closed.reject(reason) : closed.resolve();
+                                    closeStreams();
                                 },
                             }),
                             writable: new WritableStream<Uint8Array>({
@@ -661,12 +725,6 @@ export async function bindUdp(localAddress: UdpBindOptions = {}): Promise<UdpSoc
                                             err ? reject(err) : resolve();
                                         });
                                     });
-                                },
-                                close() {
-                                    writeCtrl!.error();
-                                },
-                                abort(reason) {
-                                    writeCtrl?.error(reason);
                                 },
                             }),
                         }));

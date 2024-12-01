@@ -5,26 +5,6 @@ import { ToDict } from "../types.ts";
  * Represents the network address of a connection peer.
  */
 export interface NetAddress {
-    family: "IPv4" | "IPv6";
-    /**
-     * @deprecated use `hostname` instead.
-     */
-    readonly address: string;
-    /**
-     * The hostname of the remote peer.
-     */
-    hostname: string;
-    /**
-     * The port number of the remote peer, or `0` if it's not available.
-     */
-    port: number;
-}
-
-/**
- * The options for {@link connect}.
- */
-export interface ConnectOptions {
-    transport?: "tcp";
     /**
      * The hostname of the remote peer.
      */
@@ -33,6 +13,13 @@ export interface ConnectOptions {
      * The port number of the remote peer.
      */
     port: number;
+}
+
+/**
+ * The options for {@link connect}.
+ */
+export interface TcpConnectOptions extends NetAddress {
+    transport?: "tcp";
     /**
      * Whether to enable TLS for the connection.
      */
@@ -47,9 +34,7 @@ export type UnixConnectOptions = {
     path: string;
 };
 
-export type UdpAddress = Pick<NetAddress, "hostname" | "port">;
-
-export type UdpConnectOptions = UdpAddress & {
+export type UdpConnectOptions = NetAddress & {
     transport: "udp";
 };
 
@@ -79,15 +64,16 @@ export class Socket {
     }
 
     /**
-     * A promise that resolves when the socket is closed, or rejects if the socket
-     * is closed with an error.
+     * A promise that resolves when the socket is closed cleanly, or rejects if
+     * the closed with an error.
      */
     get closed(): Promise<void> {
         return this[_impl].closed;
     }
 
     /**
-     * Closes both the readable and writable sides of the socket.
+     * Closes the socket immediately, if there are any queued data, they will be
+     * discarded.
      */
     close(): Promise<void> {
         return this[_impl].close();
@@ -122,7 +108,7 @@ export class Socket {
  * A socket stream represents a connection to a remote peer with a `readable`
  * stream and a `writable` stream.
  */
-export class SocketStream extends Socket implements TransformStream<Uint8Array, Uint8Array> {
+export class SocketStream extends Socket {
     protected override[_impl]: ToDict<SocketStream>;
 
     constructor(impl: ToDict<SocketStream>) {
@@ -153,12 +139,12 @@ export class TcpSocketStream extends SocketStream {
         this[_impl] = impl;
     }
 
-    get localAddress(): NetAddress | null {
-        return this[_impl].localAddress ?? null;
+    get localAddress(): NetAddress {
+        return this[_impl].localAddress;
     }
 
-    get remoteAddress(): NetAddress | null {
-        return this[_impl].remoteAddress ?? null;
+    get remoteAddress(): NetAddress {
+        return this[_impl].remoteAddress;
     }
 
     /**
@@ -190,16 +176,28 @@ export class UdpSocket extends Socket {
         this[_impl] = impl;
     }
 
-    get localAddress(): NetAddress | null {
+    get localAddress(): NetAddress {
         return this[_impl].localAddress;
     }
 
-    receive(): Promise<[Uint8Array, UdpAddress]> {
+    /**
+     * Receives a message from the socket, returns the data and the sender
+     * address in a tuple.
+     */
+    receive(): Promise<[data: Uint8Array, sender: NetAddress]> {
         return this[_impl].receive();
     }
 
-    send(data: Uint8Array, to: UdpAddress): Promise<number> {
-        return this[_impl].send(data, to);
+    /**
+     * Sends a message to the specified receiver, returns the number of bytes
+     * sent.
+     * 
+     * NOTE: UDP messages have size limits, see
+     * https://nodejs.org/docs/latest/api/dgram.html#note-about-udp-datagram-size.
+     * 
+     */
+    send(data: Uint8Array, receiver: NetAddress): Promise<number> {
+        return this[_impl].send(data, receiver);
     }
 
     /**
@@ -208,12 +206,12 @@ export class UdpSocket extends Socket {
      * 
      * This function returns a `UdpSocketStream` instance that comes with a
      * `readable` stream and a `writable` stream, which gives a more convenient
-     * interface that is similar to TCP sockets.
+     * interface that is similar to TCP connections.
      * 
      * Once connected, the `send` and `receive` methods of the original socket
      * will be disabled.
      */
-    connect(to: UdpAddress): Promise<UdpSocketStream> {
+    connect(to: NetAddress): Promise<UdpSocketStream> {
         return this[_impl].connect(to);
     }
 }
@@ -226,7 +224,7 @@ export class UdpSocketStream extends Socket {
         this[_impl] = impl;
     }
 
-    get localAddress(): NetAddress | null {
+    get localAddress(): NetAddress {
         return this[_impl].localAddress;
     }
 

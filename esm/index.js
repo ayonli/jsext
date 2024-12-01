@@ -18,7 +18,7 @@ export { AsyncFunction, AsyncGeneratorFunction, GeneratorFunction, TypedArray } 
  */
 const jsext = {
     _try,
-    /** @deprecated use `_try` instead */
+    /** @deprecated Use `_try` instead */
     try: _try,
     func,
     wrap,

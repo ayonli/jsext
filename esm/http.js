@@ -13,11 +13,10 @@ import { as } from './object.js';
 import './error/Exception.js';
 import { sha256 } from './hash.js';
 import { createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent, renderDirectoryPage, createTimingFunctions, withWeb } from './http/internal.js';
-import { HttpServer } from './http/server.js';
+import { HttpServer, constructNetAddress } from './http/server.js';
 import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
 export { HTTP_METHODS, HTTP_STATUS, parseAccepts, parseBasicAuth, parseContentType, parseRequest, parseResponse, setFilename, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from './http/util.js';
 import { randomPort as randomPort$1 } from './net.js';
-import { constructNetAddress } from './net/util.js';
 import { readAsArray } from './reader.js';
 import { WebSocketServer } from './ws.js';
 import { startsWith } from './path/util.js';
@@ -100,7 +99,7 @@ async function etag(data) {
     return `${data.size.toString(16)}-${hash.slice(0, 27)}`;
 }
 /**
- * @deprecated Use `randomPort` from the `@ayonli/jsext/net` module instead.
+ * @deprecated Use `randomPort` from `@ayonli/jsext/net` instead.
  */
 const randomPort = randomPort$1;
 /**

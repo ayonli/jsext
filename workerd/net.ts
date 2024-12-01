@@ -1,6 +1,6 @@
 import { connect as _connect } from "cloudflare:sockets";
 import {
-    ConnectOptions,
+    TcpConnectOptions,
     TcpSocketStream,
     UdpBindOptions,
     UdpConnectOptions,
@@ -9,7 +9,6 @@ import {
     UnixConnectOptions,
     UnixSocketStream,
 } from "../net/types.ts";
-import { constructNetAddress } from "../net/util.ts";
 
 export type * from "../net/types.ts";
 
@@ -21,11 +20,11 @@ export async function randomPort(
     throw new Error("Unsupported runtime");
 }
 
-export async function connect(options: ConnectOptions): Promise<TcpSocketStream>;
+export async function connect(options: TcpConnectOptions): Promise<TcpSocketStream>;
 export async function connect(options: UnixConnectOptions): Promise<UnixSocketStream>;
-export async function connect(options: UdpConnectOptions): Promise<UnixSocketStream>;
+export async function connect(options: UdpConnectOptions): Promise<UdpSocketStream>;
 export async function connect(
-    options: ConnectOptions | UnixConnectOptions | UdpConnectOptions
+    options: TcpConnectOptions | UnixConnectOptions | UdpConnectOptions
 ): Promise<TcpSocketStream | UnixSocketStream | UdpSocketStream> {
     if ("path" in options) {
         throw new Error("Unix domain socket is not supported in this runtime");
@@ -47,14 +46,20 @@ export async function connect(
         : null;
 
     return new TcpSocketStream({
-        localAddress: localAddr ? constructNetAddress({
+        localAddress: localAddr ? {
             hostname: localAddr.hostname,
             port: localAddr.port ? Number(localAddr.port) : 0,
-        }) : null,
-        remoteAddress: remoteAddr ? constructNetAddress({
+        } : {
+            hostname: options.hostname,
+            port: options.port,
+        },
+        remoteAddress: remoteAddr ? {
             hostname: remoteAddr.hostname,
             port: remoteAddr.port ? Number(remoteAddr.port) : 0,
-        }) : null,
+        } : {
+            hostname: options.hostname,
+            port: options.port,
+        },
         readable: impl.readable,
         writable: impl.writable,
         closed: impl.closed,
@@ -66,7 +71,7 @@ export async function connect(
     });
 }
 
-export async function bindUdp(options: UdpBindOptions): Promise<UdpSocket> {
+export async function udpSocket(options: UdpBindOptions): Promise<UdpSocket> {
     void options;
     throw new Error("Unsupported runtime");
 }

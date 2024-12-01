@@ -1,6 +1,5 @@
 import { connect as connect$1 } from 'cloudflare:sockets';
 import { TcpSocketStream } from '../net/types.js';
-import { constructNetAddress } from '../net/util.js';
 
 async function randomPort(prefer = undefined, hostname = undefined) {
     throw new Error("Unsupported runtime");
@@ -25,14 +24,20 @@ async function connect(options) {
         ? new URL("http://" + info.remoteAddress)
         : null;
     return new TcpSocketStream({
-        localAddress: localAddr ? constructNetAddress({
+        localAddress: localAddr ? {
             hostname: localAddr.hostname,
             port: localAddr.port ? Number(localAddr.port) : 0,
-        }) : null,
-        remoteAddress: remoteAddr ? constructNetAddress({
+        } : {
+            hostname: options.hostname,
+            port: options.port,
+        },
+        remoteAddress: remoteAddr ? {
             hostname: remoteAddr.hostname,
             port: remoteAddr.port ? Number(remoteAddr.port) : 0,
-        }) : null,
+        } : {
+            hostname: options.hostname,
+            port: options.port,
+        },
         readable: impl.readable,
         writable: impl.writable,
         closed: impl.closed,
@@ -43,9 +48,9 @@ async function connect(options) {
         setNoDelay: (noDelay = undefined) => void noDelay,
     });
 }
-async function bindUdp(options) {
+async function udpSocket(options) {
     throw new Error("Unsupported runtime");
 }
 
-export { bindUdp, connect, randomPort };
+export { connect, randomPort, udpSocket };
 //# sourceMappingURL=net.js.map

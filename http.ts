@@ -57,6 +57,8 @@ import {
     withWeb,
 } from "./http/internal.ts";
 import {
+    constructNetAddress,
+    NetAddress,
     RequestContext,
     RequestHandler,
     RequestErrorHandler,
@@ -66,8 +68,7 @@ import {
 } from "./http/server.ts";
 import { Range, ifMatch, ifNoneMatch, parseRange } from "./http/util.ts";
 import { isMain } from "./module.ts";
-import { NetAddress, randomPort as _randomPort } from "./net.ts";
-import { constructNetAddress } from "./net/util.ts";
+import { randomPort as _randomPort } from "./net.ts";
 import { as } from "./object.ts";
 import { extname, join, resolve, startsWith } from "./path.ts";
 import { readAsArray } from "./reader.ts";
@@ -77,7 +78,7 @@ import { WebSocketServer } from "./ws.ts";
 export * from "./http/util.ts";
 export type {
     /**
-     * @deprecated import from `@ayonli/jsext/net` instead.
+     * @deprecated Use `NetAddress` from `@ayonli/jsext/net` instead.
      */
     NetAddress,
     RequestContext,
@@ -87,7 +88,7 @@ export type {
     ServeStaticOptions,
     HttpServer,
     /**
-     * @deprecated use `HttpServer` instead.
+     * @deprecated Use `HttpServer` instead.
      */
     HttpServer as Server,
 };
@@ -133,7 +134,7 @@ export async function etag(data: string | Uint8Array | FileInfo): Promise<string
 }
 
 /**
- * @deprecated Use `randomPort` from the `@ayonli/jsext/net` module instead.
+ * @deprecated Use `randomPort` from `@ayonli/jsext/net` instead.
  */
 export const randomPort = _randomPort;
 

@@ -7,14 +7,15 @@ class Socket {
         this[_impl] = impl;
     }
     /**
-     * A promise that resolves when the socket is closed, or rejects if the socket
-     * is closed with an error.
+     * A promise that resolves when the socket is closed cleanly, or rejects if
+     * the closed with an error.
      */
     get closed() {
         return this[_impl].closed;
     }
     /**
-     * Closes both the readable and writable sides of the socket.
+     * Closes the socket immediately, if there are any queued data, they will be
+     * discarded.
      */
     close() {
         return this[_impl].close();
@@ -70,12 +71,10 @@ class TcpSocketStream extends SocketStream {
         this[_impl] = impl;
     }
     get localAddress() {
-        var _a;
-        return (_a = this[_impl].localAddress) !== null && _a !== void 0 ? _a : null;
+        return this[_impl].localAddress;
     }
     get remoteAddress() {
-        var _a;
-        return (_a = this[_impl].remoteAddress) !== null && _a !== void 0 ? _a : null;
+        return this[_impl].remoteAddress;
     }
     /**
      * Enable/disable keep-alive functionality.
@@ -104,11 +103,23 @@ class UdpSocket extends Socket {
     get localAddress() {
         return this[_impl].localAddress;
     }
+    /**
+     * Receives a message from the socket, returns the data and the sender
+     * address in a tuple.
+     */
     receive() {
         return this[_impl].receive();
     }
-    send(data, to) {
-        return this[_impl].send(data, to);
+    /**
+     * Sends a message to the specified receiver, returns the number of bytes
+     * sent.
+     *
+     * NOTE: UDP messages have size limits, see
+     * https://nodejs.org/docs/latest/api/dgram.html#note-about-udp-datagram-size.
+     *
+     */
+    send(data, receiver) {
+        return this[_impl].send(data, receiver);
     }
     /**
      * Connects the socket to a remote peer so that future communications will
@@ -116,7 +127,7 @@ class UdpSocket extends Socket {
      *
      * This function returns a `UdpSocketStream` instance that comes with a
      * `readable` stream and a `writable` stream, which gives a more convenient
-     * interface that is similar to TCP sockets.
+     * interface that is similar to TCP connections.
      *
      * Once connected, the `send` and `receive` methods of the original socket
      * will be disabled.

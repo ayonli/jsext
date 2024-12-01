@@ -1,10 +1,21 @@
 import { until } from '../async.js';
 import { isBun, isDeno, isNode } from '../env.js';
-import { constructNetAddress } from '../net/util.js';
 import runtime, { env } from '../runtime.js';
 import { createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent, createTimingFunctions } from './internal.js';
 
 var _a, _b, _c;
+function constructNetAddress(addr) {
+    Object.assign(addr, {
+        family: addr.hostname.includes(":") ? "IPv6" : "IPv4",
+    });
+    Object.defineProperty(addr, "address", {
+        enumerable: false,
+        get() {
+            return this.hostname;
+        },
+    });
+    return addr;
+}
 const _hostname = Symbol.for("hostname");
 const _port = Symbol.for("port");
 const _http = Symbol.for("http");
@@ -250,5 +261,5 @@ class HttpServer {
 }
 _a = _hostname, _b = _port, _c = _controller;
 
-export { HttpServer };
+export { HttpServer, constructNetAddress };
 //# sourceMappingURL=server.js.map
