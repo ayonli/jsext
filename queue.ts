@@ -6,7 +6,7 @@
 
 import chan, { Channel } from "./chan.ts";
 
-export class Queue<T> {
+export class Queue<T> implements Disposable {
     private channel?: Channel<T>;
     private errorHandler?: (err: unknown) => void;
 

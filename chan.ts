@@ -17,7 +17,7 @@ const idGenerator = serial(true);
  * A channel implementation that transfers data across routines, even across
  * multiple threads, inspired by Golang.
  */
-export class Channel<T> implements AsyncIterable<T> {
+export class Channel<T> implements AsyncIterable<T>, Disposable {
     readonly [id] = idGenerator.next().value as number;
     /** The capacity is the maximum number of data allowed to be buffered. */
     readonly capacity: number;
