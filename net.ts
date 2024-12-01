@@ -618,13 +618,13 @@ export async function udpSocket(localAddress: UdpBindOptions = {}): Promise<UdpS
         let isConnected = false;
         let isClosed = false;
         const closed = asyncTask<void>();
-        const channel = chan<[Uint8Array, NetAddress]>();
+        const channel = chan<[Uint8Array, NetAddress]>(Infinity);
 
         await new Promise<void>(resolve => {
             _socket.bind(localAddress.port, localAddress.hostname, resolve);
         });
 
-        _socket.once("message", (data, rinfo) => {
+        _socket.on("message", (data, rinfo) => {
             channel.send([new Uint8Array(data.buffer, data.byteOffset, data.byteLength), {
                 hostname: rinfo.address,
                 port: rinfo.port,

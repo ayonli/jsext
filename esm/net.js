@@ -614,11 +614,11 @@ async function udpSocket(localAddress = {}) {
         let isConnected = false;
         let isClosed = false;
         const closed = asyncTask();
-        const channel = chan();
+        const channel = chan(Infinity);
         await new Promise(resolve => {
             _socket.bind(localAddress.port, localAddress.hostname, resolve);
         });
-        _socket.once("message", (data, rinfo) => {
+        _socket.on("message", (data, rinfo) => {
             channel.send([new Uint8Array(data.buffer, data.byteOffset, data.byteLength), {
                     hostname: rinfo.address,
                     port: rinfo.port,
