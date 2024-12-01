@@ -654,6 +654,12 @@ async function udpSocket(localAddress = {}) {
             close: () => new Promise(resolve => _socket.close(resolve)),
             ref: _socket.ref.bind(_socket),
             unref: _socket.unref.bind(_socket),
+            joinMulticast: _socket.addMembership.bind(_socket),
+            leaveMulticast: _socket.dropMembership.bind(_socket),
+            setBroadcast: _socket.setBroadcast.bind(_socket),
+            setMulticastLoopback: _socket.setMulticastLoopback.bind(_socket),
+            setMulticastTTL: _socket.setMulticastTTL.bind(_socket),
+            setTTL: _socket.setTTL.bind(_socket),
         };
         return new UdpSocket({
             ...props,

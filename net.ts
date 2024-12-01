@@ -652,7 +652,7 @@ export async function udpSocket(localAddress: UdpBindOptions = {}): Promise<UdpS
         });
 
         const localAddr = _socket.address();
-        const props: Pick<UdpSocket, "localAddress" | "closed" | "close" | "ref" | "unref"> = {
+        const props: Omit<UdpSocket, "receive" | "send" | "connect"> = {
             localAddress: {
                 hostname: localAddr.address,
                 port: localAddr.port,
@@ -661,6 +661,12 @@ export async function udpSocket(localAddress: UdpBindOptions = {}): Promise<UdpS
             close: () => new Promise<void>(resolve => _socket.close(resolve)),
             ref: _socket.ref.bind(_socket),
             unref: _socket.unref.bind(_socket),
+            joinMulticast: _socket.addMembership.bind(_socket),
+            leaveMulticast: _socket.dropMembership.bind(_socket),
+            setBroadcast: _socket.setBroadcast.bind(_socket),
+            setMulticastLoopback: _socket.setMulticastLoopback.bind(_socket),
+            setMulticastTTL: _socket.setMulticastTTL.bind(_socket),
+            setTTL: _socket.setTTL.bind(_socket),
         };
 
         return new UdpSocket({

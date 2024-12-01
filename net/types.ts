@@ -214,6 +214,57 @@ export class UdpSocket extends Socket {
     connect(to: NetAddress): Promise<UdpSocketStream> {
         return this[_impl].connect(to);
     }
+
+    /**
+     * Tells the kernel to join a multicast group at the given `address` and
+     * the optional `multicastInterface` using the `IP_ADD_MEMBERSHIP` socket
+     * option.
+     */
+    joinMulticast(address: string, interfaceAddress: string | undefined = undefined): void {
+        return this[_impl].joinMulticast(address, interfaceAddress);
+    }
+
+    /**
+     * Instructs the kernel to leave a multicast group at `address` using the
+     * `IP_DROP_MEMBERSHIP` socket option. 
+     */
+    leaveMulticast(address: string, interfaceAddress: string | undefined = undefined): void {
+        return this[_impl].leaveMulticast(address, interfaceAddress);
+    }
+
+    /**
+     * Sets or clears the `SO_BROADCAST` socket option. When enabled, this
+     * socket is allowed to send packets to a broadcast address.
+     */
+    setBroadcast(flag: boolean): void {
+        return this[_impl].setBroadcast(flag);
+    }
+
+    /**
+     * Sets or clears the `IP_MULTICAST_LOOP` socket option. When enabled, this
+     * socket will receive packets that it sends to the multicast group.
+     */
+    setMulticastLoopback(flag: boolean): void {
+        return this[_impl].setMulticastLoopback(flag);
+    }
+
+    /**
+     * Sets the `IP_MULTICAST_TTL` socket option.
+     * 
+     * See https://nodejs.org/docs/latest/api/dgram.html#socketsetmulticastttlttl
+     */
+    setMulticastTTL(ttl: number): void {
+        return this[_impl].setMulticastTTL(ttl);
+    }
+
+    /**
+     * Sets the `IP_TTL` socket option
+     * 
+     * See https://nodejs.org/docs/latest/api/dgram.html#socketsetttlttl
+     */
+    setTTL(ttl: number): void {
+        return this[_impl].setTTL(ttl);
+    }
 }
 
 export class UdpSocketStream extends Socket {
