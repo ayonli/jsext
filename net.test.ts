@@ -1,8 +1,8 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { createServer } from "node:net";
+import { createServer, isIPv4 } from "node:net";
 import * as http from "node:http";
 import bytes from "./bytes.ts";
-import { connect, randomPort, udpSocket } from "./net.ts";
+import { connect, getMyIp, randomPort, udpSocket } from "./net.ts";
 import { parseResponse } from "./http.ts";
 import { readAsText } from "./reader.ts";
 import _try from "./try.ts";
@@ -12,6 +12,14 @@ import { platform } from "./runtime.ts";
 import { remove } from "./fs.ts";
 
 describe("net", () => {
+    it("getMyIp", async () => {
+        const ip = await getMyIp();
+        ok(isIPv4(ip));
+        ok(ip !== "127.0.0.1");
+        ok(ip !== "0.0.0.0");
+        ok(ip !== "8.8.8.8");
+    });
+
     describe("randomPort", () => {
         it("random port", func(async (defer) => {
             const port = await randomPort();

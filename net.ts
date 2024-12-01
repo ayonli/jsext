@@ -33,6 +33,38 @@ import chan from "./chan.ts";
 export type * from "./net/types.ts";
 
 /**
+ * Returns the IP address of the current machine.
+ * 
+ * NOTE: This function is not available in the browser and worker runtimes such
+ * as Cloudflare Workers.
+ */
+export async function getMyIp(): Promise<string> {
+    if (isNodeLike) {
+        const { createSocket } = await import("node:dgram");
+        const socket = createSocket("udp4");
+
+        return new Promise<string>((resolve) => {
+            socket.connect(53, "8.8.8.8", () => {
+                const addr = socket.address();
+                socket.close();
+                resolve(addr.address);
+            });
+        });
+    } else if (isDeno) {
+        const conn = await Deno.connect({
+            hostname: "8.8.8.8",
+            port: 53,
+        });
+        const addr = conn.localAddr as Deno.NetAddr;
+        conn.close();
+
+        return addr.hostname;
+    } else {
+        throw new Error("Unsupported runtime");
+    }
+}
+
+/**
  * Returns a random port number that is available for listening.
  * 
  * NOTE: This function is not available in the browser and worker runtimes such

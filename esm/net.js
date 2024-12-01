@@ -1,5 +1,5 @@
 import { asyncTask } from './async.js';
-import { isDeno, isBun, isNode, isNodeLike } from './env.js';
+import { isNodeLike, isDeno, isBun, isNode } from './env.js';
 import { TcpSocketStream, UnixSocketStream, UdpSocket, UdpSocketStream } from './net/types.js';
 import chan from './chan.js';
 
@@ -16,6 +16,37 @@ import chan from './chan.js';
  * @module
  * @experimental
  */
+/**
+ * Returns the IP address of the current machine.
+ *
+ * NOTE: This function is not available in the browser and worker runtimes such
+ * as Cloudflare Workers.
+ */
+async function getMyIp() {
+    if (isNodeLike) {
+        const { createSocket } = await import('node:dgram');
+        const socket = createSocket("udp4");
+        return new Promise((resolve) => {
+            socket.connect(53, "8.8.8.8", () => {
+                const addr = socket.address();
+                socket.close();
+                resolve(addr.address);
+            });
+        });
+    }
+    else if (isDeno) {
+        const conn = await Deno.connect({
+            hostname: "8.8.8.8",
+            port: 53,
+        });
+        const addr = conn.localAddr;
+        conn.close();
+        return addr.hostname;
+    }
+    else {
+        throw new Error("Unsupported runtime");
+    }
+}
 /**
  * Returns a random port number that is available for listening.
  *
@@ -748,5 +779,5 @@ async function udpSocket(localAddress = {}) {
     }
 }
 
-export { connect, randomPort, udpSocket };
+export { connect, getMyIp, randomPort, udpSocket };
 //# sourceMappingURL=net.js.map

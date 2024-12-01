@@ -1,6 +1,9 @@
 import { connect as connect$1 } from 'cloudflare:sockets';
 import { TcpSocketStream } from '../net/types.js';
 
+async function getMyIp() {
+    throw new Error("Unsupported runtime");
+}
 async function randomPort(prefer = undefined, hostname = undefined) {
     throw new Error("Unsupported runtime");
 }
@@ -52,5 +55,5 @@ async function udpSocket(options) {
     throw new Error("Unsupported runtime");
 }
 
-export { connect, randomPort, udpSocket };
+export { connect, getMyIp, randomPort, udpSocket };
 //# sourceMappingURL=net.js.map

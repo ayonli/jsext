@@ -12,6 +12,10 @@ import {
 
 export type * from "../net/types.ts";
 
+export async function getMyIp(): Promise<string> {
+    throw new Error("Unsupported runtime");
+}
+
 export async function randomPort(
     prefer: number | undefined = undefined,
     hostname: string | undefined = undefined
