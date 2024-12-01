@@ -183,6 +183,17 @@ class UdpSocket extends Socket {
     setTTL(ttl) {
         return this[_impl].setTTL(ttl);
     }
+    async *[Symbol.asyncIterator]() {
+        while (true) {
+            try {
+                const msg = await this.receive();
+                yield msg;
+            }
+            catch (_a) {
+                break; // closed
+            }
+        }
+    }
 }
 class UdpSocketStream extends Socket {
     constructor(impl) {

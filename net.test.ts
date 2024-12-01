@@ -1,7 +1,7 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { createServer, isIPv4 } from "node:net";
 import * as http from "node:http";
-import bytes from "./bytes.ts";
+import bytes, { text } from "./bytes.ts";
 import { connect, getMyIp, randomPort, udpSocket } from "./net.ts";
 import { parseResponse } from "./http.ts";
 import { readAsText } from "./reader.ts";
@@ -407,6 +407,30 @@ describe("net", () => {
             const [err2] = await _try(server.send(new Uint8Array(), server.localAddress));
             strictEqual(String(err2), "TypeError: The socket is closed.");
         });
+
+        it("async iterator", func(async (defer) => {
+            const server = await udpSocket({
+                hostname: "127.0.0.1",
+                port: 0,
+            });
+            const client = await udpSocket();
+            defer(() => client.close());
+
+            await client.send(bytes("Hello, Server!"), server.localAddress);
+            await client.send(bytes("Hi, Server!"), server.localAddress);
+
+            const messages: string[] = [];
+
+            for await (const [data] of server) {
+                messages.push(text(data));
+
+                if (messages.length === 2) {
+                    server.close();
+                }
+            }
+
+            deepStrictEqual(messages, ["Hello, Server!", "Hi, Server!"]);
+        }));
 
         describe("connection", () => {
             it("connect and half close (close the writable stream)", func(async function (defer) {

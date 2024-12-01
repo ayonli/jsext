@@ -172,7 +172,7 @@ export class TcpSocketStream extends SocketStream {
 
 export class UnixSocketStream extends SocketStream { }
 
-export class UdpSocket extends Socket {
+export class UdpSocket extends Socket implements AsyncIterable<[data: Uint8Array, sender: NetAddress]> {
     protected override[_impl]: ToDict<UdpSocket>;
 
     constructor(impl: ToDict<UdpSocket>) {
@@ -268,6 +268,17 @@ export class UdpSocket extends Socket {
      */
     setTTL(ttl: number): void {
         return this[_impl].setTTL(ttl);
+    }
+
+    async *[Symbol.asyncIterator](): AsyncIterableIterator<[data: Uint8Array, sender: NetAddress]> {
+        while (true) {
+            try {
+                const msg = await this.receive();
+                yield msg;
+            } catch {
+                break; // closed
+            }
+        }
     }
 }
 
