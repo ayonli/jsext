@@ -1,6 +1,8 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import * as http from "node:http";
+import type { AddressInfo } from "node:net";
 import type { Hono as HonoType } from "hono";
+import { randomPort } from "./net.ts";
 import {
     BasicAuthorization,
     Cookie,
@@ -20,7 +22,6 @@ import {
     parseRequest,
     parseResponse,
     parseUserAgent,
-    randomPort,
     serve,
     serveStatic,
     setCookie,
@@ -1442,120 +1443,6 @@ describe("http", () => {
         strictEqual(_etag2, "0-47DEQpj8HBSa+/TImW+5JCeuQeR");
     });
 
-    describe("randomPort", () => {
-        it("random port", func(async (defer) => {
-            const port = await randomPort();
-            ok(port > 0 && port <= 65535);
-
-            if (typeof fetch !== "function") {
-                return;
-            }
-
-            if (isDeno) {
-                const controller = new AbortController();
-                Deno.serve({ port, signal: controller.signal }, async () => {
-                    return new Response("Hello, World!");
-                });
-                defer(() => controller.abort());
-            } else if (isBun) {
-                const server = Bun.serve({
-                    port,
-                    fetch: async () => {
-                        return new Response("Hello, World!");
-                    },
-                });
-                defer(() => server.stop(true));
-            } else {
-                const server = http.createServer(withWeb(async () => {
-                    return new Response("Hello, World!");
-                })).listen(port);
-                defer(() => server.close());
-            }
-
-            const res = await fetch(`http://localhost:${port}`);
-            const text = await res.text();
-
-            strictEqual(res.status, 200);
-            strictEqual(text, "Hello, World!");
-        }));
-
-        it("prefer port", func(async (defer) => {
-            const port = await randomPort(32145);
-            strictEqual(port, 32145);
-
-            if (typeof fetch !== "function") {
-                return;
-            }
-
-            if (isDeno) {
-                const controller = new AbortController();
-                Deno.serve({ port, signal: controller.signal }, async () => {
-                    return new Response("Hello, World!");
-                });
-                defer(() => controller.abort());
-            } else if (isBun) {
-                const server = Bun.serve({
-                    port,
-                    fetch: async () => {
-                        return new Response("Hello, World!");
-                    },
-                });
-                defer(() => server.stop(true));
-            } else {
-                const server = http.createServer(withWeb(async () => {
-                    return new Response("Hello, World!");
-                })).listen(port);
-                defer(() => server.close());
-            }
-
-            const res = await fetch(`http://localhost:${port}`);
-            const text = await res.text();
-
-            strictEqual(res.status, 200);
-            strictEqual(text, "Hello, World!");
-        }));
-
-        it("prefer port used", func(async (defer) => {
-            const server = http.createServer(() => { });
-            await new Promise<void>((resolve) => server.listen(32146, () => resolve()));
-            defer(() => server.close());
-
-            const port = await randomPort(32146);
-            ok(port > 0 && port <= 65535 && port !== 32146);
-
-            if (typeof fetch !== "function") {
-                return;
-            }
-
-            if (isDeno) {
-                const controller = new AbortController();
-                Deno.serve({ port, signal: controller.signal }, async () => {
-                    return new Response("Hello, World!");
-                });
-                defer(() => controller.abort());
-            } else if (isBun) {
-                const server = Bun.serve({
-                    port,
-                    fetch: async () => {
-                        return new Response("Hello, World!");
-                    },
-                });
-                defer(() => server.stop(true));
-            } else {
-                const server = http.createServer(withWeb(async () => {
-                    return new Response("Hello, World!");
-                })).listen(port);
-                defer(() => server.close());
-            }
-
-            const res = await fetch(`http://localhost:${port}`);
-            const text = await res.text();
-
-            strictEqual(res.status, 200);
-            strictEqual(text, "Hello, World!");
-        }));
-    });
-
     describe("withWeb", () => {
         if (typeof fetch !== "function" ||
             typeof Request !== "function" ||
@@ -1579,8 +1466,11 @@ describe("http", () => {
                     statusText: "OK",
                 });
             }));
-            const port = await randomPort();
-            server.listen(port);
+
+            await new Promise<void>((resolve) => {
+                server.listen(0, resolve);
+            });
+            const port = (server.address() as AddressInfo).port;
             defer(() => server.close());
 
             const res = await fetch(`http://localhost:${port}/hello`, {
@@ -1623,8 +1513,11 @@ describe("http", () => {
                     statusText: "OK",
                 });
             }));
-            const port = await randomPort();
-            server.listen(port);
+
+            await new Promise<void>((resolve) => {
+                server.listen(0, resolve);
+            });
+            const port = (server.address() as AddressInfo).port;
             defer(() => server.close());
 
             const res = await new Promise<{
@@ -1697,8 +1590,11 @@ describe("http", () => {
                     statusText: "OK",
                 });
             }));
-            const port = await randomPort();
-            server.listen(port);
+
+            await new Promise<void>((resolve) => {
+                server.listen(0, resolve);
+            });
+            const port = (server.address() as AddressInfo).port;
             defer(() => server.close());
 
             const client = http2.connect(`https://localhost:${port}`, {
@@ -1773,8 +1669,10 @@ describe("http", () => {
                 });
 
             const server = http.createServer(withWeb(app.fetch));
-            const port = await randomPort();
-            server.listen(port);
+            await new Promise<void>((resolve) => {
+                server.listen(0, resolve);
+            });
+            const port = (server.address() as AddressInfo).port;
             defer(() => server.close());
 
             const res = await fetch(`http://localhost:${port}/hello`, {
@@ -1806,8 +1704,10 @@ describe("http", () => {
                     return new Response("Hello, World!");
                 }
             }));
-            const port = await randomPort();
-            server.listen(port);
+            await new Promise<void>((resolve) => {
+                server.listen(0, resolve);
+            });
+            const port = (server.address() as AddressInfo).port;
             defer(() => server.close());
 
             const res = await fetch(`http://localhost:${port}/hello/`, { redirect: "manual" });
@@ -1924,10 +1824,9 @@ describe("http", () => {
                 this.skip();
             }
 
-            const port = await randomPort();
             const server = serve({
                 hostname: "localhost",
-                port,
+                port: 0,
                 key: await readFileAsText("./examples/certs/cert.key"),
                 cert: await readFileAsText("./examples/certs/cert.pem"),
                 async fetch(_req) {
@@ -1953,8 +1852,9 @@ describe("http", () => {
 
             await server.ready;
             strictEqual(server.hostname, "localhost");
-            strictEqual(server.port, port);
+            ok(server.port > 0);
 
+            const port = server.port;
             const https = await import("node:https");
             const res = await new Promise<{
                 url: string;
@@ -1998,10 +1898,9 @@ describe("http", () => {
                 this.skip();
             }
 
-            const port = await randomPort();
             const server = serve({
                 hostname: "localhost",
-                port,
+                port: 0,
                 key: await readFileAsText("./examples/certs/cert.key"),
                 cert: await readFileAsText("./examples/certs/cert.pem"),
                 async fetch(_req) {
@@ -2018,8 +1917,9 @@ describe("http", () => {
 
             await server.ready;
             strictEqual(server.hostname, "localhost");
-            strictEqual(server.port, port);
+            ok(server.port > 0);
 
+            const port = server.port;
             const http2 = await import("node:http2");
             const client = http2.connect(`https://localhost:${port}`, {
                 key: await readFileAsText("./examples/certs/cert.key"),
@@ -2271,7 +2171,7 @@ describe("http", () => {
             const port = await randomPort();
             const server = serve({
                 type: "module",
-                port,
+                port: 0,
                 async fetch(_req) {
                     return new Response("Hello, World!", {
                         status: 200,

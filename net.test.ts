@@ -1,5 +1,6 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { createServer } from "node:net";
+import * as http from "node:http";
 import bytes from "./bytes.ts";
 import { connect, randomPort, udpSocket } from "./net.ts";
 import { parseResponse } from "./http.ts";
@@ -11,6 +12,120 @@ import { platform } from "./runtime.ts";
 import { remove } from "./fs.ts";
 
 describe("net", () => {
+    describe("randomPort", () => {
+        it("random port", func(async (defer) => {
+            const port = await randomPort();
+            ok(port > 0 && port <= 65535);
+
+            if (typeof fetch !== "function") {
+                return;
+            }
+
+            if (isDeno) {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async () => {
+                    return new Response("Hello, World!");
+                });
+                defer(() => controller.abort());
+            } else if (isBun) {
+                const server = Bun.serve({
+                    port,
+                    fetch: async () => {
+                        return new Response("Hello, World!");
+                    },
+                });
+                defer(() => server.stop(true));
+            } else {
+                const server = http.createServer((_req, res) => {
+                    res.end("Hello, World!");
+                }).listen(port);
+                defer(() => server.close());
+            }
+
+            const res = await fetch(`http://localhost:${port}`);
+            const text = await res.text();
+
+            strictEqual(res.status, 200);
+            strictEqual(text, "Hello, World!");
+        }));
+
+        it("prefer port", func(async (defer) => {
+            const port = await randomPort(32145);
+            strictEqual(port, 32145);
+
+            if (typeof fetch !== "function") {
+                return;
+            }
+
+            if (isDeno) {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async () => {
+                    return new Response("Hello, World!");
+                });
+                defer(() => controller.abort());
+            } else if (isBun) {
+                const server = Bun.serve({
+                    port,
+                    fetch: async () => {
+                        return new Response("Hello, World!");
+                    },
+                });
+                defer(() => server.stop(true));
+            } else {
+                const server = http.createServer((_req, res) => {
+                    res.end("Hello, World!");
+                }).listen(port);
+                defer(() => server.close());
+            }
+
+            const res = await fetch(`http://localhost:${port}`);
+            const text = await res.text();
+
+            strictEqual(res.status, 200);
+            strictEqual(text, "Hello, World!");
+        }));
+
+        it("prefer port used", func(async (defer) => {
+            const server = http.createServer(() => { });
+            await new Promise<void>((resolve) => server.listen(32146, () => resolve()));
+            defer(() => server.close());
+
+            const port = await randomPort(32146);
+            ok(port > 0 && port <= 65535 && port !== 32146);
+
+            if (typeof fetch !== "function") {
+                return;
+            }
+
+            if (isDeno) {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, async () => {
+                    return new Response("Hello, World!");
+                });
+                defer(() => controller.abort());
+            } else if (isBun) {
+                const server = Bun.serve({
+                    port,
+                    fetch: async () => {
+                        return new Response("Hello, World!");
+                    },
+                });
+                defer(() => server.stop(true));
+            } else {
+                const server = http.createServer((_req, res) => {
+                    res.end("Hello, World!");
+                }).listen(port);
+                defer(() => server.close());
+            }
+
+            const res = await fetch(`http://localhost:${port}`);
+            const text = await res.text();
+
+            strictEqual(res.status, 200);
+            strictEqual(text, "Hello, World!");
+        }));
+    });
+
     describe("connect", () => {
         if (typeof ReadableStream === "undefined") {
             return;
