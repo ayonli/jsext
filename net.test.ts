@@ -414,12 +414,19 @@ describe("net", () => {
                     hostname: "127.0.0.1",
                     port: 0,
                 });
-                const client = await (await udpSocket({
+                const socket = await udpSocket({
                     hostname: "127.0.0.1",
                     port: 0,
-                })).connect(server.localAddress);
+                });
+                const client = await socket.connect(server.localAddress);
                 defer(() => server.close());
                 defer(() => client.close());
+
+                const [err1] = await _try(socket.receive());
+                strictEqual(String(err1), "TypeError: The socket is connected.");
+
+                const [err2] = await _try(socket.send(new Uint8Array(), server.localAddress));
+                strictEqual(String(err2), "TypeError: The socket is connected.");
 
                 const reader = client.readable.getReader();
                 const writer = client.writable.getWriter();
@@ -442,9 +449,9 @@ describe("net", () => {
                 strictEqual(done, false);
                 deepStrictEqual(value, new Uint8Array(bytes("Hello, Client!")));
 
-                const [err, res] = await _try(writer.write(new Uint8Array()));
-                ok(String(err).includes("TypeError") && String(err).includes("closed"));
-                strictEqual(res, undefined);
+                const [err3, res3] = await _try(writer.write(new Uint8Array()));
+                ok(String(err3).includes("TypeError") && String(err3).includes("closed"));
+                strictEqual(res3, undefined);
             }));
 
             it("close socket (both readable and writable)", func(async function (defer) {
