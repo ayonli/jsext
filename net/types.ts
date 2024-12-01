@@ -1,5 +1,5 @@
-import type { connect } from "../net.ts";
-import { ToDict } from "../types.ts";
+import type { connect, udpSocket } from "../net.ts";
+import type { ToDict } from "../types.ts";
 
 /**
  * Represents the network address of a connection peer.
@@ -16,7 +16,7 @@ export interface NetAddress {
 }
 
 /**
- * The options for {@link connect}.
+ * The options for {@link connect} to establish a TCP connection.
  */
 export interface TcpConnectOptions extends NetAddress {
     transport?: "tcp";
@@ -27,17 +27,23 @@ export interface TcpConnectOptions extends NetAddress {
 };
 
 /**
- * Represents a Unix domain socket address.
+ * The options for {@link connect} to establish a Unix domain socket connection.
  */
 export type UnixConnectOptions = {
     transport?: "unix";
     path: string;
 };
 
+/**
+ * The options for {@link connect} to establish a UDP connection.
+ */
 export type UdpConnectOptions = NetAddress & {
     transport: "udp";
 };
 
+/**
+ * The options for {@link udpSocket} to bind a UDP socket.
+ */
 export type UdpBindOptions = {
     /**
      * The hostname to be bound, if not provided, the system will try to listen
@@ -135,6 +141,9 @@ export class SocketStream extends Socket {
     }
 }
 
+/**
+ * A connection with TCP socket.
+ */
 export class TcpSocketStream extends SocketStream {
     protected override[_impl]: ToDict<TcpSocketStream>;
 
@@ -143,10 +152,16 @@ export class TcpSocketStream extends SocketStream {
         this[_impl] = impl;
     }
 
+    /**
+     * The address of the local peer.
+     */
     get localAddress(): NetAddress {
         return this[_impl].localAddress;
     }
 
+    /**
+     * The address of the remote peer.
+     */
     get remoteAddress(): NetAddress {
         return this[_impl].remoteAddress;
     }
@@ -170,8 +185,15 @@ export class TcpSocketStream extends SocketStream {
     }
 }
 
+/**
+ * A connection with Unix domain socket.
+ */
 export class UnixSocketStream extends SocketStream { }
 
+/**
+ * A UDP socket bound to a local address, with the ability to send and receive
+ * messages.
+ */
 export class UdpSocket extends Socket implements AsyncIterable<[data: Uint8Array, sender: NetAddress]> {
     protected override[_impl]: ToDict<UdpSocket>;
 
@@ -180,6 +202,9 @@ export class UdpSocket extends Socket implements AsyncIterable<[data: Uint8Array
         this[_impl] = impl;
     }
 
+    /**
+     * The address that this socket is bound to.
+     */
     get localAddress(): NetAddress {
         return this[_impl].localAddress;
     }
@@ -205,12 +230,12 @@ export class UdpSocket extends Socket implements AsyncIterable<[data: Uint8Array
     }
 
     /**
-     * Connects the socket to a remote peer so that future communications will
+     * Associates the socket to a remote peer so that future communications will
      * only be with that peer.
      * 
-     * This function returns a `UdpSocketStream` instance that comes with a
-     * `readable` stream and a `writable` stream, which gives a more convenient
-     * interface that is similar to TCP connections.
+     * This function returns a {@link UdpSocketStream} instance that comes with
+     * a `readable` stream and a `writable` stream, which gives a more
+     * convenient interface that is similar to TCP connections.
      * 
      * Once connected, the `send` and `receive` methods of the original socket
      * will be disabled.
@@ -221,7 +246,7 @@ export class UdpSocket extends Socket implements AsyncIterable<[data: Uint8Array
 
     /**
      * Tells the kernel to join a multicast group at the given `address` and
-     * the optional `multicastInterface` using the `IP_ADD_MEMBERSHIP` socket
+     * the optional `interfaceAddress` using the `IP_ADD_MEMBERSHIP` socket
      * option.
      */
     joinMulticast(address: string, interfaceAddress: string | undefined = undefined): void {
@@ -282,6 +307,15 @@ export class UdpSocket extends Socket implements AsyncIterable<[data: Uint8Array
     }
 }
 
+/**
+ * A UDP socket stream represents a UDP socket that is bound to a local address
+ * and associated to a remote address, the socket will only send and receive
+ * messages to and from that remote address.
+ * 
+ * The instance of this class comes with a `readable` stream and a `writable`
+ * stream, which gives a more convenient interface that is similar to TCP
+ * connections.
+ */
 export class UdpSocketStream extends Socket {
     protected override[_impl]: ToDict<UdpSocketStream>;
 
@@ -290,18 +324,30 @@ export class UdpSocketStream extends Socket {
         this[_impl] = impl;
     }
 
+    /**
+     * The address that this socket is bound to.
+     */
     get localAddress(): NetAddress {
         return this[_impl].localAddress;
     }
 
+    /**
+     * The address of the remote peer.
+     */
     get remoteAddress(): NetAddress {
         return this[_impl].remoteAddress;
     }
 
+    /**
+     * The readable side of the socket.
+     */
     get readable(): ReadableStream<Uint8Array> {
         return this[_impl].readable;
     }
 
+    /**
+     * The writable side of the socket.
+     */
     get writable(): WritableStream<Uint8Array> {
         return this[_impl].writable;
     }

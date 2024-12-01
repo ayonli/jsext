@@ -161,7 +161,7 @@ export async function randomPort(
  * This function provides a unified interface to connect to a TCP server or UDP
  * peer in Node.js, Deno, Bun and Cloudflare Workers, based on modern Web APIs.
  * 
- * NOTE: This module depends on the Web Streams API, in Node.js, it requires
+ * NOTE: This function depends on the Web Streams API, in Node.js, it requires
  * Node.js v18.0 or above.
  * 
  * @example
@@ -568,8 +568,19 @@ async function connectUdp(remoteAddress: NetAddress): Promise<UdpSocketStream> {
  * This function provides a unified interface to bind a UDP socket in Node.js,
  * Deno and Bun, based on modern Web APIs.
  * 
- * NOTE: This module depends on the Web Streams API, in Node.js, it requires
+ * NOTE: This function depends on the Web Streams API, in Node.js, it requires
  * Node.js v18.0 or above.
+ * 
+ * @example
+ * ```ts
+ * import { udpSocket } from "@ayonli/jsext/net";
+ * 
+ * const socket = await udpSocket({ port: 8080 });
+ * 
+ * for await (const [data, addr] of socket) {
+ *     console.log(`Received ${data.byteLength} bytes from ${addr.hostname}:${addr.port}`);
+ * }
+ * ```
  */
 export async function udpSocket(localAddress: UdpBindOptions = {}): Promise<UdpSocket> {
     // if (isDeno) {

@@ -68,14 +68,23 @@ class SocketStream extends Socket {
         return this[_impl].writable;
     }
 }
+/**
+ * A connection with TCP socket.
+ */
 class TcpSocketStream extends SocketStream {
     constructor(impl) {
         super(impl);
         this[_impl] = impl;
     }
+    /**
+     * The address of the local peer.
+     */
     get localAddress() {
         return this[_impl].localAddress;
     }
+    /**
+     * The address of the remote peer.
+     */
     get remoteAddress() {
         return this[_impl].remoteAddress;
     }
@@ -96,13 +105,23 @@ class TcpSocketStream extends SocketStream {
         return this[_impl].setNoDelay(noDelay);
     }
 }
+/**
+ * A connection with Unix domain socket.
+ */
 class UnixSocketStream extends SocketStream {
 }
+/**
+ * A UDP socket bound to a local address, with the ability to send and receive
+ * messages.
+ */
 class UdpSocket extends Socket {
     constructor(impl) {
         super(impl);
         this[_impl] = impl;
     }
+    /**
+     * The address that this socket is bound to.
+     */
     get localAddress() {
         return this[_impl].localAddress;
     }
@@ -125,12 +144,12 @@ class UdpSocket extends Socket {
         return this[_impl].send(data, receiver);
     }
     /**
-     * Connects the socket to a remote peer so that future communications will
+     * Associates the socket to a remote peer so that future communications will
      * only be with that peer.
      *
-     * This function returns a `UdpSocketStream` instance that comes with a
-     * `readable` stream and a `writable` stream, which gives a more convenient
-     * interface that is similar to TCP connections.
+     * This function returns a {@link UdpSocketStream} instance that comes with
+     * a `readable` stream and a `writable` stream, which gives a more
+     * convenient interface that is similar to TCP connections.
      *
      * Once connected, the `send` and `receive` methods of the original socket
      * will be disabled.
@@ -140,7 +159,7 @@ class UdpSocket extends Socket {
     }
     /**
      * Tells the kernel to join a multicast group at the given `address` and
-     * the optional `multicastInterface` using the `IP_ADD_MEMBERSHIP` socket
+     * the optional `interfaceAddress` using the `IP_ADD_MEMBERSHIP` socket
      * option.
      */
     joinMulticast(address, interfaceAddress = undefined) {
@@ -195,20 +214,41 @@ class UdpSocket extends Socket {
         }
     }
 }
+/**
+ * A UDP socket stream represents a UDP socket that is bound to a local address
+ * and associated to a remote address, the socket will only send and receive
+ * messages to and from that remote address.
+ *
+ * The instance of this class comes with a `readable` stream and a `writable`
+ * stream, which gives a more convenient interface that is similar to TCP
+ * connections.
+ */
 class UdpSocketStream extends Socket {
     constructor(impl) {
         super(impl);
         this[_impl] = impl;
     }
+    /**
+     * The address that this socket is bound to.
+     */
     get localAddress() {
         return this[_impl].localAddress;
     }
+    /**
+     * The address of the remote peer.
+     */
     get remoteAddress() {
         return this[_impl].remoteAddress;
     }
+    /**
+     * The readable side of the socket.
+     */
     get readable() {
         return this[_impl].readable;
     }
+    /**
+     * The writable side of the socket.
+     */
     get writable() {
         return this[_impl].writable;
     }
