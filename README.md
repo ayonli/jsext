@@ -131,8 +131,10 @@ categories:
   specific structures.
 - [math](https://jsr.io/@ayonli/jsext/doc/math/~) Functions for mathematical
   calculations.
-- [module](https://jsr.io/@ayonli/jsext/doc/module/~) Utility functions for
-  working with JavaScript modules.
+- [module](https://jsr.io/@ayonli/jsext/doc/module/~) Functions for working with
+  JavaScript modules.
+- [net](https://jsr.io/@ayonli/jsext/doc/net/~) Functions for working with the
+  network.
 - [number](https://jsr.io/@ayonli/jsext/doc/number/~) Functions for dealing with
   numbers.
 - [object](https://jsr.io/@ayonli/jsext/doc/object/~) Functions for dealing with
