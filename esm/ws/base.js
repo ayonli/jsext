@@ -53,7 +53,7 @@ class WebSocketConnection extends EventTarget {
      */
     send(data) {
         if (!this[_ws]) {
-            throw new Error("WebSocket connection is not ready");
+            throw new Error("WebSocket connection is not ready.");
         }
         this[_ws].send(data);
     }
@@ -62,7 +62,7 @@ class WebSocketConnection extends EventTarget {
      */
     close(code, reason) {
         if (!this[_ws]) {
-            throw new Error("WebSocket connection is not ready");
+            throw new Error("WebSocket connection is not ready.");
         }
         this[_ws].close(code, reason);
     }

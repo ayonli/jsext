@@ -267,7 +267,7 @@ async function run<R, A extends any[] = any[]>(
     let terminate = () => Promise.resolve<void>(void 0);
 
     const timeout = options?.timeout ? setTimeout(async () => {
-        const err = new Error(`operation timeout after ${options.timeout}ms`);
+        const err = new Error(`Operation timeout after ${options.timeout}ms.`);
         error = err;
         await terminate();
         handleClose(err, true);
@@ -600,7 +600,7 @@ async function run<R, A extends any[] = any[]>(
             if (promise) {
                 throw new Error("result() has been called");
             } else if (result) {
-                throw new TypeError("the response is not iterable");
+                throw new TypeError("The response is not iterable.");
             }
 
             channel = chan<R>(Infinity);

@@ -61,7 +61,7 @@ export class WebSocketConnection extends EventTarget implements AsyncIterable<st
      */
     send(data: string | ArrayBufferLike | ArrayBufferView): void {
         if (!this[_ws]) {
-            throw new Error("WebSocket connection is not ready");
+            throw new Error("WebSocket connection is not ready.");
         }
 
         this[_ws].send(data);
@@ -72,7 +72,7 @@ export class WebSocketConnection extends EventTarget implements AsyncIterable<st
      */
     close(code?: number | undefined, reason?: string | undefined): void {
         if (!this[_ws]) {
-            throw new Error("WebSocket connection is not ready");
+            throw new Error("WebSocket connection is not ready.");
         }
 
         this[_ws].close(code, reason);

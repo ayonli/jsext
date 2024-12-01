@@ -405,10 +405,10 @@ async function copy(src, dest, options = {}) {
 async function copyInBrowser(src, dest, options = {}) {
     var _a, _b;
     if (typeof src === "object" && typeof dest !== "object") {
-        throw new TypeError("The destination must be a FileSystemHandle");
+        throw new TypeError("The destination must be a FileSystemHandle.");
     }
     else if (typeof dest === "object" && typeof src !== "object") {
-        throw new TypeError("The source must be a FileSystemHandle");
+        throw new TypeError("The source must be a FileSystemHandle.");
     }
     else if (typeof src === "object" && typeof dest === "object") {
         if (src.kind === "file") {

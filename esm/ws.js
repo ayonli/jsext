@@ -248,7 +248,7 @@ class WebSocketServer {
             this[_connTasks].set(request, task);
             const ok = server.upgrade(request, { data: { request } });
             if (!ok) {
-                throw new Error("Failed to upgrade to WebSocket");
+                throw new Error("Failed to upgrade to WebSocket.");
             }
             const socket = new WebSocketConnection(task);
             socket.ready.then(() => {
@@ -274,7 +274,7 @@ class WebSocketServer {
                 request = Reflect.get(request, Symbol.for("incomingMessage"));
             }
             if (!("socket" in request)) {
-                throw new TypeError("Expected an instance of http.IncomingMessage");
+                throw new TypeError("Expected an instance of http.IncomingMessage.");
             }
             const { socket } = request;
             const upgradeHeader = request.headers.upgrade;

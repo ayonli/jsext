@@ -269,7 +269,7 @@ export default class Tarball {
 
     constructor() {
         if (typeof ReadableStream === "undefined") {
-            throw new TypeError("ReadableStream is not supported in this environment");
+            throw new TypeError("ReadableStream is not supported in this environment.");
         }
     }
 
@@ -335,10 +335,10 @@ export default class Tarball {
             if (info.size != undefined) {
                 size = info.size;
             } else {
-                throw new TypeError("size must be provided for ReadableStream data");
+                throw new TypeError("size must be provided for ReadableStream data.");
             }
         } else {
-            throw new TypeError("data must be a string, Uint8Array, ArrayBuffer, ArrayBufferView, Blob, or ReadableStream");
+            throw new TypeError("data must be a string, Uint8Array, ArrayBuffer, ArrayBufferView, Blob, or ReadableStream.");
         }
 
         const kind = info.kind ?? "file";
@@ -415,7 +415,7 @@ export default class Tarball {
             if (info.kind === "directory") {
                 data = new Uint8Array(0);
             } else {
-                throw new TypeError("data must be provided for files");
+                throw new TypeError("data must be provided for files.");
             }
         }
 
@@ -425,7 +425,7 @@ export default class Tarball {
             if (typeof File === "function" && data instanceof File) {
                 relativePath = (data.webkitRelativePath || data.name);
             } else {
-                throw new TypeError("info.relativePath must be provided");
+                throw new TypeError("info.relativePath must be provided.");
             }
         }
 
@@ -525,7 +525,7 @@ export default class Tarball {
             if (info.kind === "directory") {
                 data = new Uint8Array(0);
             } else {
-                throw new TypeError("data must be provided for files");
+                throw new TypeError("data must be provided for files.");
             }
         }
 
@@ -620,7 +620,7 @@ export default class Tarball {
         gzip?: boolean;
     } = {}): ReadableStream<Uint8Array> {
         if (this[_bodyUsed]) {
-            throw new TypeError("The body of the tarball has been used");
+            throw new TypeError("The body of the tarball has been used.");
         }
 
         this[_bodyUsed] = true;

@@ -320,7 +320,7 @@ export function env(
                 }
             }
         } else {
-            throw new Error("Cannot modify environment variables in the worker");
+            throw new Error("Cannot modify environment variables in the worker.");
         }
     } else {
         // @ts-ignore

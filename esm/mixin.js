@@ -61,7 +61,7 @@ function mixin(base, ...mixins) {
             mergeIfNotExists(obj.ctor.prototype, mixin);
         }
         else {
-            throw new TypeError("mixin must be a constructor or an object");
+            throw new TypeError("Mixin must be a constructor or an object.");
         }
     }
     return obj.ctor;

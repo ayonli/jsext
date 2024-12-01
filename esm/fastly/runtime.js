@@ -8,7 +8,7 @@ function env(name = undefined, value = undefined) {
         throw new Error("Not implemented");
     }
     else if (value !== undefined) {
-        throw new Error("Cannot modify environment variables in the worker");
+        throw new Error("Cannot modify environment variables in the worker.");
     }
     else if (name === undefined) {
         return {

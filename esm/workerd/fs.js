@@ -16,7 +16,7 @@ async function getFileHandle(path, options = {}) {
 }
 function ensureFsTarget(path) {
     if (path instanceof URL || (typeof path === "string" && isFileUrl(path))) {
-        throw new TypeError("URL is not supported");
+        throw new TypeError("URL is not supported.");
     }
     else {
         return path;
@@ -27,7 +27,7 @@ function getKVStore(options) {
     // @ts-ignore
     const kv = ((_a = options.root) !== null && _a !== void 0 ? _a : globalThis["__STATIC_CONTENT"]);
     if (!kv) {
-        throw new Error("Must set the `options.root` a KVNamespace object");
+        throw new Error("Must set the `options.root` a KVNamespace object.");
     }
     return kv;
 }

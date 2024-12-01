@@ -271,7 +271,7 @@ function abortWith(_parent, options = undefined) {
         timeout = _parent.timeout;
     }
     if (!parent && !timeout) {
-        throw new TypeError("Must provide a parent signal or a timeout value, or both");
+        throw new TypeError("Must provide a parent signal or a timeout value, or both.");
     }
     const ctrl = new AbortController();
     const { signal } = ctrl;

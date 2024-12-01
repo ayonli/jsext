@@ -225,7 +225,7 @@ async function connectTcp(options) {
             }
             catch (_b) { }
             try {
-                writeCtrl === null || writeCtrl === void 0 ? void 0 : writeCtrl.error(new TypeError("The stream is closed"));
+                writeCtrl === null || writeCtrl === void 0 ? void 0 : writeCtrl.error(new TypeError("The stream is closed."));
             }
             catch (_c) { }
         };
@@ -246,7 +246,7 @@ async function connectTcp(options) {
                 _socket.write(chunk);
             },
             close() {
-                writeCtrl.error(new TypeError("The stream is closed"));
+                writeCtrl.error(new TypeError("The stream is closed."));
                 _socket.shutdown();
             },
         });
@@ -340,7 +340,7 @@ async function connectUnix(options) {
             }
             catch (_b) { }
             try {
-                writeCtrl === null || writeCtrl === void 0 ? void 0 : writeCtrl.error(new TypeError("The stream is closed"));
+                writeCtrl === null || writeCtrl === void 0 ? void 0 : writeCtrl.error(new TypeError("The stream is closed."));
             }
             catch (_c) { }
         };
@@ -423,7 +423,7 @@ async function nodeToSocket(socket) {
         }
         catch (_b) { }
         try {
-            writeCtrl === null || writeCtrl === void 0 ? void 0 : writeCtrl.error(new TypeError("The stream is closed"));
+            writeCtrl === null || writeCtrl === void 0 ? void 0 : writeCtrl.error(new TypeError("The stream is closed."));
         }
         catch (_c) { }
     };
@@ -502,7 +502,7 @@ function denoToSocket(socket) {
         }
         catch (_b) { }
         try {
-            writeCtrl === null || writeCtrl === void 0 ? void 0 : writeCtrl.error(new TypeError("The stream is closed"));
+            writeCtrl === null || writeCtrl === void 0 ? void 0 : writeCtrl.error(new TypeError("The stream is closed."));
         }
         catch (_c) { }
     };
@@ -659,25 +659,25 @@ async function udpSocket(localAddress = {}) {
             ...props,
             receive: async () => {
                 if (isConnected) {
-                    throw new TypeError("The socket is connected");
+                    throw new TypeError("The socket is connected.");
                 }
                 else if (isClosed) {
-                    throw new TypeError("The socket is closed");
+                    throw new TypeError("The socket is closed.");
                 }
                 const msg = await channel.recv();
                 if (msg) {
                     return msg;
                 }
                 else {
-                    throw new TypeError("The socket is closed");
+                    throw new TypeError("The socket is closed.");
                 }
             },
             send: async (data, remoteAddress) => {
                 if (isConnected) {
-                    throw new TypeError("The socket is connected");
+                    throw new TypeError("The socket is connected.");
                 }
                 else if (isClosed) {
-                    throw new TypeError("The socket is closed");
+                    throw new TypeError("The socket is closed.");
                 }
                 return new Promise((resolve, reject) => {
                     _socket.send(data, remoteAddress.port, remoteAddress.hostname, (err, n) => {
@@ -704,7 +704,7 @@ async function udpSocket(localAddress = {}) {
                             }
                             catch (_b) { }
                             try {
-                                writeCtrl === null || writeCtrl === void 0 ? void 0 : writeCtrl.error(new TypeError("The stream is closed"));
+                                writeCtrl === null || writeCtrl === void 0 ? void 0 : writeCtrl.error(new TypeError("The stream is closed."));
                             }
                             catch (_c) { }
                         };

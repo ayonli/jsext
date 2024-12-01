@@ -31,9 +31,9 @@ export async function connect(
     options: TcpConnectOptions | UnixConnectOptions | UdpConnectOptions
 ): Promise<TcpSocketStream | UnixSocketStream | UdpSocketStream> {
     if ("path" in options) {
-        throw new Error("Unix domain socket is not supported in this runtime");
+        throw new Error("Unix domain socket is not supported in this runtime.");
     } else if (options.transport === "udp") {
-        throw new Error("UDP socket is not supported in this runtime");
+        throw new Error("UDP socket is not supported in this runtime.");
     }
 
     const { tls = false, ..._options } = options;

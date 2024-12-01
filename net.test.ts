@@ -192,7 +192,7 @@ describe("net", () => {
             deepStrictEqual(res1, { done: true, value: undefined });
 
             const [err2, res2] = await _try(writer.write(new Uint8Array()));
-            strictEqual(String(err2), "TypeError: The stream is closed");
+            strictEqual(String(err2), "TypeError: The stream is closed.");
             strictEqual(res2, undefined);
         });
 
@@ -214,7 +214,7 @@ describe("net", () => {
             deepStrictEqual(res1, { done: true, value: undefined });
 
             const [err2, res2] = await _try(writer.write(new Uint8Array()));
-            strictEqual(String(err2), "TypeError: The stream is closed");
+            strictEqual(String(err2), "TypeError: The stream is closed.");
             strictEqual(res2, undefined);
         });
 
@@ -237,7 +237,7 @@ describe("net", () => {
             deepStrictEqual(res1, { done: true, value: undefined });
 
             const [err2, res2] = await _try(writer.write(new Uint8Array()));
-            strictEqual(String(err2), "TypeError: The stream is closed");
+            strictEqual(String(err2), "TypeError: The stream is closed.");
             strictEqual(res2, undefined);
         });
 
@@ -265,7 +265,7 @@ describe("net", () => {
             deepStrictEqual(res1, { done: true, value: undefined });
 
             const [err2, res2] = await _try(socket.writable.getWriter().write(new Uint8Array()));
-            strictEqual(String(err2), "TypeError: The stream is closed");
+            strictEqual(String(err2), "TypeError: The stream is closed.");
             strictEqual(res2, undefined);
         }));
 
@@ -402,10 +402,10 @@ describe("net", () => {
             strictEqual(await server.closed, undefined);
 
             const [err1] = await _try(server.receive());
-            strictEqual(String(err1), "TypeError: The socket is closed");
+            strictEqual(String(err1), "TypeError: The socket is closed.");
 
             const [err2] = await _try(server.send(new Uint8Array(), server.localAddress));
-            strictEqual(String(err2), "TypeError: The socket is closed");
+            strictEqual(String(err2), "TypeError: The socket is closed.");
         });
 
         describe("connection", () => {
@@ -466,7 +466,7 @@ describe("net", () => {
                 deepStrictEqual(res1, { done: true, value: undefined });
 
                 const [err2, res2] = await _try(client.writable.getWriter().write(new Uint8Array()));
-                strictEqual(String(err2), "TypeError: The stream is closed");
+                strictEqual(String(err2), "TypeError: The stream is closed.");
                 strictEqual(res2, undefined);
             }));
 
@@ -491,7 +491,7 @@ describe("net", () => {
                 deepStrictEqual(res1, { done: true, value: undefined });
 
                 const [err2, res2] = await _try(client.writable.getWriter().write(new Uint8Array()));
-                strictEqual(String(err2), "TypeError: The stream is closed");
+                strictEqual(String(err2), "TypeError: The stream is closed.");
                 strictEqual(res2, undefined);
             }));
 
@@ -517,7 +517,7 @@ describe("net", () => {
                 deepStrictEqual(res1, { done: true, value: undefined });
 
                 const [err2, res2] = await _try(client.writable.getWriter().write(new Uint8Array()));
-                strictEqual(String(err2), "TypeError: The stream is closed");
+                strictEqual(String(err2), "TypeError: The stream is closed.");
                 strictEqual(res2, undefined);
             }));
         });

@@ -113,7 +113,7 @@ export default function mixin(base: Constructor<any>, ...mixins: any[]) {
         } else if (mixin && typeof mixin === "object") {
             mergeIfNotExists(obj.ctor.prototype, mixin);
         } else {
-            throw new TypeError("mixin must be a constructor or an object");
+            throw new TypeError("Mixin must be a constructor or an object.");
         }
     }
 

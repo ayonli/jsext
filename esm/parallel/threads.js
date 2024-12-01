@@ -172,7 +172,7 @@ async function createWorker(options) {
             const workerId = workerIdCounter.next().value;
             await new Promise((resolve, reject) => {
                 worker.onerror = (ev) => {
-                    reject(new Error(ev.message || "unable to start the worker"));
+                    reject(new Error(ev.message || "Unable to start the worker."));
                 };
                 worker.addEventListener("open", () => {
                     // @ts-ignore

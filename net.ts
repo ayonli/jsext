@@ -264,7 +264,7 @@ async function connectTcp(options: TcpConnectOptions): Promise<TcpSocketStream> 
         const closeStreams = () => {
             try { _socket.terminate(); } catch { }
             try { readCtrl?.close(); } catch { }
-            try { writeCtrl?.error(new TypeError("The stream is closed")); } catch { }
+            try { writeCtrl?.error(new TypeError("The stream is closed.")); } catch { }
         };
 
         const readable = new ReadableStream<Uint8Array>({
@@ -284,7 +284,7 @@ async function connectTcp(options: TcpConnectOptions): Promise<TcpSocketStream> 
                 _socket.write(chunk);
             },
             close() {
-                writeCtrl!.error(new TypeError("The stream is closed"));
+                writeCtrl!.error(new TypeError("The stream is closed."));
                 _socket.shutdown();
             },
         });
@@ -368,7 +368,7 @@ async function connectUnix(options: UnixConnectOptions): Promise<UnixSocketStrea
         const closeStreams = () => {
             try { _socket.terminate(); } catch { }
             try { readCtrl?.close(); } catch { }
-            try { writeCtrl?.error(new TypeError("The stream is closed")); } catch { }
+            try { writeCtrl?.error(new TypeError("The stream is closed.")); } catch { }
         };
 
         const readable = new ReadableStream<Uint8Array>({
@@ -442,7 +442,7 @@ async function nodeToSocket(
     const closeStreams = () => {
         try { socket.destroyed || socket.destroy(); } catch { }
         try { readCtrl?.close(); } catch { }
-        try { writeCtrl?.error(new TypeError("The stream is closed")); } catch { }
+        try { writeCtrl?.error(new TypeError("The stream is closed.")); } catch { }
     };
 
     const readable = new ReadableStream<Uint8Array>({
@@ -513,7 +513,7 @@ function denoToSocket(
     const closeStreams = () => {
         try { socket.close(); } catch { }
         try { readCtrl?.close(); } catch { }
-        try { writeCtrl?.error(new TypeError("The stream is closed")); } catch { }
+        try { writeCtrl?.error(new TypeError("The stream is closed.")); } catch { }
     };
 
     return {
@@ -667,23 +667,23 @@ export async function udpSocket(localAddress: UdpBindOptions = {}): Promise<UdpS
             ...props,
             receive: async () => {
                 if (isConnected) {
-                    throw new TypeError("The socket is connected");
+                    throw new TypeError("The socket is connected.");
                 } else if (isClosed) {
-                    throw new TypeError("The socket is closed");
+                    throw new TypeError("The socket is closed.");
                 }
 
                 const msg = await channel.recv();
                 if (msg) {
                     return msg;
                 } else {
-                    throw new TypeError("The socket is closed");
+                    throw new TypeError("The socket is closed.");
                 }
             },
             send: async (data, remoteAddress) => {
                 if (isConnected) {
-                    throw new TypeError("The socket is connected");
+                    throw new TypeError("The socket is connected.");
                 } else if (isClosed) {
-                    throw new TypeError("The socket is closed");
+                    throw new TypeError("The socket is closed.");
                 }
 
                 return new Promise<number>((resolve, reject) => {
@@ -704,7 +704,7 @@ export async function udpSocket(localAddress: UdpBindOptions = {}): Promise<UdpS
                             channel.close();
                             try { _socket.close(); } catch { }
                             try { readCtrl?.close(); } catch { }
-                            try { writeCtrl?.error(new TypeError("The stream is closed")); } catch { }
+                            try { writeCtrl?.error(new TypeError("The stream is closed.")); } catch { }
                         };
 
                         resolve(new UdpSocketStream({

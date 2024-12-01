@@ -54,7 +54,7 @@ function ensureFsTarget<T extends string | URL | FileSystemFileHandle | FileSyst
     path: T
 ): Exclude<T, URL> {
     if (path instanceof URL || (typeof path === "string" && isFileUrl(path))) {
-        throw new TypeError("URL is not supported");
+        throw new TypeError("URL is not supported.");
     } else {
         return path as Exclude<T, URL>;
     }
@@ -65,7 +65,7 @@ function getKVStore(options: FileSystemOptions): KVNamespace {
     const kv = (options.root ?? globalThis["__STATIC_CONTENT"]) as KVNamespace | undefined;
 
     if (!kv) {
-        throw new Error("Must set the `options.root` a KVNamespace object");
+        throw new Error("Must set the `options.root` a KVNamespace object.");
     }
 
     return kv as KVNamespace;

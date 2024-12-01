@@ -58,7 +58,7 @@ export interface UserAgentInfo {
  */
 export function parseUserAgent(str: string): UserAgentInfo {
     if (!str)
-        throw new TypeError("The user agent string cannot be empty");
+        throw new TypeError("The user agent string cannot be empty.");
 
     const ua: UserAgentInfo = {
         name: "",

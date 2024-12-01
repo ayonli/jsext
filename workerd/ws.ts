@@ -35,14 +35,14 @@ export class WebSocketServer {
     upgrade(request: IncomingMessage): { socket: WebSocketConnection; };
     upgrade(request: Request | IncomingMessage): { socket: WebSocketConnection; response: Response; } {
         if ("socket" in request) {
-            throw new TypeError("Expected a Request instance");
+            throw new TypeError("Expected a Request instance.");
         }
 
         const upgradeHeader = request.headers.get("Upgrade");
         if (!upgradeHeader || upgradeHeader !== "websocket") {
             throw new TypeError("Expected Upgrade: websocket");
         } else if (typeof WebSocketPair !== "function") {
-            throw new Error("WebSocket is not supported in this environment");
+            throw new Error("WebSocket is not supported in this environment.");
         }
 
         const handler = this[_handler];

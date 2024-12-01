@@ -313,12 +313,12 @@ export function concat<T>(
     ...sources: (AsyncIterable<T>[]) | (ReadableStream<T>[])
 ): AsyncIterable<T> | ReadableStream<T> {
     if (!sources[0]) {
-        throw new TypeError("No sources provided");
+        throw new TypeError("No sources provided.");
     }
 
     if (typeof ReadableStream === "function" && sources[0] instanceof ReadableStream) {
         if (!sources.every(source => source instanceof ReadableStream)) {
-            throw new TypeError("All sources must be readable streams");
+            throw new TypeError("All sources must be readable streams.");
         }
 
         const streams = sources as ReadableStream<T>[];
@@ -351,7 +351,7 @@ export function concat<T>(
         });
     } else {
         if (sources.some(source => typeof (source as any)[Symbol.asyncIterator] !== "function")) {
-            throw new TypeError("All sources must be async iterable objects");
+            throw new TypeError("All sources must be async iterable objects.");
         }
 
         const iterables = sources as AsyncIterable<T>[];

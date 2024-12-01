@@ -165,7 +165,7 @@ class Tarball {
         this[_a] = [];
         this[_b] = false;
         if (typeof ReadableStream === "undefined") {
-            throw new TypeError("ReadableStream is not supported in this environment");
+            throw new TypeError("ReadableStream is not supported in this environment.");
         }
     }
     constructEntry(relativePath, data, info) {
@@ -228,11 +228,11 @@ class Tarball {
                 size = info.size;
             }
             else {
-                throw new TypeError("size must be provided for ReadableStream data");
+                throw new TypeError("size must be provided for ReadableStream data.");
             }
         }
         else {
-            throw new TypeError("data must be a string, Uint8Array, ArrayBuffer, ArrayBufferView, Blob, or ReadableStream");
+            throw new TypeError("data must be a string, Uint8Array, ArrayBuffer, ArrayBufferView, Blob, or ReadableStream.");
         }
         const kind = (_c = info.kind) !== null && _c !== void 0 ? _c : "file";
         const mode = (_d = info.mode) !== null && _d !== void 0 ? _d : (kind === "directory" ? 0o755 : 0o666);
@@ -291,7 +291,7 @@ class Tarball {
                 data = new Uint8Array(0);
             }
             else {
-                throw new TypeError("data must be provided for files");
+                throw new TypeError("data must be provided for files.");
             }
         }
         let relativePath = info.relativePath;
@@ -300,7 +300,7 @@ class Tarball {
                 relativePath = (data.webkitRelativePath || data.name);
             }
             else {
-                throw new TypeError("info.relativePath must be provided");
+                throw new TypeError("info.relativePath must be provided.");
             }
         }
         const dir = dirname(relativePath).replace(/\\/g, "/");
@@ -387,7 +387,7 @@ class Tarball {
                 data = new Uint8Array(0);
             }
             else {
-                throw new TypeError("data must be provided for files");
+                throw new TypeError("data must be provided for files.");
             }
         }
         const newEntry = this.constructEntry(relativePath, data, info);
@@ -466,7 +466,7 @@ class Tarball {
      */
     stream(options = {}) {
         if (this[_bodyUsed]) {
-            throw new TypeError("The body of the tarball has been used");
+            throw new TypeError("The body of the tarball has been used.");
         }
         this[_bodyUsed] = true;
         const streams = [];

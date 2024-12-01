@@ -15,7 +15,7 @@ export function env(
     if (typeof name === "object") {
         throw new Error("Not implemented");
     } else if (value !== undefined) {
-        throw new Error("Cannot modify environment variables in the worker");
+        throw new Error("Cannot modify environment variables in the worker.");
     } else if (name === undefined) {
         return {
             "FASTLY_CACHE_GENERATION": _env("FASTLY_CACHE_GENERATION") ?? "",

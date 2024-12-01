@@ -20,7 +20,7 @@ export function sanitizeModuleId(id: string | (() => Promise<any>), strict = fal
         }
 
         if (start === -1) {
-            throw new TypeError("the given script is not a dynamic import expression");
+            throw new TypeError("The given script is not a dynamic import expression.");
         } else {
             start += offset;
             const end = str.indexOf(")", start);

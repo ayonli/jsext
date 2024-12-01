@@ -197,11 +197,11 @@ async function readAsJSON(source) {
 }
 function concat(...sources) {
     if (!sources[0]) {
-        throw new TypeError("No sources provided");
+        throw new TypeError("No sources provided.");
     }
     if (typeof ReadableStream === "function" && sources[0] instanceof ReadableStream) {
         if (!sources.every(source => source instanceof ReadableStream)) {
-            throw new TypeError("All sources must be readable streams");
+            throw new TypeError("All sources must be readable streams.");
         }
         const streams = sources;
         let current = 0;
@@ -234,7 +234,7 @@ function concat(...sources) {
     }
     else {
         if (sources.some(source => typeof source[Symbol.asyncIterator] !== "function")) {
-            throw new TypeError("All sources must be async iterable objects");
+            throw new TypeError("All sources must be async iterable objects.");
         }
         const iterables = sources;
         return {
