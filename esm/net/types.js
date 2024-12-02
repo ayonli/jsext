@@ -8,7 +8,7 @@ class Socket {
     }
     /**
      * A promise that resolves when the socket is closed cleanly, or rejects if
-     * the closed with an error.
+     * closed with an error.
      */
     get closed() {
         return this[_impl].closed;
