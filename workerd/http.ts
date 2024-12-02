@@ -33,11 +33,12 @@ export type {
     ServeOptions,
     ServeStaticOptions,
     HttpServer,
-    /**
-     * @deprecated Use `HttpServer` instead.
-     */
-    HttpServer as Server,
 };
+
+/**
+ * @deprecated Use {@link HttpServer} instead.
+ */
+export type Server = HttpServer;
 
 export async function randomPort(prefer: number | undefined = undefined): Promise<number> {
     void prefer;

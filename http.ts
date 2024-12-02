@@ -87,11 +87,12 @@ export type {
     ServeOptions,
     ServeStaticOptions,
     HttpServer,
-    /**
-     * @deprecated Use `HttpServer` instead.
-     */
-    HttpServer as Server,
 };
+
+/**
+ * @deprecated Use {@link HttpServer} instead.
+ */
+export type Server = HttpServer;
 
 /**
  * Calculates the ETag for a given entity.
