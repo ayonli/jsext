@@ -29,22 +29,22 @@ export interface TcpConnectOptions extends NetAddress {
 /**
  * The options for {@link connect} to establish a Unix domain socket connection.
  */
-export type UnixConnectOptions = {
+export interface UnixConnectOptions {
     transport?: "unix";
     path: string;
-};
+}
 
 /**
  * The options for {@link connect} to establish a UDP connection.
  */
-export type UdpConnectOptions = NetAddress & {
+export interface UdpConnectOptions extends NetAddress {
     transport: "udp";
-};
+}
 
 /**
  * The options for {@link udpSocket} to bind a UDP socket.
  */
-export type UdpBindOptions = {
+export interface UdpBindOptions {
     /**
      * The hostname to be bound, if not provided, the system will try to listen
      * on all available addresses.
@@ -55,7 +55,7 @@ export type UdpBindOptions = {
      * random port.
      */
     port?: number;
-};
+}
 
 const _impl = Symbol.for("impl");
 
@@ -71,7 +71,7 @@ export class Socket implements Disposable {
 
     /**
      * A promise that resolves when the socket is closed cleanly, or rejects if
-     * the closed with an error.
+     * closed with an error.
      */
     get closed(): Promise<void> {
         return this[_impl].closed;
