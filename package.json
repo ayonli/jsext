@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "description": "A JavaScript extension package for building strong and modern applications.",
     "type": "module",
     "exports": {

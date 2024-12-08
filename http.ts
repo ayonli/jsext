@@ -28,10 +28,10 @@
  * Node.js:
  * 
  * ```sh
- * tsx --import=@ayonli/jsext/http [DIR] [--port PORT] [--parallel [NUM]]
+ * tsx node_modules/@ayonli/jsext/http.ts [DIR] [--port PORT] [--parallel [NUM]]
  * tsx --import=@ayonli/jsext/http <entry.ts> [--parallel [NUM]]
  * # or
- * node -r @ayonli/jsext/http [DIR] [--port PORT] [--parallel [NUM]]
+ * node node_modules/@ayonli/jsext/esm/http.js [DIR] [--port PORT] [--parallel [NUM]]
  * node -r @ayonli/jsext/http <entry.js> [--parallel [NUM]]
  * ```
  * @module
@@ -87,11 +87,12 @@ export type {
     ServeOptions,
     ServeStaticOptions,
     HttpServer,
-    /**
-     * @deprecated Use `HttpServer` instead.
-     */
-    HttpServer as Server,
 };
+
+/**
+ * @deprecated Use {@link HttpServer} instead.
+ */
+export type Server = HttpServer;
 
 /**
  * Calculates the ETag for a given entity.
