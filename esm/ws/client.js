@@ -52,7 +52,7 @@ function initWebSocketStream(wss, ws) {
             });
         });
         ws.addEventListener("error", () => {
-            reject(new Error("Failed to establish WebSocket connection"));
+            reject(new Error("Failed to establish WebSocket connection."));
         });
     }));
     setReadonly(wss, "closed", new Promise((resolve) => {
@@ -97,7 +97,7 @@ class WebSocketStream {
             throw new Error("WebSocket is not supported in this environment.");
         }
         const { protocols, signal } = options;
-        const ws = this[_ws] = new WebSocket(url, protocols);
+        const ws = this[_ws] = new globalThis.WebSocket(url, protocols);
         setReadonly(this, "url", ws.url);
         initWebSocketStream(this, ws);
         signal === null || signal === void 0 ? void 0 : signal.addEventListener("abort", () => ws.close());

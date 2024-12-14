@@ -55,7 +55,7 @@ function initWebSocketStream(wss: WebSocketStream, ws: WebSocket) {
             });
         });
         ws.addEventListener("error", () => {
-            reject(new Error("Failed to establish WebSocket connection"));
+            reject(new Error("Failed to establish WebSocket connection."));
         });
     }));
 
@@ -126,7 +126,7 @@ export class WebSocketStream {
         }
 
         const { protocols, signal } = options;
-        const ws = this[_ws] = new WebSocket(url, protocols);
+        const ws = this[_ws] = new globalThis.WebSocket(url, protocols);
 
         setReadonly(this, "url", ws.url);
         initWebSocketStream(this, ws);
