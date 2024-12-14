@@ -34,7 +34,7 @@ import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.m
  * ```
  */
 export default function func<T, R = any, A extends any[] = any[]>(
-    fn: (this: T, defer: (cb: () => void) => void, ...args: A) => R
+    fn: (this: T, defer: (cb: () => any) => void, ...args: A) => R
 ): (this: T, ...args: A) => R {
     return function (this: T, ...args: A) {
         const callbacks: (() => void)[] = [];
