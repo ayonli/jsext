@@ -1,4 +1,5 @@
 import './external/event-target-polyfill/index.js';
+import { fixStringTag, getReadonly, setReadonly } from './class/util.js';
 import { createCloseEvent, createErrorEvent } from './event.js';
 import { isBun, isDeno } from './env.js';
 import runtime, { customInspect } from './runtime.js';
@@ -45,21 +46,6 @@ const _controller = Symbol.for("controller");
 const _onopen = Symbol.for("onopen");
 const _onerror = Symbol.for("onerror");
 const _onmessage = Symbol.for("onmessage");
-function setReadonly(obj, name, value) {
-    Object.defineProperty(obj, name, {
-        configurable: true,
-        enumerable: false,
-        writable: false,
-        value,
-    });
-}
-function getReadonly(obj, name) {
-    var _o;
-    return (_o = Object.getOwnPropertyDescriptor(obj, name)) === null || _o === void 0 ? void 0 : _o.value;
-}
-function fixStringTag(ctor) {
-    setReadonly(ctor.prototype, Symbol.toStringTag, ctor.name);
-}
 /**
  * An SSE (server-sent events) implementation that can be used to send messages
  * to the client. This implementation is based on the `EventTarget` interface

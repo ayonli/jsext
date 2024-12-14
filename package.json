@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "1.2.1",
+    "version": "1.3.0",
     "description": "A JavaScript extension package for building strong and modern applications.",
     "type": "module",
     "exports": {
@@ -388,9 +388,20 @@
             "bun": "./ws.ts",
             "workerd": "./esm/workerd/ws.js",
             "fastly": "./esm/workerd/ws.js",
+            "node": {
+                "import": "./esm/ws/node.js",
+                "require": "./cjs/ws/node.js"
+            },
             "import": "./esm/ws.js",
             "require": "./cjs/ws.js",
             "default": "./ws.ts"
+        },
+        "./ws/client": {
+            "types": "./types/ws/client.d.ts",
+            "bun": "./ws/client.ts",
+            "import": "./esm/ws/client.js",
+            "require": "./cjs/ws/client.js",
+            "default": "./ws/client.ts"
         }
     },
     "scripts": {

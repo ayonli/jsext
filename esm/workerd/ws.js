@@ -1,5 +1,6 @@
 import { createErrorEvent, createCloseEvent } from '../event.js';
 import { WebSocketConnection } from '../ws/base.js';
+export { WebSocket, WebSocketStream } from '../ws/client.js';
 
 var _a;
 const _handler = Symbol.for("handler");

@@ -16,7 +16,7 @@
 import "./external/event-target-polyfill/index.ts";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
-import type { Constructor } from "./types.ts";
+import { fixStringTag, getReadonly, setReadonly } from "./class/util.ts";
 import { createCloseEvent, createErrorEvent } from "./event.ts";
 import { isBun, isDeno } from "./env.ts";
 import runtime, { customInspect } from "./runtime.ts";
@@ -76,23 +76,6 @@ const _controller = Symbol.for("controller");
 const _onopen = Symbol.for("onopen");
 const _onerror = Symbol.for("onerror");
 const _onmessage = Symbol.for("onmessage");
-
-function setReadonly<T>(obj: any, name: string | symbol, value: T) {
-    Object.defineProperty(obj, name, {
-        configurable: true,
-        enumerable: false,
-        writable: false,
-        value,
-    });
-}
-
-function getReadonly<T>(obj: any, name: string | symbol): T | undefined {
-    return Object.getOwnPropertyDescriptor(obj, name)?.value;
-}
-
-function fixStringTag(ctor: Constructor): void {
-    setReadonly(ctor.prototype, Symbol.toStringTag, ctor.name);
-}
 
 /**
  * The options for the {@link EventEndpoint} constructor.

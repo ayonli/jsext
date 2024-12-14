@@ -2,6 +2,7 @@ import { createCloseEvent, createErrorEvent } from "../event.ts";
 import { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike } from "../ws/base.ts";
 import type { IncomingMessage } from "node:http";
 
+export * from "../ws/client.ts";
 export type { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike };
 
 const _handler = Symbol.for("handler");

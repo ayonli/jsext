@@ -3,18 +3,23 @@ import { concat, text } from './bytes.js';
 import { createErrorEvent, createCloseEvent } from './event.js';
 import runtime from './runtime.js';
 import { WebSocketConnection } from './ws/base.js';
+export { WebSocket, WebSocketStream } from './ws/client.js';
 
 /**
- * This module provides a unified WebSocket server interface for Node.js, Deno,
- * Bun and Cloudflare Workers. This module is based on the `EventTarget`
- * interface and conforms the web standard.
+ * This module provides unified WebSocket server and client interfaces for
+ * Node.js, Deno, Bun and Cloudflare Workers.
+ *
+ * The {@link WebSocketServer} and {@link WebSocketConnection} are used to
+ * manage WebSocket connections on the server side, while the {@link WebSocket}
+ * (polyfill) and the {@link WebSocketStream} (polyfill) are used to connect to
+ * WebSocket servers on the client side.
  *
  * **IMPORTANT**: The {@link WebSocketConnection} interface is an abstraction of
  * the WebSocket on the server side, it's design is not consistent with the
  * {@link WebSocket} API in the browser. For example, when receiving binary data,
  * the `data` property is always a `Uint8Array` object, which is different from
- * the `Blob` object (or `ArrayBuffer`) in the browser. In the future, we may
- * provide a more consistent API, be aware of this when using this module.
+ * the `Blob` object (or `ArrayBuffer`) in the browser. In the future, a more
+ * consistent API will be provided, be aware of this when using this module.
  * @module
  * @experimental
  */
@@ -293,26 +298,25 @@ class WebSocketServer {
             }
             const task = this[_wsServer].then(wsServer => new Promise((resolve) => {
                 wsServer.handleUpgrade(request, socket, Buffer.alloc(0), (ws) => {
+                    ws.binaryType = "arraybuffer";
                     ws.on("message", (data, isBinary) => {
                         data = Array.isArray(data) ? concat(...data) : data;
                         let event;
                         if (typeof data === "string") {
                             event = new MessageEvent("message", { data });
                         }
+                        else if (isBinary) {
+                            event = new MessageEvent("message", {
+                                data: new Uint8Array(data),
+                            });
+                        }
                         else {
-                            if (isBinary) {
-                                event = new MessageEvent("message", {
-                                    data: new Uint8Array(data),
-                                });
-                            }
-                            else {
-                                const bytes = data instanceof ArrayBuffer
-                                    ? new Uint8Array(data)
-                                    : data;
-                                event = new MessageEvent("message", {
-                                    data: text(bytes),
-                                });
-                            }
+                            const bytes = data instanceof ArrayBuffer
+                                ? new Uint8Array(data)
+                                : data;
+                            event = new MessageEvent("message", {
+                                data: text(bytes),
+                            });
                         }
                         client.dispatchEvent(event);
                     });
