@@ -5,436 +5,437 @@
     "type": "module",
     "exports": {
         ".": {
+            "types": "./types/index.d.ts",
             "bun": "./index.ts",
             "deno": "./index.ts",
             "fastly": "./esm/workerd/index.js",
             "workerd": "./esm/workerd/index.js",
             "import": "./esm/index.js",
             "require": "./cjs/index.js",
-            "default": "./index.ts",
-            "types": "./types/index.d.ts"
+            "default": "./index.ts"
         },
         "./archive": {
+            "types": "./types/archive.d.ts",
             "bun": "./archive/bun.ts",
             "deno": "./archive.ts",
             "fastly": "./esm/workerd/archive.js",
             "workerd": "./esm/workerd/archive.js",
             "import": "./esm/archive.js",
             "require": "./cjs/archive.js",
-            "default": "./archive.ts",
-            "types": "./types/archive.d.ts"
+            "default": "./archive.ts"
         },
         "./array": {
+            "types": "./types/array.d.ts",
             "bun": "./array.ts",
             "deno": "./array.ts",
             "import": "./esm/array.js",
             "require": "./cjs/array.js",
-            "default": "./array.ts",
-            "types": "./types/array.d.ts"
+            "default": "./array.ts"
         },
         "./async": {
+            "types": "./types/async.d.ts",
             "bun": "./async.ts",
             "deno": "./async.ts",
             "import": "./esm/async.js",
             "require": "./cjs/async.js",
-            "default": "./async.ts",
-            "types": "./types/async.d.ts"
+            "default": "./async.ts"
         },
         "./augment": {
+            "types": "./types/augment.d.ts",
             "bun": "./augment.ts",
             "deno": "./augment.ts",
             "import": "./esm/augment.js",
             "require": "./cjs/augment.js",
-            "default": "./augment.ts",
-            "types": "./types/augment.d.ts"
+            "default": "./augment.ts"
         },
         "./augment/*": {
+            "types": "./types/augment/*.d.ts",
             "bun": "./augment/*.ts",
             "deno": "./augment/*.ts",
             "import": "./esm/augment/*.js",
             "require": "./cjs/augment/*.js",
-            "default": "./augment/*.ts",
-            "types": "./types/augment/*.d.ts"
+            "default": "./augment/*.ts"
         },
         "./bytes": {
+            "types": "./types/bytes.d.ts",
             "bun": "./bytes.ts",
             "deno": "./bytes.ts",
             "import": "./esm/bytes.js",
             "require": "./cjs/bytes.js",
-            "default": "./bytes.ts",
-            "types": "./types/bytes.d.ts"
+            "default": "./bytes.ts"
         },
         "./chan": {
+            "types": "./types/chan.d.ts",
             "bun": "./chan.ts",
             "deno": "./chan.ts",
             "import": "./esm/chan.js",
             "require": "./cjs/chan.js",
-            "default": "./chan.ts",
-            "types": "./types/chan.d.ts"
+            "default": "./chan.ts"
         },
         "./class": {
+            "types": "./types/class.d.ts",
             "bun": "./class.ts",
             "deno": "./class.ts",
             "import": "./esm/class.js",
             "require": "./cjs/class.js",
-            "default": "./class.ts",
-            "types": "./types/class.d.ts"
+            "default": "./class.ts"
         },
         "./class/decorators": {
+            "types": "./types/class/decorators.d.ts",
             "bun": "./class/decorators.ts",
             "deno": "./class/decorators.ts",
             "import": "./esm/class/decorators.js",
             "require": "./cjs/class/decorators.js",
-            "default": "./class/decorators.ts",
-            "types": "./types/class/decorators.d.ts"
+            "default": "./class/decorators.ts"
         },
         "./cli": {
+            "types": "./types/cli.d.ts",
             "bun": "./cli.ts",
             "deno": "./cli.ts",
             "fastly": "./esm/workerd/cli.js",
             "workerd": "./esm/workerd/cli.js",
             "import": "./esm/cli.js",
             "require": "./cjs/cli.js",
-            "default": "./cli.ts",
-            "types": "./types/cli.d.ts"
+            "default": "./cli.ts"
         },
         "./collections": {
+            "types": "./types/collections.d.ts",
             "bun": "./collections.ts",
             "deno": "./collections.ts",
             "import": "./esm/collections.js",
             "require": "./cjs/collections.js",
-            "default": "./collections.ts",
-            "types": "./types/collections.d.ts"
+            "default": "./collections.ts"
         },
         "./debounce": {
+            "types": "./types/debounce.d.ts",
             "bun": "./debounce.ts",
             "deno": "./debounce.ts",
             "import": "./esm/debounce.js",
             "require": "./cjs/debounce.js",
-            "default": "./debounce.ts",
-            "types": "./types/debounce.d.ts"
+            "default": "./debounce.ts"
         },
         "./deprecate": {
+            "types": "./types/deprecate.d.ts",
             "bun": "./deprecate.ts",
             "deno": "./deprecate.ts",
             "import": "./esm/deprecate.js",
             "require": "./cjs/deprecate.js",
-            "default": "./deprecate.ts",
-            "types": "./types/deprecate.d.ts"
+            "default": "./deprecate.ts"
         },
         "./dialog": {
+            "types": "./types/dialog.d.ts",
             "bun": "./dialog.ts",
             "deno": "./dialog.ts",
             "fastly": "./esm/workerd/dialog.js",
             "workerd": "./esm/workerd/dialog.js",
             "import": "./esm/dialog.js",
             "require": "./cjs/dialog.js",
-            "default": "./dialog.ts",
-            "types": "./types/dialog.d.ts"
+            "default": "./dialog.ts"
         },
         "./dialog/web": {
+            "types": "./types/dialog/web.d.ts",
             "bun": "./dialog/web.ts",
             "deno": "./dialog/web.ts",
             "import": "./esm/dialog/web.js",
             "require": "./cjs/dialog/web.js",
-            "default": "./dialog/web.ts",
-            "types": "./types/dialog/web.d.ts"
+            "default": "./dialog/web.ts"
         },
         "./dialog/cli": {
+            "types": "./types/dialog/cli.d.ts",
             "bun": "./dialog/cli.ts",
             "deno": "./dialog/cli.ts",
             "import": "./esm/dialog/cli.js",
             "require": "./cjs/dialog/cli.js",
-            "default": "./dialog/cli.ts",
-            "types": "./types/dialog/cli.d.ts"
+            "default": "./dialog/cli.ts"
         },
         "./encoding": {
+            "types": "./types/encoding.d.ts",
             "bun": "./encoding.ts",
             "deno": "./encoding.ts",
             "import": "./esm/encoding.js",
             "require": "./cjs/encoding.js",
-            "default": "./encoding.ts",
-            "types": "./types/encoding.d.ts"
+            "default": "./encoding.ts"
         },
         "./error": {
+            "types": "./types/error.d.ts",
             "bun": "./error.ts",
             "deno": "./error.ts",
             "import": "./esm/error.js",
             "require": "./cjs/error.js",
-            "default": "./error.ts",
-            "types": "./types/error.d.ts"
+            "default": "./error.ts"
         },
         "./event": {
+            "types": "./types/event.d.ts",
             "bun": "./event.ts",
             "deno": "./event.ts",
             "import": "./esm/event.js",
             "require": "./cjs/event.js",
-            "default": "./event.ts",
-            "types": "./types/event.d.ts"
+            "default": "./event.ts"
         },
         "./filetype": {
+            "types": "./types/filetype.d.ts",
             "bun": "./filetype.ts",
             "deno": "./filetype.ts",
             "import": "./esm/filetype.js",
             "require": "./cjs/filetype.js",
-            "default": "./filetype.ts",
-            "types": "./types/filetype.d.ts"
+            "default": "./filetype.ts"
         },
         "./fs": {
+            "types": "./types/fs.d.ts",
             "bun": "./fs.ts",
             "deno": "./fs.ts",
             "fastly": "./esm/workerd/fs.js",
             "workerd": "./esm/workerd/fs.js",
             "import": "./esm/fs.js",
             "require": "./cjs/fs.js",
-            "default": "./fs.ts",
-            "types": "./types/fs.d.ts"
+            "default": "./fs.ts"
         },
         "./fs/web": {
+            "types": "./types/fs/web.d.ts",
             "bun": "./fs/web.ts",
             "deno": "./fs/web.ts",
             "import": "./esm/fs/web.js",
             "require": "./cjs/fs/web.js",
-            "default": "./fs/web.ts",
-            "types": "./types/fs/web.d.ts"
+            "default": "./fs/web.ts"
         },
         "./func": {
+            "types": "./types/func.d.ts",
             "bun": "./func.ts",
             "deno": "./func.ts",
             "import": "./esm/func.js",
             "require": "./cjs/func.js",
-            "default": "./func.ts",
-            "types": "./types/func.d.ts"
+            "default": "./func.ts"
         },
         "./hash": {
+            "types": "./types/hash.d.ts",
             "bun": "./hash.ts",
             "deno": "./hash.ts",
             "fastly": "./esm/workerd/hash.js",
             "workerd": "./esm/workerd/hash.js",
             "import": "./esm/hash.js",
             "require": "./cjs/hash.js",
-            "default": "./hash.ts",
-            "types": "./types/hash.d.ts"
+            "default": "./hash.ts"
         },
         "./hash/web": {
+            "types": "./types/hash/web.d.ts",
             "bun": "./hash/web.ts",
             "deno": "./hash/web.ts",
             "import": "./esm/hash/web.js",
             "require": "./cjs/hash/web.js",
-            "default": "./hash/web.ts",
-            "types": "./types/hash/web.d.ts"
+            "default": "./hash/web.ts"
         },
         "./http": {
+            "types": "./types/http.d.ts",
             "bun": "./http.ts",
             "deno": "./http.ts",
             "fastly": "./esm/workerd/http.js",
             "workerd": "./esm/workerd/http.js",
             "import": "./esm/http.js",
             "require": "./cjs/http.js",
-            "default": "./http.ts",
-            "types": "./types/http.d.ts"
+            "default": "./http.ts"
         },
         "./http/internal": {
+            "types": "./types/http/internal.d.ts",
             "bun": "./http/internal.ts",
             "deno": "./http/internal.ts",
             "import": "./esm/http/internal.js",
             "require": "./cjs/http/internal.js",
-            "default": "./http/internal.ts",
-            "types": "./types/http/internal.d.ts"
+            "default": "./http/internal.ts"
         },
         "./http/util": {
+            "types": "./types/http/util.d.ts",
             "bun": "./http/util.ts",
             "deno": "./http/util.ts",
             "import": "./esm/http/util.js",
             "require": "./cjs/http/util.js",
-            "default": "./http/util.ts",
-            "types": "./types/http/util.d.ts"
+            "default": "./http/util.ts"
         },
         "./json": {
+            "types": "./types/json.d.ts",
             "bun": "./json.ts",
             "deno": "./json.ts",
             "import": "./esm/json.js",
             "require": "./cjs/json.js",
-            "default": "./json.ts",
-            "types": "./types/json.d.ts"
+            "default": "./json.ts"
         },
         "./lock": {
+            "types": "./types/lock.d.ts",
             "bun": "./lock.ts",
             "deno": "./lock.ts",
             "import": "./esm/lock.js",
             "require": "./cjs/lock.js",
-            "default": "./lock.ts",
-            "types": "./types/lock.d.ts"
+            "default": "./lock.ts"
         },
         "./math": {
+            "types": "./types/math.d.ts",
             "bun": "./math.ts",
             "deno": "./math.ts",
             "import": "./esm/math.js",
             "require": "./cjs/math.js",
-            "default": "./math.ts",
-            "types": "./types/math.d.ts"
+            "default": "./math.ts"
         },
         "./mixin": {
+            "types": "./types/mixin.d.ts",
             "bun": "./mixin.ts",
             "deno": "./mixin.ts",
             "import": "./esm/mixin.js",
             "require": "./cjs/mixin.js",
-            "default": "./mixin.ts",
-            "types": "./types/mixin.d.ts"
+            "default": "./mixin.ts"
         },
         "./module": {
+            "types": "./types/module.d.ts",
             "bun": "./module.ts",
             "deno": "./module.ts",
             "fastly": "./esm/module/web.js",
             "workerd": "./esm/module/web.js",
             "import": "./esm/module.js",
             "require": "./cjs/module.js",
-            "default": "./module.ts",
-            "types": "./types/module.d.ts"
+            "default": "./module.ts"
         },
         "./module/web": {
+            "types": "./types/module/web.d.ts",
             "bun": "./module/web.ts",
             "deno": "./module/web.ts",
             "import": "./esm/module/web.js",
             "require": "./cjs/module/web.js",
-            "default": "./module/web.ts",
-            "types": "./types/module/web.d.ts"
+            "default": "./module/web.ts"
         },
         "./net": {
+            "types": "./types/net.d.ts",
             "bun": "./net.ts",
             "deno": "./net.ts",
             "workerd": "./esm/workerd/net.js",
             "import": "./esm/net.js",
             "require": "./cjs/net.js",
-            "default": "./net.ts",
-            "types": "./types/net.d.ts"
+            "default": "./net.ts"
         },
         "./number": {
+            "types": "./types/number.d.ts",
             "bun": "./number.ts",
             "deno": "./number.ts",
             "import": "./esm/number.js",
             "require": "./cjs/number.js",
-            "default": "./number.ts",
-            "types": "./types/number.d.ts"
+            "default": "./number.ts"
         },
         "./object": {
+            "types": "./types/object.d.ts",
             "bun": "./object.ts",
             "deno": "./object.ts",
             "import": "./esm/object.js",
             "require": "./cjs/object.js",
-            "default": "./object.ts",
-            "types": "./types/object.d.ts"
+            "default": "./object.ts"
         },
         "./parallel": {
+            "types": "./types/parallel.d.ts",
             "bun": "./parallel.ts",
             "deno": "./parallel.ts",
             "fastly": "./esm/workerd/parallel.js",
             "workerd": "./esm/workerd/parallel.js",
             "import": "./esm/parallel.js",
             "require": "./cjs/parallel.js",
-            "default": "./parallel.ts",
-            "types": "./types/parallel.d.ts"
+            "default": "./parallel.ts"
         },
         "./path": {
+            "types": "./types/path.d.ts",
             "bun": "./path.ts",
             "deno": "./path.ts",
             "import": "./esm/path.js",
             "require": "./cjs/path.js",
-            "default": "./path.ts",
-            "types": "./types/path.d.ts"
+            "default": "./path.ts"
         },
         "./pipe": {
+            "types": "./types/pipe.d.ts",
             "bun": "./pipe.ts",
             "deno": "./pipe.ts",
             "import": "./esm/pipe.js",
             "require": "./cjs/pipe.js",
-            "default": "./pipe.ts",
-            "types": "./types/pipe.d.ts"
+            "default": "./pipe.ts"
         },
         "./queue": {
+            "types": "./types/queue.d.ts",
             "bun": "./queue.ts",
             "deno": "./queue.ts",
             "import": "./esm/queue.js",
             "require": "./cjs/queue.js",
-            "default": "./queue.ts",
-            "types": "./types/queue.d.ts"
+            "default": "./queue.ts"
         },
         "./reader": {
+            "types": "./types/reader.d.ts",
             "bun": "./reader.ts",
             "deno": "./reader.ts",
             "import": "./esm/reader.js",
             "require": "./cjs/reader.js",
-            "default": "./reader.ts",
-            "types": "./types/reader.d.ts"
+            "default": "./reader.ts"
         },
         "./run": {
+            "types": "./types/run.d.ts",
             "bun": "./run.ts",
             "deno": "./run.ts",
             "fastly": "./esm/workerd/run.js",
             "workerd": "./esm/workerd/run.js",
             "import": "./esm/run.js",
             "require": "./cjs/run.js",
-            "default": "./run.ts",
-            "types": "./types/run.d.ts"
+            "default": "./run.ts"
         },
         "./runtime": {
+            "types": "./types/runtime.d.ts",
             "bun": "./runtime.ts",
             "deno": "./runtime.ts",
             "fastly": "./esm/fastly/runtime.js",
             "import": "./esm/runtime.js",
             "require": "./cjs/runtime.js",
-            "default": "./runtime.ts",
-            "types": "./types/runtime.d.ts"
+            "default": "./runtime.ts"
         },
         "./sse": {
+            "types": "./types/sse.d.ts",
             "bun": "./sse.ts",
             "deno": "./sse.ts",
             "import": "./esm/sse.js",
             "require": "./cjs/sse.js",
-            "default": "./sse.ts",
-            "types": "./types/sse.d.ts"
+            "default": "./sse.ts"
         },
         "./string": {
+            "types": "./types/string.d.ts",
             "bun": "./string.ts",
             "deno": "./string.ts",
             "import": "./esm/string.js",
             "require": "./cjs/string.js",
-            "default": "./string.ts",
-            "types": "./types/string.d.ts"
+            "default": "./string.ts"
         },
         "./throttle": {
+            "types": "./types/throttle.d.ts",
             "bun": "./throttle.ts",
             "deno": "./throttle.ts",
             "import": "./esm/throttle.js",
             "require": "./cjs/throttle.js",
-            "default": "./throttle.ts",
-            "types": "./types/throttle.d.ts"
+            "default": "./throttle.ts"
         },
         "./try": {
+            "types": "./types/try.d.ts",
             "bun": "./try.ts",
             "deno": "./try.ts",
             "import": "./esm/try.js",
             "require": "./cjs/try.js",
-            "default": "./try.ts",
-            "types": "./types/try.d.ts"
+            "default": "./try.ts"
         },
         "./types": {
+            "types": "./types/types.d.ts",
             "bun": "./types.ts",
             "deno": "./types.ts",
             "import": "./esm/types.js",
             "require": "./cjs/types.js",
-            "default": "./types.ts",
-            "types": "./types/types.d.ts"
+            "default": "./types.ts"
         },
         "./wrap": {
+            "types": "./types/wrap.d.ts",
             "bun": "./wrap.ts",
             "deno": "./wrap.ts",
             "import": "./esm/wrap.js",
             "require": "./cjs/wrap.js",
-            "default": "./wrap.ts",
-            "types": "./types/wrap.d.ts"
+            "default": "./wrap.ts"
         },
         "./ws": {
+            "types": "./types/ws.d.ts",
             "bun": "./ws.ts",
             "deno": "./ws.ts",
             "node": {
@@ -445,16 +446,15 @@
             "workerd": "./esm/workerd/ws.js",
             "import": "./esm/ws.js",
             "require": "./cjs/ws.js",
-            "default": "./ws.ts",
-            "types": "./types/ws.d.ts"
+            "default": "./ws.ts"
         },
         "./ws/client": {
+            "types": "./types/ws/client.d.ts",
             "bun": "./ws/client.ts",
             "deno": "./ws/client.ts",
             "import": "./esm/ws/client.js",
             "require": "./cjs/ws/client.js",
-            "default": "./ws/client.ts",
-            "types": "./types/ws/client.d.ts"
+            "default": "./ws/client.ts"
         }
     },
     "scripts": {

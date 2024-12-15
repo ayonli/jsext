@@ -56,8 +56,10 @@ version of this package instead of the JSR version.
 
 ### Note for TypeScript Project
 
-This package requires `compilerOptions.moduleResolution` set to `Bundler` or
-`NodeNext` in `tsconfig.json`.
+In `tsconfig.json`, the following `compilerOptions` must be set as such:
+
+- `moduleResolution`: `Bundler` or `NodeNext`
+- `skipLibCheck`: `true`
 
 ## Language-enhancing Functions
 
