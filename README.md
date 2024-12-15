@@ -54,11 +54,6 @@ browser.
 For applications run in Cloudflare Workers and Fastly Compute, install the NPM
 version of this package instead of the JSR version.
 
-### Note for TypeScript Project
-
-This package requires `compilerOptions.moduleResolution` set to `Bundler` or
-`NodeNext` in `tsconfig.json`.
-
 ## Language-enhancing Functions
 
 - [_try](https://jsr.io/@ayonli/jsext/doc/try/~/_try) Calls a function safely and
