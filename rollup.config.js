@@ -2,7 +2,7 @@ import { glob } from "glob";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { builtinModules } from "node:module";
 import typescript from "@rollup/plugin-typescript";
 import resolve from "@rollup/plugin-node-resolve";
@@ -148,5 +148,18 @@ const config = [
 export default config;
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-    writePackageJson().generateBundle({ dir: "types", format: "esm" });
+    await writePackageJson().generateBundle({ dir: "types", format: "cjs" });
+    const files = await glob("./types/**/*.d.ts", {
+        ignore: "types/external/**",
+        absolute: true,
+    });
+
+    for (const filename of files) {
+        const content = await readFile(filename, "utf-8");
+        const defaultExport = content.match(/export default function ([\w\d_]+)/)?.[1];
+
+        if (defaultExport) {
+            await writeFile(filename, content + `\nexport = ${defaultExport};\n`, "utf-8");
+        }
+    }
 }
