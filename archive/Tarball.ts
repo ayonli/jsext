@@ -5,7 +5,7 @@ import { omit } from "../object.ts";
 import { basename, dirname } from "../path.ts";
 import { concat as concatStreams, toReadableStream } from "../reader.ts";
 import { stripEnd } from "../string.ts";
-import { Ensured } from "../types.ts";
+import { RequiredKeys } from "../types.ts";
 
 const _stream = Symbol.for("stream");
 const _bodyUsed = Symbol.for("bodyUsed");
@@ -405,7 +405,7 @@ export default class Tarball {
     append(data: File): void;
     append(
         data: string | ArrayBuffer | ArrayBufferView | Blob | ReadableStream<Uint8Array> | null,
-        info: Ensured<Partial<TarEntry>, "relativePath">
+        info: RequiredKeys<Partial<TarEntry>, "relativePath">
     ): void;
     append(
         data: string | ArrayBuffer | ArrayBufferView | Blob | ReadableStream<Uint8Array> | null,

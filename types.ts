@@ -142,34 +142,44 @@ export interface RealArrayLike<T> extends ArrayLike<T> {
  * 
  * @example
  * ```ts
- * import { Optional } from "@ayonli/jsext/types";
+ * import { PartialKeys } from "@ayonli/jsext/types";
  * 
  * interface User {
  *     name: string;
  *     age: number;
  * }
  * 
- * type UserPartial = Optional<User, "age">; // { name: string; age?: number; }
+ * type UserPartial = PartialKeys<User, "age">; // { name: string; age?: number; }
  * ```
  */
-export type Optional<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
+export type PartialKeys<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
+
+/**
+ * @deprecated Use {@link PartialKeys} instead.
+ */
+export type Optional<T, K extends keyof T> = PartialKeys<T, K>;
 
 /**
  * Constructs a type by ensuring the specified keys are required.
  * 
  * @example
  * ```ts
- * import { Ensured } from "@ayonli/jsext/types";
+ * import { RequiredKeys } from "@ayonli/jsext/types";
  * 
  * interface User {
  *     name: string;
  *     age?: number;
  * }
  * 
- * type UserRequired = Ensured<User, "age">; // { name: string; age: number; }
+ * type UserRequired = RequiredKeys<User, "age">; // { name: string; age: number; }
  * ```
  */
-export type Ensured<T, K extends keyof T> = Required<Pick<T, K>> & Omit<T, K>;
+export type RequiredKeys<T, K extends keyof T> = Required<Pick<T, K>> & Omit<T, K>;
+
+/**
+ * @deprecated Use {@link RequiredKeys} instead.
+ */
+export type Ensured<T, K extends keyof T> = RequiredKeys<T, K>;
 
 /**
  * Returns the primitive value held by the given type if its a wrapper object,

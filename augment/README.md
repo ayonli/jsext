@@ -222,6 +222,6 @@ _These types are augmented to the global scope._
 - `AsyncFunctionConstructor`
 - `TypedArray`
 - `RealArrayLike<T>`
-- `Optional<T, K extends keyof T>`
-- `Ensured<T, K extends keyof T>`
+- `PartialKeys<T, K extends keyof T>`
+- `RequiredKeys<T, K extends keyof T>`
 - `ValueOf<T>`

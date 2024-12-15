@@ -1,13 +1,13 @@
 import "../external/event-target-polyfill/index.ts";
 import chan from "../chan.ts";
 import { fromErrorEvent } from "../error.ts";
-import type { Ensured } from "../types.ts";
+import type { RequiredKeys } from "../types.ts";
 import type { WebSocketServer } from "../ws.ts";
 
 const _source = Symbol.for("source");
 const _ws = Symbol.for("ws");
 
-export type WebSocketLike = Ensured<Partial<WebSocket>, "readyState" | "close" | "send">;
+export type WebSocketLike = RequiredKeys<Partial<WebSocket>, "readyState" | "close" | "send">;
 
 /**
  * This class represents a WebSocket connection on the server side.
