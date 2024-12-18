@@ -5,7 +5,7 @@ import { isBun, isDeno } from "./env.ts";
 import jsext, { _try } from "./index.ts";
 import { readAsArray, readAsText } from "./reader.ts";
 import { platform } from "./runtime.ts";
-import { basename, join, resolve, sep } from "./path.ts";
+import { basename, join, resolve, sep, toFsPath } from "./path.ts";
 import bytes, { equals } from "./bytes.ts";
 import {
     EOL,
@@ -37,6 +37,14 @@ import {
 import { random } from "./string.ts";
 
 const homedir = os.homedir();
+
+function rmDir(path: string) {
+    if (typeof fs.rm === "function") {
+        return fs.rm(path, { recursive: true, force: true });
+    } else {
+        return fs.rmdir(path, { recursive: true });
+    }
+}
 
 describe("fs", () => {
     it("EOL", () => {
@@ -349,7 +357,7 @@ describe("fs", () => {
     describe("mkdir", () => {
         it("default", jsext.func(async (defer) => {
             await mkdir("./tmp");
-            defer(() => fs.rmdir("./tmp", { recursive: true }));
+            defer(() => rmDir("./tmp"));
 
             const _stat = await stat("./tmp");
             strictEqual(_stat.name, "tmp");
@@ -358,7 +366,7 @@ describe("fs", () => {
 
         it("recursive", jsext.func(async (defer) => {
             await mkdir("./tmp/a/b/c", { recursive: true });
-            defer(() => fs.rmdir("./tmp", { recursive: true }));
+            defer(() => rmDir("./tmp"));
 
             const _stat = await stat("./tmp/a/b/c");
             strictEqual(_stat.name, "c");
@@ -371,7 +379,7 @@ describe("fs", () => {
             }
 
             await mkdir("./tmp", { mode: 0o755 });
-            defer(() => fs.rmdir("./tmp", { recursive: true }));
+            defer(() => rmDir("./tmp"));
 
             if (isDeno) {
                 const _stat = await Deno.stat("./tmp");
@@ -385,7 +393,7 @@ describe("fs", () => {
         it("~ support", jsext.func(async (defer) => {
             const dir = "~/tmp_" + random(8);
             await mkdir(dir);
-            defer(() => fs.rmdir(join(homedir, basename(dir)), { recursive: true }));
+            defer(() => rmDir(join(homedir, basename(dir))));
 
             const _stat = await stat(dir);
             strictEqual(_stat.name, basename(dir));
@@ -395,7 +403,7 @@ describe("fs", () => {
         it("file URL support", jsext.func(async (defer) => {
             const url = new URL("./tmp", import.meta.url);
             await mkdir(url);
-            defer(() => fs.rmdir(url, { recursive: true }));
+            defer(() => rmDir(toFsPath(url.toString())));
 
             const _stat = await stat(url);
             strictEqual(_stat.name, "tmp");
