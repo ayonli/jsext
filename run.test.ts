@@ -206,6 +206,46 @@ describe("jsext.run", () => {
 
             ok((err as DOMException)?.stack?.includes("examples/worker.mjs"));
         });
+
+        it("nested with worker thread", async function () {
+            if (isNodeLike && process.platform === "win32") {
+                this.skip();
+            }
+
+            const job = await jsext.run<{
+                pid: number;
+                workerId: number;
+                result: string;
+            }>("examples/worker-nested.mjs");
+
+            const result = await job.result();
+            strictEqual(typeof result, "object");
+            strictEqual(typeof result.workerId, "number");
+            strictEqual(typeof result.pid, "number");
+            strictEqual(result.result, "Hello, Alice");
+            ok(result.workerId > 0 && result.pid > 0 && result.workerId !== result.pid);
+        });
+
+        it("nested with child process", async function () {
+            if (isNodeLike && process.platform === "win32") {
+                this.skip();
+            }
+
+            const job = await jsext.run<{
+                pid: number;
+                workerId: number;
+                result: string;
+            }>("examples/worker-nested.mjs", [{
+                adapter: "child_process",
+            }]);
+
+            const result = await job.result();
+            strictEqual(typeof result, "object");
+            strictEqual(typeof result.workerId, "number");
+            strictEqual(typeof result.pid, "number");
+            strictEqual(result.result, "Hello, Alice");
+            ok(result.workerId > 0 && result.pid > 0 && result.workerId !== result.pid);
+        });
     });
 
     describe("child_process", async () => {
