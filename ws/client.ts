@@ -122,7 +122,7 @@ export class WebSocketStream {
         return getReadonly(this, "closed")!;
     }
 
-    constructor(url: string, options: WebSocketStreamOptions = {}) {
+    constructor(url: string | URL, options: WebSocketStreamOptions = {}) {
         if (typeof globalThis.WebSocket !== "function") {
             throw new Error("WebSocket is not supported in this environment.");
         }
