@@ -130,6 +130,10 @@ async function powershell(script) {
 /**
  * Executes a command with elevated privileges using `sudo` (or UAC in Windows).
  *
+ * @deprecated Running a command (or subprocess) with elevated privileges is
+ * dangerous, and the underlying dependency `sudo-prompt` is also deprecated.
+ * Use this function with caution.
+ *
  * @example
  * ```ts
  * import { sudo } from "@ayonli/jsext/cli";
