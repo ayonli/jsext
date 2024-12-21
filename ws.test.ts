@@ -2,11 +2,13 @@ import { deepStrictEqual, strictEqual } from "node:assert";
 import * as http from "node:http";
 import { isBun, isDeno, isNode } from "./env.ts";
 import func from "./func.ts";
-import { type WebSocketConnection } from "./ws.ts";
+import { toWebSocketStream, type WebSocketConnection } from "./ws.ts";
 import bytes, { concat, text } from "./bytes.ts";
 import { select, sleep, until } from "./async.ts";
 import { randomPort } from "./http.ts";
 import { withWeb } from "./http/internal.ts";
+import { toAsyncIterable } from "./reader.ts";
+import { createCloseEvent } from "./event.ts";
 
 describe("ws", () => {
     describe("WebSocketServer", () => {
@@ -795,6 +797,252 @@ describe("ws", () => {
             }
             strictEqual(serverMessages[0], "text");
             strictEqual(clientMessages[0], "client sent: text");
+        }));
+    });
+
+    describe("toWebSocketStream", () => {
+        if (typeof ReadableStream === "undefined") {
+            return;
+        }
+
+        it("from WebSocket", func(async function (defer) {
+            this.timeout(5_000);
+
+            if (isNode && !globalThis.WebSocket) {
+                // @ts-ignore
+                globalThis.WebSocket = (await import("ws")).WebSocket;
+                defer(() => {
+                    // @ts-ignore
+                    delete globalThis.WebSocket;
+                });
+            }
+
+            const { WebSocketServer } = await import("./ws.ts");
+
+            let errorEvent: ErrorEvent | undefined;
+            let closeEvent: CloseEvent | undefined;
+            const serverMessages: (string | Uint8Array)[] = [];
+            const clientMessages: (string | Uint8Array)[] = [];
+
+            const wsServer = new WebSocketServer((socket) => {
+                socket.addEventListener("message", (event) => {
+                    if (typeof event.data === "string") {
+                        serverMessages.push(event.data);
+                        socket.send("client sent: " + event.data);
+                    } else {
+                        serverMessages.push(event.data);
+                        socket.send(concat(bytes("client sent: "), event.data));
+                    }
+                });
+
+                socket.addEventListener("error", (ev) => {
+                    errorEvent = ev;
+                });
+
+                socket.addEventListener("close", (ev) => {
+                    closeEvent = ev;
+                });
+            });
+
+            const port = await randomPort();
+
+            if (isDeno) {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, req => {
+                    const { response } = wsServer.upgrade(req);
+                    return response;
+                });
+                defer(() => controller.abort());
+            } else if (isBun) {
+                const server = Bun.serve({
+                    port,
+                    fetch: (req: Request) => {
+                        const { response } = wsServer.upgrade(req);
+                        return response;
+                    },
+                    websocket: wsServer.bunListener,
+                });
+                wsServer.bunBind(server);
+                defer(() => select([server.stop(true), sleep(100)]));
+            } else {
+                const server = http.createServer((req) => {
+                    wsServer.upgrade(req);
+                });
+                server.listen(port);
+                defer(() => server.close());
+            }
+
+            const url = `ws://localhost:${port}/`;
+            const ws = new WebSocket(url);
+            const wss = toWebSocketStream(ws);
+            const { extensions, protocol, readable, writable } = await wss.opened;
+
+            strictEqual(wss.url, url);
+            strictEqual(extensions, "");
+            strictEqual(protocol, "");
+
+            const writer = writable.getWriter();
+            const reader = readable.getReader();
+
+            writer.write("text");
+
+            while (true) {
+                const { done, value } = await reader.read();
+
+                if (done) {
+                    break;
+                }
+
+                clientMessages.push(value);
+
+                if (clientMessages.length === 2) {
+                    reader.cancel();
+                } else {
+                    writer.write(bytes("binary"));
+                }
+            }
+
+            const closure = await wss.closed;
+            try {
+                deepStrictEqual(closure, { closeCode: 1005, reason: "" });
+            } catch {
+                deepStrictEqual(closure, { closeCode: 1000, reason: "" });
+            }
+
+            await until(() => !!closeEvent);
+            strictEqual(errorEvent, undefined);
+            strictEqual(closeEvent?.type, "close");
+            strictEqual(closeEvent?.wasClean, true);
+            try {
+                strictEqual(closeEvent?.code, 1000);
+            } catch {
+                strictEqual(closeEvent?.code, 1005);
+            }
+            strictEqual(serverMessages[0], "text");
+            strictEqual(text(serverMessages[1] as Uint8Array), "binary");
+            strictEqual(clientMessages[0], "client sent: text");
+            strictEqual(text(clientMessages[1] as Uint8Array), "client sent: binary");
+        }));
+
+        it("from WebSocketConnection", func(async function (defer) {
+            this.timeout(5_000);
+
+            if (isNode && !globalThis.WebSocket) {
+                // @ts-ignore
+                globalThis.WebSocket = (await import("ws")).WebSocket;
+                defer(() => {
+                    // @ts-ignore
+                    delete globalThis.WebSocket;
+                });
+            }
+
+            const { WebSocketServer, WebSocketStream } = await import("./ws.ts");
+
+            let closeEvent: CloseEvent | undefined;
+            const serverMessages: (string | Uint8Array)[] = [];
+            const clientMessages: (string | Uint8Array)[] = [];
+
+            const wsServer = new WebSocketServer(async (socket) => {
+                const wss = toWebSocketStream(socket);
+
+                wss.closed.then(({ closeCode, reason }) => {
+                    closeEvent = createCloseEvent("close", {
+                        code: closeCode,
+                        reason,
+                        wasClean: true,
+                    });
+                });
+
+                const { readable, writable } = await wss.opened;
+                const writer = writable.getWriter();
+
+                for await (const value of toAsyncIterable(readable)) {
+                    serverMessages.push(value);
+
+                    if (typeof value === "string") {
+                        writer.write("client sent: " + value);
+                    } else {
+                        writer.write(concat(bytes("client sent: "), value));
+                    }
+                }
+            });
+
+            const port = await randomPort();
+
+            if (isDeno) {
+                const controller = new AbortController();
+                Deno.serve({ port, signal: controller.signal }, req => {
+                    const { response } = wsServer.upgrade(req);
+                    return response;
+                });
+                defer(() => controller.abort());
+            } else if (isBun) {
+                const server = Bun.serve({
+                    port,
+                    fetch: (req: Request) => {
+                        const { response } = wsServer.upgrade(req);
+                        return response;
+                    },
+                    websocket: wsServer.bunListener,
+                });
+                wsServer.bunBind(server);
+                defer(() => select([server.stop(true), sleep(100)]));
+            } else {
+                const server = http.createServer((req) => {
+                    wsServer.upgrade(req);
+                });
+                server.listen(port);
+                defer(() => server.close());
+            }
+
+            const url = `ws://localhost:${port}/`;
+            const wss = new WebSocketStream(url);
+            const { extensions, protocol, readable, writable } = await wss.opened;
+
+            strictEqual(wss.url, url);
+            strictEqual(extensions, "");
+            strictEqual(protocol, "");
+
+            const writer = writable.getWriter();
+            const reader = readable.getReader();
+
+            writer.write("text");
+
+            while (true) {
+                const { done, value } = await reader.read();
+
+                if (done) {
+                    break;
+                }
+
+                clientMessages.push(value);
+
+                if (clientMessages.length === 2) {
+                    reader.cancel();
+                } else {
+                    writer.write(bytes("binary"));
+                }
+            }
+
+            const closure = await wss.closed;
+            try {
+                deepStrictEqual(closure, { closeCode: 1005, reason: "" });
+            } catch {
+                deepStrictEqual(closure, { closeCode: 1000, reason: "" });
+            }
+
+            await until(() => !!closeEvent);
+            strictEqual(closeEvent?.type, "close");
+            strictEqual(closeEvent?.wasClean, true);
+            try {
+                strictEqual(closeEvent?.code, 1000);
+            } catch {
+                strictEqual(closeEvent?.code, 1005);
+            }
+            strictEqual(serverMessages[0], "text");
+            strictEqual(text(serverMessages[1] as Uint8Array), "binary");
+            strictEqual(clientMessages[0], "client sent: text");
+            strictEqual(text(clientMessages[1] as Uint8Array), "client sent: binary");
         }));
     });
 });

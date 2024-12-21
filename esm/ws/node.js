@@ -1,6 +1,6 @@
 import { WebSocket } from 'ws';
 export { WebSocketServer } from '../ws.js';
-export { WebSocket, WebSocketStream } from './client.js';
+export { WebSocket, WebSocketStream, toWebSocketStream } from './client.js';
 
 var _a;
 // @ts-ignore for WebSocketStream polyfill

@@ -3,7 +3,7 @@ import { concat, text } from './bytes.js';
 import { createErrorEvent, createCloseEvent } from './event.js';
 import runtime from './runtime.js';
 import { WebSocketConnection } from './ws/base.js';
-export { WebSocket, WebSocketStream } from './ws/client.js';
+export { WebSocket, WebSocketStream, toWebSocketStream } from './ws/client.js';
 
 /**
  * This module provides unified WebSocket server and client interfaces for

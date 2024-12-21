@@ -1,4 +1,5 @@
 import { getReadonly, setReadonly } from "../class/util.ts";
+import { WebSocketConnection } from "./base.ts";
 
 /**
  * A `WebSocket` polyfill for Node.js before v21.
@@ -10,10 +11,11 @@ import { getReadonly, setReadonly } from "../class/util.ts";
  */
 export const WebSocket = globalThis.WebSocket;
 
-const _ws = Symbol("ws");
+const _ws = Symbol.for("ws");
 
 function initWebSocketStream(wss: WebSocketStream, ws: WebSocket) {
     ws.binaryType = "arraybuffer";
+    setReadonly(wss, "url", ws.url);
     setReadonly(wss, "opened", new Promise<WebSocketStreamPair & {
         extensions: string;
         protocol: string;
@@ -103,7 +105,7 @@ export interface WebSocketCloseInfo {
  * ```
  */
 export class WebSocketStream {
-    private [_ws]: WebSocket;
+    private [_ws]: WebSocket | WebSocketConnection;
 
     get url(): string {
         return getReadonly(this, "url")!;
@@ -128,7 +130,6 @@ export class WebSocketStream {
         const { protocols, signal } = options;
         const ws = this[_ws] = new globalThis.WebSocket(url, protocols);
 
-        setReadonly(this, "url", ws.url);
         initWebSocketStream(this, ws);
         signal?.addEventListener("abort", () => ws.close());
     }
@@ -147,4 +148,54 @@ if (typeof globalThis.WebSocketStream === "function") {
     Object.setPrototypeOf(WebSocketStream, globalThis.WebSocketStream);
     // @ts-ignore
     Object.setPrototypeOf(WebSocketStream.prototype, globalThis.WebSocketStream.prototype);
+}
+
+/**
+ * Transforms a `WebSocket` or {@link WebSocketConnection} instance into a
+ * {@link WebSocketStream} instance.
+ */
+export function toWebSocketStream(ws: WebSocket | WebSocketConnection): WebSocketStream {
+    const wss = Object.create(WebSocketStream.prototype) as WebSocketStream;
+
+    if (ws instanceof WebSocketConnection) {
+        wss[_ws] = ws;
+        setReadonly(wss, "url", "");
+        setReadonly(wss, "opened", ws.ready.then(() => ({
+            extensions: "",
+            protocol: "",
+            readable: new ReadableStream({
+                start(controller) {
+                    ws.addEventListener("message", ({ data }) => {
+                        controller.enqueue(data);
+                    });
+                    ws.addEventListener("close", () => {
+                        try { controller.close(); } catch { }
+                    });
+                },
+                cancel() {
+                    ws.close();
+                },
+            }),
+            writable: new WritableStream({
+                write(chunk) {
+                    ws.send(chunk);
+                },
+            }),
+        } satisfies WebSocketStreamPair & {
+            extensions: string;
+            protocol: string;
+        })));
+        setReadonly(wss, "closed", new Promise<WebSocketCloseInfo>((resolve) => {
+            ws.addEventListener("close", (ev) => {
+                resolve({
+                    closeCode: ev.code,
+                    reason: ev.reason,
+                });
+            });
+        }));
+    } else {
+        initWebSocketStream(wss, ws);
+    }
+
+    return wss;
 }

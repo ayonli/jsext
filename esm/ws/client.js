@@ -1,4 +1,5 @@
 import { getReadonly, setReadonly } from '../class/util.js';
+import { WebSocketConnection } from './base.js';
 
 /**
  * A `WebSocket` polyfill for Node.js before v21.
@@ -9,9 +10,10 @@ import { getReadonly, setReadonly } from '../class/util.js';
  * class instead of the polyfill one.
  */
 const WebSocket = globalThis.WebSocket;
-const _ws = Symbol("ws");
+const _ws = Symbol.for("ws");
 function initWebSocketStream(wss, ws) {
     ws.binaryType = "arraybuffer";
+    setReadonly(wss, "url", ws.url);
     setReadonly(wss, "opened", new Promise((resolve, reject) => {
         ws.addEventListener("open", () => {
             resolve({
@@ -98,7 +100,6 @@ class WebSocketStream {
         }
         const { protocols, signal } = options;
         const ws = this[_ws] = new globalThis.WebSocket(url, protocols);
-        setReadonly(this, "url", ws.url);
         initWebSocketStream(this, ws);
         signal === null || signal === void 0 ? void 0 : signal.addEventListener("abort", () => ws.close());
     }
@@ -117,6 +118,54 @@ if (typeof globalThis.WebSocketStream === "function") {
     // @ts-ignore
     Object.setPrototypeOf(WebSocketStream.prototype, globalThis.WebSocketStream.prototype);
 }
+/**
+ * Transforms a `WebSocket` or {@link WebSocketConnection} instance into a
+ * {@link WebSocketStream} instance.
+ */
+function toWebSocketStream(ws) {
+    const wss = Object.create(WebSocketStream.prototype);
+    if (ws instanceof WebSocketConnection) {
+        wss[_ws] = ws;
+        setReadonly(wss, "url", "");
+        setReadonly(wss, "opened", ws.ready.then(() => ({
+            extensions: "",
+            protocol: "",
+            readable: new ReadableStream({
+                start(controller) {
+                    ws.addEventListener("message", ({ data }) => {
+                        controller.enqueue(data);
+                    });
+                    ws.addEventListener("close", () => {
+                        try {
+                            controller.close();
+                        }
+                        catch (_a) { }
+                    });
+                },
+                cancel() {
+                    ws.close();
+                },
+            }),
+            writable: new WritableStream({
+                write(chunk) {
+                    ws.send(chunk);
+                },
+            }),
+        })));
+        setReadonly(wss, "closed", new Promise((resolve) => {
+            ws.addEventListener("close", (ev) => {
+                resolve({
+                    closeCode: ev.code,
+                    reason: ev.reason,
+                });
+            });
+        }));
+    }
+    else {
+        initWebSocketStream(wss, ws);
+    }
+    return wss;
+}
 
-export { WebSocket, WebSocketStream };
+export { WebSocket, WebSocketStream, toWebSocketStream };
 //# sourceMappingURL=client.js.map
