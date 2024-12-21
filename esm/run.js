@@ -432,7 +432,7 @@ async function run(script, args, options) {
         req.args = args;
         await safeRemoteCall(worker, req, transferable);
     }
-    return {
+    const task = {
         workerId,
         async abort(reason = undefined) {
             timeout && clearTimeout(timeout);
@@ -471,6 +471,13 @@ async function run(script, args, options) {
             };
         },
     };
+    const signal = options === null || options === void 0 ? void 0 : options.signal;
+    signal === null || signal === void 0 ? void 0 : signal.addEventListener("abort", () => {
+        if (!error && !result) {
+            task.abort(signal.reason);
+        }
+    });
+    return task;
 }
 (function (run) {
     /**

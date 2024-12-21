@@ -92,6 +92,34 @@ describe("jsext.run", () => {
             deepStrictEqual(err2, new Error("something went wrong"));
         });
 
+        it("abort with signal", async function () {
+            if (typeof AbortController !== "function") {
+                this.skip();
+            }
+
+            const controller = new AbortController();
+            const job = await jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
+                fn: "takeTooLong",
+                signal: controller.signal,
+            });
+
+            controller.abort();
+            const [err, res] = await jsext.try(job.result());
+            strictEqual(res, undefined);
+            strictEqual((err as Error)?.name, "AbortError");
+
+            const controller2 = new AbortController();
+            const job2 = await jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
+                fn: "takeTooLong",
+                signal: controller2.signal,
+            });
+
+            controller2.abort(new Error("something went wrong"));
+            const [err2, res2] = await jsext.try(job2.result());
+            strictEqual(res2, undefined);
+            deepStrictEqual(err2, new Error("something went wrong"));
+        });
+
         it("iterate", async () => {
             const job = await jsext.run<string, [string[]]>("examples/worker.mjs", [["foo", "bar"]], {
                 fn: "sequence",
@@ -356,6 +384,36 @@ describe("jsext.run", () => {
                 adapter: "child_process",
             });
             await job2.abort(new Error("something went wrong"));
+            const [err2, res2] = await jsext.try(job2.result());
+            strictEqual(res2, undefined);
+            deepStrictEqual(err2, new Error("something went wrong"));
+        });
+
+        it("abort with signal", async function () {
+            if (typeof AbortController !== "function" || isNodeLike && process.platform === "win32") {
+                this.skip();
+            }
+
+            const controller = new AbortController();
+            const job = await jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
+                fn: "takeTooLong",
+                adapter: "child_process",
+                signal: controller.signal,
+            });
+
+            controller.abort();
+            const [err, res] = await jsext.try(job.result());
+            strictEqual(res, undefined);
+            strictEqual((err as Error)?.name, "AbortError");
+
+            const controller2 = new AbortController();
+            const job2 = await jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
+                fn: "takeTooLong",
+                adapter: "child_process",
+                signal: controller2.signal,
+            });
+
+            controller2.abort(new Error("something went wrong"));
             const [err2, res2] = await jsext.try(job2.result());
             strictEqual(res2, undefined);
             deepStrictEqual(err2, new Error("something went wrong"));

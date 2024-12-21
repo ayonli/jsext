@@ -73,6 +73,12 @@ export interface RunOptions {
      * information.
      */
     adapter?: "worker_threads" | "child_process";
+    /**
+     * Instead of aborting the task by calling the `abort()` method manually,
+     * we can use an `AbortSignal` to abort the task automatically when the
+     * signal is aborted.
+     */
+    signal?: AbortSignal;
 }
 
 /**
@@ -567,7 +573,7 @@ async function run<R, A extends any[] = any[]>(
         await safeRemoteCall(worker, req, transferable);
     }
 
-    return {
+    const task: WorkerTask<R> = {
         workerId,
         async abort(reason = undefined) {
             timeout && clearTimeout(timeout);
@@ -608,6 +614,15 @@ async function run<R, A extends any[] = any[]>(
             };
         },
     };
+
+    const signal = options?.signal;
+    signal?.addEventListener("abort", () => {
+        if (!error && !result) {
+            task.abort(signal.reason);
+        }
+    });
+
+    return task;
 }
 
 namespace run {
