@@ -1,6 +1,6 @@
 import { isDeno, isNodeLike } from './env.js';
 import { stripEnd, trim } from './string.js';
-import { isAbsolute, split, isUrl, isPosixPath, isWindowsPath, isNotQuery, isFileProtocol, isVolume, isFileUrl, isFsPath } from './path/util.js';
+import { isAbsolute, split, isUrl, isPosixPath, isWindowsPath, isNotQuery, isVolume, isFileUrl, isFsPath } from './path/util.js';
 export { contains, endsWith, equals, startsWith } from './path/util.js';
 
 /**
@@ -194,7 +194,7 @@ function dirname(path) {
         const origin = protocol + "//" + host;
         const _dirname = dirname(decodeURI(pathname));
         if (_dirname === "/") {
-            return isFileProtocol(origin) ? origin + "/" : origin;
+            return protocol === "file:" && !host ? origin + "/" : origin;
         }
         else {
             return origin + _dirname;
@@ -315,19 +315,29 @@ function toFileUrl(path) {
  * ```
  */
 function toFsPath(url) {
+    if (typeof url === "object") {
+        if (url.protocol === "file:") {
+            return join(fileUrlToFsPath(url.toString()));
+        }
+        else {
+            throw new Error("Cannot convert a non-file URL to a file system path.");
+        }
+    }
     if (isFsPath(url)) {
         return url;
     }
     else if (isFileUrl(url)) {
-        url = url.replace(/^file:(\/\/)?/i, "").replace(/^\/([a-z]):/i, "$1:");
-        return join(url);
+        return join(fileUrlToFsPath(url));
     }
     else if (!isUrl(url)) {
         return resolve(url);
     }
     else {
-        throw new Error("Cannot convert a URL to a file system path.");
+        throw new Error("Cannot convert a non-file URL to a file system path.");
     }
+}
+function fileUrlToFsPath(url) {
+    return url.replace(/^file:(\/\/)?/i, "").replace(/^\/([a-z]):/i, "$1:");
 }
 
 export { basename, cwd, dirname, extname, isAbsolute, isFileUrl, isFsPath, isPosixPath, isUrl, isWindowsPath, join, normalize, resolve, sanitize, sep, split, toFileUrl, toFsPath };

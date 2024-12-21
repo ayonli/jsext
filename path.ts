@@ -15,7 +15,6 @@ import {
     endsWith,
     equals,
     isAbsolute,
-    isFileProtocol,
     isFileUrl,
     isFsPath,
     isNotQuery,
@@ -238,7 +237,7 @@ export function dirname(path: string): string {
         const _dirname = dirname(decodeURI(pathname));
 
         if (_dirname === "/") {
-            return isFileProtocol(origin) ? origin + "/" : origin;
+            return protocol === "file:" && !host ? origin + "/" : origin;
         } else {
             return origin + _dirname;
         }
@@ -353,15 +352,26 @@ export function toFileUrl(path: string): string {
  * console.log(toFsPath("file:///c:/foo/bar")); // "c:\\foo\\bar"
  * ```
  */
-export function toFsPath(url: string): string {
+export function toFsPath(url: string | URL): string {
+    if (typeof url === "object") {
+        if (url.protocol === "file:") {
+            return join(fileUrlToFsPath(url.toString()));
+        } else {
+            throw new Error("Cannot convert a non-file URL to a file system path.");
+        }
+    }
+
     if (isFsPath(url)) {
         return url;
     } else if (isFileUrl(url)) {
-        url = url.replace(/^file:(\/\/)?/i, "").replace(/^\/([a-z]):/i, "$1:");
-        return join(url);
+        return join(fileUrlToFsPath(url));
     } else if (!isUrl(url)) {
         return resolve(url);
     } else {
-        throw new Error("Cannot convert a URL to a file system path.");
+        throw new Error("Cannot convert a non-file URL to a file system path.");
     }
+}
+
+function fileUrlToFsPath(url: string): string {
+    return url.replace(/^file:(\/\/)?/i, "").replace(/^\/([a-z]):/i, "$1:");
 }

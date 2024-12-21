@@ -71,7 +71,8 @@ function isUrl(str) {
     return /^[a-z](([a-z\-]+)?:\/\/\S+|[a-z\-]+:\/\/$)/i.test(str) || isFileUrl(str);
 }
 /**
- * Checks if the given string is a file URL, whether with or without `//`.
+ * Checks if the given string or {@link URL} instance is a file URL, whether
+ * with or without `//`.
  *
  * @example
  * ```ts
@@ -82,13 +83,13 @@ function isUrl(str) {
  * console.assert(isFileUrl("file:///usr/bin"));
  * console.assert(isFileUrl("file:/usr/bin"));
  * console.assert(isFileUrl("file:///usr/bin?foo=bar"));
+ * console.assert(isFileUrl(new URL("file:///usr/bin?foo=bar")));
  * ```
  */
-function isFileUrl(str) {
-    return /^file:((\/\/|\/)\S+|\/?$)/i.test(str);
-}
-function isFileProtocol(path) {
-    return /^file:(\/\/)?$/i.test(path);
+function isFileUrl(path) {
+    return typeof path === "string"
+        ? /^file:((\/\/|\/)\S+|\/?$)/i.test(path)
+        : path.protocol === "file:";
 }
 /**
  * Checks if the given `path` is an absolute path.
@@ -129,7 +130,7 @@ function split(path) {
     else if (isUrl(path)) {
         const { protocol, host, pathname, search, hash } = new URL(path);
         let origin = protocol + "//" + host;
-        if (isFileProtocol(origin)) {
+        if (protocol === "file:" && !host) {
             origin += "/";
         }
         if (pathname === "/") {
@@ -362,5 +363,5 @@ function equals(path1, path2, options = {}) {
     return equals$1(paths, subs);
 }
 
-export { contains, endsWith, equals, isAbsolute, isFileProtocol, isFileUrl, isFsPath, isNotQuery, isPosixPath, isUrl, isVolume, isWindowsPath, split, startsWith };
+export { contains, endsWith, equals, isAbsolute, isFileUrl, isFsPath, isNotQuery, isPosixPath, isUrl, isVolume, isWindowsPath, split, startsWith };
 //# sourceMappingURL=util.js.map

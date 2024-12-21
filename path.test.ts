@@ -146,6 +146,7 @@ describe("path", () => {
         ok(isFileUrl("file:/foo/bar?foo=bar#baz"));
         ok(isFileUrl("file:///目录/文件"));
         ok(isFileUrl("file:/目录/文件"));
+        ok(isFileUrl(new URL("file:///c:/foo/bar")));
     });
 
     describe("isAbsolute", () => {
@@ -1505,6 +1506,7 @@ describe("path", () => {
             strictEqual(toFsPath("file:///c:/foo.txt?foo=bar"), "c:\\foo.txt?foo=bar");
             strictEqual(toFsPath("file:///c:/foo.txt#baz"), "c:\\foo.txt#baz");
             strictEqual(toFsPath("file:///c:/foo.txt?foo=bar#baz"), "c:\\foo.txt?foo=bar#baz");
+            strictEqual(toFsPath(new URL("file:///c:/foo.txt?foo=bar#baz")), "c:\\foo.txt?foo=bar#baz");
         });
 
         it("posix path", () => {
@@ -1515,11 +1517,15 @@ describe("path", () => {
             strictEqual(toFsPath("file:///foo.txt?foo=bar"), "/foo.txt?foo=bar");
             strictEqual(toFsPath("file:///foo.txt#baz"), "/foo.txt#baz");
             strictEqual(toFsPath("file:///foo.txt?foo=bar#baz"), "/foo.txt?foo=bar#baz");
+            strictEqual(toFsPath(new URL("file:///foo.txt?foo=bar#baz")), "/foo.txt?foo=bar#baz");
         });
 
         it("url", () => {
-            const [err] = jsext._try(() => toFsPath("http://example.com/foo/bar"));
-            strictEqual(as(err, Error)?.message, "Cannot convert a URL to a file system path.");
+            const [err1] = jsext._try(() => toFsPath("http://example.com/foo/bar"));
+            strictEqual(as(err1, Error)?.message, "Cannot convert a non-file URL to a file system path.");
+
+            const [err2] = jsext._try(() => toFsPath(new URL("http://example.com/foo/bar")));
+            strictEqual(as(err2, Error)?.message, "Cannot convert a non-file URL to a file system path.");
         });
     });
 });

@@ -82,7 +82,8 @@ export function isUrl(str: string): boolean {
 }
 
 /**
- * Checks if the given string is a file URL, whether with or without `//`.
+ * Checks if the given string or {@link URL} instance is a file URL, whether
+ * with or without `//`.
  * 
  * @example
  * ```ts
@@ -93,14 +94,13 @@ export function isUrl(str: string): boolean {
  * console.assert(isFileUrl("file:///usr/bin"));
  * console.assert(isFileUrl("file:/usr/bin"));
  * console.assert(isFileUrl("file:///usr/bin?foo=bar"));
+ * console.assert(isFileUrl(new URL("file:///usr/bin?foo=bar")));
  * ```
  */
-export function isFileUrl(str: string): boolean {
-    return /^file:((\/\/|\/)\S+|\/?$)/i.test(str);
-}
-
-export function isFileProtocol(path: string): boolean {
-    return /^file:(\/\/)?$/i.test(path);
+export function isFileUrl(path: string | URL): boolean {
+    return typeof path === "string"
+        ? /^file:((\/\/|\/)\S+|\/?$)/i.test(path)
+        : path.protocol === "file:";
 }
 
 /**
@@ -143,7 +143,7 @@ export function split(path: string): string[] {
         const { protocol, host, pathname, search, hash } = new URL(path);
         let origin = protocol + "//" + host;
 
-        if (isFileProtocol(origin)) {
+        if (protocol === "file:" && !host) {
             origin += "/";
         }
 
