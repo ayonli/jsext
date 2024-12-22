@@ -69,10 +69,10 @@ async function* abortableAsyncIterable(task, signal) {
 }
 function createTimeoutError(ms) {
     if (typeof DOMException === "function") {
-        return new DOMException(`operation timeout after ${ms}ms`, "TimeoutError");
+        return new DOMException(`Operation timeout after ${ms}ms`, "TimeoutError");
     }
     else {
-        return new Exception(`operation timeout after ${ms}ms`, {
+        return new Exception(`Operation timeout after ${ms}ms`, {
             name: "TimeoutError",
             code: 408,
         });
@@ -292,6 +292,7 @@ function abortWith(_parent, options = undefined) {
         const timer = setTimeout(() => {
             signal.aborted || ctrl.abort(createTimeoutError(timeout));
         }, timeout);
+        unrefTimer(timer);
         signal.addEventListener("abort", () => {
             clearTimeout(timer);
         }, { once: true });

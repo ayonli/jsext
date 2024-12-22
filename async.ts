@@ -138,9 +138,9 @@ async function* abortableAsyncIterable<T>(
 
 function createTimeoutError(ms: number): DOMException | Exception {
     if (typeof DOMException === "function") {
-        return new DOMException(`operation timeout after ${ms}ms`, "TimeoutError");
+        return new DOMException(`Operation timeout after ${ms}ms`, "TimeoutError");
     } else {
-        return new Exception(`operation timeout after ${ms}ms`, {
+        return new Exception(`Operation timeout after ${ms}ms`, {
             name: "TimeoutError",
             code: 408,
         });
@@ -351,12 +351,12 @@ export interface AbortWithOptions {
      * The parent signal to be linked with the new abort signal. If the parent
      * signal is aborted, the new signal will be aborted with the same reason.
      */
-    parent?: AbortSignal;
+    parent?: AbortSignal | undefined;
     /**
      * If provided, the abort signal will be automatically aborted after the
      * given duration (in milliseconds) if it is not already aborted.
      */
-    timeout?: number;
+    timeout?: number | undefined;
 }
 
 /**
@@ -433,6 +433,7 @@ export function abortWith(
             signal.aborted || ctrl.abort(createTimeoutError(timeout));
         }, timeout);
 
+        unrefTimer(timer);
         signal.addEventListener("abort", () => {
             clearTimeout(timer);
         }, { once: true });
