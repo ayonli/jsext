@@ -173,7 +173,7 @@ describe("async", () => {
         });
         const [err, res2] = await jsext.try(Promise.timeout(job, 50));
         strictEqual(res2, undefined);
-        deepStrictEqual(as(err, Error)?.message, "operation timeout after 50ms");
+        deepStrictEqual(as(err, Error)?.message, "Operation timeout after 50ms");
     });
 
     it("after", async () => {
