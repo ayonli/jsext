@@ -85,8 +85,8 @@ In `tsconfig.json`, the following `compilerOptions` must be set as such:
   Golang.
 - [parallel](https://jsr.io/@ayonli/jsext/doc/parallel/~/default) Runs functions in
   parallel threads and take advantage of multi-core CPUs, inspired by Golang.
-- [run](https://jsr.io/@ayonli/jsext/doc/run/~/default) Runs a script in another thread
-  and abort at any time.
+- [run](https://jsr.io/@ayonli/jsext/doc/run/~/default) Runs the given `script`
+  in a worker thread and invokes its `default` function to collect the result.
 - [deprecate](https://jsr.io/@ayonli/jsext/doc/deprecate/~/deprecate) Marks a function as
   deprecated and emit warnings when it is called.
 - [pipe](https://jsr.io/@ayonli/jsext/doc/pipe/~/pipe) Performs pipe operations

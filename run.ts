@@ -21,7 +21,7 @@ import {
 } from "./parallel/threads.ts";
 import parallel from "./parallel.ts";
 import { unrefTimer } from "./runtime.ts";
-import { AsyncTask, asyncTask } from "./async.ts";
+import { AsyncTask, abortWith, asyncTask } from "./async.ts";
 
 type PoolRecord = {
     getWorker: Promise<{
@@ -45,7 +45,7 @@ const workerConsumerQueue: (() => void)[] = [];
  */
 export interface RunOptions {
     /**
-     * If not set, invoke the default function, otherwise invoke the specified
+     * If not set, invoke the `default` function, otherwise invoke the specified
      * function.
      */
     fn?: string;
@@ -99,14 +99,15 @@ export interface WorkerTask<R> {
     iterate(): AsyncIterable<R>;
     /**
      * Terminates the worker thread and aborts the task. If `reason` is provided,
-     * `result()` or `iterate()` will throw the error. Otherwise, the task will
-     * be aborted silently.
+     * `result()` or `iterate()` will throw that error. Otherwise, an `AbortError`
+     * will be thrown.
      */
-    abort(reason?: Error | null): Promise<void>;
+    abort(reason?: any): void;
 }
 
 /**
- * Runs the given `script` in a worker thread and abort the task at any time.
+ * Runs the given `script` in a worker thread and invokes its `default` function
+ * to collect the result.
  * 
  * This function is similar to {@link parallel}(), many features and
  * restrictions applicable to `parallel()` are also applicable to `run()`,
@@ -176,6 +177,11 @@ async function run<R, A extends any[] = any[]>(
 
     script = typeof script === "string" ? script : script.href;
     const maxWorkers = run.maxWorkers || parallel.maxWorkers || await getMaxParallelism;
+
+    if (options?.signal?.aborted) {
+        throw options.signal.reason;
+    }
+
     const fn = options?.fn || "default";
     let modId = sanitizeModuleId(script);
     let baseUrl: string | undefined = undefined;
@@ -270,22 +276,23 @@ async function run<R, A extends any[] = any[]>(
     let release: () => void;
     let terminate = () => Promise.resolve<void>(void 0);
 
-    const timeout = options?.timeout ? setTimeout(async () => {
-        const err = new Error(`Operation timeout after ${options.timeout}ms.`);
-        error = err;
-        await terminate();
-        handleClose(err, true);
-    }, options.timeout) : null;
+    const controller = options?.timeout || options?.signal ? abortWith({
+        timeout: options?.timeout,
+        parent: options?.signal,
+    }) : new AbortController();
+    const { signal } = controller;
 
-    if (timeout) {
-        unrefTimer(timeout);
-    }
+    signal.addEventListener("abort", () => {
+        error = signal.reason;
+        terminate().then(() => {
+            handleClose(error, true);
+        });
+    });
 
     const handleMessage = async (msg: any) => {
         if (isChannelMessage(msg)) {
             await handleChannelMessage(msg);
         } else if (isCallResponse(msg)) {
-            timeout && clearTimeout(timeout);
 
             if (msg.type === "return" || msg.type === "error") {
                 if (msg.type === "error") {
@@ -331,9 +338,7 @@ async function run<R, A extends any[] = any[]>(
         }
     };
 
-    const handleClose = (err: Error | null, terminated = false) => {
-        timeout && clearTimeout(timeout);
-
+    const handleClose = (err: unknown, terminated = false) => {
         if (!terminated) {
             // Release before resolve.
             release?.();
@@ -575,17 +580,8 @@ async function run<R, A extends any[] = any[]>(
 
     const task: WorkerTask<R> = {
         workerId,
-        async abort(reason = undefined) {
-            timeout && clearTimeout(timeout);
-
-            if (reason) {
-                error = reason;
-            } else {
-                result = { value: void 0 };
-            }
-
-            await terminate();
-            handleClose(null, true);
+        abort(reason = undefined) {
+            controller.abort(reason);
         },
         async result() {
             const task = asyncTask<R>();
@@ -614,13 +610,6 @@ async function run<R, A extends any[] = any[]>(
             };
         },
     };
-
-    const signal = options?.signal;
-    signal?.addEventListener("abort", () => {
-        if (!error && !result) {
-            task.abort(signal.reason);
-        }
-    });
 
     return task;
 }

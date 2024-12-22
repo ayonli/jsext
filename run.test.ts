@@ -8,6 +8,7 @@ import { trim } from "./string.ts";
 import * as path from "node:path";
 import { readAsArray } from "./reader.ts";
 import { toFsPath } from "./path.ts";
+import { as } from "./object.ts";
 
 const __dirname = path.dirname(toFsPath(import.meta.url));
 
@@ -66,11 +67,11 @@ describe("jsext.run", () => {
 
             if (err) {
                 strictEqual(job, undefined);
-                deepStrictEqual(err, new Error("Operation timeout after 50ms."));
+                strictEqual(as(err, Error)?.message, "Operation timeout after 50ms");
             } else {
                 const [err2, res] = await jsext.try(job.result());
                 strictEqual(res, undefined);
-                deepStrictEqual(err2, new Error("Operation timeout after 50ms."));
+                strictEqual(as(err2, Error)?.message, "Operation timeout after 50ms");
             }
         });
 
@@ -78,15 +79,15 @@ describe("jsext.run", () => {
             const job = await jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
                 fn: "takeTooLong",
             });
-            await job.abort();
+            job.abort();
             const [err, res] = await jsext.try(job.result());
             strictEqual(res, undefined);
-            deepStrictEqual(err, null);
+            strictEqual(as(err, Error)?.name, "AbortError");
 
             const job2 = await jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
                 fn: "takeTooLong",
             });
-            await job2.abort(new Error("something went wrong"));
+            job2.abort(new Error("something went wrong"));
             const [err2, res2] = await jsext.try(job2.result());
             strictEqual(res2, undefined);
             deepStrictEqual(err2, new Error("something went wrong"));
@@ -357,11 +358,11 @@ describe("jsext.run", () => {
 
             if (err) {
                 strictEqual(job, undefined);
-                deepStrictEqual(err, new Error("Operation timeout after 50ms."));
+                strictEqual(as(err, Error)?.message, "Operation timeout after 50ms");
             } else {
                 const [err2, res] = await jsext.try(job.result());
                 strictEqual(res, undefined);
-                deepStrictEqual(err2, new Error("Operation timeout after 50ms."));
+                strictEqual(as(err2, Error)?.message, "Operation timeout after 50ms");
             }
         });
 
@@ -374,16 +375,16 @@ describe("jsext.run", () => {
                 fn: "takeTooLong",
                 adapter: "child_process",
             });
-            await job.abort();
+            job.abort();
             const [err, res] = await jsext.try(job.result());
             strictEqual(res, undefined);
-            deepStrictEqual(err, null);
+            strictEqual(as(err, Error)?.name, "AbortError");
 
             const job2 = await jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
                 fn: "takeTooLong",
                 adapter: "child_process",
             });
-            await job2.abort(new Error("something went wrong"));
+            job2.abort(new Error("something went wrong"));
             const [err2, res2] = await jsext.try(job2.result());
             strictEqual(res2, undefined);
             deepStrictEqual(err2, new Error("something went wrong"));
