@@ -1,6 +1,7 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { sleep } from "./async.ts";
 import jsext from "./index.ts";
+import { as } from "./object.ts";
 
 describe("jsext.debounce", () => {
     it("success", async () => {
@@ -123,5 +124,26 @@ describe("jsext.debounce", () => {
         })({ bar: "world" });
         deepStrictEqual(res3, { bar: "world" });
         strictEqual(count, 5);
+    });
+
+    it("abort", async () => {
+        const controller = new AbortController();
+        const { signal } = controller;
+        let count = 0;
+        const fn = jsext.debounce(async <T>(obj: T) => {
+            count++;
+            return await Promise.resolve(obj);
+        }, { delay: 5, signal });
+
+        const task1 = fn({ foo: "hello", bar: "world" });
+        const task2 = fn({ foo: "hi" });
+        controller.abort();
+
+        const [res1, res2] = await Promise.allSettled([task1, task2]);
+
+        strictEqual(res1.status, "rejected");
+        strictEqual(res2.status, "rejected");
+        strictEqual(as(res1.reason, Error)?.name, "AbortError");
+        ok(res1.reason === res2.reason);
     });
 });

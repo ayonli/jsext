@@ -30,6 +30,10 @@ export interface DebounceOptions {
      * scopes and overwriting the handler are possible.
      */
     for?: any;
+    /**
+     * Cancel the pending task if the signal is aborted.
+     */
+    signal?: AbortSignal;
 }
 
 /**
@@ -130,6 +134,7 @@ export default function debounce<I, T = any, R = any>(
     options: number | DebounceOptions,
     reducer: ((prev: T, current: T) => T) | undefined = undefined,
 ): (this: I, data: T) => Promise<R> {
+    const signal = typeof options === "number" ? undefined : options.signal;
     const delay = typeof options === "number" ? options : options.delay;
     const key = typeof options === "number" ? null : options.for;
     const hasKey = key !== null && key !== undefined && key !== "";
@@ -150,7 +155,39 @@ export default function debounce<I, T = any, R = any>(
     }
 
     const cache = _cache;
+    const getResolvers = (cache: Debounce) => {
+        // Move tasks and cached data to new variables, so during the middle
+        // of handler running, new calls won't interfere the running process.
+        const _tasks = cache.tasks;
+        const data = cache.data as T;
+        cache.tasks = [];
+        cache.data = undefined;
+
+        if (hasKey) {
+            registry.delete(key);
+        }
+
+        const resolve = (result: R) => {
+            _tasks.forEach(({ resolve }) => resolve(result));
+        };
+        const reject = (err: unknown) => {
+            _tasks.forEach(({ reject }) => reject(err));
+        };
+
+        return { resolve, reject, data };
+    };
+
+    signal?.addEventListener("abort", () => {
+        cache.timer && clearTimeout(cache.timer);
+        const { reject } = getResolvers(cache);
+        reject(signal.reason);
+    });
+
     return async function (this: I, data: T) {
+        if (signal?.aborted) {
+            throw signal.reason;
+        }
+
         if (typeof reducer === "function" && cache.data !== undefined) {
             cache.data = reducer(cache.data, data);
         } else {
@@ -158,27 +195,11 @@ export default function debounce<I, T = any, R = any>(
         }
 
         cache.timer && clearTimeout(cache.timer);
-        cache.timer = setTimeout(() => {
-            // Move tasks and cached data to new variables, so during the middle
-            // of handler running, new calls won't affect the running process.
-            const _tasks = cache.tasks;
-            const _data = cache.data as T;
-            cache.tasks = [];
-            cache.data = undefined;
-
-            if (hasKey) {
-                registry.delete(key);
-            }
-
-            const resolve = (result: R) => {
-                _tasks.forEach(({ resolve }) => resolve(result));
-            };
-            const reject = (err: unknown) => {
-                _tasks.forEach(({ reject }) => reject(err));
-            };
+        cache.timer = setTimeout((cache) => {
+            const { resolve, reject, data } = getResolvers(cache);
 
             try {
-                const res = handler.call(this, _data) as any;
+                const res = handler.call(this, data) as any;
 
                 if (typeof res?.then === "function") {
                     Promise.resolve(res).then(resolve, reject);
@@ -188,7 +209,7 @@ export default function debounce<I, T = any, R = any>(
             } catch (err) {
                 reject(err);
             }
-        }, delay);
+        }, delay, cache);
 
         const task = asyncTask<R>();
         cache.tasks.push(task);
