@@ -19,6 +19,8 @@ import { platform } from "./runtime.ts";
 import { chars } from "./string.ts";
 import bytes from "./bytes.ts";
 import { isDeno, isNodeBelow16 } from "./env.ts";
+import _try from "./try.ts";
+import { as } from "./object.ts";
 
 const str1 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const str2 = "你好，世界！";
@@ -279,13 +281,28 @@ describe("cli", () => {
         strictEqual(quote("Hello, World`"), `"Hello, World\`"`);
     });
 
-    it("run", async function () {
-        this.timeout(5000);
+    describe("run", () => {
+        it("success", async function () {
+            this.timeout(5000);
 
-        const { code, stdout, stderr } = await run("echo", ["Hello, World!"]);
-        strictEqual(code, 0);
-        strictEqual(stdout.trim(), "Hello, World!");
-        strictEqual(stderr, "");
+            const { code, stdout, stderr } = await run("echo", ["Hello, World!"]);
+            strictEqual(code, 0);
+            strictEqual(stdout.trim(), "Hello, World!");
+            strictEqual(stderr, "");
+        });
+
+        it("abort", async function () {
+            this.timeout(5000);
+
+            const controller = new AbortController();
+            const { signal } = controller;
+            const task = run("echo", ["Hello, World!"], { signal });
+
+            controller.abort();
+            const [err, res] = await _try(task);
+            console.log(res);
+            strictEqual(as(err, Error)?.name, "AbortError");
+        });
     });
 
     it("which", async function () {

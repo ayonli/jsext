@@ -1,6 +1,5 @@
 import { trimStart } from './string.js';
-import { text } from './bytes.js';
-import { isDeno, isNodeLike, isBun, isBrowserWindow, isSharedWorker, isDedicatedWorker } from './env.js';
+import { isNodeLike, isDeno, isBun, isBrowserWindow, isSharedWorker, isDedicatedWorker } from './env.js';
 import runtime, { platform, env } from './runtime.js';
 import './fs.js';
 import { basename } from './path.js';
@@ -38,28 +37,16 @@ import { resolveHomeDir } from './fs/util/server.js';
  * console.log(JSON.stringify(stderr)); // ""
  * ```
  */
-async function run(cmd, args) {
+async function run(cmd, args, options = {}) {
+    const signal = options.signal;
     const isWindows = platform() === "windows";
     const isWslPs = isWSL() && cmd.endsWith("powershell.exe");
-    if (isDeno) {
-        const { Buffer } = await import('node:buffer');
-        const { decode } = interop(await import('iconv-lite'), false);
-        const _cmd = isWindows && PowerShellCommands.includes(cmd)
-            ? new Deno.Command("powershell", { args: ["-c", cmd, ...args.map(quote)] })
-            : new Deno.Command(cmd, { args });
-        const { code, stdout, stderr } = await _cmd.output();
-        return {
-            code,
-            stdout: isWindows || isWslPs ? decode(Buffer.from(stdout), "cp936") : text(stdout),
-            stderr: isWindows || isWslPs ? decode(Buffer.from(stderr), "cp936") : text(stderr),
-        };
-    }
-    else if (isNodeLike) {
+    if (isNodeLike || isDeno) {
         const { spawn } = await import('node:child_process');
         const { decode } = await interop(import('iconv-lite'), false);
         const child = isWindows && PowerShellCommands.includes(cmd)
-            ? spawn("powershell", ["-c", cmd, ...args.map(quote)])
-            : spawn(cmd, args);
+            ? spawn("powershell", ["-c", cmd, ...args.map(quote)], { signal })
+            : spawn(cmd, args, { signal });
         const stdout = [];
         const stderr = [];
         child.stdout.on("data", chunk => {
@@ -120,12 +107,12 @@ async function run(cmd, args) {
  * } = await powershell(`Get-Command -Name ${cmd} | Select-Object -ExpandProperty Source`);
  * ```
  */
-async function powershell(script) {
+async function powershell(script, options = {}) {
     let command = "powershell";
     if (isWSL()) {
         command = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe";
     }
-    return await run(command, ["-c", script]);
+    return await run(command, ["-c", script], options);
 }
 /**
  * Executes a command with elevated privileges using `sudo` (or UAC in Windows).

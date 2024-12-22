@@ -7,7 +7,6 @@
  * @experimental
  */
 import { trimStart } from "./string.ts";
-import { text } from "./bytes.ts";
 import { isBrowserWindow, isBun, isDeno, isNodeLike, isSharedWorker, isDedicatedWorker } from "./env.ts";
 import runtime, { env, platform } from "./runtime.ts";
 import { interop } from "./module.ts";
@@ -18,6 +17,17 @@ import { ensureFsTarget } from "./fs/util.ts";
 import { resolveHomeDir } from "./fs/util/server.ts";
 
 export * from "./cli/common.ts";
+
+/**
+ * The options for command execution functions such as the {@link run},
+ * {@link powershell}.
+ */
+export interface CommandOptions {
+    /**
+     * The signal to abort the command execution.
+     */
+    signal?: AbortSignal;
+}
 
 /**
  * The result of command execution functions such as the {@link run},
@@ -56,29 +66,21 @@ export interface CommandResult {
  * console.log(JSON.stringify(stderr)); // ""
  * ```
  */
-export async function run(cmd: string, args: string[]): Promise<CommandResult> {
+export async function run(
+    cmd: string,
+    args: string[],
+    options: CommandOptions = {}
+): Promise<CommandResult> {
+    const signal = options.signal;
     const isWindows = platform() === "windows";
     const isWslPs = isWSL() && cmd.endsWith("powershell.exe");
 
-    if (isDeno) {
-        const { Buffer } = await import("node:buffer");
-        const { decode } = interop(await import("iconv-lite"), false);
-        const _cmd = isWindows && PowerShellCommands.includes(cmd)
-            ? new Deno.Command("powershell", { args: ["-c", cmd, ...args.map(quote)] })
-            : new Deno.Command(cmd, { args });
-
-        const { code, stdout, stderr } = await _cmd.output();
-        return {
-            code,
-            stdout: isWindows || isWslPs ? decode(Buffer.from(stdout), "cp936") : text(stdout),
-            stderr: isWindows || isWslPs ? decode(Buffer.from(stderr), "cp936") : text(stderr),
-        };
-    } else if (isNodeLike) {
+    if (isNodeLike || isDeno) {
         const { spawn } = await import("node:child_process");
         const { decode } = await interop(import("iconv-lite"), false);
         const child = isWindows && PowerShellCommands.includes(cmd)
-            ? spawn("powershell", ["-c", cmd, ...args.map(quote)])
-            : spawn(cmd, args);
+            ? spawn("powershell", ["-c", cmd, ...args.map(quote)], { signal })
+            : spawn(cmd, args, { signal });
         const stdout: string[] = [];
         const stderr: string[] = [];
 
@@ -139,14 +141,17 @@ export async function run(cmd: string, args: string[]): Promise<CommandResult> {
  * } = await powershell(`Get-Command -Name ${cmd} | Select-Object -ExpandProperty Source`);
  * ```
  */
-export async function powershell(script: string): Promise<CommandResult> {
+export async function powershell(
+    script: string,
+    options: CommandOptions = {}
+): Promise<CommandResult> {
     let command = "powershell";
 
     if (isWSL()) {
         command = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe";
     }
 
-    return await run(command, ["-c", script]);
+    return await run(command, ["-c", script], options);
 }
 
 /**
