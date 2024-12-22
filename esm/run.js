@@ -184,6 +184,9 @@ async function run(script, args, options) {
     }) : new AbortController();
     const { signal } = controller;
     signal.addEventListener("abort", () => {
+        if (error || result) {
+            return; // If the task has already settled, ignore the abort event.
+        }
         error = signal.reason;
         terminate().then(() => {
             handleClose(error, true);

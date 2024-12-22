@@ -283,6 +283,10 @@ async function run<R, A extends any[] = any[]>(
     const { signal } = controller;
 
     signal.addEventListener("abort", () => {
+        if (error || result) {
+            return; // If the task has already settled, ignore the abort event.
+        }
+
         error = signal.reason;
         terminate().then(() => {
             handleClose(error, true);
@@ -293,7 +297,6 @@ async function run<R, A extends any[] = any[]>(
         if (isChannelMessage(msg)) {
             await handleChannelMessage(msg);
         } else if (isCallResponse(msg)) {
-
             if (msg.type === "return" || msg.type === "error") {
                 if (msg.type === "error") {
                     const err = isPlainObject(msg.error)

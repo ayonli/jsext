@@ -87,8 +87,9 @@ describe("jsext.run", () => {
             const job2 = await jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
                 fn: "takeTooLong",
             });
+            const awaitResult = job2.result();
             job2.abort(new Error("something went wrong"));
-            const [err2, res2] = await jsext.try(job2.result());
+            const [err2, res2] = await jsext.try(awaitResult);
             strictEqual(res2, undefined);
             deepStrictEqual(err2, new Error("something went wrong"));
         });
@@ -384,8 +385,9 @@ describe("jsext.run", () => {
                 fn: "takeTooLong",
                 adapter: "child_process",
             });
+            const awaitResult = job2.result();
             job2.abort(new Error("something went wrong"));
-            const [err2, res2] = await jsext.try(job2.result());
+            const [err2, res2] = await jsext.try(awaitResult);
             strictEqual(res2, undefined);
             deepStrictEqual(err2, new Error("something went wrong"));
         });
