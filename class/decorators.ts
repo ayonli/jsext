@@ -252,7 +252,7 @@ export function param<T extends z.ZodType>(
  * ```
  */
 export function returns<T extends z.ZodType>(type: T): MethodDecorator {
-    return ((...args: any[]) => {
+    return (...args: any[]) => {
         if (typeof args[1] === "object") { // new ES decorator since TypeScript 5.0
             const [target, context] = args as [Function, DecoratorContext];
             const fn = decorate(target, context.name as string) as any;
@@ -266,7 +266,7 @@ export function returns<T extends z.ZodType>(type: T): MethodDecorator {
 
             return desc;
         }
-    });
+    };
 }
 
 /**
@@ -295,7 +295,7 @@ export function returns<T extends z.ZodType>(type: T): MethodDecorator {
  * ```
  */
 export function throws<T extends z.ZodType>(type: T): MethodDecorator {
-    return ((...args: any[]) => {
+    return (...args: any[]) => {
         if (typeof args[1] === "object") { // new ES decorator since TypeScript 5.0
             const [target, context] = args as [Function, DecoratorContext];
             const fn = decorate(target, context.name as string) as any;
@@ -309,5 +309,5 @@ export function throws<T extends z.ZodType>(type: T): MethodDecorator {
 
             return desc ?? fn;
         }
-    });
+    };
 }

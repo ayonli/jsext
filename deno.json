@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "exports": {
         ".": "./index.ts",
         "./archive": "./archive.ts",
@@ -43,6 +43,7 @@
         "./pipe": "./pipe.ts",
         "./queue": "./queue.ts",
         "./reader": "./reader.ts",
+        "./result": "./result.ts",
         "./run": "./run.ts",
         "./runtime": "./runtime.ts",
         "./sse": "./sse.ts",
