@@ -10,18 +10,52 @@
  * 
  * This module don't give up the error propagation mechanism in JavaScript, we
  * can still use the `try...catch` statement to catch the error and handle it in
- * a traditional way. Which is done by accessing the `value` property of the
- * `Result` object directly without checking the `ok` property. Much like the
- * `?` operator in Rust, or the `try` expression in Zig and Swift. Although we
- * need to use the {@link Result.wrap} function if we want the caller function
- * to return a `Result` as well.
+ * a traditional way. Which is done by using the `unwrap()` method of the
+ * `Result` object to retrieve the value directly. Then we can use the
+ * {@link Result.wrap} function to wrap the caller function if we want it to
+ * return a `Result` as well.
  * 
  * @experimental
  * @module
  */
 import { MethodDecorator } from "./class/decorators.ts";
-import { getReadonly, setReadonly } from "./class/util.ts";
 import wrap from "./wrap.ts";
+
+export interface IResult<T, E> {
+    /**
+     * Whether the result is successful.
+     */
+    ok: boolean;
+    /**
+     * Returns the value if the result is successful, otherwise throws the error.
+     */
+    unwrap(): T;
+    /**
+     * Handles the result if failed and provides a fallback value.
+     */
+    catch(fn: (error: E) => T): T;
+    /**
+     * Returns the value if the result is successful, otherwise returns
+     * `undefined`.
+     */
+    optional(): T | undefined;
+}
+
+export interface ResultOk<T, E> extends IResult<T, E> {
+    ok: true;
+    /**
+     * The value of the result if `ok` is `true`.
+     */
+    value: T;
+}
+
+export interface ResultErr<T, E> extends IResult<T, E> {
+    ok: false;
+    /**
+     * The error of the result if `ok` is `false`.
+     */
+    error: E;
+}
 
 /**
  * Represents the result of an operation that may succeed or fail.
@@ -56,7 +90,7 @@ import wrap from "./wrap.ts";
  * // propagate the error and wrap it into a Result object
  * function divAndSub(a: number, b: number): Result<number, RangeError> {
  *     return Result.wrap(() => {
- *         const value = divide(a, b).value; // This throws if b is 0, but
+ *         const value = divide(a, b).unwrap(); // This throws if b is 0, but
  *                                           // it will be caught and wrapped.
  *         return Ok(value - b);
  *     });
@@ -66,140 +100,111 @@ import wrap from "./wrap.ts";
  * class Calculator {
  *     \@Result.wrap()
  *     divAndSub(a: number, b: number): Result<number, RangeError> {
- *         const value = divide(a, b).value; // This throws if b is 0, but
+ *         const value = divide(a, b).unwrap(); // This throws if b is 0, but
  *                                           // it will be caught and wrapped.
  *         return Ok(value - b);
  *     }
  * }
  * ```
  */
-export class Result<T, E = unknown> {
-    private constructor(result: {
-        ok: true,
-        value: T,
-    } | {
-        ok: false,
-        error: E;
-    }) {
-        if (result.ok) {
-            setReadonly(this, "ok", true);
-            setReadonly(this, "value", result.value);
-        } else {
-            setReadonly(this, "ok", false);
-            setReadonly(this, "error", result.error);
-        }
+export type Result<T, E> = ResultOk<T, E> | ResultErr<T, E>;
+export var Result = function Result<T, E>(this: any, result: {
+    ok: true,
+    value: T;
+} | {
+    ok: false,
+    error: E;
+}) {
+    if (!new.target) {
+        return new (Result as any)(result);
     }
 
-    /**
-     * Whether the result is successful.
-     */
-    get ok(): boolean {
-        return getReadonly(this, "ok") as boolean;
+    const ins = this as Result<T, E>;
+    ins.ok = result.ok;
+
+    if (result.ok) {
+        (ins as ResultOk<T, E>).value = result.value;
+    } else {
+        (ins as ResultErr<T, E>).error = result.error;
     }
+} as unknown as {
+    prototype: Result<unknown, unknown>;
+    <T, E = unknown>(result: { ok: true, value: T; }): Result<T, E>;
+    <T, E = unknown>(result: { ok: false, error: E; }): Result<T, E>;
+    new <T, E = unknown>(result: { ok: true, value: T; }): Result<T, E>;
+    new <T, E = unknown>(result: { ok: false, error: E; }): Result<T, E>;
+    wrap: {
+        <T, E = unknown>(fn: () => Result<T, E>): Result<T, E>;
+        <T, E = unknown>(fn: () => Promise<Result<T, E>>): Promise<Result<T, E>>;
+        <T, E = unknown>(fn: () => Promise<T | never>): Promise<Result<T, E>>;
+        <T, E = unknown>(fn: () => T | never): Result<T, E>;
+        (): MethodDecorator;
+    };
+};
 
-    /**
-     * The value of the result if `ok` is `true`, otherwise throws the error if
-     * `ok` is `false`, allowing the error to propagate.
-     */
-    get value(): T {
-        if (!this.ok) {
-            throw this.error;
-        }
-
-        return getReadonly(this, "value") as T;
+Result.prototype.unwrap = function <T, E>(this: Result<T, E>) {
+    if (this.ok) {
+        return (this as ResultOk<T, E>).value;
+    } else {
+        throw (this as ResultErr<T, E>).error;
     }
+};
 
-    /**
-     * The error of the result if `ok` is `false`, otherwise it is `undefined`.
-     */
-    get error(): E {
-        return getReadonly(this, "error") as E;
+Result.prototype.catch = function <T, E>(this: Result<T, E>, fn: (error: E) => T) {
+    if (this.ok) {
+        return (this as ResultOk<T, E>).value;
+    } else {
+        return fn((this as ResultErr<T, E>).error);
     }
+};
 
-    /**
-     * Handles the result if failed, logs the error or provides a fallback value.
-     */
-    catch(fn: (error: E) => T): T {
-        return this.ok ? this.value : fn(this.error);
+Result.prototype.optional = function <T, E>(this: Result<T, E>) {
+    if (this.ok) {
+        return (this as ResultOk<T, E>).value;
+    } else {
+        return undefined;
     }
+};
 
-    /**
-     * Returns the value if the result is successful, otherwise returns
-     * `undefined`.
-     */
-    optional(): T | undefined {
-        return this.ok ? this.value : undefined;
-    }
+Result.wrap = function (fn: (() => any) | undefined = undefined): any {
+    if (typeof fn === "function") {
+        try {
+            const res = fn();
 
-    /**
-     * Constructs a successful result.
-     */
-    static ok<T, E = unknown>(value: T): Result<T, E> {
-        return new Result({ ok: true, value });
-    }
-
-    /**
-     * Constructs a failed result.
-     */
-    static err<E, T = never>(error: E): Result<T, E> {
-        return new Result({ ok: false, error });
-    }
-
-    /**
-     * Wraps a function that may throw and calls it, capturing the result into a
-     * `Result` object. If the returned value is already a `Result` object, it
-     * will be returned as is.
-     */
-    static wrap<T, E = unknown>(fn: () => Result<T, E>): Result<T, E>;
-    static wrap<T, E = unknown>(fn: () => Promise<Result<T, E>>): Promise<Result<T, E>>;
-    static wrap<T, E = unknown>(fn: () => Promise<T | never>): Promise<Result<T, E>>;
-    static wrap<T, E = unknown>(fn: () => T | never): Result<T, E>;
-    /**
-     * Use as a decorator, make sure a method always returns a `Result` instance,
-     * even if it throws.
-     */
-    static wrap(): MethodDecorator;
-    static wrap(fn: (() => any) | undefined = undefined): any {
-        if (typeof fn === "function") {
-            try {
-                const res = fn();
-
-                if (typeof res?.then === "function") {
-                    return Promise.resolve(res)
-                        .then(value => value instanceof Result ? value : this.ok(value))
-                        .catch(error => this.err(error));
-                } else {
-                    return res instanceof Result ? res : this.ok(res);
-                }
-            } catch (error) {
-                return this.err(error);
+            if (typeof res?.then === "function") {
+                return Promise.resolve(res)
+                    .then(value => value instanceof Result ? value : Ok(value))
+                    .catch(error => Err(error));
+            } else {
+                return res instanceof Result ? res : Ok(res);
             }
-        } else { // as a decorator
-            const _Result = this;
-            return (...args: any[]) => {
-                if (typeof args[1] === "object") { // new ES decorator since TypeScript 5.0
-                    const [fn] = args as [(this: any, ...args: any[]) => any, DecoratorContext];
-                    return wrap(fn, function (this, fn, ...args) {
-                        return _Result.wrap(() => fn.call(this, ...args));
-                    });
-                } else {
-                    const [_ins, _prop, desc] = args as [any, string, TypedPropertyDescriptor<any>];
-                    desc.value = wrap(desc.value, function (fn, ...args) {
-                        return _Result.wrap(() => fn.call(this, ...args));
-                    });
-                    return;
-                }
-            };
+        } catch (error) {
+            return Err(error);
         }
+    } else { // as a decorator
+        return (...args: any[]) => {
+            if (typeof args[1] === "object") { // new ES decorator since TypeScript 5.0
+                const [fn] = args as [(this: any, ...args: any[]) => any, DecoratorContext];
+                return wrap(fn, function (this, fn, ...args) {
+                    return Result.wrap(() => fn.call(this, ...args));
+                });
+            } else {
+                const [_ins, _prop, desc] = args as [any, string, TypedPropertyDescriptor<any>];
+                desc.value = wrap(desc.value, function (fn, ...args) {
+                    return Result.wrap(() => fn.call(this, ...args));
+                });
+                return;
+            }
+        };
     }
-}
+};
 
 /**
- * A shorthand for `Result.ok`.
+ * Constructs a successful result with the given value.
  */
-export const Ok = Result.ok;
+export const Ok = <T, E = unknown>(value: T) => new Result<T, E>({ ok: true, value });
 
 /**
- * A shorthand for `Result.err`.
+ * Constructs a failed result with the given error.
  */
-export const Err = Result.err;
+export const Err = <E, T = never>(error: E) => new Result<T, E>({ ok: false, error });

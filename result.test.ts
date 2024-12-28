@@ -1,4 +1,4 @@
-import { strictEqual } from "node:assert";
+import { ok, strictEqual } from "node:assert";
 import { Err, Ok, Result } from "./result.ts";
 import _try from "./try.ts";
 
@@ -23,16 +23,15 @@ describe("result", () => {
         const result = Ok(10);
         strictEqual(result.ok, true);
         strictEqual(result.value, 10);
-        strictEqual(result.error, undefined);
+        strictEqual("error" in result, false);
     });
 
     it("Err", () => {
         const err = new Error("something went wrong");
         const result = Err(err);
-        const [_err] = _try(() => result.value as undefined);
         strictEqual(result.ok, false);
         strictEqual(result.error, err);
-        strictEqual(_err, err);
+        strictEqual("value" in result, false);
     });
 
     it("catch", () => {
@@ -43,7 +42,7 @@ describe("result", () => {
             return 10;
         });
         strictEqual(value, 10);
-        strictEqual(err, result.error);
+        ok(!result.ok && result.error === err);
     });
 
     it("optional", () => {
@@ -115,7 +114,7 @@ describe("result", () => {
 
         it("error propagation", async () => {
             function divideAndTimes(a: number, b: number, c: number): Result<number, RangeError> {
-                const result = divideR(a, b).value;
+                const result = divideR(a, b).unwrap();
                 return Ok(result * c);
             }
 
@@ -128,7 +127,7 @@ describe("result", () => {
                 b: number,
                 c: number
             ): Promise<Result<number, RangeError>> {
-                const result = (await divideAsync(a, b)).value;
+                const result = (await divideAsync(a, b)).unwrap();
                 return Ok(result * c);
             }
 
@@ -162,7 +161,7 @@ describe("result", () => {
 
                 @Result.wrap()
                 divideAndTimes(a: number, b: number, c: number): Result<number, RangeError> {
-                    const result = this.divide(a, b).value;
+                    const result = this.divide(a, b).unwrap();
                     return Ok(result * c);
                 }
 
@@ -178,7 +177,7 @@ describe("result", () => {
                     b: number,
                     c: number
                 ): Promise<Result<number, RangeError>> {
-                    const result = (await this.divideAsync(a, b)).value;
+                    const result = (await this.divideAsync(a, b)).unwrap();
                     return Ok(result * c);
                 }
             }
