@@ -1,5 +1,6 @@
 /**
- * Runs a script in another thread and abort at any time.
+ * Runs a script in a worker thread and invokes its `default` function to
+ * collect the result.
  * @module
  */
 
@@ -141,7 +142,7 @@ export interface WorkerTask<R> {
  * const job2 = await run<string, [string[]]>(
  *     "examples/worker.mjs",
  *     [["foo", "bar"]],
- *     { fn: "sequence" }
+ *     { fn: "sequence" } // sequence is a generator function
  * );
  * for await (const word of job2.iterate()) {
  *     console.log(word);
@@ -160,9 +161,9 @@ export interface WorkerTask<R> {
  * const job3 = await run<string, [string]>("examples/worker.mjs", ["foobar"], {
  *    fn: "takeTooLong",
  * });
- * await job3.abort();
+ * job3.abort();
  * const [err, res] = await _try(job3.result());
- * console.assert(err === null);
+ * console.assert((err as DOMException)?.name === "AbortError");
  * console.assert(res === undefined);
  * ```
  */

@@ -12,7 +12,8 @@ import { abortWith, asyncTask } from './async.js';
 import { isAbsolute } from './path/util.js';
 
 /**
- * Runs a script in another thread and abort at any time.
+ * Runs a script in a worker thread and invokes its `default` function to
+ * collect the result.
  * @module
  */
 const workerPools = new Map();
@@ -57,7 +58,7 @@ const workerConsumerQueue = [];
  * const job2 = await run<string, [string[]]>(
  *     "examples/worker.mjs",
  *     [["foo", "bar"]],
- *     { fn: "sequence" }
+ *     { fn: "sequence" } // sequence is a generator function
  * );
  * for await (const word of job2.iterate()) {
  *     console.log(word);
@@ -76,9 +77,9 @@ const workerConsumerQueue = [];
  * const job3 = await run<string, [string]>("examples/worker.mjs", ["foobar"], {
  *    fn: "takeTooLong",
  * });
- * await job3.abort();
+ * job3.abort();
  * const [err, res] = await _try(job3.result());
- * console.assert(err === null);
+ * console.assert((err as DOMException)?.name === "AbortError");
  * console.assert(res === undefined);
  * ```
  */
