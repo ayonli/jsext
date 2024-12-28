@@ -91,6 +91,8 @@ In `tsconfig.json`, the following `compilerOptions` must be set as such:
   deprecated and emit warnings when it is called.
 - [pipe](https://jsr.io/@ayonli/jsext/doc/pipe/~/pipe) Performs pipe operations
   through a series of functions upon a value.
+- [result](https://jsr.io/@ayonli/jsext/doc/pipe/~/result) (Experimental)
+  Introduces the `Result` pattern into JavaScript, inspired by Rust.
 
 ## Subcategories
 
