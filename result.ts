@@ -95,14 +95,6 @@ export interface ResultStatic {
  *     console.error(result.error); // RangeError: division by zero
  * }
  * 
- * // provide a fallback value if failed
- * const value = result.catch(() => 0);
- * console.log(value); // 0
- * 
- * // make the result optional
- * const value2 = result.optional();
- * console.log(value2); // undefined
- * 
  * // propagate the error and wrap it into a Result object
  * function divAndSub(a: number, b: number): Result<number, RangeError> {
  *     return Result.wrap(() => {
@@ -121,6 +113,18 @@ export interface ResultStatic {
  *         return Ok(value - b);
  *     }
  * }
+ * 
+ *
+ * // Handle the error and provide a fallback value
+ * const value = result.unwrap((error) => {
+ *     console.error("An error occurred:", error);
+ *     return 0;
+ * });
+ * console.log(value); // 0
+ * 
+ * // make the result optional
+ * const value2 = result.optional();
+ * console.log(value2); // undefined
  * ```
  */
 export type Result<T, E> = ResultOk<T, E> | ResultErr<T, E>;
