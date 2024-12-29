@@ -1,41 +1,36 @@
 import wrap from './wrap.js';
 
-var Result = function Result(result) {
+const Result = function Result(init) {
     if (!new.target) {
-        return new Result(result);
+        throw new TypeError("Class constructor Result cannot be invoked without 'new'");
     }
     const ins = this;
-    ins.ok = result.ok;
-    if (result.ok) {
-        ins.value = result.value;
+    if (init.ok) {
+        Object.defineProperties(ins, {
+            ok: { value: true },
+            value: { value: init.value },
+        });
     }
     else {
-        ins.error = result.error;
+        Object.defineProperties(ins, {
+            ok: { value: false },
+            error: { value: init.error },
+        });
     }
 };
-Result.prototype.unwrap = function () {
+Result.prototype.unwrap = function (onError = undefined) {
     if (this.ok) {
         return this.value;
+    }
+    else if (onError) {
+        return onError(this.error);
     }
     else {
         throw this.error;
     }
 };
-Result.prototype.catch = function (fn) {
-    if (this.ok) {
-        return this.value;
-    }
-    else {
-        return fn(this.error);
-    }
-};
 Result.prototype.optional = function () {
-    if (this.ok) {
-        return this.value;
-    }
-    else {
-        return undefined;
-    }
+    return this.ok ? this.value : undefined;
 };
 Result.wrap = function (fn = undefined) {
     if (typeof fn === "function") {

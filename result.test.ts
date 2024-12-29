@@ -34,15 +34,22 @@ describe("result", () => {
         strictEqual("value" in result, false);
     });
 
-    it("catch", () => {
-        const result = Err<Error, number>(new Error("something went wrong"));
-        let err: Error | undefined;
-        const value = result.catch((error) => {
-            err = error;
-            return 10;
-        });
-        strictEqual(value, 10);
-        ok(!result.ok && result.error === err);
+    it("unwrap", () => {
+        const result1 = Ok(10);
+        strictEqual(result1.unwrap(), 10);
+
+        const result2 = Err<Error, number>(new Error("something went wrong"));
+        const [err] = _try(() => result2.unwrap());
+        ok(!result2.ok && result2.error === err);
+
+        const result3 = Err<Error, number>(new Error("something went wrong"));
+        let _err: Error | undefined;
+        const [, value3] = _try(() => result3.unwrap(error => {
+            _err = error;
+            return 0;
+        }));
+        ok(!result3.ok && result3.error === _err);
+        strictEqual(value3, 0);
     });
 
     it("optional", () => {

@@ -25,15 +25,14 @@ export interface IResult<T, E> {
     /**
      * Whether the result is successful.
      */
-    ok: boolean;
+    readonly ok: boolean;
     /**
-     * Returns the value if the result is successful, otherwise throws the error.
+     * Returns the value if the result is successful, otherwise throws the error,
+     * unless the error is handled and a fallback value is provided.
+     * 
+     * @param onError Handles the error and provides a fallback value.
      */
-    unwrap(): T;
-    /**
-     * Handles the result if failed and provides a fallback value.
-     */
-    catch(fn: (error: E) => T): T;
+    unwrap(onError?: ((error: E) => T) | undefined): T;
     /**
      * Returns the value if the result is successful, otherwise returns
      * `undefined`.
@@ -42,19 +41,36 @@ export interface IResult<T, E> {
 }
 
 export interface ResultOk<T, E> extends IResult<T, E> {
-    ok: true;
+    readonly ok: true;
     /**
      * The value of the result if `ok` is `true`.
      */
-    value: T;
+    readonly value: T;
 }
 
 export interface ResultErr<T, E> extends IResult<T, E> {
-    ok: false;
+    readonly ok: false;
     /**
      * The error of the result if `ok` is `false`.
      */
-    error: E;
+    readonly error: E;
+}
+
+export interface ResultStatic {
+    /**
+     * Wraps a function that may throw and calls it, capturing the result into a
+     * `Result` object. If the returned value is already a `Result` object, it
+     * will be returned as is.
+     */
+    wrap<T, E = unknown>(fn: () => Result<T, E>): Result<T, E>;
+    wrap<T, E = unknown>(fn: () => Promise<Result<T, E>>): Promise<Result<T, E>>;
+    wrap<T, E = unknown>(fn: () => Promise<T | never>): Promise<Result<T, E>>;
+    wrap<T, E = unknown>(fn: () => T | never): Result<T, E>;
+    /**
+     * Used as a decorator, make sure a method always returns a `Result`
+     * instance, even if it throws.
+     */
+    wrap(): MethodDecorator;
 }
 
 /**
@@ -108,7 +124,7 @@ export interface ResultErr<T, E> extends IResult<T, E> {
  * ```
  */
 export type Result<T, E> = ResultOk<T, E> | ResultErr<T, E>;
-export var Result = function Result<T, E>(this: any, result: {
+export const Result = function Result<T, E>(this: any, init: {
     ok: true,
     value: T;
 } | {
@@ -116,54 +132,43 @@ export var Result = function Result<T, E>(this: any, result: {
     error: E;
 }) {
     if (!new.target) {
-        return new (Result as any)(result);
+        throw new TypeError("Class constructor Result cannot be invoked without 'new'");
     }
 
     const ins = this as Result<T, E>;
-    ins.ok = result.ok;
 
-    if (result.ok) {
-        (ins as ResultOk<T, E>).value = result.value;
+    if (init.ok) {
+        Object.defineProperties(ins, {
+            ok: { value: true },
+            value: { value: init.value },
+        });
     } else {
-        (ins as ResultErr<T, E>).error = result.error;
+        Object.defineProperties(ins, {
+            ok: { value: false },
+            error: { value: init.error },
+        });
     }
 } as unknown as {
+    new <T, E = unknown>(init: { ok: true, value: T; }): Result<T, E>;
+    new <T, E = unknown>(init: { ok: false, error: E; }): Result<T, E>;
     prototype: Result<unknown, unknown>;
-    <T, E = unknown>(result: { ok: true, value: T; }): Result<T, E>;
-    <T, E = unknown>(result: { ok: false, error: E; }): Result<T, E>;
-    new <T, E = unknown>(result: { ok: true, value: T; }): Result<T, E>;
-    new <T, E = unknown>(result: { ok: false, error: E; }): Result<T, E>;
-    wrap: {
-        <T, E = unknown>(fn: () => Result<T, E>): Result<T, E>;
-        <T, E = unknown>(fn: () => Promise<Result<T, E>>): Promise<Result<T, E>>;
-        <T, E = unknown>(fn: () => Promise<T | never>): Promise<Result<T, E>>;
-        <T, E = unknown>(fn: () => T | never): Result<T, E>;
-        (): MethodDecorator;
-    };
-};
+} & ResultStatic;
 
-Result.prototype.unwrap = function <T, E>(this: Result<T, E>) {
+Result.prototype.unwrap = function <T, E>(
+    this: Result<T, E>,
+    onError: ((error: E) => T) | undefined = undefined
+) {
     if (this.ok) {
-        return (this as ResultOk<T, E>).value;
+        return this.value;
+    } else if (onError) {
+        return onError(this.error);
     } else {
-        throw (this as ResultErr<T, E>).error;
-    }
-};
-
-Result.prototype.catch = function <T, E>(this: Result<T, E>, fn: (error: E) => T) {
-    if (this.ok) {
-        return (this as ResultOk<T, E>).value;
-    } else {
-        return fn((this as ResultErr<T, E>).error);
+        throw this.error;
     }
 };
 
 Result.prototype.optional = function <T, E>(this: Result<T, E>) {
-    if (this.ok) {
-        return (this as ResultOk<T, E>).value;
-    } else {
-        return undefined;
-    }
+    return this.ok ? this.value : undefined;
 };
 
 Result.wrap = function (fn: (() => any) | undefined = undefined): any {
