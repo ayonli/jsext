@@ -187,7 +187,7 @@ function param(arg1, arg2 = undefined) {
  * ```
  */
 function returns(type) {
-    return ((...args) => {
+    return (...args) => {
         if (typeof args[1] === "object") { // new ES decorator since TypeScript 5.0
             const [target, context] = args;
             const fn = decorate(target, context.name);
@@ -200,7 +200,7 @@ function returns(type) {
             fn[_returns] = { type, name: "return value" };
             return desc;
         }
-    });
+    };
 }
 /**
  * A decorator that restrains the thrown value of the method at runtime, based
@@ -228,7 +228,7 @@ function returns(type) {
  * ```
  */
 function throws(type) {
-    return ((...args) => {
+    return (...args) => {
         if (typeof args[1] === "object") { // new ES decorator since TypeScript 5.0
             const [target, context] = args;
             const fn = decorate(target, context.name);
@@ -241,7 +241,7 @@ function throws(type) {
             fn[_throws] = { type, name: "thrown value" };
             return desc !== null && desc !== void 0 ? desc : fn;
         }
-    });
+    };
 }
 
 export { param, returns, throws };

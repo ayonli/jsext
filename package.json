@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "1.3.1",
+    "version": "1.4.0",
     "description": "A JavaScript extension package for building strong and modern applications.",
     "type": "module",
     "exports": {
@@ -366,6 +366,14 @@
             "import": "./esm/reader.js",
             "require": "./cjs/reader.js",
             "default": "./reader.ts"
+        },
+        "./result": {
+            "types": "./types/result.d.ts",
+            "bun": "./result.ts",
+            "deno": "./result.ts",
+            "import": "./esm/result.js",
+            "require": "./cjs/result.js",
+            "default": "./result.ts"
         },
         "./run": {
             "types": "./types/run.d.ts",
