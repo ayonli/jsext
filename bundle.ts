@@ -22,6 +22,7 @@ import * as number from "./number.ts";
 import * as object from "./object.ts";
 import * as path from "./path.ts";
 import * as reader from "./reader.ts";
+import * as result from "./result.ts";
 import * as runtime from "./runtime.ts";
 import * as sse from "./sse.ts";
 import * as string from "./string.ts";
@@ -65,6 +66,7 @@ export default {
     object,
     path,
     reader,
+    result,
     runtime: {
         ...object.omit(runtime, ["default"]),
         runtime: runtime.default,
