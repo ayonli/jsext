@@ -58,9 +58,9 @@ export interface ResultErr<T, E> extends IResult<T, E> {
 
 export interface ResultStatic {
     /**
-     * Wraps a function that may throw and calls it, capturing the result into a
-     * `Result` object. If the returned value is already a `Result` object, it
-     * will be returned as is.
+     * Wraps a function that may throw and returns a new function that always
+     * returns a `Result` object. If the returned value is already a `Result`
+     * object, it will be returned as is.
      */
     wrap<A extends any[], R, E = unknown>(fn: (...args: A) => Result<R, E>): (...args: A) => Result<R, E>;
     wrap<A extends any[], R, E = unknown>(fn: (...args: A) => Promise<Result<R, E>>): (...args: A) => Promise<Result<R, E>>;
@@ -95,7 +95,7 @@ export interface ResultStatic {
  *     console.error(result.error); // RangeError: division by zero
  * }
  * 
- * // propagate the error and wrap it into a Result object
+ * // safely propagate the error
  * const divAndSub = Result.wrap((a: number, b: number): Result<number, RangeError> => {
  *     const value = divide(a, b).unwrap(); // This throws if b is 0, but
  *                                          // it will be caught and wrapped.
@@ -107,7 +107,7 @@ export interface ResultStatic {
  *     \@Result.wrap()
  *     divAndSub(a: number, b: number): Result<number, RangeError> {
  *         const value = divide(a, b).unwrap(); // This throws if b is 0, but
- *                                           // it will be caught and wrapped.
+ *                                              // it will be caught and wrapped.
  *         return Ok(value - b);
  *     }
  * }
