@@ -34,34 +34,32 @@ Result.prototype.optional = function () {
 };
 Result.wrap = function (fn = undefined) {
     if (typeof fn === "function") {
-        try {
-            const res = fn();
-            if (typeof (res === null || res === void 0 ? void 0 : res.then) === "function") {
-                return Promise.resolve(res)
-                    .then(value => value instanceof Result ? value : Ok(value))
-                    .catch(error => Err(error));
+        return wrap(fn, function (fn, ...args) {
+            try {
+                const res = fn.call(this, ...args);
+                if (typeof (res === null || res === void 0 ? void 0 : res.then) === "function") {
+                    return Promise.resolve(res)
+                        .then(value => value instanceof Result ? value : Ok(value))
+                        .catch(error => Err(error));
+                }
+                else {
+                    return res instanceof Result ? res : Ok(res);
+                }
             }
-            else {
-                return res instanceof Result ? res : Ok(res);
+            catch (error) {
+                return Err(error);
             }
-        }
-        catch (error) {
-            return Err(error);
-        }
+        });
     }
     else { // as a decorator
         return (...args) => {
             if (typeof args[1] === "object") { // new ES decorator since TypeScript 5.0
                 const [fn] = args;
-                return wrap(fn, function (fn, ...args) {
-                    return Result.wrap(() => fn.call(this, ...args));
-                });
+                return Result.wrap(fn);
             }
             else {
                 const [_ins, _prop, desc] = args;
-                desc.value = wrap(desc.value, function (fn, ...args) {
-                    return Result.wrap(() => fn.call(this, ...args));
-                });
+                desc.value = Result.wrap(desc.value);
                 return;
             }
         };

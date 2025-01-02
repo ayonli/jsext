@@ -10,12 +10,21 @@ function divide(a: number, b: number): number | never {
     return a / b;
 }
 
+async function divideAsync(a: number, b: number): Promise<number> {
+    await Promise.resolve();
+    return divide(a, b);
+}
+
 function divideR(a: number, b: number): Result<number, RangeError> {
     if (b === 0) {
         return Err(new RangeError("division by zero"));
     }
 
     return Ok(a / b);
+}
+
+function divideRAsync(a: number, b: number): Promise<Result<number, RangeError>> {
+    return Promise.resolve(divideR(a, b));
 }
 
 describe("result", () => {
@@ -60,61 +69,61 @@ describe("result", () => {
 
     describe("wrap", () => {
         it("regular functions", () => {
-            const result1 = Result.wrap<number, RangeError>(() => divide(10, 2));
+            const result1 = Result.wrap(divide)(10, 2);
             strictEqual(result1.ok, true);
             strictEqual(result1.value, 5);
 
-            const result2 = Result.wrap<number, RangeError>(() => divide(10, 0));
+            const result2 = Result.wrap<[number, number], number, RangeError>(divide)(10, 0);
             strictEqual(result2.ok, false);
             strictEqual(result2.error?.message, "division by zero");
         });
 
         it("async functions", async () => {
-            const result1 = await Result.wrap<number, RangeError>(async () => divide(10, 2));
+            const result1 = await Result.wrap<[number, number], number, RangeError>(divideAsync)(10, 2);
             strictEqual(result1.ok, true);
             strictEqual(result1.value, 5);
 
-            const result2 = await Result.wrap<number, RangeError>(async () => divide(10, 0));
+            const result2 = await Result.wrap<[number, number], number, RangeError>(divideAsync)(10, 0);
             strictEqual(result2.ok, false);
             strictEqual(result2.error?.message, "division by zero");
         });
 
         it("functions return Result", async () => {
-            const result1 = Result.wrap(() => divideR(10, 2));
+            const result1 = Result.wrap<[number, number], number, RangeError>(divideR)(10, 2);
             strictEqual(result1.ok, true);
             strictEqual(result1.value, 5);
 
-            const result2 = Result.wrap(() => divideR(10, 0));
+            const result2 = Result.wrap<[number, number], number, RangeError>(divideR)(10, 0);
             strictEqual(result2.ok, false);
             strictEqual(result2.error?.message, "division by zero");
 
-            const result3 = await Result.wrap(async () => divideR(10, 2));
+            const result3 = await Result.wrap<[number, number], number, RangeError>(divideRAsync)(10, 2);
             strictEqual(result3.ok, true);
             strictEqual(result3.value, 5);
 
-            const result4 = await Result.wrap(async () => divideR(10, 0));
+            const result4 = await Result.wrap<[number, number], number, RangeError>(divideRAsync)(10, 0);
             strictEqual(result4.ok, false);
             strictEqual(result4.error?.message, "division by zero");
         });
 
         it("functions returns void", async () => {
-            const result1 = Result.wrap(() => { });
+            const result1 = Result.wrap(() => { })();
             strictEqual(result1.ok, true);
             strictEqual(result1.value, undefined);
 
-            const result2 = Result.wrap<never, Error>(() => {
+            const result2 = Result.wrap<[], never, Error>(() => {
                 throw new Error("something went wrong");
-            });
+            })();
             strictEqual(result2.ok, false);
             strictEqual(result2.error?.message, "something went wrong");
 
-            const result3 = await Result.wrap(async () => { });
+            const result3 = await Result.wrap(async () => { })();
             strictEqual(result3.ok, true);
             strictEqual(result3.value, undefined);
 
-            const result4 = await Result.wrap<never, Error>(async () => {
+            const result4 = await Result.wrap<[], never, Error>(async () => {
                 throw new Error("something went wrong");
-            });
+            })();
             strictEqual(result4.ok, false);
             strictEqual(result4.error?.message, "something went wrong");
         });
@@ -126,7 +135,7 @@ describe("result", () => {
             }
 
             function divideAsync(a: number, b: number): Promise<Result<number, RangeError>> {
-                return Result.wrap(async () => divideR(a, b));
+                return Result.wrap(divideRAsync)(a, b);
             }
 
             async function divideAndTimesAsync(
@@ -138,19 +147,19 @@ describe("result", () => {
                 return Ok(result * c);
             }
 
-            const result1 = Result.wrap<number, RangeError>(() => divideAndTimes(10, 2, 3));
+            const result1 = Result.wrap<[number, number, number], number, RangeError>(divideAndTimes)(10, 2, 3);
             strictEqual(result1.ok, true);
             strictEqual(result1.value, 15);
 
-            const result2 = Result.wrap<number, RangeError>(() => divideAndTimes(10, 0, 3));
+            const result2 = Result.wrap<[number, number, number], number, RangeError>(divideAndTimes)(10, 0, 3);
             strictEqual(result2.ok, false);
             strictEqual(result2.error?.message, "division by zero");
 
-            const result3 = await Result.wrap<number, RangeError>(() => divideAndTimesAsync(10, 2, 3));
+            const result3 = await Result.wrap<[number, number, number], number, RangeError>(divideAndTimesAsync)(10, 2, 3);
             strictEqual(result3.ok, true);
             strictEqual(result3.value, 15);
 
-            const result4 = await Result.wrap<number, RangeError>(() => divideAndTimesAsync(10, 0, 3));
+            const result4 = await Result.wrap<[number, number, number], number, RangeError>(divideAndTimesAsync)(10, 0, 3);
             strictEqual(result4.ok, false);
             strictEqual(result4.error?.message, "division by zero");
         });

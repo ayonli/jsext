@@ -6,7 +6,7 @@
  * This module also provides the {@link Ok} and {@link Err} functions as
  * shorthands for constructing successful and failed results, respectively. Also,
  * a {@link Result.wrap} function is provided to wrap a traditional function
- * that may throw an error into a `Result` object.
+ * that may throw an error into a function that always returns a `Result` object.
  * 
  * This module don't give up the error propagation mechanism in JavaScript, we
  * can still use the `try...catch` statement to catch the error and handle it in
@@ -62,10 +62,10 @@ export interface ResultStatic {
      * `Result` object. If the returned value is already a `Result` object, it
      * will be returned as is.
      */
-    wrap<T, E = unknown>(fn: () => Result<T, E>): Result<T, E>;
-    wrap<T, E = unknown>(fn: () => Promise<Result<T, E>>): Promise<Result<T, E>>;
-    wrap<T, E = unknown>(fn: () => Promise<T | never>): Promise<Result<T, E>>;
-    wrap<T, E = unknown>(fn: () => T | never): Result<T, E>;
+    wrap<A extends any[], R, E = unknown>(fn: (...args: A) => Result<R, E>): (...args: A) => Result<R, E>;
+    wrap<A extends any[], R, E = unknown>(fn: (...args: A) => Promise<Result<R, E>>): (...args: A) => Promise<Result<R, E>>;
+    wrap<A extends any[], R, E = unknown>(fn: (...args: A) => Promise<R | never>): (...args: A) => Promise<Result<R, E>>;
+    wrap<A extends any[], R, E = unknown>(fn: (...args: A) => R | never): (...args: A) => Result<R, E>;
     /**
      * Used as a decorator, make sure a method always returns a `Result`
      * instance, even if it throws.
@@ -96,13 +96,11 @@ export interface ResultStatic {
  * }
  * 
  * // propagate the error and wrap it into a Result object
- * function divAndSub(a: number, b: number): Result<number, RangeError> {
- *     return Result.wrap(() => {
- *         const value = divide(a, b).unwrap(); // This throws if b is 0, but
- *                                           // it will be caught and wrapped.
- *         return Ok(value - b);
- *     });
- * }
+ * const divAndSub = Result.wrap((a: number, b: number): Result<number, RangeError> => {
+ *     const value = divide(a, b).unwrap(); // This throws if b is 0, but
+ *                                          // it will be caught and wrapped.
+ *     return Ok(value - b);
+ * });
  * 
  * // use `wrap` as a decorator
  * class Calculator {
@@ -127,8 +125,8 @@ export interface ResultStatic {
  * console.log(value2); // undefined
  * ```
  */
-export type Result<T, E> = ResultOk<T, E> | ResultErr<T, E>;
-export const Result = function Result<T, E>(this: any, init: {
+export type Result<T, E = unknown> = ResultOk<T, E> | ResultErr<T, E>;
+export const Result = function Result<T, E = unknown>(this: any, init: {
     ok: true,
     value: T;
 } | {
@@ -175,33 +173,31 @@ Result.prototype.optional = function <T, E>(this: Result<T, E>) {
     return this.ok ? this.value : undefined;
 };
 
-Result.wrap = function (fn: (() => any) | undefined = undefined): any {
+Result.wrap = function (fn: ((...args: any[]) => any) | undefined = undefined): (...args: any[]) => any {
     if (typeof fn === "function") {
-        try {
-            const res = fn();
+        return wrap(fn, function (this, fn, ...args) {
+            try {
+                const res = fn.call(this, ...args);
 
-            if (typeof res?.then === "function") {
-                return Promise.resolve(res)
-                    .then(value => value instanceof Result ? value : Ok(value))
-                    .catch(error => Err(error));
-            } else {
-                return res instanceof Result ? res : Ok(res);
+                if (typeof res?.then === "function") {
+                    return Promise.resolve(res)
+                        .then(value => value instanceof Result ? value : Ok(value))
+                        .catch(error => Err(error));
+                } else {
+                    return res instanceof Result ? res : Ok(res);
+                }
+            } catch (error) {
+                return Err(error);
             }
-        } catch (error) {
-            return Err(error);
-        }
+        });
     } else { // as a decorator
         return (...args: any[]) => {
             if (typeof args[1] === "object") { // new ES decorator since TypeScript 5.0
                 const [fn] = args as [(this: any, ...args: any[]) => any, DecoratorContext];
-                return wrap(fn, function (this, fn, ...args) {
-                    return Result.wrap(() => fn.call(this, ...args));
-                });
+                return Result.wrap(fn);
             } else {
                 const [_ins, _prop, desc] = args as [any, string, TypedPropertyDescriptor<any>];
-                desc.value = wrap(desc.value, function (fn, ...args) {
-                    return Result.wrap(() => fn.call(this, ...args));
-                });
+                desc.value = Result.wrap(desc.value);
                 return;
             }
         };
