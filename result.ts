@@ -62,8 +62,8 @@ export interface ResultStatic {
      * returns a `Result` object. If the returned value is already a `Result`
      * object, it will be returned as is.
      */
-    wrap<A extends any[], R, E = unknown>(fn: (...args: A) => Result<R, E>): (...args: A) => Result<R, E>;
-    wrap<A extends any[], R, E = unknown>(fn: (...args: A) => Promise<Result<R, E>>): (...args: A) => Promise<Result<R, E>>;
+    wrap<A extends any[], T, E = unknown>(fn: (...args: A) => Result<T, E>): (...args: A) => Result<T, E>;
+    wrap<A extends any[], T, E = unknown>(fn: (...args: A) => Promise<Result<T, E>>): (...args: A) => Promise<Result<T, E>>;
     wrap<A extends any[], R, E = unknown>(fn: (...args: A) => Promise<R | never>): (...args: A) => Promise<Result<R, E>>;
     wrap<A extends any[], R, E = unknown>(fn: (...args: A) => R | never): (...args: A) => Result<R, E>;
     /**
