@@ -32,6 +32,27 @@ Result.prototype.unwrap = function (onError = undefined) {
 Result.prototype.optional = function () {
     return this.ok ? this.value : undefined;
 };
+Result.try = function (fn, ...args) {
+    if (typeof fn === "function") {
+        try {
+            const res = fn.call(void 0, ...args);
+            if (typeof (res === null || res === void 0 ? void 0 : res.then) === "function") {
+                return Result.try(res);
+            }
+            else {
+                return res instanceof Result ? res : Ok(res);
+            }
+        }
+        catch (error) {
+            return Err(error);
+        }
+    }
+    else {
+        return Promise.resolve(fn)
+            .then(value => value instanceof Result ? value : Ok(value))
+            .catch(error => Err(error));
+    }
+};
 Result.wrap = function (fn = undefined) {
     if (typeof fn === "function") {
         return wrap(fn, function (fn, ...args) {

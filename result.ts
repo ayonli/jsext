@@ -12,8 +12,8 @@
  * can still use the `try...catch` statement to catch the error and handle it in
  * a traditional way. Which is done by using the `unwrap()` method of the
  * `Result` object to retrieve the value directly. Then we can use the
- * {@link Result.wrap} function to wrap the caller function if we want it to
- * return a `Result` as well.
+ * {@link Result.wrap} or {@link Result.try} to wrap the caller function if we
+ * want it to return a `Result` as well.
  * 
  * @experimental
  * @module
@@ -58,6 +58,22 @@ export interface ResultErr<T, E> extends IResult<T, E> {
 
 export interface ResultStatic {
     /**
+     * Safely invokes a function that may throw and wraps the result in a `Result`
+     * object. If the returned value is already a `Result` object, it will be
+     * returned as is.
+     */
+    try<T, E = unknown, A extends any[] = any[]>(fn: (...args: A) => Result<T, E>, ...args: A): Result<T, E>;
+    try<T, E = unknown, A extends any[] = any[]>(fn: (...args: A) => Promise<Result<T, E>>, ...args: A): Promise<Result<T, E>>;
+    try<R, E = unknown, A extends any[] = any[]>(fn: (...args: A) => Promise<R | never>, ...args: A): Promise<Result<R, E>>;
+    try<R, E = unknown, A extends any[] = any[]>(fn: (...args: A) => R | never, ...args: A): Result<R, E>;
+    /**
+     * Resolves the promise's result in a `Result` object. If the fulfilled value
+     * is already a `Result` object, it will be resolved as is.
+     */
+    try<T, E = unknown>(promise: Promise<Result<T, E>>): Promise<Result<T, E>>;
+    try<R, E = unknown>(promise: Promise<R | never>): Promise<Result<R, E>>;
+
+    /**
      * Wraps a function that may throw and returns a new function that always
      * returns a `Result` object. If the returned value is already a `Result`
      * object, it will be returned as is.
@@ -96,7 +112,16 @@ export interface ResultStatic {
  * }
  * 
  * // safely propagate the error
- * const divAndSub = Result.wrap((a: number, b: number): Result<number, RangeError> => {
+ * function divAndSub(a: number, b: number): Result<number, RangeError> {
+ *     return Result.try(() => {
+ *         const value = divide(a, b).unwrap(); // This throws if b is 0, but
+ *                                              // it will be caught and wrapped.
+ *         return Ok(value - b);
+ *     });
+ * }
+ * 
+ * // wrap a function that may throw
+ * const divAndSub2 = Result.wrap((a: number, b: number): Result<number, RangeError> => {
  *     const value = divide(a, b).unwrap(); // This throws if b is 0, but
  *                                          // it will be caught and wrapped.
  *     return Ok(value - b);
@@ -171,6 +196,26 @@ Result.prototype.unwrap = function <T, E>(
 
 Result.prototype.optional = function <T, E>(this: Result<T, E>) {
     return this.ok ? this.value : undefined;
+};
+
+Result.try = function (fn: ((...args: any[]) => any) | Promise<any>, ...args: any[]): any {
+    if (typeof fn === "function") {
+        try {
+            const res = (fn as Function).call(void 0, ...args);
+
+            if (typeof res?.then === "function") {
+                return Result.try(res);
+            } else {
+                return res instanceof Result ? res : Ok(res);
+            }
+        } catch (error) {
+            return Err(error);
+        }
+    } else {
+        return Promise.resolve(fn)
+            .then(value => value instanceof Result ? value : Ok(value))
+            .catch(error => Err(error));
+    }
 };
 
 Result.wrap = function (fn: ((...args: any[]) => any) | undefined = undefined): (...args: any[]) => any {
