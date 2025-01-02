@@ -91,8 +91,6 @@ In `tsconfig.json`, the following `compilerOptions` must be set as such:
   deprecated and emit warnings when it is called.
 - [pipe](https://jsr.io/@ayonli/jsext/doc/pipe/~/pipe) Performs pipe operations
   through a series of functions upon a value.
-- [result](https://jsr.io/@ayonli/jsext/doc/pipe/~/result) (Experimental)
-  Introduces the `Result` pattern into JavaScript, inspired by Rust.
 
 ## Subcategories
 
@@ -147,6 +145,8 @@ categories:
   functions for dealing with file system paths and URLs.
 - [reader](https://jsr.io/@ayonli/jsext/doc/reader/~) Utility functions for
   reading data from various types of source into various forms.
+- [result](https://jsr.io/@ayonli/jsext/doc/result/~) (Experimental)
+  Introduces the `Result` pattern into JavaScript, inspired by Rust.
 - [runtime](https://jsr.io/@ayonli/jsext/doc/runtime/~) Utility functions to
   retrieve runtime information or configure runtime behaviors.
 - [sse](https://jsr.io/@ayonli/jsext/doc/sse/~) Tools for processing Server-sent

@@ -211,9 +211,9 @@ Result.wrap = function (fn: (() => any) | undefined = undefined): any {
 /**
  * Constructs a successful result with the given value.
  */
-export const Ok = <T, E = unknown>(value: T) => new Result<T, E>({ ok: true, value });
+export const Ok: <T, E = unknown>(value: T) => Result<T, E> = (value) => new Result({ ok: true, value });
 
 /**
  * Constructs a failed result with the given error.
  */
-export const Err = <E, T = never>(error: E) => new Result<T, E>({ ok: false, error });
+export const Err: <E, T = never>(error: E) => Result<T, E> = (error) => new Result({ ok: false, error });
