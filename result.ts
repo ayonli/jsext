@@ -166,13 +166,13 @@ export const Result = function Result<T, E = unknown>(this: any, init: {
 
     if (init.ok) {
         Object.defineProperties(ins, {
-            ok: { value: true },
-            value: { value: init.value },
+            ok: { value: true, enumerable: true },
+            value: { value: init.value, enumerable: true },
         });
     } else {
         Object.defineProperties(ins, {
-            ok: { value: false },
-            error: { value: init.error },
+            ok: { value: false, enumerable: true },
+            error: { value: init.error, enumerable: true },
         });
     }
 } as unknown as {
