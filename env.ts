@@ -16,8 +16,8 @@ export const isDedicatedWorker = typeof DedicatedWorkerGlobalScope === "function
     && globalThis instanceof DedicatedWorkerGlobalScope;
 export const isWorker = isServiceWorker || isSharedWorker || isDedicatedWorker;
 
-export const isDeno = typeof Deno === "object" && !!Deno.version?.deno;
-export const isBun = typeof Bun === "object" && !!Bun.version;
+export const isDeno = typeof Deno === "object" && typeof Deno.version === "object";
+export const isBun = typeof Bun === "object" && typeof Bun.version === "string";
 export const isNodeLike = typeof process === "object" && !!process.versions?.node && !isDeno;
 export const isNode: boolean = isNodeLike && !isDeno && !isBun;
 

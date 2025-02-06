@@ -33,6 +33,7 @@ describe("result", () => {
         strictEqual(result.ok, true);
         strictEqual(result.value, 10);
         strictEqual("error" in result, false);
+        strictEqual(JSON.stringify(result), '{"ok":true,"value":10}');
     });
 
     it("Err", () => {
@@ -41,6 +42,9 @@ describe("result", () => {
         strictEqual(result.ok, false);
         strictEqual(result.error, err);
         strictEqual("value" in result, false);
+        strictEqual(
+            JSON.stringify(Err("something went wrong")),
+            '{"ok":false,"error":"something went wrong"}');
     });
 
     it("unwrap", () => {

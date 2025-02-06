@@ -1,13 +1,12 @@
 {
     "name": "@ayonli/jsext",
-    "version": "1.4.2",
+    "version": "1.4.4",
     "description": "A JavaScript extension package for building strong and modern applications.",
     "type": "module",
     "exports": {
         ".": {
             "types": "./types/index.d.ts",
             "bun": "./index.ts",
-            "deno": "./index.ts",
             "fastly": "./esm/workerd/index.js",
             "workerd": "./esm/workerd/index.js",
             "import": "./esm/index.js",
@@ -17,7 +16,6 @@
         "./archive": {
             "types": "./types/archive.d.ts",
             "bun": "./archive/bun.ts",
-            "deno": "./archive.ts",
             "fastly": "./esm/workerd/archive.js",
             "workerd": "./esm/workerd/archive.js",
             "import": "./esm/archive.js",
@@ -27,7 +25,6 @@
         "./array": {
             "types": "./types/array.d.ts",
             "bun": "./array.ts",
-            "deno": "./array.ts",
             "import": "./esm/array.js",
             "require": "./cjs/array.js",
             "default": "./array.ts"
@@ -35,7 +32,6 @@
         "./async": {
             "types": "./types/async.d.ts",
             "bun": "./async.ts",
-            "deno": "./async.ts",
             "import": "./esm/async.js",
             "require": "./cjs/async.js",
             "default": "./async.ts"
@@ -43,7 +39,6 @@
         "./augment": {
             "types": "./types/augment.d.ts",
             "bun": "./augment.ts",
-            "deno": "./augment.ts",
             "import": "./esm/augment.js",
             "require": "./cjs/augment.js",
             "default": "./augment.ts"
@@ -51,7 +46,6 @@
         "./augment/*": {
             "types": "./types/augment/*.d.ts",
             "bun": "./augment/*.ts",
-            "deno": "./augment/*.ts",
             "import": "./esm/augment/*.js",
             "require": "./cjs/augment/*.js",
             "default": "./augment/*.ts"
@@ -59,7 +53,6 @@
         "./bytes": {
             "types": "./types/bytes.d.ts",
             "bun": "./bytes.ts",
-            "deno": "./bytes.ts",
             "import": "./esm/bytes.js",
             "require": "./cjs/bytes.js",
             "default": "./bytes.ts"
@@ -67,7 +60,6 @@
         "./chan": {
             "types": "./types/chan.d.ts",
             "bun": "./chan.ts",
-            "deno": "./chan.ts",
             "import": "./esm/chan.js",
             "require": "./cjs/chan.js",
             "default": "./chan.ts"
@@ -75,7 +67,6 @@
         "./class": {
             "types": "./types/class.d.ts",
             "bun": "./class.ts",
-            "deno": "./class.ts",
             "import": "./esm/class.js",
             "require": "./cjs/class.js",
             "default": "./class.ts"
@@ -83,7 +74,6 @@
         "./class/decorators": {
             "types": "./types/class/decorators.d.ts",
             "bun": "./class/decorators.ts",
-            "deno": "./class/decorators.ts",
             "import": "./esm/class/decorators.js",
             "require": "./cjs/class/decorators.js",
             "default": "./class/decorators.ts"
@@ -91,7 +81,6 @@
         "./cli": {
             "types": "./types/cli.d.ts",
             "bun": "./cli.ts",
-            "deno": "./cli.ts",
             "fastly": "./esm/workerd/cli.js",
             "workerd": "./esm/workerd/cli.js",
             "import": "./esm/cli.js",
@@ -101,7 +90,6 @@
         "./collections": {
             "types": "./types/collections.d.ts",
             "bun": "./collections.ts",
-            "deno": "./collections.ts",
             "import": "./esm/collections.js",
             "require": "./cjs/collections.js",
             "default": "./collections.ts"
@@ -109,7 +97,6 @@
         "./debounce": {
             "types": "./types/debounce.d.ts",
             "bun": "./debounce.ts",
-            "deno": "./debounce.ts",
             "import": "./esm/debounce.js",
             "require": "./cjs/debounce.js",
             "default": "./debounce.ts"
@@ -117,7 +104,6 @@
         "./deprecate": {
             "types": "./types/deprecate.d.ts",
             "bun": "./deprecate.ts",
-            "deno": "./deprecate.ts",
             "import": "./esm/deprecate.js",
             "require": "./cjs/deprecate.js",
             "default": "./deprecate.ts"
@@ -125,7 +111,6 @@
         "./dialog": {
             "types": "./types/dialog.d.ts",
             "bun": "./dialog.ts",
-            "deno": "./dialog.ts",
             "fastly": "./esm/workerd/dialog.js",
             "workerd": "./esm/workerd/dialog.js",
             "import": "./esm/dialog.js",
@@ -135,7 +120,6 @@
         "./dialog/web": {
             "types": "./types/dialog/web.d.ts",
             "bun": "./dialog/web.ts",
-            "deno": "./dialog/web.ts",
             "import": "./esm/dialog/web.js",
             "require": "./cjs/dialog/web.js",
             "default": "./dialog/web.ts"
@@ -143,7 +127,6 @@
         "./dialog/cli": {
             "types": "./types/dialog/cli.d.ts",
             "bun": "./dialog/cli.ts",
-            "deno": "./dialog/cli.ts",
             "import": "./esm/dialog/cli.js",
             "require": "./cjs/dialog/cli.js",
             "default": "./dialog/cli.ts"
@@ -151,7 +134,6 @@
         "./encoding": {
             "types": "./types/encoding.d.ts",
             "bun": "./encoding.ts",
-            "deno": "./encoding.ts",
             "import": "./esm/encoding.js",
             "require": "./cjs/encoding.js",
             "default": "./encoding.ts"
@@ -159,7 +141,6 @@
         "./error": {
             "types": "./types/error.d.ts",
             "bun": "./error.ts",
-            "deno": "./error.ts",
             "import": "./esm/error.js",
             "require": "./cjs/error.js",
             "default": "./error.ts"
@@ -167,7 +148,6 @@
         "./event": {
             "types": "./types/event.d.ts",
             "bun": "./event.ts",
-            "deno": "./event.ts",
             "import": "./esm/event.js",
             "require": "./cjs/event.js",
             "default": "./event.ts"
@@ -175,7 +155,6 @@
         "./filetype": {
             "types": "./types/filetype.d.ts",
             "bun": "./filetype.ts",
-            "deno": "./filetype.ts",
             "import": "./esm/filetype.js",
             "require": "./cjs/filetype.js",
             "default": "./filetype.ts"
@@ -183,7 +162,6 @@
         "./fs": {
             "types": "./types/fs.d.ts",
             "bun": "./fs.ts",
-            "deno": "./fs.ts",
             "fastly": "./esm/workerd/fs.js",
             "workerd": "./esm/workerd/fs.js",
             "import": "./esm/fs.js",
@@ -193,7 +171,6 @@
         "./fs/web": {
             "types": "./types/fs/web.d.ts",
             "bun": "./fs/web.ts",
-            "deno": "./fs/web.ts",
             "import": "./esm/fs/web.js",
             "require": "./cjs/fs/web.js",
             "default": "./fs/web.ts"
@@ -201,7 +178,6 @@
         "./func": {
             "types": "./types/func.d.ts",
             "bun": "./func.ts",
-            "deno": "./func.ts",
             "import": "./esm/func.js",
             "require": "./cjs/func.js",
             "default": "./func.ts"
@@ -209,7 +185,6 @@
         "./hash": {
             "types": "./types/hash.d.ts",
             "bun": "./hash.ts",
-            "deno": "./hash.ts",
             "fastly": "./esm/workerd/hash.js",
             "workerd": "./esm/workerd/hash.js",
             "import": "./esm/hash.js",
@@ -219,7 +194,6 @@
         "./hash/web": {
             "types": "./types/hash/web.d.ts",
             "bun": "./hash/web.ts",
-            "deno": "./hash/web.ts",
             "import": "./esm/hash/web.js",
             "require": "./cjs/hash/web.js",
             "default": "./hash/web.ts"
@@ -227,7 +201,6 @@
         "./http": {
             "types": "./types/http.d.ts",
             "bun": "./http.ts",
-            "deno": "./http.ts",
             "fastly": "./esm/workerd/http.js",
             "workerd": "./esm/workerd/http.js",
             "import": "./esm/http.js",
@@ -237,7 +210,6 @@
         "./http/internal": {
             "types": "./types/http/internal.d.ts",
             "bun": "./http/internal.ts",
-            "deno": "./http/internal.ts",
             "import": "./esm/http/internal.js",
             "require": "./cjs/http/internal.js",
             "default": "./http/internal.ts"
@@ -245,7 +217,6 @@
         "./http/util": {
             "types": "./types/http/util.d.ts",
             "bun": "./http/util.ts",
-            "deno": "./http/util.ts",
             "import": "./esm/http/util.js",
             "require": "./cjs/http/util.js",
             "default": "./http/util.ts"
@@ -253,7 +224,6 @@
         "./json": {
             "types": "./types/json.d.ts",
             "bun": "./json.ts",
-            "deno": "./json.ts",
             "import": "./esm/json.js",
             "require": "./cjs/json.js",
             "default": "./json.ts"
@@ -261,7 +231,6 @@
         "./lock": {
             "types": "./types/lock.d.ts",
             "bun": "./lock.ts",
-            "deno": "./lock.ts",
             "import": "./esm/lock.js",
             "require": "./cjs/lock.js",
             "default": "./lock.ts"
@@ -269,7 +238,6 @@
         "./math": {
             "types": "./types/math.d.ts",
             "bun": "./math.ts",
-            "deno": "./math.ts",
             "import": "./esm/math.js",
             "require": "./cjs/math.js",
             "default": "./math.ts"
@@ -277,7 +245,6 @@
         "./mixin": {
             "types": "./types/mixin.d.ts",
             "bun": "./mixin.ts",
-            "deno": "./mixin.ts",
             "import": "./esm/mixin.js",
             "require": "./cjs/mixin.js",
             "default": "./mixin.ts"
@@ -285,7 +252,6 @@
         "./module": {
             "types": "./types/module.d.ts",
             "bun": "./module.ts",
-            "deno": "./module.ts",
             "fastly": "./esm/module/web.js",
             "workerd": "./esm/module/web.js",
             "import": "./esm/module.js",
@@ -295,7 +261,6 @@
         "./module/web": {
             "types": "./types/module/web.d.ts",
             "bun": "./module/web.ts",
-            "deno": "./module/web.ts",
             "import": "./esm/module/web.js",
             "require": "./cjs/module/web.js",
             "default": "./module/web.ts"
@@ -303,7 +268,6 @@
         "./net": {
             "types": "./types/net.d.ts",
             "bun": "./net.ts",
-            "deno": "./net.ts",
             "workerd": "./esm/workerd/net.js",
             "import": "./esm/net.js",
             "require": "./cjs/net.js",
@@ -312,7 +276,6 @@
         "./number": {
             "types": "./types/number.d.ts",
             "bun": "./number.ts",
-            "deno": "./number.ts",
             "import": "./esm/number.js",
             "require": "./cjs/number.js",
             "default": "./number.ts"
@@ -320,7 +283,6 @@
         "./object": {
             "types": "./types/object.d.ts",
             "bun": "./object.ts",
-            "deno": "./object.ts",
             "import": "./esm/object.js",
             "require": "./cjs/object.js",
             "default": "./object.ts"
@@ -328,7 +290,6 @@
         "./parallel": {
             "types": "./types/parallel.d.ts",
             "bun": "./parallel.ts",
-            "deno": "./parallel.ts",
             "fastly": "./esm/workerd/parallel.js",
             "workerd": "./esm/workerd/parallel.js",
             "import": "./esm/parallel.js",
@@ -338,7 +299,6 @@
         "./path": {
             "types": "./types/path.d.ts",
             "bun": "./path.ts",
-            "deno": "./path.ts",
             "import": "./esm/path.js",
             "require": "./cjs/path.js",
             "default": "./path.ts"
@@ -346,7 +306,6 @@
         "./pipe": {
             "types": "./types/pipe.d.ts",
             "bun": "./pipe.ts",
-            "deno": "./pipe.ts",
             "import": "./esm/pipe.js",
             "require": "./cjs/pipe.js",
             "default": "./pipe.ts"
@@ -354,7 +313,6 @@
         "./queue": {
             "types": "./types/queue.d.ts",
             "bun": "./queue.ts",
-            "deno": "./queue.ts",
             "import": "./esm/queue.js",
             "require": "./cjs/queue.js",
             "default": "./queue.ts"
@@ -362,7 +320,6 @@
         "./reader": {
             "types": "./types/reader.d.ts",
             "bun": "./reader.ts",
-            "deno": "./reader.ts",
             "import": "./esm/reader.js",
             "require": "./cjs/reader.js",
             "default": "./reader.ts"
@@ -370,7 +327,6 @@
         "./result": {
             "types": "./types/result.d.ts",
             "bun": "./result.ts",
-            "deno": "./result.ts",
             "import": "./esm/result.js",
             "require": "./cjs/result.js",
             "default": "./result.ts"
@@ -378,7 +334,6 @@
         "./run": {
             "types": "./types/run.d.ts",
             "bun": "./run.ts",
-            "deno": "./run.ts",
             "fastly": "./esm/workerd/run.js",
             "workerd": "./esm/workerd/run.js",
             "import": "./esm/run.js",
@@ -388,7 +343,6 @@
         "./runtime": {
             "types": "./types/runtime.d.ts",
             "bun": "./runtime.ts",
-            "deno": "./runtime.ts",
             "fastly": "./esm/fastly/runtime.js",
             "import": "./esm/runtime.js",
             "require": "./cjs/runtime.js",
@@ -397,7 +351,6 @@
         "./sse": {
             "types": "./types/sse.d.ts",
             "bun": "./sse.ts",
-            "deno": "./sse.ts",
             "import": "./esm/sse.js",
             "require": "./cjs/sse.js",
             "default": "./sse.ts"
@@ -405,7 +358,6 @@
         "./string": {
             "types": "./types/string.d.ts",
             "bun": "./string.ts",
-            "deno": "./string.ts",
             "import": "./esm/string.js",
             "require": "./cjs/string.js",
             "default": "./string.ts"
@@ -413,7 +365,6 @@
         "./throttle": {
             "types": "./types/throttle.d.ts",
             "bun": "./throttle.ts",
-            "deno": "./throttle.ts",
             "import": "./esm/throttle.js",
             "require": "./cjs/throttle.js",
             "default": "./throttle.ts"
@@ -421,7 +372,6 @@
         "./try": {
             "types": "./types/try.d.ts",
             "bun": "./try.ts",
-            "deno": "./try.ts",
             "import": "./esm/try.js",
             "require": "./cjs/try.js",
             "default": "./try.ts"
@@ -429,7 +379,6 @@
         "./types": {
             "types": "./types/types.d.ts",
             "bun": "./types.ts",
-            "deno": "./types.ts",
             "import": "./esm/types.js",
             "require": "./cjs/types.js",
             "default": "./types.ts"
@@ -437,7 +386,6 @@
         "./wrap": {
             "types": "./types/wrap.d.ts",
             "bun": "./wrap.ts",
-            "deno": "./wrap.ts",
             "import": "./esm/wrap.js",
             "require": "./cjs/wrap.js",
             "default": "./wrap.ts"
@@ -445,7 +393,7 @@
         "./ws": {
             "types": "./types/ws.d.ts",
             "bun": "./ws.ts",
-            "deno": "./ws.ts",
+            "deno": "./esm/ws.js",
             "node": {
                 "import": "./esm/ws/node.js",
                 "require": "./cjs/ws/node.js"
@@ -459,7 +407,6 @@
         "./ws/client": {
             "types": "./types/ws/client.d.ts",
             "bun": "./ws/client.ts",
-            "deno": "./ws/client.ts",
             "import": "./esm/ws/client.js",
             "require": "./cjs/ws/client.js",
             "default": "./ws/client.ts"

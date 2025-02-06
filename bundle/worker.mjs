@@ -1,4 +1,4 @@
-var _a$2, _b;
+var _a$2;
 const id = Symbol.for("id");
 typeof ServiceWorkerGlobalScope === "function"
     && globalThis instanceof ServiceWorkerGlobalScope;
@@ -6,9 +6,9 @@ typeof SharedWorkerGlobalScope === "function"
     && globalThis instanceof SharedWorkerGlobalScope;
 typeof DedicatedWorkerGlobalScope === "function"
     && globalThis instanceof DedicatedWorkerGlobalScope;
-const isDeno = typeof Deno === "object" && !!((_a$2 = Deno.version) === null || _a$2 === void 0 ? void 0 : _a$2.deno);
-const isBun = typeof Bun === "object" && !!Bun.version;
-const isNodeLike = typeof process === "object" && !!((_b = process.versions) === null || _b === void 0 ? void 0 : _b.node) && !isDeno;
+const isDeno = typeof Deno === "object" && typeof Deno.version === "object";
+const isBun = typeof Bun === "object" && typeof Bun.version === "string";
+const isNodeLike = typeof process === "object" && !!((_a$2 = process.versions) === null || _a$2 === void 0 ? void 0 : _a$2.node) && !isDeno;
 const isNode = isNodeLike && !isDeno && !isBun;
 isNode && parseInt(process.version.slice(1)) < 14;
 isNode && parseInt(process.version.slice(1)) < 16;
