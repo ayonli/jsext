@@ -665,7 +665,7 @@ async function startServer(args) {
 function isThisMain(importMeta) {
     var _a, _b;
     const filename = (_b = (_a = importMeta.filename) === null || _a === void 0 ? void 0 : _a.replace(/\\/g, "/")) !== null && _b !== void 0 ? _b : importMeta.url;
-    return /\/jsext(\/(esm|cjs))?\/http(\.(ts|js))?$/.test(filename);
+    return /\/jsext(\/(esm|cjs)|[\/@\^]*(\d+\.\d+\.\d+|latest))?\/http(\.(ts|js))?$/.test(filename);
 }
 if ((isDeno || isBun || isNode) && isMain(import.meta) && isThisMain(import.meta)) {
     startServer(args);

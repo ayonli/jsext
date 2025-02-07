@@ -724,7 +724,7 @@ async function startServer(args: string[]) {
  */
 function isThisMain(importMeta: ImportMeta) {
     const filename = importMeta.filename?.replace(/\\/g, "/") ?? importMeta.url;
-    return /\/jsext(\/(esm|cjs))?\/http(\.(ts|js))?$/.test(filename);
+    return /\/jsext(\/(esm|cjs)|[\/@\^]*(\d+\.\d+\.\d+|latest))?\/http(\.(ts|js))?$/.test(filename);
 }
 
 if ((isDeno || isBun || isNode) && isMain(import.meta) && isThisMain(import.meta)) {
