@@ -658,7 +658,16 @@ async function startServer(args) {
         serve({ ...config, fetch, port, type: "classic" });
     }
 }
-if ((isDeno || isBun || isNode) && isMain(import.meta)) {
+/**
+ * In case the program is bundled, this function checks if this very module is
+ * the main entry module.
+ */
+function isThisMain(importMeta) {
+    var _a, _b;
+    const filename = (_b = (_a = importMeta.filename) === null || _a === void 0 ? void 0 : _a.replace(/\\/g, "/")) !== null && _b !== void 0 ? _b : importMeta.url;
+    return /\/jsext(\/(esm|cjs))?\/http(\.(ts|js))?$/.test(filename);
+}
+if ((isDeno || isBun || isNode) && isMain(import.meta) && isThisMain(import.meta)) {
     startServer(args);
 }
 else if (isNode && process.execArgv.some(arg => arg.endsWith("@ayonli/jsext/http"))) {
