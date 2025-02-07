@@ -718,7 +718,16 @@ async function startServer(args: string[]) {
     }
 }
 
-if ((isDeno || isBun || isNode) && isMain(import.meta)) {
+/**
+ * In case the program is bundled, this function checks if this very module is
+ * the main entry module.
+ */
+function isThisMain(importMeta: ImportMeta) {
+    const filename = importMeta.filename?.replace(/\\/g, "/") ?? importMeta.url;
+    return /\/jsext(\/(esm|cjs))?\/http(\.(ts|js))?$/.test(filename);
+}
+
+if ((isDeno || isBun || isNode) && isMain(import.meta) && isThisMain(import.meta)) {
     startServer(args);
 } else if (isNode && process.execArgv.some(arg => arg.endsWith("@ayonli/jsext/http"))) {
     const options = parseArgs(process.execArgv, {
