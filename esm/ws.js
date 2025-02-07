@@ -297,6 +297,21 @@ class WebSocketServer {
                 });
             }
             const task = this[_wsServer].then(wsServer => new Promise((resolve) => {
+                try {
+                    // Modify the underlying socket for upgrade, this is actually
+                    // How Node.js does before emitting the `upgrade` event.
+                    // Prevent the socket from timing out.
+                    socket.setTimeout(0);
+                    // Remove all existing listeners, this is important, otherwise the
+                    // connection will not work properly, for example, the connection
+                    // may close prematurely.
+                    socket.eventNames().forEach(name => {
+                        socket.removeAllListeners(name);
+                    });
+                    // @ts-ignore internal state
+                    socket.readableFlowing = null;
+                }
+                catch (_e) { }
                 wsServer.handleUpgrade(request, socket, Buffer.alloc(0), (ws) => {
                     ws.binaryType = "arraybuffer";
                     ws.on("message", (data, isBinary) => {
