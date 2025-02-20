@@ -1,5 +1,5 @@
 import { ok, strictEqual } from "node:assert";
-import { Err, Ok, Result } from "./result.ts";
+import { Err, Ok, Result, try_ } from "./result.ts";
 import _try from "./try.ts";
 
 function divide(a: number, b: number): number | never {
@@ -196,6 +196,10 @@ describe("result", () => {
             const result4 = await Result.try(divideAndTimesAsync, 10, 0, 3);
             strictEqual(result4.ok, false);
             strictEqual(result4.error?.message, "division by zero");
+        });
+
+        it("try_ alias", () => {
+            strictEqual(try_, Result.try);
         });
     });
 

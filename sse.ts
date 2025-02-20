@@ -20,7 +20,7 @@ import { fixStringTag, getReadonly, setReadonly } from "./class/util.ts";
 import { createCloseEvent, createErrorEvent } from "./event.ts";
 import { isBun, isDeno } from "./env.ts";
 import runtime, { customInspect } from "./runtime.ts";
-import _try from "./try.ts";
+import { try_ } from "./result.ts";
 
 if (typeof MessageEvent !== "function" || runtime().identity === "workerd") {
     // Worker environments does not implement or only partially implement the MessageEvent, 
@@ -639,11 +639,23 @@ export class EventSource extends EventTarget {
             signal: this[_controller].signal,
         });
 
-        const [err, res] = await _try(fetch(this[_request]));
+        const result = await try_(fetch(this[_request]));
 
-        if (err || res?.type === "error") {
+        if (!result.ok) {
             const event = createErrorEvent("error", {
-                error: err || new Error(`Failed to fetch '${this.url}'`),
+                error: result.error,
+            });
+            this.dispatchEvent(event);
+            this.onerror?.call(this, event);
+            this.tryReconnect();
+            return;
+        }
+
+        const res = result.value;
+
+        if (res.type === "error") {
+            const event = createErrorEvent("error", {
+                error: new Error(`Failed to fetch '${this.url}'`),
             });
             this.dispatchEvent(event);
             this.onerror?.call(this, event);

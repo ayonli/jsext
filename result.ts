@@ -258,3 +258,8 @@ export const Ok: <T, E = unknown>(value: T) => Result<T, E> = (value) => new Res
  * Constructs a failed result with the given error.
  */
 export const Err: <E, T = never>(error: E) => Result<T, E> = (error) => new Result({ ok: false, error });
+
+/**
+ * A alias for {@link Result.try}.
+ */
+export const try_ = Result.try;

@@ -3,7 +3,7 @@ import { fixStringTag, getReadonly, setReadonly } from './class/util.js';
 import { createCloseEvent, createErrorEvent } from './event.js';
 import { isBun, isDeno } from './env.js';
 import runtime, { customInspect } from './runtime.js';
-import _try from './try.js';
+import { try_ } from './result.js';
 
 var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
 if (typeof MessageEvent !== "function" || runtime().identity === "workerd") {
@@ -474,7 +474,7 @@ class EventSource extends EventTarget {
         this.connect().catch(() => { });
     }
     async connect() {
-        var _o, _p, _q, _r, _s, _t;
+        var _o, _p, _q, _r, _s, _t, _u;
         if (this.readyState === this.CLOSED) {
             return;
         }
@@ -491,13 +491,23 @@ class EventSource extends EventTarget {
             cache: "no-store",
             signal: this[_controller].signal,
         });
-        const [err, res] = await _try(fetch(this[_request]));
-        if (err || (res === null || res === void 0 ? void 0 : res.type) === "error") {
+        const result = await try_(fetch(this[_request]));
+        if (!result.ok) {
             const event = createErrorEvent("error", {
-                error: err || new Error(`Failed to fetch '${this.url}'`),
+                error: result.error,
             });
             this.dispatchEvent(event);
             (_o = this.onerror) === null || _o === void 0 ? void 0 : _o.call(this, event);
+            this.tryReconnect();
+            return;
+        }
+        const res = result.value;
+        if (res.type === "error") {
+            const event = createErrorEvent("error", {
+                error: new Error(`Failed to fetch '${this.url}'`),
+            });
+            this.dispatchEvent(event);
+            (_p = this.onerror) === null || _p === void 0 ? void 0 : _p.call(this, event);
             this.tryReconnect();
             return;
         }
@@ -511,16 +521,16 @@ class EventSource extends EventTarget {
                 error: new TypeError(`The server responded with status ${res.status}.`),
             });
             this.dispatchEvent(event);
-            (_p = this.onerror) === null || _p === void 0 ? void 0 : _p.call(this, event);
+            (_q = this.onerror) === null || _q === void 0 ? void 0 : _q.call(this, event);
             return;
         }
-        else if (!((_q = res.headers.get("Content-Type")) === null || _q === void 0 ? void 0 : _q.startsWith("text/event-stream"))) {
+        else if (!((_r = res.headers.get("Content-Type")) === null || _r === void 0 ? void 0 : _r.startsWith("text/event-stream"))) {
             setReadonly(this, "readyState", this.CLOSED);
             const event = createErrorEvent("error", {
                 error: new TypeError("The response is not an event stream."),
             });
             this.dispatchEvent(event);
-            (_r = this.onerror) === null || _r === void 0 ? void 0 : _r.call(this, event);
+            (_s = this.onerror) === null || _s === void 0 ? void 0 : _s.call(this, event);
             return;
         }
         else if (!res.body) {
@@ -529,14 +539,14 @@ class EventSource extends EventTarget {
                 error: new TypeError("The response does not have a body."),
             });
             this.dispatchEvent(event);
-            (_s = this.onerror) === null || _s === void 0 ? void 0 : _s.call(this, event);
+            (_t = this.onerror) === null || _t === void 0 ? void 0 : _t.call(this, event);
             return;
         }
         setReadonly(this, "readyState", this.OPEN);
         this[_retry] = 0;
         const event = new Event("open");
         this.dispatchEvent(event);
-        (_t = this.onopen) === null || _t === void 0 ? void 0 : _t.call(this, event);
+        (_u = this.onopen) === null || _u === void 0 ? void 0 : _u.call(this, event);
         const origin = new URL(res.url || this.url).origin;
         await readAndProcessResponse(res, {
             onId: (id) => {

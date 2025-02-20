@@ -1,5 +1,6 @@
 /**
  * Calls a function safely and return errors when captured.
+ * @deprecated This module is not type-safe. Use `@ayonli/jsext/result` instead.
  * @module
  */
 
@@ -30,6 +31,8 @@ import { ThenableAsyncGenerator } from "./external/thenable-generator/index.ts";
  *     }
  * }
  * ```
+ * 
+ * @deprecated This function is not type-safe.
  */
 export default function _try<E = unknown, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
     fn: (...args: A) => AsyncGenerator<T, TReturn, TNext>,
@@ -55,6 +58,8 @@ export default function _try<E = unknown, T = any, A extends any[] = any[], TRet
  *     }
  * }
  * ```
+ * 
+ * @deprecated This function is not type-safe.
  */
 export default function _try<E = unknown, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
     fn: (...args: A) => Generator<T, TReturn, TNext>,
@@ -76,6 +81,9 @@ export default function _try<E = unknown, T = any, A extends any[] = any[], TRet
  *     res = (err as any)["response"];
  * }
  * ```
+ * 
+ * @deprecated This function is not type-safe. Use `try_` from
+ * `@ayonli/jsext/result` instead.
  */
 export default function _try<E = unknown, R = any, A extends any[] = any[]>(
     fn: (...args: A) => Promise<R>,
@@ -92,6 +100,9 @@ export default function _try<E = unknown, R = any, A extends any[] = any[]>(
  *     // do something that may fail
  * });
  * ```
+ * 
+ * @deprecated This function is not type-safe. Use `try_` from
+ * `@ayonli/jsext/result` instead.
  */
 export default function _try<E = unknown, R = any, A extends any[] = any[]>(
     fn: (...args: A) => R,
@@ -117,6 +128,8 @@ export default function _try<E = unknown, R = any, A extends any[] = any[]>(
  *     }
  * }
  * ```
+ * 
+ * @deprecated This function is not type-safe.
  */
 export default function _try<E = unknown, T = any, TReturn = any, TNext = unknown>(
     gen: AsyncGenerator<T, TReturn, TNext>
@@ -140,6 +153,8 @@ export default function _try<E = unknown, T = any, TReturn = any, TNext = unknow
  *     }
  * }
  * ```
+ * 
+ * @deprecated This function is not type-safe.
  */
 export default function _try<E = unknown, T = any, TReturn = any, TNext = unknown>(
     gen: Generator<T, TReturn, TNext>
@@ -158,6 +173,9 @@ export default function _try<E = unknown, T = any, TReturn = any, TNext = unknow
  *     res = (err as any)["response"];
  * }
  * ```
+ * 
+ * @deprecated This function is not type-safe. Use `try_` from
+ * `@ayonli/jsext/result` instead.
  */
 export default function _try<E = unknown, R = any>(job: PromiseLike<R>): Promise<[E, R]>;
 export default function _try(fn: any, ...args: any[]) {

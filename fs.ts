@@ -78,7 +78,6 @@ import { as } from "./object.ts";
 import { basename, extname, join } from "./path.ts";
 import { readAsArray, readAsText, resolveByteStream } from "./reader.ts";
 import runtime, { platform } from "./runtime.ts";
-import _try from "./try.ts";
 
 export type { FileSystemOptions, FileInfo, DirEntry, DirTree };
 export { getDirHandle, getFileHandle };

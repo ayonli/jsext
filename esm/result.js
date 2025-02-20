@@ -94,6 +94,10 @@ const Ok = (value) => new Result({ ok: true, value });
  * Constructs a failed result with the given error.
  */
 const Err = (error) => new Result({ ok: false, error });
+/**
+ * A alias for {@link Result.try}.
+ */
+const try_ = Result.try;
 
-export { Err, Ok, Result };
+export { Err, Ok, Result, try_ };
 //# sourceMappingURL=result.js.map

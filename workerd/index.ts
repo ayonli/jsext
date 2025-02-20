@@ -17,8 +17,15 @@ export * from "../types.ts";
  * The entry of jsext major functions.
  */
 const jsext = {
+    /**
+     * @deprecated This function is not type-safe. Use `try_` from
+     * `@ayonli/jsext/result` instead.
+     */
     _try,
-    /** @deprecated Use `_try` instead */
+    /**
+     * @deprecated This function is not type-safe. Use `try_` from
+     * `@ayonli/jsext/result` instead.
+     */
     try: _try,
     func,
     wrap,

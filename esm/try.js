@@ -3,6 +3,7 @@ import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
 
 /**
  * Calls a function safely and return errors when captured.
+ * @deprecated This module is not type-safe. Use `@ayonli/jsext/result` instead.
  * @module
  */
 // @ts-ignore
