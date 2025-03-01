@@ -58,15 +58,23 @@ function createTimingFunctions() {
  */
 function createRequestContext(request, props) {
     const { ws, remoteAddress = null, ...rest } = props;
-    return {
+    const ctx = {
         remoteAddress,
-        createEventEndpoint: () => {
-            const events = new EventEndpoint(request);
-            return { events, response: events.response };
+        upgradeEventEndpoint: () => {
+            const endpoint = new EventEndpoint(request);
+            return { endpoint, response: endpoint.response };
         },
         upgradeWebSocket: () => ws.upgrade(request),
         ...rest,
     };
+    Object.defineProperty(ctx, "createEventEndpoint", {
+        enumerable: false,
+        value: () => {
+            const events = new EventEndpoint(request);
+            return { events, response: events.response };
+        },
+    });
+    return ctx;
 }
 /**
  * Patches the timing metrics to the response's headers.

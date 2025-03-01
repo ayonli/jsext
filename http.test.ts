@@ -1970,10 +1970,10 @@ describe("http", () => {
         it("SSE", func(async function (defer) {
             const server = serve({
                 async fetch(_req, ctx) {
-                    const { events, response } = ctx.createEventEndpoint();
+                    const { endpoint, response } = ctx.upgradeEventEndpoint();
 
                     setTimeout(() => {
-                        events.dispatchEvent(new MessageEvent("message", {
+                        endpoint.dispatchEvent(new MessageEvent("message", {
                             data: "Hello, World!",
                         }));
                     }, 1000);

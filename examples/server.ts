@@ -45,12 +45,12 @@ export default serve({
 
             return response;
         } else if (pathname === "/sse") {
-            const { events, response } = ctx.createEventEndpoint();
-            let count = events.lastEventId ? Number(events.lastEventId) : 0;
+            const { endpoint, response } = ctx.upgradeEventEndpoint();
+            let count = endpoint.lastEventId ? Number(endpoint.lastEventId) : 0;
 
             setInterval(() => {
                 const lastEventId = String(++count);
-                events.dispatchEvent(new MessageEvent("ping", {
+                endpoint.dispatchEvent(new MessageEvent("ping", {
                     data: lastEventId,
                     lastEventId,
                 }));

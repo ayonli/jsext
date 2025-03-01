@@ -75,10 +75,14 @@ export interface RequestContext {
      */
     remoteAddress: NetAddress | null;
     /**
-     * Creates an SSE (server-sent events) endpoint for sending events to the
-     * client.
+     * @deprecated use {@link upgradeEventEndpoint} instead.
      */
     createEventEndpoint(): { events: EventEndpoint<Request>; response: Response; };
+    /**
+     * Upgrades the request to an SSE (server-sent events) endpoint for sending
+     * events to the client.
+     */
+    upgradeEventEndpoint(): { endpoint: EventEndpoint<Request>; response: Response; };
     /**
      * Upgrades the request to a WebSocket connection.
      */
