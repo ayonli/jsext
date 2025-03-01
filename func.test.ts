@@ -139,7 +139,7 @@ describe("jsext.func", () => {
             const { done, value: [err, res] } = gen2.next();
 
             if (!err) {
-                logs2.push(res);
+                logs2.push(res!);
             }
 
             if (done)
@@ -192,7 +192,7 @@ describe("jsext.func", () => {
             const { done, value: [err, res] } = await gen2.next();
 
             if (!err) {
-                logs2.push(res);
+                logs2.push(res!);
             }
 
             if (done)

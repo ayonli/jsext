@@ -71,6 +71,15 @@ describe("result", () => {
         strictEqual(value, undefined);
     });
 
+    it("extraction", () => {
+        const { ok, value, error } = new Result<number, Error>({ ok: true, value: 10 });
+        if (ok) {
+            strictEqual(value.toString(), "10");
+        } else {
+            strictEqual(error.message, "something went wrong");
+        }
+    });
+
     describe("try", () => {
         it("regular functions", () => {
             const result = Result.try(() => divide(10, 2));

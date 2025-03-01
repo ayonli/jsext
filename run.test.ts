@@ -69,7 +69,7 @@ describe("jsext.run", () => {
                 strictEqual(job, undefined);
                 strictEqual(as(err, Error)?.message, "Operation timeout after 50ms");
             } else {
-                const [err2, res] = await jsext.try(job.result());
+                const [err2, res] = await jsext.try(job!.result());
                 strictEqual(res, undefined);
                 strictEqual(as(err2, Error)?.message, "Operation timeout after 50ms");
             }
@@ -361,7 +361,7 @@ describe("jsext.run", () => {
                 strictEqual(job, undefined);
                 strictEqual(as(err, Error)?.message, "Operation timeout after 50ms");
             } else {
-                const [err2, res] = await jsext.try(job.result());
+                const [err2, res] = await jsext.try(job!.result());
                 strictEqual(res, undefined);
                 strictEqual(as(err2, Error)?.message, "Operation timeout after 50ms");
             }

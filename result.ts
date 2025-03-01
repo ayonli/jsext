@@ -27,6 +27,14 @@ export interface IResult<T, E> {
      */
     readonly ok: boolean;
     /**
+     * The value of the result if `ok` is `true`.
+     */
+    value?: T | undefined;
+    /**
+     * The error of the result if `ok` is `false`.
+     */
+    error?: E | undefined;
+    /**
      * Returns the value if the result is successful, otherwise throws the error,
      * unless the error is handled and a fallback value is provided.
      * 
@@ -42,18 +50,14 @@ export interface IResult<T, E> {
 
 export interface ResultOk<T, E> extends IResult<T, E> {
     readonly ok: true;
-    /**
-     * The value of the result if `ok` is `true`.
-     */
     readonly value: T;
+    readonly error?: undefined;
 }
 
 export interface ResultErr<T, E> extends IResult<T, E> {
     readonly ok: false;
-    /**
-     * The error of the result if `ok` is `false`.
-     */
     readonly error: E;
+    readonly value?: undefined;
 }
 
 export interface ResultStatic {
@@ -92,9 +96,11 @@ export interface ResultStatic {
 export type ResultLike<T, E = unknown> = {
     ok: true;
     value: T;
+    error?: undefined;
 } | {
     ok: false;
     error: E;
+    value?: undefined;
 };
 
 /**

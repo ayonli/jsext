@@ -63,8 +63,6 @@ In `tsconfig.json`, the following `compilerOptions` must be set as such:
 
 ## Language-enhancing Functions
 
-- [_try](https://jsr.io/@ayonli/jsext/doc/try/~/_try) Calls a function safely and
-  return errors when captured.
 - [func](https://jsr.io/@ayonli/jsext/doc/func/~/func) Declares a function along with
   a `defer` keyword, inspired by
   Golang.
@@ -145,8 +143,8 @@ categories:
   functions for dealing with file system paths and URLs.
 - [reader](https://jsr.io/@ayonli/jsext/doc/reader/~) Utility functions for
   reading data from various types of source into various forms.
-- [result](https://jsr.io/@ayonli/jsext/doc/result/~) (Experimental)
-  Introduces the `Result` pattern into JavaScript, inspired by Rust.
+- [result](https://jsr.io/@ayonli/jsext/doc/result/~) Introduces the `Result`
+  pattern into JavaScript, inspired by Rust.
 - [runtime](https://jsr.io/@ayonli/jsext/doc/runtime/~) Utility functions to
   retrieve runtime information or configure runtime behaviors.
 - [sse](https://jsr.io/@ayonli/jsext/doc/sse/~) Tools for processing Server-sent

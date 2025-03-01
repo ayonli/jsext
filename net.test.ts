@@ -330,7 +330,7 @@ describe("net", () => {
             const [err, socket] = await _try(connect({ path }));
             strictEqual(err, null);
 
-            const text = await readAsText(socket.readable);
+            const text = await readAsText(socket!.readable);
             strictEqual(text, "Hello, world!");
         }));
 
