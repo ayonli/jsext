@@ -19,7 +19,7 @@
  * @module
  */
 import { MethodDecorator } from "./class/decorators.ts";
-import wrap from "./wrap.ts";
+import _wrap from "./wrap.ts";
 
 export interface IResult<T, E> {
     /**
@@ -89,6 +89,14 @@ export interface ResultStatic {
     wrap(): MethodDecorator;
 }
 
+export type ResultLike<T, E = unknown> = {
+    ok: true;
+    value: T;
+} | {
+    ok: false;
+    error: E;
+};
+
 /**
  * Represents the result of an operation that may succeed or fail.
  * 
@@ -151,13 +159,7 @@ export interface ResultStatic {
  * ```
  */
 export type Result<T, E = unknown> = ResultOk<T, E> | ResultErr<T, E>;
-export const Result = function Result<T, E = unknown>(this: any, init: {
-    ok: true,
-    value: T;
-} | {
-    ok: false,
-    error: E;
-}) {
+export const Result = function Result<T, E = unknown>(this: any, init: ResultLike<T, E>) {
     if (!new.target) {
         throw new TypeError("Class constructor Result cannot be invoked without 'new'");
     }
@@ -176,12 +178,11 @@ export const Result = function Result<T, E = unknown>(this: any, init: {
         });
     }
 } as unknown as {
-    new <T, E = unknown>(init: { ok: true, value: T; }): Result<T, E>;
-    new <T, E = unknown>(init: { ok: false, error: E; }): Result<T, E>;
+    new <T, E = unknown>(init: ResultLike<T, E>): Result<T, E>;
     prototype: Result<unknown, unknown>;
 } & ResultStatic;
 
-Result.prototype.unwrap = function <T, E>(
+Result.prototype.unwrap = function unwrap<T, E>(
     this: Result<T, E>,
     onError: ((error: E) => T) | undefined = undefined
 ) {
@@ -194,11 +195,11 @@ Result.prototype.unwrap = function <T, E>(
     }
 };
 
-Result.prototype.optional = function <T, E>(this: Result<T, E>) {
+Result.prototype.optional = function optional<T, E>(this: Result<T, E>) {
     return this.ok ? this.value : undefined;
 };
 
-Result.try = function (fn: ((...args: any[]) => any) | Promise<any>, ...args: any[]): any {
+Result.try = function try_(fn: ((...args: any[]) => any) | Promise<any>, ...args: any[]): any {
     if (typeof fn === "function") {
         try {
             const res = (fn as Function).call(void 0, ...args);
@@ -218,9 +219,9 @@ Result.try = function (fn: ((...args: any[]) => any) | Promise<any>, ...args: an
     }
 };
 
-Result.wrap = function (fn: ((...args: any[]) => any) | undefined = undefined): (...args: any[]) => any {
+Result.wrap = function wrap(fn: ((...args: any[]) => any) | undefined = undefined): (...args: any[]) => any {
     if (typeof fn === "function") {
-        return wrap(fn, function (this, fn, ...args) {
+        return _wrap(fn, function (this, fn, ...args) {
             try {
                 const res = fn.call(this, ...args);
 

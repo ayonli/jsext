@@ -18,7 +18,7 @@ const Result = function Result(init) {
         });
     }
 };
-Result.prototype.unwrap = function (onError = undefined) {
+Result.prototype.unwrap = function unwrap(onError = undefined) {
     if (this.ok) {
         return this.value;
     }
@@ -29,10 +29,10 @@ Result.prototype.unwrap = function (onError = undefined) {
         throw this.error;
     }
 };
-Result.prototype.optional = function () {
+Result.prototype.optional = function optional() {
     return this.ok ? this.value : undefined;
 };
-Result.try = function (fn, ...args) {
+Result.try = function try_(fn, ...args) {
     if (typeof fn === "function") {
         try {
             const res = fn.call(void 0, ...args);
@@ -53,7 +53,7 @@ Result.try = function (fn, ...args) {
             .catch(error => Err(error));
     }
 };
-Result.wrap = function (fn = undefined) {
+Result.wrap = function wrap$1(fn = undefined) {
     if (typeof fn === "function") {
         return wrap(fn, function (fn, ...args) {
             try {
