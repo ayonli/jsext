@@ -58,10 +58,14 @@ const locale = {
     zh: "确定",
 };
 
+export function getOkText() {
+    return i18n(locale);
+}
+
 export default function OkButton() {
     const button = document.createElement("button");
 
-    button.textContent = i18n(locale);
+    button.textContent = getOkText();
     button.style.minWidth = "80px";
     button.style.height = "32px";
     button.style.boxSizing = "border-box";

@@ -29,6 +29,15 @@ export interface DialogOptions {
      * ignored in other platforms and the browser.
      */
     gui?: boolean;
+    /**
+     * The time in milliseconds to wait before the dialog is automatically
+     * dismissed. Should set to a positive number greater than `1000` and be a
+     * multiple of `1000` as the dialog will display the remaining time in
+     * seconds.
+     * 
+     * This option is only available in the browser.
+     */
+    timeout?: number | undefined;
 }
 
 /**
@@ -45,7 +54,7 @@ export interface DialogOptions {
 export async function alert(message: string, options: DialogOptions = {}): Promise<void> {
     if (isBrowserWindow) {
         const { alert } = await import("./dialog/web.ts");
-        await alert(message);
+        await alert(message, options);
     } else if (isDeno || isNodeLike) {
         const { default: alert } = await import("./dialog/cli/alert.ts");
         await alert(message, options);
@@ -72,7 +81,7 @@ export async function alert(message: string, options: DialogOptions = {}): Promi
 export async function confirm(message: string, options: DialogOptions = {}): Promise<boolean> {
     if (isBrowserWindow) {
         const { confirm } = await import("./dialog/web.ts");
-        return await confirm(message);
+        return await confirm(message, options);
     } else if (isDeno || isNodeLike) {
         const { default: confirm } = await import("./dialog/cli/confirm.ts");
         return await confirm(message, options);
@@ -162,13 +171,14 @@ export async function prompt(
         ? typeof options === "object" ? (options.mask ?? "*") : "*"
         : undefined;
     const gui = typeof options === "object" ? (options.gui ?? false) : false;
+    const timeout = typeof options === "object" ? options.timeout : undefined;
 
     if (isBrowserWindow) {
         const { prompt } = await import("./dialog/web.ts");
-        return await prompt(message, { type, defaultValue });
+        return await prompt(message, { defaultValue, type, timeout });
     } else if (isDeno || isNodeLike) {
         const { default: prompt } = await import("./dialog/cli/prompt.ts");
-        return await prompt(message, { defaultValue, type, mask, gui });
+        return await prompt(message, { defaultValue, type, mask, gui, timeout });
     } else {
         throw new Error("Unsupported runtime");
     }

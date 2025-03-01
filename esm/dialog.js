@@ -23,7 +23,7 @@ export { downloadFile, openDirectory, openFile, openFiles, pickDirectory, pickFi
 async function alert(message, options = {}) {
     if (isBrowserWindow) {
         const { alert } = await import('./dialog/web.js');
-        await alert(message);
+        await alert(message, options);
     }
     else if (isDeno || isNodeLike) {
         const { default: alert } = await import('./dialog/cli/alert.js');
@@ -51,7 +51,7 @@ async function alert(message, options = {}) {
 async function confirm(message, options = {}) {
     if (isBrowserWindow) {
         const { confirm } = await import('./dialog/web.js');
-        return await confirm(message);
+        return await confirm(message, options);
     }
     else if (isDeno || isNodeLike) {
         const { default: confirm } = await import('./dialog/cli/confirm.js');
@@ -73,13 +73,14 @@ async function prompt(message, options = "") {
         ? typeof options === "object" ? ((_b = options.mask) !== null && _b !== void 0 ? _b : "*") : "*"
         : undefined;
     const gui = typeof options === "object" ? ((_c = options.gui) !== null && _c !== void 0 ? _c : false) : false;
+    const timeout = typeof options === "object" ? options.timeout : undefined;
     if (isBrowserWindow) {
         const { prompt } = await import('./dialog/web.js');
-        return await prompt(message, { type, defaultValue });
+        return await prompt(message, { defaultValue, type, timeout });
     }
     else if (isDeno || isNodeLike) {
         const { default: prompt } = await import('./dialog/cli/prompt.js');
-        return await prompt(message, { defaultValue, type, mask, gui });
+        return await prompt(message, { defaultValue, type, mask, gui, timeout });
     }
     else {
         throw new Error("Unsupported runtime");

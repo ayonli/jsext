@@ -57,9 +57,12 @@ const locale = {
     vi: "OK",
     zh: "确定",
 };
+function getOkText() {
+    return i18n(locale);
+}
 function OkButton() {
     const button = document.createElement("button");
-    button.textContent = i18n(locale);
+    button.textContent = getOkText();
     button.style.minWidth = "80px";
     button.style.height = "32px";
     button.style.boxSizing = "border-box";
@@ -84,5 +87,5 @@ function OkButton() {
     return button;
 }
 
-export { OkButton as default };
+export { OkButton as default, getOkText };
 //# sourceMappingURL=OkButton.js.map

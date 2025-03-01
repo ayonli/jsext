@@ -63,11 +63,15 @@ const locale = {
     zh: "取消",
 };
 
+export function getCancelText() {
+    return i18n(locale);
+}
+
 export default function CancelButton() {
     const button = document.createElement("button");
     const { theme, onChange } = useColorTheme();
 
-    button.textContent = i18n(locale);
+    button.textContent = getCancelText();
     button.style.minWidth = "80px";
     button.style.height = "32px";
     button.style.boxSizing = "border-box";

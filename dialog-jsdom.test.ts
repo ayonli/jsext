@@ -4,6 +4,7 @@ import { sleep, until } from "./async.ts";
 import { as } from "./object.ts";
 import _try from "./try.ts";
 import { isBrowserWindow } from "./env.ts";
+import { fireEvent } from "@testing-library/dom";
 
 // Mock `window.matchMedia` for JSDOM.
 globalThis.matchMedia = window.matchMedia = (query) => {
@@ -28,24 +29,44 @@ describe("dialog", () => {
         return;
     }
 
-    it("alert", async () => {
-        const job = alert("Hello, World!");
-        const dialog = await until(() => document.body.querySelector("dialog"));
-        ok(dialog !== null);
+    describe("alert", () => {
+        it("click OK", async () => {
+            const job = alert("Hello, World!");
+            const dialog = await until(() => document.body.querySelector("dialog"));
+            ok(dialog !== null);
 
-        const p = dialog.querySelector("p")!;
-        ok(p !== null);
-        strictEqual(html2text(p.innerHTML), "Hello, World!");
+            const p = dialog.querySelector("p")!;
+            ok(p !== null);
+            strictEqual(html2text(p.innerHTML), "Hello, World!");
 
-        const button = dialog.querySelector("button")!;
-        ok(button !== null);
-        strictEqual(button.textContent, "OK");
+            const button = dialog.querySelector("button")!;
+            ok(button !== null);
+            strictEqual(button.textContent, "OK");
 
-        await until(() => dialog.open);
-        button.click();
+            await until(() => dialog.open);
+            button.click();
 
-        await until(() => !dialog.open);
-        strictEqual(await job, undefined);
+            await until(() => !dialog.open);
+            strictEqual(await job, undefined);
+        });
+
+        it("timeout", async () => {
+            const job = alert("Hello, World!", { timeout: 1_000 });
+            const dialog = await until(() => document.body.querySelector("dialog"));
+            ok(dialog !== null);
+
+            const p = dialog.querySelector("p")!;
+            ok(p !== null);
+            strictEqual(html2text(p.innerHTML), "Hello, World!");
+
+            const button = dialog.querySelector("button")!;
+            ok(button !== null);
+            strictEqual(button.textContent, "OK (1)");
+
+            await until(() => dialog.open);
+            await until(() => !dialog.open);
+            strictEqual(await job, undefined);
+        });
     });
 
     describe("confirm", () => {
@@ -118,6 +139,27 @@ describe("dialog", () => {
             await until(() => !dialog.open);
             strictEqual(await job, true);
         });
+
+        it("timeout", async () => {
+            const job = confirm("Are you sure?", { timeout: 1_000 });
+            const dialog = await until(() => document.body.querySelector("dialog"));
+            ok(dialog !== null);
+
+            const p = dialog.querySelector("p")!;
+            ok(p !== null);
+            strictEqual(html2text(p.innerHTML), "Are you sure?");
+
+            const buttons = dialog.querySelectorAll("button");
+            strictEqual(buttons.length, 2);
+
+            const [cancelButton, okButton] = buttons;
+            strictEqual(okButton!.textContent, "OK");
+            strictEqual(cancelButton!.textContent, "Cancel (1)");
+
+            await until(() => dialog.open);
+            await until(() => !dialog.open);
+            strictEqual(await job, false);
+        });
     });
 
     describe("prompt", () => {
@@ -177,6 +219,33 @@ describe("dialog", () => {
 
             await until(() => !dialog.open);
             strictEqual(await job, "password123");
+        });
+
+        it("default value", async () => {
+            const job = prompt("What's your name?", { defaultValue: "Alice" });
+            const dialog = await until(() => document.body.querySelector("dialog"));
+            ok(dialog !== null);
+
+            const p = dialog.querySelector("p")!;
+            ok(p !== null);
+            strictEqual(html2text(p.innerHTML), "What's your name?");
+
+            const input = dialog.querySelector("input")!;
+            ok(input !== null);
+            strictEqual(input.value, "Alice");
+
+            const buttons = dialog.querySelectorAll("button");
+            strictEqual(buttons.length, 2);
+
+            const [cancelButton, okButton] = buttons;
+            strictEqual(okButton!.textContent, "OK");
+            strictEqual(cancelButton!.textContent, "Cancel");
+
+            await until(() => dialog.open);
+            okButton!.click();
+
+            await until(() => !dialog.open);
+            strictEqual(await job, "Alice");
         });
 
         it("click OK", async () => {
@@ -259,6 +328,126 @@ describe("dialog", () => {
 
             await until(() => !dialog.open);
             strictEqual(await job, "Charlie");
+        });
+
+        it("timeout", async () => {
+            const job = prompt("What's your name?", { timeout: 1_000 });
+            const dialog = await until(() => document.body.querySelector("dialog"));
+            ok(dialog !== null);
+
+            const p = dialog.querySelector("p")!;
+            ok(p !== null);
+            strictEqual(html2text(p.innerHTML), "What's your name?");
+
+            const input = dialog.querySelector("input")!;
+            ok(input !== null);
+
+            const buttons = dialog.querySelectorAll("button");
+            strictEqual(buttons.length, 2);
+
+            const [cancelButton, okButton] = buttons;
+            strictEqual(okButton!.textContent, "OK");
+            strictEqual(cancelButton!.textContent, "Cancel (1)");
+
+            await until(() => dialog.open);
+            input.value = "Bob";
+
+            await until(() => !dialog.open);
+            strictEqual(await job, null);
+        });
+
+        it("timeout with default value", async () => {
+            const job = prompt("What's your name?", { defaultValue: "Alice", timeout: 1_000 });
+            const dialog = await until(() => document.body.querySelector("dialog"));
+            ok(dialog !== null);
+
+            const p = dialog.querySelector("p")!;
+            ok(p !== null);
+            strictEqual(html2text(p.innerHTML), "What's your name?");
+
+            const input = dialog.querySelector("input")!;
+            ok(input !== null);
+            strictEqual(input.value, "Alice");
+
+            const buttons = dialog.querySelectorAll("button");
+            strictEqual(buttons.length, 2);
+
+            const [cancelButton, okButton] = buttons;
+            strictEqual(okButton!.textContent, "OK (1)");
+            strictEqual(cancelButton!.textContent, "Cancel");
+
+            await until(() => dialog.open);
+            await until(() => !dialog.open);
+            strictEqual(await job, "Alice");
+        });
+
+        it("timeout canceled by input", async () => {
+            const job = prompt("What's your name?", { timeout: 1_000 });
+            const dialog = await until(() => document.body.querySelector("dialog"));
+            ok(dialog !== null);
+
+            const p = dialog.querySelector("p")!;
+            ok(p !== null);
+            strictEqual(html2text(p.innerHTML), "What's your name?");
+
+            const input = dialog.querySelector("input")!;
+            ok(input !== null);
+
+            const buttons = dialog.querySelectorAll("button");
+            strictEqual(buttons.length, 2);
+
+            const [cancelButton, okButton] = buttons;
+            strictEqual(okButton!.textContent, "OK");
+            strictEqual(cancelButton!.textContent, "Cancel (1)");
+
+            await until(() => dialog.open);
+            fireEvent.input(input, { target: { value: "Alice" } });
+
+            strictEqual(okButton!.textContent, "OK");
+            strictEqual(cancelButton!.textContent, "Cancel");
+            strictEqual(input.value, "Alice");
+
+            await sleep(1100);
+            strictEqual(dialog.open, true);
+
+            fireEvent.click(okButton!);
+            await until(() => !dialog.open);
+            strictEqual(await job, "Alice");
+        });
+
+        it("timeout with default value canceled by input", async () => {
+            const job = prompt("What's your name?", { defaultValue: "Alice", timeout: 1_000 });
+            const dialog = await until(() => document.body.querySelector("dialog"));
+            ok(dialog !== null);
+
+            const p = dialog.querySelector("p")!;
+            ok(p !== null);
+            strictEqual(html2text(p.innerHTML), "What's your name?");
+
+            const input = dialog.querySelector("input")!;
+            ok(input !== null);
+            strictEqual(input.value, "Alice");
+
+            const buttons = dialog.querySelectorAll("button");
+            strictEqual(buttons.length, 2);
+
+            const [cancelButton, okButton] = buttons;
+            strictEqual(okButton!.textContent, "OK (1)");
+            strictEqual(cancelButton!.textContent, "Cancel");
+
+            await until(() => dialog.open);
+            fireEvent.input(input, { target: { value: "Bob" } });
+
+            strictEqual(okButton!.textContent, "OK");
+            strictEqual(cancelButton!.textContent, "Cancel");
+            strictEqual(input.value, "Bob");
+
+            await sleep(1100);
+            strictEqual(dialog.open, true);
+
+            fireEvent.click(okButton!);
+            await until(() => !dialog.open);
+            strictEqual(await job, "Bob");
         });
     });
 

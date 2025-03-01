@@ -61,10 +61,13 @@ const locale = {
     vi: "Hủy",
     zh: "取消",
 };
+function getCancelText() {
+    return i18n(locale);
+}
 function CancelButton() {
     const button = document.createElement("button");
     const { theme, onChange } = useColorTheme();
-    button.textContent = i18n(locale);
+    button.textContent = getCancelText();
     button.style.minWidth = "80px";
     button.style.height = "32px";
     button.style.boxSizing = "border-box";
@@ -94,5 +97,5 @@ function CancelButton() {
     return button;
 }
 
-export { CancelButton as default };
+export { CancelButton as default, getCancelText };
 //# sourceMappingURL=CancelButton.js.map
