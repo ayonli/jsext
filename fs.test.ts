@@ -685,10 +685,10 @@ describe("fs", () => {
 
             controller.abort();
 
-            const [err, res] = await jsext._try(promise);
-            ok(err instanceof Error);
-            strictEqual(err.name, "AbortError");
-            strictEqual(res, undefined);
+            const result = await try_(promise);
+            strictEqual(result.ok, false);
+            ok(result.error instanceof Error);
+            strictEqual(result.error.name, "AbortError");
         });
 
         it("~ support", jsext.func(async (defer) => {
@@ -742,10 +742,10 @@ describe("fs", () => {
 
             controller.abort();
 
-            const [err, res] = await jsext._try(promise);
-            ok(err instanceof Error);
-            strictEqual(err.name, "AbortError");
-            strictEqual(res, undefined);
+            const result = await try_(promise);
+            strictEqual(result.ok, false);
+            ok(result.error instanceof Error);
+            strictEqual(result.error.name, "AbortError");
         });
 
         it("encoding", async function () {
@@ -819,10 +819,10 @@ describe("fs", () => {
 
             controller.abort();
 
-            const [err, res] = await jsext._try(promise);
-            ok(err instanceof Error);
-            strictEqual(err.name, "AbortError");
-            strictEqual(res, undefined);
+            const result = await try_(promise);
+            strictEqual(result.ok, false);
+            ok(result.error instanceof Error);
+            strictEqual(result.error.name, "AbortError");
         });
 
         it("~ support", jsext.func(async (defer) => {
@@ -951,9 +951,10 @@ describe("fs", () => {
 
             controller.abort();
 
-            const [err] = await jsext._try(promise);
-            ok(err instanceof Error);
-            strictEqual(err.name, "AbortError");
+            const result = await try_(promise);
+            strictEqual(result.ok, false);
+            ok(result.error instanceof Error);
+            strictEqual(result.error.name, "AbortError");
         });
 
         it("append", async () => {

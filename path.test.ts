@@ -22,7 +22,7 @@ import {
     toFileUrl,
     toFsPath,
 } from "./path.ts";
-import jsext from "./index.ts";
+import _try from "./try.ts";
 import { as } from "./object.ts";
 
 describe("path", () => {
@@ -1492,7 +1492,7 @@ describe("path", () => {
         });
 
         it("url", () => {
-            const [err] = jsext._try(() => toFileUrl("http://example.com/foo/bar"));
+            const [err] = _try(() => toFileUrl("http://example.com/foo/bar"));
             strictEqual(as(err, Error)?.message, "Cannot convert a URL to a file URL.");
         });
     });
@@ -1521,10 +1521,10 @@ describe("path", () => {
         });
 
         it("url", () => {
-            const [err1] = jsext._try(() => toFsPath("http://example.com/foo/bar"));
+            const [err1] = _try(() => toFsPath("http://example.com/foo/bar"));
             strictEqual(as(err1, Error)?.message, "Cannot convert a non-file URL to a file system path.");
 
-            const [err2] = jsext._try(() => toFsPath(new URL("http://example.com/foo/bar")));
+            const [err2] = _try(() => toFsPath(new URL("http://example.com/foo/bar")));
             strictEqual(as(err2, Error)?.message, "Cannot convert a non-file URL to a file system path.");
         });
     });

@@ -1,6 +1,5 @@
-import { deepStrictEqual, strictEqual } from "node:assert";
+import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import jsext from "./index.ts";
-
 
 describe("jsext.try", () => {
     const EmptyStringError = new Error("the string must not be empty");
@@ -148,6 +147,68 @@ describe("jsext.try", () => {
 
         deepStrictEqual(await jsext.try(check("Hello, World!")), [null, "Hello, World!"]);
         deepStrictEqual(await jsext.try(check("")), [EmptyStringError, undefined]);
+    });
+
+    it("convert non-Error", async () => {
+        function check(str: string) {
+            if (str.length === 0) {
+                throw "the string must not be empty";
+            }
+            return str;
+        }
+
+        const [err1] = jsext.try(check, "");
+        ok(err1 instanceof Error);
+        strictEqual(err1.message, "the string must not be empty");
+
+        async function checkAsync(str: string) {
+            if (str.length === 0) {
+                throw "the string must not be empty";
+            }
+            return str;
+        }
+
+        const [err2] = await jsext.try(checkAsync, "");
+        ok(err2 instanceof Error);
+        strictEqual(err2.message, "the string must not be empty");
+
+        const [err3] = await jsext.try(checkAsync(""));
+        ok(err3 instanceof Error);
+        strictEqual(err3.message, "the string must not be empty");
+
+        function* checkGen(str: string) {
+            if (str.length === 0) {
+                throw "the string must not be empty";
+            }
+
+            for (const x of str) {
+                yield x;
+            }
+
+            return "OK";
+        }
+
+        const gen1 = jsext.try(checkGen, "");
+        const { value: [err4] } = gen1.next();
+        ok(err4 instanceof Error);
+        strictEqual(err4.message, "the string must not be empty");
+
+        async function* checkGenAsync(str: string) {
+            if (str.length === 0) {
+                throw "the string must not be empty";
+            }
+
+            for (const x of str) {
+                yield x;
+            }
+
+            return "OK";
+        }
+
+        const gen2 = jsext.try(checkGenAsync, "");
+        const { value: [err5] } = await gen2.next();
+        ok(err5 instanceof Error);
+        strictEqual(err5.message, "the string must not be empty");
     });
 
     it("pass value into generator function", () => {

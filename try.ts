@@ -1,6 +1,12 @@
 /**
  * Calls a function safely and return errors when captured.
- * @deprecated This module has design flaw. Use `@ayonli/jsext/result` instead.
+ * 
+ * NOTE: Since v1.5.0, this module will convert the error to an instance of
+ * `Error` if it's not one already.
+ * 
+ * NOTE: This module, inspired by Golang, is not well-designed, take a look at
+ * the [result](https://jsr.io/@ayonli/jsext/doc/result/~) module for a better
+ * alternative.
  * @module
  */
 
@@ -8,7 +14,7 @@
 import { isAsyncGenerator, isGenerator } from "./external/check-iterable/index.mjs";
 import { ThenableAsyncGenerator } from "./external/thenable-generator/index.ts";
 
-export type TryResult<E, T> = [E, undefined] | [null, T];
+export type TryResult<E extends Error, T> = [E, undefined] | [null, T];
 
 // The following declarations shall be order from complex to simple, otherwise
 // TypeScript won't work well.
@@ -33,10 +39,8 @@ export type TryResult<E, T> = [E, undefined] | [null, T];
  *     }
  * }
  * ```
- * 
- * @deprecated This function has design flaw.
  */
-export default function _try<E = unknown, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
+export default function _try<E extends Error = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
     fn: (...args: A) => AsyncGenerator<T, TReturn, TNext>,
     ...args: A
 ): AsyncGenerator<TryResult<E, T>, [E, TReturn], TNext>;
@@ -60,10 +64,8 @@ export default function _try<E = unknown, T = any, A extends any[] = any[], TRet
  *     }
  * }
  * ```
- * 
- * @deprecated This function has design flaw.
  */
-export default function _try<E = unknown, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
+export default function _try<E extends Error = Error, T = any, A extends any[] = any[], TReturn = any, TNext = unknown>(
     fn: (...args: A) => Generator<T, TReturn, TNext>,
     ...args: A
 ): Generator<TryResult<E, T>, [E, TReturn], TNext>;
@@ -83,11 +85,8 @@ export default function _try<E = unknown, T = any, A extends any[] = any[], TRet
  *     res = (err as any)["response"];
  * }
  * ```
- * 
- * @deprecated This function has design flaw.
- * Use `try_` from `@ayonli/jsext/result` instead.
  */
-export default function _try<E = unknown, R = any, A extends any[] = any[]>(
+export default function _try<E extends Error = Error, R = any, A extends any[] = any[]>(
     fn: (...args: A) => Promise<R>,
     ...args: A
 ): Promise<TryResult<E, R>>;
@@ -102,11 +101,8 @@ export default function _try<E = unknown, R = any, A extends any[] = any[]>(
  *     // do something that may fail
  * });
  * ```
- * 
- * @deprecated This function has design flaw.
- * Use `try_` from `@ayonli/jsext/result` instead.
  */
-export default function _try<E = unknown, R = any, A extends any[] = any[]>(
+export default function _try<E extends Error = Error, R = any, A extends any[] = any[]>(
     fn: (...args: A) => R,
     ...args: A
 ): TryResult<E, R>;
@@ -130,10 +126,8 @@ export default function _try<E = unknown, R = any, A extends any[] = any[]>(
  *     }
  * }
  * ```
- * 
- * @deprecated This function has design flaw.
  */
-export default function _try<E = unknown, T = any, TReturn = any, TNext = unknown>(
+export default function _try<E extends Error = Error, T = any, TReturn = any, TNext = unknown>(
     gen: AsyncGenerator<T, TReturn, TNext>
 ): AsyncGenerator<TryResult<E, T>, [E, TReturn], TNext>;
 /**
@@ -155,10 +149,8 @@ export default function _try<E = unknown, T = any, TReturn = any, TNext = unknow
  *     }
  * }
  * ```
- * 
- * @deprecated This function has design flaw.
  */
-export default function _try<E = unknown, T = any, TReturn = any, TNext = unknown>(
+export default function _try<E extends Error = Error, T = any, TReturn = any, TNext = unknown>(
     gen: Generator<T, TReturn, TNext>
 ): Generator<TryResult<E, T>, [E, TReturn], TNext>;
 /**
@@ -175,16 +167,14 @@ export default function _try<E = unknown, T = any, TReturn = any, TNext = unknow
  *     res = (err as any)["response"];
  * }
  * ```
- * 
- * @deprecated This function has design flaw.
- * Use `try_` from * `@ayonli/jsext/result` instead.
  */
-export default function _try<E = unknown, R = any>(job: PromiseLike<R>): Promise<TryResult<E, R>>;
+export default function _try<E extends Error = Error, R = any>(job: PromiseLike<R>): Promise<TryResult<E, R>>;
 export default function _try(fn: any, ...args: any[]) {
     if (typeof fn === "function") {
         try {
             return _try((fn as (...args: any[]) => any).apply(void 0, args));
         } catch (err) {
+            err = err instanceof Error ? err : new Error(String(err));
             return [err, undefined];
         }
     }
@@ -196,7 +186,10 @@ export default function _try(fn: any, ...args: any[]) {
         // special case for `ThenableAsyncGenerator`
         return Promise.resolve(returns)
             .then((value: any) => [null, value])
-            .catch((err: unknown) => [err, undefined]);
+            .catch((err: unknown) => {
+                err = err instanceof Error ? err : new Error(String(err));
+                return [err, undefined];
+            });
     } else if (isAsyncGenerator(returns)) {
         // @ts-ignore
         return (async function* () {
@@ -222,6 +215,7 @@ export default function _try(fn: any, ...args: any[]) {
                     // If any error occurs, yield that error as resolved
                     // and break the loop immediately, indicating the
                     // process is forced broken.
+                    err = err instanceof Error ? err : new Error(String(err));
                     yield Promise.resolve([err, undefined]);
                     break;
                 }
@@ -245,6 +239,7 @@ export default function _try(fn: any, ...args: any[]) {
                         input = yield [null, value];
                     }
                 } catch (err) {
+                    err = err instanceof Error ? err : new Error(String(err));
                     yield [err, undefined];
                     break;
                 }
@@ -255,7 +250,10 @@ export default function _try(fn: any, ...args: any[]) {
     } else if (typeof returns?.then === "function") {
         return Promise.resolve(returns)
             .then((value: any) => [null, value])
-            .catch((err: unknown) => [err, undefined]);
+            .catch((err: unknown) => {
+                err = err instanceof Error ? err : new Error(String(err));
+                return [err, undefined];
+            });
     } else {
         return [null, returns];
     }
