@@ -12,8 +12,8 @@
  * can still use the `try...catch` statement to catch the error and handle it in
  * a traditional way. Which is done by using the `unwrap()` method of the
  * `Result` object to retrieve the value directly. Then we can use the
- * {@link Result.wrap} or {@link Result.try} to wrap the caller function if we
- * want it to return a `Result` as well.
+ * {@link Result.wrap} or {@link Result.try} (or {@link try_}) to wrap the
+ * caller function if we want it to return a `Result` as well.
  * 
  * @experimental
  * @module

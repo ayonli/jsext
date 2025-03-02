@@ -18,12 +18,12 @@ export * from "./types.ts";
  */
 const jsext = {
     /**
-     * @deprecated This function is not type-safe. Use `try_` from
+     * @deprecated This function has design flaw. Use `try_` from
      * `@ayonli/jsext/result` instead.
      */
     _try,
     /**
-     * @deprecated This function is not type-safe. Use `try_` from
+     * @deprecated This function has design flaw. Use `try_` from
      * `@ayonli/jsext/result` instead.
      */
     try: _try,

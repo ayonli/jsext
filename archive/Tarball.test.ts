@@ -5,7 +5,7 @@ import Tarball, { type TarEntry, _entries, TarTree } from "../archive/Tarball.ts
 import { readAsText } from "../reader.ts";
 import { omit } from "../object.ts";
 import { platform } from "../runtime.ts";
-import _try from "../try.ts";
+import { try_ } from "../result.ts";
 
 describe("archive/Tarball", () => {
     if (typeof ReadableStream !== "function") {
@@ -167,8 +167,8 @@ describe("archive/Tarball", () => {
         ok(await exists(filename1));
         ok(tarball1.bodyUsed);
 
-        const [err] = _try(() => tarball1.stream());
-        ok(err instanceof Error);
+        const result = try_(() => tarball1.stream());
+        ok(!result.ok && result.error instanceof Error);
     });
 
     it("stream with gzip", async function () {
@@ -182,8 +182,8 @@ describe("archive/Tarball", () => {
         ok(await exists(filename2));
         ok(tarball2.bodyUsed);
 
-        const [err] = _try(() => tarball2.stream());
-        ok(err instanceof Error);
+        const result = try_(() => tarball2.stream());
+        ok(!result.ok && result.error instanceof Error);
     });
 
     it("load", async () => {

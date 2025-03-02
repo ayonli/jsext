@@ -2,7 +2,8 @@ import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import fs from "node:fs/promises";
 import os from "node:os";
 import { isBun, isDeno } from "./env.ts";
-import jsext, { _try } from "./index.ts";
+import jsext from "./index.ts";
+import { try_ } from "./result.ts";
 import { readAsArray, readAsText } from "./reader.ts";
 import { platform } from "./runtime.ts";
 import { basename, join, resolve, sep, toFsPath } from "./path.ts";
@@ -1289,9 +1290,10 @@ describe("fs", () => {
                 { name: "tmp.txt", kind: "file", relativePath: join("a", "b", "c", "tmp.txt") },
             ] satisfies DirEntry[]);
 
-            const [err] = await _try(copy(src, dest));
-            ok(err instanceof Error);
-            strictEqual(err.name, "InvalidOperationError");
+            const result = await try_(copy(src, dest));
+            strictEqual(result.ok, false);
+            ok(result.error instanceof Error);
+            strictEqual(result.error.name, "InvalidOperationError");
 
             await copy(src, dest, { recursive: true });
             defer(() => remove(src, { recursive: true }));

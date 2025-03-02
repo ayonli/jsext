@@ -1,7 +1,7 @@
 import "./augment.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { Comparable } from "./types.ts";
-import _try from "./try.ts";
+import { try_ } from "./result.ts";
 import { fromObject, toObject } from "./error.ts";
 import bytes from "./bytes.ts";
 import { isBun } from "./env.ts";
@@ -235,8 +235,12 @@ describe("Object", () => {
         strictEqual(bob.compareTo(alice), 1);
 
         // Cannot compare different types, even they have the same structure
-        const [err1] = _try(() => Object.compare(new Person("Jane", 25), new Employee("John", 30)));
-        strictEqual(err1 instanceof TypeError, true);
+        const result1 = try_(() => Object.compare(
+            new Person("Jane", 25),
+            new Employee("John", 30)
+        ));
+        strictEqual(result1.ok, false);
+        strictEqual(result1.error instanceof TypeError, true);
 
         strictEqual(Object.compare(null, null), 0);
         strictEqual(Object.compare(undefined, undefined), 0);
@@ -248,8 +252,9 @@ describe("Object", () => {
         const fn = () => null;
         strictEqual(Object.compare(fn, fn), 0);
 
-        const [err2] = _try(() => Object.compare(NaN, NaN));
-        strictEqual(err2 instanceof TypeError, true);
+        const result2 = try_(() => Object.compare(NaN, NaN));
+        strictEqual(result2.ok, false);
+        strictEqual(result2.error instanceof TypeError, true);
 
         strictEqual(Object.compare({
             valueOf: () => "A",

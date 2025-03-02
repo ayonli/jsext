@@ -2,7 +2,7 @@ import { ok, strictEqual } from "node:assert";
 import { alert, confirm, prompt, progress } from "./dialog.ts";
 import { sleep, until } from "./async.ts";
 import { as } from "./object.ts";
-import _try from "./try.ts";
+import { try_ } from "./result.ts";
 import { isBrowserWindow } from "./env.ts";
 import { fireEvent } from "@testing-library/dom";
 
@@ -574,8 +574,9 @@ describe("dialog", () => {
             cancelButton.click();
 
             await until(() => !dialog.open);
-            const [err] = await _try(job);
-            strictEqual(as(err, Error)?.message, "Canceled");
+            const result = await try_(job);
+            strictEqual(result.ok, false);
+            strictEqual(as(result.error, Error)?.message, "Canceled");
         });
     });
 });

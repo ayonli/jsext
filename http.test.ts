@@ -34,7 +34,7 @@ import {
     verifyBasicAuth,
 } from "./http.ts";
 import { withWeb } from "./http/internal.ts";
-import _try from "./try.ts";
+import { try_ } from "./result.ts";
 import func from "./func.ts";
 import { readFileAsText } from "./fs.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
@@ -2326,12 +2326,17 @@ describe("http", () => {
             defer(() => server.close(true));
             await server.ready;
 
-            const [err, res1] = await _try(fetch(`http://localhost:${server.port}?tag=1`, {
+            const {
+                ok: ok1,
+                error: err1,
+                value: res1,
+            } = await try_(fetch(`http://localhost:${server.port}?tag=1`, {
                 signal: AbortSignal.timeout(500),
             }));
             const res2 = await fetch(`http://localhost:${server.port}?tag=2`);
 
-            strictEqual((err as DOMException)?.name, "TimeoutError");
+            strictEqual(ok1, false);
+            strictEqual((err1 as DOMException)?.name, "TimeoutError");
             strictEqual(res1, undefined);
             strictEqual(res2.status, 200);
             strictEqual(res2.statusText, "OK");

@@ -19,7 +19,7 @@ import { platform } from "./runtime.ts";
 import { chars } from "./string.ts";
 import bytes from "./bytes.ts";
 import { isDeno, isNodeBelow16 } from "./env.ts";
-import _try from "./try.ts";
+import { try_ } from "./result.ts";
 import { as } from "./object.ts";
 
 const str1 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -299,9 +299,9 @@ describe("cli", () => {
             const task = run("echo", ["Hello, World!"], { signal });
 
             controller.abort();
-            const [err, res] = await _try(task);
-            console.log(res);
-            strictEqual(as(err, Error)?.name, "AbortError");
+            const result = await try_(task);
+            strictEqual(result.ok, false);
+            strictEqual(as(result.error, Error)?.name, "AbortError");
         });
     });
 

@@ -1,7 +1,7 @@
 import { ok, strictEqual } from "node:assert";
 import mixin from "./mixin.ts";
 import { hasOwn } from "./object.ts";
-import _try from "./try.ts";
+import { try_ } from "./result.ts";
 
 describe("mixin", () => {
     class A {
@@ -80,7 +80,7 @@ describe("mixin", () => {
         ok(!hasOwn(bar2, "name"));
         strictEqual(Bar2.length, 0);
 
-        const [err] = _try(() => strictEqual(bar2.name, ""));
-        err && strictEqual(bar2.name, "Bar"); // old v8
+        const result = try_(() => strictEqual(bar2.name, ""));
+        result.ok || strictEqual(bar2.name, "Bar"); // old v8
     });
 });

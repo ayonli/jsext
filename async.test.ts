@@ -4,7 +4,7 @@ import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { asyncTask, abortable, sleep, abortWith } from "./async.ts";
 import { isNodeBelow16 } from "./env.ts";
 import { as } from "./object.ts";
-import _try from "./try.ts";
+import { try_ } from "./result.ts";
 
 describe("async", () => {
     describe("asyncTask", () => {
@@ -290,7 +290,11 @@ describe("async", () => {
             aborted = [];
             signals.clear();
 
-            const [err1, result1] = await _try(Promise.select([
+            const {
+                ok: ok1,
+                value: result1,
+                error: err1,
+            } = await try_(Promise.select([
                 async signal => {
                     let resolved = false;
                     signals.set(1, signal);
@@ -325,6 +329,7 @@ describe("async", () => {
                 },
             ]));
 
+            strictEqual(ok1, false);
             strictEqual((err1 as Error)?.name, "Error");
             strictEqual(result1, undefined);
             deepStrictEqual(aborted, [2]);
@@ -383,7 +388,11 @@ describe("async", () => {
             aborted = [];
             signals.clear();
 
-            const [err1, result1] = await _try(Promise.select([
+            const {
+                ok: ok1,
+                value: result1,
+                error: err1,
+            } = await try_(Promise.select([
                 async signal => {
                     let resolved = false;
                     signals.set(1, signal);
@@ -423,6 +432,7 @@ describe("async", () => {
                 }),
             ]));
 
+            strictEqual(ok1, false);
             strictEqual((err1 as Error)?.name, "Error");
             strictEqual(result1, undefined);
             deepStrictEqual(aborted, [1, 2]);
@@ -485,7 +495,11 @@ describe("async", () => {
 
             const ctrl1 = new AbortController();
             setTimeout(() => ctrl1.abort(), 10);
-            const [err1, result1] = await _try(Promise.select([
+            const {
+                ok: ok1,
+                value: result1,
+                error: err1,
+            } = await try_(Promise.select([
                 async signal => {
                     let resolved = false;
                     signals.set(1, signal);
@@ -520,6 +534,7 @@ describe("async", () => {
                 },
             ], ctrl1.signal));
 
+            strictEqual(ok1, false);
             strictEqual((err1 as Error)?.name, "AbortError");
             strictEqual(result1, undefined);
             deepStrictEqual(aborted, [1, 2]);
@@ -531,7 +546,11 @@ describe("async", () => {
 
             const ctrl2 = new AbortController();
             ctrl2.abort();
-            const [err2, result2] = await _try(Promise.select([
+            const {
+                ok: ok2,
+                value: result2,
+                error: err2,
+            } = await try_(Promise.select([
                 async signal => {
                     let resolved = false;
                     signals.set(1, signal);
@@ -566,6 +585,7 @@ describe("async", () => {
                 },
             ], ctrl2.signal));
 
+            strictEqual(ok2, false);
             strictEqual((err2 as Error)?.name, "AbortError");
             strictEqual(result2, undefined);
             deepStrictEqual(aborted, []);
@@ -666,7 +686,12 @@ describe("async", () => {
             ok(child3.signal.aborted);
             strictEqual((child3.signal.reason as Error)?.name, "TimeoutError");
 
-            const [err, child4] = _try(() => abortWith({}));
+            const {
+                ok: ok4,
+                value: child4,
+                error: err,
+            } = try_(() => abortWith({}));
+            strictEqual(ok4, false);
             strictEqual((err as Error)?.name, "TypeError");
             strictEqual(child4, undefined);
         });

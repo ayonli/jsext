@@ -3,6 +3,7 @@ import { sleep } from "./async.ts";
 import { random, range } from "./number.ts";
 import { sum } from "./math.ts";
 import jsext from "./index.ts";
+import { try_ } from "./result.ts";
 
 describe("jsext.chan", () => {
     it("non-buffered channel", async () => {
@@ -97,9 +98,10 @@ describe("jsext.chan", () => {
             channel.close(new Error("something went wrong"));
         })();
 
-        const [err, res] = await jsext.try(channel.recv());
-        deepStrictEqual(err, new Error("something went wrong"));
-        strictEqual(res, undefined);
+        const result = await try_(channel.recv());
+        strictEqual(result.ok, false);
+        deepStrictEqual(result.error, new Error("something went wrong"));
+        strictEqual(result.value, undefined);
 
         const val = await channel.recv();
         strictEqual(val, undefined);

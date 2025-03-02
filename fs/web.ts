@@ -12,7 +12,7 @@ import { as } from "../object.ts";
 import { basename, dirname, extname, join, split } from "../path.ts";
 import { readAsArray, readAsText, resolveByteStream, toAsyncIterable } from "../reader.ts";
 import { stripStart } from "../string.ts";
-import _try from "../try.ts";
+import { try_ } from "../result.ts";
 import { fixDirEntry, fixFileType, makeTree, rawOp, wrapFsError } from "./util.ts";
 import type { FileInfo, FileSystemOptions, DirEntry, DirTree } from "./types.ts";
 import type {
@@ -194,7 +194,10 @@ export async function stat(
             };
         }
     } else {
-        const [err, file] = await _try(getFileHandle(target, options));
+        const {
+            value: file,
+            error: err,
+        } = await try_(getFileHandle(target, options));
 
         if (file) {
             const info = await rawOp(file.getFile(), "file");
@@ -537,13 +540,19 @@ async function copyInBrowser(
     const oldName = basename(src as string);
 
     let oldDir = await getDirHandle(oldParent, { root: options.root });
-    const [oldErr, oldFile] = await _try(rawOp(oldDir.getFileHandle(oldName), "file"));
+    const {
+        value: oldFile,
+        error: oldErr,
+    } = await try_(rawOp(oldDir.getFileHandle(oldName), "file"));
 
     if (oldFile) {
         const newParent = dirname(dest as string);
         const newName = basename(dest as string);
         let newDir = await getDirHandle(newParent, { root: options.root });
-        const [newErr, newFile] = await _try(rawOp(newDir.getFileHandle(newName, {
+        const {
+            error: newErr,
+            value: newFile,
+        } = await try_(rawOp(newDir.getFileHandle(newName, {
             create: true,
         }), "file"));
 
