@@ -3,6 +3,10 @@
  * an operation that may succeed or fail, similar to the `Result` type in Rust,
  * but with a more JavaScript-friendly API and removes unnecessary boilerplate.
  * 
+ * This module provides a {@link try_} function (alias of {@link Result.try}) to
+ * safely invoke a function that may throw and wraps the result in a `Result`
+ * object.
+ * 
  * This module also provides the {@link Ok} and {@link Err} functions as
  * shorthands for constructing successful and failed results, respectively. Also,
  * a {@link Result.wrap} function is provided to wrap a traditional function
@@ -11,9 +15,98 @@
  * This module don't give up the error propagation mechanism in JavaScript, we
  * can still use the `try...catch` statement to catch the error and handle it in
  * a traditional way. Which is done by using the `unwrap()` method of the
- * `Result` object to retrieve the value directly. Then we can use the
- * {@link Result.wrap} or {@link Result.try} (or {@link try_}) to wrap the
- * caller function if we want it to return a `Result` as well.
+ * `Result` object to retrieve the value directly.
+ * 
+ * @example
+ * ```ts
+ * // Safely invoke a function that may throw with `try_`.
+ * import { try_ } from "@ayonli/jsext/result";
+ * 
+ * function divide(a: number, b: number): number {
+ *     if (b === 0) {
+ *         throw new RangeError("division by zero");
+ *     }
+ * 
+ *     return a / b;
+ * }
+ * 
+ * const result = try_<number, RangeError>(() => divide(10, 0));
+ * if (result.ok) {
+ *     console.log("Result:", result.value);
+ * } else {
+ *     console.error("Error:", result.error.message);
+ * }
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // Wrap a traditional function that may throw with `Result.wrap`.
+ * import { Err, OK, Result } from "@ayonli/jsext/result";
+ * 
+ * function divide(a: number, b: number): number {
+ *     if (b === 0) {
+ *         throw new RangeError("division by zero");
+ *     }
+ * 
+ *      return a / b;
+ * }
+ * 
+ * const safeDivide = Result.wrap(divide);
+ * 
+ * const result = safeDivide(10, 0);
+ * if (result.ok) {
+ *     console.log("Result:", result.value);
+ * } else {
+ *     console.error("Error:", result.error.message);
+ * }
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // Define a class method that always returns a `Result` object.
+ * import { Err, OK, Result } from "@ayonli/jsext/result";
+ * 
+ * class Calculator {
+ *     \@Result.wrap()
+ *     divide(a: number, b: number): Result<number, RangeError> {
+ *         if (b === 0) {
+ *             return Err(new RangeError("division by zero"));
+ *         }
+ * 
+ *         return Ok(a / b);
+ *     }
+ * }
+ * 
+ * const calc = new Calculator();
+ * 
+ * const result = calc.divide(10, 0);
+ * if (result.ok) {
+ *     console.log("Result:", result.value);
+ * } else {
+ *     console.error("Error:", result.error.message);
+ * }
+ * ```
+ * 
+ * @example
+ * ```ts
+ * // Use the `unwrap()` method to retrieve the value directly.
+ * import { Err, OK, Result } from "@ayonli/jsext/result";
+ * 
+ * function safeDivide(a: number, b: number): Result<number, RangeError> {
+ *     if (b === 0) {
+ *         return Err(new RangeError("division by zero"));
+ *     }
+ * 
+ *     return Ok(a / b);
+ * }
+ * 
+ * try {
+ *     const value = safeDivide(10, 0).unwrap();
+ *     console.log("Result:", value);
+ * } catch (error) {
+ *     console.error("Error:", (error as RangeError).message);
+ * }
+ * ```
  * 
  * @experimental
  * @module
@@ -39,6 +132,26 @@ export interface IResult<T, E> {
      * unless the error is handled and a fallback value is provided.
      * 
      * @param onError Handles the error and provides a fallback value.
+     * 
+     *  * @example
+     * ```ts
+     * import { Err, OK, Result } from "@ayonli/jsext/result";
+     * 
+     * function safeDivide(a: number, b: number): Result<number, RangeError> {
+     *     if (b === 0) {
+     *         return Err(new RangeError("division by zero"));
+     *     }
+     * 
+     *     return Ok(a / b);
+     * }
+     * 
+     * try {
+     *     const value = safeDivide(10, 0).unwrap();
+     *     console.log("Result:", value);
+     * } catch (error) {
+     *     console.error("Error:", (error as RangeError).message);
+     * }
+     * ```
      */
     unwrap(onError?: ((error: E) => T) | undefined): T;
     /**
@@ -65,6 +178,26 @@ export interface ResultStatic {
      * Safely invokes a function that may throw and wraps the result in a `Result`
      * object. If the returned value is already a `Result` object, it will be
      * returned as is.
+     * 
+     * @example
+     * ```ts
+     * import { try_ } from "@ayonli/jsext/result";
+     * 
+     * function divide(a: number, b: number): number {
+     *     if (b === 0) {
+     *         throw new RangeError("division by zero");
+     *     }
+     * 
+     *     return a / b;
+     * }
+     * 
+     * const result = try_<number, RangeError>(() => divide(10, 0));
+     * if (result.ok) {
+     *     console.log("Result:", result.value);
+     * } else {
+     *     console.error("Error:", result.error.message);
+     * }
+     * ```
      */
     try<T, E = unknown, A extends any[] = any[]>(fn: (...args: A) => Result<T, E>, ...args: A): Result<T, E>;
     try<T, E = unknown, A extends any[] = any[]>(fn: (...args: A) => Promise<Result<T, E>>, ...args: A): Promise<Result<T, E>>;
@@ -81,6 +214,28 @@ export interface ResultStatic {
      * Wraps a function that may throw and returns a new function that always
      * returns a `Result` object. If the returned value is already a `Result`
      * object, it will be returned as is.
+     * 
+     * @example
+     * ```ts
+     * import { Err, OK, Result } from "@ayonli/jsext/result";
+     * 
+     * function divide(a: number, b: number): number {
+     *     if (b === 0) {
+     *         throw new RangeError("division by zero");
+     *     }
+     * 
+     *      return a / b;
+     * }
+     * 
+     * const safeDivide = Result.wrap(divide);
+     * 
+     * const result = safeDivide(10, 0);
+     * if (result.ok) {
+     *     console.log("Result:", result.value);
+     * } else {
+     *     console.error("Error:", result.error.message);
+     * }
+     * ```
      */
     wrap<A extends any[], T, E = unknown>(fn: (...args: A) => Result<T, E>): (...args: A) => Result<T, E>;
     wrap<A extends any[], T, E = unknown>(fn: (...args: A) => Promise<Result<T, E>>): (...args: A) => Promise<Result<T, E>>;
@@ -89,6 +244,31 @@ export interface ResultStatic {
     /**
      * Used as a decorator, make sure a method always returns a `Result`
      * instance, even if it throws.
+     * 
+     * @example
+     * ```ts
+     * import { Err, OK, Result } from "@ayonli/jsext/result";
+     * 
+     * class Calculator {
+     *     \@Result.wrap()
+     *     divide(a: number, b: number): Result<number, RangeError> {
+     *         if (b === 0) {
+     *             return Err(new RangeError("division by zero"));
+     *         }
+     * 
+     *         return Ok(a / b);
+     *     }
+     * }
+     * 
+     * const calc = new Calculator();
+     * 
+     * const result = calc.divide(10, 0);
+     * if (result.ok) {
+     *     console.log("Result:", result.value);
+     * } else {
+     *     console.error("Error:", result.error.message);
+     * }
+     * ```
      */
     wrap(): MethodDecorator;
 }
@@ -105,64 +285,6 @@ export type ResultLike<T, E = unknown> = {
 
 /**
  * Represents the result of an operation that may succeed or fail.
- * 
- * @example
- * ```ts
- * import { Result, Ok, Err } from "@ayonli/jsext/result";
- * 
- * function divide(a: number, b: number): Result<number, RangeError> {
- *     if (b === 0) {
- *         return Err(new RangeError("division by zero"));
- *     }
- * 
- *     return Ok(a / b);
- * }
- * 
- * const result = divide(10, 0);
- * if (result.ok) {
- *     console.log(result.value);
- * } else {
- *     console.error(result.error); // RangeError: division by zero
- * }
- * 
- * // safely propagate the error
- * function divAndSub(a: number, b: number): Result<number, RangeError> {
- *     return Result.try(() => {
- *         const value = divide(a, b).unwrap(); // This throws if b is 0, but
- *                                              // it will be caught and wrapped.
- *         return Ok(value - b);
- *     });
- * }
- * 
- * // wrap a function that may throw
- * const divAndSub2 = Result.wrap((a: number, b: number): Result<number, RangeError> => {
- *     const value = divide(a, b).unwrap(); // This throws if b is 0, but
- *                                          // it will be caught and wrapped.
- *     return Ok(value - b);
- * });
- * 
- * // use `wrap` as a decorator
- * class Calculator {
- *     \@Result.wrap()
- *     divAndSub(a: number, b: number): Result<number, RangeError> {
- *         const value = divide(a, b).unwrap(); // This throws if b is 0, but
- *                                              // it will be caught and wrapped.
- *         return Ok(value - b);
- *     }
- * }
- * 
- *
- * // Handle the error and provide a fallback value
- * const value = result.unwrap((error) => {
- *     console.error("An error occurred:", error);
- *     return 0;
- * });
- * console.log(value); // 0
- * 
- * // make the result optional
- * const value2 = result.optional();
- * console.log(value2); // undefined
- * ```
  */
 export type Result<T, E = unknown> = ResultOk<T, E> | ResultErr<T, E>;
 export const Result = function Result<T, E = unknown>(this: any, init: ResultLike<T, E>) {
@@ -268,5 +390,25 @@ export const Err: <E, T = never>(error: E) => Result<T, E> = (error) => new Resu
 
 /**
  * A alias for {@link Result.try}.
+ * 
+ * @example
+ * ```ts
+ * import { try_ } from "@ayonli/jsext/result";
+ * 
+ * function divide(a: number, b: number): number {
+ *     if (b === 0) {
+ *         throw new RangeError("division by zero");
+ *     }
+ * 
+ *     return a / b;
+ * }
+ * 
+ * const result = try_<number, RangeError>(() => divide(10, 0));
+ * if (result.ok) {
+ *     console.log("Result:", result.value);
+ * } else {
+ *     console.error("Error:", result.error.message);
+ * }
+ * ```
  */
 export const try_ = Result.try;
