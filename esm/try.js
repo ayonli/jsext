@@ -3,7 +3,13 @@ import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
 
 /**
  * Calls a function safely and return errors when captured.
- * @deprecated This module has design flaw. Use `@ayonli/jsext/result` instead.
+ *
+ * NOTE: Since v1.5.0, this module will convert the error to an instance of
+ * `Error` if it's not one already.
+ *
+ * NOTE: This module, inspired by Golang, is not well-designed, take a look at
+ * the [result](https://jsr.io/@ayonli/jsext/doc/result/~) module for a better
+ * alternative.
  * @module
  */
 // @ts-ignore
@@ -13,6 +19,7 @@ function _try(fn, ...args) {
             return _try(fn.apply(void 0, args));
         }
         catch (err) {
+            err = err instanceof Error ? err : new Error(String(err));
             return [err, undefined];
         }
     }
@@ -22,7 +29,10 @@ function _try(fn, ...args) {
         // special case for `ThenableAsyncGenerator`
         return Promise.resolve(returns)
             .then((value) => [null, value])
-            .catch((err) => [err, undefined]);
+            .catch((err) => {
+            err = err instanceof Error ? err : new Error(String(err));
+            return [err, undefined];
+        });
     }
     else if (isAsyncGenerator(returns)) {
         // @ts-ignore
@@ -49,6 +59,7 @@ function _try(fn, ...args) {
                     // If any error occurs, yield that error as resolved
                     // and break the loop immediately, indicating the
                     // process is forced broken.
+                    err = err instanceof Error ? err : new Error(String(err));
                     yield Promise.resolve([err, undefined]);
                     break;
                 }
@@ -72,6 +83,7 @@ function _try(fn, ...args) {
                     }
                 }
                 catch (err) {
+                    err = err instanceof Error ? err : new Error(String(err));
                     yield [err, undefined];
                     break;
                 }
@@ -82,7 +94,10 @@ function _try(fn, ...args) {
     else if (typeof (returns === null || returns === void 0 ? void 0 : returns.then) === "function") {
         return Promise.resolve(returns)
             .then((value) => [null, value])
-            .catch((err) => [err, undefined]);
+            .catch((err) => {
+            err = err instanceof Error ? err : new Error(String(err));
+            return [err, undefined];
+        });
     }
     else {
         return [null, returns];

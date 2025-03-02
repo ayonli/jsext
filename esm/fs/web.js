@@ -4,7 +4,7 @@ import { as } from '../object.js';
 import { dirname, basename, extname, join } from '../path.js';
 import { readAsArray, readAsText } from '../reader.js';
 import { stripStart } from '../string.js';
-import _try from '../try.js';
+import { try_ } from '../result.js';
 import { rawOp, fixDirEntry, makeTree, fixFileType, wrapFsError } from './util.js';
 import { split } from '../path/util.js';
 import { toAsyncIterable, resolveByteStream } from '../reader/util.js';
@@ -171,7 +171,7 @@ async function stat(target, options = {}) {
         }
     }
     else {
-        const [err, file] = await _try(getFileHandle(target, options));
+        const { value: file, error: err, } = await try_(getFileHandle(target, options));
         if (file) {
             const info = await rawOp(file.getFile(), "file");
             return {
@@ -438,12 +438,12 @@ async function copyInBrowser(src, dest, options = {}) {
     const oldParent = dirname(src);
     const oldName = basename(src);
     let oldDir = await getDirHandle(oldParent, { root: options.root });
-    const [oldErr, oldFile] = await _try(rawOp(oldDir.getFileHandle(oldName), "file"));
+    const { value: oldFile, error: oldErr, } = await try_(rawOp(oldDir.getFileHandle(oldName), "file"));
     if (oldFile) {
         const newParent = dirname(dest);
         const newName = basename(dest);
         let newDir = await getDirHandle(newParent, { root: options.root });
-        const [newErr, newFile] = await _try(rawOp(newDir.getFileHandle(newName, {
+        const { error: newErr, value: newFile, } = await try_(rawOp(newDir.getFileHandle(newName, {
             create: true,
         }), "file"));
         if (newFile) {

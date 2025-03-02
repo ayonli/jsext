@@ -96,6 +96,26 @@ const Ok = (value) => new Result({ ok: true, value });
 const Err = (error) => new Result({ ok: false, error });
 /**
  * A alias for {@link Result.try}.
+ *
+ * @example
+ * ```ts
+ * import { try_ } from "@ayonli/jsext/result";
+ *
+ * function divide(a: number, b: number): number {
+ *     if (b === 0) {
+ *         throw new RangeError("division by zero");
+ *     }
+ *
+ *     return a / b;
+ * }
+ *
+ * const result = try_<number, RangeError>(() => divide(10, 0));
+ * if (result.ok) {
+ *     console.log("Result:", result.value);
+ * } else {
+ *     console.error("Error:", result.error.message);
+ * }
+ * ```
  */
 const try_ = Result.try;
 
