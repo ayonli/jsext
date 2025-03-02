@@ -1,6 +1,7 @@
 import { deepStrictEqual, ok } from "node:assert";
 import { sleep } from "./async.ts";
 import jsext from "./index.ts";
+import _try from "./try.ts";
 
 describe("jsext.throttle", () => {
     describe("regular function", () => {
@@ -27,15 +28,15 @@ describe("jsext.throttle", () => {
                         return obj;
                     }
                 }, 5);
-                const [err1] = jsext.try(() => fn({ foo: "hello", bar: "world" }));
-                const [err2] = jsext.try(() => fn({ foo: "hello" }));
+                const [err1] = _try(() => fn({ foo: "hello", bar: "world" }));
+                const [err2] = _try(() => fn({ foo: "hello" }));
 
                 deepStrictEqual(err1, new Error("something went wrong"));
                 ok(err1 === err2);
 
                 await sleep(6);
 
-                const [err3] = jsext.try(() => fn({ bar: "world" }));
+                const [err3] = _try(() => fn({ bar: "world" }));
                 deepStrictEqual(err3, new Error("something went wrong"));
                 ok(err1 !== err3);
             });
@@ -65,7 +66,7 @@ describe("jsext.throttle", () => {
             });
 
             it("error", async () => {
-                const [err1] = jsext.try(() => jsext.throttle(<T>(obj: T) => {
+                const [err1] = _try(() => jsext.throttle(<T>(obj: T) => {
                     if (true) {
                         throw new Error("something went wrong");
                     } else {
@@ -75,7 +76,7 @@ describe("jsext.throttle", () => {
                     duration: 5,
                     for: "bar",
                 })({ foo: "hello", bar: "world" }));
-                const [err2] = jsext.try(() => jsext.throttle(<T>(obj: T) => {
+                const [err2] = _try(() => jsext.throttle(<T>(obj: T) => {
                     if (true) {
                         throw new Error("something went wrong");
                     } else {
@@ -91,7 +92,7 @@ describe("jsext.throttle", () => {
 
                 await sleep(6);
 
-                const [err3] = jsext.try(() => jsext.throttle(<T>(obj: T) => {
+                const [err3] = _try(() => jsext.throttle(<T>(obj: T) => {
                     if (true) {
                         throw new Error("something went wrong");
                     } else {
@@ -152,8 +153,8 @@ describe("jsext.throttle", () => {
                 ok(job1 === job2);
 
                 const [[err1], [err2]] = await Promise.all([
-                    jsext.try(job1),
-                    jsext.try(job2),
+                    _try(job1),
+                    _try(job2),
                 ]);
 
                 deepStrictEqual(err1, new Error("something went wrong"));
@@ -164,7 +165,7 @@ describe("jsext.throttle", () => {
                 const job3 = fn({ bar: "world" });
                 ok(job3 instanceof Promise);
 
-                const [err3] = await jsext.try(job3);
+                const [err3] = await _try(job3);
                 deepStrictEqual(err3, new Error("something went wrong"));
                 ok(err1 !== err3);
 
@@ -267,7 +268,7 @@ describe("jsext.throttle", () => {
                 ok(job2 instanceof Promise);
                 ok(job1 === job2);
 
-                const [[err1], [err2]] = await Promise.all([jsext.try(job1), jsext.try(job2)]);
+                const [[err1], [err2]] = await Promise.all([_try(job1), _try(job2)]);
 
                 deepStrictEqual(err1, new Error("something went wrong"));
                 ok(err1 === err2);
@@ -284,7 +285,7 @@ describe("jsext.throttle", () => {
                     duration: 50,
                     for: "barAsync",
                 })({ bar: "world" });
-                const [err3] = await jsext.try(job3);
+                const [err3] = await _try(job3);
                 deepStrictEqual(err3, new Error("something went wrong"));
                 ok(err1 !== err3);
 

@@ -1,7 +1,8 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { sleep } from "./async.ts";
-import jsext from "./index.ts";
 import { as } from "./object.ts";
+import { try_ } from "./result.ts";
+import jsext from "./index.ts";
 
 describe("jsext.debounce", () => {
     it("success", async () => {
@@ -36,12 +37,12 @@ describe("jsext.debounce", () => {
                 return obj;
             }
         }, 5);
-        const [[err1], [err2]] = await Promise.all([
-            jsext.try(fn({ foo: "hello", bar: "world" })),
-            jsext.try(fn({ foo: "hi" })),
+        const [res1, res2] = await Promise.all([
+            try_(fn({ foo: "hello", bar: "world" })),
+            try_(fn({ foo: "hi" })),
         ]);
-        deepStrictEqual(err1, new Error("something went wrong"));
-        ok(err1 === err2);
+        deepStrictEqual(res1.error, new Error("something went wrong"));
+        strictEqual(res1.error, res2.error);
         strictEqual(count, 1);
 
         await sleep(6);

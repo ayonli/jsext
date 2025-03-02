@@ -1,6 +1,7 @@
 
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { words } from "./string.ts";
+import _try from "./try.ts";
 import jsext from "./index.ts";
 
 describe("jsext.func", () => {
@@ -19,7 +20,7 @@ describe("jsext.func", () => {
         });
 
         it("error", () => {
-            const [err, text2] = jsext.try(() => jsext.func((defer, text: string) => {
+            const [err, text2] = _try(() => jsext.func((defer, text: string) => {
                 defer(() => {
                     throw new Error("something went wrong");
                 });
@@ -67,7 +68,7 @@ describe("jsext.func", () => {
         });
 
         it("error", async () => {
-            const [err, text2] = await jsext.try(() => jsext.func(async (defer, text: string) => {
+            const [err, text2] = await _try(() => jsext.func(async (defer, text: string) => {
                 defer(() => Promise.reject(new Error("something went wrong")));
 
                 return await Promise.resolve(text);
@@ -120,7 +121,7 @@ describe("jsext.func", () => {
         deepStrictEqual(logs, ["Hello", "World", "2", "1", "Hello, World!"]);
 
         const logs2: string[] = [];
-        const gen2 = jsext.try(jsext.func(function* (defer, text: string) {
+        const gen2 = _try(jsext.func(function* (defer, text: string) {
             defer(() => void logs2.push("1"));
             defer(() => void logs2.push("2"));
 
@@ -173,7 +174,7 @@ describe("jsext.func", () => {
         deepStrictEqual(logs, ["Hello", "World", "2", "1", "Hello, World!"]);
 
         const logs2: string[] = [];
-        const gen2 = jsext.try(jsext.func(async function* (defer, text: string) {
+        const gen2 = _try(jsext.func(async function* (defer, text: string) {
             defer(async () => void logs2.push(await Promise.resolve("1")));
             defer(async () => void logs2.push(await Promise.resolve("2")));
 

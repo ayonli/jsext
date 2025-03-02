@@ -1,5 +1,6 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import jsext from "./index.ts";
+import _try from "./try.ts";
 import { range } from "./number.ts";
 import { fromObject } from "./error.ts";
 import { sum } from "./math.ts";
@@ -60,7 +61,7 @@ describe("jsext.run", () => {
         });
 
         it("timeout", async () => {
-            const [err, job] = await jsext.try(jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
+            const [err, job] = await _try(jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
                 fn: "takeTooLong",
                 timeout: 50,
             }));
@@ -69,7 +70,7 @@ describe("jsext.run", () => {
                 strictEqual(job, undefined);
                 strictEqual(as(err, Error)?.message, "Operation timeout after 50ms");
             } else {
-                const [err2, res] = await jsext.try(job!.result());
+                const [err2, res] = await _try(job!.result());
                 strictEqual(res, undefined);
                 strictEqual(as(err2, Error)?.message, "Operation timeout after 50ms");
             }
@@ -80,7 +81,7 @@ describe("jsext.run", () => {
                 fn: "takeTooLong",
             });
             job.abort();
-            const [err, res] = await jsext.try(job.result());
+            const [err, res] = await _try(job.result());
             strictEqual(res, undefined);
             strictEqual(as(err, Error)?.name, "AbortError");
 
@@ -89,7 +90,7 @@ describe("jsext.run", () => {
             });
             const awaitResult = job2.result();
             job2.abort(new Error("something went wrong"));
-            const [err2, res2] = await jsext.try(awaitResult);
+            const [err2, res2] = await _try(awaitResult);
             strictEqual(res2, undefined);
             deepStrictEqual(err2, new Error("something went wrong"));
         });
@@ -106,7 +107,7 @@ describe("jsext.run", () => {
             });
 
             controller.abort();
-            const [err, res] = await jsext.try(job.result());
+            const [err, res] = await _try(job.result());
             strictEqual(res, undefined);
             strictEqual((err as Error)?.name, "AbortError");
 
@@ -117,7 +118,7 @@ describe("jsext.run", () => {
             });
 
             controller2.abort(new Error("something went wrong"));
-            const [err2, res2] = await jsext.try(job2.result());
+            const [err2, res2] = await _try(job2.result());
             strictEqual(res2, undefined);
             deepStrictEqual(err2, new Error("something went wrong"));
         });
@@ -205,7 +206,7 @@ describe("jsext.run", () => {
         });
 
         it("send unserializable", async () => {
-            const [_err] = await jsext.try(async () => await jsext.run<number, [any]>("examples/worker.mjs", [
+            const [_err] = await _try(async () => await jsext.run<number, [any]>("examples/worker.mjs", [
                 () => null
             ], {
                 fn: "throwUnserializableError",
@@ -232,7 +233,7 @@ describe("jsext.run", () => {
             ], {
                 fn: "throwUnserializableError",
             });
-            const [err] = await jsext.try(job.result());
+            const [err] = await _try(job.result());
 
             ok((err as DOMException)?.stack?.includes("examples/worker.mjs"));
         });
@@ -351,7 +352,7 @@ describe("jsext.run", () => {
                 this.skip();
             }
 
-            const [err, job] = await jsext.try(jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
+            const [err, job] = await _try(jsext.run<string, [string]>("examples/worker.mjs", ["foobar"], {
                 fn: "takeTooLong",
                 timeout: 50,
                 adapter: "child_process",
@@ -361,7 +362,7 @@ describe("jsext.run", () => {
                 strictEqual(job, undefined);
                 strictEqual(as(err, Error)?.message, "Operation timeout after 50ms");
             } else {
-                const [err2, res] = await jsext.try(job!.result());
+                const [err2, res] = await _try(job!.result());
                 strictEqual(res, undefined);
                 strictEqual(as(err2, Error)?.message, "Operation timeout after 50ms");
             }
@@ -377,7 +378,7 @@ describe("jsext.run", () => {
                 adapter: "child_process",
             });
             job.abort();
-            const [err, res] = await jsext.try(job.result());
+            const [err, res] = await _try(job.result());
             strictEqual(res, undefined);
             strictEqual(as(err, Error)?.name, "AbortError");
 
@@ -387,7 +388,7 @@ describe("jsext.run", () => {
             });
             const awaitResult = job2.result();
             job2.abort(new Error("something went wrong"));
-            const [err2, res2] = await jsext.try(awaitResult);
+            const [err2, res2] = await _try(awaitResult);
             strictEqual(res2, undefined);
             deepStrictEqual(err2, new Error("something went wrong"));
         });
@@ -405,7 +406,7 @@ describe("jsext.run", () => {
             });
 
             controller.abort();
-            const [err, res] = await jsext.try(job.result());
+            const [err, res] = await _try(job.result());
             strictEqual(res, undefined);
             strictEqual((err as Error)?.name, "AbortError");
 
@@ -417,7 +418,7 @@ describe("jsext.run", () => {
             });
 
             controller2.abort(new Error("something went wrong"));
-            const [err2, res2] = await jsext.try(job2.result());
+            const [err2, res2] = await _try(job2.result());
             strictEqual(res2, undefined);
             deepStrictEqual(err2, new Error("something went wrong"));
         });
@@ -518,7 +519,7 @@ describe("jsext.run", () => {
                 this.skip();
             }
 
-            const [_err] = await jsext.try(async () => await jsext.run<number, [any]>("examples/worker.mjs", [
+            const [_err] = await _try(async () => await jsext.run<number, [any]>("examples/worker.mjs", [
                 () => null
             ], {
                 fn: "throwUnserializableError",
@@ -549,7 +550,7 @@ describe("jsext.run", () => {
                 fn: "throwUnserializableError",
                 adapter: "child_process",
             });
-            const [err] = await jsext.try(job.result());
+            const [err] = await _try(job.result());
 
             ok((err as DOMException)?.stack?.includes("examples/worker.mjs"));
         });

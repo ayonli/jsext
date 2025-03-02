@@ -1,5 +1,6 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import jsext from "./index.ts";
+import _try from "./try.ts";
 import { range } from "./number.ts";
 import { sum } from "./math.ts";
 import { pick } from "./object.ts";
@@ -38,7 +39,7 @@ describe("jsext.parallel", () => {
 
     it("use error", async () => {
         // @ts-ignore because allowJs is not turned on
-        const [err1] = await jsext.try(mod.throwError("not good"));
+        const [err1] = await _try(mod.throwError("not good"));
         ok(err1 instanceof Error);
         strictEqual(err1.message, "not good");
 
@@ -211,7 +212,7 @@ describe("jsext.parallel", () => {
 
     it("send unserializable", async () => {
         // @ts-ignore because allowJs is not turned on
-        const [err] = await jsext.try(async () => await mod.throwUnserializableError(() => null));
+        const [err] = await _try(async () => await mod.throwUnserializableError(() => null));
 
         if (typeof Bun === "object") {
             // Currently Bun/JSCore has problem capturing the call stack in async functions,
@@ -229,7 +230,7 @@ describe("jsext.parallel", () => {
 
     it("receive unserializable", async () => {
         // @ts-ignore because allowJs is not turned on
-        const [err] = await jsext.try(async () => await mod.throwUnserializableError(1));
+        const [err] = await _try(async () => await mod.throwUnserializableError(1));
         const __filename = trim(
             modUrl.replace(/^(file|https?):\/\//, "").replace(/\//g, path.sep),
             path.sep).replace(/^([a-zA-Z]):/, "");
