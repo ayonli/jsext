@@ -106,7 +106,7 @@ export function createRequestContext(
     };
 
     Object.defineProperty(ctx, "createEventEndpoint", {
-        enumerable: false,
+        enumerable: true, // MUST be enumerable in order to work with Hono
         value: () => {
             const events = new EventEndpoint(request);
             return { events, response: events.response };
