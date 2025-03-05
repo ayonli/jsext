@@ -73,6 +73,7 @@ _These types are augmented to the global scope._
   - `fromErrorEvent<T extends Error>(event: ErrorEvent): T | null`
   - `prototype`
     - `toJSON(): { [x: string | symbol]: any; }`
+    - `isCausedBy(cause: unknown): boolean`
 
 - `Exception` (extends `Error`) _This type is augmented to the global scope._
   - `cause?: unknown`

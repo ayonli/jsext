@@ -21,6 +21,12 @@
         "experimentalDecorators": true,
         "isolatedModules": true,
         "skipLibCheck": true,
+        "lib": [
+            "ESNext",
+            "DOM",
+            "DOM.AsyncIterable",
+            "DOM.Iterable"
+        ],
         "types": [
             "node",
             "mocha",

@@ -323,3 +323,45 @@ export function isAggregateError(value: unknown): boolean {
     return (typeof AggregateError === "function" && value instanceof AggregateError)
         || (value instanceof Error && value.constructor.name === "AggregateError");
 }
+
+/**
+ * Checks if the error is caused by the given `cause`. This function traverses
+ * the cause chain until it reaches the end.
+ * 
+ * The given `cause` can be a value or an error constructor. If it's a value,
+ * the error and the cause will be compared using `===`. If it's an error
+ * constructor, the error and the cause will be compared using `instanceof`.
+ * 
+ * @example
+ * ```ts
+ * import { isCausedBy } from "@ayonli/jsext/error";
+ * 
+ * const err1 = "The first error";
+ * const err2 = new Error("The second error", { cause: err1 });
+ * 
+ * class ThirdError extends Error {}
+ * const err3 = new ThirdError("The third error", { cause: err2 });
+ * 
+ * const err4 = new Error("The fourth error", { cause: err3 });
+ * 
+ * console.log(isCausedBy(err4, ThirdError)); // true
+ * console.log(isCausedBy(err4, err2)); // true
+ * console.log(isCausedBy(err4, err1)); // true
+ * ```
+ */
+export function isCausedBy(error: Error, cause: unknown): boolean {
+    while (true) {
+        if (error.cause === cause ||
+            Object.is(error.cause, cause) ||
+            (typeof cause === "function" && error.cause instanceof cause)
+        ) {
+            return true;
+        } else if (error.cause instanceof Error) {
+            error = error.cause;
+        } else {
+            break;
+        }
+    }
+
+    return false;
+}

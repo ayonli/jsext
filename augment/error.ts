@@ -1,9 +1,17 @@
-import { Exception, toErrorEvent, fromObject, toObject, fromErrorEvent } from "../error.ts";
+import {
+    Exception,
+    toErrorEvent,
+    fromObject,
+    toObject,
+    fromErrorEvent,
+    isCausedBy as _isCausedBy,
+} from "../error.ts";
 import { Constructor } from "../types.ts";
 
 declare global {
     interface Error {
         toJSON(): { [x: string]: any; };
+        isCausedBy(cause: unknown): boolean;
     }
 
     interface ErrorConstructor {
@@ -45,4 +53,8 @@ Error.fromErrorEvent = fromErrorEvent;
 
 Error.prototype.toJSON = function toJSON() {
     return toObject(this);
+};
+
+Error.prototype.isCausedBy = function isCausedBy(cause: unknown) {
+    return _isCausedBy(this, cause);
 };

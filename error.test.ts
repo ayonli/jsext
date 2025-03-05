@@ -408,4 +408,56 @@ describe("Error", () => {
             strictEqual(err4?.stack, "Error: Something went wrong.\n    at <anonymous>:1:13");
         }
     });
+
+    describe("Error.isCausedBy", () => {
+        it("value", () => {
+            const err1 = new Error("first error");
+            const err2 = new Error("second error", {
+                cause: err1,
+            });
+            const err3 = new Error("third error", {
+                cause: err2,
+            });
+            const err4 = new Error("fourth error", {
+                cause: "unknown",
+            });
+            const err5 = new Error("fifth error", {
+                cause: null,
+            });
+
+            ok(err1.isCausedBy(undefined));
+            ok(err2.isCausedBy(err1));
+            ok(err3.isCausedBy(err1));
+            ok(err3.isCausedBy(err2));
+            ok(err4.isCausedBy("unknown"));
+            ok(err5.isCausedBy(null));
+            ok(!err1.isCausedBy(err2));
+            ok(!err1.isCausedBy(err3));
+            ok(!err2.isCausedBy(err3));
+            ok(!err3.isCausedBy(err4));
+            ok(!err4.isCausedBy(err5));
+        });
+
+        it("constructor", () => {
+            class Error1 extends Error { }
+            class Error2 extends Error { }
+            class Error3 extends Error { }
+
+            const err1 = new Error1("first error");
+            const err2 = new Error2("second error", {
+                cause: err1,
+            });
+            const err3 = new Error3("third error", {
+                cause: err2,
+            });
+
+            ok(err1.isCausedBy(undefined));
+            ok(err2.isCausedBy(Error1));
+            ok(err3.isCausedBy(Error1));
+            ok(err3.isCausedBy(Error2));
+            ok(!err1.isCausedBy(Error2));
+            ok(!err1.isCausedBy(Error3));
+            ok(!err2.isCausedBy(Error3));
+        });
+    });
 });

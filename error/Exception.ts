@@ -51,7 +51,7 @@ export interface ExceptionOptions {
  * ```
  */
 export default class Exception extends Error {
-    cause?: unknown;
+    override cause?: unknown;
     code: number = 0;
 
     constructor(message: string, name?: string);
