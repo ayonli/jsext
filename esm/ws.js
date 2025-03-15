@@ -3,6 +3,8 @@ import { concat, text } from './bytes.js';
 import { createErrorEvent, createCloseEvent } from './event.js';
 import runtime from './runtime.js';
 import { WebSocketConnection } from './ws/base.js';
+import './error/Exception.js';
+import { NotSupportedError } from './error/common.js';
 export { WebSocket, WebSocketStream, toWebSocketStream } from './ws/client.js';
 
 /**
@@ -212,7 +214,7 @@ class WebSocketServer {
             return this.upgradeInNode(request, isNodeRequest);
         }
         else {
-            throw new TypeError("Unsupported runtime");
+            throw new NotSupportedError("Unsupported runtime");
         }
     }
     upgradeInDeno(request) {

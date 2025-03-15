@@ -7,20 +7,20 @@
  * // throw an exception with a name
  * import { Exception } from "@ayonli/jsext/error";
  *
- * throw new Exception("The resource cannot be found", "NotFoundError");
+ * throw new Exception("Operation timeout after 5 seconds", "TimeoutError");
  * ```
  *
  * @example
  * ```ts
- * // throw an exception with a code
+ * // throw an exception with a code (not recommended, always use a name or both)
  * import { Exception } from "@ayonli/jsext/error";
  *
- * throw new Exception("The resource cannot be found", 404);
+ * throw new Exception("Operation timeout after 5 seconds", 408);
  * ```
  *
  * @example
  * ```ts
- * // rethrow an exception with a cause
+ * // throw an exception with a cause
  * import { Exception } from "@ayonli/jsext/error";
  *
  * try {
@@ -71,8 +71,9 @@ class Exception extends Error {
 Object.defineProperty(Exception.prototype, "name", {
     configurable: true,
     enumerable: false,
-    writable: true,
-    value: "Exception",
+    get() {
+        return this.constructor.name;
+    },
 });
 
 export { Exception as default };

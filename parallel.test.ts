@@ -4,7 +4,7 @@ import _try from "./try.ts";
 import { range } from "./number.ts";
 import { sum } from "./math.ts";
 import { pick } from "./object.ts";
-import Exception from "./error/Exception.ts";
+import { Exception } from "./error.ts";
 import * as path from "node:path";
 import { trim } from "./string.ts";
 import { readAsArray } from "./reader.ts";

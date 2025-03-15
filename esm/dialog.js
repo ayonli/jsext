@@ -1,4 +1,8 @@
 import { isBrowserWindow, isDeno, isNodeLike } from './env.js';
+import './bytes.js';
+import './error/Exception.js';
+import './external/event-target-polyfill/index.js';
+import { NotSupportedError } from './error/common.js';
 export { default as progress } from './dialog/progress.js';
 export { downloadFile, openDirectory, openFile, openFiles, pickDirectory, pickFile, pickFiles, saveFile } from './dialog/file.js';
 
@@ -30,7 +34,7 @@ async function alert(message, options = {}) {
         await alert(message, options);
     }
     else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 /**
@@ -58,7 +62,7 @@ async function confirm(message, options = {}) {
         return await confirm(message, options);
     }
     else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 async function prompt(message, options = "") {
@@ -83,7 +87,7 @@ async function prompt(message, options = "") {
         return await prompt(message, { defaultValue, type, mask, gui, timeout });
     }
     else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 

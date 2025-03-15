@@ -1,4 +1,8 @@
 import { getReadonly, setReadonly } from '../class/util.js';
+import '../bytes.js';
+import '../error/Exception.js';
+import '../external/event-target-polyfill/index.js';
+import { NotSupportedError, NetworkError } from '../error/common.js';
 import { WebSocketConnection } from './base.js';
 
 /**
@@ -54,7 +58,7 @@ function initWebSocketStream(wss, ws) {
             });
         });
         ws.addEventListener("error", () => {
-            reject(new Error("Failed to establish WebSocket connection."));
+            reject(new NetworkError("Failed to establish WebSocket connection."));
         });
     }));
     setReadonly(wss, "closed", new Promise((resolve) => {
@@ -96,7 +100,7 @@ class WebSocketStream {
     }
     constructor(url, options = {}) {
         if (typeof globalThis.WebSocket !== "function") {
-            throw new Error("WebSocket is not supported in this environment.");
+            throw new NotSupportedError("WebSocket is not supported in this environment.");
         }
         const { protocols, signal } = options;
         const ws = this[_ws] = new globalThis.WebSocket(url, protocols);

@@ -1,4 +1,8 @@
 import { isDeno, isNodeLike } from './env.js';
+import './bytes.js';
+import './error/Exception.js';
+import './external/event-target-polyfill/index.js';
+import { NotSupportedError } from './error/common.js';
 import { stripEnd, trim } from './string.js';
 import { isAbsolute, split, isUrl, isPosixPath, isWindowsPath, isNotQuery, isVolume, isFileUrl, isFsPath } from './path/util.js';
 export { contains, endsWith, equals, startsWith } from './path/util.js';
@@ -48,7 +52,7 @@ function cwd() {
         return location.origin + (location.pathname === "/" ? "" : location.pathname);
     }
     else {
-        throw new Error("Unable to determine the current working directory.");
+        throw new NotSupportedError("Unable to determine the current working directory.");
     }
 }
 /**
@@ -300,7 +304,7 @@ function toFileUrl(path) {
         return new URL("file://" + _path).href;
     }
     else {
-        throw new Error("Cannot convert a URL to a file URL.");
+        throw new NotSupportedError("Cannot convert a URL to a file URL.");
     }
 }
 /**
@@ -320,7 +324,7 @@ function toFsPath(url) {
             return join(fileUrlToFsPath(url.toString()));
         }
         else {
-            throw new Error("Cannot convert a non-file URL to a file system path.");
+            throw new NotSupportedError("Cannot convert a non-file URL to a file system path.");
         }
     }
     if (isFsPath(url)) {
@@ -333,7 +337,7 @@ function toFsPath(url) {
         return resolve(url);
     }
     else {
-        throw new Error("Cannot convert a non-file URL to a file system path.");
+        throw new NotSupportedError("Cannot convert a non-file URL to a file system path.");
     }
 }
 function fileUrlToFsPath(url) {

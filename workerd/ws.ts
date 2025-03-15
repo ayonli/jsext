@@ -1,3 +1,4 @@
+import { NotSupportedError } from "../error.ts";
 import { createCloseEvent, createErrorEvent } from "../event.ts";
 import { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike } from "../ws/base.ts";
 import type { IncomingMessage } from "node:http";
@@ -43,7 +44,7 @@ export class WebSocketServer {
         if (!upgradeHeader || upgradeHeader !== "websocket") {
             throw new TypeError("Expected Upgrade: websocket");
         } else if (typeof WebSocketPair !== "function") {
-            throw new Error("WebSocket is not supported in this environment.");
+            throw new NotSupportedError("WebSocket is not supported in this environment.");
         }
 
         const handler = this[_handler];

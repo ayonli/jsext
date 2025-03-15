@@ -6,6 +6,7 @@
 
 import bytes from "./bytes.ts";
 import { isDeno, isNodeLike } from "./env.ts";
+import { NotSupportedError } from "./error.ts";
 import { toBytesAsync } from "./hash/util.ts";
 import hash, {
     type DataSource,
@@ -76,7 +77,7 @@ export async function sha1(
     } else if (isDeno || isNodeLike) {
         return nodeHash("sha1", data, encoding);
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -114,7 +115,7 @@ export async function sha256(
     } else if (isDeno || isNodeLike) {
         return nodeHash("sha256", data, encoding);
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -154,7 +155,7 @@ export async function sha512(
     } else if (isDeno || isNodeLike) {
         return nodeHash("sha512", data, encoding);
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -192,7 +193,7 @@ export async function md5(
     if (isDeno || isNodeLike) {
         return nodeHash("md5", data, encoding);
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -230,6 +231,6 @@ export async function hmac(
             return result.buffer.slice(result.byteOffset, result.byteOffset + result.byteLength);
         }
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }

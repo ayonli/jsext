@@ -1,4 +1,4 @@
-import { Exception } from "../error.ts";
+import { NotFoundError, NotImplementedError } from "../error.ts";
 import { getMIME } from "../filetype.ts";
 import type {
     CopyOptions,
@@ -39,7 +39,7 @@ export async function getDirHandle(
     options: GetDirOptions = {}
 ): Promise<FileSystemDirectoryHandle> {
     void path, options;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 export async function getFileHandle(
@@ -47,7 +47,7 @@ export async function getFileHandle(
     options: GetFileOptions = {}
 ): Promise<FileSystemFileHandle> {
     void path, options;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 function ensureFsTarget<T extends string | URL | FileSystemFileHandle | FileSystemDirectoryHandle>(
@@ -65,7 +65,7 @@ function getKVStore(options: FileSystemOptions): KVNamespace {
     const kv = (options.root ?? globalThis["__STATIC_CONTENT"]) as KVNamespace | undefined;
 
     if (!kv) {
-        throw new Error("Must set the `options.root` a KVNamespace object.");
+        throw new TypeError("Must set the `options.root` a KVNamespace object.");
     }
 
     return kv as KVNamespace;
@@ -86,10 +86,7 @@ const loadManifest: Promise<{ [filename: string]: string; }> = (async () => {
 })();
 
 function throwNotFoundError(filename: string, kind: "file" | "directory" = "file"): never {
-    throw new Exception(`${kind === "file" ? "File" : "Directory"} '${filename}' does not exist`, {
-        name: "NotFoundError",
-        code: 404,
-    });
+    throw new NotFoundError(`${kind === "file" ? "File" : "Directory"} '${filename}' does not exist`);
 }
 
 export async function exists(path: string | URL, options: FileSystemOptions = {}): Promise<boolean> {
@@ -165,7 +162,7 @@ export async function stat(
 
 export async function mkdir(path: string, options: MkdirOptions = {}): Promise<void> {
     void path, options;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 export async function ensureDir(
@@ -173,7 +170,7 @@ export async function ensureDir(
     options: Omit<MkdirOptions, "recursive"> = {}
 ): Promise<void> {
     void path, options;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 export async function* readDir(
@@ -329,7 +326,7 @@ export async function writeFile(
     options: WriteFileOptions = {}
 ): Promise<void> {
     void target, data, options;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 export async function writeLines(
@@ -338,7 +335,7 @@ export async function writeLines(
     options: WriteFileOptions = {}
 ): Promise<void> {
     void target, lines, options;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 export async function truncate(
@@ -347,12 +344,12 @@ export async function truncate(
     options: FileSystemOptions = {}
 ): Promise<void> {
     void target, size, options;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 export async function remove(path: string | URL, options: RemoveOptions = {}): Promise<void> {
     void path, options;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 export async function rename(
@@ -361,7 +358,7 @@ export async function rename(
     options: FileSystemOptions = {}
 ): Promise<void> {
     void oldPath, newPath, options;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 export async function copy(
@@ -384,7 +381,7 @@ export async function copy(
     options: CopyOptions = {}
 ): Promise<void> {
     void src, dest, options;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 export async function link(
@@ -393,12 +390,12 @@ export async function link(
     options: LinkOptions = {}
 ): Promise<void> {
     void src, dest, options;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 export async function readLink(path: string | URL): Promise<string> {
     void path;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 export async function chmod(path: string | URL, mode: number): Promise<void> {
@@ -422,7 +419,7 @@ export function createReadableStream(
     options: FileSystemOptions = {}
 ): ReadableStream<Uint8Array> {
     void target, options;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 export function createWritableStream(
@@ -430,5 +427,5 @@ export function createWritableStream(
     options: Omit<WriteFileOptions, "signal"> = {}
 ): WritableStream<Uint8Array> {
     void target, options;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }

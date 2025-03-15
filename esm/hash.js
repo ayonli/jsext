@@ -1,5 +1,8 @@
 import bytes from './bytes.js';
 import { isDeno, isNodeLike } from './env.js';
+import './error/Exception.js';
+import './external/event-target-polyfill/index.js';
+import { NotSupportedError } from './error/common.js';
 import { toBytesAsync } from './hash/util.js';
 import hash, { sha1 as sha1$1, sha256 as sha256$1, sha512 as sha512$1, hmac as hmac$1 } from './hash/web.js';
 export { adler32, crc32 } from './hash/web.js';
@@ -31,7 +34,7 @@ async function sha1(data, encoding = undefined) {
         return nodeHash("sha1", data, encoding);
     }
     else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 async function sha256(data, encoding = undefined) {
@@ -42,7 +45,7 @@ async function sha256(data, encoding = undefined) {
         return nodeHash("sha256", data, encoding);
     }
     else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 async function sha512(data, encoding = undefined) {
@@ -53,7 +56,7 @@ async function sha512(data, encoding = undefined) {
         return nodeHash("sha512", data, encoding);
     }
     else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 async function md5(data, encoding = undefined) {
@@ -61,7 +64,7 @@ async function md5(data, encoding = undefined) {
         return nodeHash("md5", data, encoding);
     }
     else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 async function hmac(algorithm, key, data, encoding = undefined) {
@@ -83,7 +86,7 @@ async function hmac(algorithm, key, data, encoding = undefined) {
         }
     }
     else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 

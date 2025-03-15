@@ -1,14 +1,15 @@
 import { env as env$1 } from 'fastly:env';
+import '../bytes.js';
+import '../error/Exception.js';
+import '../external/event-target-polyfill/index.js';
+import { NotSupportedError } from '../error/common.js';
 export { addShutdownListener, addUnhandledRejectionListener, customInspect, default, isREPL, platform, refTimer, unrefTimer } from '../runtime.js';
 
 // @ts-ignore
 function env(name = undefined, value = undefined) {
     var _a, _b, _c, _d, _e, _f, _g, _h;
-    if (typeof name === "object") {
-        throw new Error("Not implemented");
-    }
-    else if (value !== undefined) {
-        throw new Error("Cannot modify environment variables in the worker.");
+    if (typeof name === "object" || value !== undefined) {
+        throw new NotSupportedError("Cannot modify environment variables in the worker.");
     }
     else if (name === undefined) {
         return {

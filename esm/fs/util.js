@@ -2,6 +2,8 @@ import { orderBy, startsWith } from '../array.js';
 import { omit } from '../object.js';
 import Exception from '../error/Exception.js';
 import '../external/event-target-polyfill/index.js';
+import { NotFoundError, NotAllowedError, AlreadyExistsError } from '../error/common.js';
+import { IsDirectoryError, NotDirectoryError, InvalidOperationError, BusyError, InterruptedError, FileTooLargeError, FilesystemLoopError } from './errors.js';
 import { getMIME } from '../filetype.js';
 import { toFsPath, extname, basename } from '../path.js';
 import { isFileUrl, split } from '../path/util.js';
@@ -43,7 +45,7 @@ function wrapFsError(err, type = undefined) {
             || errName === "NotFound"
             || errCode === "ENOENT"
             || errCode === "ENOTFOUND") {
-            return new Exception(err.message, { name: "NotFoundError", code: 404, cause: err });
+            return new NotFoundError(err.message, { cause: err });
         }
         else if (errName === "NotAllowedError"
             || errName === "PermissionDenied"
@@ -52,23 +54,23 @@ function wrapFsError(err, type = undefined) {
             || errName === "EACCES"
             || errCode === "EPERM"
             || errCode === "ERR_ACCESS_DENIED") {
-            return new Exception(err.message, { name: "NotAllowedError", code: 403, cause: err });
+            return new NotAllowedError(err.message, { cause: err });
         }
         else if (errName === "AlreadyExists"
             || errCode === "EEXIST"
             || errCode === "ERR_FS_CP_EEXIST") {
-            return new Exception(err.message, { name: "AlreadyExistsError", code: 409, cause: err });
+            return new AlreadyExistsError(err.message, { cause: err });
         }
         else if ((errName === "TypeMismatchError" && type === "file")
             || errName === "IsADirectory"
             || errCode === "EISDIR"
             || errCode === "ERR_FS_EISDIR") {
-            return new Exception(err.message, { name: "IsDirectoryError", code: 415, cause: err });
+            return new IsDirectoryError(err.message, { cause: err });
         }
         else if ((errName === "TypeMismatchError" && type === "directory")
             || errName === "NotADirectory"
             || errCode === "ENOTDIR") {
-            return new Exception(err.message, { name: "NotDirectoryError", code: 415, cause: err });
+            return new NotDirectoryError(err.message, { cause: err });
         }
         else if (errName === "InvalidModificationError"
             || errName === "NotSupported"
@@ -81,23 +83,23 @@ function wrapFsError(err, type = undefined) {
             || errCode === "ERR_FS_CP_SYMLINK_TO_SUBDIRECTORY"
             || errCode === "ERR_FS_CP_UNKNOWN"
             || errCode === "ERR_FS_INVALID_SYMLINK_TYPE") {
-            return new Exception(err.message, { name: "InvalidOperationError", code: 405, cause: err });
+            return new InvalidOperationError(err.message, { cause: err });
         }
         else if (errName === "NoModificationAllowedError"
             || errName === "Busy"
             || errName === "TimedOut"
             || errCode === "ERR_DIR_CONCURRENT_OPERATION") {
-            return new Exception(errName, { name: "BusyError", code: 409, cause: err });
+            return new BusyError(errName, { cause: err });
         }
         else if (errName === "Interrupted" || errCode === "ERR_DIR_CLOSED") {
-            return new Exception(err.message, { name: "InterruptedError", code: 409, cause: err });
+            return new InterruptedError(err.message, { cause: err });
         }
         else if (errName === "QuotaExceededError"
             || errCode === "ERR_FS_FILE_TOO_LARGE") {
-            return new Exception(err.message, { name: "FileTooLargeError", code: 413, cause: err });
+            return new FileTooLargeError(err.message, { cause: err });
         }
         else if (errName === "FilesystemLoop") {
-            return new Exception(err.message, { name: "FilesystemLoopError", code: 508, cause: err });
+            return new FilesystemLoopError(err.message, { cause: err });
         }
         else {
             return err;

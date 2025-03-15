@@ -1,5 +1,5 @@
 import bytes, { concat as concatBytes } from "../bytes.ts";
-import { Exception } from "../error.ts";
+import { FilenameTooLongError } from "../fs/errors.ts";
 import { makeTree } from "../fs/util.ts";
 import { omit } from "../object.ts";
 import { basename, dirname } from "../path.ts";
@@ -131,12 +131,10 @@ const USTarFileHeaderFieldLengths = { // byte offset
 // eight checksum bytes taken to be ascii spaces (decimal value 32)
 const initialChecksum = 8 * 32;
 
-const FilenameTooLongError = new Exception(
+const filenameTooLongError = new FilenameTooLongError(
     "UStar format does not allow a long file name (length of [file name"
-    + "prefix] + / + [file name] must be shorter than 256 bytes)", {
-    name: "FilenameTooLongError",
-    code: 431
-});
+    + "prefix] + / + [file name] must be shorter than 256 bytes)"
+);
 
 function toFixedOctal(num: number, bytes: number): string {
     return num.toString(8).padStart(bytes, "0");
@@ -303,9 +301,9 @@ export default class Tarball {
             }
 
             if (i < 0 || name.length > 100) {
-                throw FilenameTooLongError;
+                throw filenameTooLongError;
             } else if (prefix.length > 155) {
-                throw FilenameTooLongError;
+                throw filenameTooLongError;
             }
         }
 

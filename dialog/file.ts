@@ -1,4 +1,5 @@
 import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
+import { NotSupportedError } from "../error.ts";
 
 /**
  * Options for file dialog functions, such as {@link pickFile} and
@@ -85,7 +86,7 @@ export async function pickFile(
         return await pickFile(options);
     }
 
-    throw new Error("Unsupported platform");
+    throw new NotSupportedError("Unsupported runtime");
 }
 
 /**
@@ -130,7 +131,7 @@ export async function pickFiles(
         return await pickFiles(options);
     }
 
-    throw new Error("Unsupported platform");
+    throw new NotSupportedError("Unsupported runtime");
 }
 
 /**
@@ -161,7 +162,7 @@ export async function pickDirectory(
         return await pickDirectory(options);
     }
 
-    throw new Error("Unsupported platform");
+    throw new NotSupportedError("Unsupported runtime");
 }
 
 /**
@@ -200,7 +201,7 @@ export async function openFile(options?: FileDialogOptions): Promise<File | null
         const { openFile } = await import("./cli/file.ts");
         return await openFile(options);
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -240,7 +241,7 @@ export async function openFiles(options: FileDialogOptions = {}): Promise<File[]
         const { openFiles } = await import("./cli/file.ts");
         return await openFiles(options);
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -268,7 +269,7 @@ export async function openDirectory(
         const { openDirectory } = await import("./cli/file.ts");
         return await openDirectory(options);
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -331,7 +332,7 @@ export async function saveFile(
         const { saveFile } = await import("./cli/file.ts");
         return await saveFile(file, options);
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -378,7 +379,7 @@ export async function downloadFile(
         const { downloadFile } = await import("./web/file.ts");
         return downloadFile(url, options);
     } else if (!isDeno && !isNodeLike || typeof fetch !== "function") {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 
     const { downloadFile } = await import("./cli/file.ts");

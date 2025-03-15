@@ -2,15 +2,16 @@ import { asyncTask } from './async.js';
 import bytes from './bytes.js';
 import { stripStart } from './string.js';
 import { isDeno, isBun, isNode } from './env.js';
+import { as } from './object.js';
+import './error/Exception.js';
 import './external/event-target-polyfill/index.js';
+import { NotSupportedError } from './error/common.js';
 export { parseUserAgent } from './http/user-agent.js';
 import { stat, exists, readDir, readFile, createReadableStream } from './fs.js';
 import { join, extname, resolve } from './path.js';
 import { isMain } from './module/web.js';
 import './cli/constants.js';
 import { parseArgs, args } from './cli/common.js';
-import { as } from './object.js';
-import './error/Exception.js';
 import { sha256 } from './hash.js';
 import { createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent, renderDirectoryPage, createTimingFunctions, withWeb } from './http/internal.js';
 import { HttpServer, constructNetAddress } from './http/server.js';
@@ -361,7 +362,7 @@ function serve(options) {
             }
         }
         else {
-            throw new Error("Unsupported runtime");
+            throw new NotSupportedError("Unsupported runtime");
         }
         return { http: server, hostname, port, controller };
     }, { type, fetch: handle, onError, onListen, ws, headers, secure: !!key && !!cert });

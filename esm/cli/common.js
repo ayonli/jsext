@@ -3,6 +3,9 @@ import { byteLength, chars } from '../string.js';
 import { EMOJI_CHAR } from '../string/constants.js';
 import bytes, { equals } from '../bytes.js';
 import { isDeno, isNodeLike, isBrowserWindow } from '../env.js';
+import '../error/Exception.js';
+import '../external/event-target-polyfill/index.js';
+import { NotSupportedError } from '../error/common.js';
 import { platform } from '../runtime.js';
 import { sum } from '../math.js';
 import { Mutex } from '../lock.js';
@@ -168,7 +171,7 @@ const stdinMutex = new Mutex(1);
  */
 async function lockStdin(task) {
     if (!isTTY) {
-        throw new Error("Not a terminal");
+        throw new NotSupportedError("Not a terminal");
     }
     const lock = await stdinMutex.lock();
     try {
@@ -206,7 +209,7 @@ async function lockStdin(task) {
             }
         }
         else {
-            throw new Error("No stdin available");
+            throw new NotSupportedError("No stdin available");
         }
     }
     finally {
@@ -248,7 +251,7 @@ async function readStdin() {
         });
     }
     else {
-        throw new Error("No stdin available");
+        throw new NotSupportedError("No stdin available");
     }
 }
 /**
@@ -264,7 +267,7 @@ async function writeStdout(data) {
         });
     }
     else {
-        throw new Error("No stdout available");
+        throw new NotSupportedError("No stdout available");
     }
 }
 /**
@@ -285,7 +288,7 @@ function writeStdoutSync(data) {
         process.stdout.write(data);
     }
     else {
-        throw new Error("No stdout available");
+        throw new NotSupportedError("No stdout available");
     }
 }
 /**

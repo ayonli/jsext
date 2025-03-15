@@ -10,6 +10,7 @@ import { createErrorEvent } from "./event.ts";
 
 export { Exception };
 export type { ExceptionOptions };
+export * from "./error/common.ts";
 
 /**
  * Transforms the error to a plain object.

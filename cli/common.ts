@@ -10,6 +10,7 @@ import { byteLength, chars } from "../string.ts";
 import { EMOJI_CHAR } from "../string/constants.ts";
 import bytes, { ByteArray, equals } from "../bytes.ts";
 import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
+import { NotSupportedError } from "../error.ts";
 import { platform } from "../runtime.ts";
 import { sum } from "../math.ts";
 import { Mutex } from "../lock.ts";
@@ -180,7 +181,7 @@ const stdinMutex = new Mutex(1);
  */
 export async function lockStdin<T>(task: () => Promise<T>): Promise<T | null> {
     if (!isTTY) {
-        throw new Error("Not a terminal");
+        throw new NotSupportedError("Not a terminal");
     }
 
     const lock = await stdinMutex.lock();
@@ -220,7 +221,7 @@ export async function lockStdin<T>(task: () => Promise<T>): Promise<T | null> {
                 }
             }
         } else {
-            throw new Error("No stdin available");
+            throw new NotSupportedError("No stdin available");
         }
     } finally {
         lock.unlock();
@@ -260,7 +261,7 @@ export async function readStdin(): Promise<ByteArray> {
             stdin.on("data", listener);
         });
     } else {
-        throw new Error("No stdin available");
+        throw new NotSupportedError("No stdin available");
     }
 }
 
@@ -275,7 +276,7 @@ export async function writeStdout(data: ByteArray): Promise<void> {
             process.stdout.write(data, () => resolve());
         });
     } else {
-        throw new Error("No stdout available");
+        throw new NotSupportedError("No stdout available");
     }
 }
 
@@ -295,7 +296,7 @@ export function writeStdoutSync(data: ByteArray): void {
     } else if (isNodeLike) {
         process.stdout.write(data);
     } else {
-        throw new Error("No stdout available");
+        throw new NotSupportedError("No stdout available");
     }
 }
 

@@ -3,7 +3,9 @@ import { isDeno, isNodeLike } from './env.js';
 import { as } from './object.js';
 import Exception from './error/Exception.js';
 import './external/event-target-polyfill/index.js';
+import { NotSupportedError } from './error/common.js';
 import { getMIME } from './filetype.js';
+import { InvalidOperationError, NotDirectoryError } from './fs/errors.js';
 import { ensureFsTarget, rawOp, fixDirEntry, wrapFsError, makeTree } from './fs/util.js';
 import { resolveHomeDir } from './fs/util/server.js';
 import { stat as stat$1, mkdir as mkdir$1, readDir as readDir$1, readFile as readFile$1, readFileAsFile as readFileAsFile$1, writeFile as writeFile$1, truncate as truncate$1, remove as remove$1, rename as rename$1, copy as copy$1, createReadableStream as createReadableStream$1, createWritableStream as createWritableStream$1 } from './fs/web.js';
@@ -43,24 +45,29 @@ import { resolveByteStream } from './reader/util.js';
  *
  * **Errors:**
  *
- * When a file system operation fails, this module throws an {@link Exception}
- * with one of the following names:
+ * When a file system operation fails, this module throws one of following
+ * derived {@link Exception} instances:
  *
- * - `NotFoundError`: The file or directory does not exist.
  * - `NotAllowedError`: The operation is not allowed, such as being blocked by
  *   the permission system.
+ * - `NotFoundError`: The file or directory does not exist.
  * - `AlreadyExistsError`: The file or directory already exists.
+ * - `InvalidOperationError`: The operation is invalid, such as trying to copy a
+ *   directory without the `recursive` option.
  * - `IsDirectoryError`: The path is a directory, not a file.
  * - `NotDirectoryError`: The path is a file, not a directory.
- * - `InvalidOperationError`: The operation is not supported, such as trying to
- *   copy a directory without the `recursive` option.
- * - `BusyError`: The file is busy, such as being locked by another program.
- * - `InterruptedError`: The operation is interrupted by the underlying file
- *   system.
  * - `FileTooLargeError`: The file is too large, or the file system doesn't have
  *   enough space to store the new content.
+ * - `FilenameTooLongError`: The filename is too long to be resolved by the file
+ *   system.
  * - `FilesystemLoopError`:  Too many symbolic links were encountered when
  *   resolving the filename.
+ * - `BusyError`: The file is busy at the moment, such as being locked by
+ *   another program.
+ * - `InterruptedError`: The operation is interrupted by the underlying file
+ *   system.
+ * - `NotSupportedError`: The operation is not supported by the current
+ *   environment.
  *
  * Other errors may also be thrown by the runtime, such as `TypeError`.
  * @module
@@ -115,15 +122,14 @@ const EOL = (() => {
  * ```
  */
 async function exists(path, options = {}) {
+    var _a;
     try {
         await stat(path, options);
         return true;
     }
     catch (err) {
-        if (err instanceof Exception) {
-            if (err.name === "NotFoundError") {
-                return false;
-            }
+        if (((_a = as(err, Exception)) === null || _a === void 0 ? void 0 : _a.name) === "NotFoundError") {
+            return false;
         }
         throw err;
     }
@@ -877,19 +883,13 @@ async function copy(src, dest, options = {}) {
     const isDirSrc = oldStat.kind === "directory";
     let isDirDest = false;
     if (isDirSrc && !options.recursive) {
-        throw new Exception("Cannot copy a directory without the 'recursive' option", {
-            name: "InvalidOperationError",
-            code: 400,
-        });
+        throw new InvalidOperationError("Cannot copy a directory without the 'recursive' option");
     }
     try {
         const newStat = await stat(dest, { followSymlink: true });
         isDirDest = newStat.kind === "directory";
         if (isDirSrc && !isDirDest) {
-            throw new Exception(`'${dest}' is not a directory`, {
-                name: "NotDirectoryError",
-                code: 415,
-            });
+            throw new NotDirectoryError(`'${dest}' is not a directory`);
         }
     }
     catch (_a) {
@@ -997,7 +997,7 @@ async function link(src, dest, options = {}) {
         }
     }
     else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 /**
@@ -1024,7 +1024,7 @@ async function readLink(path) {
         return await rawOp(fs.readlink(path));
     }
     else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 /**

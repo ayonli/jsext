@@ -1,5 +1,8 @@
 import { isDeno, isMainThread, isBun, isNode, isSharedWorker, isServiceWorker, isDedicatedWorker, isNodeLike } from './env.js';
+import './bytes.js';
+import './error/Exception.js';
 import { createCloseEvent } from './event.js';
+import { NotSupportedError } from './error/common.js';
 import { parseUserAgent } from './http/user-agent.js';
 
 /**
@@ -253,7 +256,7 @@ function env(name = undefined, value = undefined) {
             }
         }
         else {
-            throw new Error("Cannot modify environment variables in the worker.");
+            throw new NotSupportedError("Cannot modify environment variables in the worker.");
         }
     }
     else {

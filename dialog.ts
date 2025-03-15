@@ -6,6 +6,7 @@
  * @module
  */
 import { isBrowserWindow, isDeno, isNodeLike } from "./env.ts";
+import { NotSupportedError } from "./error.ts";
 import progress from "./dialog/progress.ts";
 
 export { progress };
@@ -59,7 +60,7 @@ export async function alert(message: string, options: DialogOptions = {}): Promi
         const { default: alert } = await import("./dialog/cli/alert.ts");
         await alert(message, options);
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -86,7 +87,7 @@ export async function confirm(message: string, options: DialogOptions = {}): Pro
         const { default: confirm } = await import("./dialog/cli/confirm.ts");
         return await confirm(message, options);
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -180,6 +181,6 @@ export async function prompt(
         const { default: prompt } = await import("./dialog/cli/prompt.ts");
         return await prompt(message, { defaultValue, type, mask, gui, timeout });
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }

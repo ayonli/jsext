@@ -1,4 +1,8 @@
 import { isBrowserWindow, isDeno, isNodeLike } from '../env.js';
+import '../bytes.js';
+import '../error/Exception.js';
+import '../external/event-target-polyfill/index.js';
+import { NotSupportedError } from '../error/common.js';
 
 /**
  * Displays a dialog with a progress bar indicating the ongoing state of the
@@ -77,7 +81,7 @@ async function progress(message, fn, onAbort = undefined) {
         return await progress(message, fn, onAbort);
     }
     else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 

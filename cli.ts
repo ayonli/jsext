@@ -13,6 +13,7 @@ import { interop } from "./module.ts";
 import { basename } from "./path.ts";
 import { PowerShellCommands } from "./cli/constants.ts";
 import { isWSL, quote } from "./cli/common.ts";
+import { NotSupportedError } from "./error.ts";
 import { ensureFsTarget } from "./fs/util.ts";
 import { resolveHomeDir } from "./fs/util/server.ts";
 
@@ -115,7 +116,7 @@ export async function run(
             stderr: stderr.join(""),
         };
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -202,7 +203,7 @@ export async function sudo(
     }
 
     if (!["darwin", "windows", "linux"].includes(_platform)) {
-        throw new Error("Unsupported platform");
+        throw new NotSupportedError("Unsupported platform");
     }
 
     const { exec } = await interop(import("sudo-prompt"));
@@ -304,7 +305,7 @@ export async function edit(filename: string | URL): Promise<void> {
         || isSharedWorker
         || (isDedicatedWorker && (["chrome", "firefox", "safari"]).includes(runtime().identity))
     ) {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 
     const _platform = platform();
@@ -337,7 +338,7 @@ export async function edit(filename: string | URL): Promise<void> {
         return;
     }
 
-    let editor = env("EDITOR")
+    let cmd = env("EDITOR")
         || env("VISUAL")
         || (await which("gedit"))
         || (await which("kate"))
@@ -346,36 +347,36 @@ export async function edit(filename: string | URL): Promise<void> {
         || (await which("nano"));
     let args: string[] | undefined;
 
-    if (!editor) {
+    if (!cmd) {
         throw new Error("Cannot determine the editor to open.");
     } else {
-        editor = basename(editor);
+        cmd = basename(cmd);
     }
 
-    if (["gedit", "kate", "vim", "vi", "nano"].includes(editor)) {
+    if (["gedit", "kate", "vim", "vi", "nano"].includes(cmd)) {
         args = line ? [`+${line}`, filename] : [filename];
     }
 
-    if (["vim", "vi", "nano"].includes(editor)) {
+    if (["vim", "vi", "nano"].includes(cmd)) {
         if (await which("gnome-terminal")) {
-            args = ["--", editor, ...args!];
-            editor = "gnome-terminal";
+            args = ["--", cmd, ...args!];
+            cmd = "gnome-terminal";
         } else {
-            args = ["-e", `'${editor} ${args!.map(quote).join(" ")}'`];
-            editor = (await which("konsole"))
+            args = ["-e", `'${cmd} ${args!.map(quote).join(" ")}'`];
+            cmd = (await which("konsole"))
                 || (await which("xfce4-terminal"))
                 || (await which("deepin-terminal"))
                 || (await which("xterm"));
         }
 
-        if (!editor) {
+        if (!cmd) {
             throw new Error("Cannot determine the terminal to open.");
         }
     } else {
         args = [filename];
     }
 
-    const { code, stderr } = await run(editor, args!);
+    const { code, stderr } = await run(cmd, args!);
 
     if (code)
         throw new Error(stderr || `Unable to open ${filename} in the editor.`);

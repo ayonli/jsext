@@ -1,6 +1,7 @@
 import '../bytes.js';
-import Exception from '../error/Exception.js';
+import '../error/Exception.js';
 import '../external/event-target-polyfill/index.js';
+import { NotImplementedError, NotFoundError } from '../error/common.js';
 import { getMIME } from '../filetype.js';
 import { makeTree } from '../fs/util.js';
 import { join, basename, extname } from '../path.js';
@@ -9,10 +10,10 @@ import { isFileUrl } from '../path/util.js';
 
 const EOL = "\n";
 async function getDirHandle(path, options = {}) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 async function getFileHandle(path, options = {}) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 function ensureFsTarget(path) {
     if (path instanceof URL || (typeof path === "string" && isFileUrl(path))) {
@@ -27,7 +28,7 @@ function getKVStore(options) {
     // @ts-ignore
     const kv = ((_a = options.root) !== null && _a !== void 0 ? _a : globalThis["__STATIC_CONTENT"]);
     if (!kv) {
-        throw new Error("Must set the `options.root` a KVNamespace object.");
+        throw new TypeError("Must set the `options.root` a KVNamespace object.");
     }
     return kv;
 }
@@ -44,10 +45,7 @@ const loadManifest = (async () => {
         .catch(() => ({}));
 })();
 function throwNotFoundError(filename, kind = "file") {
-    throw new Exception(`${kind === "file" ? "File" : "Directory"} '${filename}' does not exist`, {
-        name: "NotFoundError",
-        code: 404,
-    });
+    throw new NotFoundError(`${kind === "file" ? "File" : "Directory"} '${filename}' does not exist`);
 }
 async function exists(path, options = {}) {
     void getKVStore(options);
@@ -115,10 +113,10 @@ async function stat(target, options = {}) {
     }
 }
 async function mkdir(path, options = {}) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 async function ensureDir(path, options = {}) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 async function* readDir(target, options = {}) {
     void getKVStore(options);
@@ -232,28 +230,28 @@ async function readFileAsFile(target, options = {}) {
     return file;
 }
 async function writeFile(target, data, options = {}) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 async function writeLines(target, lines, options = {}) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 async function truncate(target, size = 0, options = {}) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 async function remove(path, options = {}) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 async function rename(oldPath, newPath, options = {}) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 async function copy(src, dest, options = {}) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 async function link(src, dest, options = {}) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 async function readLink(path) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 async function chmod(path, mode) {
 }
@@ -262,10 +260,10 @@ async function chown(path, uid, gid) {
 async function utimes(path, atime, mtime) {
 }
 function createReadableStream(target, options = {}) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 function createWritableStream(target, options = {}) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 export { EOL, chmod, chown, copy, createReadableStream, createWritableStream, ensureDir, exists, getDirHandle, getFileHandle, link, mkdir, readDir, readFile, readFileAsFile, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };

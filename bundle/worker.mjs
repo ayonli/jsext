@@ -419,6 +419,412 @@ new TextEncoder();
 new TextEncoder();
 new TextDecoder();
 
+/**
+ * Functions for dealing with objects.
+ * @module
+ */
+/**
+ * Returns `true` if the specified object has the indicated property as its own property.
+ * If the property is inherited, or does not exist, the function returns `false`.
+ *
+ * @example
+ * ```ts
+ * import { hasOwn } from "@ayonli/jsext/object";
+ *
+ * const obj = { foo: "hello" };
+ *
+ * console.log(hasOwn(obj, "foo")); // true
+ * console.log(hasOwn(obj, "toString")); // false
+ * ```
+ */
+function hasOwn(obj, key) {
+    return Object.prototype.hasOwnProperty.call(obj, key);
+}
+function pick(obj, keys) {
+    return keys.reduce((result, key) => {
+        if (key in obj && obj[key] !== undefined) {
+            result[key] = obj[key];
+        }
+        return result;
+    }, {});
+}
+function omit(obj, keys) {
+    const allKeys = Reflect.ownKeys(obj);
+    const keptKeys = allKeys.filter(key => !keys.includes(key));
+    const result = pick(obj, keptKeys);
+    // special treatment for Error types
+    if (obj instanceof Error) {
+        ["name", "message", "stack", "cause"].forEach(key => {
+            if (!keys.includes(key) &&
+                obj[key] !== undefined &&
+                !hasOwn(result, key)) {
+                result[key] = obj[key];
+            }
+        });
+    }
+    return result;
+}
+/**
+ * Returns `true` is the given value is a plain object, that is, an object created by
+ * the `Object` constructor or one with a `[[Prototype]]` of `null`.
+ *
+ * @example
+ * ```ts
+ * import { isPlainObject } from "@ayonli/jsext/object";
+ *
+ * console.log(isPlainObject({ foo: "bar" })); // true
+ * console.log(isPlainObject(Object.create(null))); // true
+ * console.log(isPlainObject(new Map([["foo", "bar"]]))); // false
+ * ```
+ */
+function isPlainObject(value) {
+    if (typeof value !== "object" || value === null)
+        return false;
+    const proto = Object.getPrototypeOf(value);
+    return proto === null || proto.constructor === Object;
+}
+
+/**
+ * A generic exception class, which can be used to represent any kind of error.
+ * It's similar to the `DOMException`, but for any JavaScript environment.
+ *
+ * @example
+ * ```ts
+ * // throw an exception with a name
+ * import { Exception } from "@ayonli/jsext/error";
+ *
+ * throw new Exception("Operation timeout after 5 seconds", "TimeoutError");
+ * ```
+ *
+ * @example
+ * ```ts
+ * // throw an exception with a code (not recommended, always use a name or both)
+ * import { Exception } from "@ayonli/jsext/error";
+ *
+ * throw new Exception("Operation timeout after 5 seconds", 408);
+ * ```
+ *
+ * @example
+ * ```ts
+ * // throw an exception with a cause
+ * import { Exception } from "@ayonli/jsext/error";
+ *
+ * try {
+ *     throw new Error("Something went wrong");
+ * } catch (error) {
+ *     throw new Exception("An error occurred", { cause: error });
+ * }
+ * ```
+ */
+class Exception extends Error {
+    constructor(message, options = 0) {
+        super(message);
+        this.code = 0;
+        if (typeof options === "number") {
+            this.code = options;
+        }
+        else if (typeof options === "string") {
+            Object.defineProperty(this, "name", {
+                configurable: true,
+                enumerable: false,
+                writable: true,
+                value: options,
+            });
+        }
+        else {
+            if (options.name) {
+                Object.defineProperty(this, "name", {
+                    configurable: true,
+                    enumerable: false,
+                    writable: true,
+                    value: options.name,
+                });
+            }
+            if (options.cause) {
+                Object.defineProperty(this, "cause", {
+                    configurable: true,
+                    enumerable: false,
+                    writable: true,
+                    value: options.cause,
+                });
+            }
+            if (options.code) {
+                this.code = options.code;
+            }
+        }
+    }
+}
+Object.defineProperty(Exception.prototype, "name", {
+    configurable: true,
+    enumerable: false,
+    get() {
+        return this.constructor.name;
+    },
+});
+
+var _a;
+if (typeof globalThis.Event !== "function") {
+    // @ts-ignore
+    globalThis.Event = (_a = class Event {
+            constructor(type, eventInitDict = {}) {
+                this.type = type;
+                this.eventInitDict = eventInitDict;
+                this.bubbles = false;
+                this.cancelable = false;
+                this.cancelBubble = false;
+                this.composed = false;
+                this.currentTarget = null;
+                this.defaultPrevented = false;
+                this.eventPhase = _a.NONE;
+                this.isTrusted = false;
+                this.returnValue = true;
+                this.target = null;
+                this.timeStamp = Date.now();
+                this.srcElement = null;
+                this.AT_TARGET = 2;
+                this.BUBBLING_PHASE = 3;
+                this.CAPTURING_PHASE = 1;
+                this.NONE = 0;
+                if (eventInitDict.bubbles !== undefined) {
+                    this.bubbles = eventInitDict.bubbles;
+                }
+                if (eventInitDict.cancelable !== undefined) {
+                    this.cancelable = eventInitDict.cancelable;
+                }
+                if (eventInitDict.composed !== undefined) {
+                    this.composed = eventInitDict.composed;
+                }
+            }
+            composedPath() {
+                return [];
+            }
+            preventDefault() {
+                if (this.cancelable) {
+                    this.defaultPrevented = true;
+                }
+            }
+            stopImmediatePropagation() {
+                // Do nothing
+            }
+            stopPropagation() {
+                this.cancelBubble = true;
+            }
+            initEvent(type, bubbles = undefined, cancelable = undefined) {
+                this.type = type;
+                this.bubbles = bubbles !== null && bubbles !== void 0 ? bubbles : false;
+                this.cancelable = cancelable !== null && cancelable !== void 0 ? cancelable : false;
+            }
+        },
+        _a.AT_TARGET = 2,
+        _a.BUBBLING_PHASE = 3,
+        _a.CAPTURING_PHASE = 1,
+        _a.NONE = 0,
+        _a);
+}
+if (typeof globalThis.EventTarget !== "function") {
+    // @ts-ignore
+    globalThis.EventTarget = class EventTarget {
+        constructor() {
+            this.listeners = {};
+        }
+        addEventListener(type, callback, options = {}) {
+            var _b;
+            if (!(type in this.listeners)) {
+                this.listeners[type] = [];
+            }
+            // @ts-ignore
+            this.listeners[type].push({ callback, once: (_b = options === null || options === void 0 ? void 0 : options.once) !== null && _b !== void 0 ? _b : false });
+        }
+        removeEventListener(type, callback) {
+            if (!(type in this.listeners)) {
+                return;
+            }
+            const stack = this.listeners[type];
+            for (let i = 0, l = stack.length; i < l; i++) {
+                if (stack[i].callback === callback) {
+                    stack.splice(i, 1);
+                    return;
+                }
+            }
+            if (stack.length === 0) {
+                delete this.listeners[type];
+            }
+        }
+        dispatchEvent(event) {
+            if (!(event.type in this.listeners)) {
+                return true;
+            }
+            Object.defineProperties(event, {
+                currentTarget: { configurable: true, value: this },
+                target: { configurable: true, value: this },
+            });
+            const stack = this.listeners[event.type].slice();
+            for (let i = 0, l = stack.length; i < l; i++) {
+                const listener = stack[i];
+                try {
+                    listener.callback.call(this, event);
+                }
+                catch (err) {
+                    setTimeout(() => {
+                        throw err;
+                    });
+                }
+                if (listener.once) {
+                    this.removeEventListener(event.type, listener.callback);
+                }
+            }
+            return !event.defaultPrevented;
+        }
+    };
+}
+
+/**
+ * This module includes some common errors that can be used in the application.
+ * @module
+ */
+/**
+ * This error indicates that the requested function or feature is not supported
+ * by the current environment.
+ */
+class NotSupportedError extends Exception {
+    constructor(message, options = {}) {
+        super(message, { ...options, name: "NotSupportedError", code: 405 });
+    }
+}
+/**
+ * This error indicates that the connection between the client and the server
+ * cannot be established.
+ */
+class NetworkError extends Exception {
+    constructor(message, options = {}) {
+        super(message, { ...options, name: "NetworkError" });
+    }
+}
+
+/**
+ * Functions for converting errors to/from other types of objects.
+ * @module
+ */
+/**
+ * Transforms the error to a plain object.
+ *
+ * @example
+ * ```ts
+ * import { toObject } from "@ayonli/jsext/error";
+ *
+ * const err = new Error("Something went wrong.");
+ *
+ * const obj = toObject(err);
+ * console.log(obj);
+ * // {
+ * //     "@@type": "Error",
+ * //     name: "Error",
+ * //     message: "Something went wrong.",
+ * //     stack: "Error: Something went wrong.\n    at <anonymous>:1:13"
+ * // }
+ * ```
+ */
+function toObject(err) {
+    if (!(err instanceof Error) && err["name"] && err["message"]) { // Error-like
+        err = fromObject(err, Error);
+    }
+    const obj = {
+        "@@type": err.constructor.name,
+        ...omit(err, ["toString", "toJSON", "__callSiteEvals"]),
+    };
+    if (obj["@@type"] === "AggregateError" && Array.isArray(obj["errors"])) {
+        obj["errors"] = obj["errors"].map(item => {
+            return item instanceof Error ? toObject(item) : item;
+        });
+    }
+    return obj;
+}
+function fromObject(obj, ctor = undefined) {
+    var _a, _b;
+    // @ts-ignore
+    if (!(obj === null || obj === void 0 ? void 0 : obj.name)) {
+        return null;
+    }
+    // @ts-ignore
+    ctor || (ctor = (globalThis[obj["@@type"] || obj.name] || globalThis[obj.name]));
+    if (!ctor) {
+        if (obj["@@type"] === "Exception") {
+            ctor = Exception;
+        }
+        else {
+            ctor = Error;
+        }
+    }
+    let err;
+    if (ctor.name === "DOMException" && typeof DOMException === "function") {
+        err = new ctor((_a = obj["message"]) !== null && _a !== void 0 ? _a : "", obj["name"]);
+    }
+    else {
+        err = Object.create(ctor.prototype, {
+            message: {
+                configurable: true,
+                enumerable: false,
+                writable: true,
+                value: (_b = obj["message"]) !== null && _b !== void 0 ? _b : "",
+            },
+        });
+    }
+    if (err.name !== obj["name"]) {
+        Object.defineProperty(err, "name", {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: obj["name"],
+        });
+    }
+    if (obj["stack"] !== undefined) {
+        Object.defineProperty(err, "stack", {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: obj["stack"],
+        });
+    }
+    if (obj["cause"] != undefined) {
+        Object.defineProperty(err, "cause", {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: obj["cause"],
+        });
+    }
+    const otherKeys = Reflect.ownKeys(obj).filter(key => ![
+        "@@type",
+        "name",
+        "message",
+        "stack",
+        "cause"
+    ].includes(key));
+    otherKeys.forEach(key => {
+        var _a;
+        // @ts-ignore
+        (_a = err[key]) !== null && _a !== void 0 ? _a : (err[key] = obj[key]);
+    });
+    // @ts-ignore
+    if (isAggregateError(err) && Array.isArray(err["errors"])) {
+        err["errors"] = err["errors"].map(item => {
+            return isPlainObject(item) ? fromObject(item) : item;
+        });
+    }
+    return err;
+}
+/** @inner */
+function isDOMException(value) {
+    return ((typeof DOMException === "function") && (value instanceof DOMException))
+        || (value instanceof Error && value.constructor.name === "DOMException"); // Node.js v16-
+}
+/** @inner */
+function isAggregateError(value) {
+    // @ts-ignore
+    return (typeof AggregateError === "function" && value instanceof AggregateError)
+        || (value instanceof Error && value.constructor.name === "AggregateError");
+}
+
 (() => {
     try {
         return new RegExp("^\(?:\\p{Emoji_Modifier_Base}\\p{Emoji_Modifier}?|\\p{Emoji_Presentation}|\\p{Emoji}\\uFE0F)(?:\\u200d(?:\\p{Emoji_Modifier_Base}\\p{Emoji_Modifier}?|\\p{Emoji_Presentation}|\\p{Emoji}\\uFE0F))*$", "u");
@@ -735,7 +1141,7 @@ function cwd() {
         return location.origin + (location.pathname === "/" ? "" : location.pathname);
     }
     else {
-        throw new Error("Unable to determine the current working directory.");
+        throw new NotSupportedError("Unable to determine the current working directory.");
     }
 }
 /**
@@ -847,7 +1253,7 @@ function toFsPath(url) {
             return join(fileUrlToFsPath(url.toString()));
         }
         else {
-            throw new Error("Cannot convert a non-file URL to a file system path.");
+            throw new NotSupportedError("Cannot convert a non-file URL to a file system path.");
         }
     }
     if (isFsPath(url)) {
@@ -860,393 +1266,11 @@ function toFsPath(url) {
         return resolve(url);
     }
     else {
-        throw new Error("Cannot convert a non-file URL to a file system path.");
+        throw new NotSupportedError("Cannot convert a non-file URL to a file system path.");
     }
 }
 function fileUrlToFsPath(url) {
     return url.replace(/^file:(\/\/)?/i, "").replace(/^\/([a-z]):/i, "$1:");
-}
-
-/**
- * Functions for dealing with objects.
- * @module
- */
-/**
- * Returns `true` if the specified object has the indicated property as its own property.
- * If the property is inherited, or does not exist, the function returns `false`.
- *
- * @example
- * ```ts
- * import { hasOwn } from "@ayonli/jsext/object";
- *
- * const obj = { foo: "hello" };
- *
- * console.log(hasOwn(obj, "foo")); // true
- * console.log(hasOwn(obj, "toString")); // false
- * ```
- */
-function hasOwn(obj, key) {
-    return Object.prototype.hasOwnProperty.call(obj, key);
-}
-function pick(obj, keys) {
-    return keys.reduce((result, key) => {
-        if (key in obj && obj[key] !== undefined) {
-            result[key] = obj[key];
-        }
-        return result;
-    }, {});
-}
-function omit(obj, keys) {
-    const allKeys = Reflect.ownKeys(obj);
-    const keptKeys = allKeys.filter(key => !keys.includes(key));
-    const result = pick(obj, keptKeys);
-    // special treatment for Error types
-    if (obj instanceof Error) {
-        ["name", "message", "stack", "cause"].forEach(key => {
-            if (!keys.includes(key) &&
-                obj[key] !== undefined &&
-                !hasOwn(result, key)) {
-                result[key] = obj[key];
-            }
-        });
-    }
-    return result;
-}
-/**
- * Returns `true` is the given value is a plain object, that is, an object created by
- * the `Object` constructor or one with a `[[Prototype]]` of `null`.
- *
- * @example
- * ```ts
- * import { isPlainObject } from "@ayonli/jsext/object";
- *
- * console.log(isPlainObject({ foo: "bar" })); // true
- * console.log(isPlainObject(Object.create(null))); // true
- * console.log(isPlainObject(new Map([["foo", "bar"]]))); // false
- * ```
- */
-function isPlainObject(value) {
-    if (typeof value !== "object" || value === null)
-        return false;
-    const proto = Object.getPrototypeOf(value);
-    return proto === null || proto.constructor === Object;
-}
-
-/**
- * A generic exception class, which can be used to represent any kind of error.
- * It's similar to the `DOMException`, but for any JavaScript environment.
- *
- * @example
- * ```ts
- * // throw an exception with a name
- * import { Exception } from "@ayonli/jsext/error";
- *
- * throw new Exception("The resource cannot be found", "NotFoundError");
- * ```
- *
- * @example
- * ```ts
- * // throw an exception with a code
- * import { Exception } from "@ayonli/jsext/error";
- *
- * throw new Exception("The resource cannot be found", 404);
- * ```
- *
- * @example
- * ```ts
- * // rethrow an exception with a cause
- * import { Exception } from "@ayonli/jsext/error";
- *
- * try {
- *     throw new Error("Something went wrong");
- * } catch (error) {
- *     throw new Exception("An error occurred", { cause: error });
- * }
- * ```
- */
-class Exception extends Error {
-    constructor(message, options = 0) {
-        super(message);
-        this.code = 0;
-        if (typeof options === "number") {
-            this.code = options;
-        }
-        else if (typeof options === "string") {
-            Object.defineProperty(this, "name", {
-                configurable: true,
-                enumerable: false,
-                writable: true,
-                value: options,
-            });
-        }
-        else {
-            if (options.name) {
-                Object.defineProperty(this, "name", {
-                    configurable: true,
-                    enumerable: false,
-                    writable: true,
-                    value: options.name,
-                });
-            }
-            if (options.cause) {
-                Object.defineProperty(this, "cause", {
-                    configurable: true,
-                    enumerable: false,
-                    writable: true,
-                    value: options.cause,
-                });
-            }
-            if (options.code) {
-                this.code = options.code;
-            }
-        }
-    }
-}
-Object.defineProperty(Exception.prototype, "name", {
-    configurable: true,
-    enumerable: false,
-    writable: true,
-    value: "Exception",
-});
-
-var _a;
-if (typeof globalThis.Event !== "function") {
-    // @ts-ignore
-    globalThis.Event = (_a = class Event {
-            constructor(type, eventInitDict = {}) {
-                this.type = type;
-                this.eventInitDict = eventInitDict;
-                this.bubbles = false;
-                this.cancelable = false;
-                this.cancelBubble = false;
-                this.composed = false;
-                this.currentTarget = null;
-                this.defaultPrevented = false;
-                this.eventPhase = _a.NONE;
-                this.isTrusted = false;
-                this.returnValue = true;
-                this.target = null;
-                this.timeStamp = Date.now();
-                this.srcElement = null;
-                this.AT_TARGET = 2;
-                this.BUBBLING_PHASE = 3;
-                this.CAPTURING_PHASE = 1;
-                this.NONE = 0;
-                if (eventInitDict.bubbles !== undefined) {
-                    this.bubbles = eventInitDict.bubbles;
-                }
-                if (eventInitDict.cancelable !== undefined) {
-                    this.cancelable = eventInitDict.cancelable;
-                }
-                if (eventInitDict.composed !== undefined) {
-                    this.composed = eventInitDict.composed;
-                }
-            }
-            composedPath() {
-                return [];
-            }
-            preventDefault() {
-                if (this.cancelable) {
-                    this.defaultPrevented = true;
-                }
-            }
-            stopImmediatePropagation() {
-                // Do nothing
-            }
-            stopPropagation() {
-                this.cancelBubble = true;
-            }
-            initEvent(type, bubbles = undefined, cancelable = undefined) {
-                this.type = type;
-                this.bubbles = bubbles !== null && bubbles !== void 0 ? bubbles : false;
-                this.cancelable = cancelable !== null && cancelable !== void 0 ? cancelable : false;
-            }
-        },
-        _a.AT_TARGET = 2,
-        _a.BUBBLING_PHASE = 3,
-        _a.CAPTURING_PHASE = 1,
-        _a.NONE = 0,
-        _a);
-}
-if (typeof globalThis.EventTarget !== "function") {
-    // @ts-ignore
-    globalThis.EventTarget = class EventTarget {
-        constructor() {
-            this.listeners = {};
-        }
-        addEventListener(type, callback, options = {}) {
-            var _b;
-            if (!(type in this.listeners)) {
-                this.listeners[type] = [];
-            }
-            // @ts-ignore
-            this.listeners[type].push({ callback, once: (_b = options === null || options === void 0 ? void 0 : options.once) !== null && _b !== void 0 ? _b : false });
-        }
-        removeEventListener(type, callback) {
-            if (!(type in this.listeners)) {
-                return;
-            }
-            const stack = this.listeners[type];
-            for (let i = 0, l = stack.length; i < l; i++) {
-                if (stack[i].callback === callback) {
-                    stack.splice(i, 1);
-                    return;
-                }
-            }
-            if (stack.length === 0) {
-                delete this.listeners[type];
-            }
-        }
-        dispatchEvent(event) {
-            if (!(event.type in this.listeners)) {
-                return true;
-            }
-            Object.defineProperties(event, {
-                currentTarget: { configurable: true, value: this },
-                target: { configurable: true, value: this },
-            });
-            const stack = this.listeners[event.type].slice();
-            for (let i = 0, l = stack.length; i < l; i++) {
-                const listener = stack[i];
-                try {
-                    listener.callback.call(this, event);
-                }
-                catch (err) {
-                    setTimeout(() => {
-                        throw err;
-                    });
-                }
-                if (listener.once) {
-                    this.removeEventListener(event.type, listener.callback);
-                }
-            }
-            return !event.defaultPrevented;
-        }
-    };
-}
-
-/**
- * Functions for converting errors to/from other types of objects.
- * @module
- */
-/**
- * Transforms the error to a plain object.
- *
- * @example
- * ```ts
- * import { toObject } from "@ayonli/jsext/error";
- *
- * const err = new Error("Something went wrong.");
- *
- * const obj = toObject(err);
- * console.log(obj);
- * // {
- * //     "@@type": "Error",
- * //     name: "Error",
- * //     message: "Something went wrong.",
- * //     stack: "Error: Something went wrong.\n    at <anonymous>:1:13"
- * // }
- * ```
- */
-function toObject(err) {
-    if (!(err instanceof Error) && err["name"] && err["message"]) { // Error-like
-        err = fromObject(err, Error);
-    }
-    const obj = {
-        "@@type": err.constructor.name,
-        ...omit(err, ["toString", "toJSON", "__callSiteEvals"]),
-    };
-    if (obj["@@type"] === "AggregateError" && Array.isArray(obj["errors"])) {
-        obj["errors"] = obj["errors"].map(item => {
-            return item instanceof Error ? toObject(item) : item;
-        });
-    }
-    return obj;
-}
-function fromObject(obj, ctor = undefined) {
-    var _a, _b;
-    // @ts-ignore
-    if (!(obj === null || obj === void 0 ? void 0 : obj.name)) {
-        return null;
-    }
-    // @ts-ignore
-    ctor || (ctor = (globalThis[obj["@@type"] || obj.name] || globalThis[obj.name]));
-    if (!ctor) {
-        if (obj["@@type"] === "Exception") {
-            ctor = Exception;
-        }
-        else {
-            ctor = Error;
-        }
-    }
-    let err;
-    if (ctor.name === "DOMException" && typeof DOMException === "function") {
-        err = new ctor((_a = obj["message"]) !== null && _a !== void 0 ? _a : "", obj["name"]);
-    }
-    else {
-        err = Object.create(ctor.prototype, {
-            message: {
-                configurable: true,
-                enumerable: false,
-                writable: true,
-                value: (_b = obj["message"]) !== null && _b !== void 0 ? _b : "",
-            },
-        });
-    }
-    if (err.name !== obj["name"]) {
-        Object.defineProperty(err, "name", {
-            configurable: true,
-            enumerable: false,
-            writable: true,
-            value: obj["name"],
-        });
-    }
-    if (obj["stack"] !== undefined) {
-        Object.defineProperty(err, "stack", {
-            configurable: true,
-            enumerable: false,
-            writable: true,
-            value: obj["stack"],
-        });
-    }
-    if (obj["cause"] != undefined) {
-        Object.defineProperty(err, "cause", {
-            configurable: true,
-            enumerable: false,
-            writable: true,
-            value: obj["cause"],
-        });
-    }
-    const otherKeys = Reflect.ownKeys(obj).filter(key => ![
-        "@@type",
-        "name",
-        "message",
-        "stack",
-        "cause"
-    ].includes(key));
-    otherKeys.forEach(key => {
-        var _a;
-        // @ts-ignore
-        (_a = err[key]) !== null && _a !== void 0 ? _a : (err[key] = obj[key]);
-    });
-    // @ts-ignore
-    if (isAggregateError(err) && Array.isArray(err["errors"])) {
-        err["errors"] = err["errors"].map(item => {
-            return isPlainObject(item) ? fromObject(item) : item;
-        });
-    }
-    return err;
-}
-/** @inner */
-function isDOMException(value) {
-    return ((typeof DOMException === "function") && (value instanceof DOMException))
-        || (value instanceof Error && value.constructor.name === "DOMException"); // Node.js v16-
-}
-/** @inner */
-function isAggregateError(value) {
-    // @ts-ignore
-    return (typeof AggregateError === "function" && value instanceof AggregateError)
-        || (value instanceof Error && value.constructor.name === "AggregateError");
 }
 
 /**
@@ -1279,24 +1303,29 @@ function isAggregateError(value) {
  *
  * **Errors:**
  *
- * When a file system operation fails, this module throws an {@link Exception}
- * with one of the following names:
+ * When a file system operation fails, this module throws one of following
+ * derived {@link Exception} instances:
  *
- * - `NotFoundError`: The file or directory does not exist.
  * - `NotAllowedError`: The operation is not allowed, such as being blocked by
  *   the permission system.
+ * - `NotFoundError`: The file or directory does not exist.
  * - `AlreadyExistsError`: The file or directory already exists.
+ * - `InvalidOperationError`: The operation is invalid, such as trying to copy a
+ *   directory without the `recursive` option.
  * - `IsDirectoryError`: The path is a directory, not a file.
  * - `NotDirectoryError`: The path is a file, not a directory.
- * - `InvalidOperationError`: The operation is not supported, such as trying to
- *   copy a directory without the `recursive` option.
- * - `BusyError`: The file is busy, such as being locked by another program.
- * - `InterruptedError`: The operation is interrupted by the underlying file
- *   system.
  * - `FileTooLargeError`: The file is too large, or the file system doesn't have
  *   enough space to store the new content.
+ * - `FilenameTooLongError`: The filename is too long to be resolved by the file
+ *   system.
  * - `FilesystemLoopError`:  Too many symbolic links were encountered when
  *   resolving the filename.
+ * - `BusyError`: The file is busy at the moment, such as being locked by
+ *   another program.
+ * - `InterruptedError`: The operation is interrupted by the underlying file
+ *   system.
+ * - `NotSupportedError`: The operation is not supported by the current
+ *   environment.
  *
  * Other errors may also be thrown by the runtime, such as `TypeError`.
  * @module
@@ -1340,7 +1369,7 @@ async function getObjectURL(src, mimeType = "text/javascript") {
     // bypass the same-origin policy for web workers.
     const res = await fetch(src);
     if (!res.ok) {
-        throw new Error(`Failed to fetch resource: ${src}`);
+        throw new NetworkError(`Failed to fetch resource: ${src}`);
     }
     let blob;
     // JavaScript has more than one MIME types, so we just check it loosely.

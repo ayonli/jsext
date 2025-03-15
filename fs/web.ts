@@ -26,6 +26,8 @@ import type {
     StatOptions,
     WriteFileOptions,
 } from "../fs.ts";
+import { AlreadyExistsError } from "../error.ts";
+import { InvalidOperationError, NotDirectoryError } from "./errors.ts";
 
 export type { FileSystemOptions, FileInfo, DirEntry, DirTree };
 
@@ -242,10 +244,7 @@ export async function stat(
 
 export async function mkdir(path: string, options: MkdirOptions = {}): Promise<void> {
     if (await exists(path, { root: options.root })) {
-        throw new Exception(`File or folder already exists, mkdir '${path}'`, {
-            name: "AlreadyExistsError",
-            code: 409,
-        });
+        throw new AlreadyExistsError(`File or folder already exists, mkdir '${path}'`);
     }
 
     await getDirHandle(path, { ...options, create: true });
@@ -521,18 +520,13 @@ async function copyInBrowser(
             }
         } else if (dest.kind === "directory") {
             if (!options.recursive) {
-                throw new Exception("Cannot copy a directory without the 'recursive' option", {
-                    name: "InvalidOperationError",
-                    code: 400,
-                });
+                throw new InvalidOperationError(
+                    "Cannot copy a directory without the 'recursive' option");
             }
 
             return await copyDirHandleToDirHandle(src, dest);
         } else {
-            throw new Exception("The destination location is not a directory", {
-                name: "NotDirectoryError",
-                code: 415,
-            });
+            throw new NotDirectoryError("The destination location is not a directory");
         }
     }
 
@@ -572,10 +566,8 @@ async function copyInBrowser(
         }
     } else if (as(oldErr, Exception)?.name === "IsDirectoryError") {
         if (!options.recursive) {
-            throw new Exception("Cannot copy a directory without the 'recursive' option", {
-                name: "InvalidOperationError",
-                code: 400,
-            });
+            throw new InvalidOperationError(
+                "Cannot copy a directory without the 'recursive' option");
         }
 
         const parent = oldDir;

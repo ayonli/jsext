@@ -1,5 +1,6 @@
 import { asyncTask } from "../../async.ts";
 import { isWSL, which } from "../../cli.ts";
+import { Exception, NotSupportedError } from "../../error.ts";
 import { createProgressEvent } from "../../event.ts";
 import { readDir, readFileAsFile, writeFile } from "../../fs.ts";
 import { fixFileType } from "../../fs/util.ts";
@@ -43,7 +44,7 @@ export async function pickFile(
         });
     }
 
-    throw new Error("Unsupported platform");
+    throw new NotSupportedError("Unsupported platform");
 }
 
 export async function pickFiles(
@@ -59,7 +60,7 @@ export async function pickFiles(
         return await linuxPickFiles(options.title, options.type);
     }
 
-    throw new Error("Unsupported platform");
+    throw new NotSupportedError("Unsupported platform");
 }
 
 export async function pickDirectory(
@@ -75,7 +76,7 @@ export async function pickDirectory(
         return await linuxPickFolder(options.title);
     }
 
-    throw new Error("Unsupported platform");
+    throw new NotSupportedError("Unsupported platform");
 }
 
 export async function openFile(options?: FileDialogOptions): Promise<File | null> {
@@ -181,7 +182,7 @@ export async function downloadFile(
             return await task;
         }, () => {
             ctrl.abort();
-            throw new Error("Download canceled");
+            throw new Exception("Download canceled", { name: "AbortError" });
         });
     } else {
         result = task;

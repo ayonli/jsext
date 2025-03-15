@@ -4,7 +4,7 @@
  */
 
 import { unrefTimer } from "./runtime.ts";
-import Exception from "./error/Exception.ts";
+import { Exception, TimeoutError } from "./error.ts";
 
 /** A promise that can be resolved or rejected manually. */
 export type AsyncTask<T> = Promise<T> & {
@@ -137,14 +137,7 @@ async function* abortableAsyncIterable<T>(
 }
 
 function createTimeoutError(ms: number): DOMException | Exception {
-    if (typeof DOMException === "function") {
-        return new DOMException(`Operation timeout after ${ms}ms`, "TimeoutError");
-    } else {
-        return new Exception(`Operation timeout after ${ms}ms`, {
-            name: "TimeoutError",
-            code: 408,
-        });
-    }
+    return new TimeoutError(`Operation timeout after ${ms}ms`);
 }
 
 /**

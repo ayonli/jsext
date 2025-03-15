@@ -4,6 +4,7 @@
  */
 
 import { isBrowserWindow, isDedicatedWorker, isSharedWorker } from "../env.ts";
+import { NotSupportedError, NetworkError } from "../error.ts";
 import { equals, extname } from "../path.ts";
 import { getObjectURL } from "./util.ts";
 
@@ -184,7 +185,9 @@ export function importScript(url: string | URL, options: {
     type?: "classic" | "module";
 } = {}): Promise<void> {
     if (!isBrowserWindow) {
-        return Promise.reject(new Error("This function is only available in the browser."));
+        return Promise.reject(
+            new NotSupportedError("This function is only available in the browser.")
+        );
     }
 
     url = new URL(url, location.href).href;
@@ -202,7 +205,7 @@ export function importScript(url: string | URL, options: {
             script.type = options.type === "module" ? "module" : "text/javascript";
             script.setAttribute("data-src", url);
             script.onload = () => setTimeout(resolve, 0);
-            script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
+            script.onerror = () => reject(new NetworkError(`Failed to load script: ${url}`));
             document.head.appendChild(script);
         }).catch(reject);
     });
@@ -228,7 +231,9 @@ export function importScript(url: string | URL, options: {
  */
 export function importStylesheet(url: string | URL): Promise<void> {
     if (!isBrowserWindow) {
-        return Promise.reject(new Error("This function is only available in the browser."));
+        return Promise.reject(
+            new NotSupportedError("This function is only available in the browser.")
+        );
     }
 
     url = new URL(url, location.href).href;
@@ -246,7 +251,7 @@ export function importStylesheet(url: string | URL): Promise<void> {
             link.rel = "stylesheet";
             link.setAttribute("data-src", url);
             link.onload = () => setTimeout(resolve, 0);
-            link.onerror = () => reject(new Error(`Failed to load stylesheet: ${url}`));
+            link.onerror = () => reject(new NetworkError(`Failed to load stylesheet: ${url}`));
             document.head.appendChild(link);
         }).catch(reject);
     });

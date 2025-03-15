@@ -1,3 +1,4 @@
+import { NetworkError } from "../error.ts";
 import { isUrl } from "../path.ts";
 
 const urlCache = new Map<string, string>();
@@ -28,7 +29,7 @@ export async function getObjectURL(
     // bypass the same-origin policy for web workers.
     const res = await fetch(src);
     if (!res.ok) {
-        throw new Error(`Failed to fetch resource: ${src}`);
+        throw new NetworkError(`Failed to fetch resource: ${src}`);
     }
 
     let blob: Blob;

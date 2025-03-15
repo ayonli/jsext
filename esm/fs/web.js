@@ -6,6 +6,10 @@ import { readAsArray, readAsText } from '../reader.js';
 import { stripStart } from '../string.js';
 import { try_ } from '../result.js';
 import { rawOp, fixDirEntry, makeTree, fixFileType, wrapFsError } from './util.js';
+import '../error/Exception.js';
+import '../external/event-target-polyfill/index.js';
+import { AlreadyExistsError } from '../error/common.js';
+import { InvalidOperationError, NotDirectoryError } from './errors.js';
 import { split } from '../path/util.js';
 import { toAsyncIterable, resolveByteStream } from '../reader/util.js';
 
@@ -216,10 +220,7 @@ async function stat(target, options = {}) {
 }
 async function mkdir(path, options = {}) {
     if (await exists(path, { root: options.root })) {
-        throw new Exception(`File or folder already exists, mkdir '${path}'`, {
-            name: "AlreadyExistsError",
-            code: 409,
-        });
+        throw new AlreadyExistsError(`File or folder already exists, mkdir '${path}'`);
     }
     await getDirHandle(path, { ...options, create: true });
 }
@@ -421,18 +422,12 @@ async function copyInBrowser(src, dest, options = {}) {
         }
         else if (dest.kind === "directory") {
             if (!options.recursive) {
-                throw new Exception("Cannot copy a directory without the 'recursive' option", {
-                    name: "InvalidOperationError",
-                    code: 400,
-                });
+                throw new InvalidOperationError("Cannot copy a directory without the 'recursive' option");
             }
             return await copyDirHandleToDirHandle(src, dest);
         }
         else {
-            throw new Exception("The destination location is not a directory", {
-                name: "NotDirectoryError",
-                code: 415,
-            });
+            throw new NotDirectoryError("The destination location is not a directory");
         }
     }
     const oldParent = dirname(src);
@@ -464,10 +459,7 @@ async function copyInBrowser(src, dest, options = {}) {
     }
     else if (((_b = as(oldErr, Exception)) === null || _b === void 0 ? void 0 : _b.name) === "IsDirectoryError") {
         if (!options.recursive) {
-            throw new Exception("Cannot copy a directory without the 'recursive' option", {
-                name: "InvalidOperationError",
-                code: 400,
-            });
+            throw new InvalidOperationError("Cannot copy a directory without the 'recursive' option");
         }
         const parent = oldDir;
         oldDir = await rawOp(oldDir.getDirectoryHandle(oldName), "directory");

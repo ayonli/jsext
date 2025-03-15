@@ -1,11 +1,12 @@
 import { isMainThread } from "../env.ts";
+import { NotImplementedError } from "../error.ts";
 import { ThreadedFunctions } from "../parallel.ts";
 
 function parallel<M extends { [x: string]: any; }>(
     module: string | (() => Promise<M>)
 ): ThreadedFunctions<M> {
     void module;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 namespace parallel {

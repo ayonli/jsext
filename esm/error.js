@@ -1,6 +1,7 @@
 import { omit, isPlainObject } from './object.js';
 import Exception from './error/Exception.js';
 import { createErrorEvent } from './event.js';
+export { AlreadyExistsError, NetworkError, NotAllowedError, NotFoundError, NotImplementedError, NotSupportedError, TimeoutError } from './error/common.js';
 
 /**
  * Functions for converting errors to/from other types of objects.

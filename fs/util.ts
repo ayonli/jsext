@@ -1,5 +1,19 @@
 import { orderBy, startsWith } from "../array.ts";
-import { Exception } from "../error.ts";
+import {
+    AlreadyExistsError,
+    Exception,
+    NotAllowedError,
+    NotFoundError,
+} from "../error.ts";
+import {
+    BusyError,
+    FileTooLargeError,
+    FilesystemLoopError,
+    InterruptedError,
+    InvalidOperationError,
+    IsDirectoryError,
+    NotDirectoryError,
+} from "./errors.ts";
 import { getMIME } from "../filetype.ts";
 import { omit } from "../object.ts";
 import { basename, extname, isFileUrl, split, toFsPath } from "../path.ts";
@@ -47,7 +61,7 @@ export function wrapFsError(
             || errCode === "ENOENT"
             || errCode === "ENOTFOUND"
         ) {
-            return new Exception(err.message, { name: "NotFoundError", code: 404, cause: err });
+            return new NotFoundError(err.message, { cause: err });
         } else if (errName === "NotAllowedError"
             || errName === "PermissionDenied"
             || errName === "InvalidStateError"
@@ -56,23 +70,23 @@ export function wrapFsError(
             || errCode === "EPERM"
             || errCode === "ERR_ACCESS_DENIED"
         ) {
-            return new Exception(err.message, { name: "NotAllowedError", code: 403, cause: err });
+            return new NotAllowedError(err.message, { cause: err });
         } else if (errName === "AlreadyExists"
             || errCode === "EEXIST"
             || errCode === "ERR_FS_CP_EEXIST"
         ) {
-            return new Exception(err.message, { name: "AlreadyExistsError", code: 409, cause: err });
+            return new AlreadyExistsError(err.message, { cause: err });
         } else if ((errName === "TypeMismatchError" && type === "file")
             || errName === "IsADirectory"
             || errCode === "EISDIR"
             || errCode === "ERR_FS_EISDIR"
         ) {
-            return new Exception(err.message, { name: "IsDirectoryError", code: 415, cause: err });
+            return new IsDirectoryError(err.message, { cause: err });
         } else if ((errName === "TypeMismatchError" && type === "directory")
             || errName === "NotADirectory"
             || errCode === "ENOTDIR"
         ) {
-            return new Exception(err.message, { name: "NotDirectoryError", code: 415, cause: err });
+            return new NotDirectoryError(err.message, { cause: err });
         } else if (errName === "InvalidModificationError"
             || errName === "NotSupported"
             || errCode === "ENOTEMPTY"
@@ -85,21 +99,21 @@ export function wrapFsError(
             || errCode === "ERR_FS_CP_UNKNOWN"
             || errCode === "ERR_FS_INVALID_SYMLINK_TYPE"
         ) {
-            return new Exception(err.message, { name: "InvalidOperationError", code: 405, cause: err });
+            return new InvalidOperationError(err.message, { cause: err });
         } else if (errName === "NoModificationAllowedError"
             || errName === "Busy"
             || errName === "TimedOut"
             || errCode === "ERR_DIR_CONCURRENT_OPERATION"
         ) {
-            return new Exception(errName, { name: "BusyError", code: 409, cause: err });
+            return new BusyError(errName, { cause: err });
         } else if (errName === "Interrupted" || errCode === "ERR_DIR_CLOSED") {
-            return new Exception(err.message, { name: "InterruptedError", code: 409, cause: err });
+            return new InterruptedError(err.message, { cause: err });
         } else if (errName === "QuotaExceededError"
             || errCode === "ERR_FS_FILE_TOO_LARGE"
         ) {
-            return new Exception(err.message, { name: "FileTooLargeError", code: 413, cause: err });
+            return new FileTooLargeError(err.message, { cause: err });
         } else if (errName === "FilesystemLoop") {
-            return new Exception(err.message, { name: "FilesystemLoopError", code: 508, cause: err });
+            return new FilesystemLoopError(err.message, { cause: err });
         } else {
             return err;
         }

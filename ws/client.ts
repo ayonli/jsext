@@ -1,4 +1,5 @@
 import { getReadonly, setReadonly } from "../class/util.ts";
+import { NetworkError, NotSupportedError } from "../error.ts";
 import { WebSocketConnection } from "./base.ts";
 
 /**
@@ -57,7 +58,7 @@ function initWebSocketStream(wss: WebSocketStream, ws: WebSocket) {
             });
         });
         ws.addEventListener("error", () => {
-            reject(new Error("Failed to establish WebSocket connection."));
+            reject(new NetworkError("Failed to establish WebSocket connection."));
         });
     }));
 
@@ -124,7 +125,7 @@ export class WebSocketStream {
 
     constructor(url: string | URL, options: WebSocketStreamOptions = {}) {
         if (typeof globalThis.WebSocket !== "function") {
-            throw new Error("WebSocket is not supported in this environment.");
+            throw new NotSupportedError("WebSocket is not supported in this environment.");
         }
 
         const { protocols, signal } = options;

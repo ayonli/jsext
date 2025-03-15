@@ -10,6 +10,7 @@ import parallel from './parallel.js';
 import { unrefTimer } from './runtime.js';
 import { abortWith, asyncTask } from './async.js';
 import { isAbsolute } from './path/util.js';
+import { NotSupportedError } from './error/common.js';
 
 /**
  * Runs a script in a worker thread and invokes its `default` function to
@@ -86,7 +87,7 @@ const workerConsumerQueue = [];
 async function run(script, args, options) {
     var _a, _b;
     if (!isNode && typeof Worker !== "function") {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
     script = typeof script === "string" ? script : script.href;
     const maxWorkers = run.maxWorkers || parallel.maxWorkers || await getMaxParallelism;

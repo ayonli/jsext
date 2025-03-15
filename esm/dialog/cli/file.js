@@ -1,9 +1,11 @@
 import { asyncTask } from '../../async.js';
 import { which } from '../../cli.js';
+import { as, pick } from '../../object.js';
+import Exception from '../../error/Exception.js';
 import { createProgressEvent } from '../../event.js';
+import { NotSupportedError } from '../../error/common.js';
 import { readFileAsFile, readDir, writeFile } from '../../fs.js';
 import { fixFileType } from '../../fs/util.js';
-import { as, pick } from '../../object.js';
 import { join, basename } from '../../path.js';
 import { platform } from '../../runtime.js';
 import progress from './progress.js';
@@ -35,7 +37,7 @@ async function pickFile(options = {}) {
             defaultName: options === null || options === void 0 ? void 0 : options.defaultName,
         });
     }
-    throw new Error("Unsupported platform");
+    throw new NotSupportedError("Unsupported platform");
 }
 async function pickFiles(options = {}) {
     const _platform = platform();
@@ -48,7 +50,7 @@ async function pickFiles(options = {}) {
     else if (_platform === "linux" || await which("zenity")) {
         return await linuxPickFiles(options.title, options.type);
     }
-    throw new Error("Unsupported platform");
+    throw new NotSupportedError("Unsupported platform");
 }
 async function pickDirectory(options = {}) {
     const _platform = platform();
@@ -61,7 +63,7 @@ async function pickDirectory(options = {}) {
     else if (_platform === "linux" || await which("zenity")) {
         return await linuxPickFolder(options.title);
     }
-    throw new Error("Unsupported platform");
+    throw new NotSupportedError("Unsupported platform");
 }
 async function openFile(options) {
     let filename = await pickFile(options);
@@ -147,7 +149,7 @@ async function downloadFile(url, options = {}) {
             return await task;
         }, () => {
             ctrl.abort();
-            throw new Error("Download canceled");
+            throw new Exception("Download canceled", { name: "AbortError" });
         });
     }
     else {

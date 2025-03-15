@@ -60,4 +60,11 @@ describe("error/Exception", () => {
         strictEqual(e6.cause, undefined);
         strictEqual(e6.code, 500);
     });
+
+    it("inheritance", () => {
+        class MyException extends Exception { }
+
+        const err = new MyException("source error");
+        strictEqual(err.name, "MyException");
+    });
 });

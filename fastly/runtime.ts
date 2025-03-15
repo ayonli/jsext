@@ -1,5 +1,6 @@
 // @ts-ignore
 import { env as _env } from "fastly:env";
+import { NotSupportedError } from "../error.ts";
 
 export * from "../runtime.ts";
 export { default } from "../runtime.ts";
@@ -12,10 +13,8 @@ export function env(
     name: string | undefined | object = undefined,
     value: string | undefined = undefined
 ): any {
-    if (typeof name === "object") {
-        throw new Error("Not implemented");
-    } else if (value !== undefined) {
-        throw new Error("Cannot modify environment variables in the worker.");
+    if (typeof name === "object" || value !== undefined) {
+        throw new NotSupportedError("Cannot modify environment variables in the worker.");
     } else if (name === undefined) {
         return {
             "FASTLY_CACHE_GENERATION": _env("FASTLY_CACHE_GENERATION") ?? "",

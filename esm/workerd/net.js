@@ -1,18 +1,22 @@
 import { connect as connect$1 } from 'cloudflare:sockets';
+import '../bytes.js';
+import '../error/Exception.js';
+import '../external/event-target-polyfill/index.js';
+import { NotImplementedError } from '../error/common.js';
 import { TcpSocketStream } from '../net/types.js';
 
 async function getMyIp() {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 async function randomPort(prefer = undefined, hostname = undefined) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 async function connect(options) {
     if ("path" in options) {
-        throw new Error("Unix domain socket is not supported in this runtime.");
+        throw new TypeError("Unix domain socket is not supported in this runtime.");
     }
     else if (options.transport === "udp") {
-        throw new Error("UDP socket is not supported in this runtime.");
+        throw new TypeError("UDP socket is not supported in this runtime.");
     }
     const { tls = false, ..._options } = options;
     const impl = connect$1(_options, {
@@ -52,7 +56,7 @@ async function connect(options) {
     });
 }
 async function udpSocket(options) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 export { connect, getMyIp, randomPort, udpSocket };

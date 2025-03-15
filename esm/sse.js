@@ -1,7 +1,10 @@
 import './external/event-target-polyfill/index.js';
 import { fixStringTag, getReadonly, setReadonly } from './class/util.js';
-import { createCloseEvent, createErrorEvent } from './event.js';
 import { isBun, isDeno } from './env.js';
+import './bytes.js';
+import './error/Exception.js';
+import { createCloseEvent, createErrorEvent } from './event.js';
+import { NetworkError } from './error/common.js';
 import runtime, { customInspect } from './runtime.js';
 import { try_ } from './result.js';
 
@@ -504,7 +507,7 @@ class EventSource extends EventTarget {
         const res = result.value;
         if (res.type === "error") {
             const event = createErrorEvent("error", {
-                error: new Error(`Failed to fetch '${this.url}'`),
+                error: new NetworkError(`Failed to fetch '${this.url}'`),
             });
             this.dispatchEvent(event);
             (_p = this.onerror) === null || _p === void 0 ? void 0 : _p.call(this, event);

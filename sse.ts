@@ -17,8 +17,9 @@ import "./external/event-target-polyfill/index.ts";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
 import { fixStringTag, getReadonly, setReadonly } from "./class/util.ts";
-import { createCloseEvent, createErrorEvent } from "./event.ts";
 import { isBun, isDeno } from "./env.ts";
+import { NetworkError } from "./error.ts";
+import { createCloseEvent, createErrorEvent } from "./event.ts";
 import runtime, { customInspect } from "./runtime.ts";
 import { try_ } from "./result.ts";
 
@@ -655,7 +656,7 @@ export class EventSource extends EventTarget {
 
         if (res.type === "error") {
             const event = createErrorEvent("error", {
-                error: new Error(`Failed to fetch '${this.url}'`),
+                error: new NetworkError(`Failed to fetch '${this.url}'`),
             });
             this.dispatchEvent(event);
             this.onerror?.call(this, event);

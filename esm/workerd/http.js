@@ -1,6 +1,7 @@
 import { as } from '../object.js';
-import Exception from '../error/Exception.js';
+import '../error/Exception.js';
 import '../external/event-target-polyfill/index.js';
+import { NotImplementedError } from '../error/common.js';
 import { getMIME } from '../filetype.js';
 import { exists, readFile, readDir } from './fs.js';
 import { renderDirectoryPage } from '../http/internal.js';
@@ -18,7 +19,7 @@ export { getCookie, getCookies, parseCookie, parseCookies, setCookie, stringifyC
 export { parseUserAgent } from '../http/user-agent.js';
 
 async function randomPort(prefer = undefined) {
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 function serve(options) {
     const { identity } = runtime();
@@ -99,7 +100,7 @@ async function serveStatic(req, options = {}) {
             });
         }
         catch (err) {
-            if (((_f = as(err, Exception)) === null || _f === void 0 ? void 0 : _f.name) === "NotFoundError") {
+            if (((_f = as(err, Error)) === null || _f === void 0 ? void 0 : _f.name) === "NotFoundError") {
                 return new Response("Not Found", {
                     status: 404,
                     statusText: "Not Found",

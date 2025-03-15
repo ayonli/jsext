@@ -28,24 +28,29 @@
  * 
  * **Errors:**
  * 
- * When a file system operation fails, this module throws an {@link Exception}
- * with one of the following names:
+ * When a file system operation fails, this module throws one of following
+ * derived {@link Exception} instances:
  * 
- * - `NotFoundError`: The file or directory does not exist.
  * - `NotAllowedError`: The operation is not allowed, such as being blocked by
  *   the permission system.
+ * - `NotFoundError`: The file or directory does not exist.
  * - `AlreadyExistsError`: The file or directory already exists.
+ * - `InvalidOperationError`: The operation is invalid, such as trying to copy a
+ *   directory without the `recursive` option.
  * - `IsDirectoryError`: The path is a directory, not a file.
  * - `NotDirectoryError`: The path is a file, not a directory.
- * - `InvalidOperationError`: The operation is not supported, such as trying to
- *   copy a directory without the `recursive` option.
- * - `BusyError`: The file is busy, such as being locked by another program.
- * - `InterruptedError`: The operation is interrupted by the underlying file
- *   system.
  * - `FileTooLargeError`: The file is too large, or the file system doesn't have
  *   enough space to store the new content.
+ * - `FilenameTooLongError`: The filename is too long to be resolved by the file
+ *   system.
  * - `FilesystemLoopError`:  Too many symbolic links were encountered when
  *   resolving the filename.
+ * - `BusyError`: The file is busy at the moment, such as being locked by
+ *   another program.
+ * - `InterruptedError`: The operation is interrupted by the underlying file
+ *   system.
+ * - `NotSupportedError`: The operation is not supported by the current
+ *   environment.
  * 
  * Other errors may also be thrown by the runtime, such as `TypeError`.
  * @module
@@ -53,8 +58,9 @@
 
 import bytes from "./bytes.ts";
 import { isDeno, isNodeLike } from "./env.ts";
-import { Exception } from "./error.ts";
+import { Exception, NotSupportedError } from "./error.ts";
 import { getMIME } from "./filetype.ts";
+import { InvalidOperationError, NotDirectoryError } from "./fs/errors.ts";
 import type { FileInfo, DirEntry, FileSystemOptions, DirTree } from "./fs/types.ts";
 import { ensureFsTarget, fixDirEntry, makeTree, rawOp, wrapFsError } from "./fs/util.ts";
 import { resolveHomeDir } from "./fs/util/server.ts";
@@ -160,10 +166,8 @@ export async function exists(path: string | URL, options: FileSystemOptions = {}
         await stat(path, options);
         return true;
     } catch (err) {
-        if (err instanceof Exception) {
-            if (err.name === "NotFoundError") {
-                return false;
-            }
+        if (as(err, Exception)?.name === "NotFoundError") {
+            return false;
         }
 
         throw err;
@@ -1166,10 +1170,7 @@ export async function copy(
     let isDirDest = false;
 
     if (isDirSrc && !options.recursive) {
-        throw new Exception("Cannot copy a directory without the 'recursive' option", {
-            name: "InvalidOperationError",
-            code: 400,
-        });
+        throw new InvalidOperationError("Cannot copy a directory without the 'recursive' option");
     }
 
     try {
@@ -1177,10 +1178,7 @@ export async function copy(
         isDirDest = newStat.kind === "directory";
 
         if (isDirSrc && !isDirDest) {
-            throw new Exception(`'${dest}' is not a directory`, {
-                name: "NotDirectoryError",
-                code: 415,
-            });
+            throw new NotDirectoryError(`'${dest}' is not a directory`);
         }
     } catch {
         if (isDirSrc) {
@@ -1299,7 +1297,7 @@ export async function link(
             await rawOp(fs.link(src, dest));
         }
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -1326,7 +1324,7 @@ export async function readLink(path: string | URL): Promise<string> {
         const fs = await import("node:fs/promises");
         return await rawOp(fs.readlink(path));
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 

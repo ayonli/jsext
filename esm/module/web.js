@@ -1,4 +1,8 @@
 import { isDedicatedWorker, isSharedWorker, isBrowserWindow } from '../env.js';
+import '../bytes.js';
+import '../error/Exception.js';
+import '../external/event-target-polyfill/index.js';
+import { NotSupportedError, NetworkError } from '../error/common.js';
 import { extname } from '../path.js';
 import { getObjectURL } from './util.js';
 import { equals } from '../path/util.js';
@@ -90,7 +94,7 @@ const importCache = new Map();
  */
 function importScript(url, options = {}) {
     if (!isBrowserWindow) {
-        return Promise.reject(new Error("This function is only available in the browser."));
+        return Promise.reject(new NotSupportedError("This function is only available in the browser."));
     }
     url = new URL(url, location.href).href;
     let cache = importCache.get(url);
@@ -104,7 +108,7 @@ function importScript(url, options = {}) {
             script.type = options.type === "module" ? "module" : "text/javascript";
             script.setAttribute("data-src", url);
             script.onload = () => setTimeout(resolve, 0);
-            script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
+            script.onerror = () => reject(new NetworkError(`Failed to load script: ${url}`));
             document.head.appendChild(script);
         }).catch(reject);
     });
@@ -128,7 +132,7 @@ function importScript(url, options = {}) {
  */
 function importStylesheet(url) {
     if (!isBrowserWindow) {
-        return Promise.reject(new Error("This function is only available in the browser."));
+        return Promise.reject(new NotSupportedError("This function is only available in the browser."));
     }
     url = new URL(url, location.href).href;
     let cache = importCache.get(url);
@@ -142,7 +146,7 @@ function importStylesheet(url) {
             link.rel = "stylesheet";
             link.setAttribute("data-src", url);
             link.onload = () => setTimeout(resolve, 0);
-            link.onerror = () => reject(new Error(`Failed to load stylesheet: ${url}`));
+            link.onerror = () => reject(new NetworkError(`Failed to load stylesheet: ${url}`));
             document.head.appendChild(link);
         }).catch(reject);
     });

@@ -1,3 +1,7 @@
+import '../bytes.js';
+import '../error/Exception.js';
+import '../external/event-target-polyfill/index.js';
+import { NetworkError } from '../error/common.js';
 import '../path.js';
 import { isUrl } from '../path/util.js';
 
@@ -24,7 +28,7 @@ async function getObjectURL(src, mimeType = "text/javascript") {
     // bypass the same-origin policy for web workers.
     const res = await fetch(src);
     if (!res.ok) {
-        throw new Error(`Failed to fetch resource: ${src}`);
+        throw new NetworkError(`Failed to fetch resource: ${src}`);
     }
     let blob;
     // JavaScript has more than one MIME types, so we just check it loosely.

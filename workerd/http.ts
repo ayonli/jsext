@@ -1,4 +1,4 @@
-import { Exception } from "../error.ts";
+import { NotImplementedError } from "../error.ts";
 import { getMIME } from "../filetype.ts";
 import { exists, readDir, readFile } from "./fs.ts";
 import { renderDirectoryPage, withWeb } from "../http/internal.ts";
@@ -42,7 +42,7 @@ export type Server = HttpServer;
 
 export async function randomPort(prefer: number | undefined = undefined): Promise<number> {
     void prefer;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 export function serve(options: ServeOptions): HttpServer {
@@ -129,7 +129,7 @@ export async function serveStatic(
                 maxAge: options.maxAge ?? 0,
             });
         } catch (err) {
-            if (as(err, Exception)?.name === "NotFoundError") {
+            if (as(err, Error)?.name === "NotFoundError") {
                 return new Response("Not Found", {
                     status: 404,
                     statusText: "Not Found",

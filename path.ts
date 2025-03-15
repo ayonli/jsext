@@ -9,6 +9,7 @@
  */
 
 import { isDeno, isNodeLike } from "./env.ts";
+import { NotSupportedError } from "./error.ts";
 import { stripEnd, trim } from "./string.ts";
 import {
     contains,
@@ -77,7 +78,7 @@ export function cwd(): string {
     } else if (typeof location === "object" && location.origin) {
         return location.origin + (location.pathname === "/" ? "" : location.pathname);
     } else {
-        throw new Error("Unable to determine the current working directory.");
+        throw new NotSupportedError("Unable to determine the current working directory.");
     }
 }
 
@@ -337,7 +338,7 @@ export function toFileUrl(path: string): string {
         _path = _path[0] === "/" ? _path : "/" + _path;
         return new URL("file://" + _path).href;
     } else {
-        throw new Error("Cannot convert a URL to a file URL.");
+        throw new NotSupportedError("Cannot convert a URL to a file URL.");
     }
 }
 
@@ -357,7 +358,8 @@ export function toFsPath(url: string | URL): string {
         if (url.protocol === "file:") {
             return join(fileUrlToFsPath(url.toString()));
         } else {
-            throw new Error("Cannot convert a non-file URL to a file system path.");
+            throw new NotSupportedError(
+                "Cannot convert a non-file URL to a file system path.");
         }
     }
 
@@ -368,7 +370,8 @@ export function toFsPath(url: string | URL): string {
     } else if (!isUrl(url)) {
         return resolve(url);
     } else {
-        throw new Error("Cannot convert a non-file URL to a file system path.");
+        throw new NotSupportedError(
+            "Cannot convert a non-file URL to a file system path.");
     }
 }
 

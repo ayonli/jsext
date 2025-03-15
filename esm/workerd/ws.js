@@ -1,4 +1,7 @@
+import '../bytes.js';
+import '../error/Exception.js';
 import { createErrorEvent, createCloseEvent } from '../event.js';
+import { NotSupportedError } from '../error/common.js';
 import { WebSocketConnection } from '../ws/base.js';
 export { WebSocket, WebSocketStream, toWebSocketStream } from '../ws/client.js';
 
@@ -29,7 +32,7 @@ class WebSocketServer {
             throw new TypeError("Expected Upgrade: websocket");
         }
         else if (typeof WebSocketPair !== "function") {
-            throw new Error("WebSocket is not supported in this environment.");
+            throw new NotSupportedError("WebSocket is not supported in this environment.");
         }
         const handler = this[_handler];
         const clients = this[_clients];

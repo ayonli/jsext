@@ -13,6 +13,7 @@
  */
 import { asyncTask } from "./async.ts";
 import { isBun, isDeno, isNode, isNodeLike } from "./env.ts";
+import { NotSupportedError } from "./error.ts";
 import { ToDict } from "./types.ts";
 import {
     NetAddress,
@@ -60,7 +61,7 @@ export async function getMyIp(): Promise<string> {
 
         return addr.hostname;
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -153,7 +154,7 @@ export async function randomPort(
             });
         }
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -341,7 +342,7 @@ async function connectTcp(options: TcpConnectOptions): Promise<TcpSocketStream> 
             },
         });
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -422,7 +423,7 @@ async function connectUnix(options: UnixConnectOptions): Promise<UnixSocketStrea
             unref: () => _socket.unref(),
         });
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }
 
@@ -769,6 +770,6 @@ export async function udpSocket(localAddress: UdpBindOptions = {}): Promise<UdpS
             },
         });
     } else {
-        throw new Error("Unsupported runtime");
+        throw new NotSupportedError("Unsupported runtime");
     }
 }

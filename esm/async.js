@@ -1,5 +1,8 @@
 import { unrefTimer } from './runtime.js';
-import Exception from './error/Exception.js';
+import './bytes.js';
+import './error/Exception.js';
+import './external/event-target-polyfill/index.js';
+import { TimeoutError } from './error/common.js';
 
 /**
  * Functions for async/promise context handling.
@@ -68,15 +71,7 @@ async function* abortableAsyncIterable(task, signal) {
     }
 }
 function createTimeoutError(ms) {
-    if (typeof DOMException === "function") {
-        return new DOMException(`Operation timeout after ${ms}ms`, "TimeoutError");
-    }
-    else {
-        return new Exception(`Operation timeout after ${ms}ms`, {
-            name: "TimeoutError",
-            code: 408,
-        });
-    }
+    return new TimeoutError(`Operation timeout after ${ms}ms`);
 }
 /**
  * Try to resolve a promise with a timeout limit.

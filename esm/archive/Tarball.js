@@ -1,8 +1,7 @@
 import bytes, { concat as concat$1 } from '../bytes.js';
-import { omit } from '../object.js';
-import Exception from '../error/Exception.js';
-import '../external/event-target-polyfill/index.js';
+import { FilenameTooLongError } from '../fs/errors.js';
 import { makeTree } from '../fs/util.js';
+import { omit } from '../object.js';
 import { basename, dirname } from '../path.js';
 import { toReadableStream, concat } from '../reader.js';
 import { stripEnd } from '../string.js';
@@ -45,11 +44,8 @@ const USTarFileHeaderFieldLengths = {
 // https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html#tag_20_92_13_06
 // eight checksum bytes taken to be ascii spaces (decimal value 32)
 const initialChecksum = 8 * 32;
-const FilenameTooLongError = new Exception("UStar format does not allow a long file name (length of [file name"
-    + "prefix] + / + [file name] must be shorter than 256 bytes)", {
-    name: "FilenameTooLongError",
-    code: 431
-});
+const filenameTooLongError = new FilenameTooLongError("UStar format does not allow a long file name (length of [file name"
+    + "prefix] + / + [file name] must be shorter than 256 bytes)");
 function toFixedOctal(num, bytes) {
     return num.toString(8).padStart(bytes, "0");
 }
@@ -192,10 +188,10 @@ class Tarball {
                 i--;
             }
             if (i < 0 || name.length > 100) {
-                throw FilenameTooLongError;
+                throw filenameTooLongError;
             }
             else if (prefix.length > 155) {
-                throw FilenameTooLongError;
+                throw filenameTooLongError;
             }
         }
         let body;

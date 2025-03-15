@@ -1,3 +1,4 @@
+import { NotImplementedError } from "../error.ts";
 import { RunOptions, WorkerTask } from "../run.ts";
 
 export type { RunOptions, WorkerTask };
@@ -8,7 +9,7 @@ async function run<R, A extends any[] = any[]>(
     options?: RunOptions
 ): Promise<WorkerTask<R>> {
     void script, args, options;
-    throw new Error("Unsupported runtime");
+    throw new NotImplementedError("Unsupported runtime");
 }
 
 namespace run {

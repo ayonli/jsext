@@ -13,6 +13,7 @@ import {
     isDedicatedWorker,
     isNodeLike,
 } from "./env.ts";
+import { NotSupportedError } from "./error.ts";
 import { createCloseEvent } from "./event.ts";
 import { parseUserAgent } from "./http/user-agent.ts";
 
@@ -320,7 +321,7 @@ export function env(
                 }
             }
         } else {
-            throw new Error("Cannot modify environment variables in the worker.");
+            throw new NotSupportedError("Cannot modify environment variables in the worker.");
         }
     } else {
         // @ts-ignore

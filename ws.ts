@@ -25,6 +25,7 @@ import { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike } f
 import type { WebSocket, WebSocketStream } from "./ws/client.ts";
 import type { WebSocketServer as WsServer } from "ws";
 import type { IncomingMessage } from "node:http";
+import { NotSupportedError } from "./error.ts";
 
 export * from "./ws/client.ts";
 export type { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike };
@@ -246,7 +247,7 @@ export class WebSocketServer {
 
             return this.upgradeInNode(request, isNodeRequest);
         } else {
-            throw new TypeError("Unsupported runtime");
+            throw new NotSupportedError("Unsupported runtime");
         }
     }
 
