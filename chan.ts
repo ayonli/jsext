@@ -51,7 +51,7 @@ export class Channel<T> implements AsyncIterable<T>, Disposable {
      */
     send(data: T): Promise<void> {
         if (this.state !== 1) {
-            throw new Error("the channel is closed");
+            throw new TypeError("the channel is closed");
         } else if (this.consumers.length) {
             const consume = this.consumers.shift() as (err: Error | null, data?: T) => void;
             return Promise.resolve(consume(null, data));

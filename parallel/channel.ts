@@ -66,7 +66,7 @@ function wireChannel(
                         const channel = record.channel;
 
                         if (channel["state"] !== 1) {
-                            throw new Error("the channel is closed");
+                            throw new TypeError("the channel is closed");
                         }
 
                         const write = record.writers[record.counter++ % record.writers.length];
