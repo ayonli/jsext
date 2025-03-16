@@ -247,6 +247,7 @@ function extractBaseUrl(stackTrace) {
  *   properties)
  * - `DOMException` (as arguments, return values, thrown values, or shallow
  *   object properties)
+ * - Other errors that has been registered by {@link registerKnownError}.
  *
  * In order to handle errors properly between threads, throw well-known error
  * types or use `Exception` (or `DOMException`) with error names in the threaded

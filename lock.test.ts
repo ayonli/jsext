@@ -66,9 +66,9 @@ describe("jsext.lock", () => {
         lock.unlock();
 
         const { error: err1 } = try_(() => lock.value);
-        deepStrictEqual(err1, new ReferenceError("trying to access data after unlocked"));
+        deepStrictEqual(err1, new ReferenceError("Trying to access data after unlocked."));
 
         const { error: err2 } = try_(() => { lock.value = 2; });
-        deepStrictEqual(err2, new ReferenceError("trying to access data after unlocked"));
+        deepStrictEqual(err2, new ReferenceError("Trying to access data after unlocked."));
     });
 });

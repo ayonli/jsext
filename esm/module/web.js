@@ -1,11 +1,9 @@
 import { isDedicatedWorker, isSharedWorker, isBrowserWindow } from '../env.js';
-import '../bytes.js';
-import '../error/Exception.js';
-import { NotSupportedError, NetworkError } from '../error/common.js';
-import '../external/event-target-polyfill/index.js';
+import '../error.js';
 import { extname } from '../path.js';
 import { getObjectURL } from './util.js';
 import { equals } from '../path/util.js';
+import { NotSupportedError, NetworkError } from '../error/common.js';
 
 /**
  * The `module` module purified for the web.

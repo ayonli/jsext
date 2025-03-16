@@ -1,6 +1,5 @@
-import '../bytes.js';
+import { registerKnownError } from '../error.js';
 import Exception from '../error/Exception.js';
-import '../external/event-target-polyfill/index.js';
 
 /**
  * This error indicates that the filename is too long to be resolved by the file
@@ -13,6 +12,7 @@ class FilenameTooLongError extends Exception {
         super(message, { ...options, name: "FilenameTooLongError", code: 414 });
     }
 }
+registerKnownError(FilenameTooLongError);
 /**
  * This error indicates that the archive is corrupted or invalid.
  *
@@ -23,6 +23,7 @@ class CorruptedArchiveError extends Exception {
         super(message, { ...options, name: "ArchiveCorruptedError", code: 400 });
     }
 }
+registerKnownError(CorruptedArchiveError);
 
 export { CorruptedArchiveError, FilenameTooLongError };
 //# sourceMappingURL=errors.js.map

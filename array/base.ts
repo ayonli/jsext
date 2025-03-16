@@ -1,4 +1,4 @@
-import { Sequence } from "../types.ts";
+import { Constructor, Sequence } from "../types.ts";
 
 /**
  * Performs a shallow compare to another sequence and see if it contains the same elements as
@@ -111,7 +111,7 @@ export function split<T>(arr: Sequence<T>, delimiter: T): Sequence<T>[] {
     if (offset < limit) {
         chunks.push(arr.slice(offset, limit));
     } else if (offset === limit) {
-        const ctor = arr.constructor as (new (...args: any[]) => Sequence<T>) & {
+        const ctor = arr.constructor as Constructor<Sequence<T>> & {
             from?: (iterable: Iterable<T>) => Sequence<T>;
         };
 

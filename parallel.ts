@@ -6,7 +6,7 @@
 
 import { ThenableAsyncGenerator, ThenableAsyncGeneratorLike } from "./external/thenable-generator/index.ts";
 import chan, { Channel } from "./chan.ts";
-import { throwUnsupportedRuntimeError } from "./error.ts";
+import { registerKnownError, throwUnsupportedRuntimeError } from "./error.ts";
 import { serial } from "./number.ts";
 import { cwd, isFsPath, toFileUrl } from "./path.ts";
 import { asyncTask } from "./async.ts";
@@ -283,6 +283,7 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  *   properties)
  * - `DOMException` (as arguments, return values, thrown values, or shallow
  *   object properties)
+ * - Other errors that has been registered by {@link registerKnownError}.
  * 
  * In order to handle errors properly between threads, throw well-known error
  * types or use `Exception` (or `DOMException`) with error names in the threaded

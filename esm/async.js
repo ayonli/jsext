@@ -1,8 +1,6 @@
 import { unrefTimer } from './runtime.js';
-import './bytes.js';
-import './error/Exception.js';
+import './error.js';
 import { TimeoutError } from './error/common.js';
-import './external/event-target-polyfill/index.js';
 
 /**
  * Functions for async/promise context handling.

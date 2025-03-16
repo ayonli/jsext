@@ -10,6 +10,7 @@ import { join, extname, resolve } from './path.js';
 import { isMain } from './module/web.js';
 import './cli/constants.js';
 import { parseArgs, args } from './cli/common.js';
+import './fs/errors.js';
 import { as } from './object.js';
 import { sha256 } from './hash.js';
 import { createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent, renderDirectoryPage, createTimingFunctions, withWeb } from './http/internal.js';

@@ -1,12 +1,11 @@
 import './external/event-target-polyfill/index.js';
 import { fixStringTag, getReadonly, setReadonly } from './class/util.js';
 import { isBun, isDeno } from './env.js';
-import './bytes.js';
-import './error/Exception.js';
-import { NetworkError } from './error/common.js';
+import './error.js';
 import { createCloseEvent, createErrorEvent } from './event.js';
 import runtime, { customInspect } from './runtime.js';
 import { try_ } from './result.js';
+import { NetworkError } from './error/common.js';
 
 var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
 if (typeof MessageEvent !== "function" || runtime().identity === "workerd") {

@@ -1,13 +1,29 @@
 import { omit, isPlainObject } from './object.js';
 import Exception from './error/Exception.js';
-import { NotSupportedError } from './error/common.js';
-export { AlreadyExistsError, NetworkError, NotAllowedError, NotFoundError, NotImplementedError, TimeoutError } from './error/common.js';
+import * as error_common from './error/common.js';
+export { AlreadyExistsError, NetworkError, NotAllowedError, NotFoundError, NotImplementedError, NotSupportedError, TimeoutError } from './error/common.js';
 import { createErrorEvent } from './event.js';
+import { isSubclassOf } from './class.js';
 
 /**
  * Functions for converting errors to/from other types of objects.
  * @module
  */
+const { NotSupportedError } = error_common;
+const errorsMap = new Map([
+    ["Exception", Exception]
+]);
+/**
+ * Registers an error constructor that can be used by {@link fromObject} to
+ * reverse a plain object to an error instance.
+ * @inner
+ * */
+function registerKnownError(ctor) {
+    errorsMap.set(ctor.name, ctor);
+}
+const commonErrors = Object.values(error_common)
+    .filter(value => isSubclassOf(value, Error));
+commonErrors.forEach(ctor => registerKnownError(ctor));
 /**
  * Transforms the error to a plain object.
  *
@@ -43,24 +59,18 @@ function toObject(err) {
     return obj;
 }
 function fromObject(obj, ctor = undefined) {
-    var _a, _b;
+    var _a, _b, _c, _d;
     // @ts-ignore
     if (!(obj === null || obj === void 0 ? void 0 : obj.name)) {
         return null;
     }
     // @ts-ignore
-    ctor || (ctor = (globalThis[obj["@@type"] || obj.name] || globalThis[obj.name]));
-    if (!ctor) {
-        if (obj["@@type"] === "Exception") {
-            ctor = Exception;
-        }
-        else {
-            ctor = Error;
-        }
-    }
+    const typeName = obj["@@type"] || obj.name;
+    // @ts-ignore
+    ctor !== null && ctor !== void 0 ? ctor : (ctor = ((_b = (_a = errorsMap.get(typeName)) !== null && _a !== void 0 ? _a : globalThis[typeName]) !== null && _b !== void 0 ? _b : Error));
     let err;
     if (ctor.name === "DOMException" && typeof DOMException === "function") {
-        err = new ctor((_a = obj["message"]) !== null && _a !== void 0 ? _a : "", obj["name"]);
+        err = new ctor((_c = obj["message"]) !== null && _c !== void 0 ? _c : "", obj["name"]);
     }
     else {
         err = Object.create(ctor.prototype, {
@@ -68,7 +78,7 @@ function fromObject(obj, ctor = undefined) {
                 configurable: true,
                 enumerable: false,
                 writable: true,
-                value: (_b = obj["message"]) !== null && _b !== void 0 ? _b : "",
+                value: (_d = obj["message"]) !== null && _d !== void 0 ? _d : "",
             },
         });
     }
@@ -310,5 +320,5 @@ function isCausedBy(error, cause) {
     return false;
 }
 
-export { Exception, NotSupportedError, fromErrorEvent, fromObject, isAggregateError, isCausedBy, isDOMException, throwUnsupportedRuntimeError, toErrorEvent, toObject };
+export { Exception, fromErrorEvent, fromObject, isAggregateError, isCausedBy, isDOMException, registerKnownError, throwUnsupportedRuntimeError, toErrorEvent, toObject };
 //# sourceMappingURL=error.js.map

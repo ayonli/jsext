@@ -1,9 +1,7 @@
-import '../bytes.js';
-import '../error/Exception.js';
-import { NetworkError } from '../error/common.js';
-import '../external/event-target-polyfill/index.js';
+import '../error.js';
 import '../path.js';
 import { isUrl } from '../path/util.js';
+import { NetworkError } from '../error/common.js';
 
 const urlCache = new Map();
 /**

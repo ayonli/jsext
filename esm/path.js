@@ -1,11 +1,9 @@
 import { isDeno, isNodeLike } from './env.js';
-import './bytes.js';
-import './error/Exception.js';
-import { NotSupportedError } from './error/common.js';
-import './external/event-target-polyfill/index.js';
+import './error.js';
 import { stripEnd, trim } from './string.js';
 import { isAbsolute, split, isUrl, isPosixPath, isWindowsPath, isNotQuery, isVolume, isFileUrl, isFsPath } from './path/util.js';
 export { contains, endsWith, equals, startsWith } from './path/util.js';
+import { NotSupportedError } from './error/common.js';
 
 /**
  * Platform-independent utility functions for dealing with file system paths and

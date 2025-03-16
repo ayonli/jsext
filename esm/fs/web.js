@@ -6,12 +6,11 @@ import { readAsArray, readAsText } from '../reader.js';
 import { stripStart } from '../string.js';
 import { try_ } from '../result.js';
 import { rawOp, fixDirEntry, makeTree, fixFileType, wrapFsError } from './util.js';
-import '../error/Exception.js';
-import { AlreadyExistsError } from '../error/common.js';
-import '../external/event-target-polyfill/index.js';
+import '../error.js';
 import { InvalidOperationError, NotDirectoryError } from './errors.js';
 import { split } from '../path/util.js';
 import { toAsyncIterable, resolveByteStream } from '../reader/util.js';
+import { AlreadyExistsError } from '../error/common.js';
 
 /**
  * A slim version of the `fs` module for the browser.

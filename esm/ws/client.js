@@ -1,9 +1,7 @@
 import { getReadonly, setReadonly } from '../class/util.js';
-import '../bytes.js';
-import '../error/Exception.js';
-import { NotSupportedError, NetworkError } from '../error/common.js';
-import '../external/event-target-polyfill/index.js';
+import '../error.js';
 import { WebSocketConnection } from './base.js';
+import { NotSupportedError, NetworkError } from '../error/common.js';
 
 /**
  * A `WebSocket` polyfill for Node.js before v21.

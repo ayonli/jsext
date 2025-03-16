@@ -1,9 +1,8 @@
 import { isDeno, isMainThread, isBun, isNode, isSharedWorker, isServiceWorker, isDedicatedWorker, isNodeLike } from './env.js';
-import './bytes.js';
-import './error/Exception.js';
-import { NotSupportedError } from './error/common.js';
+import './error.js';
 import { createCloseEvent } from './event.js';
 import { parseUserAgent } from './http/user-agent.js';
+import { NotSupportedError } from './error/common.js';
 
 /**
  * Utility functions to retrieve runtime information or configure runtime behaviors.

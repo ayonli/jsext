@@ -1,4 +1,4 @@
-import { Exception } from "../error.ts";
+import { Exception, registerKnownError } from "../error.ts";
 
 /**
  * This error indicates that the filename is too long to be resolved by the file
@@ -11,6 +11,7 @@ export class FilenameTooLongError extends Exception {
         super(message, { ...options, name: "FilenameTooLongError", code: 414 });
     }
 }
+registerKnownError(FilenameTooLongError);
 
 /**
  * This error indicates that the archive is corrupted or invalid.
@@ -22,3 +23,4 @@ export class CorruptedArchiveError extends Exception {
         super(message, { ...options, name: "ArchiveCorruptedError", code: 400 });
     }
 }
+registerKnownError(CorruptedArchiveError);

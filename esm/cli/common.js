@@ -3,14 +3,13 @@ import { byteLength, chars } from '../string.js';
 import { EMOJI_CHAR } from '../string/constants.js';
 import bytes, { equals } from '../bytes.js';
 import { isDeno, isNodeLike, isBrowserWindow } from '../env.js';
-import '../error/Exception.js';
-import { NotSupportedError } from '../error/common.js';
-import '../external/event-target-polyfill/index.js';
+import '../error.js';
 import { platform } from '../runtime.js';
 import { sum } from '../math.js';
 import { Mutex } from '../lock.js';
 import { ControlKeys, NavigationKeys, FunctionKeys } from './constants.js';
 export { ControlSequences } from './constants.js';
+import { NotSupportedError } from '../error/common.js';
 
 /**
  * Useful utility functions for interacting with the terminal.

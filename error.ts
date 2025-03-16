@@ -6,12 +6,32 @@
 import { Constructor } from "./types.ts";
 import { isPlainObject, omit } from "./object.ts";
 import Exception, { type ExceptionOptions } from "./error/Exception.ts";
-import { NotSupportedError } from "./error/common.ts";
+import * as common from "./error/common.ts";
 import { createErrorEvent } from "./event.ts";
+import { isSubclassOf } from "./class.ts";
+
+const { NotSupportedError } = common;
 
 export { Exception };
 export type { ExceptionOptions };
 export * from "./error/common.ts";
+
+const errorsMap = new Map<string, Constructor<Error>>([
+    ["Exception", Exception]
+]);
+
+/**
+ * Registers an error constructor that can be used by {@link fromObject} to
+ * reverse a plain object to an error instance.
+ * @inner
+ * */
+export function registerKnownError<T extends Error>(ctor: Constructor<T>): void {
+    errorsMap.set(ctor.name, ctor);
+}
+
+const commonErrors = Object.values(common)
+    .filter(value => isSubclassOf(value, Error)) as Constructor<Error>[];
+commonErrors.forEach(ctor => registerKnownError(ctor));
 
 /**
  * Transforms the error to a plain object.
@@ -90,16 +110,9 @@ export function fromObject<T extends Error>(
     }
 
     // @ts-ignore
-    ctor ||= (globalThis[obj["@@type"] || obj.name] || globalThis[obj.name]) as new (...args: any) => T;
-
-    if (!ctor) {
-        if (obj["@@type"] === "Exception") {
-            ctor = Exception as unknown as new (...args: any) => T;
-        } else {
-            ctor = Error as unknown as new (...args: any) => T;
-        }
-    }
-
+    const typeName: string = obj["@@type"] || obj.name;
+    // @ts-ignore
+    ctor ??= (errorsMap.get(typeName) ?? globalThis[typeName] ?? Error) as Constructor<T>;
     let err: T;
 
     if (ctor.name === "DOMException" && typeof DOMException === "function") {

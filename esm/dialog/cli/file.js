@@ -1,18 +1,19 @@
 import { asyncTask } from '../../async.js';
 import { which } from '../../cli.js';
-import { as, pick } from '../../object.js';
-import Exception from '../../error/Exception.js';
-import { NotSupportedError } from '../../error/common.js';
+import '../../error.js';
 import { createProgressEvent } from '../../event.js';
 import { readFileAsFile, readDir, writeFile } from '../../fs.js';
 import { fixFileType } from '../../fs/util.js';
+import { as, pick } from '../../object.js';
 import { join, basename } from '../../path.js';
 import { platform } from '../../runtime.js';
 import progress from './progress.js';
 import { linuxPickFile, linuxPickFiles, linuxPickFolder } from './file/linux.js';
 import { macPickFile, macPickFiles, macPickFolder } from './file/mac.js';
 import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './file/windows.js';
+import Exception from '../../error/Exception.js';
 import { isWSL } from '../../cli/common.js';
+import { NotSupportedError } from '../../error/common.js';
 
 function throwUnsupportedPlatformError() {
     throw new NotSupportedError("Unsupported platform");

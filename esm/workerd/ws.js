@@ -1,9 +1,8 @@
-import '../bytes.js';
-import '../error/Exception.js';
-import { NotSupportedError } from '../error/common.js';
+import '../error.js';
 import { createErrorEvent, createCloseEvent } from '../event.js';
 import { WebSocketConnection } from '../ws/base.js';
 export { WebSocket, WebSocketStream, toWebSocketStream } from '../ws/client.js';
+import { NotSupportedError } from '../error/common.js';
 
 var _a;
 const _handler = Symbol.for("handler");

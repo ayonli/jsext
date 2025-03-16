@@ -1,12 +1,12 @@
 import { orderBy, startsWith } from '../array.js';
-import { omit } from '../object.js';
-import Exception from '../error/Exception.js';
-import { NotFoundError, NotAllowedError, AlreadyExistsError } from '../error/common.js';
-import '../external/event-target-polyfill/index.js';
+import '../error.js';
 import { IsDirectoryError, NotDirectoryError, InvalidOperationError, BusyError, InterruptedError, FileTooLargeError, FilesystemLoopError } from './errors.js';
 import { getMIME } from '../filetype.js';
+import { omit } from '../object.js';
 import { toFsPath, extname, basename } from '../path.js';
 import { isFileUrl, split } from '../path/util.js';
+import Exception from '../error/Exception.js';
+import { NotFoundError, NotAllowedError, AlreadyExistsError } from '../error/common.js';
 
 function ensureFsTarget(path) {
     if (path instanceof URL) {

@@ -1,12 +1,13 @@
 import bytes, { equals } from '../../bytes.js';
 import '../../string/constants.js';
 import '../../env.js';
-import '../../error/Exception.js';
+import '../../error.js';
 import '../../external/event-target-polyfill/index.js';
 import '../../fs.js';
 import '../../path.js';
 import { ControlKeys, ControlSequences } from '../../cli/constants.js';
 import { lockStdin, writeStdoutSync, getWindowSize, stringWidth } from '../../cli/common.js';
+import '../../fs/errors.js';
 
 const { CTRL_C, ESC, LF } = ControlKeys;
 const { CLR } = ControlSequences;
