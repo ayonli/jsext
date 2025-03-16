@@ -112,6 +112,9 @@ function charWidth(char) {
 function stringWidth(str) {
     return sum(...chars(str).map(charWidth));
 }
+function throwNoStdioError(type) {
+    throw new NotSupportedError(`No ${type} available`);
+}
 const stdinMutex = new Mutex(1);
 /**
  * Requests the standard input to be used only by the given task until it is
@@ -209,7 +212,7 @@ async function lockStdin(task) {
             }
         }
         else {
-            throw new NotSupportedError("No stdin available");
+            throwNoStdioError("stdin");
         }
     }
     finally {
@@ -251,7 +254,7 @@ async function readStdin() {
         });
     }
     else {
-        throw new NotSupportedError("No stdin available");
+        throwNoStdioError("stdin");
     }
 }
 /**
@@ -267,7 +270,7 @@ async function writeStdout(data) {
         });
     }
     else {
-        throw new NotSupportedError("No stdout available");
+        throwNoStdioError("stdout");
     }
 }
 /**
@@ -288,7 +291,7 @@ function writeStdoutSync(data) {
         process.stdout.write(data);
     }
     else {
-        throw new NotSupportedError("No stdout available");
+        throwNoStdioError("stdout");
     }
 }
 /**

@@ -9,9 +9,9 @@ import Tarball, {
     HEADER_LENGTH,
     TarEntry,
     TarTree,
-    corruptedArchiveError,
     createEntry,
     parseHeader,
+    throwCorruptedArchiveError,
 } from "./Tarball.ts";
 import { TarOptions } from "./tar.ts";
 
@@ -234,7 +234,7 @@ export default async function untar(
         }
 
         if (lastChunk.byteLength) {
-            throw corruptedArchiveError;
+            throwCorruptedArchiveError();
         } else if (totalBytes && totalWrittenBytes < totalBytes && options.onProgress) {
             totalWrittenBytes = totalBytes;
             options.onProgress(createProgressEvent("progress", {

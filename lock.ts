@@ -98,20 +98,20 @@ export namespace Mutex {
             this[_mutex] = mutex;
         }
 
+        private checkState(): void {
+            if (this[_unlocked]) {
+                throw new ReferenceError("Trying to access data after unlocked.");
+            }
+        }
+
         /** Accesses the data associated to the mutex instance. */
         get value(): T {
-            if (this[_unlocked]) {
-                throw new ReferenceError("trying to access data after unlocked");
-            }
-
+            this.checkState();
             return this[_mutex][_value];
         }
 
         set value(v: T) {
-            if (this[_unlocked]) {
-                throw new ReferenceError("trying to access data after unlocked");
-            }
-
+            this.checkState();
             this[_mutex][_value] = v;
         }
 

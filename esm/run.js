@@ -460,7 +460,7 @@ async function run(script, args, options) {
         },
         iterate() {
             if (promise) {
-                throw new Error("result() has been called");
+                throw new TypeError("result() has been called.");
             }
             else if (result) {
                 throw new TypeError("The response is not iterable.");

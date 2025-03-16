@@ -358,8 +358,7 @@ export function toFsPath(url: string | URL): string {
         if (url.protocol === "file:") {
             return join(fileUrlToFsPath(url.toString()));
         } else {
-            throw new NotSupportedError(
-                "Cannot convert a non-file URL to a file system path.");
+            throwNonFileUrlConversionError();
         }
     }
 
@@ -370,11 +369,14 @@ export function toFsPath(url: string | URL): string {
     } else if (!isUrl(url)) {
         return resolve(url);
     } else {
-        throw new NotSupportedError(
-            "Cannot convert a non-file URL to a file system path.");
+        throwNonFileUrlConversionError();
     }
 }
 
 function fileUrlToFsPath(url: string): string {
     return url.replace(/^file:(\/\/)?/i, "").replace(/^\/([a-z]):/i, "$1:");
+}
+
+function throwNonFileUrlConversionError(): never {
+    throw new NotSupportedError("Cannot convert a non-file URL to a file system path.");
 }

@@ -19,6 +19,10 @@ import type {
     SaveFileOptions,
 } from "../file.ts";
 
+function throwUnsupportedPlatformError(): never {
+    throw new NotSupportedError("Unsupported platform");
+}
+
 export async function pickFile(
     options: PickFileOptions = {}
 ): Promise<string | null> {
@@ -44,7 +48,7 @@ export async function pickFile(
         });
     }
 
-    throw new NotSupportedError("Unsupported platform");
+    throwUnsupportedPlatformError();
 }
 
 export async function pickFiles(
@@ -60,7 +64,7 @@ export async function pickFiles(
         return await linuxPickFiles(options.title, options.type);
     }
 
-    throw new NotSupportedError("Unsupported platform");
+    throwUnsupportedPlatformError();
 }
 
 export async function pickDirectory(
@@ -76,7 +80,7 @@ export async function pickDirectory(
         return await linuxPickFolder(options.title);
     }
 
-    throw new NotSupportedError("Unsupported platform");
+    throwUnsupportedPlatformError();
 }
 
 export async function openFile(options?: FileDialogOptions): Promise<File | null> {

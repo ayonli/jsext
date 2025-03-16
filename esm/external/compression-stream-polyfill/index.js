@@ -1,5 +1,8 @@
 import { createGzip, createDeflate, createDeflateRaw, createGunzip, createInflate, createInflateRaw } from 'node:zlib';
 
+function throwUnsupportedFormatError(format) {
+    throw new TypeError(`Unsupported format: ${format}`);
+}
 if (typeof CompressionStream === "undefined") {
     globalThis.CompressionStream = class CompressionStream {
         constructor(format) {
@@ -14,7 +17,7 @@ if (typeof CompressionStream === "undefined") {
                 impl = createDeflateRaw();
             }
             else {
-                throw new TypeError(`Unsupported format: ${format}`);
+                throwUnsupportedFormatError(format);
             }
             this.readable = new ReadableStream({
                 start(controller) {
@@ -55,7 +58,7 @@ if (typeof DecompressionStream === "undefined") {
                 impl = createInflateRaw();
             }
             else {
-                throw new TypeError(`Unsupported format: ${format}`);
+                throwUnsupportedFormatError(format);
             }
             this.readable = new ReadableStream({
                 start(controller) {

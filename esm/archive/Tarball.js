@@ -57,9 +57,9 @@ const USTarFileHeaderFieldLengths = {
 // https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html#tag_20_92_13_06
 // eight checksum bytes taken to be ascii spaces (decimal value 32)
 const initialChecksum = 8 * 32;
-const filenameTooLongError = new FilenameTooLongError("UStar format does not allow a long file name (length of [file name"
-    + "prefix] + / + [file name] must be shorter than 256 bytes)");
-const corruptedArchiveError = new CorruptedArchiveError("The archive is corrupted");
+function throwCorruptedArchiveError() {
+    throw new CorruptedArchiveError("The archive is corrupted.");
+}
 function toFixedOctal(num, bytes) {
     return num.toString(8).padStart(bytes, "0");
 }
@@ -97,7 +97,7 @@ function parseHeader(header) {
             // EOF
             return null;
         }
-        throw corruptedArchiveError;
+        throwCorruptedArchiveError();
     }
     if (!data.magic.startsWith("ustar")) {
         throw new TypeError("Unsupported archive format: " + data.magic);
@@ -131,6 +131,14 @@ function createEntry(headerInfo) {
         owner: headerInfo.uname.trim(),
         group: headerInfo.gname.trim(),
     };
+}
+function getEmptyData(info) {
+    if (info.kind === "directory") {
+        return new Uint8Array(0);
+    }
+    else {
+        throw new TypeError("data must be provided for files.");
+    }
 }
 const _entries = Symbol.for("entries");
 /**
@@ -201,11 +209,9 @@ class Tarball {
                 }
                 i--;
             }
-            if (i < 0 || name.length > 100) {
-                throw filenameTooLongError;
-            }
-            else if (prefix.length > 155) {
-                throw filenameTooLongError;
+            if (i < 0 || name.length > 100 || prefix.length > 155) {
+                throw new FilenameTooLongError("UStar format does not allow a long file name (length of [file name"
+                    + "prefix] + / + [file name] must be shorter than 256 bytes)");
             }
         }
         let body;
@@ -296,14 +302,7 @@ class Tarball {
         };
     }
     append(data, info = {}) {
-        if (data === null) {
-            if (info.kind === "directory") {
-                data = new Uint8Array(0);
-            }
-            else {
-                throw new TypeError("data must be provided for files.");
-            }
-        }
+        data !== null && data !== void 0 ? data : (data = getEmptyData(info));
         let relativePath = info.relativePath;
         if (!relativePath) {
             if (typeof File === "function" && data instanceof File) {
@@ -392,14 +391,7 @@ class Tarball {
         else if (oldEntry.kind !== "directory" && info.kind === "directory") {
             return false;
         }
-        else if (data === null) {
-            if (info.kind === "directory") {
-                data = new Uint8Array(0);
-            }
-            else {
-                throw new TypeError("data must be provided for files.");
-            }
-        }
+        data !== null && data !== void 0 ? data : (data = getEmptyData(info));
         const newEntry = this.constructEntry(relativePath, data, info);
         this[_entries][index] = newEntry;
         return true;
@@ -585,7 +577,7 @@ class Tarball {
                 }
             }
             if (lastChunk.byteLength) {
-                throw corruptedArchiveError;
+                throwCorruptedArchiveError();
             }
             return tarball;
         }
@@ -595,5 +587,5 @@ class Tarball {
     }
 }
 
-export { FilenameTooLongError, HEADER_LENGTH, _entries, corruptedArchiveError, createEntry, Tarball as default, parseHeader };
+export { FilenameTooLongError, HEADER_LENGTH, _entries, createEntry, Tarball as default, parseHeader, throwCorruptedArchiveError };
 //# sourceMappingURL=Tarball.js.map

@@ -5,7 +5,7 @@ import type { RequiredKeys } from "../types.ts";
 import type { WebSocketServer } from "../ws.ts";
 
 const _source = Symbol.for("source");
-const _ws = Symbol.for("ws");
+const _socket = Symbol.for("socket");
 
 export type WebSocketLike = RequiredKeys<Partial<WebSocket>, "readyState" | "close" | "send">;
 
@@ -29,13 +29,13 @@ export type WebSocketLike = RequiredKeys<Partial<WebSocket>, "readyState" | "clo
  */
 export class WebSocketConnection extends EventTarget implements AsyncIterable<string | Uint8Array> {
     private [_source]: Promise<WebSocketLike>;
-    private [_ws]: WebSocketLike | null = null;
+    private [_socket]: WebSocketLike | null = null;
 
     constructor(source: Promise<WebSocketLike>) {
         super();
         this[_source] = source;
         this[_source].then(ws => {
-            this[_ws] = ws;
+            this[_socket] = ws;
         });
     }
 
@@ -53,29 +53,29 @@ export class WebSocketConnection extends EventTarget implements AsyncIterable<st
      * The current state of the WebSocket connection.
      */
     get readyState(): number {
-        return this[_ws]?.readyState ?? 0;
+        return this[_socket]?.readyState ?? 0;
+    }
+
+    private get socket(): WebSocketLike {
+        if (!this[_socket]) {
+            throw new Error("WebSocket connection is not ready.");
+        }
+
+        return this[_socket];
     }
 
     /**
      * Sends data to the WebSocket client.
      */
     send(data: string | ArrayBufferLike | ArrayBufferView): void {
-        if (!this[_ws]) {
-            throw new Error("WebSocket connection is not ready.");
-        }
-
-        this[_ws].send(data);
+        this.socket.send(data);
     }
 
     /**
      * Closes the WebSocket connection.
      */
     close(code?: number | undefined, reason?: string | undefined): void {
-        if (!this[_ws]) {
-            throw new Error("WebSocket connection is not ready.");
-        }
-
-        this[_ws].close(code, reason);
+        this.socket.close(code, reason);
     }
 
     /**

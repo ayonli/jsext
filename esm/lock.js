@@ -91,17 +91,18 @@ _a = _queue;
             this[_b] = false;
             this[_mutex] = mutex;
         }
+        checkState() {
+            if (this[_unlocked]) {
+                throw new ReferenceError("Trying to access data after unlocked.");
+            }
+        }
         /** Accesses the data associated to the mutex instance. */
         get value() {
-            if (this[_unlocked]) {
-                throw new ReferenceError("trying to access data after unlocked");
-            }
+            this.checkState();
             return this[_mutex][_value];
         }
         set value(v) {
-            if (this[_unlocked]) {
-                throw new ReferenceError("trying to access data after unlocked");
-            }
+            this.checkState();
             this[_mutex][_value] = v;
         }
         /** Releases the current lock of the mutex. */

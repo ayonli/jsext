@@ -654,6 +654,14 @@ async function udpSocket(localAddress = {}) {
             ref: _socket.ref.bind(_socket),
             unref: _socket.unref.bind(_socket),
         };
+        const checkState = () => {
+            if (isConnected) {
+                throw new TypeError("The socket is connected.");
+            }
+            else if (isClosed) {
+                throw new TypeError("The socket is closed.");
+            }
+        };
         return new UdpSocket({
             ...props,
             joinMulticast: _socket.addMembership.bind(_socket),
@@ -663,12 +671,7 @@ async function udpSocket(localAddress = {}) {
             setMulticastTTL: _socket.setMulticastTTL.bind(_socket),
             setTTL: _socket.setTTL.bind(_socket),
             receive: async () => {
-                if (isConnected) {
-                    throw new TypeError("The socket is connected.");
-                }
-                else if (isClosed) {
-                    throw new TypeError("The socket is closed.");
-                }
+                checkState();
                 const msg = await channel.recv();
                 if (msg) {
                     return msg;
@@ -678,12 +681,7 @@ async function udpSocket(localAddress = {}) {
                 }
             },
             send: async (data, remoteAddress) => {
-                if (isConnected) {
-                    throw new TypeError("The socket is connected.");
-                }
-                else if (isClosed) {
-                    throw new TypeError("The socket is closed.");
-                }
+                checkState();
                 return new Promise((resolve, reject) => {
                     _socket.send(data, remoteAddress.port, remoteAddress.hostname, (err, n) => {
                         err ? reject(err) : resolve(n);

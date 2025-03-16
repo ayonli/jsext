@@ -317,20 +317,23 @@ export async function edit(filename: string | URL): Promise<void> {
 
     const _platform = platform();
     const vscode = await which("code");
+    const throwOpenError = (stderr: string, filename: string) => {
+        throw new Error(stderr || `Unable to open ${filename} in the editor.`);
+    };
 
     if (vscode) {
         const args = line ? ["--goto", `${filename}:${line}`] : [filename];
         const { code, stderr } = await run(vscode, args);
 
         if (code)
-            throw new Error(stderr || `Unable to open ${filename} in the editor.`);
+            throwOpenError(stderr, filename);
 
         return;
     } else if (_platform === "darwin") {
         const { code, stderr } = await run("open", ["-t", filename]);
 
         if (code)
-            throw new Error(stderr || `Unable to open ${filename} in the editor.`);
+            throwOpenError(stderr, filename);
 
         return;
     } else if (_platform === "windows" || isWSL()) {
@@ -340,7 +343,7 @@ export async function edit(filename: string | URL): Promise<void> {
         const { code, stderr } = await run(notepad, [filename]);
 
         if (code)
-            throw new Error(stderr || `Unable to open ${filename} in the editor.`);
+            throwOpenError(stderr, filename);
 
         return;
     }
@@ -355,7 +358,7 @@ export async function edit(filename: string | URL): Promise<void> {
     let args: string[] | undefined;
 
     if (!cmd) {
-        throw new Error("Cannot determine the editor to open.");
+        throw new Error("Cannot determine which editor to open.");
     } else {
         cmd = basename(cmd);
     }
@@ -377,7 +380,7 @@ export async function edit(filename: string | URL): Promise<void> {
         }
 
         if (!cmd) {
-            throw new Error("Cannot determine the terminal to open.");
+            throw new Error("Cannot determine which terminal to open.");
         }
     } else {
         args = [filename];
@@ -386,5 +389,5 @@ export async function edit(filename: string | URL): Promise<void> {
     const { code, stderr } = await run(cmd, args!);
 
     if (code)
-        throw new Error(stderr || `Unable to open ${filename} in the editor.`);
+        throwOpenError(stderr, filename);
 }

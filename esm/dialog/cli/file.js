@@ -14,6 +14,9 @@ import { macPickFile, macPickFiles, macPickFolder } from './file/mac.js';
 import { windowsPickFile, windowsPickFiles, windowsPickFolder } from './file/windows.js';
 import { isWSL } from '../../cli/common.js';
 
+function throwUnsupportedPlatformError() {
+    throw new NotSupportedError("Unsupported platform");
+}
 async function pickFile(options = {}) {
     const _platform = platform();
     if (_platform === "darwin") {
@@ -37,7 +40,7 @@ async function pickFile(options = {}) {
             defaultName: options === null || options === void 0 ? void 0 : options.defaultName,
         });
     }
-    throw new NotSupportedError("Unsupported platform");
+    throwUnsupportedPlatformError();
 }
 async function pickFiles(options = {}) {
     const _platform = platform();
@@ -50,7 +53,7 @@ async function pickFiles(options = {}) {
     else if (_platform === "linux" || await which("zenity")) {
         return await linuxPickFiles(options.title, options.type);
     }
-    throw new NotSupportedError("Unsupported platform");
+    throwUnsupportedPlatformError();
 }
 async function pickDirectory(options = {}) {
     const _platform = platform();
@@ -63,7 +66,7 @@ async function pickDirectory(options = {}) {
     else if (_platform === "linux" || await which("zenity")) {
         return await linuxPickFolder(options.title);
     }
-    throw new NotSupportedError("Unsupported platform");
+    throwUnsupportedPlatformError();
 }
 async function openFile(options) {
     let filename = await pickFile(options);

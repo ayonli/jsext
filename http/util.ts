@@ -480,10 +480,14 @@ export const HTTP_STATUS = {
     505: "HTTP Version Not Supported",
 };
 
+function throwInvalidMessageError(): never {
+    throw new SyntaxError("Invalid message");
+}
+
 function parseMessage(message: string): { headers: Headers, body: string | Uint8Array; } {
     const headerEnd = message.indexOf("\r\n\r\n");
     if (headerEnd === -1) {
-        throw new SyntaxError("Invalid message");
+        throwInvalidMessageError();
     }
 
     const headers = new Headers();
@@ -595,7 +599,7 @@ function parseMessage(message: string): { headers: Headers, body: string | Uint8
 export function parseRequest(message: string): Request {
     let lineEnd = message.indexOf("\r\n");
     if (lineEnd === -1) {
-        throw new SyntaxError("Invalid message");
+        throwInvalidMessageError();
     }
 
     const [method, url, version] = message.slice(0, lineEnd).split(/\s+/);
@@ -604,7 +608,7 @@ export function parseRequest(message: string): Request {
         !url || !url.startsWith("/") ||
         !version?.startsWith("HTTP/")
     ) {
-        throw new SyntaxError("Invalid message");
+        throwInvalidMessageError();
     } else if (version !== "HTTP/1.1") {
         throw new TypeError("Unsupported HTTP version");
     }
@@ -657,7 +661,7 @@ export function parseRequest(message: string): Request {
 export function parseResponse(message: string): Response {
     let lineEnd = message.indexOf("\r\n");
     if (lineEnd === -1) {
-        throw new SyntaxError("Invalid message");
+        throwInvalidMessageError();
     }
 
     const [version, _status, ...statusTexts] = message.slice(0, lineEnd).split(/\s+/);
@@ -667,7 +671,7 @@ export function parseResponse(message: string): Response {
     if (!version?.startsWith("HTTP/") ||
         !_status || !Number.isInteger((status = Number(_status)))
     ) {
-        throw new SyntaxError("Invalid message");
+        throwInvalidMessageError();
     }
 
     const { headers, body: _body } = parseMessage(message.slice(lineEnd + 2));

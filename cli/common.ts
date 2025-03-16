@@ -121,6 +121,10 @@ export function stringWidth(str: string): number {
     return sum(...chars(str).map(charWidth));
 }
 
+function throwNoStdioError(type: "stdin" | "stdout" | "stderr"): never {
+    throw new NotSupportedError(`No ${type} available`);
+}
+
 const stdinMutex = new Mutex(1);
 
 /**
@@ -221,7 +225,7 @@ export async function lockStdin<T>(task: () => Promise<T>): Promise<T | null> {
                 }
             }
         } else {
-            throw new NotSupportedError("No stdin available");
+            throwNoStdioError("stdin");
         }
     } finally {
         lock.unlock();
@@ -261,7 +265,7 @@ export async function readStdin(): Promise<ByteArray> {
             stdin.on("data", listener);
         });
     } else {
-        throw new NotSupportedError("No stdin available");
+        throwNoStdioError("stdin");
     }
 }
 
@@ -276,7 +280,7 @@ export async function writeStdout(data: ByteArray): Promise<void> {
             process.stdout.write(data, () => resolve());
         });
     } else {
-        throw new NotSupportedError("No stdout available");
+        throwNoStdioError("stdout");
     }
 }
 
@@ -296,7 +300,7 @@ export function writeStdoutSync(data: ByteArray): void {
     } else if (isNodeLike) {
         process.stdout.write(data);
     } else {
-        throw new NotSupportedError("No stdout available");
+        throwNoStdioError("stdout");
     }
 }
 

@@ -5,7 +5,7 @@ import { createReadableStream, ensureDir, stat, createWritableStream, chmod, uti
 import { ensureFsTarget, makeTree } from '../fs/util.js';
 import { toFsPath, resolve, join, dirname, basename } from '../path.js';
 import { platform } from '../runtime.js';
-import Tarball, { HEADER_LENGTH, parseHeader, createEntry, corruptedArchiveError } from './Tarball.js';
+import Tarball, { HEADER_LENGTH, parseHeader, createEntry, throwCorruptedArchiveError } from './Tarball.js';
 import { isFileUrl } from '../path/util.js';
 
 async function untar(src, dest = {}, options = {}) {
@@ -152,7 +152,7 @@ async function untar(src, dest = {}, options = {}) {
             }
         }
         if (lastChunk.byteLength) {
-            throw corruptedArchiveError;
+            throwCorruptedArchiveError();
         }
         else if (totalBytes && totalWrittenBytes < totalBytes && options.onProgress) {
             totalWrittenBytes = totalBytes;

@@ -4,7 +4,7 @@ import { fromErrorEvent } from '../error.js';
 
 var _a;
 const _source = Symbol.for("source");
-const _ws = Symbol.for("ws");
+const _socket = Symbol.for("socket");
 /**
  * This class represents a WebSocket connection on the server side.
  * Normally we don't create instances of this class directly, but rather use
@@ -29,7 +29,7 @@ class WebSocketConnection extends EventTarget {
         this[_a] = null;
         this[_source] = source;
         this[_source].then(ws => {
-            this[_ws] = ws;
+            this[_socket] = ws;
         });
     }
     /**
@@ -46,25 +46,25 @@ class WebSocketConnection extends EventTarget {
      */
     get readyState() {
         var _b, _c;
-        return (_c = (_b = this[_ws]) === null || _b === void 0 ? void 0 : _b.readyState) !== null && _c !== void 0 ? _c : 0;
+        return (_c = (_b = this[_socket]) === null || _b === void 0 ? void 0 : _b.readyState) !== null && _c !== void 0 ? _c : 0;
+    }
+    get socket() {
+        if (!this[_socket]) {
+            throw new Error("WebSocket connection is not ready.");
+        }
+        return this[_socket];
     }
     /**
      * Sends data to the WebSocket client.
      */
     send(data) {
-        if (!this[_ws]) {
-            throw new Error("WebSocket connection is not ready.");
-        }
-        this[_ws].send(data);
+        this.socket.send(data);
     }
     /**
      * Closes the WebSocket connection.
      */
     close(code, reason) {
-        if (!this[_ws]) {
-            throw new Error("WebSocket connection is not ready.");
-        }
-        this[_ws].close(code, reason);
+        this.socket.close(code, reason);
     }
     addEventListener(event, listener, options = undefined) {
         return super.addEventListener(event, listener, options);
@@ -72,7 +72,7 @@ class WebSocketConnection extends EventTarget {
     removeEventListener(event, listener, options = undefined) {
         return super.removeEventListener(event, listener, options);
     }
-    async *[(_a = _ws, Symbol.asyncIterator)]() {
+    async *[(_a = _socket, Symbol.asyncIterator)]() {
         const channel = chan(Infinity);
         const handleMessage = (ev) => {
             channel.send(ev.data);

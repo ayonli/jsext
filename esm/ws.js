@@ -272,7 +272,7 @@ class WebSocketServer {
         const clients = this[_clients];
         const server = this[_httpServer];
         if (!server) {
-            throw new Error("WebSocket server is not bound to a Bun server instance.");
+            throw new TypeError("WebSocket server is not bound to a Bun server instance.");
         }
         const task = asyncTask();
         this[_connTasks].set(request, task);

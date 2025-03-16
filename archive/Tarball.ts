@@ -144,12 +144,9 @@ const USTarFileHeaderFieldLengths = { // byte offset
 // eight checksum bytes taken to be ascii spaces (decimal value 32)
 const initialChecksum = 8 * 32;
 
-const filenameTooLongError = new FilenameTooLongError(
-    "UStar format does not allow a long file name (length of [file name"
-    + "prefix] + / + [file name] must be shorter than 256 bytes)"
-);
-
-export const corruptedArchiveError = new CorruptedArchiveError("The archive is corrupted");
+export function throwCorruptedArchiveError(): never {
+    throw new CorruptedArchiveError("The archive is corrupted.");
+}
 
 function toFixedOctal(num: number, bytes: number): string {
     return num.toString(8).padStart(bytes, "0");
@@ -198,7 +195,7 @@ export function parseHeader(header: Uint8Array): [USTarFileHeader, header: Uint8
             return null;
         }
 
-        throw corruptedArchiveError;
+        throwCorruptedArchiveError();
     }
 
     if (!data.magic.startsWith("ustar")) {
@@ -235,6 +232,14 @@ export function createEntry(headerInfo: USTarFileHeader): TarEntry {
         owner: headerInfo.uname.trim(),
         group: headerInfo.gname.trim(),
     };
+}
+
+function getEmptyData(info: Partial<TarEntry>): Uint8Array {
+    if (info.kind === "directory") {
+        return new Uint8Array(0);
+    } else {
+        throw new TypeError("data must be provided for files.");
+    }
 }
 
 export const _entries = Symbol.for("entries");
@@ -315,10 +320,11 @@ export default class Tarball {
                 i--;
             }
 
-            if (i < 0 || name.length > 100) {
-                throw filenameTooLongError;
-            } else if (prefix.length > 155) {
-                throw filenameTooLongError;
+            if (i < 0 || name.length > 100 || prefix.length > 155) {
+                throw new FilenameTooLongError(
+                    "UStar format does not allow a long file name (length of [file name"
+                    + "prefix] + / + [file name] must be shorter than 256 bytes)"
+                );
             }
         }
 
@@ -425,14 +431,7 @@ export default class Tarball {
         data: string | ArrayBuffer | ArrayBufferView | Blob | ReadableStream<Uint8Array> | null,
         info: Partial<TarEntry> = {}
     ): void {
-        if (data === null) {
-            if (info.kind === "directory") {
-                data = new Uint8Array(0);
-            } else {
-                throw new TypeError("data must be provided for files.");
-            }
-        }
-
+        data ??= getEmptyData(info);
         let relativePath = info.relativePath;
 
         if (!relativePath) {
@@ -535,14 +534,9 @@ export default class Tarball {
             return false;
         } else if (oldEntry.kind !== "directory" && info.kind === "directory") {
             return false;
-        } else if (data === null) {
-            if (info.kind === "directory") {
-                data = new Uint8Array(0);
-            } else {
-                throw new TypeError("data must be provided for files.");
-            }
         }
 
+        data ??= getEmptyData(info);
         const newEntry = this.constructEntry(relativePath, data, info);
         this[_entries][index] = newEntry;
         return true;
@@ -762,7 +756,7 @@ export default class Tarball {
             }
 
             if (lastChunk.byteLength) {
-                throw corruptedArchiveError;
+                throwCorruptedArchiveError();
             }
 
             return tarball;

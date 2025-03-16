@@ -324,7 +324,7 @@ function toFsPath(url) {
             return join(fileUrlToFsPath(url.toString()));
         }
         else {
-            throw new NotSupportedError("Cannot convert a non-file URL to a file system path.");
+            throwNonFileUrlConversionError();
         }
     }
     if (isFsPath(url)) {
@@ -337,11 +337,14 @@ function toFsPath(url) {
         return resolve(url);
     }
     else {
-        throw new NotSupportedError("Cannot convert a non-file URL to a file system path.");
+        throwNonFileUrlConversionError();
     }
 }
 function fileUrlToFsPath(url) {
     return url.replace(/^file:(\/\/)?/i, "").replace(/^\/([a-z]):/i, "$1:");
+}
+function throwNonFileUrlConversionError() {
+    throw new NotSupportedError("Cannot convert a non-file URL to a file system path.");
 }
 
 export { basename, cwd, dirname, extname, isAbsolute, isFileUrl, isFsPath, isPosixPath, isUrl, isWindowsPath, join, normalize, resolve, sanitize, sep, split, toFileUrl, toFsPath };
