@@ -1,6 +1,8 @@
 import bytes, { concat as concat$1 } from '../bytes.js';
 import { makeTree } from '../fs/util.js';
 import { omit } from '../object.js';
+import Exception from '../error/Exception.js';
+import '../external/event-target-polyfill/index.js';
 import { basename, dirname } from '../path.js';
 import { toReadableStream, concat } from '../reader.js';
 import { stripEnd } from '../string.js';

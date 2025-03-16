@@ -1,5 +1,6 @@
 import bytes, { concat as concatBytes } from "../bytes.ts";
 import { makeTree } from "../fs/util.ts";
+import { Exception } from "../error.ts";
 import { omit } from "../object.ts";
 import { basename, dirname } from "../path.ts";
 import { concat as concatStreams, toReadableStream } from "../reader.ts";
