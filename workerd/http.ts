@@ -1,4 +1,3 @@
-import { NotImplementedError } from "../error.ts";
 import { getMIME } from "../filetype.ts";
 import { exists, readDir, readFile } from "./fs.ts";
 import { renderDirectoryPage, withWeb } from "../http/internal.ts";
@@ -19,6 +18,7 @@ import { stripStart } from "../string.ts";
 import { KVNamespace } from "./types.ts";
 import { WebSocketServer } from "./ws.ts";
 import runtime from "../runtime.ts";
+import { throwUnsupportedRuntimeError } from "../error.ts";
 
 export { withWeb };
 export * from "../http/util.ts";
@@ -42,7 +42,7 @@ export type Server = HttpServer;
 
 export async function randomPort(prefer: number | undefined = undefined): Promise<number> {
     void prefer;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export function serve(options: ServeOptions): HttpServer {

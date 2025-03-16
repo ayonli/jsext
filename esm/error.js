@@ -1,7 +1,8 @@
 import { omit, isPlainObject } from './object.js';
 import Exception from './error/Exception.js';
+import { NotSupportedError } from './error/common.js';
+export { AlreadyExistsError, NetworkError, NotAllowedError, NotFoundError, NotImplementedError, TimeoutError } from './error/common.js';
 import { createErrorEvent } from './event.js';
-export { AlreadyExistsError, NetworkError, NotAllowedError, NotFoundError, NotImplementedError, NotSupportedError, TimeoutError } from './error/common.js';
 
 /**
  * Functions for converting errors to/from other types of objects.
@@ -263,6 +264,10 @@ function isAggregateError(value) {
     return (typeof AggregateError === "function" && value instanceof AggregateError)
         || (value instanceof Error && value.constructor.name === "AggregateError");
 }
+/** @inner */
+function throwUnsupportedRuntimeError() {
+    throw new NotSupportedError("Unsupported runtime");
+}
 /**
  * Checks if the error is caused by the given `cause`. This function traverses
  * the cause chain until it reaches the end.
@@ -305,5 +310,5 @@ function isCausedBy(error, cause) {
     return false;
 }
 
-export { Exception, fromErrorEvent, fromObject, isAggregateError, isCausedBy, isDOMException, toErrorEvent, toObject };
+export { Exception, NotSupportedError, fromErrorEvent, fromObject, isAggregateError, isCausedBy, isDOMException, throwUnsupportedRuntimeError, toErrorEvent, toObject };
 //# sourceMappingURL=error.js.map

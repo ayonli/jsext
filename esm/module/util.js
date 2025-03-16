@@ -1,7 +1,7 @@
 import '../bytes.js';
 import '../error/Exception.js';
-import '../external/event-target-polyfill/index.js';
 import { NetworkError } from '../error/common.js';
+import '../external/event-target-polyfill/index.js';
 import '../path.js';
 import { isUrl } from '../path/util.js';
 

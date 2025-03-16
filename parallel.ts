@@ -6,7 +6,7 @@
 
 import { ThenableAsyncGenerator, ThenableAsyncGeneratorLike } from "./external/thenable-generator/index.ts";
 import chan, { Channel } from "./chan.ts";
-import { NotSupportedError } from "./error.ts";
+import { throwUnsupportedRuntimeError } from "./error.ts";
 import { serial } from "./number.ts";
 import { cwd, isFsPath, toFileUrl } from "./path.ts";
 import { asyncTask } from "./async.ts";
@@ -371,7 +371,7 @@ function parallel<M extends { [x: string]: any; }>(
     module: string | (() => Promise<M>)
 ): ThreadedFunctions<M> {
     if (!isNode && typeof Worker !== "function") {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 
     let modId = sanitizeModuleId(module, true);

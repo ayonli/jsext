@@ -1,8 +1,8 @@
 import { isDeno, isMainThread, isBun, isNode, isSharedWorker, isServiceWorker, isDedicatedWorker, isNodeLike } from './env.js';
 import './bytes.js';
 import './error/Exception.js';
-import { createCloseEvent } from './event.js';
 import { NotSupportedError } from './error/common.js';
+import { createCloseEvent } from './event.js';
 import { parseUserAgent } from './http/user-agent.js';
 
 /**

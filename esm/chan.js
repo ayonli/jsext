@@ -44,7 +44,7 @@ class Channel {
      */
     send(data) {
         if (this.state !== 1) {
-            throw new Error("the channel is closed");
+            throw new TypeError("the channel is closed");
         }
         else if (this.consumers.length) {
             const consume = this.consumers.shift();

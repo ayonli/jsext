@@ -1,11 +1,8 @@
 import { isMainThread } from '../env.js';
-import '../bytes.js';
-import '../error/Exception.js';
-import '../external/event-target-polyfill/index.js';
-import { NotImplementedError } from '../error/common.js';
+import { throwUnsupportedRuntimeError } from '../error.js';
 
 function parallel(module) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 (function (parallel) {
     parallel.maxWorkers = undefined;

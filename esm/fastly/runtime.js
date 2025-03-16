@@ -1,8 +1,8 @@
 import { env as env$1 } from 'fastly:env';
 import '../bytes.js';
 import '../error/Exception.js';
-import '../external/event-target-polyfill/index.js';
 import { NotSupportedError } from '../error/common.js';
+import '../external/event-target-polyfill/index.js';
 export { addShutdownListener, addUnhandledRejectionListener, customInspect, default, isREPL, platform, refTimer, unrefTimer } from '../runtime.js';
 
 // @ts-ignore

@@ -1,8 +1,8 @@
 import { orderBy, startsWith } from '../array.js';
 import { omit } from '../object.js';
 import Exception from '../error/Exception.js';
-import '../external/event-target-polyfill/index.js';
 import { NotFoundError, NotAllowedError, AlreadyExistsError } from '../error/common.js';
+import '../external/event-target-polyfill/index.js';
 import { IsDirectoryError, NotDirectoryError, InvalidOperationError, BusyError, InterruptedError, FileTooLargeError, FilesystemLoopError } from './errors.js';
 import { getMIME } from '../filetype.js';
 import { toFsPath, extname, basename } from '../path.js';

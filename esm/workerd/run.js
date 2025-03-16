@@ -1,10 +1,7 @@
-import '../bytes.js';
-import '../error/Exception.js';
-import '../external/event-target-polyfill/index.js';
-import { NotImplementedError } from '../error/common.js';
+import { throwUnsupportedRuntimeError } from '../error.js';
 
 async function run(script, args, options) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 (function (run) {
     run.maxWorkers = undefined;

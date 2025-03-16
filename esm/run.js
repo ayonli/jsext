@@ -1,6 +1,6 @@
 import chan from './chan.js';
 import { isPlainObject } from './object.js';
-import { fromErrorEvent, fromObject } from './error.js';
+import { throwUnsupportedRuntimeError, fromErrorEvent, fromObject } from './error.js';
 import { toFileUrl, cwd } from './path.js';
 import { isNode, isBrowserWindow, isBun } from './env.js';
 import { sanitizeModuleId } from './parallel/module.js';
@@ -10,7 +10,6 @@ import parallel from './parallel.js';
 import { unrefTimer } from './runtime.js';
 import { abortWith, asyncTask } from './async.js';
 import { isAbsolute } from './path/util.js';
-import { NotSupportedError } from './error/common.js';
 
 /**
  * Runs a script in a worker thread and invokes its `default` function to
@@ -87,7 +86,7 @@ const workerConsumerQueue = [];
 async function run(script, args, options) {
     var _a, _b;
     if (!isNode && typeof Worker !== "function") {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
     script = typeof script === "string" ? script : script.href;
     const maxWorkers = run.maxWorkers || parallel.maxWorkers || await getMaxParallelism;

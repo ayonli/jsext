@@ -1,4 +1,4 @@
-import { NotFoundError, NotImplementedError } from "../error.ts";
+import { NotFoundError, throwUnsupportedRuntimeError } from "../error.ts";
 import { getMIME } from "../filetype.ts";
 import type {
     CopyOptions,
@@ -40,7 +40,7 @@ export async function getDirHandle(
     options: GetDirOptions = {}
 ): Promise<FileSystemDirectoryHandle> {
     void path, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function getFileHandle(
@@ -48,14 +48,14 @@ export async function getFileHandle(
     options: GetFileOptions = {}
 ): Promise<FileSystemFileHandle> {
     void path, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 function ensureFsTarget<T extends string | URL | FileSystemFileHandle | FileSystemDirectoryHandle>(
     path: T
 ): Exclude<T, URL> {
     if (path instanceof URL || (typeof path === "string" && isFileUrl(path))) {
-        throw new TypeError("URL is not supported.");
+        throw new NotSupportedError("File URL is not supported in this runtime.");
     } else {
         return path as Exclude<T, URL>;
     }
@@ -163,7 +163,7 @@ export async function stat(
 
 export async function mkdir(path: string, options: MkdirOptions = {}): Promise<void> {
     void path, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function ensureDir(
@@ -171,7 +171,7 @@ export async function ensureDir(
     options: Omit<MkdirOptions, "recursive"> = {}
 ): Promise<void> {
     void path, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function* readDir(
@@ -327,7 +327,7 @@ export async function writeFile(
     options: WriteFileOptions = {}
 ): Promise<void> {
     void target, data, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function writeLines(
@@ -336,7 +336,7 @@ export async function writeLines(
     options: WriteFileOptions = {}
 ): Promise<void> {
     void target, lines, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function truncate(
@@ -345,12 +345,12 @@ export async function truncate(
     options: FileSystemOptions = {}
 ): Promise<void> {
     void target, size, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function remove(path: string | URL, options: RemoveOptions = {}): Promise<void> {
     void path, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function rename(
@@ -359,7 +359,7 @@ export async function rename(
     options: FileSystemOptions = {}
 ): Promise<void> {
     void oldPath, newPath, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function copy(
@@ -382,7 +382,7 @@ export async function copy(
     options: CopyOptions = {}
 ): Promise<void> {
     void src, dest, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function link(
@@ -391,12 +391,12 @@ export async function link(
     options: LinkOptions = {}
 ): Promise<void> {
     void src, dest, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function readLink(path: string | URL): Promise<string> {
     void path;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function chmod(path: string | URL, mode: number): Promise<void> {
@@ -420,7 +420,7 @@ export function createReadableStream(
     options: FileSystemOptions = {}
 ): ReadableStream<Uint8Array> {
     void target, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export function createWritableStream(
@@ -428,5 +428,5 @@ export function createWritableStream(
     options: Omit<WriteFileOptions, "signal"> = {}
 ): WritableStream<Uint8Array> {
     void target, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }

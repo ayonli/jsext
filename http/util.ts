@@ -114,7 +114,7 @@ export function parseContentType(str: string): ContentType {
     const [type, ...params] = str.split(";").map((part) => part.trim());
 
     if (!type?.includes("/")) {
-        throw new TypeError("Invalid Content-Type header");
+        throw new SyntaxError("Invalid Content-Type header");
     }
 
     const parsed: ContentType = { type: type! };
@@ -217,7 +217,7 @@ export interface Range {
  */
 export function parseRange(str: string): Range {
     if (!str.includes("=")) {
-        throw new TypeError("Invalid Range header");
+        throw new SyntaxError("Invalid Range header");
     }
 
     const [unit, ranges] = str.split("=").map((part) => part.trim());
@@ -243,7 +243,7 @@ export function parseRange(str: string): Range {
     if ((!parsed.ranges.length && !parsed.suffix) ||
         parsed.ranges.some((range) => range.start < 0 || (range.end && range.end <= range.start))
     ) {
-        throw new TypeError("Invalid Range header");
+        throw new SyntaxError("Invalid Range header");
     }
 
     return parsed;
@@ -370,7 +370,7 @@ export function parseBasicAuth(str: string): BasicAuthorization {
     const credentials = parts.slice(1).join(" ");
 
     if (!scheme || !credentials) {
-        throw new TypeError("Invalid Authorization header");
+        throw new SyntaxError("Invalid Authorization header");
     } else if (scheme !== "basic") {
         throw new TypeError("Authorization scheme is not 'Basic'");
     } else {
@@ -483,7 +483,7 @@ export const HTTP_STATUS = {
 function parseMessage(message: string): { headers: Headers, body: string | Uint8Array; } {
     const headerEnd = message.indexOf("\r\n\r\n");
     if (headerEnd === -1) {
-        throw new TypeError("Invalid message");
+        throw new SyntaxError("Invalid message");
     }
 
     const headers = new Headers();
@@ -504,7 +504,7 @@ function parseMessage(message: string): { headers: Headers, body: string | Uint8
         try {
             headers.append(name, value);
         } catch {
-            throw new TypeError(`Invalid header name '${name}' in line ${lineNum}`);
+            throw new SyntaxError(`Invalid header name '${name}' in line ${lineNum}`);
         }
     }
 
@@ -520,12 +520,12 @@ function parseMessage(message: string): { headers: Headers, body: string | Uint8
         while (bodyBytes.length) {
             const lineEnd = indexOfSlice(bodyBytes, lineBreak);
             if (lineEnd === -1) {
-                throw new TypeError("Invalid chunked body");
+                throw new SyntaxError("Invalid chunked body");
             }
 
             const length = parseInt(decoder.decode(bodyBytes.subarray(0, lineEnd)), 16);
             if (!Number.isInteger(length) || length < 0) {
-                throw new TypeError("Invalid chunk length");
+                throw new SyntaxError("Invalid chunk length");
             }
 
             if (length === 0) { // end of chunked body
@@ -536,7 +536,7 @@ function parseMessage(message: string): { headers: Headers, body: string | Uint8
             const chunkEnd = chunkStart + length;
             const chunk = bodyBytes.subarray(chunkStart, chunkEnd);
             if (chunk.length !== length) {
-                throw new TypeError("Invalid chunk");
+                throw new SyntaxError("Invalid chunk");
             }
 
             chunks.push(chunk);
@@ -595,7 +595,7 @@ function parseMessage(message: string): { headers: Headers, body: string | Uint8
 export function parseRequest(message: string): Request {
     let lineEnd = message.indexOf("\r\n");
     if (lineEnd === -1) {
-        throw new TypeError("Invalid message");
+        throw new SyntaxError("Invalid message");
     }
 
     const [method, url, version] = message.slice(0, lineEnd).split(/\s+/);
@@ -604,7 +604,7 @@ export function parseRequest(message: string): Request {
         !url || !url.startsWith("/") ||
         !version?.startsWith("HTTP/")
     ) {
-        throw new TypeError("Invalid message");
+        throw new SyntaxError("Invalid message");
     } else if (version !== "HTTP/1.1") {
         throw new TypeError("Unsupported HTTP version");
     }
@@ -614,7 +614,7 @@ export function parseRequest(message: string): Request {
 
     if (method === "GET" || method === "HEAD") {
         if (body) {
-            throw new TypeError("Request with GET/HEAD method cannot have body.");
+            throw new SyntaxError("Request with GET/HEAD method cannot have body.");
         } else {
             body = null;
         }
@@ -657,7 +657,7 @@ export function parseRequest(message: string): Request {
 export function parseResponse(message: string): Response {
     let lineEnd = message.indexOf("\r\n");
     if (lineEnd === -1) {
-        throw new TypeError("Invalid message");
+        throw new SyntaxError("Invalid message");
     }
 
     const [version, _status, ...statusTexts] = message.slice(0, lineEnd).split(/\s+/);
@@ -667,7 +667,7 @@ export function parseResponse(message: string): Response {
     if (!version?.startsWith("HTTP/") ||
         !_status || !Number.isInteger((status = Number(_status)))
     ) {
-        throw new TypeError("Invalid message");
+        throw new SyntaxError("Invalid message");
     }
 
     const { headers, body: _body } = parseMessage(message.slice(lineEnd + 2));

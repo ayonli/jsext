@@ -1,7 +1,3 @@
-import { as } from '../object.js';
-import '../error/Exception.js';
-import '../external/event-target-polyfill/index.js';
-import { NotImplementedError } from '../error/common.js';
 import { getMIME } from '../filetype.js';
 import { exists, readFile, readDir } from './fs.js';
 import { renderDirectoryPage } from '../http/internal.js';
@@ -9,17 +5,19 @@ export { withWeb } from '../http/internal.js';
 import { HttpServer } from '../http/server.js';
 import { parseRange, etag, ifNoneMatch, ifMatch } from '../http/util.js';
 export { HTTP_METHODS, HTTP_STATUS, parseAccepts, parseBasicAuth, parseContentType, parseRequest, parseResponse, setFilename, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from '../http/util.js';
+import { as } from '../object.js';
 import { join, extname } from '../path.js';
 import { readAsArray } from '../reader.js';
 import { stripStart } from '../string.js';
 import { WebSocketServer } from './ws.js';
 import runtime from '../runtime.js';
+import { throwUnsupportedRuntimeError } from '../error.js';
 import { startsWith } from '../path/util.js';
 export { getCookie, getCookies, parseCookie, parseCookies, setCookie, stringifyCookie, stringifyCookies } from '../http/cookie.js';
 export { parseUserAgent } from '../http/user-agent.js';
 
 async function randomPort(prefer = undefined) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 function serve(options) {
     const { identity } = runtime();

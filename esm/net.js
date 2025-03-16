@@ -1,9 +1,6 @@
 import { asyncTask } from './async.js';
 import { isNodeLike, isDeno, isBun, isNode } from './env.js';
-import './bytes.js';
-import './error/Exception.js';
-import './external/event-target-polyfill/index.js';
-import { NotSupportedError } from './error/common.js';
+import { throwUnsupportedRuntimeError } from './error.js';
 import { TcpSocketStream, UnixSocketStream, UdpSocket, UdpSocketStream } from './net/types.js';
 import chan from './chan.js';
 
@@ -48,7 +45,7 @@ async function getMyIp() {
         return addr.hostname;
     }
     else {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 }
 /**
@@ -144,7 +141,7 @@ async function randomPort(prefer = undefined, hostname = undefined) {
         }
     }
     else {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 }
 function connect(options) {
@@ -311,7 +308,7 @@ async function connectTcp(options) {
         });
     }
     else {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 }
 async function connectUnix(options) {
@@ -403,7 +400,7 @@ async function connectUnix(options) {
         });
     }
     else {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 }
 async function nodeToSocket(socket) {
@@ -783,7 +780,7 @@ async function udpSocket(localAddress = {}) {
         });
     }
     else {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 }
 

@@ -7,13 +7,20 @@
  * @experimental
  */
 import { trimStart } from "./string.ts";
-import { isBrowserWindow, isBun, isDeno, isNodeLike, isSharedWorker, isDedicatedWorker } from "./env.ts";
+import {
+    isBrowserWindow,
+    isBun,
+    isDeno,
+    isNodeLike,
+    isSharedWorker,
+    isDedicatedWorker,
+} from "./env.ts";
 import runtime, { env, platform } from "./runtime.ts";
 import { interop } from "./module.ts";
 import { basename } from "./path.ts";
 import { PowerShellCommands } from "./cli/constants.ts";
 import { isWSL, quote } from "./cli/common.ts";
-import { NotSupportedError } from "./error.ts";
+import { NotSupportedError, throwUnsupportedRuntimeError } from "./error.ts";
 import { ensureFsTarget } from "./fs/util.ts";
 import { resolveHomeDir } from "./fs/util/server.ts";
 
@@ -116,7 +123,7 @@ export async function run(
             stderr: stderr.join(""),
         };
     } else {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 }
 
@@ -305,7 +312,7 @@ export async function edit(filename: string | URL): Promise<void> {
         || isSharedWorker
         || (isDedicatedWorker && (["chrome", "firefox", "safari"]).includes(runtime().identity))
     ) {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 
     const _platform = platform();

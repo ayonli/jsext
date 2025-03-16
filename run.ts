@@ -7,7 +7,7 @@
 import type { ChildProcess } from "node:child_process";
 import chan, { Channel } from "./chan.ts";
 import { isPlainObject } from "./object.ts";
-import { NotSupportedError, fromErrorEvent, fromObject } from "./error.ts";
+import { fromErrorEvent, fromObject, throwUnsupportedRuntimeError } from "./error.ts";
 import { cwd, isAbsolute, toFileUrl } from "./path.ts";
 import { isNode, isBun, isBrowserWindow } from "./env.ts";
 import { BunWorker, NodeWorker, CallRequest, CallResponse } from "./parallel/types.ts";
@@ -173,7 +173,7 @@ async function run<R, A extends any[] = any[]>(
     options?: RunOptions
 ): Promise<WorkerTask<R>> {
     if (!isNode && typeof Worker !== "function") {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 
     script = typeof script === "string" ? script : script.href;

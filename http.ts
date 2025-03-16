@@ -45,7 +45,7 @@ import { asyncTask } from "./async.ts";
 import bytes from "./bytes.ts";
 import { args, parseArgs } from "./cli.ts";
 import { isBun, isDeno, isNode } from "./env.ts";
-import { NotSupportedError } from "./error.ts";
+import { throwUnsupportedRuntimeError } from "./error.ts";
 import { FileInfo, createReadableStream, exists, readDir, readFile, stat } from "./fs.ts";
 import { sha256 } from "./hash.ts";
 import {
@@ -403,7 +403,7 @@ export function serve(options: ServeOptions): HttpServer {
                 listenFetchEvent({ ws, fetch: handle, onError, headers });
             }
         } else {
-            throw new NotSupportedError("Unsupported runtime");
+            throwUnsupportedRuntimeError();
         }
 
         return { http: server, hostname, port, controller };

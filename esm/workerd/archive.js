@@ -1,14 +1,12 @@
-export { FilenameTooLongError, default as Tarball } from '../archive/Tarball.js';
-import '../bytes.js';
-import '../error/Exception.js';
-import '../external/event-target-polyfill/index.js';
-import { NotImplementedError } from '../error/common.js';
+export { default as Tarball } from '../archive/Tarball.js';
+import { throwUnsupportedRuntimeError } from '../error.js';
+export { CorruptedArchiveError, FilenameTooLongError } from '../archive/errors.js';
 
 async function tar(src, dest = {}, options = {}) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 async function untar(src, dest = {}, options = {}) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export { tar, untar };

@@ -430,7 +430,7 @@ export function toAsyncIterable<T>(source: any, eventMap: {
             target.off(errEvent, handleClose);
         });
     } else {
-        throw new TypeError("The  source cannot be converted to an async iterable object.");
+        throw new TypeError("The source cannot be converted to an async iterable object.");
     }
 
     return {

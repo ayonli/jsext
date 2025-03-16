@@ -25,7 +25,7 @@ import { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike } f
 import type { WebSocket, WebSocketStream } from "./ws/client.ts";
 import type { WebSocketServer as WsServer } from "ws";
 import type { IncomingMessage } from "node:http";
-import { NotSupportedError } from "./error.ts";
+import { NotSupportedError, throwUnsupportedRuntimeError } from "./error.ts";
 
 export * from "./ws/client.ts";
 export type { ServerOptions, WebSocketConnection, WebSocketHandler, WebSocketLike };
@@ -36,6 +36,9 @@ const _clients = Symbol.for("clients");
 const _httpServer = Symbol.for("httpServer");
 const _wsServer = Symbol.for("wsServer");
 const _connTasks = Symbol.for("connTasks");
+
+const noNodeJSSupportError = new NotSupportedError(
+    "Node.js support is not implemented outside Node.js runtime.");
 
 /**
  * A unified WebSocket server interface for Node.js, Deno, Bun and Cloudflare
@@ -224,13 +227,13 @@ export class WebSocketServer {
 
         if (identity === "deno") {
             if ("socket" in request) {
-                throw new TypeError("Node.js support is not implemented outside Node.js runtime.");
+                throw noNodeJSSupportError;
             }
 
             return this.upgradeInDeno(request);
         } else if (identity === "bun") {
             if ("socket" in request) {
-                throw new TypeError("Node.js support is not implemented outside Node.js runtime.");
+                throw noNodeJSSupportError;
             }
 
             return this.upgradeInBun(request);
@@ -247,7 +250,7 @@ export class WebSocketServer {
 
             return this.upgradeInNode(request, isNodeRequest);
         } else {
-            throw new NotSupportedError("Unsupported runtime");
+            throwUnsupportedRuntimeError();
         }
     }
 

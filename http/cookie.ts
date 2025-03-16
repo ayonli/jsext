@@ -93,7 +93,7 @@ export function parseCookie(str: string): Cookie {
     const [nameValue, ...params] = str.split(";").map((part) => part.trim());
 
     if (!nameValue || !nameValue.includes("=")) {
-        throw new TypeError("Invalid Set-Cookie header");
+        throw new SyntaxError("Invalid Set-Cookie header");
     }
 
     const [name, value] = nameValue!.split("=");

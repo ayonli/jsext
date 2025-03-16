@@ -18,7 +18,7 @@
 function parseUserAgent(str) {
     var _a, _b, _c, _d, _e;
     if (!str)
-        throw new TypeError("The user agent string cannot be empty.");
+        throw new SyntaxError("The user agent string cannot be empty.");
     const ua = {
         name: "",
         version: undefined,

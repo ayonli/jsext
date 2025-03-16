@@ -1,8 +1,5 @@
 import { isDeno, isNodeLike, isBrowserWindow } from '../env.js';
-import '../bytes.js';
-import '../error/Exception.js';
-import '../external/event-target-polyfill/index.js';
-import { NotSupportedError } from '../error/common.js';
+import { throwUnsupportedRuntimeError } from '../error.js';
 
 /**
  * Opens the file picker dialog and pick a file, this function returns the
@@ -61,7 +58,7 @@ async function pickFile(options = {}) {
         const { pickFile } = await import('./cli/file.js');
         return await pickFile(options);
     }
-    throw new NotSupportedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 /**
  * Opens the file picker dialog and pick multiple files, this function returns
@@ -103,7 +100,7 @@ async function pickFiles(options = {}) {
         const { pickFiles } = await import('./cli/file.js');
         return await pickFiles(options);
     }
-    throw new NotSupportedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 /**
  * Opens the file picker dialog and pick a directory, this function returns the
@@ -131,7 +128,7 @@ async function pickDirectory(options = {}) {
         const { pickDirectory } = await import('./cli/file.js');
         return await pickDirectory(options);
     }
-    throw new NotSupportedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 /**
  * Opens the file picker dialog and selects a file to open.
@@ -171,7 +168,7 @@ async function openFile(options) {
         return await openFile(options);
     }
     else {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 }
 /**
@@ -212,7 +209,7 @@ async function openFiles(options = {}) {
         return await openFiles(options);
     }
     else {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 }
 /**
@@ -239,7 +236,7 @@ async function openDirectory(options = {}) {
         return await openDirectory(options);
     }
     else {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 }
 async function saveFile(file, options = {}) {
@@ -252,7 +249,7 @@ async function saveFile(file, options = {}) {
         return await saveFile(file, options);
     }
     else {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 }
 /**
@@ -279,7 +276,7 @@ async function downloadFile(url, options = {}) {
         return downloadFile(url, options);
     }
     else if (!isDeno && !isNodeLike || typeof fetch !== "function") {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
     const { downloadFile } = await import('./cli/file.js');
     return downloadFile(url, options);

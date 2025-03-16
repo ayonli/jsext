@@ -107,7 +107,7 @@ class Channel {
      */
     send(data) {
         if (this.state !== 1) {
-            throw new Error("the channel is closed");
+            throw new TypeError("the channel is closed");
         }
         else if (this.consumers.length) {
             const consume = this.consumers.shift();
@@ -279,7 +279,7 @@ function wireChannel(channel, channelWrite) {
                     if (record) {
                         const channel = record.channel;
                         if (channel["state"] !== 1) {
-                            throw new Error("the channel is closed");
+                            throw new TypeError("the channel is closed");
                         }
                         const write = record.writers[record.counter++ % record.writers.length];
                         await Promise.resolve(write("send", data, channelId));
@@ -564,6 +564,31 @@ Object.defineProperty(Exception.prototype, "name", {
     },
 });
 
+/**
+ * This module includes some common errors that can be used in the application.
+ * @module
+ */
+/**
+ * This error indicates that the requested function or feature is not supported
+ * by the current environment.
+ *
+ * NOTE: This error has an HTTP-compatible code of `405`.
+ */
+class NotSupportedError extends Exception {
+    constructor(message, options = {}) {
+        super(message, { ...options, name: "NotSupportedError", code: 405 });
+    }
+}
+/**
+ * This error indicates that the connection between the client and the server
+ * cannot be established.
+ */
+class NetworkError extends Exception {
+    constructor(message, options = {}) {
+        super(message, { ...options, name: "NetworkError" });
+    }
+}
+
 var _a;
 if (typeof globalThis.Event !== "function") {
     // @ts-ignore
@@ -678,31 +703,6 @@ if (typeof globalThis.EventTarget !== "function") {
             return !event.defaultPrevented;
         }
     };
-}
-
-/**
- * This module includes some common errors that can be used in the application.
- * @module
- */
-/**
- * This error indicates that the requested function or feature is not supported
- * by the current environment.
- *
- * NOTE: This error has an HTTP-compatible code of `405`.
- */
-class NotSupportedError extends Exception {
-    constructor(message, options = {}) {
-        super(message, { ...options, name: "NotSupportedError", code: 405 });
-    }
-}
-/**
- * This error indicates that the connection between the client and the server
- * cannot be established.
- */
-class NetworkError extends Exception {
-    constructor(message, options = {}) {
-        super(message, { ...options, name: "NetworkError" });
-    }
 }
 
 /**

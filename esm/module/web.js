@@ -1,8 +1,8 @@
 import { isDedicatedWorker, isSharedWorker, isBrowserWindow } from '../env.js';
 import '../bytes.js';
 import '../error/Exception.js';
-import '../external/event-target-polyfill/index.js';
 import { NotSupportedError, NetworkError } from '../error/common.js';
+import '../external/event-target-polyfill/index.js';
 import { extname } from '../path.js';
 import { getObjectURL } from './util.js';
 import { equals } from '../path/util.js';

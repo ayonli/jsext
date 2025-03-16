@@ -282,7 +282,7 @@ export default class Tarball {
 
     constructor() {
         if (typeof ReadableStream === "undefined") {
-            throw new TypeError("ReadableStream is not supported in this environment.");
+            throw new NotSupportedError("ReadableStream is not supported in this environment.");
         }
     }
 
@@ -351,7 +351,8 @@ export default class Tarball {
                 throw new TypeError("size must be provided for ReadableStream data.");
             }
         } else {
-            throw new TypeError("data must be a string, Uint8Array, ArrayBuffer, ArrayBufferView, Blob, or ReadableStream.");
+            throw new TypeError(
+                "data must be a string, Uint8Array, ArrayBuffer, ArrayBufferView, Blob, or ReadableStream.");
         }
 
         const kind = info.kind ?? "file";

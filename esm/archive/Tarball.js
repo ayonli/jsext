@@ -6,6 +6,7 @@ import '../external/event-target-polyfill/index.js';
 import { basename, dirname } from '../path.js';
 import { toReadableStream, concat } from '../reader.js';
 import { stripEnd } from '../string.js';
+import { CorruptedArchiveError } from './errors.js';
 
 var _a, _b;
 const _stream = Symbol.for("stream");
@@ -58,6 +59,7 @@ const USTarFileHeaderFieldLengths = {
 const initialChecksum = 8 * 32;
 const filenameTooLongError = new FilenameTooLongError("UStar format does not allow a long file name (length of [file name"
     + "prefix] + / + [file name] must be shorter than 256 bytes)");
+const corruptedArchiveError = new CorruptedArchiveError("The archive is corrupted");
 function toFixedOctal(num, bytes) {
     return num.toString(8).padStart(bytes, "0");
 }
@@ -95,7 +97,7 @@ function parseHeader(header) {
             // EOF
             return null;
         }
-        throw new Error("The archive is corrupted");
+        throw corruptedArchiveError;
     }
     if (!data.magic.startsWith("ustar")) {
         throw new TypeError("Unsupported archive format: " + data.magic);
@@ -173,7 +175,7 @@ class Tarball {
         this[_a] = [];
         this[_b] = false;
         if (typeof ReadableStream === "undefined") {
-            throw new TypeError("ReadableStream is not supported in this environment.");
+            throw new NotSupportedError("ReadableStream is not supported in this environment.");
         }
     }
     constructEntry(relativePath, data, info) {
@@ -583,7 +585,7 @@ class Tarball {
                 }
             }
             if (lastChunk.byteLength) {
-                throw new Error("The archive is corrupted");
+                throw corruptedArchiveError;
             }
             return tarball;
         }
@@ -593,5 +595,5 @@ class Tarball {
     }
 }
 
-export { FilenameTooLongError, HEADER_LENGTH, _entries, createEntry, Tarball as default, parseHeader };
+export { FilenameTooLongError, HEADER_LENGTH, _entries, corruptedArchiveError, createEntry, Tarball as default, parseHeader };
 //# sourceMappingURL=Tarball.js.map

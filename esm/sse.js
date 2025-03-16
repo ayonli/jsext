@@ -3,8 +3,8 @@ import { fixStringTag, getReadonly, setReadonly } from './class/util.js';
 import { isBun, isDeno } from './env.js';
 import './bytes.js';
 import './error/Exception.js';
-import { createCloseEvent, createErrorEvent } from './event.js';
 import { NetworkError } from './error/common.js';
+import { createCloseEvent, createErrorEvent } from './event.js';
 import runtime, { customInspect } from './runtime.js';
 import { try_ } from './result.js';
 

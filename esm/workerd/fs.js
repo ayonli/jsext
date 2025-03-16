@@ -1,24 +1,22 @@
-import '../bytes.js';
-import '../error/Exception.js';
-import '../external/event-target-polyfill/index.js';
-import { NotImplementedError, NotFoundError } from '../error/common.js';
+import { throwUnsupportedRuntimeError } from '../error.js';
 import { getMIME } from '../filetype.js';
 import { makeTree } from '../fs/util.js';
 import { join, basename, extname } from '../path.js';
 import { readAsArray, readAsArrayBuffer } from '../reader.js';
 export { BusyError, FileTooLargeError, FilesystemLoopError, InterruptedError, InvalidOperationError, IsDirectoryError, NotDirectoryError } from '../fs/errors.js';
 import { isFileUrl } from '../path/util.js';
+import { NotFoundError } from '../error/common.js';
 
 const EOL = "\n";
 async function getDirHandle(path, options = {}) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 async function getFileHandle(path, options = {}) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 function ensureFsTarget(path) {
     if (path instanceof URL || (typeof path === "string" && isFileUrl(path))) {
-        throw new TypeError("URL is not supported.");
+        throw new NotSupportedError("File URL is not supported in this runtime.");
     }
     else {
         return path;
@@ -114,10 +112,10 @@ async function stat(target, options = {}) {
     }
 }
 async function mkdir(path, options = {}) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 async function ensureDir(path, options = {}) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 async function* readDir(target, options = {}) {
     void getKVStore(options);
@@ -231,28 +229,28 @@ async function readFileAsFile(target, options = {}) {
     return file;
 }
 async function writeFile(target, data, options = {}) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 async function writeLines(target, lines, options = {}) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 async function truncate(target, size = 0, options = {}) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 async function remove(path, options = {}) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 async function rename(oldPath, newPath, options = {}) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 async function copy(src, dest, options = {}) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 async function link(src, dest, options = {}) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 async function readLink(path) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 async function chmod(path, mode) {
 }
@@ -261,10 +259,10 @@ async function chown(path, uid, gid) {
 async function utimes(path, atime, mtime) {
 }
 function createReadableStream(target, options = {}) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 function createWritableStream(target, options = {}) {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export { EOL, chmod, chown, copy, createReadableStream, createWritableStream, ensureDir, exists, getDirHandle, getFileHandle, link, mkdir, readDir, readFile, readFileAsFile, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };

@@ -1,8 +1,8 @@
 import { getReadonly, setReadonly } from '../class/util.js';
 import '../bytes.js';
 import '../error/Exception.js';
-import '../external/event-target-polyfill/index.js';
 import { NotSupportedError, NetworkError } from '../error/common.js';
+import '../external/event-target-polyfill/index.js';
 import { WebSocketConnection } from './base.js';
 
 /**

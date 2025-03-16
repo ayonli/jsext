@@ -56,7 +56,7 @@
 
 import bytes from "./bytes.ts";
 import { isDeno, isNodeLike } from "./env.ts";
-import { Exception, NotSupportedError } from "./error.ts";
+import { Exception, throwUnsupportedRuntimeError } from "./error.ts";
 import { getMIME } from "./filetype.ts";
 import { InvalidOperationError, NotDirectoryError } from "./fs/errors.ts";
 import type { FileInfo, DirEntry, FileSystemOptions, DirTree } from "./fs/types.ts";
@@ -1296,7 +1296,7 @@ export async function link(
             await rawOp(fs.link(src, dest));
         }
     } else {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 }
 
@@ -1323,7 +1323,7 @@ export async function readLink(path: string | URL): Promise<string> {
         const fs = await import("node:fs/promises");
         return await rawOp(fs.readlink(path));
     } else {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 }
 

@@ -1,7 +1,7 @@
 import '../bytes.js';
 import '../error/Exception.js';
-import { createErrorEvent, createCloseEvent } from '../event.js';
 import { NotSupportedError } from '../error/common.js';
+import { createErrorEvent, createCloseEvent } from '../event.js';
 import { WebSocketConnection } from '../ws/base.js';
 export { WebSocket, WebSocketStream, toWebSocketStream } from '../ws/client.js';
 

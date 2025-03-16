@@ -1,9 +1,6 @@
 import bytes from './bytes.js';
 import { isDeno, isNodeLike } from './env.js';
-import { as } from './object.js';
-import Exception from './error/Exception.js';
-import './external/event-target-polyfill/index.js';
-import { NotSupportedError } from './error/common.js';
+import { throwUnsupportedRuntimeError } from './error.js';
 import { getMIME } from './filetype.js';
 import { InvalidOperationError, NotDirectoryError } from './fs/errors.js';
 export { BusyError, FileTooLargeError, FilesystemLoopError, InterruptedError, IsDirectoryError } from './fs/errors.js';
@@ -11,9 +8,11 @@ import { ensureFsTarget, rawOp, fixDirEntry, wrapFsError, makeTree } from './fs/
 import { resolveHomeDir } from './fs/util/server.js';
 import { stat as stat$1, mkdir as mkdir$1, readDir as readDir$1, readFile as readFile$1, readFileAsFile as readFileAsFile$1, writeFile as writeFile$1, truncate as truncate$1, remove as remove$1, rename as rename$1, copy as copy$1, createReadableStream as createReadableStream$1, createWritableStream as createWritableStream$1 } from './fs/web.js';
 export { getDirHandle, getFileHandle } from './fs/web.js';
+import { as } from './object.js';
 import { basename, extname, join } from './path.js';
 import { readAsArray, readAsText } from './reader.js';
 import { platform } from './runtime.js';
+import Exception from './error/Exception.js';
 import { resolveByteStream } from './reader/util.js';
 
 /**
@@ -996,7 +995,7 @@ async function link(src, dest, options = {}) {
         }
     }
     else {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 }
 /**
@@ -1023,7 +1022,7 @@ async function readLink(path) {
         return await rawOp(fs.readlink(path));
     }
     else {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 }
 /**

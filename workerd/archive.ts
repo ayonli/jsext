@@ -1,8 +1,8 @@
 import Tarball, { type TarEntry, type TarTree } from "../archive/Tarball.ts";
 import type { TarOptions } from "../archive/tar.ts";
 import type { UntarOptions } from "../archive/untar.ts";
+import { throwUnsupportedRuntimeError } from "../error.ts";
 import type { FileSystemOptions } from "../fs/types.ts";
-import { NotImplementedError } from "../error.ts";
 
 export * from "../archive/errors.ts";
 export { Tarball };
@@ -23,7 +23,7 @@ export async function tar(
     options: TarOptions = {}
 ): Promise<Tarball | void> {
     void src, dest, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export function untar(
@@ -41,5 +41,5 @@ export async function untar(
     options: UntarOptions = {}
 ): Promise<Tarball | void> {
     void src, dest, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }

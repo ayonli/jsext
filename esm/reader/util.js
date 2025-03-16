@@ -325,7 +325,7 @@ function toAsyncIterable(source, eventMap = undefined) {
         });
     }
     else {
-        throw new TypeError("The  source cannot be converted to an async iterable object.");
+        throw new TypeError("The source cannot be converted to an async iterable object.");
     }
     return {
         [Symbol.asyncIterator]: channel[Symbol.asyncIterator].bind(channel),

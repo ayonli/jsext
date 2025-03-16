@@ -6,6 +6,7 @@
 import { Constructor } from "./types.ts";
 import { isPlainObject, omit } from "./object.ts";
 import Exception, { type ExceptionOptions } from "./error/Exception.ts";
+import { NotSupportedError } from "./error/common.ts";
 import { createErrorEvent } from "./event.ts";
 
 export { Exception };
@@ -323,6 +324,11 @@ export function isAggregateError(value: unknown): boolean {
     // @ts-ignore
     return (typeof AggregateError === "function" && value instanceof AggregateError)
         || (value instanceof Error && value.constructor.name === "AggregateError");
+}
+
+/** @inner */
+export function throwUnsupportedRuntimeError(): never {
+    throw new NotSupportedError("Unsupported runtime");
 }
 
 /**

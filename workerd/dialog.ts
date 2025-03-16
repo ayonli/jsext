@@ -9,7 +9,7 @@ import type {
     PromptOptions,
     SaveFileOptions,
 } from "../dialog.ts";
-import { NotImplementedError } from "../error.ts";
+import { throwUnsupportedRuntimeError } from "../error.ts";
 
 export type {
     DialogOptions,
@@ -25,12 +25,12 @@ export type {
 
 export async function alert(message: string, options: DialogOptions = {}): Promise<void> {
     void message, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function confirm(message: string, options: DialogOptions = {}): Promise<boolean> {
     void message, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function prompt(
@@ -43,7 +43,7 @@ export async function prompt(
     options: string | PromptOptions = ""
 ): Promise<string | null> {
     void message, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function progress<T>(
@@ -52,45 +52,45 @@ export async function progress<T>(
     onAbort: ProgressAbortHandler<T> | undefined = undefined
 ): Promise<T | null> {
     void message, fn, onAbort;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function pickFile(
     options: PickFileOptions = {}
 ): Promise<string | FileSystemFileHandle | null> {
     void options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function pickFiles(
     options: FileDialogOptions = {}
 ): Promise<string[] | FileSystemFileHandle[]> {
     void options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function pickDirectory(
     options: Pick<FileDialogOptions, "title"> = {}
 ): Promise<string | FileSystemDirectoryHandle | null> {
     void options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export function openFile(options?: FileDialogOptions): Promise<File | null> {
     void options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function openFiles(options: FileDialogOptions = {}): Promise<File[]> {
     void options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function openDirectory(
     options: Pick<FileDialogOptions, "title"> = {}
 ): Promise<File[]> {
     void options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function saveFile(file: File, options?: Pick<SaveFileOptions, "title">): Promise<void>;
@@ -103,7 +103,7 @@ export async function saveFile(
     options: SaveFileOptions = {}
 ): Promise<void> {
     void file, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function downloadFile(
@@ -111,5 +111,5 @@ export async function downloadFile(
     options: DownloadFileOptions = {}
 ): Promise<void> {
     void url, options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }

@@ -1,5 +1,5 @@
 import { connect as _connect } from "cloudflare:sockets";
-import { NotImplementedError } from "../error.ts";
+import { throwUnsupportedRuntimeError } from "../error.ts";
 import {
     TcpConnectOptions,
     TcpSocketStream,
@@ -14,7 +14,7 @@ import {
 export type * from "../net/types.ts";
 
 export async function getMyIp(): Promise<string> {
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function randomPort(
@@ -22,7 +22,7 @@ export async function randomPort(
     hostname: string | undefined = undefined
 ): Promise<number> {
     void prefer, hostname;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }
 
 export async function connect(options: TcpConnectOptions): Promise<TcpSocketStream>;
@@ -32,9 +32,9 @@ export async function connect(
     options: TcpConnectOptions | UnixConnectOptions | UdpConnectOptions
 ): Promise<TcpSocketStream | UnixSocketStream | UdpSocketStream> {
     if ("path" in options) {
-        throw new TypeError("Unix domain socket is not supported in this runtime.");
+        throw new NotSupportedError("Unix domain socket is not supported in this runtime.");
     } else if (options.transport === "udp") {
-        throw new TypeError("UDP socket is not supported in this runtime.");
+        throw new NotSupportedError("UDP socket is not supported in this runtime.");
     }
 
     const { tls = false, ..._options } = options;
@@ -78,5 +78,5 @@ export async function connect(
 
 export async function udpSocket(options: UdpBindOptions): Promise<UdpSocket> {
     void options;
-    throw new NotImplementedError("Unsupported runtime");
+    throwUnsupportedRuntimeError();
 }

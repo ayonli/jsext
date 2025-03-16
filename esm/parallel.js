@@ -1,9 +1,6 @@
 import { ThenableAsyncGenerator } from './external/thenable-generator/index.js';
 import chan from './chan.js';
-import './bytes.js';
-import './error/Exception.js';
-import './external/event-target-polyfill/index.js';
-import { NotSupportedError } from './error/common.js';
+import { throwUnsupportedRuntimeError } from './error.js';
 import { serial } from './number.js';
 import { toFileUrl, cwd } from './path.js';
 import { asyncTask } from './async.js';
@@ -336,7 +333,7 @@ function extractBaseUrl(stackTrace) {
  */
 function parallel(module) {
     if (!isNode && typeof Worker !== "function") {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
     let modId = sanitizeModuleId(module, true);
     let baseUrl;

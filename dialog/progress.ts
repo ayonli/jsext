@@ -1,5 +1,5 @@
 import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
-import { NotSupportedError } from "../error.ts";
+import { throwUnsupportedRuntimeError } from "../error.ts";
 
 export type ProgressState = {
     /**
@@ -95,6 +95,6 @@ export default async function progress<T>(
         const { default: progress } = await import("./cli/progress.ts");
         return await progress(message, fn, onAbort);
     } else {
-        throw new NotSupportedError("Unsupported runtime");
+        throwUnsupportedRuntimeError();
     }
 }

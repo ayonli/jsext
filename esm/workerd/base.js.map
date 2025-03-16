@@ -1,0 +1,1 @@
+{"version":3,"file":"base.js","sources":["../../workerd/base.ts"],"sourcesContent":["export const unsupportedRuntimeError = new NotImplementedError(\"Unsupported runtime\");\n//# sourceMappingURL=base.js.map"],"names":[],"mappings":"AAAY,MAAC,uBAAuB,GAAG,IAAI,mBAAmB,CAAC,qBAAqB;;;;"}
