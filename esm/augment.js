@@ -9,9 +9,8 @@ import './augment/promise.js';
 import './augment/collections.js';
 import './augment/error.js';
 import './augment/json.js';
-import './augment/pipe.js';
 import './augment/types.js';
 import { customInspect } from './runtime.js';
 
-Object.defineProperty(Symbol, "customInspec", { value: customInspect });
+Object.defineProperty(Symbol, "customInspect", { value: customInspect });
 //# sourceMappingURL=augment.js.map

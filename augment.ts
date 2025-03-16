@@ -9,8 +9,7 @@ import "./augment/promise.ts";
 import "./augment/collections.ts";
 import "./augment/error.ts";
 import "./augment/json.ts";
-import "./augment/pipe.ts";
 import "./augment/types.ts";
 import { customInspect } from "./runtime.ts";
 
-Object.defineProperty(Symbol, "customInspec", { value: customInspect });
+Object.defineProperty(Symbol, "customInspect", { value: customInspect });
