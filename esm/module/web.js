@@ -17,7 +17,10 @@ function interop(module, strict = undefined) {
         return module.then(mod => interop(mod, strict));
     }
     else if (typeof module === "object" && module !== null && !Array.isArray(module)) {
-        if (typeof module["default"] === "object" &&
+        if (typeof module["module.exports"] !== "undefined") {
+            return module["module.exports"];
+        }
+        else if (typeof module["default"] === "object" &&
             module["default"] !== null &&
             !Array.isArray(module["default"])) {
             const hasEsModule = module["__esModule"] === true
@@ -28,14 +31,13 @@ function interop(module, strict = undefined) {
             else if (strict) {
                 return module;
             }
+            const exportNames = (x) => x !== "default" && x !== "__esModule";
             const moduleKeys = Object.getOwnPropertyNames(module)
-                .filter(x => x !== "default" && x !== "__esModule").sort();
+                .filter(exportNames).sort();
             const defaultKeys = Object.getOwnPropertyNames(module["default"])
-                .filter(x => x !== "default" && x !== "__esModule").sort();
-            if (String(moduleKeys) === String(defaultKeys)) {
-                return module["default"];
-            }
-            else if (strict === false && !moduleKeys.length) {
+                .filter(exportNames).sort();
+            if (String(moduleKeys) === String(defaultKeys) ||
+                (strict === false && !moduleKeys.length)) {
                 return module["default"];
             }
         }

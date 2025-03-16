@@ -71,7 +71,9 @@ export function interop<T extends { [x: string]: any; }>(
     } else if (module instanceof Promise) {
         return module.then(mod => interop(mod, strict)) as Promise<T>;
     } else if (typeof module === "object" && module !== null && !Array.isArray(module)) {
-        if (typeof module["default"] === "object" &&
+        if (typeof module["module.exports"] !== "undefined") {
+            return module["module.exports"];
+        } else if (typeof module["default"] === "object" &&
             module["default"] !== null &&
             !Array.isArray(module["default"])
         ) {
@@ -84,14 +86,15 @@ export function interop<T extends { [x: string]: any; }>(
                 return module;
             }
 
+            const exportNames = (x: string) => x !== "default" && x !== "__esModule";
             const moduleKeys = Object.getOwnPropertyNames(module)
-                .filter(x => x !== "default" && x !== "__esModule").sort();
+                .filter(exportNames).sort();
             const defaultKeys = Object.getOwnPropertyNames(module["default"])
-                .filter(x => x !== "default" && x !== "__esModule").sort();
+                .filter(exportNames).sort();
 
-            if (String(moduleKeys) === String(defaultKeys)) {
-                return module["default"];
-            } else if (strict === false && !moduleKeys.length) {
+            if (String(moduleKeys) === String(defaultKeys) ||
+                (strict === false && !moduleKeys.length)
+            ) {
                 return module["default"];
             }
         }
