@@ -5,7 +5,14 @@ import { chmod, createReadableStream, createWritableStream, ensureDir, stat, uti
 import { ensureFsTarget, makeTree } from "../fs/util.ts";
 import { basename, dirname, isFileUrl, join, resolve, toFsPath } from "../path.ts";
 import { platform } from "../runtime.ts";
-import Tarball, { HEADER_LENGTH, TarEntry, TarTree, createEntry, parseHeader } from "./Tarball.ts";
+import Tarball, {
+    HEADER_LENGTH,
+    TarEntry,
+    TarTree,
+    corruptedArchiveError,
+    createEntry,
+    parseHeader,
+} from "./Tarball.ts";
 import { TarOptions } from "./tar.ts";
 
 /**
@@ -227,7 +234,7 @@ export default async function untar(
         }
 
         if (lastChunk.byteLength) {
-            throw new Error("The archive is corrupted");
+            throw corruptedArchiveError;
         } else if (totalBytes && totalWrittenBytes < totalBytes && options.onProgress) {
             totalWrittenBytes = totalBytes;
             options.onProgress(createProgressEvent("progress", {

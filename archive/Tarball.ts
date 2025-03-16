@@ -6,6 +6,7 @@ import { basename, dirname } from "../path.ts";
 import { concat as concatStreams, toReadableStream } from "../reader.ts";
 import { stripEnd } from "../string.ts";
 import { RequiredKeys } from "../types.ts";
+import { CorruptedArchiveError } from "./errors.ts";
 
 const _stream = Symbol.for("stream");
 const _bodyUsed = Symbol.for("bodyUsed");
@@ -148,6 +149,8 @@ const filenameTooLongError = new FilenameTooLongError(
     + "prefix] + / + [file name] must be shorter than 256 bytes)"
 );
 
+export const corruptedArchiveError = new CorruptedArchiveError("The archive is corrupted");
+
 function toFixedOctal(num: number, bytes: number): string {
     return num.toString(8).padStart(bytes, "0");
 }
@@ -195,7 +198,7 @@ export function parseHeader(header: Uint8Array): [USTarFileHeader, header: Uint8
             return null;
         }
 
-        throw new Error("The archive is corrupted");
+        throw corruptedArchiveError;
     }
 
     if (!data.magic.startsWith("ustar")) {
@@ -758,7 +761,7 @@ export default class Tarball {
             }
 
             if (lastChunk.byteLength) {
-                throw new Error("The archive is corrupted");
+                throw corruptedArchiveError;
             }
 
             return tarball;
