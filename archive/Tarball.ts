@@ -1,27 +1,14 @@
 import bytes, { concat as concatBytes } from "../bytes.ts";
 import { makeTree } from "../fs/util.ts";
-import { Exception } from "../error.ts";
 import { omit } from "../object.ts";
 import { basename, dirname } from "../path.ts";
 import { concat as concatStreams, toReadableStream } from "../reader.ts";
 import { stripEnd } from "../string.ts";
 import { RequiredKeys } from "../types.ts";
-import { CorruptedArchiveError } from "./errors.ts";
+import { CorruptedArchiveError, FilenameTooLongError } from "./errors.ts";
 
 const _stream = Symbol.for("stream");
 const _bodyUsed = Symbol.for("bodyUsed");
-
-/**
- * This error indicates that the filename is too long to be resolved by the file
- * system.
- * 
- * NOTE: This error has an HTTP-compatible code of `414`.
- */
-export class FilenameTooLongError extends Exception {
-    constructor(message: string, options: ErrorOptions = {}) {
-        super(message, { ...options, name: "FilenameTooLongError", code: 414 });
-    }
-}
 
 /**
  * Information about a file in a tar archive.
