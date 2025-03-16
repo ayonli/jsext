@@ -132,10 +132,17 @@ export interface TypedArray {
     [Symbol.iterator](): IterableIterator<number>;
 }
 
-/** A real-array-like object is an array-like object with a `slice` method. */
-export interface RealArrayLike<T> extends ArrayLike<T> {
-    slice(start?: number, end?: number): RealArrayLike<T>;
+/**
+ * A sequence is an array-like object that can be sliced.
+ */
+export interface Sequence<T> extends ArrayLike<T> {
+    slice(start?: number, end?: number): Sequence<T>;
 }
+
+/**
+ * @deprecated Use {@link Sequence} instead.
+ */
+export type RealArrayLike<T> = Sequence<T>;
 
 /**
  * Constructs a type by making the specified keys optional.
@@ -210,13 +217,36 @@ export interface Comparable {
 
 /**
  * This utility type is used to convert an interface to a plain object type,
- * which will remove all non-enumerable members.
+ * which will remove all non-symbol members.
  * 
  * NOTE: This type is experimental, use it with caution.
  * @experimental
  */
-export type ToDict<T> = Pick<T, EnumerableKeys<T>>;
+export type ToDict<T> = Omit<T, SymbolKeys<T>>;
 
-export type EnumerableKeys<T> = {
-    [K in keyof T]: K extends symbol ? never : K;
+type SymbolKeys<T> = {
+    [K in keyof T]: K extends symbol ? K : never;
 }[keyof T];
+
+declare const __brand: unique symbol;
+/**
+ * Creates a unique type from the given type `T` with a brand, which can be used
+ * to enhance type safety in TypeScript.
+ * 
+ * @example
+ * ```ts
+ * import { Branded } from "@ayonli/jsext/types";
+ * 
+ * type Email = Branded<string, "Email">;
+ * 
+ * function assertAcceptable(email: Email): never {
+ *     // ...
+ * }
+ * 
+ * const email = "the@ayon.li" as Email;
+ * assertAcceptable(email); // OK
+ * 
+ * assertAcceptable("the@ayon.li") // Error
+ * ```
+ */
+export type Branded<T, B> = T & { [__brand]: B; };

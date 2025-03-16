@@ -6,7 +6,6 @@
 import { isSubclassOf } from "./class.ts";
 import { random as rand } from "./number.ts";
 import {
-    count as _count,
     equals as _equals,
     includeSlice as _includesSlice,
     startsWith as _startsWith,
@@ -81,7 +80,15 @@ export function random<T>(arr: T[], remove = false): T | undefined {
  * ```
  */
 export function count<T>(arr: T[], item: T): number {
-    return _count(arr, item);
+    let count = 0;
+
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i] === item) {
+            count++;
+        }
+    }
+
+    return count;
 }
 
 /**

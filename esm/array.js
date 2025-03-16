@@ -1,6 +1,6 @@
 import { isSubclassOf } from './class.js';
 import { random as random$1 } from './number.js';
-import { count as count$1, equals as equals$1, includeSlice, startsWith as startsWith$1, endsWith as endsWith$1, split as split$1, chunk as chunk$1 } from './array/base.js';
+import { equals as equals$1, includeSlice, startsWith as startsWith$1, endsWith as endsWith$1, split as split$1, chunk as chunk$1 } from './array/base.js';
 
 /**
  * Functions for dealing with arrays.
@@ -70,7 +70,13 @@ function random(arr, remove = false) {
  * ```
  */
 function count(arr, item) {
-    return count$1(arr, item);
+    let count = 0;
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i] === item) {
+            count++;
+        }
+    }
+    return count;
 }
 /**
  * Performs a shallow compare to another array and see if it contains the same elements as

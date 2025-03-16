@@ -126,10 +126,17 @@ declare global {
         [Symbol.iterator](): IterableIterator<number>;
     }
 
-    /** A real-array-like object is an array-like object with a `slice` method. */
-    interface RealArrayLike<T> extends ArrayLike<T> {
-        slice(start?: number, end?: number): RealArrayLike<T>;
+    /**
+     * A sequence is an array-like object that can be sliced.
+     */
+    interface Sequence<T> extends ArrayLike<T> {
+        slice(start?: number, end?: number): Sequence<T>;
     }
+
+    /**
+     * @deprecated Use {@link Sequence} instead.
+     */
+    type RealArrayLike<T> = Sequence<T>;
 
     /**
      * Constructs a type by making the specified keys optional.
@@ -181,6 +188,58 @@ declare global {
         : T extends BigInt ? bigint
         : T extends Symbol ? symbol
         : T;
+
+    /**
+     * The `Comparable` interface is used to compare an object of the same class
+     * with an instance of that class, it provides ordering of data for objects of
+     * the user-defined class.
+     * 
+     * This interface is inspired by Java's `Comparable` interface.
+     */
+    interface Comparable {
+        /**
+         * Compares this object with another object for order. Returns `-1` if this
+         * object is less than the other object, `0` if they are equal, and `1` if
+         * this object is greater than the other object.
+         */
+        compareTo(other: this): -1 | 0 | 1;
+    }
+
+    /**
+     * This utility type is used to convert an interface to a plain object type,
+     * which will remove all non-symbol members.
+     * 
+     * NOTE: This type is experimental, use it with caution.
+     * @experimental
+     */
+    type ToDict<T> = Omit<T, SymbolKeys<T>>;
+
+    type SymbolKeys<T> = {
+        [K in keyof T]: K extends symbol ? K : never;
+    }[keyof T];
+
+    const __brand: unique symbol;
+    /**
+     * Creates a unique type from the given type `T` with a brand, which can be used
+     * to enhance type safety in TypeScript.
+     * 
+     * @example
+     * ```ts
+     * import { Branded } from "@ayonli/jsext/types";
+     * 
+     * type Email = Branded<string, "Email">;
+     * 
+     * function assertAcceptable(email: Email): never {
+     *     // ...
+     * }
+     * 
+     * const email = "the@ayon.li" as Email;
+     * assertAcceptable(email); // OK
+     * 
+     * assertAcceptable("the@ayon.li") // Error
+     * ```
+     */
+    type Branded<T, B> = T & { [__brand]: B; };
 }
 
 // @ts-ignore

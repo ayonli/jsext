@@ -1,16 +1,6 @@
-/** Counts the occurrence of the element in the array-like object. */
-function count(arr, item) {
-    let count = 0;
-    for (let i = 0; i < arr.length; i++) {
-        if (arr[i] === item) {
-            count++;
-        }
-    }
-    return count;
-}
 /**
- * Performs a shallow compare to another array and see if it contains the same elements as
- * this array-like object.
+ * Performs a shallow compare to another sequence and see if it contains the same elements as
+ * this sequence.
  */
 function equals(arr1, arr2) {
     if (arr1 === arr2) {
@@ -26,7 +16,7 @@ function equals(arr1, arr2) {
     }
     return true;
 }
-/** Checks if the array-like object contains another array as a slice of its contents. */
+/** Checks if the sequence contains another sequence as a slice of its contents. */
 function includeSlice(arr, slice) {
     if (arr === slice || !slice.length) {
         return true;
@@ -49,7 +39,7 @@ function includeSlice(arr, slice) {
     }
     return false;
 }
-/** Checks if the array-like object starts with the given prefix. */
+/** Checks if the sequence starts with the given prefix. */
 function startsWith(arr, prefix) {
     if (arr === prefix || !prefix.length) {
         return true;
@@ -66,7 +56,7 @@ function startsWith(arr, prefix) {
     }
     return true;
 }
-/** Checks if the array-like object ends with the given suffix. */
+/** Checks if the sequence ends with the given suffix. */
 function endsWith(arr, suffix) {
     if (arr === suffix || !suffix.length) {
         return true;
@@ -84,7 +74,7 @@ function endsWith(arr, suffix) {
     }
     return true;
 }
-/** Breaks the array-like object into smaller chunks according to the given delimiter. */
+/** Breaks the sequence into smaller chunks according to the given delimiter. */
 function split(arr, delimiter) {
     const chunks = [];
     const limit = arr.length;
@@ -109,7 +99,7 @@ function split(arr, delimiter) {
     }
     return chunks;
 }
-/** Breaks the array-like object into smaller chunks according to the given length. */
+/** Breaks the sequence into smaller chunks according to the given length. */
 function chunk(arr, length) {
     const limit = arr.length;
     const size = Math.ceil(limit / length);
@@ -124,5 +114,5 @@ function chunk(arr, length) {
     return chunks;
 }
 
-export { chunk, count, endsWith, equals, includeSlice, split, startsWith };
+export { chunk, endsWith, equals, includeSlice, split, startsWith };
 //# sourceMappingURL=base.js.map

@@ -1,23 +1,10 @@
-import { RealArrayLike } from "../types.ts";
-
-/** Counts the occurrence of the element in the array-like object. */
-export function count<T>(arr: RealArrayLike<T>, item: T): number {
-    let count = 0;
-
-    for (let i = 0; i < arr.length; i++) {
-        if (arr[i] === item) {
-            count++;
-        }
-    }
-
-    return count;
-}
+import { Sequence } from "../types.ts";
 
 /**
- * Performs a shallow compare to another array and see if it contains the same elements as
- * this array-like object.
+ * Performs a shallow compare to another sequence and see if it contains the same elements as
+ * this sequence.
  */
-export function equals<T>(arr1: RealArrayLike<T>, arr2: RealArrayLike<T>): boolean {
+export function equals<T>(arr1: Sequence<T>, arr2: Sequence<T>): boolean {
     if (arr1 === arr2) {
         return true;
     } else if (arr1.length !== arr2.length) {
@@ -33,8 +20,8 @@ export function equals<T>(arr1: RealArrayLike<T>, arr2: RealArrayLike<T>): boole
     return true;
 }
 
-/** Checks if the array-like object contains another array as a slice of its contents. */
-export function includeSlice<T>(arr: RealArrayLike<T>, slice: RealArrayLike<T>): boolean {
+/** Checks if the sequence contains another sequence as a slice of its contents. */
+export function includeSlice<T>(arr: Sequence<T>, slice: Sequence<T>): boolean {
     if (arr === slice || !slice.length) {
         return true;
     }
@@ -63,8 +50,8 @@ export function includeSlice<T>(arr: RealArrayLike<T>, slice: RealArrayLike<T>):
     return false;
 }
 
-/** Checks if the array-like object starts with the given prefix. */
-export function startsWith<T>(arr: RealArrayLike<T>, prefix: RealArrayLike<T>): boolean {
+/** Checks if the sequence starts with the given prefix. */
+export function startsWith<T>(arr: Sequence<T>, prefix: Sequence<T>): boolean {
     if (arr === prefix || !prefix.length) {
         return true;
     }
@@ -85,8 +72,8 @@ export function startsWith<T>(arr: RealArrayLike<T>, prefix: RealArrayLike<T>): 
     return true;
 }
 
-/** Checks if the array-like object ends with the given suffix. */
-export function endsWith<T>(arr: RealArrayLike<T>, suffix: RealArrayLike<T>): boolean {
+/** Checks if the sequence ends with the given suffix. */
+export function endsWith<T>(arr: Sequence<T>, suffix: Sequence<T>): boolean {
     if (arr === suffix || !suffix.length) {
         return true;
     }
@@ -108,8 +95,8 @@ export function endsWith<T>(arr: RealArrayLike<T>, suffix: RealArrayLike<T>): bo
     return true;
 }
 
-/** Breaks the array-like object into smaller chunks according to the given delimiter. */
-export function split<T>(arr: RealArrayLike<T>, delimiter: T): RealArrayLike<T>[] {
+/** Breaks the sequence into smaller chunks according to the given delimiter. */
+export function split<T>(arr: Sequence<T>, delimiter: T): Sequence<T>[] {
     const chunks: (typeof arr)[] = [];
     const limit = arr.length;
     let offset = 0;
@@ -124,8 +111,8 @@ export function split<T>(arr: RealArrayLike<T>, delimiter: T): RealArrayLike<T>[
     if (offset < limit) {
         chunks.push(arr.slice(offset, limit));
     } else if (offset === limit) {
-        const ctor = arr.constructor as (new (...args: any[]) => RealArrayLike<T>) & {
-            from?: (iterable: Iterable<T>) => RealArrayLike<T>;
+        const ctor = arr.constructor as (new (...args: any[]) => Sequence<T>) & {
+            from?: (iterable: Iterable<T>) => Sequence<T>;
         };
 
         if (typeof ctor.from === "function") {
@@ -138,11 +125,11 @@ export function split<T>(arr: RealArrayLike<T>, delimiter: T): RealArrayLike<T>[
     return chunks;
 }
 
-/** Breaks the array-like object into smaller chunks according to the given length. */
-export function chunk<T>(arr: RealArrayLike<T>, length: number): RealArrayLike<T>[] {
+/** Breaks the sequence into smaller chunks according to the given length. */
+export function chunk<T>(arr: Sequence<T>, length: number): Sequence<T>[] {
     const limit = arr.length;
     const size = Math.ceil(limit / length);
-    const chunks = new Array<RealArrayLike<T>>(size);
+    const chunks = new Array<Sequence<T>>(size);
     let offset = 0;
     let idx = 0;
 
