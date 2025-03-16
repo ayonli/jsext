@@ -7,7 +7,7 @@ import {
     NotImplementedError,
     NotSupportedError,
     TimeoutError,
-} from "./common";
+} from "./common.ts";
 
 describe("error/common", () => {
     it("NotAllowedError", () => {
