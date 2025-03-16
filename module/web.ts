@@ -70,37 +70,40 @@ export function interop<T extends { [x: string]: any; }>(
         return module().then(mod => interop(mod, strict)) as Promise<T>;
     } else if (module instanceof Promise) {
         return module.then(mod => interop(mod, strict)) as Promise<T>;
-    } else if (typeof module === "object" && module !== null && !Array.isArray(module)) {
-        if (typeof module["module.exports"] !== "undefined") {
-            return module["module.exports"];
-        } else if (typeof module["default"] === "object" &&
-            module["default"] !== null &&
-            !Array.isArray(module["default"])
+    }
+
+    let exports = module["module.exports"];
+
+    if (typeof exports !== "undefined") {
+        return exports as T;
+    } else if (isExportsObject(exports = module["default"])) {
+        const hasEsModule = module["__esModule"] === true
+            || exports["__esModule"] === true;
+
+        if (hasEsModule) {
+            return exports as T;
+        } else if (strict) {
+            return module;
+        }
+
+        const exportNames = (x: string) => x !== "default" && x !== "__esModule";
+        const moduleKeys = Object.getOwnPropertyNames(module)
+            .filter(exportNames).sort();
+        const defaultKeys = Object.getOwnPropertyNames(exports)
+            .filter(exportNames).sort();
+
+        if (String(moduleKeys) === String(defaultKeys) ||
+            (strict === false && !moduleKeys.length)
         ) {
-            const hasEsModule = module["__esModule"] === true
-                || module["default"]["__esModule"] === true;
-
-            if (hasEsModule) {
-                return module["default"];
-            } else if (strict) {
-                return module;
-            }
-
-            const exportNames = (x: string) => x !== "default" && x !== "__esModule";
-            const moduleKeys = Object.getOwnPropertyNames(module)
-                .filter(exportNames).sort();
-            const defaultKeys = Object.getOwnPropertyNames(module["default"])
-                .filter(exportNames).sort();
-
-            if (String(moduleKeys) === String(defaultKeys) ||
-                (strict === false && !moduleKeys.length)
-            ) {
-                return module["default"];
-            }
+            return exports as T;
         }
     }
 
     return module;
+}
+
+function isExportsObject(module: unknown): module is { [x: string]: unknown; } {
+    return typeof module === "object" && module !== null && !Array.isArray(module);
 }
 
 /**
