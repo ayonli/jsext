@@ -22,7 +22,6 @@ import "@ayonli/jsext/augment/object";
 import "@ayonli/jsext/augment/promise";
 import "@ayonli/jsext/augment/string";
 import "@ayonli/jsext/augment/uint8array";
-import "@ayonli/jsext/augment/pipe";
 import "@ayonli/jsext/augment/types";
 ```
 
@@ -75,9 +74,18 @@ _These types are augmented to the global scope._
     - `toJSON(): { [x: string | symbol]: any; }`
     - `isCausedBy(cause: unknown): boolean`
 
-- `Exception` (extends `Error`) _This type is augmented to the global scope._
+_These types are augmented to the global scope._
+
+- `Exception` (extends `Error`)
   - `cause?: unknown`
   - `code: number`
+- `NotAllowedError` (extends `Exception`)
+- `NotFoundError` (extends `Exception`)
+- `AlreadyExistsError` (extends `Exception`)
+- `NotSupportedError` (extends `Exception`) 
+- `NotImplementedError` (extends `Exception`)
+- `TimeoutError` (extends `Exception`)
+- `NetworkError` (extends `Exception`)
 
 ### Augment JSON
 
@@ -193,25 +201,6 @@ _These types are augmented to the global scope._
     - `endsWith(subset: Uint8Array): boolean`
     - `split(delimiter: number): this[]`
     - `chunk(length: number): this[]`
-
-### Augment Pipe
-
-- `String.prototype.pipe`
-- `Number.prototype.pipe`
-- `BigInt.prototype.pipe`
-- `Boolean.prototype.pipe`
-- `Symbol.prototype.pipe`
-- `Date.prototype.pipe`
-- `RegExp.prototype.pipe`
-- `Error.prototype.pipe`
-- `Map.prototype.pipe`
-- `Set.prototype.pipe`
-- `Array.prototype.pipe`
-- `TypedArray.prototype.pipe`
-- `ArrayBuffer.prototype.pipe`
-- `SharedArrayBuffer.prototype.pipe`
-- `Blob.prototype.pipe`
-- `Event.prototype.pipe`
 
 ### Augment global types
 

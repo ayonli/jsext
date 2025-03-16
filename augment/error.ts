@@ -1,5 +1,12 @@
 import {
     Exception,
+    NotAllowedError,
+    NotFoundError,
+    AlreadyExistsError,
+    NotSupportedError,
+    NotImplementedError,
+    TimeoutError,
+    NetworkError,
     toErrorEvent,
     fromObject,
     toObject,
@@ -41,10 +48,52 @@ declare global {
         constructor(message: string, code?: number);
         constructor(message: string, options: { name?: string; cause?: unknown; code?: number; });
     }
+
+    class NotAllowedError extends Exception {
+        constructor(message: string, options?: ErrorOptions);
+    }
+
+    class NotFoundError extends Exception {
+        constructor(message: string, options?: ErrorOptions);
+    }
+
+    class AlreadyExistsError extends Exception {
+        constructor(message: string, options?: ErrorOptions);
+    }
+
+    class NotSupportedError extends Exception {
+        constructor(message: string, options?: ErrorOptions);
+    }
+
+    class NotImplementedError extends Exception {
+        constructor(message: string, options?: ErrorOptions);
+    }
+
+    class TimeoutError extends Exception {
+        constructor(message: string, options?: ErrorOptions);
+    }
+
+    class NetworkError extends Exception {
+        constructor(message: string, options?: ErrorOptions);
+    }
 }
 
 //@ts-ignore
 globalThis["Exception"] = Exception;
+//@ts-ignore
+globalThis["NotAllowedError"] = NotAllowedError;
+//@ts-ignore
+globalThis["NotFoundError"] = NotFoundError;
+//@ts-ignore
+globalThis["AlreadyExistsError"] = AlreadyExistsError;
+//@ts-ignore
+globalThis["NotSupportedError"] = NotSupportedError;
+//@ts-ignore
+globalThis["NotImplementedError"] = NotImplementedError;
+//@ts-ignore
+globalThis["TimeoutError"] = TimeoutError;
+//@ts-ignore
+globalThis["NetworkError"] = NetworkError;
 
 Error.toObject = toObject;
 Error.fromObject = fromObject;
