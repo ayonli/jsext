@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "1.5.1",
+    "version": "1.6.0",
     "exports": {
         ".": "./index.ts",
         "./archive": "./archive.ts",
@@ -22,6 +22,7 @@
         "./event": "./event.ts",
         "./filetype": "./filetype.ts",
         "./fs": "./fs.ts",
+        "./fs/errors": "./fs/errors.ts",
         "./fs/web": "./fs/web.ts",
         "./func": "./func.ts",
         "./hash": "./hash.ts",

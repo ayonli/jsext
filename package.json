@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "1.5.1",
+    "version": "1.6.0",
     "description": "A JavaScript extension package for building strong and modern applications.",
     "type": "module",
     "exports": {
@@ -167,6 +167,13 @@
             "import": "./esm/fs.js",
             "require": "./cjs/fs.js",
             "default": "./fs.ts"
+        },
+        "./fs/errors": {
+            "types": "./types/fs/errors.d.ts",
+            "bun": "./fs/errors.ts",
+            "import": "./esm/fs/errors.js",
+            "require": "./cjs/fs/errors.js",
+            "default": "./fs/errors.ts"
         },
         "./fs/web": {
             "types": "./types/fs/web.d.ts",
