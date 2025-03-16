@@ -6,6 +6,7 @@ import './external/event-target-polyfill/index.js';
 import { NotSupportedError } from './error/common.js';
 import { getMIME } from './filetype.js';
 import { InvalidOperationError, NotDirectoryError } from './fs/errors.js';
+export { BusyError, FileTooLargeError, FilesystemLoopError, InterruptedError, IsDirectoryError } from './fs/errors.js';
 import { ensureFsTarget, rawOp, fixDirEntry, wrapFsError, makeTree } from './fs/util.js';
 import { resolveHomeDir } from './fs/util/server.js';
 import { stat as stat$1, mkdir as mkdir$1, readDir as readDir$1, readFile as readFile$1, readFileAsFile as readFileAsFile$1, writeFile as writeFile$1, truncate as truncate$1, remove as remove$1, rename as rename$1, copy as copy$1, createReadableStream as createReadableStream$1, createWritableStream as createWritableStream$1 } from './fs/web.js';
@@ -58,8 +59,6 @@ import { resolveByteStream } from './reader/util.js';
  * - `NotDirectoryError`: The path is a file, not a directory.
  * - `FileTooLargeError`: The file is too large, or the file system doesn't have
  *   enough space to store the new content.
- * - `FilenameTooLongError`: The filename is too long to be resolved by the file
- *   system.
  * - `FilesystemLoopError`:  Too many symbolic links were encountered when
  *   resolving the filename.
  * - `BusyError`: The file is busy at the moment, such as being locked by
@@ -1268,5 +1267,5 @@ function createNodeWritableStream(filename, options) {
     });
 }
 
-export { EOL, chmod, chown, copy, createReadableStream, createWritableStream, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsFile, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };
+export { EOL, InvalidOperationError, NotDirectoryError, chmod, chown, copy, createReadableStream, createWritableStream, ensureDir, exists, link, mkdir, readDir, readFile, readFileAsFile, readFileAsText, readLink, readTree, remove, rename, stat, truncate, utimes, writeFile, writeLines };
 //# sourceMappingURL=fs.js.map

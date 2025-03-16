@@ -1,5 +1,4 @@
 import bytes, { concat as concat$1 } from '../bytes.js';
-import { FilenameTooLongError } from '../fs/errors.js';
 import { makeTree } from '../fs/util.js';
 import { omit } from '../object.js';
 import { basename, dirname } from '../path.js';
@@ -9,6 +8,17 @@ import { stripEnd } from '../string.js';
 var _a, _b;
 const _stream = Symbol.for("stream");
 const _bodyUsed = Symbol.for("bodyUsed");
+/**
+ * This error indicates that the filename is too long to be resolved by the file
+ * system.
+ *
+ * NOTE: This error has an HTTP-compatible code of `414`.
+ */
+class FilenameTooLongError extends Exception {
+    constructor(message, options = {}) {
+        super(message, { ...options, name: "FilenameTooLongError", code: 414 });
+    }
+}
 var FileTypes;
 (function (FileTypes) {
     FileTypes[FileTypes["file"] = 0] = "file";
@@ -581,5 +591,5 @@ class Tarball {
     }
 }
 
-export { HEADER_LENGTH, _entries, createEntry, Tarball as default, parseHeader };
+export { FilenameTooLongError, HEADER_LENGTH, _entries, createEntry, Tarball as default, parseHeader };
 //# sourceMappingURL=Tarball.js.map

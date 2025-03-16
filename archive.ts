@@ -14,9 +14,9 @@
  * @module
  */
 
-import Tarball, { type TarEntry, type TarTree } from "./archive/Tarball.ts";
+import Tarball, { FilenameTooLongError, type TarEntry, type TarTree } from "./archive/Tarball.ts";
 import tar, { type TarOptions } from "./archive/tar.ts";
 import untar, { type UntarOptions } from "./archive/untar.ts";
 
-export { Tarball, tar, untar };
+export { Tarball, FilenameTooLongError, tar, untar };
 export type { TarEntry, TarTree, TarOptions, UntarOptions };

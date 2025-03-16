@@ -8,6 +8,8 @@ import Exception from "./Exception.ts";
 /**
  * This error indicates that the requested operation, such as modifying a file,
  * is not allowed by the current user.
+ * 
+ * NOTE: This error has an HTTP-compatible code of `403`.
  */
 export class NotAllowedError extends Exception {
     constructor(message: string, options: ErrorOptions = {}) {
@@ -18,6 +20,8 @@ export class NotAllowedError extends Exception {
 /**
  * This error indicates that the requested resource, such as a file, is not
  * found.
+ * 
+ * NOTE: This error has an HTTP-compatible code of `404`.
  */
 export class NotFoundError extends Exception {
     constructor(message: string, options: ErrorOptions = {}) {
@@ -28,6 +32,8 @@ export class NotFoundError extends Exception {
 /**
  * This error indicates that the target resource path, such as a file, already
  * exists.
+ * 
+ * NOTE: This error has an HTTP-compatible code of `409`.
  */
 export class AlreadyExistsError extends Exception {
     constructor(message: string, options: ErrorOptions = {}) {
@@ -38,6 +44,8 @@ export class AlreadyExistsError extends Exception {
 /**
  * This error indicates that the requested function or feature is not supported
  * by the current environment.
+ * 
+ * NOTE: This error has an HTTP-compatible code of `405`.
  */
 export class NotSupportedError extends Exception {
     constructor(message: string, options: ErrorOptions = {}) {
@@ -48,6 +56,8 @@ export class NotSupportedError extends Exception {
 /**
  * This error indicates that the requested operation, such as a function, is not
  * implemented.
+ * 
+ * NOTE: This error has an HTTP-compatible code of `501`.
  * 
  * NOTE: `NotImplementedError` should only be used for stubs or placeholders,
  * it should not be used to indicate the lack of support for a feature, in such
@@ -62,6 +72,8 @@ export class NotImplementedError extends Exception {
 /**
  * This error indicates that the requested operation, such as a network request,
  * is timed out.
+ * 
+ * NOTE: This error has an HTTP-compatible code of `408`.
  */
 export class TimeoutError extends Exception {
     constructor(message: string, options: ErrorOptions = {}) {

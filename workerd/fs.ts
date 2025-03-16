@@ -18,6 +18,7 @@ import { basename, extname, isFileUrl, join } from "../path.ts";
 import { readAsArray, readAsArrayBuffer } from "../reader.ts";
 import { KVNamespace } from "./types.ts";
 
+export * from "../fs/errors.ts";
 export type {
     CopyOptions,
     GetDirOptions,

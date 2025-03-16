@@ -6,6 +6,7 @@ import { getMIME } from '../filetype.js';
 import { makeTree } from '../fs/util.js';
 import { join, basename, extname } from '../path.js';
 import { readAsArray, readAsArrayBuffer } from '../reader.js';
+export { BusyError, FileTooLargeError, FilesystemLoopError, InterruptedError, InvalidOperationError, IsDirectoryError, NotDirectoryError } from '../fs/errors.js';
 import { isFileUrl } from '../path/util.js';
 
 const EOL = "\n";

@@ -1,4 +1,4 @@
-export { default as Tarball } from '../archive/Tarball.js';
+export { FilenameTooLongError, default as Tarball } from '../archive/Tarball.js';
 import '../bytes.js';
 import '../error/Exception.js';
 import '../external/event-target-polyfill/index.js';

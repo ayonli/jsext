@@ -687,6 +687,8 @@ if (typeof globalThis.EventTarget !== "function") {
 /**
  * This error indicates that the requested function or feature is not supported
  * by the current environment.
+ *
+ * NOTE: This error has an HTTP-compatible code of `405`.
  */
 class NotSupportedError extends Exception {
     constructor(message, options = {}) {
@@ -1318,8 +1320,6 @@ function fileUrlToFsPath(url) {
  * - `NotDirectoryError`: The path is a file, not a directory.
  * - `FileTooLargeError`: The file is too large, or the file system doesn't have
  *   enough space to store the new content.
- * - `FilenameTooLongError`: The filename is too long to be resolved by the file
- *   system.
  * - `FilesystemLoopError`:  Too many symbolic links were encountered when
  *   resolving the filename.
  * - `BusyError`: The file is busy at the moment, such as being locked by

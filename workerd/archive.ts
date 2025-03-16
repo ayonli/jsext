@@ -1,11 +1,11 @@
-import Tarball, { TarEntry } from "../archive/Tarball.ts";
+import Tarball, { FilenameTooLongError, type TarEntry, type TarTree } from "../archive/Tarball.ts";
 import type { TarOptions } from "../archive/tar.ts";
 import type { UntarOptions } from "../archive/untar.ts";
 import type { FileSystemOptions } from "../fs/types.ts";
 import { NotImplementedError } from "../error.ts";
 
-export { Tarball };
-export type { TarEntry, TarOptions, UntarOptions };
+export { Tarball, FilenameTooLongError };
+export type { TarEntry, TarOptions, UntarOptions, TarTree };
 
 export function tar(
     src: string | FileSystemDirectoryHandle,

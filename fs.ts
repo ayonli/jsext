@@ -41,8 +41,6 @@
  * - `NotDirectoryError`: The path is a file, not a directory.
  * - `FileTooLargeError`: The file is too large, or the file system doesn't have
  *   enough space to store the new content.
- * - `FilenameTooLongError`: The filename is too long to be resolved by the file
- *   system.
  * - `FilesystemLoopError`:  Too many symbolic links were encountered when
  *   resolving the filename.
  * - `BusyError`: The file is busy at the moment, such as being locked by
@@ -85,6 +83,7 @@ import { basename, extname, join } from "./path.ts";
 import { readAsArray, readAsText, resolveByteStream } from "./reader.ts";
 import runtime, { platform } from "./runtime.ts";
 
+export * from "./fs/errors.ts";
 export type { FileSystemOptions, FileInfo, DirEntry, DirTree };
 export { getDirHandle, getFileHandle };
 
