@@ -4,7 +4,7 @@ import _try from "./try.ts";
 import { range } from "./number.ts";
 import { sum } from "./math.ts";
 import { pick } from "./object.ts";
-import { Exception } from "./error.ts";
+import { Exception, NotImplementedError } from "./error.ts";
 import * as path from "node:path";
 import { trim } from "./string.ts";
 import { readAsArray } from "./reader.ts";
@@ -124,6 +124,14 @@ describe("jsext.parallel", () => {
             deepStrictEqual(pick(returns10.errors[0], ["constructor", "name", "message", "stack"]),
                 pick(err10.errors[0], ["constructor", "name", "message", "stack"]));
         }
+
+        const err11 = new NotImplementedError("not implemented");
+        // @ts-ignore because allowJs is not turned on
+        const returns11 = await mod.transferError(err11);
+        ok(returns11 instanceof NotImplementedError);
+        strictEqual(returns11.name, "NotImplementedError");
+        strictEqual(returns11.message, err11.message);
+        strictEqual(returns11.stack, err11.stack);
     });
 
     it("use channel", async () => {

@@ -4,7 +4,7 @@ import { wrapChannel, isChannelMessage, handleChannelMessage } from './channel.j
 import { getObjectURL } from '../module/util.js';
 import { isPlainObject } from '../object.js';
 import { serial } from '../number.js';
-import { fromErrorEvent, isDOMException, isAggregateError, toObject, fromObject } from '../error.js';
+import { fromErrorEvent, isDOMException, isAggregateError, toObject, isKnownError, fromObject } from '../error.js';
 import { join, toFsPath, cwd, extname, resolve, dirname } from '../path.js';
 import { unrefTimer } from '../runtime.js';
 import Exception from '../error/Exception.js';
@@ -214,6 +214,7 @@ function handleWorkerMessage(poolRecord, worker, msg) {
                 if (err instanceof Error &&
                     (err.message.includes("not be cloned")
                         || ((_b = err.stack) === null || _b === void 0 ? void 0 : _b.includes("not be cloned")) // Node.js v16-
+                        || err.message.includes("Do not know how to serialize") // JSON error
                     )) {
                     Object.defineProperty(err, "stack", {
                         configurable: true,
@@ -444,9 +445,9 @@ function wrapArgs(args, getWorker) {
     return { args, transferable };
 }
 function unwrapReturnValue(value) {
-    if (isPlainObject(value) && (value["@@type"] === "Exception" ||
-        value["@@type"] === "DOMException" ||
-        value["@@type"] === "AggregateError")) {
+    if (isPlainObject(value) && typeof value["@@type"] === "string" && (value["@@type"] === "DOMException" ||
+        value["@@type"] === "AggregateError" ||
+        isKnownError(value["@@type"]))) {
         return fromObject(value);
     }
     return value;

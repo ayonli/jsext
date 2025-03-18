@@ -2,7 +2,7 @@ import { isAsyncGenerator, isGenerator } from '../external/check-iterable/index.
 import { unwrapChannel } from './channel.js';
 import { resolveModule } from './module.js';
 import { isPlainObject } from '../object.js';
-import { fromObject, isDOMException, isAggregateError, toObject } from '../error.js';
+import { isKnownError, fromObject, isDOMException, isAggregateError, toObject } from '../error.js';
 import Exception from '../error/Exception.js';
 
 const pendingTasks = new Map();
@@ -37,9 +37,9 @@ function unwrapArgs(args, channelWrite) {
             if (arg["@@type"] === "Channel" && typeof arg["@@id"] === "number") {
                 return unwrapChannel(arg, channelWrite);
             }
-            else if (arg["@@type"] === "Exception"
-                || arg["@@type"] === "DOMException"
-                || arg["@@type"] === "AggregateError") {
+            else if (typeof arg["@@type"] === "string" && (arg["@@type"] === "DOMException" ||
+                arg["@@type"] === "AggregateError" ||
+                isKnownError(arg["@@type"]))) {
                 return fromObject(arg);
             }
         }

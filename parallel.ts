@@ -277,17 +277,15 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * - `SyntaxError`
  * - `TypeError`
  * - `URIError`
- * - `AggregateError` (as arguments, return values, thrown values, or shallow
- *   object properties)
- * - `Exception` (as arguments, return values, thrown values, or shallow object
- *   properties)
- * - `DOMException` (as arguments, return values, thrown values, or shallow
- *   object properties)
- * - Other errors that has been registered by {@link registerKnownError}.
  * 
- * In order to handle errors properly between threads, throw well-known error
- * types or use `Exception` (or `DOMException`) with error names in the threaded
- * function.
+ * The following error types are also supported, but are limited to be function
+ * arguments, return values, thrown values, or shallow object properties.
+ * 
+ * - `AggregateError`
+ * - `DOMException`
+ * - Other errors that has been registered by {@link registerKnownError}, this
+ *   includes errors from the `@ayonli/jsext/error` module and the
+ *   `@ayonli/jsext/fs` module.
  * 
  * @example
  * ```ts

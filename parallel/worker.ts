@@ -6,6 +6,7 @@ import { isPlainObject } from "../object.ts";
 import {
     Exception,
     fromObject,
+    isKnownError,
     isAggregateError,
     isDOMException,
     toObject,
@@ -51,10 +52,11 @@ function unwrapArgs(
         if (isPlainObject(arg)) {
             if (arg["@@type"] === "Channel" && typeof arg["@@id"] === "number") {
                 return unwrapChannel(arg as any, channelWrite);
-            } else if (arg["@@type"] === "Exception"
-                || arg["@@type"] === "DOMException"
-                || arg["@@type"] === "AggregateError"
-            ) {
+            } else if (typeof arg["@@type"] === "string" && (
+                arg["@@type"] === "DOMException" ||
+                arg["@@type"] === "AggregateError" ||
+                isKnownError(arg["@@type"])
+            )) {
                 return fromObject(arg);
             }
         }

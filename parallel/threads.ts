@@ -13,6 +13,7 @@ import {
     fromObject,
     isAggregateError,
     isDOMException,
+    isKnownError,
     toObject,
 } from "../error.ts";
 import * as path from "../path.ts";
@@ -248,6 +249,7 @@ function handleWorkerMessage(poolRecord: PoolRecord, worker: NodeWorker | BunWor
                 if (err instanceof Error &&
                     (err.message.includes("not be cloned")
                         || err.stack?.includes("not be cloned") // Node.js v16-
+                        || err.message.includes("Do not know how to serialize") // JSON error
                     )
                 ) {
                     Object.defineProperty(err, "stack", {
@@ -507,10 +509,10 @@ export function wrapArgs<A extends any[]>(
 }
 
 export function unwrapReturnValue(value: any): any {
-    if (isPlainObject(value) && (
-        value["@@type"] === "Exception" ||
+    if (isPlainObject(value) && typeof value["@@type"] === "string" && (
         value["@@type"] === "DOMException" ||
-        value["@@type"] === "AggregateError"
+        value["@@type"] === "AggregateError" ||
+        isKnownError(value["@@type"])
     )) {
         return fromObject(value);
     }

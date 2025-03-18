@@ -816,17 +816,25 @@ const errorsMap = new Map([
 ]);
 /**
  * Registers an error constructor that can be used by {@link fromObject} to
- * reverse a plain object to an error instance.
- * @inner
+ * reverse a plain object which is previously transformed by {@link toObject}
+ * back to an error instance.
  * */
 function registerKnownError(ctor) {
     errorsMap.set(ctor.name, ctor);
+}
+/**
+ * Returns `true` if an error constructor by the `name` is previously registered
+ * by {@link registerKnownError}, `false` otherwise.
+ */
+function isKnownError(name) {
+    return errorsMap.has(name);
 }
 const commonErrors = Object.values(common)
     .filter(value => isSubclassOf(value, Error));
 commonErrors.forEach(ctor => registerKnownError(ctor));
 /**
- * Transforms the error to a plain object.
+ * Transforms the error to a plain object so that it can be serialized to JSON
+ * and later reversed back to an error instance using {@link fromObject}.
  *
  * @example
  * ```ts
@@ -882,8 +890,6 @@ function fromObject(obj, ctor = undefined) {
                 value: (_d = obj["message"]) !== null && _d !== void 0 ? _d : "",
             },
         });
-    }
-    if (err.name !== obj["name"]) {
         Object.defineProperty(err, "name", {
             configurable: true,
             enumerable: false,
@@ -1698,9 +1704,9 @@ function unwrapArgs(args, channelWrite) {
             if (arg["@@type"] === "Channel" && typeof arg["@@id"] === "number") {
                 return unwrapChannel(arg, channelWrite);
             }
-            else if (arg["@@type"] === "Exception"
-                || arg["@@type"] === "DOMException"
-                || arg["@@type"] === "AggregateError") {
+            else if (typeof arg["@@type"] === "string" && (arg["@@type"] === "DOMException" ||
+                arg["@@type"] === "AggregateError" ||
+                isKnownError(arg["@@type"]))) {
                 return fromObject(arg);
             }
         }

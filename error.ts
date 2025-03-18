@@ -22,11 +22,19 @@ const errorsMap = new Map<string, Constructor<Error>>([
 
 /**
  * Registers an error constructor that can be used by {@link fromObject} to
- * reverse a plain object to an error instance.
- * @inner
+ * reverse a plain object which is previously transformed by {@link toObject}
+ * back to an error instance.
  * */
 export function registerKnownError<T extends Error>(ctor: Constructor<T>): void {
     errorsMap.set(ctor.name, ctor);
+}
+
+/**
+ * Returns `true` if an error constructor by the `name` is previously registered
+ * by {@link registerKnownError}, `false` otherwise.
+ */
+export function isKnownError(name: string): boolean {
+    return errorsMap.has(name);
 }
 
 const commonErrors = Object.values(common)
@@ -34,7 +42,8 @@ const commonErrors = Object.values(common)
 commonErrors.forEach(ctor => registerKnownError(ctor));
 
 /**
- * Transforms the error to a plain object.
+ * Transforms the error to a plain object so that it can be serialized to JSON
+ * and later reversed back to an error instance using {@link fromObject}.
  * 
  * @example
  * ```ts
@@ -72,7 +81,8 @@ export function toObject<T extends Error>(err: T): { [x: string | symbol]: any; 
 }
 
 /**
- * Reverses a plain object to a specific error type.
+ * Reverses a plain object previously transformed by {@link toObject} back to an
+ * error instance.
  * 
  * @example
  * ```ts
@@ -126,9 +136,6 @@ export function fromObject<T extends Error>(
                 value: obj["message"] ?? "",
             },
         });
-    }
-
-    if (err.name !== obj["name"]) {
         Object.defineProperty(err, "name", {
             configurable: true,
             enumerable: false,
@@ -276,7 +283,7 @@ export function fromErrorEvent<T extends Error>(event: ErrorEvent): T | null {
         && event.error["name"]
         && event.error["message"]
     ) { // Error-like
-        err = fromObject(event.error, Error) as T;
+        err = fromObject(event.error) as T;
         shouldPatchStack = !err.stack;
     } else if (event.message) {
         err = new Error(event.message) as T;
