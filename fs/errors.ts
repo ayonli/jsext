@@ -1,4 +1,4 @@
-import { Exception, registerKnownError } from "../error.ts";
+import { Exception, registerErrorType } from "../error.ts";
 
 /**
  * This error indicates that the operation is invalid, such as trying to copy a
@@ -11,7 +11,7 @@ export class InvalidOperationError extends Exception {
         super(message, { ...options, name: "InvalidOperationError", code: 400 });
     }
 }
-registerKnownError(InvalidOperationError);
+registerErrorType(InvalidOperationError);
 
 /**
  * This error indicates that an operation cannot be performed because the target
@@ -24,7 +24,7 @@ export class IsDirectoryError extends Exception {
         super(message, { ...options, name: "IsDirectoryError", code: 400 });
     }
 }
-registerKnownError(IsDirectoryError);
+registerErrorType(IsDirectoryError);
 
 /**
  * This error indicates that an operation cannot be performed because the target
@@ -37,7 +37,7 @@ export class NotDirectoryError extends Exception {
         super(message, { ...options, name: "NotDirectoryError", code: 400 });
     }
 }
-registerKnownError(NotDirectoryError);
+registerErrorType(NotDirectoryError);
 
 /**
  * This error indicates that the file is too large, or the file system doesn't
@@ -50,7 +50,7 @@ export class FileTooLargeError extends Exception {
         super(message, { ...options, name: "FileTooLargeError", code: 413 });
     }
 }
-registerKnownError(FileTooLargeError);
+registerErrorType(FileTooLargeError);
 
 /**
  * This error indicates that too many symbolic links were encountered when
@@ -63,7 +63,7 @@ export class FilesystemLoopError extends Exception {
         super(message, { ...options, name: "FilesystemLoopError", code: 508 });
     }
 }
-registerKnownError(FilesystemLoopError);
+registerErrorType(FilesystemLoopError);
 
 /**
  * This error indicates that the file is busy at the moment, such as being
@@ -76,7 +76,7 @@ export class BusyError extends Exception {
         super(message, { ...options, name: "BusyError", code: 423 });
     }
 }
-registerKnownError(BusyError);
+registerErrorType(BusyError);
 
 /**
  * This error indicates that the operation is interrupted by the underlying file
@@ -89,4 +89,4 @@ export class InterruptedError extends Exception {
         super(message, { ...options, name: "InterruptedError", code: 500 });
     }
 }
-registerKnownError(InterruptedError);
+registerErrorType(InterruptedError);

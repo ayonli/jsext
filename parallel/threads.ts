@@ -13,7 +13,7 @@ import {
     fromObject,
     isAggregateError,
     isDOMException,
-    isKnownError,
+    getErrorType,
     toObject,
 } from "../error.ts";
 import * as path from "../path.ts";
@@ -509,11 +509,10 @@ export function wrapArgs<A extends any[]>(
 }
 
 export function unwrapReturnValue(value: any): any {
-    if (isPlainObject(value) && typeof value["@@type"] === "string" && (
-        value["@@type"] === "DOMException" ||
-        value["@@type"] === "AggregateError" ||
-        isKnownError(value["@@type"])
-    )) {
+    if (isPlainObject(value) &&
+        typeof value["@@type"] === "string" &&
+        getErrorType(value["@@type"])
+    ) {
         return fromObject(value);
     }
 

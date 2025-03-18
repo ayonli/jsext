@@ -16,7 +16,7 @@ export { Exception };
 export type { ExceptionOptions };
 export * from "./error/common.ts";
 
-const errorsMap = new Map<string, Constructor<Error>>([
+const errorTypeRegistry = new Map<string, Constructor<Error>>([
     ["Exception", Exception]
 ]);
 
@@ -25,21 +25,32 @@ const errorsMap = new Map<string, Constructor<Error>>([
  * reverse a plain object which is previously transformed by {@link toObject}
  * back to an error instance.
  * */
-export function registerKnownError<T extends Error>(ctor: Constructor<T>): void {
-    errorsMap.set(ctor.name, ctor);
+export function registerErrorType<T extends Error>(ctor: Constructor<T>): void {
+    errorTypeRegistry.set(ctor.name, ctor);
 }
 
 /**
- * Returns `true` if an error constructor by the `name` is previously registered
- * by {@link registerKnownError}, `false` otherwise.
+ * Returns the error constructor by the `name`.
+ * @inner
  */
-export function isKnownError(name: string): boolean {
-    return errorsMap.has(name);
+export function getErrorType<T extends Error>(name: string): Constructor<T> | null {
+    let type = errorTypeRegistry.get(name);
+
+    if (!type && name in globalThis) {
+        const value = (globalThis as any)[name];
+        if (value === Error || isSubclassOf(value, Error) ||
+            (typeof DOMException === "function" && value === DOMException)
+        ) {
+            type = value;
+        }
+    }
+
+    return type ? type as Constructor<T> : null;
 }
 
 const commonErrors = Object.values(common)
     .filter(value => isSubclassOf(value, Error)) as Constructor<Error>[];
-commonErrors.forEach(ctor => registerKnownError(ctor));
+commonErrors.forEach(ctor => registerErrorType(ctor));
 
 /**
  * Transforms the error to a plain object so that it can be serialized to JSON
@@ -122,7 +133,7 @@ export function fromObject<T extends Error>(
     // @ts-ignore
     const typeName: string = obj["@@type"] || obj.name;
     // @ts-ignore
-    ctor ??= (errorsMap.get(typeName) ?? globalThis[typeName] ?? Error) as Constructor<T>;
+    ctor ??= (getErrorType(typeName) ?? Error) as Constructor<T>;
     let err: T;
 
     if (ctor.name === "DOMException" && typeof DOMException === "function") {

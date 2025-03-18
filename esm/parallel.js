@@ -247,7 +247,7 @@ function extractBaseUrl(stackTrace) {
  *
  * - `AggregateError`
  * - `DOMException`
- * - Other errors that has been registered by {@link registerKnownError}, this
+ * - Other errors that has been registered by {@link registerErrorType}, this
  *   includes errors from the `@ayonli/jsext/error` module and the
  *   `@ayonli/jsext/fs` module.
  *

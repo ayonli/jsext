@@ -1,4 +1,4 @@
-import { registerKnownError } from '../error.js';
+import { registerErrorType } from '../error.js';
 import Exception from '../error/Exception.js';
 
 /**
@@ -12,7 +12,7 @@ class FilenameTooLongError extends Exception {
         super(message, { ...options, name: "FilenameTooLongError", code: 414 });
     }
 }
-registerKnownError(FilenameTooLongError);
+registerErrorType(FilenameTooLongError);
 /**
  * This error indicates that the archive is corrupted or invalid.
  *
@@ -23,7 +23,7 @@ class CorruptedArchiveError extends Exception {
         super(message, { ...options, name: "ArchiveCorruptedError", code: 400 });
     }
 }
-registerKnownError(CorruptedArchiveError);
+registerErrorType(CorruptedArchiveError);
 
 export { CorruptedArchiveError, FilenameTooLongError };
 //# sourceMappingURL=errors.js.map

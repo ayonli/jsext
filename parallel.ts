@@ -6,7 +6,7 @@
 
 import { ThenableAsyncGenerator, ThenableAsyncGeneratorLike } from "./external/thenable-generator/index.ts";
 import chan, { Channel } from "./chan.ts";
-import { registerKnownError, throwUnsupportedRuntimeError } from "./error.ts";
+import { registerErrorType, throwUnsupportedRuntimeError } from "./error.ts";
 import { serial } from "./number.ts";
 import { cwd, isFsPath, toFileUrl } from "./path.ts";
 import { asyncTask } from "./async.ts";
@@ -283,7 +283,7 @@ function extractBaseUrl(stackTrace: string): string | undefined {
  * 
  * - `AggregateError`
  * - `DOMException`
- * - Other errors that has been registered by {@link registerKnownError}, this
+ * - Other errors that has been registered by {@link registerErrorType}, this
  *   includes errors from the `@ayonli/jsext/error` module and the
  *   `@ayonli/jsext/fs` module.
  * 

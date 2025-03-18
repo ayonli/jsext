@@ -813,7 +813,7 @@ if (typeof globalThis.EventTarget !== "function") {
  * Functions for converting errors to/from other types of objects.
  * @module
  */
-const errorsMap = new Map([
+const errorTypeRegistry = new Map([
     ["Exception", Exception]
 ]);
 /**
@@ -821,19 +821,27 @@ const errorsMap = new Map([
  * reverse a plain object which is previously transformed by {@link toObject}
  * back to an error instance.
  * */
-function registerKnownError(ctor) {
-    errorsMap.set(ctor.name, ctor);
+function registerErrorType(ctor) {
+    errorTypeRegistry.set(ctor.name, ctor);
 }
 /**
- * Returns `true` if an error constructor by the `name` is previously registered
- * by {@link registerKnownError}, `false` otherwise.
+ * Returns the error constructor by the `name`.
+ * @inner
  */
-function isKnownError(name) {
-    return errorsMap.has(name);
+function getErrorType(name) {
+    let type = errorTypeRegistry.get(name);
+    if (!type && name in globalThis) {
+        const value = globalThis[name];
+        if (value === Error || isSubclassOf(value, Error) ||
+            (typeof DOMException === "function" && value === DOMException)) {
+            type = value;
+        }
+    }
+    return type ? type : null;
 }
 const commonErrors = Object.values(common)
     .filter(value => isSubclassOf(value, Error));
-commonErrors.forEach(ctor => registerKnownError(ctor));
+commonErrors.forEach(ctor => registerErrorType(ctor));
 /**
  * Transforms the error to a plain object so that it can be serialized to JSON
  * and later reversed back to an error instance using {@link fromObject}.
@@ -870,7 +878,7 @@ function toObject(err) {
     return obj;
 }
 function fromObject(obj, ctor = undefined) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c;
     // @ts-ignore
     if (!(obj === null || obj === void 0 ? void 0 : obj.name)) {
         return null;
@@ -878,10 +886,10 @@ function fromObject(obj, ctor = undefined) {
     // @ts-ignore
     const typeName = obj["@@type"] || obj.name;
     // @ts-ignore
-    ctor !== null && ctor !== void 0 ? ctor : (ctor = ((_b = (_a = errorsMap.get(typeName)) !== null && _a !== void 0 ? _a : globalThis[typeName]) !== null && _b !== void 0 ? _b : Error));
+    ctor !== null && ctor !== void 0 ? ctor : (ctor = ((_a = getErrorType(typeName)) !== null && _a !== void 0 ? _a : Error));
     let err;
     if (ctor.name === "DOMException" && typeof DOMException === "function") {
-        err = new ctor((_c = obj["message"]) !== null && _c !== void 0 ? _c : "", obj["name"]);
+        err = new ctor((_b = obj["message"]) !== null && _b !== void 0 ? _b : "", obj["name"]);
     }
     else {
         err = Object.create(ctor.prototype, {
@@ -889,7 +897,7 @@ function fromObject(obj, ctor = undefined) {
                 configurable: true,
                 enumerable: false,
                 writable: true,
-                value: (_d = obj["message"]) !== null && _d !== void 0 ? _d : "",
+                value: (_c = obj["message"]) !== null && _c !== void 0 ? _c : "",
             },
         });
         Object.defineProperty(err, "name", {
@@ -1409,7 +1417,7 @@ class InvalidOperationError extends Exception {
         super(message, { ...options, name: "InvalidOperationError", code: 400 });
     }
 }
-registerKnownError(InvalidOperationError);
+registerErrorType(InvalidOperationError);
 /**
  * This error indicates that an operation cannot be performed because the target
  * path is a directory while a file is expected.
@@ -1421,7 +1429,7 @@ class IsDirectoryError extends Exception {
         super(message, { ...options, name: "IsDirectoryError", code: 400 });
     }
 }
-registerKnownError(IsDirectoryError);
+registerErrorType(IsDirectoryError);
 /**
  * This error indicates that an operation cannot be performed because the target
  * path is a file while a directory is expected.
@@ -1433,7 +1441,7 @@ class NotDirectoryError extends Exception {
         super(message, { ...options, name: "NotDirectoryError", code: 400 });
     }
 }
-registerKnownError(NotDirectoryError);
+registerErrorType(NotDirectoryError);
 /**
  * This error indicates that the file is too large, or the file system doesn't
  * have enough space to store the new content.
@@ -1445,7 +1453,7 @@ class FileTooLargeError extends Exception {
         super(message, { ...options, name: "FileTooLargeError", code: 413 });
     }
 }
-registerKnownError(FileTooLargeError);
+registerErrorType(FileTooLargeError);
 /**
  * This error indicates that too many symbolic links were encountered when
  * resolving the filename.
@@ -1457,7 +1465,7 @@ class FilesystemLoopError extends Exception {
         super(message, { ...options, name: "FilesystemLoopError", code: 508 });
     }
 }
-registerKnownError(FilesystemLoopError);
+registerErrorType(FilesystemLoopError);
 /**
  * This error indicates that the file is busy at the moment, such as being
  * locked by another program.
@@ -1469,7 +1477,7 @@ class BusyError extends Exception {
         super(message, { ...options, name: "BusyError", code: 423 });
     }
 }
-registerKnownError(BusyError);
+registerErrorType(BusyError);
 /**
  * This error indicates that the operation is interrupted by the underlying file
  * system.
@@ -1481,7 +1489,7 @@ class InterruptedError extends Exception {
         super(message, { ...options, name: "InterruptedError", code: 500 });
     }
 }
-registerKnownError(InterruptedError);
+registerErrorType(InterruptedError);
 
 /**
  * Universal file system APIs for both server and browser applications.
@@ -1706,9 +1714,7 @@ function unwrapArgs(args, channelWrite) {
             if (arg["@@type"] === "Channel" && typeof arg["@@id"] === "number") {
                 return unwrapChannel(arg, channelWrite);
             }
-            else if (typeof arg["@@type"] === "string" && (arg["@@type"] === "DOMException" ||
-                arg["@@type"] === "AggregateError" ||
-                isKnownError(arg["@@type"]))) {
+            else if (typeof arg["@@type"] === "string" && getErrorType(arg["@@type"])) {
                 return fromObject(arg);
             }
         }
