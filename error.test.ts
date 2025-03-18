@@ -4,6 +4,9 @@ import { isDeno } from "./env.ts";
 import { pick } from "./object.ts";
 import { toFsPath } from "./path.ts";
 import { createErrorEvent } from "./event.ts";
+import { isSubclassOf } from "./class.ts";
+import * as common from "./error/common.ts";
+import { getErrorConstructor, registerErrorType } from "./error.ts";
 
 declare var AggregateError: new (errors: Error[], message?: string, options?: { cause: unknown; }) => Error & { errors: Error[]; };
 
@@ -315,7 +318,7 @@ describe("Error", () => {
         strictEqual(normalize(event.filename), toFsPath(import.meta.url));
 
         if (isDeno) {
-            strictEqual(event.lineno, 300);
+            strictEqual(event.lineno, 303);
             strictEqual(event.colno, 21);
         } else {
             ok(event.lineno > 0);
@@ -335,7 +338,7 @@ describe("Error", () => {
         strictEqual(normalize(event2.filename), toFsPath(import.meta.url));
 
         if (isDeno) {
-            strictEqual(event2.lineno, 325);
+            strictEqual(event2.lineno, 328);
             strictEqual(event2.colno, 22);
         } else {
             ok(event2.lineno > 0);
@@ -458,6 +461,55 @@ describe("Error", () => {
             ok(!err1.isCausedBy(Error2));
             ok(!err1.isCausedBy(Error3));
             ok(!err2.isCausedBy(Error3));
+        });
+    });
+
+    describe("registerErrorType", () => {
+        it("register and retrieve", () => {
+            class MyError extends Exception {
+                constructor(message: string, options: ErrorOptions = {}) {
+                    super(message, { ...options, name: "MyError" });
+                }
+            }
+
+            registerErrorType(MyError);
+            strictEqual(getErrorConstructor("MyError"), MyError);
+
+            const obj = Error.toObject(new MyError("something went wrong", {
+                cause: "unknown",
+            }));
+            const err = Error.fromObject(obj);
+            strictEqual(err?.constructor, MyError);
+            strictEqual(err?.name, obj["name"]);
+            strictEqual(err?.message, obj["message"]);
+            strictEqual(err?.stack, obj["stack"]);
+            // @ts-ignore
+            strictEqual(err?.cause, obj["cause"]);
+            // @ts-ignore
+            strictEqual(err?.code, obj["code"]);
+        });
+
+        it("common error types", () => {
+            ok(Object.values(common).some(ctor => isSubclassOf(ctor, Exception)));
+
+            for (const ctor of Object.values(common)) {
+                if (!isSubclassOf(ctor, Exception)) {
+                    continue;
+                }
+
+                const obj = Error.toObject(new ctor("something went wrong", {
+                    cause: "unknown",
+                }));
+                const err = Error.fromObject(obj);
+                strictEqual(err?.constructor, ctor);
+                strictEqual(err?.name, obj["name"]);
+                strictEqual(err?.message, obj["message"]);
+                strictEqual(err?.stack, obj["stack"]);
+                // @ts-ignore
+                strictEqual(err?.cause, obj["cause"]);
+                // @ts-ignore
+                strictEqual(err?.code, obj["code"]);
+            }
         });
     });
 });

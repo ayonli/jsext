@@ -33,7 +33,7 @@ export function registerErrorType<T extends Error>(ctor: Constructor<T>): void {
  * Returns the error constructor by the `name`.
  * @inner
  */
-export function getErrorType<T extends Error>(name: string): Constructor<T> | null {
+export function getErrorConstructor<T extends Error>(name: string): Constructor<T> | null {
     let type = errorTypeRegistry.get(name);
 
     if (!type && name in globalThis) {
@@ -133,7 +133,7 @@ export function fromObject<T extends Error>(
     // @ts-ignore
     const typeName: string = obj["@@type"] || obj.name;
     // @ts-ignore
-    ctor ??= (getErrorType(typeName) ?? Error) as Constructor<T>;
+    ctor ??= (getErrorConstructor(typeName) ?? Error) as Constructor<T>;
     let err: T;
 
     if (ctor.name === "DOMException" && typeof DOMException === "function") {
