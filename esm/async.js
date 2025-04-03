@@ -72,7 +72,12 @@ function createTimeoutError(ms) {
     return new TimeoutError(`Operation timeout after ${ms}ms`);
 }
 /**
- * Try to resolve a promise with a timeout limit.
+ * Try to resolve the promise with a timeout limit.
+ *
+ * **NOTE:** It is recommended to use the `AbortSignal.timeout` API whenever
+ * possible, as it is more efficient and allows for cancellation of the task
+ * itself. This function is mainly for compatibility with existing code that
+ * does not support abort signals.
  *
  * @example
  * ```ts
@@ -93,19 +98,19 @@ async function timeout(task, ms) {
     return result;
 }
 /**
- * Resolves a promise only after the given duration.
+ * Slows down and resolves the promise only after the given duration.
  *
  * @example
  * ```ts
- * import { after } from "@ayonli/jsext/async";
+ * import { pace } from "@ayonli/jsext/async";
  *
  * const task = fetch("https://example.com")
- * const res = await after(task, 1000);
+ * const res = await pace(task, 1000);
  *
  * console.log(res); // the response will not be printed unless 1 second has passed
  * ```
  */
-async function after(task, ms) {
+async function pace(task, ms) {
     const [result] = await Promise.allSettled([
         task,
         new Promise(resolve => setTimeout(resolve, ms))
@@ -117,6 +122,10 @@ async function after(task, ms) {
         throw result.reason;
     }
 }
+/**
+ * @deprecated Use {@link pace} instead.
+ */
+const after = pace;
 /**
  * Blocks the context for a given duration.
  *
@@ -293,5 +302,5 @@ function abortWith(_parent, options = undefined) {
     return ctrl;
 }
 
-export { abortWith, abortable, after, asyncTask, select, sleep, timeout, until };
+export { abortWith, abortable, after, asyncTask, pace, select, sleep, timeout, until };
 //# sourceMappingURL=async.js.map

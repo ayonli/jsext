@@ -1,6 +1,6 @@
 import "./augment.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { asyncTask, abortable, sleep, abortWith } from "./async.ts";
+import { asyncTask, abortable, sleep, abortWith, pace, timeout, until, select } from "./async.ts";
 import { isNodeBelow16 } from "./env.ts";
 import { as } from "./object.ts";
 import { try_ } from "./result.ts";
@@ -161,7 +161,7 @@ describe("async", () => {
     });
 
     it("timeout", async () => {
-        const res1 = await Promise.timeout(Promise.resolve(1), 50);
+        const res1 = await timeout(Promise.resolve(1), 50);
 
         strictEqual(res1, 1);
 
@@ -170,14 +170,16 @@ describe("async", () => {
                 resolve(1);
             }, 100);
         });
-        const { value, error } = await try_(Promise.timeout(job, 50));
+        const { value, error } = await try_(timeout(job, 50));
         strictEqual(value, undefined);
         deepStrictEqual(as(error, Error)?.message, "Operation timeout after 50ms");
+
+        strictEqual(Promise.timeout, timeout);
     });
 
-    it("after", async () => {
+    it("pace", async () => {
         let startTime = Date.now();
-        const res1 = await Promise.after(Promise.resolve(1), 50);
+        const res1 = await pace(Promise.resolve(1), 50);
         const duration = Date.now() - startTime;
 
         strictEqual(res1, 1);
@@ -189,23 +191,28 @@ describe("async", () => {
                 resolve(1);
             }, 100);
         });
-        const res2 = await Promise.after(job, 50);
+        const res2 = await pace(job, 50);
         const duration2 = Date.now() - startTime;
 
         strictEqual(res2, 1);
         ok(duration2 >= 99);
+
+        strictEqual(Promise.pace, pace);
+        strictEqual(Promise.after, pace);
     });
 
     it("sleep", async () => {
         const startTime = Date.now();
-        await Promise.sleep(50);
+        await sleep(50);
         ok(Date.now() - startTime >= 49);
+
+        strictEqual(Promise.sleep, sleep);
     });
 
     describe("until", () => {
         it("return true", async () => {
             let result = 0;
-            const ok = await Promise.until(() => (++result) === 10);
+            const ok = await until(() => (++result) === 10);
             strictEqual(ok, true);
             strictEqual(result, 10);
         });
@@ -216,7 +223,7 @@ describe("async", () => {
                 value = "ok";
             }, 50);
 
-            const result = await Promise.until(() => value);
+            const result = await until(() => value);
             clearTimeout(timer);
             strictEqual(result, "ok");
         });
@@ -227,7 +234,7 @@ describe("async", () => {
                 value = "ok";
             }, 50);
 
-            const result = await Promise.until(() => {
+            const result = await until(() => {
                 if (value !== "ok") {
                     throw new Error("error");
                 }
@@ -235,6 +242,10 @@ describe("async", () => {
             });
             clearTimeout(timer);
             strictEqual(result, "ok");
+        });
+
+        it("augment", () => {
+            strictEqual(Promise.until, until);
         });
     });
 
@@ -246,7 +257,7 @@ describe("async", () => {
         it("functions", async () => {
             let aborted: number[] = [];
             const signals = new Map<number, AbortSignal>();
-            const result = await Promise.select([
+            const result = await select([
                 async signal => {
                     let resolved = false;
                     signals.set(1, signal);
@@ -254,7 +265,7 @@ describe("async", () => {
                         resolved || aborted.push(1);
                     });
 
-                    await Promise.sleep(50);
+                    await sleep(50);
 
                     if (signal.aborted) {
                         return 0;
@@ -270,7 +281,7 @@ describe("async", () => {
                         resolved || aborted.push(2);
                     });
 
-                    await Promise.sleep(100);
+                    await sleep(100);
 
                     if (signal.aborted) {
                         return 0;
@@ -293,7 +304,7 @@ describe("async", () => {
                 ok: ok1,
                 value: result1,
                 error: err1,
-            } = await try_(Promise.select([
+            } = await try_(select([
                 async signal => {
                     let resolved = false;
                     signals.set(1, signal);
@@ -301,7 +312,7 @@ describe("async", () => {
                         resolved || aborted.push(1);
                     });
 
-                    await Promise.sleep(50);
+                    await sleep(50);
 
                     if (signal.aborted) {
                         return 0;
@@ -317,7 +328,7 @@ describe("async", () => {
                         resolved || aborted.push(2);
                     });
 
-                    await Promise.sleep(100);
+                    await sleep(100);
 
                     if (signal.aborted) {
                         return 0;
@@ -339,7 +350,7 @@ describe("async", () => {
         it("with promises", async () => {
             let aborted: number[] = [];
             const signals = new Map<number, AbortSignal>();
-            const result = await Promise.select([
+            const result = await select([
                 async signal => {
                     let resolved = false;
                     signals.set(1, signal);
@@ -347,7 +358,7 @@ describe("async", () => {
                         resolved || aborted.push(1);
                     });
 
-                    await Promise.sleep(50);
+                    await sleep(50);
 
                     if (signal.aborted) {
                         return 0;
@@ -363,7 +374,7 @@ describe("async", () => {
                         resolved || aborted.push(2);
                     });
 
-                    await Promise.sleep(100);
+                    await sleep(100);
 
                     if (signal.aborted) {
                         return 0;
@@ -391,7 +402,7 @@ describe("async", () => {
                 ok: ok1,
                 value: result1,
                 error: err1,
-            } = await try_(Promise.select([
+            } = await try_(select([
                 async signal => {
                     let resolved = false;
                     signals.set(1, signal);
@@ -399,7 +410,7 @@ describe("async", () => {
                         resolved || aborted.push(1);
                     });
 
-                    await Promise.sleep(50);
+                    await sleep(50);
 
                     if (signal.aborted) {
                         return 0;
@@ -415,7 +426,7 @@ describe("async", () => {
                         resolved || aborted.push(2);
                     });
 
-                    await Promise.sleep(100);
+                    await sleep(100);
 
                     if (signal.aborted) {
                         return 0;
@@ -445,7 +456,7 @@ describe("async", () => {
 
             const ctrl = new AbortController();
             setTimeout(() => ctrl.abort(), 150);
-            const result = await Promise.select([
+            const result = await select([
                 async signal => {
                     let resolved = false;
                     signals.set(1, signal);
@@ -453,7 +464,7 @@ describe("async", () => {
                         resolved || aborted.push(1);
                     });
 
-                    await Promise.sleep(50);
+                    await sleep(50);
 
                     if (signal.aborted) {
                         return 0;
@@ -469,7 +480,7 @@ describe("async", () => {
                         resolved || aborted.push(2);
                     });
 
-                    await Promise.sleep(100);
+                    await sleep(100);
 
                     if (signal.aborted) {
                         return 0;
@@ -498,7 +509,7 @@ describe("async", () => {
                 ok: ok1,
                 value: result1,
                 error: err1,
-            } = await try_(Promise.select([
+            } = await try_(select([
                 async signal => {
                     let resolved = false;
                     signals.set(1, signal);
@@ -506,7 +517,7 @@ describe("async", () => {
                         resolved || aborted.push(1);
                     });
 
-                    await Promise.sleep(50);
+                    await sleep(50);
 
                     if (signal.aborted) {
                         return 0;
@@ -522,7 +533,7 @@ describe("async", () => {
                         resolved || aborted.push(2);
                     });
 
-                    await Promise.sleep(100);
+                    await sleep(100);
 
                     if (signal.aborted) {
                         return 0;
@@ -549,7 +560,7 @@ describe("async", () => {
                 ok: ok2,
                 value: result2,
                 error: err2,
-            } = await try_(Promise.select([
+            } = await try_(select([
                 async signal => {
                     let resolved = false;
                     signals.set(1, signal);
@@ -557,7 +568,7 @@ describe("async", () => {
                         resolved || aborted.push(1);
                     });
 
-                    await Promise.sleep(50);
+                    await sleep(50);
 
                     if (signal.aborted) {
                         return 0;
@@ -573,7 +584,7 @@ describe("async", () => {
                         resolved || aborted.push(2);
                     });
 
-                    await Promise.sleep(100);
+                    await sleep(100);
 
                     if (signal.aborted) {
                         return 0;
@@ -589,6 +600,10 @@ describe("async", () => {
             strictEqual(result2, undefined);
             deepStrictEqual(aborted, []);
             strictEqual(signals.size, 0);
+        });
+
+        it("augment", () => {
+            strictEqual(Promise.select, select);
         });
     });
 
@@ -634,7 +649,7 @@ describe("async", () => {
                 timeout: 50,
             });
 
-            await Promise.sleep(100);
+            await sleep(100);
 
             ok(!parent.signal.aborted);
             ok(child.signal.aborted);
@@ -680,7 +695,7 @@ describe("async", () => {
                 timeout: 50,
             });
 
-            await Promise.sleep(100);
+            await sleep(100);
             ok(!parent3.signal.aborted);
             ok(child3.signal.aborted);
             strictEqual((child3.signal.reason as Error)?.name, "TimeoutError");

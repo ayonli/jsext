@@ -69,7 +69,7 @@ export function asyncTask<T>(): AsyncTask<T> {
  */
 export function abortable<T>(task: AsyncIterable<T>, signal: AbortSignal): AsyncIterable<T>;
 /**
- * Try to resolve a promise with an abort signal.
+ * Try to resolve the promise with an abort signal.
  * 
  * **NOTE:** This function does not cancel the task itself, it only prematurely
  * breaks the current routine when the signal is aborted. In order to support
@@ -141,7 +141,12 @@ function createTimeoutError(ms: number): DOMException | Exception {
 }
 
 /**
- * Try to resolve a promise with a timeout limit.
+ * Try to resolve the promise with a timeout limit.
+ * 
+ * **NOTE:** It is recommended to use the `AbortSignal.timeout` API whenever
+ * possible, as it is more efficient and allows for cancellation of the task
+ * itself. This function is mainly for compatibility with existing code that
+ * does not support abort signals.
  * 
  * @example
  * ```ts
@@ -163,19 +168,19 @@ export async function timeout<T>(task: PromiseLike<T>, ms: number): Promise<T> {
 }
 
 /**
- * Resolves a promise only after the given duration.
+ * Slows down and resolves the promise only after the given duration.
  * 
  * @example
  * ```ts
- * import { after } from "@ayonli/jsext/async";
+ * import { pace } from "@ayonli/jsext/async";
  * 
  * const task = fetch("https://example.com")
- * const res = await after(task, 1000);
+ * const res = await pace(task, 1000);
  * 
  * console.log(res); // the response will not be printed unless 1 second has passed
  * ```
  */
-export async function after<T>(task: PromiseLike<T>, ms: number): Promise<T> {
+export async function pace<T>(task: PromiseLike<T>, ms: number): Promise<T> {
     const [result] = await Promise.allSettled([
         task,
         new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -187,6 +192,11 @@ export async function after<T>(task: PromiseLike<T>, ms: number): Promise<T> {
         throw result.reason;
     }
 }
+
+/**
+ * @deprecated Use {@link pace} instead.
+ */
+export const after = pace;
 
 /**
  * Blocks the context for a given duration.

@@ -4,7 +4,7 @@ import { wrapChannel, isChannelMessage, handleChannelMessage } from './channel.j
 import { getObjectURL } from '../module/util.js';
 import { isPlainObject } from '../object.js';
 import { serial } from '../number.js';
-import { fromErrorEvent, isDOMException, isAggregateError, toObject, getErrorType, fromObject } from '../error.js';
+import { fromErrorEvent, isDOMException, isAggregateError, toObject, getErrorConstructor, fromObject } from '../error.js';
 import { join, toFsPath, cwd, extname, resolve, dirname } from '../path.js';
 import { unrefTimer } from '../runtime.js';
 import Exception from '../error/Exception.js';
@@ -447,7 +447,7 @@ function wrapArgs(args, getWorker) {
 function unwrapReturnValue(value) {
     if (isPlainObject(value) &&
         typeof value["@@type"] === "string" &&
-        getErrorType(value["@@type"])) {
+        getErrorConstructor(value["@@type"])) {
         return fromObject(value);
     }
     return value;

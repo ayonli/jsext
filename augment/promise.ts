@@ -1,10 +1,12 @@
-import { after, sleep, timeout, until, select } from "../async.ts";
+import { after, pace, sleep, timeout, until, select } from "../async.ts";
 
 declare global {
     interface PromiseConstructor {
-        /** Try to resolve a promise with a timeout limit. */
+        /** Try to resolve the promise with a timeout limit. */
         timeout<T>(value: PromiseLike<T>, ms: number): Promise<T>;
-        /** Resolves a promise only after the given duration. */
+        /** Slows down and resolves the promise only after the given duration. */
+        pace<T>(value: PromiseLike<T>, ms: number): Promise<T>;
+        /** @deprecated Use {@link pace} instead. */
         after<T>(value: PromiseLike<T>, ms: number): Promise<T>;
         /** Blocks the context for a given duration. */
         sleep(ms: number): Promise<void>;
@@ -29,6 +31,7 @@ declare global {
 
 Promise.timeout = timeout;
 Promise.after = after;
+Promise.pace = pace;
 Promise.sleep = sleep;
 Promise.until = until;
 Promise.select = select;

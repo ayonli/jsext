@@ -828,7 +828,7 @@ function registerErrorType(ctor) {
  * Returns the error constructor by the `name`.
  * @inner
  */
-function getErrorType(name) {
+function getErrorConstructor(name) {
     let type = errorTypeRegistry.get(name);
     if (!type && name in globalThis) {
         const value = globalThis[name];
@@ -886,7 +886,7 @@ function fromObject(obj, ctor = undefined) {
     // @ts-ignore
     const typeName = obj["@@type"] || obj.name;
     // @ts-ignore
-    ctor !== null && ctor !== void 0 ? ctor : (ctor = ((_a = getErrorType(typeName)) !== null && _a !== void 0 ? _a : Error));
+    ctor !== null && ctor !== void 0 ? ctor : (ctor = ((_a = getErrorConstructor(typeName)) !== null && _a !== void 0 ? _a : Error));
     let err;
     if (ctor.name === "DOMException" && typeof DOMException === "function") {
         err = new ctor((_b = obj["message"]) !== null && _b !== void 0 ? _b : "", obj["name"]);
@@ -1714,7 +1714,7 @@ function unwrapArgs(args, channelWrite) {
             if (arg["@@type"] === "Channel" && typeof arg["@@id"] === "number") {
                 return unwrapChannel(arg, channelWrite);
             }
-            else if (typeof arg["@@type"] === "string" && getErrorType(arg["@@type"])) {
+            else if (typeof arg["@@type"] === "string" && getErrorConstructor(arg["@@type"])) {
                 return fromObject(arg);
             }
         }
