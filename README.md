@@ -68,6 +68,8 @@ In `tsconfig.json`, the following `compilerOptions` must be set as such:
 - [func](https://jsr.io/@ayonli/jsext/doc/func/~/func) Declares a function along with
   a `defer` keyword, inspired by
   Golang.
+- [once](https://jsr.io/@ayonli/jsext/doc/once/~/once) Creates a function that performs
+  lazy initialization on the first call.
 - [wrap](https://jsr.io/@ayonli/jsext/doc/wrap/~/wrap) Wraps a function for decorator
   pattern but keep its signature.
 - [mixin](https://jsr.io/@ayonli/jsext/doc/mixin/~/mixin) Declares a class that

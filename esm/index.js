@@ -1,5 +1,6 @@
 import _try from './try.js';
 import func from './func.js';
+import once from './once.js';
 import wrap from './wrap.js';
 import mixin from './mixin.js';
 import throttle from './throttle.js';
@@ -26,6 +27,7 @@ const jsext = {
      */
     try: _try,
     func,
+    once,
     wrap,
     mixin,
     throttle,
@@ -39,5 +41,5 @@ const jsext = {
     pipe,
 };
 
-export { _try, chan, debounce, jsext as default, deprecate, func, lock, mixin, parallel, pipe, queue, run, throttle, wrap };
+export { _try, chan, debounce, jsext as default, deprecate, func, lock, mixin, once, parallel, pipe, queue, run, throttle, wrap };
 //# sourceMappingURL=index.js.map

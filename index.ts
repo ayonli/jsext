@@ -1,5 +1,6 @@
 import _try from "./try.ts";
 import func from "./func.ts";
+import once from "./once.ts";
 import wrap from "./wrap.ts";
 import mixin from "./mixin.ts";
 import throttle from "./throttle.ts";
@@ -26,6 +27,7 @@ const jsext = {
      */
     try: _try,
     func,
+    once,
     wrap,
     mixin,
     throttle,
@@ -43,6 +45,7 @@ export {
     jsext as default,
     _try,
     func,
+    once,
     wrap,
     mixin,
     throttle,

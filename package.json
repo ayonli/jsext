@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "description": "A JavaScript extension package for building strong and modern applications.",
     "type": "module",
     "exports": {
@@ -293,6 +293,13 @@
             "import": "./esm/object.js",
             "require": "./cjs/object.js",
             "default": "./object.ts"
+        },
+        "./once": {
+            "types": "./types/once.d.ts",
+            "bun": "./once.ts",
+            "import": "./esm/once.js",
+            "require": "./cjs/once.js",
+            "default": "./once.ts"
         },
         "./parallel": {
             "types": "./types/parallel.d.ts",

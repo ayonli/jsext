@@ -39,6 +39,7 @@
         "./net": "./net.ts",
         "./number": "./number.ts",
         "./object": "./object.ts",
+        "./once": "./once.ts",
         "./parallel": "./parallel.ts",
         "./path": "./path.ts",
         "./pipe": "./pipe.ts",
