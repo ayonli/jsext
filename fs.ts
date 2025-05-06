@@ -652,9 +652,24 @@ export async function readFileAsFile(
         return await webReadFileAsFile(target, options);
     }
 
+    const _stat = await stat(target, options);
     const bytes = await readFile(target, options);
     const type = getMIME(extname(target)) ?? "";
     const file = new File([bytes], basename(target), { type });
+    const lastModified = _stat.mtime?.getTime() ?? Date.now();
+
+    Object.defineProperty(file, "lastModified", {
+        configurable: true,
+        enumerable: true,
+        writable: false,
+        value: lastModified,
+    })
+    Object.defineProperty(file, "lastModifiedDate", {
+        configurable: true,
+        enumerable: true,
+        writable: false,
+        value: new Date(lastModified),
+    });
 
     Object.defineProperty(file, "webkitRelativePath", {
         configurable: true,

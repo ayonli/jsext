@@ -516,14 +516,28 @@ async function readFileAsText(target, options = {}) {
  * ```
  */
 async function readFileAsFile(target, options = {}) {
-    var _a;
+    var _a, _b, _c;
     target = ensureFsTarget(target);
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
         return await readFileAsFile$1(target, options);
     }
+    const _stat = await stat(target, options);
     const bytes = await readFile(target, options);
     const type = (_a = getMIME(extname(target))) !== null && _a !== void 0 ? _a : "";
     const file = new File([bytes], basename(target), { type });
+    const lastModified = (_c = (_b = _stat.mtime) === null || _b === void 0 ? void 0 : _b.getTime()) !== null && _c !== void 0 ? _c : Date.now();
+    Object.defineProperty(file, "lastModified", {
+        configurable: true,
+        enumerable: true,
+        writable: false,
+        value: lastModified,
+    });
+    Object.defineProperty(file, "lastModifiedDate", {
+        configurable: true,
+        enumerable: true,
+        writable: false,
+        value: new Date(lastModified),
+    });
     Object.defineProperty(file, "webkitRelativePath", {
         configurable: true,
         enumerable: true,
