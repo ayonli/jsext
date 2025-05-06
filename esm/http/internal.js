@@ -350,7 +350,6 @@ function toWebRequest(req) {
                         }
                     }
                     else {
-                        // This stream is requested for copy read.
                         controller.enqueue(data);
                     }
                     if (typeof controller.desiredSize === "number" && controller.desiredSize <= 0) {

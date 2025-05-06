@@ -437,7 +437,6 @@ function toWebRequest(req: IncomingMessage | Http2ServerRequest): Request {
                             controller.enqueue(data.subarray(viewLength));
                         }
                     } else {
-                        // This stream is requested for copy read.
                         controller.enqueue(data);
                     }
 
