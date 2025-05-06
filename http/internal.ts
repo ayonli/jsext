@@ -423,18 +423,18 @@ function toWebRequest(req: IncomingMessage | Http2ServerRequest): Request {
                     const request = getByobRequest(controller);
 
                     if (request) {
-                        // This stream is requested for zero-copy read.
                         const view = request.view as Uint8Array;
+                        const viewLength = view.byteLength;
 
-                        if (data.byteLength <= view.byteLength) {
-                            view.set(data, view.byteOffset);
+                        if (data.byteLength <= viewLength) {
+                            view.set(data);
                             request.respond(data.byteLength);
                         } else {
-                            view.set(data.subarray(0, view.byteLength), view.byteOffset);
-                            request.respond(view.byteLength);
+                            view.set(data.subarray(0, viewLength));
+                            request.respond(viewLength);
 
                             // Enqueue the rest of the data to the stream.
-                            controller.enqueue(data.subarray(view.byteLength));
+                            controller.enqueue(data.subarray(viewLength));
                         }
                     } else {
                         // This stream is requested for copy read.

@@ -42,7 +42,7 @@ export function resolveReadableStream<T>(promise: Promise<ReadableStream<T>>): R
 export function resolveByteStream(
     promise: Promise<ReadableStream<Uint8Array>>
 ): ReadableStream<Uint8Array> {
-    let reader: ReadableStreamBYOBReader
+    let srcReader: ReadableStreamBYOBReader
         | ReadableStreamDefaultReader<Uint8Array>;
 
     return new ReadableStream<Uint8Array>({
@@ -51,9 +51,9 @@ export function resolveByteStream(
             const source = await promise;
 
             try { // zero-copy read from the source stream
-                reader = source.getReader({ mode: "byob" });
+                srcReader = source.getReader({ mode: "byob" });
             } catch {
-                reader = source.getReader();
+                srcReader = source.getReader();
             }
         },
         async pull(controller) {
@@ -66,18 +66,17 @@ export function resolveByteStream(
                     // This stream is requested for zero-copy read.
                     request = controller.byobRequest;
                     view = request.view as Uint8Array;
-                } else if (reader instanceof ReadableStreamBYOBReader) {
-                    view = new Uint8Array(4096);
                 }
 
-                if (reader instanceof ReadableStreamBYOBReader) {
+                if (srcReader instanceof ReadableStreamBYOBReader) {
                     // The source stream supports zero-copy read, we can read its
                     // data directly into the request view's buffer.
-                    result = await reader.read(view!);
+                    view ??= new Uint8Array(4096);
+                    result = await srcReader.read(view!);
                 } else {
                     // The source stream does not support zero-copy read, we need to
                     // copy its data to a new buffer.
-                    result = await reader.read();
+                    result = await srcReader.read();
                 }
 
                 if (request) {
@@ -91,14 +90,9 @@ export function resolveByteStream(
                         } else {
                             request.respond(0);
                         }
-                    } else if (reader instanceof ReadableStreamBYOBReader
-                        || (view && result.value.buffer.byteLength === view.buffer.byteLength)
-                    ) {
+                    } else if (srcReader instanceof ReadableStreamBYOBReader) {
                         // Respond to the request reader with the same underlying
                         // buffer of the source stream.
-                        // Or the source stream doesn't support zero-copy read, but
-                        // the result bytes has the same buffer size as the request
-                        // view.
                         request.respondWithNewView(result.value);
                     } else {
                         // This stream is requested for zero-copy read, but the
@@ -114,13 +108,13 @@ export function resolveByteStream(
                     }
                 }
             } catch (err) {
-                reader.releaseLock();
+                srcReader.releaseLock();
                 controller.error(err);
             }
         },
         cancel(reason = undefined) {
-            reader.cancel(reason);
-            reader.releaseLock();
+            srcReader.cancel(reason);
+            srcReader.releaseLock();
         },
     });
 }
