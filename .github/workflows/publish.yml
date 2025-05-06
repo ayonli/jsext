@@ -120,7 +120,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [16.x, 18.x, v20.18.3, v22.13.1]
+        node-version: [16.x, 18.x, v20.18.3]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
