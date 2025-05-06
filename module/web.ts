@@ -152,7 +152,9 @@ export function isMain(importMeta: ImportMeta | NodeJS.Module): boolean {
             return ["<repl>", "[eval]"].includes((importMeta as NodeJS.Module)["id"]);
         }
 
-        const filename = "url" in importMeta ? importMeta.url : importMeta["filename"];
+        const filename = "url" in importMeta
+            ? importMeta.url
+            : (importMeta["filename"] ?? process.argv[1]);
         const urlExt = extname(filename);
         let entry = process.argv[1]!;
 

@@ -45,6 +45,7 @@ function isExportsObject(module) {
     return typeof module === "object" && module !== null && !Array.isArray(module);
 }
 function isMain(importMeta) {
+    var _a;
     if ("main" in importMeta && typeof importMeta["main"] === "boolean") {
         return importMeta["main"];
     }
@@ -62,7 +63,9 @@ function isMain(importMeta) {
             // or the program is executed by itself.
             return ["<repl>", "[eval]"].includes(importMeta["id"]);
         }
-        const filename = "url" in importMeta ? importMeta.url : importMeta["filename"];
+        const filename = "url" in importMeta
+            ? importMeta.url
+            : ((_a = importMeta["filename"]) !== null && _a !== void 0 ? _a : process.argv[1]);
         const urlExt = extname(filename);
         let entry = process.argv[1];
         if (!extname(entry) && urlExt) {

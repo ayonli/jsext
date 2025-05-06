@@ -360,6 +360,11 @@ export function withWeb(
     };
 }
 
+function getByobRequest(controller: ReadableByteStreamController) {
+    return "byobRequest" in controller && controller.byobRequest?.view
+        ? controller.byobRequest
+        : null;
+}
 
 /**
  * Transforms a Node.js HTTP request to a modern `Request` object.
@@ -410,18 +415,48 @@ function toWebRequest(req: IncomingMessage | Http2ServerRequest): Request {
     }
 
     if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "OPTIONS") {
-        const { readable, writable } = new TransformStream();
-        const writer = writable.getWriter();
+        init.body = new ReadableStream({
+            type: "bytes",
+            start(controller) {
+                req.on("data", (chunk: Buffer) => {
+                    const data = new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+                    const request = getByobRequest(controller);
 
-        req.on("data", (chunk) => {
-            writer.write(chunk);
-        }).once("error", (err) => {
-            writer.abort(err);
-        }).once("end", () => {
-            writer.close();
+                    if (request) {
+                        // This stream is requested for zero-copy read.
+                        const view = request.view as Uint8Array;
+
+                        if (data.byteLength <= view.byteLength) {
+                            view.set(data, view.byteOffset);
+                            request.respond(data.byteLength);
+                        } else {
+                            view.set(data.subarray(0, view.byteLength), view.byteOffset);
+                            request.respond(view.byteLength);
+
+                            // Enqueue the rest of the data to the stream.
+                            controller.enqueue(data.subarray(view.byteLength));
+                        }
+                    } else {
+                        // This stream is requested for copy read.
+                        controller.enqueue(data);
+                    }
+
+                    if (typeof controller.desiredSize === "number" && controller.desiredSize <= 0) {
+                        req.pause();
+                    }
+                }).once("error", (err) => {
+                    controller.error(err);
+                }).once("end", () => {
+                    controller.close();
+                    getByobRequest(controller)?.respond(0); // Close the BYOB request.
+                });
+            },
+            pull() {
+                req.resume();
+            },
+        }, {
+            highWaterMark: req.readableHighWaterMark,
         });
-
-        init.body = readable;
         // @ts-ignore Node.js special
         init.duplex = "half";
     }
