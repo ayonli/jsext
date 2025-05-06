@@ -5,16 +5,12 @@
  * @module
  */
 import { z } from "zod";
+import type { MethodDecorator } from "../types.ts";
 
 const _source = Symbol.for("source");
 const _params = Symbol.for("params");
 const _returns = Symbol.for("returns");
 const _throws = Symbol.for("throws");
-
-export type MethodDecorator = {
-    <T>(target: any, prop: string, desc: TypedPropertyDescriptor<T>): void | TypedPropertyDescriptor<T>;
-    <F extends (...args: any[]) => any>(target: F, context: DecoratorContext): void | F;
-};
 
 function refinedError(err: any, ctorOpt: Function) {
     if (err instanceof z.ZodError) {

@@ -250,3 +250,11 @@ declare const __brand: unique symbol;
  * ```
  */
 export type Branded<T, B> = T & { [__brand]: B; };
+
+/**
+ * The signature for both ES6 and TypeScript legacy method decorators.
+ */
+export type MethodDecorator = {
+    <T>(target: any, prop: string, desc: TypedPropertyDescriptor<T>): void | TypedPropertyDescriptor<T>;
+    <F extends (...args: any[]) => any>(target: F, context: DecoratorContext): void | F;
+};

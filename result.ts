@@ -111,7 +111,7 @@
  * @experimental
  * @module
  */
-import { MethodDecorator } from "./class/decorators.ts";
+import { MethodDecorator } from "./types.ts";
 import _wrap from "./wrap.ts";
 
 export interface IResult<T, E> {
