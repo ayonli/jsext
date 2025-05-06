@@ -1,4 +1,4 @@
-import bytes, { concat as concatBytes } from "../bytes.ts";
+import { concat as concatBytes } from "../bytes.ts";
 import { makeTree } from "../fs/util.ts";
 import { omit } from "../object.ts";
 import { basename, dirname } from "../path.ts";
@@ -86,7 +86,6 @@ enum FileTypes {
 }
 
 export const HEADER_LENGTH = 512;
-const USTAR_MAGIC_HEADER = "ustar\x00";
 
 export interface USTarFileHeader {
     name: string;
@@ -107,25 +106,26 @@ export interface USTarFileHeader {
     prefix: string;
 }
 
-const USTarFileHeaderFieldLengths = { // byte offset
-    name: 100,                        // 0
-    mode: 8,                          // 100
-    uid: 8,                           // 108
-    gid: 8,                           // 116
-    size: 12,                         // 124
-    mtime: 12,                        // 136
-    checksum: 8,                      // 148
-    typeflag: 1,                      // 156
-    linkname: 100,                    // 157
-    magic: 6,                         // 257
-    version: 2,                       // 263
-    uname: 32,                        // 265
-    gname: 32,                        // 297
-    devmajor: 8,                      // 329
-    devminor: 8,                      // 337
-    prefix: 155,                      // 345
-    padding: 12,                      // 500
-};
+const USTarFileHeaderFieldLengths = new Map<string, number>([
+    // field => byte length ---------------- offset
+    ["name", 100],                        // 0
+    ["mode", 8],                          // 100
+    ["uid", 8],                           // 108
+    ["gid", 8],                           // 116
+    ["size", 12],                         // 124
+    ["mtime", 12],                        // 136
+    ["checksum", 8],                      // 148
+    ["typeflag", 1],                      // 156
+    ["linkname", 100],                    // 157
+    ["magic", 6],                         // 257
+    ["version", 2],                       // 263
+    ["uname", 32],                        // 265
+    ["gname", 32],                        // 297
+    ["devmajor", 8],                      // 329
+    ["devminor", 8],                      // 337
+    ["prefix", 155],                      // 345
+    ["padding", 12],                      // 500
+]);
 
 // https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html#tag_20_92_13_06
 // eight checksum bytes taken to be ascii spaces (decimal value 32)
@@ -135,26 +135,9 @@ export function throwCorruptedArchiveError(): never {
     throw new CorruptedArchiveError("The archive is corrupted.");
 }
 
-function toFixedOctal(num: number, bytes: number): string {
-    return num.toString(8).padStart(bytes, "0");
-}
-
 function trimBytes(data: Uint8Array): Uint8Array {
     const index = data.indexOf(0);
     return index === -1 ? data : data.subarray(0, index);
-}
-
-function formatHeader(data: USTarFileHeader): Uint8Array {
-    const buffer = new Uint8Array(HEADER_LENGTH);
-    let offset = 0;
-
-    for (const [field, length] of Object.entries(USTarFileHeaderFieldLengths)) {
-        const entry = bytes(data[field as keyof USTarFileHeader] || "");
-        buffer.set(entry, offset);
-        offset += length;
-    }
-
-    return buffer;
 }
 
 export function parseHeader(header: Uint8Array): [USTarFileHeader, header: Uint8Array, leftChunk: Uint8Array] | null {
@@ -162,7 +145,7 @@ export function parseHeader(header: Uint8Array): [USTarFileHeader, header: Uint8
     const data: USTarFileHeader = {} as USTarFileHeader;
     let offset = 0;
 
-    for (const [field, length] of Object.entries(USTarFileHeaderFieldLengths)) {
+    for (const [field, length] of USTarFileHeaderFieldLengths) {
         let buffer = header.subarray(offset, offset + length);
 
         if (field !== "magic") {
@@ -233,6 +216,8 @@ export const _entries = Symbol.for("entries");
 
 /**
  * A `Tarball` instance represents a tar archive.
+ * 
+ * NOTE: currently, this implementation only supports the UStar format.
  * 
  * @example
  * ```ts
@@ -315,11 +300,13 @@ export default class Tarball {
             }
         }
 
+        const encoder = new TextEncoder();
         let body: ReadableStream<Uint8Array>;
         let size = 0;
+        let mtime = info.mtime;
 
         if (typeof data === "string") {
-            const _data = bytes(data);
+            const _data = encoder.encode(data);
             body = toReadableStream([_data]);
             size = _data.byteLength;
         } else if (data instanceof ArrayBuffer) {
@@ -332,6 +319,10 @@ export default class Tarball {
             const _data = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
             body = toReadableStream([_data]);
             size = _data.byteLength;
+        } else if (typeof File === "function" && data instanceof File) {
+            body = data.stream();
+            size = data.size;
+            mtime = info.mtime ?? new Date(data.lastModified);
         } else if (typeof Blob === "function" && data instanceof Blob) {
             body = data.stream();
             size = data.size;
@@ -348,42 +339,57 @@ export default class Tarball {
                 "data must be a string, Uint8Array, ArrayBuffer, ArrayBufferView, Blob, or ReadableStream.");
         }
 
+        mtime ??= new Date();
         const kind = info.kind ?? "file";
-        const mode = info.mode ?? (kind === "directory" ? 0o755 : 0o666);
-        const mtime = info.mtime ?? new Date();
+        const mode = info.mode ?? (kind === "directory" ? 0o755 : 0o644);
 
         if (kind === "directory") {
             size = 0; // ensure size is 0 for directories
         }
 
+        // https://man.freebsd.org/cgi/man.cgi?query=tar&sektion=5&apropos=0&manpath=FreeBSD+15.0-CURRENT
         const headerInfo: USTarFileHeader = {
             name,
-            mode: toFixedOctal(mode, USTarFileHeaderFieldLengths.mode),
-            uid: toFixedOctal(info.uid ?? 0, USTarFileHeaderFieldLengths.uid),
-            gid: toFixedOctal(info.gid ?? 0, USTarFileHeaderFieldLengths.gid),
-            size: toFixedOctal(size, USTarFileHeaderFieldLengths.size),
-            mtime: toFixedOctal(Math.floor((mtime.getTime()) / 1000), USTarFileHeaderFieldLengths.mtime),
-            checksum: "        ",
+            mode: mode.toString(8).padStart(6, "0") + " \0",
+            uid: (info.uid ?? 0).toString(8).padStart(6, "0") + " \0",
+            gid: (info.gid ?? 0).toString(8).padStart(6, "0") + " \0",
+            size: size.toString(8).padStart(size < 8 ** 11 ? 11 : 12, "0") + (size < 8 ** 11 ? " " : ""),
+            mtime: Math.floor((mtime.getTime()) / 1000).toString(8).padStart(11, "0") + " ",
+            checksum: " ".repeat(8),
             typeflag: kind in FileTypes ? String(FileTypes[kind]) : "0",
-            linkname: kind === "link" || kind === "symlink" ? name : "",
-            magic: USTAR_MAGIC_HEADER,
+            linkname: "\0".repeat(100),
+            magic: "ustar\0",
             version: "00",
-            uname: info.owner || "",
-            gname: info.group || "",
-            devmajor: "00000000",
-            devminor: "00000000",
+            uname: (info.owner ?? "").padEnd(32, "\0"),
+            gname: (info.group ?? "").padEnd(32, "\0"),
+            devmajor: "\0".repeat(8),
+            devminor: "\0".repeat(8),
             prefix,
         };
 
-        // calculate the checksum
-        let checksum = 0;
-        const encoder = new TextEncoder();
-        Object.values(headerInfo).forEach((data: string) => {
-            checksum += encoder.encode(data).reduce((p, c): number => p + c, 0);
-        });
+        const header = new Uint8Array(HEADER_LENGTH);
+        let offset = 0;
 
-        headerInfo.checksum = toFixedOctal(checksum, USTarFileHeaderFieldLengths.checksum);
-        const header = formatHeader(headerInfo);
+        for (const [field, length] of USTarFileHeaderFieldLengths) {
+            if (field === "padding") {
+                break;
+            }
+
+            const data = headerInfo[field as keyof USTarFileHeader] ?? "";
+            const bytes = encoder.encode(data);
+
+            if (bytes.byteLength !== length && field !== "name" && field !== "prefix") {
+                throw new TypeError(`Invalid header field length for ${field}: ${bytes.byteLength}`);
+            }
+
+            header.set(bytes, offset);
+            offset += length;
+        }
+
+        // update checksum
+        const checksum = header.reduce((p, c) => p + c, 0);
+        header.set(encoder.encode(checksum.toString(8).padStart(6, "0") + "\0 "), 148);
+
         const fileName = info.name
             || (typeof File === "function" && data instanceof File
                 ? data.name
@@ -631,6 +637,7 @@ export default class Tarball {
             }
         }
 
+        streams.push(toReadableStream([new Uint8Array(1024)])); // EOF
         const stream = concatStreams(...streams);
 
         if (options.gzip) {
