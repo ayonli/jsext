@@ -4,7 +4,6 @@ import { stat, createReadableStream, createWritableStream, readFileAsText, remov
 import Tarball, { type TarEntry, _entries, TarTree } from "../archive/Tarball.ts";
 import { readAsText } from "../reader.ts";
 import { omit } from "../object.ts";
-import { platform } from "../runtime.ts";
 import { try_ } from "../result.ts";
 
 describe("archive/Tarball", () => {
