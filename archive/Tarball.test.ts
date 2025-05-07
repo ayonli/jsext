@@ -145,21 +145,6 @@ describe("archive/Tarball", () => {
         ] as TarEntry[]);
     });
 
-    it("size", () => {
-        try {
-            if (platform() === "windows") {
-                strictEqual(tarball1.size, 66048);
-                strictEqual(tarball2.size, 66048);
-            } else {
-                strictEqual(tarball1.size, 69120);
-                strictEqual(tarball2.size, 69120);
-            }
-        } catch {
-            ok(tarball1.size > 0);
-            ok(tarball2.size > 0);
-        }
-    });
-
     it("stream", async () => {
         ok(!(await exists(filename1)));
         const output = createWritableStream(filename1);
@@ -401,5 +386,13 @@ describe("archive/Tarball", () => {
 
         const res4 = tarball.replace("foo", "Hello, World!");
         strictEqual(res4, false);
+    });
+
+    it("size", async () => {
+        const input = createReadableStream(filename1);
+        const tarball = await Tarball.load(input);
+        const _stat = await stat(filename1);
+
+        strictEqual(tarball.size, _stat.size);
     });
 });

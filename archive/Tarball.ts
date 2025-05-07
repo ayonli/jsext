@@ -585,7 +585,7 @@ export default class Tarball {
             }
 
             return size;
-        }, 0);
+        }, 0) + 1024; // EOF
     }
 
     /**

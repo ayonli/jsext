@@ -434,7 +434,7 @@ class Tarball {
                 size += paddingSize;
             }
             return size;
-        }, 0);
+        }, 0) + 1024; // EOF
     }
     /**
      * Indicates whether the body of the tarball has been used. This property
