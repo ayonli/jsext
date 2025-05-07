@@ -47,36 +47,29 @@ const initialChecksum = 8 * 32;
 function throwCorruptedArchiveError() {
     throw new CorruptedArchiveError("The archive is corrupted.");
 }
-function trimBytes(data) {
-    const index = data.indexOf(0);
-    return index === -1 ? data : data.subarray(0, index);
-}
 function parseHeader(header) {
     const decoder = new TextDecoder();
-    const data = {};
+    const info = {};
     let offset = 0;
     for (const [field, length] of USTarFileHeaderFieldLengths) {
-        let buffer = header.subarray(offset, offset + length);
-        if (field !== "magic") {
-            buffer = trimBytes(buffer);
-        }
-        const value = decoder.decode(buffer).trim();
-        data[field] = value;
+        const buffer = header.subarray(offset, offset + length);
+        const value = decoder.decode(buffer);
+        info[field] = value;
         offset += length;
     }
     // validate checksum
     const checksum = getChecksum(header);
-    if (checksum !== parseInt(data.checksum, 8)) {
+    if (checksum !== parseInt(info.checksum, 8)) {
         if (checksum === initialChecksum) {
             // EOF
             return null;
         }
         throwCorruptedArchiveError();
     }
-    if (!data.magic.startsWith("ustar")) {
-        throw new TypeError("Unsupported archive format: " + data.magic);
+    if (!info.magic.startsWith("ustar")) {
+        throw new TypeError("Unsupported archive format: " + info.magic);
     }
-    return [data, header.subarray(0, offset), header.subarray(offset)];
+    return [info, header.subarray(0, offset), header.subarray(offset)];
 }
 function getChecksum(header) {
     let sum = initialChecksum;
@@ -91,8 +84,9 @@ function getChecksum(header) {
 }
 function createEntry(headerInfo) {
     var _c;
-    const relativePath = (headerInfo.prefix ? headerInfo.prefix + "/" : "")
-        + stripEnd(headerInfo.name, "/");
+    const name = stripEnd(trimHeaderField(headerInfo.name), "/");
+    const prefix = trimHeaderField(headerInfo.prefix);
+    const relativePath = (prefix ? prefix + "/" : "") + name;
     return {
         name: basename(relativePath),
         kind: ((_c = FileTypes[parseInt(headerInfo.typeflag)]) !== null && _c !== void 0 ? _c : "file"),
@@ -102,9 +96,13 @@ function createEntry(headerInfo) {
         mode: parseInt(headerInfo.mode, 8),
         uid: parseInt(headerInfo.uid, 8),
         gid: parseInt(headerInfo.gid, 8),
-        owner: headerInfo.uname.trim(),
-        group: headerInfo.gname.trim(),
+        owner: trimHeaderField(headerInfo.uname),
+        group: trimHeaderField(headerInfo.gname),
     };
+}
+function trimHeaderField(data) {
+    const index = data.indexOf("\0");
+    return (index === -1 ? data : data.slice(0, index)).trim();
 }
 function getEmptyData(info) {
     if (info.kind === "directory") {
@@ -241,12 +239,12 @@ class Tarball {
         }
         // https://man.freebsd.org/cgi/man.cgi?query=tar&sektion=5&apropos=0&manpath=FreeBSD+15.0-CURRENT
         const headerInfo = {
-            name,
+            name: name.padEnd(100, "\0"),
             mode: mode.toString(8).padStart(6, "0") + " \0",
             uid: ((_f = info.uid) !== null && _f !== void 0 ? _f : 0).toString(8).padStart(6, "0") + " \0",
             gid: ((_g = info.gid) !== null && _g !== void 0 ? _g : 0).toString(8).padStart(6, "0") + " \0",
-            size: size.toString(8).padStart(size < 8 ** 11 ? 11 : 12, "0") + (size < 8 ** 11 ? " " : ""),
-            mtime: Math.floor((mtime.getTime()) / 1000).toString(8).padStart(11, "0") + " ",
+            size: size.toString(8).padStart(size < 8 ** 11 ? 11 : 12, "0").padEnd(12, " "),
+            mtime: Math.floor((mtime.getTime()) / 1000).toString(8).padStart(11, "0").padEnd(12, " "),
             checksum: " ".repeat(8),
             typeflag: kind in FileTypes ? String(FileTypes[kind]) : "0",
             linkname: "\0".repeat(100),
@@ -256,24 +254,22 @@ class Tarball {
             gname: ((_j = info.group) !== null && _j !== void 0 ? _j : "").padEnd(32, "\0"),
             devmajor: "\0".repeat(8),
             devminor: "\0".repeat(8),
-            prefix,
+            prefix: prefix.padEnd(155, "\0"),
+            padding: "\0".repeat(12),
         };
         const header = new Uint8Array(HEADER_LENGTH);
         let offset = 0;
         for (const [field, length] of USTarFileHeaderFieldLengths) {
-            if (field === "padding") {
-                break;
-            }
             const data = (_k = headerInfo[field]) !== null && _k !== void 0 ? _k : "";
             const bytes = encoder.encode(data);
-            if (bytes.byteLength !== length && field !== "name" && field !== "prefix") {
+            if (bytes.byteLength !== length) {
                 throw new TypeError(`Invalid header field length for ${field}: ${bytes.byteLength}`);
             }
             header.set(bytes, offset);
             offset += length;
         }
         // update checksum
-        const checksum = header.reduce((p, c) => p + c, 0);
+        const checksum = getChecksum(header);
         header.set(encoder.encode(checksum.toString(8).padStart(6, "0") + "\0 "), 148);
         const fileName = info.name
             || (typeof File === "function" && data instanceof File
@@ -497,7 +493,7 @@ class Tarball {
         }
         const tarball = new Tarball();
         const reader = stream.getReader();
-        let lastChunk = new Uint8Array(0);
+        let remains = new Uint8Array(0);
         let header = null;
         let headerInfo = null;
         let entry = null;
@@ -510,21 +506,21 @@ class Tarball {
                 if (done) {
                     break;
                 }
-                lastChunk = lastChunk.byteLength ? concat$1(lastChunk, value) : value;
+                remains = remains.byteLength ? concat$1(remains, value) : value;
                 while (true) {
-                    if (paddingSize > 0 && lastChunk.byteLength >= paddingSize) {
-                        lastChunk = lastChunk.subarray(paddingSize);
+                    if (paddingSize > 0 && remains.byteLength >= paddingSize) {
+                        remains = remains.subarray(paddingSize);
                         paddingSize = 0;
                     }
                     if (!entry) {
-                        if (lastChunk.byteLength >= HEADER_LENGTH) {
-                            const _header = parseHeader(lastChunk);
+                        if (remains.byteLength >= HEADER_LENGTH) {
+                            const _header = parseHeader(remains);
                             if (_header) {
-                                [headerInfo, header, lastChunk] = _header;
+                                [headerInfo, header, remains] = _header;
                                 entry = createEntry(headerInfo);
                             }
                             else {
-                                lastChunk = new Uint8Array(0);
+                                remains = new Uint8Array(0);
                                 break outer;
                             }
                         }
@@ -535,16 +531,16 @@ class Tarball {
                     const fileSize = entry.size;
                     if (writer) {
                         let leftBytes = fileSize - writtenBytes;
-                        if (lastChunk.byteLength > leftBytes) {
-                            const chunk = lastChunk.subarray(0, leftBytes);
+                        if (remains.byteLength > leftBytes) {
+                            const chunk = remains.subarray(0, leftBytes);
                             writer.push(chunk);
                             writtenBytes += chunk.byteLength;
-                            lastChunk = lastChunk.subarray(leftBytes);
+                            remains = remains.subarray(leftBytes);
                         }
                         else {
-                            writer.push(lastChunk);
-                            writtenBytes += lastChunk.byteLength;
-                            lastChunk = new Uint8Array(0);
+                            writer.push(remains);
+                            writtenBytes += remains.byteLength;
+                            remains = new Uint8Array(0);
                         }
                     }
                     else {
@@ -570,7 +566,7 @@ class Tarball {
                     }
                 }
             }
-            if (lastChunk.byteLength) {
+            if (remains.byteLength) {
                 throwCorruptedArchiveError();
             }
             return tarball;

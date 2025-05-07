@@ -129,7 +129,7 @@ export default async function untar(
 
     const entries: TarEntry[] = [];
     const reader = input.getReader();
-    let lastChunk: Uint8Array = new Uint8Array(0);
+    let remains: Uint8Array = new Uint8Array(0);
     let entry: TarEntry | null = null;
     let writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
     let writtenBytes = 0;
@@ -144,24 +144,24 @@ export default async function untar(
                 break;
             }
 
-            lastChunk = lastChunk.byteLength ? concatBytes(lastChunk, value) : value;
+            remains = remains.byteLength ? concatBytes(remains, value) : value;
 
             while (true) {
-                if (paddingSize > 0 && lastChunk.byteLength >= paddingSize) {
-                    lastChunk = lastChunk.subarray(paddingSize);
+                if (paddingSize > 0 && remains.byteLength >= paddingSize) {
+                    remains = remains.subarray(paddingSize);
                     paddingSize = 0;
                 }
 
                 if (!entry) {
-                    if (lastChunk.byteLength >= HEADER_LENGTH) {
-                        const _header = parseHeader(lastChunk);
+                    if (remains.byteLength >= HEADER_LENGTH) {
+                        const _header = parseHeader(remains);
 
                         if (_header) {
-                            lastChunk = _header[2];
+                            remains = _header[2];
                             entry = createEntry(_header[0]);
                             entries.push(entry);
                         } else {
-                            lastChunk = new Uint8Array(0);
+                            remains = new Uint8Array(0);
                             break outer;
                         }
                     } else {
@@ -173,9 +173,9 @@ export default async function untar(
                 let filename: string | undefined = undefined;
 
                 if (writer) {
-                    const chunk = lastChunk.subarray(0, fileSize - writtenBytes);
+                    const chunk = remains.subarray(0, fileSize - writtenBytes);
                     await writer.write(chunk);
-                    lastChunk = lastChunk.subarray(fileSize - writtenBytes);
+                    remains = remains.subarray(fileSize - writtenBytes);
                     writtenBytes += chunk.byteLength;
 
                     if (chunk.byteLength) {
@@ -233,7 +233,7 @@ export default async function untar(
             }
         }
 
-        if (lastChunk.byteLength) {
+        if (remains.byteLength) {
             throwCorruptedArchiveError();
         } else if (totalBytes && totalWrittenBytes < totalBytes && options.onProgress) {
             totalWrittenBytes = totalBytes;
