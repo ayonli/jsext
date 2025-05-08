@@ -8,7 +8,7 @@ declare global {
     }
 
     /** This interface represents the abstract constructor/class of the given `T` type. */
-    export interface AbstractConstructor<T = object> extends Function {
+    interface AbstractConstructor<T = object> extends Function {
         prototype: T;
     }
 
@@ -240,6 +240,18 @@ declare global {
      * ```
      */
     type Branded<T, B> = T & { [__brand]: B; };
+
+    type JSONPrimitive = string | number | boolean | null;
+    type JSONArray = JSONValue[];
+    type JSONObject = {
+        [key: string]: JSONValue | undefined;
+    };
+
+    /**
+     * The `JSONValue` type represents a value that can be serialized to JSON and
+     * deserialized from JSON without losing information.
+     */
+    type JSONValue = JSONPrimitive | JSONArray | JSONObject;
 }
 
 // @ts-ignore

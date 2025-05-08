@@ -1,5 +1,5 @@
 /**
- * The missing utility types for TypeScript.
+ * The missing builtin classes of JavaScript and utility types for TypeScript.
  * @module
  */
 
@@ -258,3 +258,15 @@ export type MethodDecorator = {
     <T>(target: any, prop: string, desc: TypedPropertyDescriptor<T>): void | TypedPropertyDescriptor<T>;
     <F extends (...args: any[]) => any>(target: F, context: DecoratorContext): void | F;
 };
+
+export type JSONPrimitive = string | number | boolean | null;
+export type JSONArray = JSONValue[];
+export type JSONObject = {
+    [key: string]: JSONValue | undefined;
+};
+
+/**
+ * This type represents a value that can be serialized to JSON and deserialized
+ * from JSON safely without losing information.
+ */
+export type JSONValue = JSONPrimitive | JSONArray | JSONObject;

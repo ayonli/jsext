@@ -1,5 +1,5 @@
 /**
- * The missing utility types for TypeScript.
+ * The missing builtin classes of JavaScript and utility types for TypeScript.
  * @module
  */
 /**
