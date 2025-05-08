@@ -27,17 +27,20 @@ import {
     UnixConnectOptions,
     UnixSocketStream,
 } from "./net/types.ts";
+import { getInternetIp } from "./net/util.ts";
 import type { Socket as NodeSocket } from "node:net";
 import type { TLSSocket } from "node:tls";
 import chan from "./chan.ts";
 
+export { getInternetIp };
 export type * from "./net/types.ts";
 
 /**
  * Returns the IP address of the current machine.
  * 
- * NOTE: This function is not available in the browser and worker runtimes such
- * as Cloudflare Workers.
+ * NOTE: This function may return the IP address of the local network or the
+ * public IP address, depending on the environment and network configuration.
+ * If the public IP address is intended, use {@link getInternetIp} instead.
  */
 export async function getMyIp(): Promise<string> {
     if (isNodeLike) {
@@ -60,9 +63,15 @@ export async function getMyIp(): Promise<string> {
         conn.close();
 
         return addr.hostname;
-    } else {
-        throwUnsupportedRuntimeError();
+    } else if (typeof fetch === "function") {
+        try {
+            return await getInternetIp();
+        } catch {
+            // ignore
+        }
     }
+
+    throwUnsupportedRuntimeError();
 }
 
 /**

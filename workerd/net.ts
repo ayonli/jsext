@@ -10,11 +10,17 @@ import {
     UnixConnectOptions,
     UnixSocketStream,
 } from "../net/types.ts";
+import { getInternetIp } from "../net/util.ts";
 
+export { getInternetIp };
 export type * from "../net/types.ts";
 
 export async function getMyIp(): Promise<string> {
-    throwUnsupportedRuntimeError();
+    try {
+        return await getInternetIp();
+    } catch {
+        throwUnsupportedRuntimeError();
+    }
 }
 
 export async function randomPort(

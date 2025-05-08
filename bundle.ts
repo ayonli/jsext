@@ -18,6 +18,7 @@ import * as http from "./http.ts";
 import * as json from "./json.ts";
 import * as math from "./math.ts";
 import * as module from "./module.ts";
+import * as net from "./net.ts";
 import * as number from "./number.ts";
 import * as object from "./object.ts";
 import * as path from "./path.ts";
@@ -62,6 +63,7 @@ export default {
     json,
     math,
     module,
+    net,
     number,
     object,
     path,

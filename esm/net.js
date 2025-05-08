@@ -2,6 +2,7 @@ import { asyncTask } from './async.js';
 import { isNodeLike, isDeno, isBun, isNode } from './env.js';
 import { throwUnsupportedRuntimeError } from './error.js';
 import { TcpSocketStream, UnixSocketStream, UdpSocket, UdpSocketStream } from './net/types.js';
+import { getInternetIp } from './net/util.js';
 import chan from './chan.js';
 
 /**
@@ -20,8 +21,9 @@ import chan from './chan.js';
 /**
  * Returns the IP address of the current machine.
  *
- * NOTE: This function is not available in the browser and worker runtimes such
- * as Cloudflare Workers.
+ * NOTE: This function may return the IP address of the local network or the
+ * public IP address, depending on the environment and network configuration.
+ * If the public IP address is intended, use {@link getInternetIp} instead.
  */
 async function getMyIp() {
     if (isNodeLike) {
@@ -44,9 +46,15 @@ async function getMyIp() {
         conn.close();
         return addr.hostname;
     }
-    else {
-        throwUnsupportedRuntimeError();
+    else if (typeof fetch === "function") {
+        try {
+            return await getInternetIp();
+        }
+        catch (_a) {
+            // ignore
+        }
     }
+    throwUnsupportedRuntimeError();
 }
 /**
  * Returns a random port number that is available for listening.
@@ -782,5 +790,5 @@ async function udpSocket(localAddress = {}) {
     }
 }
 
-export { connect, getMyIp, randomPort, udpSocket };
+export { connect, getInternetIp, getMyIp, randomPort, udpSocket };
 //# sourceMappingURL=net.js.map

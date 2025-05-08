@@ -13,12 +13,13 @@
         {
             "imports": {
                 "@ayonli/jsext": "../esm/index.js",
-                "@ayonli/archive": "../esm/archive.js",
+                "@ayonli/jsext/archive": "../esm/archive.js",
                 "@ayonli/jsext/array": "../esm/array.js",
                 "@ayonli/jsext/async": "../esm/async.js",
                 "@ayonli/jsext/bytes": "../esm/bytes.js",
                 "@ayonli/jsext/chan": "../esm/chan.js",
                 "@ayonli/jsext/class": "../esm/class.js",
+                "@ayonli/jsext/class/decorators": "../esm/class/decorators.js",
                 "@ayonli/jsext/cli": "../esm/cli.js",
                 "@ayonli/jsext/collections": "../esm/collections.js",
                 "@ayonli/jsext/debounce": "../esm/debounce.js",
@@ -27,26 +28,28 @@
                 "@ayonli/jsext/encoding": "../esm/encoding.js",
                 "@ayonli/jsext/error": "../esm/error.js",
                 "@ayonli/jsext/event": "../esm/event.js",
-                "@ayonli/jsext/example": "../esm/example.js",
                 "@ayonli/jsext/filetype": "../esm/filetype.js",
                 "@ayonli/jsext/fs": "../esm/fs.js",
+                "@ayonli/jsext/fs/errors": "../esm/fs/errors.js",
                 "@ayonli/jsext/func": "../esm/func.js",
                 "@ayonli/jsext/hash": "../esm/hash.js",
                 "@ayonli/jsext/http": "../esm/http.js",
+                "@ayonli/jsext//http/util": "../esm/http/util.js",
                 "@ayonli/jsext/json": "../esm/json.js",
                 "@ayonli/jsext/lock": "../esm/lock.js",
                 "@ayonli/jsext/math": "../esm/math.js",
                 "@ayonli/jsext/mixin": "../esm/mixin.js",
                 "@ayonli/jsext/module": "../esm/module.js",
+                "@ayonli/jsext/net": "../esm/net.js",
                 "@ayonli/jsext/number": "../esm/number.js",
                 "@ayonli/jsext/object": "../esm/object.js",
+                "@ayonli/jsext/once": "../esm/once.js",
                 "@ayonli/jsext/parallel": "../esm/parallel.js",
                 "@ayonli/jsext/path": "../esm/path.js",
                 "@ayonli/jsext/pipe": "../esm/pipe.js",
                 "@ayonli/jsext/queue": "../esm/queue.js",
-                "@ayonli/jsext/read": "../esm/read.js",
-                "@ayonli/jsext/readAll": "../esm/readAll.js",
                 "@ayonli/jsext/reader": "../esm/reader.js",
+                "@ayonli/jsext/result": "../esm/result.js",
                 "@ayonli/jsext/run": "../esm/run.js",
                 "@ayonli/jsext/runtime": "../esm/runtime.js",
                 "@ayonli/jsext/sse": "../esm/sse.js",
@@ -60,7 +63,7 @@
         }
     </script>
     <script type="module">
-        import { Tarball, tar, untar } from "@ayonli/archive";
+        import { Tarball, tar, untar } from "@ayonli/jsext/archive";
         import { sleep } from "@ayonli/jsext/async";
         import {
             alert,
