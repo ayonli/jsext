@@ -3,7 +3,7 @@
  * 
  * @see https://checkip.amazonaws.com
  */
-export async function getInternetIp() {
+export async function getInternetIp(): Promise<string> {
     const res = await fetch("https://checkip.amazonaws.com");
     if (res.ok) {
         const text = await res.text();
