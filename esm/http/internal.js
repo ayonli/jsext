@@ -373,7 +373,14 @@ function toWebRequest(req) {
         init.duplex = "half";
     }
     req.once("close", () => {
-        req.errored && controller.abort();
+        if (req.errored) {
+            if (req.errored.message.includes("aborted")) {
+                controller.abort(new DOMException("The request has been cancelled.", "AbortError"));
+            }
+            else {
+                controller.abort(req.errored);
+            }
+        }
     });
     const request = new Request(url, init);
     if (!req.headers[":authority"]) {
@@ -426,24 +433,36 @@ async function toNodeResponse(res, nodeRes, gzip = false) {
         nodeRes.end();
     }
     else {
-        await stream.pipeTo(new WritableStream({
-            start(controller) {
-                nodeRes.once("close", () => {
-                    controller.error();
-                }).once("error", (err) => {
-                    controller.error(err);
-                });
-            },
-            write(chunk) {
-                nodeRes.write(chunk);
-            },
-            close() {
-                nodeRes.end();
-            },
-            abort(err) {
-                nodeRes.destroy(err);
-            },
-        }));
+        const reader = stream.getReader();
+        nodeRes.once("close", () => {
+            nodeRes.errored ? reader.cancel(nodeRes.errored) : reader.cancel();
+        });
+        while (true) {
+            try {
+                const { done, value } = await reader.read();
+                if (done) {
+                    value ? nodeRes.end(value) : nodeRes.end();
+                    break;
+                }
+                else {
+                    await new Promise(resolve => {
+                        const ok = nodeRes.write(value);
+                        if (ok) {
+                            resolve();
+                        }
+                        else {
+                            nodeRes.once("drain", resolve);
+                        }
+                    });
+                }
+            }
+            catch (err) {
+                if (!nodeRes.destroyed) {
+                    nodeRes.destroy(err instanceof Error ? err : new Error(String(err)));
+                }
+                break;
+            }
+        }
     }
 }
 const re = /^text\/|^application\/(.+\+)?(json|yaml|toml|xml|javascript|dart|tar|fontobject|opentype)$|^font\/(otf|ttf)$|^image\/((x-ms-)?bmp|svg\+xml|(vnd\.microsoft\.|x-)icon)|vnd\.adobe\.photoshop/;

@@ -185,17 +185,31 @@ class EventEndpoint extends EventTarget {
                 },
                 async pull(controller) {
                     while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) {
-                            try {
-                                controller.close();
+                        try {
+                            const { done, value } = await reader.read();
+                            if (done) {
+                                try {
+                                    controller.close();
+                                }
+                                catch (_o) { }
+                                _this[_closed] = true;
+                                _this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
+                                break;
                             }
-                            catch (_o) { }
+                            controller.enqueue(value);
+                        }
+                        catch (error) {
+                            try {
+                                controller.error(error);
+                            }
+                            catch (_p) { }
                             _this[_closed] = true;
-                            _this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
+                            _this.dispatchEvent(createCloseEvent("close", {
+                                reason: error instanceof Error ? error.message : String(error),
+                                wasClean: false,
+                            }));
                             break;
                         }
-                        controller.enqueue(value);
                     }
                 },
                 async cancel(reason) {

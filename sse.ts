@@ -246,15 +246,25 @@ export class EventEndpoint<T extends Request | IncomingMessage | Http2ServerRequ
                 },
                 async pull(controller) {
                     while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) {
-                            try { controller.close(); } catch { }
+                        try {
+                            const { done, value } = await reader.read();
+                            if (done) {
+                                try { controller.close(); } catch { }
+                                _this[_closed] = true;
+                                _this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
+                                break;
+                            }
+
+                            controller.enqueue(value);
+                        } catch (error) {
+                            try { controller.error(error); } catch { }
                             _this[_closed] = true;
-                            _this.dispatchEvent(createCloseEvent("close", { wasClean: true }));
+                            _this.dispatchEvent(createCloseEvent("close", {
+                                reason: error instanceof Error ? error.message : String(error),
+                                wasClean: false,
+                            }));
                             break;
                         }
-
-                        controller.enqueue(value);
                     }
                 },
                 async cancel(reason) {

@@ -1,8 +1,8 @@
 import bytes from "../bytes.ts";
-import { args, parseArgs } from "../workerd/cli.ts";
-import { parseResponse, serve, serveStatic } from "../workerd/http.ts";
+import { args, parseArgs } from "../cli.ts";
+import { parseResponse, serve, serveStatic } from "../http.ts";
 import { importWasm } from "../module.ts";
-import { connect } from "../workerd/net.ts";
+import { connect } from "../net.ts";
 import { startsWith } from "../path.ts";
 import { readAsText } from "../reader.ts";
 import runtime, { addUnhandledRejectionListener } from "../runtime.ts";
@@ -17,10 +17,10 @@ addUnhandledRejectionListener(ev => {
 });
 
 export default serve({
-    type: "module",
+    // type: "module",
     port: Number(options.port || 8000),
     async fetch(request, ctx) {
-        console.log(new Date().toISOString(), request.method, request.url, ctx.remoteAddress?.address);
+        // console.log(new Date().toISOString(), request.method, request.url, ctx.remoteAddress?.address);
         const { pathname } = new URL(request.url);
 
         if (pathname === "/") {
@@ -107,6 +107,8 @@ export default serve({
             const result = await readAsText(socket.readable);
 
             return parseResponse(result);
+        } else if (pathname === "/health") {
+            return new Response("OK");
         }
 
         return new Response("Not Found", { status: 404 });
