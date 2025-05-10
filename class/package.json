@@ -1,0 +1,20 @@
+{
+    "name": "@jsext/class",
+    "version": "2.0.0",
+    "type": "module",
+    "exports": {
+        ".": "./index.ts",
+        "./decorators": "./decorators.ts"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "description": "",
+    "dependencies": {
+        "@jsext/types": "^2.0.0",
+        "zod": "^3.24.4"
+    }
+}

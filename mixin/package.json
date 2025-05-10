@@ -1,0 +1,16 @@
+{
+    "name": "@jsext/mixin",
+    "version": "2.0.0",
+    "type": "module",
+    "exports": "./index.ts",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "description": "",
+    "dependencies": {
+        "@jsext/types": "^2.0.0"
+    }
+}

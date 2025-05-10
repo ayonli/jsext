@@ -1,4 +1,4 @@
-import "../augment.ts";
+import "../augment/index.ts";
 import { ok, strictEqual } from "node:assert";
 
 describe("BiMap", () => {

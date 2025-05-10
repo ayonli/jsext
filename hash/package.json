@@ -1,0 +1,26 @@
+{
+    "name": "@jsext/hash",
+    "version": "2.0.0",
+    "type": "module",
+    "exports": {
+        ".": {
+            "fastly": "./workerd.ts",
+            "workerd": "./workerd.ts",
+            "default": "./index.ts"
+        },
+        "./web": "./web.ts"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "description": "",
+    "dependencies": {
+        "@jsext/bytes": "^2.0.0",
+        "@jsext/env": "^2.0.0",
+        "@jsext/error": "^2.0.0",
+        "@jsext/reader": "^2.0.0"
+    }
+}

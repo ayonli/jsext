@@ -1,8 +1,8 @@
-import "../external/event-target-polyfill/index.ts";
-import chan from "../chan.ts";
-import { fromErrorEvent } from "../error.ts";
-import type { RequiredKeys } from "../types.ts";
-import type { WebSocketServer } from "../ws.ts";
+import "@jsext/polyfills/event-target";
+import chan from "@jsext/chan";
+import { fromErrorEvent } from "@jsext/error";
+import type { RequiredKeys } from "@jsext/types";
+import type { WebSocketServer } from "./index.ts";
 
 const _source = Symbol.for("source");
 const _socket = Symbol.for("socket");

@@ -1,8 +1,8 @@
-import { isAsyncGenerator, isGenerator } from "../external/check-iterable/index.mjs";
+import { isAsyncGenerator, isGenerator } from "check-iterable";
 import { CallRequest, CallResponse, ChannelMessage } from "./types.ts";
 import { unwrapChannel } from "./channel.ts";
 import { resolveModule } from "./module.ts";
-import { isPlainObject } from "../object.ts";
+import { isPlainObject } from "../object/index.ts";
 import {
     Exception,
     fromObject,
@@ -10,7 +10,7 @@ import {
     isAggregateError,
     isDOMException,
     toObject,
-} from "../error.ts";
+} from "../error/index.ts";
 
 const pendingTasks = new Map<number, AsyncGenerator | Generator>();
 

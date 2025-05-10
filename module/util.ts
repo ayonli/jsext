@@ -1,5 +1,5 @@
-import { NetworkError } from "../error.ts";
-import { isUrl } from "../path.ts";
+import { NetworkError } from "@jsext/error";
+import { isUrl } from "@jsext/path";
 
 const urlCache = new Map<string, string>();
 

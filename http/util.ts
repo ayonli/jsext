@@ -2,10 +2,10 @@
  * Utility functions for handling HTTP related tasks, such as parsing headers.
  * @module
  */
-import type { FileInfo } from "../fs/types.ts";
-import bytes, { concat, indexOfSlice, text } from "../bytes.ts";
-import { sha256 } from "../hash/web.ts";
-import { capitalize, stripEnd, stripStart } from "../string.ts";
+import type { FileInfo } from "@jsext/fs";
+import bytes, { concat, indexOfSlice, text } from "@jsext/bytes";
+import { sha256 } from "@jsext/hash/web";
+import { capitalize, stripEnd, stripStart } from "@jsext/string";
 
 export * from "./cookie.ts";
 export * from "./user-agent.ts";
@@ -39,7 +39,7 @@ export interface Accept {
  * 
  * @example
  * ```ts
- * import { parseAccepts } from "@ayonli/jsext/http";
+ * import { parseAccepts } from "@jsext/http";
  * 
  * const accepts = parseAccepts("text/html,application/xhtml+xml;q=0.9");
  * console.log(accepts);
@@ -99,7 +99,7 @@ export interface ContentType {
  * 
  * @example
  * ```ts
- * import { parseContentType } from "@ayonli/jsext/http";
+ * import { parseContentType } from "@jsext/http";
  * 
  * const type = parseContentType("text/html; charset=utf-8");
  * console.log(type);
@@ -148,7 +148,7 @@ export function parseContentType(str: string): ContentType {
  * 
  * @example
  * ```ts
- * import { setFilename } from "@ayonli/jsext/http";
+ * import { setFilename } from "@jsext/http";
  * 
  * export default {
  *     fetch(req: Request) {
@@ -196,7 +196,7 @@ export interface Range {
  * 
  * @example
  * ```ts
- * import { parseRange } from "@ayonli/jsext/http";
+ * import { parseRange } from "@jsext/http";
  * 
  * const range = parseRange("bytes=0-499");
  * console.log(range);
@@ -257,8 +257,8 @@ export function parseRange(str: string): Range {
  * 
  * @example
  * ```ts
- * import { stat } from "@ayonli/jsext/fs";
- * import { etag } from "@ayonli/jsext/http";
+ * import { stat } from "@jsext/fs";
+ * import { etag } from "@jsext/http";
  * 
  * const etag1 = await etag("Hello, World!");
  * 
@@ -296,7 +296,7 @@ export async function etag(data: string | Uint8Array | FileInfo): Promise<string
  * 
  * @example
  * ```ts
- * import { etag, ifMatch } from "@ayonli/jsext/http";
+ * import { etag, ifMatch } from "@jsext/http";
  * 
  * const _etag = await etag("Hello, World!");
  * const match = ifMatch("d-3/1gIbsr1bCvZ2KQgJ7DpTGR3YH", _etag);
@@ -322,7 +322,7 @@ export function ifMatch(value: string | null, etag: string): boolean {
  * 
  * @example
  * ```ts
- * import { etag, ifNoneMatch } from "@ayonli/jsext/http";
+ * import { etag, ifNoneMatch } from "@jsext/http";
  * 
  * const _etag = await etag("Hello, World!");
  * const match = ifNoneMatch("d-3/1gIbsr1bCvZ2KQgJ7DpTGR3YH", _etag);
@@ -357,7 +357,7 @@ export interface BasicAuthorization {
  * 
  * @example
  * ```ts
- * import { parseBasicAuth } from "@ayonli/jsext/http";
+ * import { parseBasicAuth } from "@jsext/http";
  * 
  * const auth = parseBasicAuth("Basic cm9vdDpwYSQkdzByZA==");
  * console.log(auth);
@@ -386,7 +386,7 @@ export function parseBasicAuth(str: string): BasicAuthorization {
  * 
  * @example
  * ```ts
- * import { verifyBasicAuth, type BasicAuthorization } from "@ayonli/jsext/http";
+ * import { verifyBasicAuth, type BasicAuthorization } from "@jsext/http";
  * 
  * const users = new Map([
  *    ["root", "pa$$w0rd"]
@@ -563,7 +563,7 @@ function parseMessage(message: string): { headers: Headers, body: string | Uint8
  * @example
  * ```ts
  * // GET example
- * import { parseRequest } from "@ayonli/jsext/http";
+ * import { parseRequest } from "@jsext/http";
  * 
  * const message = "GET /foo HTTP/1.1\r\nHost: example.com\r\n\r\n";
  * const req = parseRequest(message);
@@ -576,7 +576,7 @@ function parseMessage(message: string): { headers: Headers, body: string | Uint8
  * @example
  * ```ts
  * // POST example
- * import { parseRequest } from "@ayonli/jsext/http";
+ * import { parseRequest } from "@jsext/http";
  * 
  * const message = "POST /foo HTTP/1.1\r\n"
  *     + "Host: example.com\r\n"
@@ -640,7 +640,7 @@ export function parseRequest(message: string): Request {
  * 
  * @example
  * ```ts
- * import { parseResponse } from "@ayonli/jsext/http";
+ * import { parseResponse } from "@jsext/http";
  * 
  * const message = "HTTP/1.1 200 OK\r\n"
  *     + "Content-Type: text/plain\r\n"
@@ -698,7 +698,7 @@ export function parseResponse(message: string): Response {
  * @example
  * ```ts
  * // GET example
- * import { stringifyRequest } from "@ayonli/jsext/http";
+ * import { stringifyRequest } from "@jsext/http";
  * 
  * const req = new Request("http://example.com/foo");
  * const message = await stringifyRequest(req);
@@ -710,7 +710,7 @@ export function parseResponse(message: string): Response {
  * @example
  * ```ts
  * // POST example
- * import { stringifyRequest } from "@ayonli/jsext/http";
+ * import { stringifyRequest } from "@jsext/http";
  * 
  * const req = new Request("http://example.com/foo", {
  *     method: "POST",
@@ -757,7 +757,7 @@ export async function stringifyRequest(req: Request): Promise<string> {
  * 
  * @example
  * ```ts
- * import { stringifyResponse } from "@ayonli/jsext/http";
+ * import { stringifyResponse } from "@jsext/http";
  * 
  * const res = new Response("Hello, World!", {
  *     status: 200,
@@ -816,7 +816,7 @@ export async function stringifyResponse(res: Response): Promise<string> {
  * 
  * @example
  * ```ts
- * import { suggestResponseType } from "@ayonli/jsext/http";
+ * import { suggestResponseType } from "@jsext/http";
  * 
  * export default {
  *     async fetch(req: Request) {

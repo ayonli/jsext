@@ -1,0 +1,22 @@
+{
+    "name": "@jsext/parallel",
+    "version": "2.0.0",
+    "description": "This file contains more details about the `parallel` module of this package.",
+    "exports": {
+        ".": "./index.ts",
+        "./channel": "./channel.ts",
+        "./module": "./module.ts",
+        "./threads": "./threads.ts",
+        "./types": "./types.ts"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "check-iterable": "^1.2.0",
+        "thenable-generator": "^0.5.2"
+    }
+}

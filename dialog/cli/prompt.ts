@@ -1,9 +1,9 @@
-import { escape } from "./util.ts";
-import { dedent } from "../../string.ts";
-import { platform } from "../../runtime.ts";
-import { isWSL, lockStdin, powershell, run, which } from "../../cli.ts";
+import { isWSL, lockStdin, powershell, run, which } from "@jsext/cli";
+import { platform } from "@jsext/runtime";
+import { dedent } from "@jsext/string";
 import question from "./question.ts";
-import type { PromptOptions } from "../../dialog.ts";
+import { escape } from "./util.ts";
+import type { PromptOptions } from "../index.ts";
 
 function createAppleScript(message: string, defaultValue = "", password = false) {
     return dedent`

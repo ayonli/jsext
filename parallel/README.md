@@ -10,7 +10,7 @@ It may not be an obvious problem when using the `parallel()` function to link a
 module in the development mode, and all things work normally. For example:
 
 ```ts
-import parallel from "@ayonli/jsext/parallel";
+import parallel from "@jsext/parallel";
 const { default: didYouMean } = parallel(() => import("didyoumean"));
 
 (async () => {
@@ -92,7 +92,7 @@ Now that we have a new module specifically for the use in the worker thread, we
 need to update our program to use that module instead.
 
 ```ts
-import parallel from "@ayonli/jsext/parallel";
+import parallel from "@jsext/parallel";
 const { didYouMean } = parallel(() => import("./utils/worker"));
 
 (async () => {

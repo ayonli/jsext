@@ -1,6 +1,8 @@
-import { Channel } from "../chan.ts";
+import { Channel } from "@jsext/chan";
+import { isMainThread } from "@jsext/env";
 import { ChannelMessage } from "./types.ts";
-import { id, isMainThread } from "../env.ts";
+
+const id = Symbol.for("id");
 
 const channelStore = new Map<number, {
     channel: Channel<any>,

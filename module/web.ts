@@ -3,9 +3,9 @@
  * @module 
  */
 
-import { isBrowserWindow, isDedicatedWorker, isSharedWorker } from "../env.ts";
-import { NotSupportedError, NetworkError } from "../error.ts";
-import { equals, extname } from "../path.ts";
+import { isBrowserWindow, isDedicatedWorker, isSharedWorker } from "@jsext/env";
+import { NotSupportedError, NetworkError } from "@jsext/error";
+import { equals, extname } from "@jsext/path";
 import { getObjectURL } from "./util.ts";
 
 /**
@@ -32,7 +32,7 @@ import { getObjectURL } from "./util.ts";
  * 
  * @example
  * ```ts
- * import { interop } from "@ayonli/jsext/module";
+ * import { interop } from "@jsext/module";
  * 
  * const { decode } = await interop(() => import("iconv-lite"), false);
  * ```
@@ -44,7 +44,7 @@ export function interop<T extends { [x: string]: any; }>(
 /**
  * @example
  * ```ts
- * import { interop } from "@ayonli/jsext/module";
+ * import { interop } from "@jsext/module";
  * 
  * const { decode } = await interop(import("iconv-lite"), false);
  * ```
@@ -56,7 +56,7 @@ export function interop<T extends { [x: string]: any; }>(
 /**
  * @example
  * ```ts
- * import { interop } from "@ayonli/jsext/module";
+ * import { interop } from "@jsext/module";
  * 
  * const { decode } = interop(await import("iconv-lite"), false);
  * ```
@@ -111,7 +111,7 @@ function isExportsObject(module: unknown): module is { [x: string]: unknown; } {
  * 
  * @example
  * ```ts
- * import { isMain } from "@ayonli/jsext/module";
+ * import { isMain } from "@jsext/module";
  * 
  * if (isMain(import.meta)) {
  *     console.log("This is the main module.");
@@ -123,7 +123,7 @@ export function isMain(importMeta: ImportMeta): boolean;
  * @example
  * ```ts
  * // CommonJS
- * const { isMain } = require("@ayonli/jsext/module");
+ * const { isMain } = require("@jsext/module");
  * 
  * if (isMain(module)) {
  *     console.log("This is the main module.");
@@ -181,7 +181,7 @@ const importCache = new Map<string, Promise<void>>();
  * 
  * @example
  * ```ts
- * import { importScript } from "@ayonli/jsext/module";
+ * import { importScript } from "@jsext/module";
  * 
  * await importScript("https://code.jquery.com/jquery-3.7.1.min.js");
  * 
@@ -232,7 +232,7 @@ export function importScript(url: string | URL, options: {
  * 
  * @example
  * ```ts
- * import { importStylesheet } from "@ayonli/jsext/module";
+ * import { importStylesheet } from "@jsext/module";
  * 
  * await importStylesheet("https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css");
  * ```

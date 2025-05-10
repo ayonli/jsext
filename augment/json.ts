@@ -1,4 +1,4 @@
-import { as, parseAs, type } from "../json.ts";
+import { as, parseAs, type } from "@jsext/json";
 
 declare global {
     interface JSON {

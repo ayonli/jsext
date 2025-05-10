@@ -1,7 +1,7 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { param, returns, throws } from "./decorators.ts";
 import { z } from "zod";
-import _try from "../try.ts";
+import _try from "@jsext/try";
 
 describe("class/decorators", () => {
     it("param", () => {

@@ -1,4 +1,4 @@
-import { Constructor, Sequence } from "../types.ts";
+import { Constructor, Sequence } from "@jsext/types";
 
 /**
  * Performs a shallow compare to another sequence and see if it contains the same elements as

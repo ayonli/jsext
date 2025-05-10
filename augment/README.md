@@ -9,20 +9,20 @@ _the JSR package._
 
 ```js
 // import all
-import "@ayonli/jsext/augment";
+import "@jsext/augment";
 
 // import individual category
-import "@ayonli/jsext/augment/array";
-import "@ayonli/jsext/augment/collections";
-import "@ayonli/jsext/augment/error";
-import "@ayonli/jsext/augment/json";
-import "@ayonli/jsext/augment/math";
-import "@ayonli/jsext/augment/number";
-import "@ayonli/jsext/augment/object";
-import "@ayonli/jsext/augment/promise";
-import "@ayonli/jsext/augment/string";
-import "@ayonli/jsext/augment/uint8array";
-import "@ayonli/jsext/augment/types";
+import "@jsext/augment/array";
+import "@jsext/augment/collections";
+import "@jsext/augment/error";
+import "@jsext/augment/json";
+import "@jsext/augment/math";
+import "@jsext/augment/number";
+import "@jsext/augment/object";
+import "@jsext/augment/promise";
+import "@jsext/augment/string";
+import "@jsext/augment/uint8array";
+import "@jsext/augment/types";
 ```
 
 ### Augment Array
@@ -157,7 +157,7 @@ _These types are augmented to the global scope._
 - `Promise`
   - `abortable<T>(value: PromiseLike<T>, signal: AbortSignal): Promise<T>`
   - `timeout<T>(value: PromiseLike<T>, ms: number): Promise<T>`
-  - `after<T>(value: PromiseLike<T>, ms: number): Promise<T>`
+  - `pace<T>(value: PromiseLike<T>, ms: number): Promise<T>`
   - `sleep(ms: number): Promise<void>`
   - `until<T>(test: () => T | Promise<T>): Promise<T extends false | null | undefined ? never : T>`
   - `select<T>(tasks: ((signal: AbortSignal) => Promise<T>)[]): Promise<T>`
@@ -211,7 +211,11 @@ _These types are augmented to the global scope._
 - `AsyncGeneratorFunction`
 - `AsyncFunctionConstructor`
 - `TypedArray`
-- `RealArrayLike<T>`
+- `Sequence<T>`
+- `Comparable`
 - `PartialKeys<T, K extends keyof T>`
 - `RequiredKeys<T, K extends keyof T>`
 - `ValueOf<T>`
+- `ToDict<T>`
+- `Branded<T>`
+- `JSONValue`

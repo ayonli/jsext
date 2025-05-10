@@ -1,4 +1,4 @@
-import type { RuntimeInfo, WellknownPlatform } from "../runtime.ts";
+import type { RuntimeInfo, WellknownPlatform } from "@jsext/runtime";
 
 /**
  * Represents the user agent information.

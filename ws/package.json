@@ -1,0 +1,29 @@
+{
+    "name": "@jsext/ws",
+    "version": "2.0.0",
+    "type": "module",
+    "exports": {
+        ".": {
+            "bun": "./index.ts",
+            "deno": "./index.ts",
+            "workerd": "./workerd.ts",
+            "node": "./node.ts",
+            "default": "./index.ts"
+        },
+        "./client": "./client.ts"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "description": "",
+    "dependencies": {
+        "@jsext/chan": "^2.0.0",
+        "@jsext/error": "^2.0.0",
+        "@jsext/event": "^2.0.0",
+        "@jsext/polyfills": "^2.0.0",
+        "@jsext/types": "^2.0.0"
+    }
+}

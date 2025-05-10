@@ -1,5 +1,5 @@
-import { throwUnsupportedRuntimeError } from "../error.ts";
-import { RunOptions, WorkerTask } from "../run.ts";
+import { throwUnsupportedRuntimeError } from "../error/index.ts";
+import { RunOptions, WorkerTask } from "../run/index.ts";
 
 export type { RunOptions, WorkerTask };
 

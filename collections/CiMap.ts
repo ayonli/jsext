@@ -3,7 +3,7 @@
  * 
  * @example
  * ```ts
- * import { CiMap } from "@ayonli/jsext/collections";
+ * import { CiMap } from "@jsext/collections";
  * 
  * const map = new CiMap<string, string>();
  * 

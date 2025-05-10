@@ -1,4 +1,4 @@
-export const EMOJI_CHAR = (() => {
+export const EMOJI_CHAR_RE = (() => {
     try {
         return new RegExp("^\(?:\\p{Emoji_Modifier_Base}\\p{Emoji_Modifier}?|\\p{Emoji_Presentation}|\\p{Emoji}\\uFE0F)(?:\\u200d(?:\\p{Emoji_Modifier_Base}\\p{Emoji_Modifier}?|\\p{Emoji_Presentation}|\\p{Emoji}\\uFE0F))*$", "u");
     } catch {

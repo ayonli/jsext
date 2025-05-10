@@ -6,6 +6,8 @@
  * module instead.
  * @module
  */
+
+import { isValid } from "@jsext/object";
 import CancelButton, { getCancelText } from "./web/CancelButton.ts";
 import Dialog, { closeDialog } from "./web/Dialog.ts";
 import Footer from "./web/Footer.ts";
@@ -14,8 +16,7 @@ import OkButton, { getOkText } from "./web/OkButton.ts";
 import Progress from "./web/Progress.ts";
 import Text from "./web/Text.ts";
 import type { ProgressAbortHandler, ProgressFunc, ProgressState } from "./progress.ts";
-import type { DialogOptions, PromptOptions } from "../dialog.ts";
-import { isValid } from "../object.ts";
+import type { DialogOptions, PromptOptions } from "./index.ts";
 
 export * from "./web/file.ts";
 

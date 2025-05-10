@@ -1,0 +1,31 @@
+{
+    "name": "@jsext/archive",
+    "version": "2.0.0",
+    "type": "module",
+    "exports": {
+        ".": {
+            "bun": "./bun.ts",
+            "fastly": "./workerd.ts",
+            "workerd": "./workerd.ts",
+            "default": "./index.ts"
+        }
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "description": "",
+    "dependencies": {
+        "@jsext/bytes": "^2.0.0",
+        "@jsext/error": "^2.0.0",
+        "@jsext/fs": "^2.0.0",
+        "@jsext/object": "^2.0.0",
+        "@jsext/path": "^2.0.0",
+        "@jsext/polyfills": "^2.0.0",
+        "@jsext/reader": "^2.0.0",
+        "@jsext/string": "^2.0.0",
+        "@jsext/types": "^2.0.0"
+    }
+}

@@ -19,8 +19,8 @@ import {
     invert,
     compare,
     equals,
-} from "../object.ts";
-import { Comparable } from "../types.ts";
+} from "@jsext/object";
+import { Comparable } from "@jsext/types";
 
 declare global {
     interface ObjectConstructor {

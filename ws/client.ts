@@ -1,6 +1,18 @@
-import { getReadonly, setReadonly } from "../class/util.ts";
-import { NetworkError, NotSupportedError } from "../error.ts";
+import { NetworkError, NotSupportedError } from "@jsext/error";
 import { WebSocketConnection } from "./base.ts";
+
+function setReadonly<T>(obj: any, name: string | symbol, value: T) {
+    Object.defineProperty(obj, name, {
+        configurable: true,
+        enumerable: false,
+        writable: false,
+        value,
+    });
+}
+
+function getReadonly<T>(obj: any, name: string | symbol): T | undefined {
+    return Object.getOwnPropertyDescriptor(obj, name)?.value;
+}
 
 /**
  * A `WebSocket` polyfill for Node.js before v21.
@@ -102,7 +114,7 @@ export interface WebSocketCloseInfo {
  * @example
  * ```ts
  * // usage
- * globalThis.WebSocketStream ??= (await import("@ayonli/jsext/ws")).WebSocketStream;
+ * globalThis.WebSocketStream ??= (await import("@jsext/ws")).WebSocketStream;
  * ```
  */
 export class WebSocketStream {

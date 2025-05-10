@@ -25,8 +25,8 @@ The recommended way is to only import the ones that are needed:
 
 ```js
 // Universal
-import _try from "@ayonli/jsext/try";
-import func from "@ayonli/jsext/func";
+import _try from "@jsext/try";
+import func from "@jsext/func";
 // ...
 
 // Deno (URL)

@@ -1,12 +1,12 @@
 import type { ChildProcess } from "node:child_process";
-import { Channel } from "../chan.ts";
-import { AsyncTask } from "../async.ts";
-import { isBun, isDeno, isNode, isNodeBelow14, isNodeLike } from "../env.ts";
+import { Channel } from "../chan/index.ts";
+import { AsyncTask } from "../async/index.ts";
+import { isBun, isDeno, isNode, isNodeBelow14, isNodeLike } from "../env/index.ts";
 import { BunWorker, NodeWorker, CallResponse, ChannelMessage } from "./types.ts";
 import { handleChannelMessage, isChannelMessage, wrapChannel } from "./channel.ts";
 import { getObjectURL } from "../module/util.ts";
-import { isPlainObject } from "../object.ts";
-import { serial } from "../number.ts";
+import { isPlainObject } from "../object/index.ts";
+import { serial } from "../number/index.ts";
 import {
     Exception,
     fromErrorEvent,
@@ -15,9 +15,9 @@ import {
     isDOMException,
     getErrorConstructor,
     toObject,
-} from "../error.ts";
-import * as path from "../path.ts";
-import { unrefTimer } from "../runtime.ts";
+} from "../error/index.ts";
+import * as path from "../path/index.ts";
+import { unrefTimer } from "../runtime/index.ts";
 
 const workerIdCounter = serial(true);
 type PoolRecord = {

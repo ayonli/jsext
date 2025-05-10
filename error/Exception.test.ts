@@ -1,4 +1,4 @@
-import "../augment.ts";
+import "../augment/index.ts";
 import { strictEqual, deepStrictEqual, ok } from "node:assert";
 
 describe("error/Exception", () => {

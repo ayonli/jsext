@@ -1,0 +1,24 @@
+{
+    "name": "@jsext/runtime",
+    "version": "2.0.0",
+    "type": "module",
+    "exports": {
+        ".": {
+            "fastly": "./fastly.ts",
+            "default": "./index.ts"
+        }
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "description": "",
+    "dependencies": {
+        "@jsext/env": "^2.0.0",
+        "@jsext/error": "^2.0.0",
+        "@jsext/event": "^2.0.0",
+        "@jsext/http": "^2.0.0"
+    }
+}

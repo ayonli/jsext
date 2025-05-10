@@ -1,6 +1,6 @@
-import { dedent, lines } from "../../../string.ts";
-import { run } from "../../../cli.ts";
-import { getUTI } from "../../../filetype.ts";
+import { run } from "@jsext/cli";
+import { getUTI } from "@jsext/filetype";
+import { dedent, lines } from "@jsext/string";
 import { escape } from "../util.ts";
 
 function htmlAcceptToAppleType(accept: string): string {

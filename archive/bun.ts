@@ -1,2 +1,2 @@
-import "../external/compression-stream-polyfill/index.ts";
-export * from "../archive.ts";
+import "@jsext/polyfills/compression-stream";
+export * from "./index.ts";

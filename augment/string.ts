@@ -18,7 +18,7 @@ import {
     byteLength as _byteLength,
     isAscii as _isAscii,
     isEmoji as _isEmoji,
-} from "../string.ts";
+} from "@jsext/string";
 
 declare global {
     interface StringConstructor {

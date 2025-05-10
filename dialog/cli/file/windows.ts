@@ -1,7 +1,7 @@
-import { extname } from "../../../path.ts";
-import { dedent, lines } from "../../../string.ts";
-import { isWSL, powershell } from "../../../cli.ts";
-import { getExtensions } from "../../../filetype.ts";
+import { isWSL, powershell } from "@jsext/cli";
+import { getExtensions } from "@jsext/filetype";
+import { extname } from "@jsext/path";
+import { dedent, lines } from "@jsext/string";
 import { escape } from "../util.ts";
 
 function htmlAcceptToFileFilter(accept: string): string {

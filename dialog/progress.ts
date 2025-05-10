@@ -1,5 +1,5 @@
-import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
-import { throwUnsupportedRuntimeError } from "../error.ts";
+import { isBrowserWindow, isDeno, isNodeLike } from "@jsext/env";
+import { throwUnsupportedRuntimeError } from "@jsext/error";
 
 export type ProgressState = {
     /**
@@ -29,7 +29,7 @@ export type ProgressAbortHandler<T> = () => T | never | Promise<T | never>;
  * @example
  * ```ts
  * // default usage
- * import { progress } from "@ayonli/jsext/dialog";
+ * import { progress } from "@jsext/dialog";
  * 
  * const result = await progress("Processing...", async () => {
  *     // ... some long-running task
@@ -42,7 +42,7 @@ export type ProgressAbortHandler<T> = () => T | never | Promise<T | never>;
  * @example
  * ```ts
  * // update state
- * import { progress } from "@ayonli/jsext/dialog";
+ * import { progress } from "@jsext/dialog";
  * 
  * const result = await progress("Processing...", async (set) => {
  *     set({ percent: 0 });
@@ -60,7 +60,7 @@ export type ProgressAbortHandler<T> = () => T | never | Promise<T | never>;
  * @example
  * ```ts
  * // abortable
- * import { progress } from "@ayonli/jsext/dialog";
+ * import { progress } from "@jsext/dialog";
  * 
  * const result = await progress("Processing...", async (set, signal) => {
  *     set({ percent: 0 });

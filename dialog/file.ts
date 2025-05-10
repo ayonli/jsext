@@ -1,5 +1,5 @@
-import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
-import { throwUnsupportedRuntimeError } from "../error.ts";
+import { isBrowserWindow, isDeno, isNodeLike } from "@jsext/env";
+import { throwUnsupportedRuntimeError } from "@jsext/error";
 
 /**
  * Options for file dialog functions, such as {@link pickFile} and
@@ -36,7 +36,7 @@ export interface PickFileOptions extends FileDialogOptions {
  * @example
  * ```ts
  * // default usage
- * import { pickFile } from "@ayonli/jsext/dialog";
+ * import { pickFile } from "@jsext/dialog";
  * 
  * // Node.js, Deno, Bun
  * const filename = await pickFile() as string | null;
@@ -48,7 +48,7 @@ export interface PickFileOptions extends FileDialogOptions {
  * @example
  * ```ts
  * // filter by MIME type
- * import { pickFile } from "@ayonli/jsext/dialog";
+ * import { pickFile } from "@jsext/dialog";
  * 
  * // Node.js, Deno, Bun
  * const filename = await pickFile({ type: "image/*" }) as string | null;
@@ -60,7 +60,7 @@ export interface PickFileOptions extends FileDialogOptions {
  * @example
  * ```ts
  * // pick for save
- * import { pickFile } from "@ayonli/jsext/dialog";
+ * import { pickFile } from "@jsext/dialog";
  * 
  * // Node.js, Deno, Bun
  * const filename = await pickFile({
@@ -99,7 +99,7 @@ export async function pickFile(
  * @example
  * ```ts
  * // default usage
- * import { pickFiles } from "@ayonli/jsext/dialog";
+ * import { pickFiles } from "@jsext/dialog";
  * 
  * // Node.js, Deno, Bun
  * const filenames = await pickFiles() as string[];
@@ -111,7 +111,7 @@ export async function pickFile(
  * @example
  * ```ts
  * // filter by MIME type
- * import { pickFiles } from "@ayonli/jsext/dialog";
+ * import { pickFiles } from "@jsext/dialog";
  * 
  * // Node.js, Deno, Bun
  * const filenames = await pickFiles({ type: "image/*" }) as string[];
@@ -142,7 +142,7 @@ export async function pickFiles(
  * 
  * @example
  * ```ts
- * import { pickDirectory } from "@ayonli/jsext/dialog";
+ * import { pickDirectory } from "@jsext/dialog";
  * 
  * // Node.js, Deno, Bun
  * const dirname = await pickDirectory() as string | null;
@@ -171,7 +171,7 @@ export async function pickDirectory(
  * @example
  * ```ts
  * // default usage
- * import { openFile } from "@ayonli/jsext/dialog";
+ * import { openFile } from "@jsext/dialog";
  * 
  * const file = await openFile();
  * 
@@ -183,7 +183,7 @@ export async function pickDirectory(
  * @example
  * ```ts
  * // filter by MIME type
- * import { openFile } from "@ayonli/jsext/dialog";
+ * import { openFile } from "@jsext/dialog";
  * 
  * const file = await openFile({ type: "image/*" });
  * 
@@ -211,7 +211,7 @@ export async function openFile(options?: FileDialogOptions): Promise<File | null
  * @example
  * ```ts
  * // default usage
- * import { openFiles } from "@ayonli/jsext/dialog";
+ * import { openFiles } from "@jsext/dialog";
  * 
  * const files = await openFiles();
  * 
@@ -223,7 +223,7 @@ export async function openFile(options?: FileDialogOptions): Promise<File | null
  * @example
  * ```ts
  * // filter by MIME type
- * import { openFiles } from "@ayonli/jsext/dialog";
+ * import { openFiles } from "@jsext/dialog";
  * 
  * const files = await openFiles({ type: "image/*" });
  * 
@@ -250,7 +250,7 @@ export async function openFiles(options: FileDialogOptions = {}): Promise<File[]
  * 
  * @example
  * ```ts
- * import { openDirectory } from "@ayonli/jsext/dialog";
+ * import { openDirectory } from "@jsext/dialog";
  * 
  * const files = await openDirectory();
  * 
@@ -298,7 +298,7 @@ export interface SaveFileOptions {
  * 
  * @example
  * ```ts
- * import { saveFile } from "@ayonli/jsext/dialog";
+ * import { saveFile } from "@jsext/dialog";
  * 
  * const file = new File(["Hello, World!"], "hello.txt", { type: "text/plain" });
  * 
@@ -309,8 +309,8 @@ export async function saveFile(file: File, options?: Pick<SaveFileOptions, "titl
 /**
  * @example
  * ```ts
- * import { saveFile } from "@ayonli/jsext/dialog";
- * import bytes from "@ayonli/jsext/bytes";
+ * import { saveFile } from "@jsext/dialog";
+ * import bytes from "@jsext/bytes";
  * 
  * const data = bytes("Hello, World!");
  * 
@@ -366,7 +366,7 @@ export interface DownloadFileOptions extends SaveFileOptions {
  * 
  * @example
  * ```ts
- * import { downloadFile } from "@ayonli/jsext/dialog";
+ * import { downloadFile } from "@jsext/dialog";
  * 
  * await downloadFile("https://ayonli.github.io/jsext/README.md");
  * ```

@@ -1,5 +1,5 @@
-import bytes from "../bytes.ts";
-import { readAsArrayBuffer } from "../reader.ts";
+import bytes from "@jsext/bytes";
+import { readAsArrayBuffer } from "@jsext/reader";
 import type { DataSource } from "./web.ts";
 
 export function toBytes(data: string | BufferSource): Uint8Array {

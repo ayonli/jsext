@@ -1,0 +1,23 @@
+{
+    "name": "@jsext/module",
+    "version": "2.0.0",
+    "type": "module",
+    "exports": {
+        ".": "./index.ts",
+        "./util": "./util.ts",
+        "./web": "./web.ts"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "description": "",
+    "dependencies": {
+        "@jsext/env": "^2.0.0",
+        "@jsext/error": "^2.0.0",
+        "@jsext/fs": "^2.0.0",
+        "@jsext/path": "^2.0.0"
+    }
+}

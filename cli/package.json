@@ -1,0 +1,32 @@
+{
+    "name": "@jsext/cli",
+    "version": "2.0.0",
+    "type": "module",
+    "exports": {
+        ".": {
+            "fastly": "./workerd.ts",
+            "workerd": "./workerd.ts",
+            "default": "./index.ts"
+        },
+        "./constants": "./constants.ts"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "description": "",
+    "dependencies": {
+        "@jsext/bytes": "^2.0.0",
+        "@jsext/env": "^2.0.0",
+        "@jsext/error": "^2.0.0",
+        "@jsext/fs": "^2.0.0",
+        "@jsext/lock": "^2.0.0",
+        "@jsext/math": "^2.0.0",
+        "@jsext/module": "^2.0.0",
+        "@jsext/path": "^2.0.0",
+        "@jsext/runtime": "^2.0.0",
+        "@jsext/string": "^2.0.0"
+    }
+}

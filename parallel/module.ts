@@ -1,8 +1,8 @@
-import { isBun, isDeno, isNode } from "../env.ts";
-import { isAbsolute, isFsPath, toFsPath } from "../path.ts";
-import { trim } from "../string.ts";
-import { interop } from "../module.ts";
-import { getObjectURL } from "../module/util.ts";
+import { isBun, isDeno, isNode } from "@jsext/env";
+import { isAbsolute, isFsPath, toFsPath } from "@jsext/path";
+import { trim } from "@jsext/string";
+import { interop } from "@jsext/module";
+import { getObjectURL } from "@jsext/module/util";
 
 const moduleCache = new Map();
 

@@ -1,6 +1,6 @@
-import { isMainThread } from "../env.ts";
-import { throwUnsupportedRuntimeError } from "../error.ts";
-import { ThreadedFunctions } from "../parallel.ts";
+import { isMainThread } from "../env/index.ts";
+import { throwUnsupportedRuntimeError } from "../error/index.ts";
+import { ThreadedFunctions } from "../parallel/index.ts";
 
 function parallel<M extends { [x: string]: any; }>(
     module: string | (() => Promise<M>)

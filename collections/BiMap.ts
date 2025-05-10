@@ -5,7 +5,7 @@ const inverse = Symbol("inverse");
  * 
  * @example
  * ```ts
- * import { BiMap } from "@ayonli/jsext/collections";
+ * import { BiMap } from "@jsext/collections";
  * 
  * const map = new BiMap<string, string>();
  * 

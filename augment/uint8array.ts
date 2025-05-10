@@ -8,7 +8,7 @@ import {
     chunk as _chunk,
     concat,
     copy,
-} from "../bytes.ts";
+} from "@jsext/bytes";
 
 declare global {
     interface Uint8ArrayConstructor {

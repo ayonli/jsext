@@ -1,30 +1,24 @@
-import _try from "../try.ts";
-import func from "../func.ts";
-import wrap from "../wrap.ts";
-import mixin from "../mixin.ts";
-import throttle from "../throttle.ts";
-import debounce from "../debounce.ts";
-import queue, { Queue as _Queue } from "../queue.ts";
-import lock, { Mutex as _Mutex } from "../lock.ts";
-import chan, { Channel as _Channel } from "../chan.ts";
+import _try from "../try/index.ts";
+import func from "../func/index.ts";
+import wrap from "../wrap/index.ts";
+import mixin from "../mixin/index.ts";
+import throttle from "../throttle/index.ts";
+import debounce from "../debounce/index.ts";
+import queue, { Queue as _Queue } from "../queue/index.ts";
+import lock, { Mutex as _Mutex } from "../lock/index.ts";
+import chan, { Channel as _Channel } from "../chan/index.ts";
 import parallel from "./parallel.ts";
 import run from "./run.ts";
-import deprecate from "../deprecate.ts";
-import pipe from "../pipe.ts";
-export * from "../types.ts";
+import deprecate from "../deprecate/index.ts";
+import pipe from "../pipe/index.ts";
+export * from "../types/index.ts";
+
+export * from "./types.ts";
 
 /**
  * The entry of jsext major functions.
  */
 const jsext = {
-    /**
-     * @deprecated Import `_try` from `@ayonli/jsext/try` instead.
-     */
-    _try,
-    /**
-     * @deprecated Import `_try` from `@ayonli/jsext/try` instead.
-     */
-    try: _try,
     func,
     wrap,
     mixin,

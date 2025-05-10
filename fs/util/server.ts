@@ -1,4 +1,4 @@
-import { isDeno, isNodeLike } from "../../env.ts";
+import { isDeno, isNodeLike } from "@jsext/env";
 
 export async function resolveHomeDir(path: string): Promise<string> {
     if (path[0] === "~" && (isDeno || isNodeLike)) {

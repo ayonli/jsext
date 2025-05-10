@@ -1,4 +1,4 @@
-import { capitalize } from "../string.ts";
+import { capitalize } from "@jsext/string";
 
 /**
  * Represents an HTTP Cookie.
@@ -73,7 +73,7 @@ export interface Cookie {
  * 
  * @example
  * ```ts
- * import { parseCookie } from "@ayonli/jsext/http";
+ * import { parseCookie } from "@jsext/http";
  * 
  * const cookie = parseCookie("foo=bar; Domain=example.com; Path=/; Expires=Wed, 09 Jun 2021 10:18:14 GMT; HttpOnly; Secure; SameSite=Strict");
  * console.log(cookie);
@@ -131,7 +131,7 @@ export function parseCookie(str: string): Cookie {
  * 
  * @example
  * ```ts
- * import { stringifyCookie } from "@ayonli/jsext/http";
+ * import { stringifyCookie } from "@jsext/http";
  * 
  * const cookie = stringifyCookie({
  *     name: "foo",
@@ -205,7 +205,7 @@ export function stringifyCookies(cookies: Cookie[]): string {
  * 
  * @example
  * ```ts
- * import { getCookies } from "@ayonli/jsext/http";
+ * import { getCookies } from "@jsext/http";
  * 
  * export default {
  *     fetch(req: Request) {
@@ -231,7 +231,7 @@ export function getCookies(obj: Request | Response): Cookie[] {
  * 
  * @example
  * ```ts
- * import { getCookie } from "@ayonli/jsext/http";
+ * import { getCookie } from "@jsext/http";
  * 
  * export default {
  *     fetch(req: Request) {
@@ -253,7 +253,7 @@ export function getCookie(obj: Request | Response, name: string): Cookie | null 
  * 
  * @example
  * ```ts
- * import { setCookie } from "@ayonli/jsext/http";
+ * import { setCookie } from "@jsext/http";
  * 
  * export default {
  *     fetch(req: Request) {

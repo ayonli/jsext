@@ -1,8 +1,8 @@
-import { getExtensions, getMIME } from "../../filetype.ts";
-import { readDir } from "../../fs/web.ts";
-import { fixFileType } from "../../fs/util.ts";
-import { basename } from "../../path.ts";
-import { readAsObjectURL } from "../../reader.ts";
+import { getExtensions, getMIME } from "@jsext/filetype";
+import { fixFileType } from "@jsext/fs/util";
+import { readDir } from "@jsext/fs/web";
+import { basename } from "@jsext/path";
+import { readAsObjectURL } from "@jsext/reader";
 import type {
     DownloadFileOptions,
     FileDialogOptions,

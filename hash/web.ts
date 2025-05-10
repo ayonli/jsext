@@ -6,7 +6,7 @@
  * module instead.
  * @module
  */
-import bytes, { text } from "../bytes.ts";
+import bytes, { text } from "@jsext/bytes";
 import { toBytes, toBytesAsync } from "./util.ts";
 
 export type DataSource = string | BufferSource | ReadableStream<Uint8Array> | Blob;
@@ -19,7 +19,7 @@ export type DataSource = string | BufferSource | ReadableStream<Uint8Array> | Bl
  * 
  * @example
  * ```ts
- * import hash from "@ayonli/jsext/hash";
+ * import hash from "@jsext/hash";
  * 
  * console.log(hash("Hello, World!")); // 4010631688
  * console.log(hash(new Uint8Array([1, 2, 3]))); // 193378021
@@ -66,7 +66,7 @@ export default function hash(data: string | BufferSource): number {
  * 
  * @example
  * ```ts
- * import { adler32 } from "@ayonli/jsext/hash";
+ * import { adler32 } from "@jsext/hash";
  * 
  * console.log(adler32("Hello, World!")); // 530449514
  * console.log(adler32(new Uint8Array([1, 2, 3]))); // 851975
@@ -126,7 +126,7 @@ const CRC32_TABLE = (() => {
  * 
  * @example
  * ```ts
- * import { crc32 } from "@ayonli/jsext/hash";
+ * import { crc32 } from "@jsext/hash";
  * 
  * console.log(crc32("Hello, World!")); // 3964322768
  * console.log(crc32(new Uint8Array([1, 2, 3]))); // 1438416925

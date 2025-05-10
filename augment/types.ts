@@ -1,4 +1,4 @@
-import { AsyncFunction, GeneratorFunction, AsyncGeneratorFunction, TypedArray } from "../types.ts";
+import { AsyncFunction, GeneratorFunction, AsyncGeneratorFunction, TypedArray } from "@jsext/types";
 
 declare global {
     /** This interface represents the constructor/class of the given `T` type. */
@@ -134,9 +134,20 @@ declare global {
     }
 
     /**
-     * @deprecated Use {@link Sequence} instead.
+     * The `Comparable` interface is used to compare an object of the same class
+     * with an instance of that class, it provides ordering of data for objects of
+     * the user-defined class.
+     * 
+     * This interface is inspired by Java's `Comparable` interface.
      */
-    type RealArrayLike<T> = Sequence<T>;
+    interface Comparable {
+        /**
+         * Compares this object with another object for order. Returns `-1` if this
+         * object is less than the other object, `0` if they are equal, and `1` if
+         * this object is greater than the other object.
+         */
+        compareTo(other: this): -1 | 0 | 1;
+    }
 
     /**
      * Constructs a type by making the specified keys optional.
@@ -154,11 +165,6 @@ declare global {
     type PartialKeys<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
 
     /**
-     * @deprecated Use {@link PartialKeys} instead.
-     */
-    type Optional<T, K extends keyof T> = PartialKeys<T, K>;
-
-    /**
      * Constructs a type by ensuring the specified keys are required.
      * 
      * @example
@@ -174,11 +180,6 @@ declare global {
     type RequiredKeys<T, K extends keyof T> = Required<Pick<T, K>> & Omit<T, K>;
 
     /**
-     * @deprecated Use {@link RequiredKeys} instead.
-     */
-    type Ensured<T, K extends keyof T> = RequiredKeys<T, K>;
-
-    /**
      * Returns the primitive value held by the given type if its a wrapper object,
      * otherwise returns the type itself.
      */
@@ -188,22 +189,6 @@ declare global {
         : T extends BigInt ? bigint
         : T extends Symbol ? symbol
         : T;
-
-    /**
-     * The `Comparable` interface is used to compare an object of the same class
-     * with an instance of that class, it provides ordering of data for objects of
-     * the user-defined class.
-     * 
-     * This interface is inspired by Java's `Comparable` interface.
-     */
-    interface Comparable {
-        /**
-         * Compares this object with another object for order. Returns `-1` if this
-         * object is less than the other object, `0` if they are equal, and `1` if
-         * this object is greater than the other object.
-         */
-        compareTo(other: this): -1 | 0 | 1;
-    }
 
     /**
      * This utility type is used to convert an interface to a plain object type,
@@ -225,7 +210,7 @@ declare global {
      * 
      * @example
      * ```ts
-     * import { Branded } from "@ayonli/jsext/types";
+     * import { Branded } from "@jsext/types";
      * 
      * type Email = Branded<string, "Email">;
      * 

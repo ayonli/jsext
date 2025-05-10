@@ -1,7 +1,7 @@
-import { extname } from "../../../path.ts";
-import { lines } from "../../../string.ts";
-import { run } from "../../../cli.ts";
-import { getExtensions } from "../../../filetype.ts";
+import { run } from "@jsext/cli";
+import { getExtensions } from "@jsext/filetype";
+import { extname } from "@jsext/path";
+import { lines } from "@jsext/string";
 
 function htmlAcceptToFileFilters(accept: string): string[] {
     const groups: (string | string[])[] = [];

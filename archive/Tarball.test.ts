@@ -1,10 +1,10 @@
-import "../external/compression-stream-polyfill/index.ts";
+import "@jsext/polyfills/compression-stream";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { stat, createReadableStream, createWritableStream, readFileAsText, remove, exists } from "../fs.ts";
-import Tarball, { type TarEntry, _entries, TarTree } from "../archive/Tarball.ts";
-import { readAsText } from "../reader.ts";
-import { omit } from "../object.ts";
-import { try_ } from "../result.ts";
+import { stat, createReadableStream, createWritableStream, readFileAsText, remove, exists } from "@jsext/fs";
+import { omit } from "@jsext/object";
+import { readAsText } from "@jsext/reader";
+import { try_ } from "@jsext/result";
+import Tarball, { type TarEntry, _entries, TarTree } from "./Tarball.ts";
 
 describe("archive/Tarball", () => {
     if (typeof ReadableStream !== "function") {

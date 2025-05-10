@@ -1,0 +1,36 @@
+{
+    "name": "@jsext/dialog",
+    "version": "2.0.0",
+    "type": "module",
+    "exports": {
+        ".": {
+            "fastly": "./workerd.ts",
+            "workerd": "./workerd.ts",
+            "default": "./index.ts"
+        },
+        "./cli": "./cli.ts",
+        "./web": "./web.ts"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "description": "",
+    "dependencies": {
+        "@jsext/async": "^2.0.0",
+        "@jsext/bytes": "^2.0.0",
+        "@jsext/cli": "^2.0.0",
+        "@jsext/env": "^2.0.0",
+        "@jsext/error": "^2.0.0",
+        "@jsext/event": "^2.0.0",
+        "@jsext/filetype": "^2.0.0",
+        "@jsext/fs": "^2.0.0",
+        "@jsext/object": "^2.0.0",
+        "@jsext/path": "^2.0.0",
+        "@jsext/reader": "^2.0.0",
+        "@jsext/runtime": "^2.0.0",
+        "@jsext/string": "^2.0.0"
+    }
+}

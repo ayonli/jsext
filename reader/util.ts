@@ -1,5 +1,5 @@
-import chan from "../chan.ts";
-import { fromErrorEvent } from "../error.ts";
+import chan from "@jsext/chan";
+import { fromErrorEvent } from "@jsext/error";
 
 function isFunction(val: unknown): val is (...args: any[]) => any {
     return typeof val === "function";
@@ -172,7 +172,7 @@ export function toAsyncIterable<T>(iterable: AsyncIterable<T> | Iterable<T>): As
 /**
  * @example
  * ```ts
- * import { toAsyncIterable } from "@ayonli/jsext/reader";
+ * import { toAsyncIterable } from "@jsext/reader";
  * 
  * const res = new Response("Hello, World!");
  * 
@@ -187,7 +187,7 @@ export function toAsyncIterable<T>(
 /**
  * @example
  * ```ts
- * import { toAsyncIterable } from "@ayonli/jsext/reader";
+ * import { toAsyncIterable } from "@jsext/reader";
  * 
  * // listen to the `onmessage`
  * const sse = new EventSource("/sse/message");
@@ -208,7 +208,7 @@ export function toAsyncIterable(es: EventSource, options?: { event?: string; }):
 /**
  * @example
  * ```ts
- * import { toAsyncIterable } from "@ayonli/jsext/reader";
+ * import { toAsyncIterable } from "@jsext/reader";
  * 
  * const ws = new WebSocket("/ws");
  * 
@@ -225,7 +225,7 @@ export function toAsyncIterable<T extends Uint8Array | string>(ws: WebSocket): A
 /**
  * @example
  * ```ts
- * import { toAsyncIterable } from "@ayonli/jsext/reader";
+ * import { toAsyncIterable } from "@jsext/reader";
  * 
  * for await (const msg of toAsyncIterable(self)) {
  *     console.log("receive message from the parent window:", msg);
@@ -240,7 +240,7 @@ export function toAsyncIterable<T>(target: EventTarget, eventMap?: {
 /**
  * @example
  * ```ts
- * import { toAsyncIterable } from "@ayonli/jsext/reader";
+ * import { toAsyncIterable } from "@jsext/reader";
  * 
  * for await (const msg of toAsyncIterable(process)) {
  *     console.log("receive message from the parent process:", msg);

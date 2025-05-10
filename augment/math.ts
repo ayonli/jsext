@@ -1,4 +1,4 @@
-import { avg, product, sum, round } from "../math.ts";
+import { avg, product, sum, round } from "@jsext/math";
 
 declare global {
     interface Math {

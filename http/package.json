@@ -1,0 +1,42 @@
+{
+    "name": "@jsext/http",
+    "version": "2.0.0",
+    "type": "module",
+    "exports": {
+        ".": {
+            "fastly": "./workerd.ts",
+            "workerd": "./workerd.ts",
+            "default": "./index.ts"
+        },
+        "./cookie": "./cookie.ts",
+        "./internal": "./internal.ts",
+        "./user-agent": "./user-agent.ts",
+        "./util": "./util.ts"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "description": "",
+    "dependencies": {
+        "@jsext/async": "^2.0.0",
+        "@jsext/bytes": "^2.0.0",
+        "@jsext/cli": "^2.0.0",
+        "@jsext/env": "^2.0.0",
+        "@jsext/error": "^2.0.0",
+        "@jsext/fs": "^2.0.0",
+        "@jsext/hash": "^2.0.0",
+        "@jsext/module": "^2.0.0",
+        "@jsext/net": "^2.0.0",
+        "@jsext/object": "^2.0.0",
+        "@jsext/path": "^2.0.0",
+        "@jsext/reader": "^2.0.0",
+        "@jsext/runtime": "^2.0.0",
+        "@jsext/sse": "^2.0.0",
+        "@jsext/string": "^2.0.0",
+        "@jsext/workerd": "^2.0.0",
+        "@jsext/ws": "^2.0.0"
+    }
+}

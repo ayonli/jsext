@@ -16,7 +16,7 @@ import {
     unique as _unique,
     uniqueBy as _uniqueBy,
     partition as _partition,
-} from "../array.ts";
+} from "@jsext/array";
 
 declare global {
     interface Array<T> {
@@ -33,7 +33,7 @@ declare global {
          * this array.
          * 
          * NOTE: This function only performs a shallow comparison, to compare nested objects
-         * in the array, use the `equals` function from `@ayonli/jsext/object` module instead.
+         * in the array, use the `equals` function from `@jsext/object` module instead.
          */
         equals(another: T[]): boolean;
         /** Checks if the array contains another array as a slice of its contents. */

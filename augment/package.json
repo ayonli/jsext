@@ -1,0 +1,40 @@
+{
+    "name": "@jsext/augment",
+    "version": "2.0.0",
+    "description": "This package supports augmenting some functions to the corresponding built-in types/namespaces, but they should only be used for application development, don't use them when developing libraries.",
+    "type": "module",
+    "exports": {
+        ".": "./index.ts",
+        "./array": "./array.ts",
+        "./collections": "./collections.ts",
+        "./error": "./error.ts",
+        "./json": "./json.ts",
+        "./math": "./math.ts",
+        "./number": "./number.ts",
+        "./object": "./object.ts",
+        "./promise": "./promise.ts",
+        "./string": "./string.ts",
+        "./types": "./types.ts",
+        "./uint8array": "./uint8array.ts"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "@jsext/array": "^2.0.0",
+        "@jsext/async": "^2.0.0",
+        "@jsext/bytes": "^2.0.0",
+        "@jsext/collections": "^2.0.0",
+        "@jsext/error": "^2.0.0",
+        "@jsext/json": "^2.0.0",
+        "@jsext/math": "^2.0.0",
+        "@jsext/number": "^2.0.0",
+        "@jsext/object": "^2.0.0",
+        "@jsext/polyfills": "^2.0.0",
+        "@jsext/string": "^2.0.0",
+        "@jsext/types": "^2.0.0"
+    }
+}

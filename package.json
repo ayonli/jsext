@@ -1,6 +1,6 @@
 {
-    "name": "@ayonli/jsext",
-    "version": "1.7.3",
+    "name": "jsext",
+    "version": "2.0.0",
     "description": "A JavaScript extension package for building strong and modern applications.",
     "type": "module",
     "exports": {
@@ -103,17 +103,17 @@
             "require": "./cjs/dialog.js",
             "default": "./dialog.ts"
         },
-        "./dialog/web": {
-            "types": "./types/dialog/web.d.ts",
-            "import": "./esm/dialog/web.js",
-            "require": "./cjs/dialog/web.js",
-            "default": "./dialog/web.ts"
-        },
         "./dialog/cli": {
             "types": "./types/dialog/cli.d.ts",
             "import": "./esm/dialog/cli.js",
             "require": "./cjs/dialog/cli.js",
             "default": "./dialog/cli.ts"
+        },
+        "./dialog/web": {
+            "types": "./types/dialog/web.d.ts",
+            "import": "./esm/dialog/web.js",
+            "require": "./cjs/dialog/web.js",
+            "default": "./dialog/web.ts"
         },
         "./encoding": {
             "types": "./types/encoding.d.ts",
@@ -534,5 +534,54 @@
     },
     "engines": {
         "node": ">=14.18"
-    }
+    },
+    "workspaces": [
+        "wrap",
+        "class",
+        "types",
+        "array",
+        "number",
+        "encoding",
+        "bytes",
+        "string",
+        "archive",
+        "math",
+        "env",
+        "chan",
+        "async",
+        "error",
+        "event",
+        "collections",
+        "debounce",
+        "deprecate",
+        "runtime",
+        "http",
+        "cli",
+        "lock",
+        "result",
+        "try",
+        "dialog",
+        "filetype",
+        "fs",
+        "hash",
+        "func",
+        "json",
+        "mixin",
+        "module",
+        "net",
+        "object",
+        "once",
+        "parallel",
+        "path",
+        "pipe",
+        "queue",
+        "run",
+        "reader",
+        "sse",
+        "throttle",
+        "ws",
+        "polyfills",
+        "augment",
+        "workerd"
+    ]
 }

@@ -1,4 +1,4 @@
-import type { KVNamespace } from "../workerd/types.ts";
+import type { KVNamespace } from "@jsext/workerd";
 
 /**
  * Common options for file system operations.

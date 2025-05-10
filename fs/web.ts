@@ -6,14 +6,16 @@
  * module instead.
  * @module
  */
-import { abortable } from "../async.ts";
-import { getMIME } from "../filetype.ts";
-import { as } from "../object.ts";
-import { basename, dirname, extname, join, split } from "../path.ts";
-import { readAsArray, readAsText, resolveByteStream, toAsyncIterable } from "../reader.ts";
-import { stripStart } from "../string.ts";
-import { try_ } from "../result.ts";
-import { fixDirEntry, fixFileType, makeTree, rawOp, wrapFsError } from "./util.ts";
+import { abortable } from "@jsext/async";
+import { getMIME } from "@jsext/filetype";
+import { AlreadyExistsError } from "@jsext/error";
+import { as } from "@jsext/object";
+import { basename, dirname, extname, join, split } from "@jsext/path";
+import { readAsArray, readAsText, resolveByteStream, toAsyncIterable } from "@jsext/reader";
+import { stripStart } from "@jsext/string";
+import { try_ } from "@jsext/result";
+import { InvalidOperationError, NotDirectoryError } from "./errors.ts";
+import { fixDirEntry, fixFileType, makeTree, rawOp, wrapFsError } from "./util/index.ts";
 import type { FileInfo, FileSystemOptions, DirEntry, DirTree } from "./types.ts";
 import type {
     CopyOptions,
@@ -25,9 +27,7 @@ import type {
     RemoveOptions,
     StatOptions,
     WriteFileOptions,
-} from "../fs.ts";
-import { AlreadyExistsError } from "../error.ts";
-import { InvalidOperationError, NotDirectoryError } from "./errors.ts";
+} from "./index.ts";
 
 export type { FileSystemOptions, FileInfo, DirEntry, DirTree };
 
@@ -44,7 +44,7 @@ export const EOL: "\n" | "\r\n" = "\n";
  * @example
  * ```ts
  * // with the default storage
- * import { getDirHandle } from "@ayonli/jsext/fs";
+ * import { getDirHandle } from "@jsext/fs";
  * 
  * const dir = await getDirHandle("/path/to/dir");
  * ```
@@ -52,7 +52,7 @@ export const EOL: "\n" | "\r\n" = "\n";
  * @example
  * ```ts
  * // with a user-selected directory as root (Chromium only)
- * import { getDirHandle } from "@ayonli/jsext/fs";
+ * import { getDirHandle } from "@jsext/fs";
  * 
  * const root = await window.showDirectoryPicker();
  * const dir = await getDirHandle("/path/to/dir", { root });
@@ -61,7 +61,7 @@ export const EOL: "\n" | "\r\n" = "\n";
  * @example
  * ```ts
  * // create the directory if not exist
- * import { getDirHandle } from "@ayonli/jsext/fs";
+ * import { getDirHandle } from "@jsext/fs";
  * 
  * const dir = await getDirHandle("/path/to/dir", { create: true, recursive: true });
  * ```
@@ -69,7 +69,7 @@ export const EOL: "\n" | "\r\n" = "\n";
  * @example
  * ```ts
  * // return the root directory handle
- * import { getDirHandle } from "@ayonli/jsext/fs";
+ * import { getDirHandle } from "@jsext/fs";
  * 
  * const root = await getDirHandle();
  * ```
@@ -105,7 +105,7 @@ export async function getDirHandle(
  * @example
  * ```ts
  * // with the default storage
- * import { getFileHandle } from "@ayonli/jsext/fs";
+ * import { getFileHandle } from "@jsext/fs";
  * 
  * const file = await getFileHandle("/path/to/file.txt");
  * ```
@@ -113,7 +113,7 @@ export async function getDirHandle(
  * @example
  * ```ts
  * // with a user-selected directory as root (Chromium only)
- * import { getFileHandle } from "@ayonli/jsext/fs";
+ * import { getFileHandle } from "@jsext/fs";
  * 
  * const root = await window.showDirectoryPicker();
  * const file = await getFileHandle("/path/to/file.txt", { root });
@@ -122,7 +122,7 @@ export async function getDirHandle(
  * @example
  * ```ts
  * // create the file if not exist
- * import { getFileHandle } from "@ayonli/jsext/fs";
+ * import { getFileHandle } from "@jsext/fs";
  * 
  * const file = await getFileHandle("/path/to/file.txt", { create: true });
  * ```

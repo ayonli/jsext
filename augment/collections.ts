@@ -1,5 +1,5 @@
 
-import { BiMap, CiMap } from "../collections.ts";
+import { BiMap, CiMap } from "@jsext/collections";
 
 declare global {
     class BiMap<K, V> extends Map<K, V> {

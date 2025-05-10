@@ -1,0 +1,12 @@
+{
+  "name": "@jsext/workerd",
+  "version": "2.0.0",
+  "description": "Components and implementations for Cloudflare Workers.",
+  "main": "./index.ts",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT"
+}

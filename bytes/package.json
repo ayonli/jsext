@@ -1,0 +1,22 @@
+{
+    "name": "@jsext/bytes",
+    "version": "2.0.0",
+    "type": "module",
+    "exports": {
+        ".": "./index.ts",
+        "./augment": "./augment.ts"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "description": "",
+    "dependencies": {
+        "@jsext/array": "^2.0.0",
+        "@jsext/encoding": "^2.0.0",
+        "@jsext/math": "^2.0.0",
+        "@jsext/types": "^2.0.0"
+    }
+}

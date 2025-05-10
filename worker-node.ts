@@ -1,5 +1,5 @@
 import { isMainThread, parentPort } from "worker_threads";
-import { isNode } from "./env.ts";
+import { isNode } from "./env/index.ts";
 import { isChannelMessage, handleChannelMessage } from "./parallel/channel.ts";
 import { isCallRequest, handleCallRequest } from "./parallel/worker.ts";
 

@@ -1,0 +1,17 @@
+{
+    "name": "@jsext/try",
+    "version": "2.0.0",
+    "type": "module",
+    "exports": "./index.ts",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "description": "",
+    "dependencies": {
+        "check-iterable": "^1.2.0",
+        "thenable-generator": "^0.5.2"
+    }
+}

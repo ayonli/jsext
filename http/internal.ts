@@ -7,15 +7,15 @@
  * integrating with Vite dev server.
  * @module
  */
-import { orderBy } from "../array.ts";
-import { join } from "../path.ts";
-import runtime from "../runtime.ts";
-import { EventEndpoint } from "../sse.ts";
-import { capitalize, dedent } from "../string.ts";
+import { orderBy } from "../array/index.ts";
+import { join } from "../path/index.ts";
+import runtime from "../runtime/index.ts";
+import { EventEndpoint } from "../sse/index.ts";
+import { capitalize, dedent } from "../string/index.ts";
 import type { DirEntry } from "../fs/types.ts";
 import { constructNetAddress } from "./server.ts";
 import type { NetAddress, FetchEvent, RequestContext, RequestErrorHandler, ServeOptions } from "./server.ts";
-import type { WebSocketServer } from "../ws.ts";
+import type { WebSocketServer } from "../ws/index.ts";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
 
@@ -55,7 +55,7 @@ function sanitizeTimers(timers: Map<string, TimingMetrics>): Map<string, TimingM
  */
 export function createTimingFunctions(): TimingFunctions & {
     /**
-     * @deprecated Use `getTimers` instead.
+     * @internal Use `getTimers` instead.
      */
     timers: Map<string, TimingMetrics>;
 } {
@@ -318,7 +318,7 @@ export async function renderDirectoryPage(
  * @example
  * ```ts
  * import * as http from "node:http";
- * import { withWeb } from "@ayonli/jsext/http/internal";
+ * import { withWeb } from "@jsext/http/internal";
  * 
  * const server = http.createServer(withWeb(async (req) => {
  *     return new Response("Hello, World!");

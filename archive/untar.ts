@@ -1,10 +1,10 @@
-import { concat as concatBytes } from "../bytes.ts";
-import { isDeno, isNodeLike } from "../env.ts";
-import { createProgressEvent } from "../event.ts";
-import { chmod, createReadableStream, createWritableStream, ensureDir, stat, utimes } from "../fs.ts";
-import { ensureFsTarget, makeTree } from "../fs/util.ts";
-import { basename, dirname, isFileUrl, join, resolve, toFsPath } from "../path.ts";
-import { platform } from "../runtime.ts";
+import { concat as concatBytes } from "@jsext/bytes";
+import { isDeno, isNodeLike } from "@jsext/env";
+import { createProgressEvent } from "@jsext/event";
+import { chmod, createReadableStream, createWritableStream, ensureDir, stat, utimes } from "@jsext/fs";
+import { ensureFsTarget, makeTree } from "@jsext/fs/util";
+import { basename, dirname, isFileUrl, join, resolve, toFsPath } from "@jsext/path";
+import { platform } from "@jsext/runtime";
 import Tarball, {
     HEADER_LENGTH,
     TarEntry,
@@ -42,7 +42,7 @@ export interface UntarOptions extends TarOptions {
  * 
  * @example
  * ```ts
- * import { untar } from "@ayonli/jsext/archive";
+ * import { untar } from "@jsext/archive";
  * 
  * await untar("/path/to/archive.tar", "/path/to/directory");
  * // with gzip
@@ -59,7 +59,7 @@ export default function untar(
  * 
  * @example
  * ```ts
- * import { untar } from "@ayonli/jsext/archive";
+ * import { untar } from "@jsext/archive";
  * 
  * const tarball = await untar("/path/to/archive.tar");
  * // with gzip

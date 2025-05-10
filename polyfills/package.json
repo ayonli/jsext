@@ -1,0 +1,18 @@
+{
+    "name": "@jsext/polyfills",
+    "version": "2.0.0",
+    "type": "module",
+    "exports": {
+        ".": "./index.ts",
+        "./compression-stream": "./compression-stream.ts",
+        "./event-target": "./event-target.ts"
+    },
+    "devDependencies": {},
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "description": ""
+}

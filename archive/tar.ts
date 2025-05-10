@@ -1,7 +1,13 @@
-import { FileSystemOptions, FileInfo } from "../fs/types.ts";
-import { createReadableStream, stat, readDir, createWritableStream } from "../fs.ts";
-import { ensureFsTarget } from "../fs/util.ts";
-import { basename, isFileUrl, join, resolve, toFsPath } from "../path.ts";
+import {
+    FileSystemOptions,
+    FileInfo,
+    createReadableStream,
+    stat,
+    readDir,
+    createWritableStream,
+} from "@jsext/fs";
+import { ensureFsTarget } from "@jsext/fs/util";
+import { basename, isFileUrl, join, resolve, toFsPath } from "@jsext/path";
 import Tarball, { TarEntry } from "./Tarball.ts";
 
 /**
@@ -23,7 +29,7 @@ export interface TarOptions extends FileSystemOptions {
  * 
  * @example
  * ```ts
- * import { tar } from "@ayonli/jsext/archive";
+ * import { tar } from "@jsext/archive";
  * 
  * await tar("/path/to/directory", "/path/to/archive.tar");
  * // with gzip
@@ -44,7 +50,7 @@ export default function tar(
  * 
  * @example
  * ```ts
- * import { tar } from "@ayonli/jsext/archive";
+ * import { tar } from "@jsext/archive";
  * 
  * const tarball = await tar("/path/to/directory");
  * ```

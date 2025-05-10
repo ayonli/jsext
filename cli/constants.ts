@@ -1,4 +1,4 @@
-import bytes, { ByteArray } from "../bytes.ts";
+import bytes, { ByteArray } from "@jsext/bytes";
 
 export namespace ControlKeys {
     /** ^I - Tab */

@@ -1,5 +1,4 @@
-import bytes, { concat, equals } from "../../bytes.ts";
-import { chars } from "../../string.ts";
+import bytes, { concat, equals } from "@jsext/bytes";
 import {
     ControlKeys,
     ControlSequences,
@@ -9,7 +8,8 @@ import {
     moveRightBy,
     readStdin,
     writeStdout,
-} from "../../cli.ts";
+} from "@jsext/cli";
+import { chars } from "@jsext/string";
 
 const { BS, CTRL_A, CTRL_C, CTRL_E, CR, DEL, ESC, LF } = ControlKeys;
 const { UP, DOWN, LEFT, RIGHT } = NavigationKeys;

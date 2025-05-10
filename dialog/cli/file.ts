@@ -1,23 +1,23 @@
-import { asyncTask } from "../../async.ts";
-import { isWSL, which } from "../../cli.ts";
-import { Exception, NotSupportedError } from "../../error.ts";
-import { createProgressEvent } from "../../event.ts";
-import { readDir, readFileAsFile, writeFile } from "../../fs.ts";
-import { fixFileType } from "../../fs/util.ts";
-import { as, pick } from "../../object.ts";
-import { basename, join } from "../../path.ts";
-import { platform } from "../../runtime.ts";
+import { asyncTask } from "@jsext/async";
+import { isWSL, which } from "@jsext/cli";
+import { Exception, NotSupportedError } from "@jsext/error";
+import { createProgressEvent } from "@jsext/event";
+import { readDir, readFileAsFile, writeFile } from "@jsext/fs";
+import { fixFileType } from "@jsext/fs/util";
+import { as, pick } from "@jsext/object";
+import { basename, join } from "@jsext/path";
+import { platform } from "@jsext/runtime";
 import type { ProgressState } from "../progress.ts";
 import progress from "./progress.ts";
-import { linuxPickFile, linuxPickFiles, linuxPickFolder } from "./file/linux.ts";
-import { macPickFile, macPickFiles, macPickFolder } from "./file/mac.ts";
-import { windowsPickFile, windowsPickFiles, windowsPickFolder } from "./file/windows.ts";
 import type {
     DownloadFileOptions,
     FileDialogOptions,
     PickFileOptions,
     SaveFileOptions,
 } from "../file.ts";
+import { linuxPickFile, linuxPickFiles, linuxPickFolder } from "./file/linux.ts";
+import { macPickFile, macPickFiles, macPickFolder } from "./file/mac.ts";
+import { windowsPickFile, windowsPickFiles, windowsPickFolder } from "./file/windows.ts";
 
 function throwUnsupportedPlatformError(): never {
     throw new NotSupportedError("Unsupported platform");

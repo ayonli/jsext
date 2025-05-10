@@ -1,13 +1,13 @@
 import type { Server as NodeHttpServer } from "node:http";
 import type { Http2SecureServer } from "node:http2";
-import type { serve, serveStatic } from "../http.ts";
-import type { NetAddress as INetAddress } from "../net/types.ts";
-import type { EventEndpoint } from "../sse.ts";
-import type { WebSocketConnection, WebSocketHandler, WebSocketServer } from "../ws.ts";
-import type { KVNamespace } from "../workerd/types.ts";
-import { until } from "../async.ts";
-import { isBun, isDeno, isNode } from "../env.ts";
-import runtime, { env } from "../runtime.ts";
+import type { serve, serveStatic } from "./index.ts";
+import type { NetAddress as INetAddress } from "@jsext/net";
+import type { EventEndpoint } from "@jsext/sse";
+import type { WebSocketConnection, WebSocketHandler, WebSocketServer } from "@jsext/ws";
+import type { KVNamespace } from "@jsext/workerd";
+import { until } from "@jsext/async";
+import { isBun, isDeno, isNode } from "@jsext/env";
+import runtime, { env } from "@jsext/runtime";
 import {
     createRequestContext,
     createTimingFunctions,
@@ -33,7 +33,7 @@ export function constructNetAddress(addr: Omit<NetAddress, "family" | "address">
 
 
 /**
- * @deprecated use `NetAddress` from `@ayonli/jsext/net` instead.
+ * @deprecated use `NetAddress` from `@jsext/net` instead.
  */
 export interface NetAddress extends INetAddress {
     /**

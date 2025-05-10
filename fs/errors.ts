@@ -1,4 +1,4 @@
-import { Exception, registerErrorType } from "../error.ts";
+import { Exception, registerErrorType } from "@jsext/error";
 
 /**
  * This error indicates that the operation is invalid, such as trying to copy a

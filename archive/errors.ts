@@ -1,4 +1,4 @@
-import { Exception, registerErrorType } from "../error.ts";
+import { Exception, registerErrorType } from "@jsext/error";
 
 /**
  * This error indicates that the filename is too long to be resolved by the file

@@ -1,4 +1,4 @@
-import { after, pace, sleep, timeout, until, select } from "../async.ts";
+import { pace, sleep, timeout, until, select } from "@jsext/async";
 
 declare global {
     interface PromiseConstructor {
@@ -6,8 +6,6 @@ declare global {
         timeout<T>(value: PromiseLike<T>, ms: number): Promise<T>;
         /** Slows down and resolves the promise only after the given duration. */
         pace<T>(value: PromiseLike<T>, ms: number): Promise<T>;
-        /** @deprecated Use {@link pace} instead. */
-        after<T>(value: PromiseLike<T>, ms: number): Promise<T>;
         /** Blocks the context for a given duration. */
         sleep(ms: number): Promise<void>;
         /**
@@ -30,7 +28,6 @@ declare global {
 }
 
 Promise.timeout = timeout;
-Promise.after = after;
 Promise.pace = pace;
 Promise.sleep = sleep;
 Promise.until = until;

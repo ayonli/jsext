@@ -1,5 +1,5 @@
-import type { connect, udpSocket } from "../net.ts";
-import type { ToDict } from "../types.ts";
+import type { ToDict } from "@jsext/types";
+import type { connect, udpSocket } from "./index.ts";
 
 /**
  * Represents the network address of a connection peer.

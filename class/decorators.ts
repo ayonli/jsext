@@ -5,7 +5,7 @@
  * @module
  */
 import { z } from "zod";
-import type { MethodDecorator } from "../types.ts";
+import type { MethodDecorator } from "@jsext/types";
 
 const _source = Symbol.for("source");
 const _params = Symbol.for("params");
@@ -150,7 +150,7 @@ function decorate(
  * 
  * @example
  * ```ts
- * import { param } from "@ayonli/jsext/class/decorators";
+ * import { param } from "@jsext/class/decorators";
  * import { z } from "zod";
  * 
  * class Calculator {
@@ -211,7 +211,7 @@ export function param<T extends z.ZodType>(
  * @example
  * ```ts
  * // regular function
- * import { returns } from "@ayonli/jsext/class/decorators";
+ * import { returns } from "@jsext/class/decorators";
  * import { z } from "zod";
  * 
  * class Calculator {
@@ -230,7 +230,7 @@ export function param<T extends z.ZodType>(
  * @example
  * ```ts
  * // async function
- * import { returns } from "@ayonli/jsext/class/decorators";
+ * import { returns } from "@jsext/class/decorators";
  * import { z } from "zod";
  * 
  * class Calculator {
@@ -271,7 +271,7 @@ export function returns<T extends z.ZodType>(type: T): MethodDecorator {
  * 
  * @example
  * ```ts
- * import { throws } from "@ayonli/jsext/class/decorators";
+ * import { throws } from "@jsext/class/decorators";
  * import { z } from "zod";
  * 
  * class Calculator {

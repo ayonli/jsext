@@ -3,8 +3,8 @@ import {
     startsWith as _startsWith,
     endsWith as _endsWith,
     equals as _equals,
-} from "../array.ts";
-import { trim, trimEnd } from "../string.ts";
+} from "@jsext/array";
+import { trim, trimEnd } from "@jsext/string";
 
 export function isNotQuery(str: string): boolean {
     return str[0] !== "?" && str[0] !== "#";
@@ -19,7 +19,7 @@ export function isVolume(path: string, strict = false): boolean {
  * 
  * @example
  * ```ts
- * import { isWindowsPath } from "@ayonli/jsext/path";
+ * import { isWindowsPath } from "@jsext/path";
  * 
  * console.assert(isWindowsPath("C:\\Windows\\System32"));
  * console.assert(isWindowsPath("c:\\Windows\\System32")); // case-insensitive on volume
@@ -36,7 +36,7 @@ export function isWindowsPath(path: string): boolean {
  * 
  * @example
  * ```ts
- * import { isPosixPath } from "@ayonli/jsext/path";
+ * import { isPosixPath } from "@jsext/path";
  * 
  * console.assert(isPosixPath("/usr/bin"));
  * ```
@@ -50,7 +50,7 @@ export function isPosixPath(path: string): boolean {
  * 
  * @example
  * ```ts
- * import { isFsPath } from "@ayonli/jsext/path";
+ * import { isFsPath } from "@jsext/path";
  * 
  * console.assert(isFsPath("/usr/bin"));
  * console.assert(isFsPath("C:\\Windows\\System32"));
@@ -67,7 +67,7 @@ export function isFsPath(path: string): boolean {
  * 
  * @example
  * ```ts
- * import { isUrl } from "@ayonli/jsext/path";
+ * import { isUrl } from "@jsext/path";
  * 
  * console.assert(isUrl("http://example.com"));
  * console.assert(isUrl("https://example.com?foo=bar#baz"));
@@ -87,7 +87,7 @@ export function isUrl(str: string): boolean {
  * 
  * @example
  * ```ts
- * import { isFileUrl } from "@ayonli/jsext/path";
+ * import { isFileUrl } from "@jsext/path";
  * 
  * console.assert(isFileUrl("file:///C:/Windows/System32"));
  * console.assert(isFileUrl("file://localhost/C:/Windows/System32"));
@@ -108,7 +108,7 @@ export function isFileUrl(path: string | URL): boolean {
  * 
  * @example
  * ```ts
- * import { isAbsolute } from "@ayonli/jsext/path";
+ * import { isAbsolute } from "@jsext/path";
  * 
  * console.assert(isAbsolute("/usr/bin"));
  * console.assert(isAbsolute("C:\\Windows\\System32"));
@@ -126,7 +126,7 @@ export function isAbsolute(path: string): boolean {
  * 
  * @example
  * ```ts
- * import { split } from "@ayonli/jsext/path";
+ * import { split } from "@jsext/path";
  * 
  * console.log(split("/usr/bin")); // ["/", "usr", "bin"]
  * console.log(split("C:\\Windows\\System32")); // ["C:\\", "Windows", "System32"]
@@ -280,7 +280,7 @@ function extractSegmentsForComparison(
  * 
  * @example
  * ```ts
- * import { contains } from "@ayonli/jsext/path";
+ * import { contains } from "@jsext/path";
  * 
  * console.assert(contains("/usr/bin", "/usr"));
  * console.assert(contains("C:\\Windows\\System32", "Windows\\System32"));
@@ -314,7 +314,7 @@ export function contains(path: string, sub: string, options: PathCompareOptions 
  * 
  * @example
  * ```ts
- * import { startsWith } from "@ayonli/jsext/path";
+ * import { startsWith } from "@jsext/path";
  * 
  * console.assert(startsWith("/usr/bin", "/usr"));
  * console.assert(startsWith("C:\\Windows\\System32", "c:/Windows"));
@@ -352,7 +352,7 @@ export function startsWith(path: string, sub: string, options: PathCompareOption
  * 
  * @example
  * ```ts
- * import { endsWith } from "@ayonli/jsext/path";
+ * import { endsWith } from "@jsext/path";
  * 
  * console.assert(endsWith("/usr/bin", "bin"));
  * console.assert(endsWith("C:\\Windows\\System32", "System32"));
@@ -384,7 +384,7 @@ export function endsWith(path: string, sub: string, options: PathCompareOptions 
  * 
  * @example
  * ```ts
- * import { equals } from "@ayonli/jsext/path";
+ * import { equals } from "@jsext/path";
  * 
  * console.assert(equals("/usr/bin", "/usr/bin"));
  * console.assert(equals("C:\\Windows\\System32", "c:/Windows/System32"));

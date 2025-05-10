@@ -1,4 +1,4 @@
-import { isBetween, isFloat, isNumeric, random, range, serial } from "../number.ts";
+import { isBetween, isFloat, isNumeric, random, range, serial } from "@jsext/number";
 
 declare global {
     interface NumberConstructor {

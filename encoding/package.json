@@ -1,0 +1,17 @@
+{
+    "name": "@jsext/encoding",
+    "version": "2.0.0",
+    "type": "module",
+    "exports": "./index.ts",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "description": "",
+    "devDependencies": {
+        "@jsext/bytes": "^2.0.0",
+        "@jsext/string": "^2.0.0"
+    }
+}

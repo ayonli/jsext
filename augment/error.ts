@@ -12,8 +12,8 @@ import {
     toObject,
     fromErrorEvent,
     isCausedBy as _isCausedBy,
-} from "../error.ts";
-import { Constructor } from "../types.ts";
+} from "@jsext/error";
+import { Constructor } from "@jsext/types";
 
 declare global {
     interface Error {

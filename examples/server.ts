@@ -1,11 +1,11 @@
-import bytes from "../bytes.ts";
-import { args, parseArgs } from "../cli.ts";
-import { parseResponse, serve, serveStatic } from "../http.ts";
-import { importWasm } from "../module.ts";
-import { connect } from "../net.ts";
-import { startsWith } from "../path.ts";
-import { readAsText } from "../reader.ts";
-import runtime, { addUnhandledRejectionListener } from "../runtime.ts";
+import bytes from "../bytes/index.ts";
+import { args, parseArgs } from "../cli/index.ts";
+import { parseResponse, serve, serveStatic } from "@jsext/http";
+import { importWasm } from "../module/index.ts";
+import { connect } from "../net/index.ts";
+import { startsWith } from "../path/index.ts";
+import { readAsText } from "../reader/index.ts";
+import runtime, { addUnhandledRejectionListener } from "../runtime/index.ts";
 
 const options = parseArgs(args);
 

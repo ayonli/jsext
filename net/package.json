@@ -1,0 +1,25 @@
+{
+    "name": "@jsext/net",
+    "version": "2.0.0",
+    "type": "module",
+    "exports": {
+        ".": {
+            "workerd": "./workerd.ts",
+            "default": "./index.ts"
+        }
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "description": "",
+    "dependencies": {
+        "@jsext/async": "^2.0.0",
+        "@jsext/chan": "^2.0.0",
+        "@jsext/env": "^2.0.0",
+        "@jsext/error": "^2.0.0",
+        "@jsext/types": "^2.0.0"
+    }
+}

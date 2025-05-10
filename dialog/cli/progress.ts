@@ -1,4 +1,4 @@
-import bytes, { equals } from "../../bytes.ts";
+import bytes, { equals } from "@jsext/bytes";
 import {
     ControlKeys,
     ControlSequences,
@@ -6,7 +6,7 @@ import {
     lockStdin,
     stringWidth,
     writeStdoutSync,
-} from "../../cli.ts";
+} from "@jsext/cli";
 import type { ProgressAbortHandler, ProgressFunc, ProgressState } from "../progress.ts";
 
 const { CTRL_C, ESC, LF } = ControlKeys;

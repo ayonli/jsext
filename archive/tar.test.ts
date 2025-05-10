@@ -1,12 +1,11 @@
-import "../external/compression-stream-polyfill/index.ts";
+import "@jsext/polyfills/compression-stream";
 import { deepStrictEqual } from "node:assert";
-import tar from "./tar.ts";
-import { pick } from "../object.ts";
+import { orderBy } from "@jsext/array";
+import { createReadableStream, remove } from "@jsext/fs";
+import func from "@jsext/func";
+import { pick } from "@jsext/object";
 import Tarball, { TarEntry } from "./Tarball.ts";
-import { createReadableStream, remove } from "../fs.ts";
-import { orderBy } from "../array.ts";
-import func from "../func.ts";
-import "../augment.ts";
+import tar from "./tar.ts";
 
 describe("archive/tar", () => {
     if (typeof ReadableStream !== "function") {

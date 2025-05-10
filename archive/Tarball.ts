@@ -1,10 +1,10 @@
-import { concat as concatBytes } from "../bytes.ts";
-import { makeTree } from "../fs/util.ts";
-import { omit } from "../object.ts";
-import { basename, dirname } from "../path.ts";
-import { concat as concatStreams, toReadableStream } from "../reader.ts";
-import { stripEnd } from "../string.ts";
-import { RequiredKeys } from "../types.ts";
+import { concat as concatBytes } from "@jsext/bytes";
+import { makeTree } from "@jsext/fs/util";
+import { omit } from "@jsext/object";
+import { basename, dirname } from "@jsext/path";
+import { concat as concatStreams, toReadableStream } from "@jsext/reader";
+import { stripEnd } from "@jsext/string";
+import { RequiredKeys } from "@jsext/types";
 import { CorruptedArchiveError, FilenameTooLongError } from "./errors.ts";
 
 const _stream = Symbol.for("stream");
@@ -219,8 +219,8 @@ export const _entries = Symbol.for("entries");
  * @example
  * ```ts
  * // create a tarball
- * import { stat, createReadableStream, createWriteableStream } from "@ayonli/jsext/fs";
- * import { Tarball } from "@ayonli/jsext/archive";
+ * import { stat, createReadableStream, createWriteableStream } from "@jsext/fs";
+ * import { Tarball } from "@jsext/archive";
  * 
  * const tarball = new Tarball();
  * 
@@ -239,8 +239,8 @@ export const _entries = Symbol.for("entries");
  * @example
  * ```ts
  * // load a tarball
- * import { createReadableStream } from "@ayonli/jsext/fs";
- * import { Tarball } from "@ayonli/jsext/archive";
+ * import { createReadableStream } from "@jsext/fs";
+ * import { Tarball } from "@jsext/archive";
  * 
  * const input = createReadableStream("archive.tar");
  * const tarball = await Tarball.load(input);

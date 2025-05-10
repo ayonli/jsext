@@ -5,21 +5,21 @@
  * in the browser environment.
  * @module
  */
-import { isFullWidth, isWide } from "../external/code-point-utils/index.ts";
-import { byteLength, chars } from "../string.ts";
-import { EMOJI_CHAR } from "../string/constants.ts";
-import bytes, { ByteArray, equals } from "../bytes.ts";
-import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
-import { NotSupportedError } from "../error.ts";
-import { platform } from "../runtime.ts";
-import { sum } from "../math.ts";
-import { Mutex } from "../lock.ts";
+import bytes, { ByteArray, equals } from "@jsext/bytes";
+import { isBrowserWindow, isDeno, isNodeLike } from "@jsext/env";
+import { NotSupportedError } from "@jsext/error";
+import { Mutex } from "@jsext/lock";
+import { sum } from "@jsext/math";
+import { platform } from "@jsext/runtime";
+import { byteLength, chars } from "@jsext/string";
+import { EMOJI_CHAR_RE } from "@jsext/string/constants";
 import {
     ControlKeys,
     ControlSequences,
     FunctionKeys,
     NavigationKeys,
 } from "./constants.ts";
+import { isFullWidth, isWide } from "./util.ts";
 
 export {
     ControlKeys,
@@ -46,7 +46,7 @@ const NonTypingKeys = [
  * // launch with `deno run main.ts --name=Bob --age=30`
  * // or `node main.js --name=Bob --age=30`
  * // or `bun run main.ts --name=Bob --age=30`
- * import { args } from "@ayonli/jsext/cli";
+ * import { args } from "@jsext/cli";
  * 
  * console.log(args);
  * // [
@@ -83,7 +83,7 @@ export const isTTY: boolean = (() => {
  * 
  * @example
  * ```ts
- * import { charWidth } from "@ayonli/jsext/cli";
+ * import { charWidth } from "@jsext/cli";
  * 
  * console.log(charWidth("a")); // 1
  * console.log(charWidth("你")); // 2
@@ -92,7 +92,7 @@ export const isTTY: boolean = (() => {
  * ```
  */
 export function charWidth(char: string): 1 | 2 {
-    if (EMOJI_CHAR.test(char)) {
+    if (EMOJI_CHAR_RE.test(char)) {
         const _bytes = byteLength(char);
 
         // Most emojis are 4 bytes wide, but some are 3 bytes in Windows/Linux,
@@ -110,7 +110,7 @@ export function charWidth(char: string): 1 | 2 {
  * 
  * @example
  * ```ts
- * import { stringWidth } from "@ayonli/jsext/cli";
+ * import { stringWidth } from "@jsext/cli";
  * 
  * console.log(stringWidth("Hello, World!")); // 13
  * console.log(stringWidth("你好，世界！")); // 12
@@ -139,8 +139,8 @@ const stdinMutex = new Mutex(1);
  * ```ts
  * // A simple program that reads a line of text from user input.
  * import process from "node:process";
- * import bytes, { equals } from "@ayonli/jsext/bytes";
- * import { chars } from "@ayonli/jsext/string";
+ * import bytes, { equals } from "@jsext/bytes";
+ * import { chars } from "@jsext/string";
  * import {
  *     ControlKeys,
  *     ControlSequences,
@@ -149,7 +149,7 @@ const stdinMutex = new Mutex(1);
  *     writeStdout,
  *     isTypingInput,
  *     moveLeftBy,
- * } from "@ayonli/jsext/cli";
+ * } from "@jsext/cli";
  * 
  * const input = await lockStdin(async () => {
  *     await writeStdout(bytes("Type something: "));
@@ -435,7 +435,7 @@ export interface ParseOptions {
  * 
  * @example
  * ```ts
- * import { parseArgs } from "@ayonli/jsext/cli";
+ * import { parseArgs } from "@jsext/cli";
  * 
  * const args = parseArgs([
  *     "Bob",
@@ -541,7 +541,7 @@ export function parseArgs(args: string[], options: ParseOptions = {}): {
  * 
  * @example
  * ```ts
- * import { quote } from "@ayonli/jsext/cli";
+ * import { quote } from "@jsext/cli";
  * 
  * console.log(quote("Hello, World!")); // "Hello, World!"
  * console.log(quote("Hello, 'World'!")); // "Hello, 'World'!"

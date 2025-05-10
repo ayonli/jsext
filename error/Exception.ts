@@ -25,7 +25,7 @@ export interface ExceptionOptions {
  * @example
  * ```ts
  * // throw an exception with a name
- * import { Exception } from "@ayonli/jsext/error";
+ * import { Exception } from "@jsext/error";
  * 
  * throw new Exception("Operation timeout after 5 seconds", "TimeoutError");
  * ```
@@ -33,7 +33,7 @@ export interface ExceptionOptions {
  * @example
  * ```ts
  * // throw an exception with a code (not recommended, always use a name or both)
- * import { Exception } from "@ayonli/jsext/error";
+ * import { Exception } from "@jsext/error";
  * 
  * throw new Exception("Operation timeout after 5 seconds", 408);
  * ```
@@ -41,7 +41,7 @@ export interface ExceptionOptions {
  * @example
  * ```ts
  * // throw an exception with a cause
- * import { Exception } from "@ayonli/jsext/error";
+ * import { Exception } from "@jsext/error";
  * 
  * try {
  *     throw new Error("Something went wrong");
