@@ -2,7 +2,6 @@
     "compilerOptions": {
         "module": "esnext",
         "target": "es2018",
-        "rootDir": ".",
         "newLine": "LF",
         "importHelpers": true,
         "sourceMap": true,
@@ -33,29 +32,13 @@
             "./lib.deno.d.ts",
             "./lib.bun.d.ts",
             "./lib.cloudflare.d.ts"
-        ],
-        "paths": {
-            "npm:iconv-lite": [
-                "./node_modules/iconv-lite/lib/index.d.ts"
-            ],
-            "npm:sudo-prompt": [
-                "./node_modules/sudo-prompt/index.d.ts"
-            ],
-            // "@ayonli/jsext": [
-            //     "."
-            // ],
-            // "@ayonli/jsext/*": [
-            //     "./*",
-            //     "./*/index.ts"
-            // ]
-        }
+        ]
     },
     "include": [
         "**/*.ts"
     ],
     "exclude": [
         "node_modules",
-        "types",
         "examples",
         "test-*.ts",
         "*deno.test.ts"

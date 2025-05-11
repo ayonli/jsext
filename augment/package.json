@@ -4,21 +4,78 @@
     "description": "This package supports augmenting some functions to the corresponding built-in types/namespaces, but they should only be used for application development, don't use them when developing libraries.",
     "type": "module",
     "exports": {
-        ".": "./index.ts",
-        "./array": "./array.ts",
-        "./collections": "./collections.ts",
-        "./error": "./error.ts",
-        "./json": "./json.ts",
-        "./math": "./math.ts",
-        "./number": "./number.ts",
-        "./object": "./object.ts",
-        "./promise": "./promise.ts",
-        "./string": "./string.ts",
-        "./types": "./types.ts",
-        "./uint8array": "./uint8array.ts"
-    },
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        ".": {
+            "types": "./dist/index.d.ts",
+            "require": "./dist/index.js",
+            "import": "./esm/index.js",
+            "default": "./index.ts"
+        },
+        "./array": {
+            "types": "./dist/array.d.ts",
+            "require": "./dist/array.js",
+            "import": "./esm/array.js",
+            "default": "./array.ts"
+        },
+        "./collections": {
+            "types": "./dist/collections.d.ts",
+            "require": "./dist/collections.js",
+            "import": "./esm/collections.js",
+            "default": "./collections.ts"
+        },
+        "./error": {
+            "types": "./dist/error.d.ts",
+            "require": "./dist/error.js",
+            "import": "./esm/error.js",
+            "default": "./error.ts"
+        },
+        "./json": {
+            "types": "./dist/json.d.ts",
+            "require": "./dist/json.js",
+            "import": "./esm/json.js",
+            "default": "./json.ts"
+        },
+        "./math": {
+            "types": "./dist/math.d.ts",
+            "require": "./dist/math.js",
+            "import": "./esm/math.js",
+            "default": "./math.ts"
+        },
+        "./number": {
+            "types": "./dist/number.d.ts",
+            "require": "./dist/number.js",
+            "import": "./esm/number.js",
+            "default": "./number.ts"
+        },
+        "./object": {
+            "types": "./dist/object.d.ts",
+            "require": "./dist/object.js",
+            "import": "./esm/object.js",
+            "default": "./object.ts"
+        },
+        "./promise": {
+            "types": "./dist/promise.d.ts",
+            "require": "./dist/promise.js",
+            "import": "./esm/promise.js",
+            "default": "./promise.ts"
+        },
+        "./string": {
+            "types": "./dist/string.d.ts",
+            "require": "./dist/string.js",
+            "import": "./esm/string.js",
+            "default": "./string.ts"
+        },
+        "./types": {
+            "types": "./dist/types.d.ts",
+            "require": "./dist/types.js",
+            "import": "./esm/types.js",
+            "default": "./types.ts"
+        },
+        "./uint8array": {
+            "types": "./dist/uint8array.d.ts",
+            "require": "./dist/uint8array.js",
+            "import": "./esm/uint8array.js",
+            "default": "./uint8array.ts"
+        }
     },
     "keywords": [],
     "author": "",

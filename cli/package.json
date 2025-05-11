@@ -1,22 +1,27 @@
 {
     "name": "@jsext/cli",
     "version": "2.0.0",
+    "description": "",
     "type": "module",
     "exports": {
         ".": {
-            "fastly": "./workerd.ts",
-            "workerd": "./workerd.ts",
+            "types": "./dist/index.d.ts",
+            "fastly": "./esm/workerd.js",
+            "workerd": "./esm/workerd.js",
+            "require": "./dist/index.js",
+            "import": "./esm/index.js",
             "default": "./index.ts"
         },
-        "./constants": "./constants.ts"
-    },
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "./constants": {
+            "types": "./dist/constants.d.ts",
+            "require": "./dist/constants.js",
+            "import": "./esm/constants.js",
+            "default": "./constants.ts"
+        }
     },
     "keywords": [],
     "author": "",
     "license": "MIT",
-    "description": "",
     "dependencies": {
         "@jsext/bytes": "^2.0.0",
         "@jsext/env": "^2.0.0",

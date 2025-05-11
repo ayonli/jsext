@@ -3,9 +3,18 @@
     "version": "2.0.0",
     "type": "module",
     "exports": {
-        ".": "./index.ts",
-        "./augment": "./augment.ts",
-        "./base": "./base.ts"
+        ".": {
+            "types": "./dist/index.d.ts",
+            "require": "./dist/index.js",
+            "import": "./esm/index.js",
+            "default": "./index.ts"
+        },
+        "./base": {
+            "types": "./dist/base.d.ts",
+            "require": "./dist/base.js",
+            "import": "./esm/base.js",
+            "default": "./base.ts"
+        }
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"

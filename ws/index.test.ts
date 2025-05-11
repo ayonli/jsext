@@ -5,7 +5,7 @@ import func from "@jsext/func";
 import { toWebSocketStream, type WebSocketConnection } from "./index.ts";
 import bytes, { concat, text } from "@jsext/bytes";
 import { select, sleep, until } from "@jsext/async";
-import { randomPort } from "@jsext/http";
+import { randomPort } from "@jsext/net";
 import { withWeb } from "@jsext/http/internal";
 import { toAsyncIterable } from "@jsext/reader";
 import { createCloseEvent } from "@jsext/event";

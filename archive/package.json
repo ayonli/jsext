@@ -3,12 +3,13 @@
     "version": "2.0.0",
     "type": "module",
     "exports": {
-        ".": {
-            "bun": "./bun.ts",
-            "fastly": "./workerd.ts",
-            "workerd": "./workerd.ts",
-            "default": "./index.ts"
-        }
+        "types": "./dist/index.d.ts",
+        "bun": "./bun.ts",
+        "fastly": "./workerd.ts",
+        "workerd": "./workerd.ts",
+        "require": "./dist/index.js",
+        "import": "./esm/index.js",
+        "default": "./index.ts"
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"

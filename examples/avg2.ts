@@ -1,4 +1,4 @@
-import parallel from "../parallel.ts";
+import parallel from "../parallel/index.ts";
 const { default: sum } = parallel(() => import("./sum2.ts"));
 
 export default async function avg(...values: number[]): Promise<number> {

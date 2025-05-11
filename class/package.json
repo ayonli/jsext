@@ -1,18 +1,25 @@
 {
     "name": "@jsext/class",
     "version": "2.0.0",
+    "description": "",
     "type": "module",
     "exports": {
-        ".": "./index.ts",
-        "./decorators": "./decorators.ts"
-    },
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        ".": {
+            "types": "./dist/index.d.ts",
+            "require": "./dist/index.js",
+            "import": "./esm/index.js",
+            "default": "./index.ts"
+        },
+        "./decorators": {
+            "types": "./dist/decorators.d.ts",
+            "require": "./dist/decorators.js",
+            "import": "./esm/decorators.js",
+            "default": "./decorators.ts"
+        }
     },
     "keywords": [],
     "author": "",
     "license": "MIT",
-    "description": "",
     "dependencies": {
         "@jsext/types": "^2.0.0",
         "zod": "^3.24.4"

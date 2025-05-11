@@ -382,7 +382,7 @@
         "test:pty:deno": "tsx ./node_modules/mocha/bin/mocha --config mocha.pty.json --exit --deno",
         "test:pty:bun": "tsx ./node_modules/mocha/bin/mocha --config mocha.pty.json --exit --bun",
         "test:pty": "npm run test:pty:node && npm run test:pty:deno",
-        "build": "rollup -c rollup.config.js && tsc -p tsconfig.types.json && node rollup.config.js",
+        "build": "node build.js",
         "typing": "tsc --noEmit --watch",
         "prepublishOnly": "npm run build"
     },

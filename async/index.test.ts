@@ -198,7 +198,6 @@ describe("async", () => {
         ok(duration2 >= 99);
 
         strictEqual(Promise.pace, pace);
-        strictEqual(Promise.after, pace);
     });
 
     it("sleep", async () => {

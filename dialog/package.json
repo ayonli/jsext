@@ -1,15 +1,29 @@
 {
     "name": "@jsext/dialog",
     "version": "2.0.0",
+    "description": "",
     "type": "module",
     "exports": {
         ".": {
-            "fastly": "./workerd.ts",
-            "workerd": "./workerd.ts",
+            "types": "./dist/index.d.ts",
+            "fastly": "./dist/workerd.js",
+            "workerd": "./dist/workerd.js",
+            "require": "./dist/index.js",
+            "import": "./esm/index.js",
             "default": "./index.ts"
         },
-        "./cli": "./cli.ts",
-        "./web": "./web.ts"
+        "./cli": {
+            "types": "./dist/cli.d.ts",
+            "require": "./dist/cli.js",
+            "import": "./esm/cli.js",
+            "default": "./cli.ts"
+        },
+        "./web": {
+            "types": "./dist/web.d.ts",
+            "require": "./dist/web.js",
+            "import": "./esm/web.js",
+            "default": "./web.ts"
+        }
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
@@ -17,7 +31,6 @@
     "keywords": [],
     "author": "",
     "license": "MIT",
-    "description": "",
     "dependencies": {
         "@jsext/async": "^2.0.0",
         "@jsext/bytes": "^2.0.0",

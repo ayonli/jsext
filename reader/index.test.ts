@@ -19,7 +19,7 @@ import {
     toReadableStream,
     concat,
 } from "./index.ts";
-import { randomPort } from "@jsext/http";
+import { randomPort } from "@jsext/net";
 import { EventEndpoint } from "@jsext/sse";
 import { isBun } from "@jsext/env";
 

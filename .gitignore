@@ -1,7 +1,8 @@
 .vscode/
 node_modules/
-cjs/
-_types/
+*/cjs/
+*/dist/
+*/esm/
 *.tgz
 .python-version
 .wrangler

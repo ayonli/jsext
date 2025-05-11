@@ -1,7 +1,7 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import jsext from "../index.ts";
+import _try from "./index.ts";
 
-describe("jsext.try", () => {
+describe("_try", () => {
     const EmptyStringError = new Error("the string must not be empty");
 
     it("regular function", () => {
@@ -12,8 +12,8 @@ describe("jsext.try", () => {
             return str;
         }
 
-        deepStrictEqual(jsext.try(check, "Hello, World!"), [null, "Hello, World!"]);
-        deepStrictEqual(jsext.try(check, ""), [EmptyStringError, undefined]);
+        deepStrictEqual(_try(check, "Hello, World!"), [null, "Hello, World!"]);
+        deepStrictEqual(_try(check, ""), [EmptyStringError, undefined]);
     });
 
     it("async function", async () => {
@@ -24,8 +24,8 @@ describe("jsext.try", () => {
             return await Promise.resolve(str);
         }
 
-        deepStrictEqual(await jsext.try(check, "Hello, World!"), [null, "Hello, World!"]);
-        deepStrictEqual(await jsext.try(check, ""), [EmptyStringError, undefined]);
+        deepStrictEqual(await _try(check, "Hello, World!"), [null, "Hello, World!"]);
+        deepStrictEqual(await _try(check, ""), [EmptyStringError, undefined]);
     });
 
     it("generator function", () => {
@@ -41,7 +41,7 @@ describe("jsext.try", () => {
             return "OK";
         }
 
-        const res = jsext.try(check, "Hello, World!");
+        const res = _try(check, "Hello, World!");
         const errors: unknown[] = [];
         let str = "";
 
@@ -61,7 +61,7 @@ describe("jsext.try", () => {
         deepStrictEqual(errors, []);
         strictEqual(str, "Hello, World!OK");
 
-        const res2 = jsext.try(check(""));
+        const res2 = _try(check(""));
         const errors2: unknown[] = [];
         let str2 = "";
 
@@ -96,7 +96,7 @@ describe("jsext.try", () => {
             return "OK";
         }
 
-        const res = jsext.try(check, "Hello, World!");
+        const res = _try(check, "Hello, World!");
         const errors: unknown[] = [];
         let str = "";
 
@@ -116,7 +116,7 @@ describe("jsext.try", () => {
         deepStrictEqual(errors, []);
         strictEqual(str, "Hello, World!OK");
 
-        const res2 = jsext.try(check(""));
+        const res2 = _try(check(""));
         const errors2: unknown[] = [];
         let str2 = "";
 
@@ -145,8 +145,8 @@ describe("jsext.try", () => {
             return await Promise.resolve(str);
         }
 
-        deepStrictEqual(await jsext.try(check("Hello, World!")), [null, "Hello, World!"]);
-        deepStrictEqual(await jsext.try(check("")), [EmptyStringError, undefined]);
+        deepStrictEqual(await _try(check("Hello, World!")), [null, "Hello, World!"]);
+        deepStrictEqual(await _try(check("")), [EmptyStringError, undefined]);
     });
 
     it("convert non-Error", async () => {
@@ -157,7 +157,7 @@ describe("jsext.try", () => {
             return str;
         }
 
-        const [err1] = jsext.try(check, "");
+        const [err1] = _try(check, "");
         ok(err1 instanceof Error);
         strictEqual(err1.message, "the string must not be empty");
 
@@ -168,11 +168,11 @@ describe("jsext.try", () => {
             return str;
         }
 
-        const [err2] = await jsext.try(checkAsync, "");
+        const [err2] = await _try(checkAsync, "");
         ok(err2 instanceof Error);
         strictEqual(err2.message, "the string must not be empty");
 
-        const [err3] = await jsext.try(checkAsync(""));
+        const [err3] = await _try(checkAsync(""));
         ok(err3 instanceof Error);
         strictEqual(err3.message, "the string must not be empty");
 
@@ -188,7 +188,7 @@ describe("jsext.try", () => {
             return "OK";
         }
 
-        const gen1 = jsext.try(checkGen, "");
+        const gen1 = _try(checkGen, "");
         const { value: [err4] } = gen1.next();
         ok(err4 instanceof Error);
         strictEqual(err4.message, "the string must not be empty");
@@ -205,14 +205,14 @@ describe("jsext.try", () => {
             return "OK";
         }
 
-        const gen2 = jsext.try(checkGenAsync, "");
+        const gen2 = _try(checkGenAsync, "");
         const { value: [err5] } = await gen2.next();
         ok(err5 instanceof Error);
         strictEqual(err5.message, "the string must not be empty");
     });
 
     it("pass value into generator function", () => {
-        const res = jsext.try(function* (str): Generator<string, string, number> {
+        const res = _try(function* (str): Generator<string, string, number> {
             if (str.length === 0) {
                 throw EmptyStringError;
             }
@@ -246,7 +246,7 @@ describe("jsext.try", () => {
     });
 
     it("pass value into async generator function", async () => {
-        const res = jsext.try(async function* (str): AsyncGenerator<string, string, number> {
+        const res = _try(async function* (str): AsyncGenerator<string, string, number> {
             if (str.length === 0) {
                 throw EmptyStringError;
             }

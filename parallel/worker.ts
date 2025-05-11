@@ -1,8 +1,4 @@
 import { isAsyncGenerator, isGenerator } from "check-iterable";
-import { CallRequest, CallResponse, ChannelMessage } from "./types.ts";
-import { unwrapChannel } from "./channel.ts";
-import { resolveModule } from "./module.ts";
-import { isPlainObject } from "../object/index.ts";
 import {
     Exception,
     fromObject,
@@ -10,7 +6,11 @@ import {
     isAggregateError,
     isDOMException,
     toObject,
-} from "../error/index.ts";
+} from "@jsext/error";
+import { isPlainObject } from "@jsext/object";
+import { unwrapChannel } from "./channel.ts";
+import { resolveModule } from "./module.ts";
+import { CallRequest, CallResponse, ChannelMessage } from "./types.ts";
 
 const pendingTasks = new Map<number, AsyncGenerator | Generator>();
 

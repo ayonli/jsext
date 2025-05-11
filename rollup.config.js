@@ -2,30 +2,37 @@ import { glob } from "glob";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { builtinModules } from "node:module";
 import typescript from "@rollup/plugin-typescript";
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
-import terser from "@rollup/plugin-terser";
 
-const moduleEntries = Object.fromEntries(
-    glob.sync("**/*.ts", {
-        ignore: [
-            "**/*.d.ts",
-            "node_modules/**",
-            "examples/**",
-            "**/*.test.ts",
-            "**/test-*.ts",
-            "bundle.ts",
-            "worker.ts",
-            "worker-node.ts"
-        ],
-    }).map(file => [
-        file.slice(0, file.length - extname(file).length),
-        fileURLToPath(new URL(file, import.meta.url))
-    ])
-);
+/**
+ * @param {string} submodule 
+ */
+function createEntryFiles(submodule) {
+    return Object.fromEntries(
+        glob.sync(`${submodule}/**/*.ts`, {
+            ignore: [
+                `${submodule}/**/*.d.ts`,
+                "node_modules/**",
+                "examples/**",
+                `${submodule}**/*.test.ts`,
+                `${submodule}/**/test-*.ts`,
+                "bundle.ts",
+                "worker.ts",
+                "worker-node.ts"
+            ],
+        }).map(file => {
+            const _file = file.slice(submodule.length + 1);
+            return [
+                _file.slice(0, _file.length - extname(_file).length),
+                fileURLToPath(new URL(file, import.meta.url))
+            ];
+        })
+    );
+}
 
 /**
  * @returns {import("rollup").Plugin}
@@ -53,113 +60,103 @@ function writePackageJson() {
 function isExternal(id) {
     return builtinModules.includes(id)
         || id.includes("node_modules")
+        || id.startsWith("node:")
         || id.startsWith("npm:")
         || id.startsWith("jsr:")
         || id.startsWith("fastly:")
         || id.startsWith("cloudflare:")
+        || id.startsWith("@jsext/")
         || id === "__STATIC_CONTENT_MANIFEST";
 }
 
-/** @type {import ("rollup").RollupOptions[]} */
-const config = [
-    { // CommonJS
-        input: moduleEntries,
-        output: {
-            dir: "cjs",
-            format: "cjs",
-            exports: "named",
-            sourcemap: true,
-            preserveModules: true,
-            preserveModulesRoot: ".",
-        },
-        plugins: [
-            typescript(),
-            resolve({ preferBuiltins: true }),
-            commonjs({ ignoreDynamicRequires: true, ignore: isExternal }),
-            writePackageJson(),
-        ],
-        external: isExternal,
-    },
-    { // ES Module
-        input: moduleEntries,
-        output: {
-            dir: "esm",
-            format: "esm",
-            sourcemap: true,
-            preserveModules: true,
-            preserveModulesRoot: ".",
-        },
-        plugins: [
-            typescript(),
-            resolve({ preferBuiltins: true }),
-            commonjs({ ignoreDynamicRequires: true, ignore: isExternal }),
-            writePackageJson(),
-        ],
-        external: isExternal,
-    },
-    { // Bundle
-        input: "bundle.ts",
-        output: {
-            file: "bundle/jsext.js",
-            format: "umd",
-            name: "jsext",
-            sourcemap: true,
-            inlineDynamicImports: true,
-        },
-        plugins: [
-            typescript(),
-            resolve({ preferBuiltins: true }),
-            commonjs({ ignoreDynamicRequires: true, ignore: isExternal }),
-            terser({
-                keep_classnames: true,
-                keep_fnames: true,
-            })
-        ],
-        external: isExternal,
-    },
-    { // Worker for Bun, Deno and the browser
-        input: "worker.ts",
-        output: {
-            file: "bundle/worker.mjs",
-            format: "esm",
-        },
-        plugins: [
-            typescript(),
-            resolve({ preferBuiltins: true }),
-            commonjs({ ignoreDynamicRequires: true, ignore: isExternal }),
-        ],
-        external: isExternal,
-    },
-    { // Worker for Node.js
-        input: "worker-node.ts",
-        output: {
-            file: "bundle/worker-node.mjs",
-            format: "esm",
-        },
-        plugins: [
-            typescript(),
-            resolve({ preferBuiltins: true }),
-            commonjs({ ignoreDynamicRequires: true, ignore: isExternal }),
-        ],
-        external: isExternal,
+/**
+ * 
+ * @param {string} submodule 
+ * @returns {import("rollup").RollupOptions[]}
+ */
+function createConfigPair(submodule) {
+    const input = createEntryFiles(submodule);
+    const hasTsConfig = existsSync(`./${submodule}/tsconfig.json`);
+    /**
+     * @type {import("rollup").Plugin}
+     */
+    let cjsTsPlugin;
+    /**
+     * @type {import("rollup").Plugin}
+     */
+    let esmTsPlugin;
+
+    if (hasTsConfig) {
+        cjsTsPlugin = typescript({
+            tsconfig: `${submodule}/tsconfig.json`,
+            include: Object.values(input),
+            declaration: true,
+            declarationDir: `${submodule}/dist`,
+            declarationMap: true,
+        });
+        esmTsPlugin = typescript({
+            tsconfig: `${submodule}/tsconfig.json`,
+            include: Object.values(input),
+        });
+    } else {
+        cjsTsPlugin = typescript({
+            tsconfig: "tsconfig.json",
+            rootDir: submodule,
+            include: Object.values(input),
+            declaration: true,
+            declarationDir: `${submodule}/dist`,
+            declarationMap: true,
+        });
+        esmTsPlugin = typescript({
+            tsconfig: "tsconfig.json",
+            rootDir: submodule,
+            include: Object.values(input),
+        });
     }
-];
 
-export default config;
-
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-    await writePackageJson().generateBundle({ dir: "types", format: "cjs" });
-    const files = await glob("./types/**/*.d.ts", {
-        ignore: "types/external/**",
-        absolute: true,
-    });
-
-    for (const filename of files) {
-        const content = await readFile(filename, "utf-8");
-        const defaultExport = content.match(/export default function ([\w\d_]+)/)?.[1];
-
-        if (defaultExport) {
-            await writeFile(filename, content + `\nexport = ${defaultExport};\n`, "utf-8");
+    return [
+        { // CommonJS
+            input,
+            output: {
+                dir: `${submodule}/dist`,
+                format: "cjs",
+                exports: "named",
+                sourcemap: true,
+                preserveModules: true,
+                preserveModulesRoot: ".",
+            },
+            plugins: [
+                cjsTsPlugin,
+                resolve({ preferBuiltins: true }),
+                commonjs({ ignoreDynamicRequires: true, ignore: isExternal }),
+                writePackageJson(),
+            ],
+            external: isExternal,
+        },
+        { // ES Module
+            input,
+            output: {
+                dir: `${submodule}/esm`,
+                format: "esm",
+                sourcemap: true,
+                preserveModules: true,
+                preserveModulesRoot: ".",
+            },
+            plugins: [
+                esmTsPlugin,
+                resolve({ preferBuiltins: true }),
+                commonjs({ ignoreDynamicRequires: true, ignore: isExternal }),
+                writePackageJson(),
+            ],
+            external: isExternal,
         }
-    }
+    ];
 }
+
+const moduleName = process.env.MODULE_NAME ?? "";
+if (!moduleName) {
+    console.error("Please provide a module name.");
+    process.exit(1);
+}
+
+export default createConfigPair(moduleName);

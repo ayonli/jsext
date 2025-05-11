@@ -4,14 +4,37 @@
     "type": "module",
     "exports": {
         ".": {
-            "fastly": "./workerd.ts",
-            "workerd": "./workerd.ts",
+            "types": "./dist/index.d.ts",
+            "fastly": "./esm/workerd.js",
+            "workerd": "./esm/workerd.js",
+            "require": "./dist/index.js",
+            "import": "./esm/index.js",
             "default": "./index.ts"
         },
-        "./errors": "./errors.ts",
-        "./util": "./util/index.ts",
-        "./util/server": "./util/server.ts",
-        "./web": "./web.ts"
+        "./errors": {
+            "types": "./dist/errors.d.ts",
+            "require": "./dist/errors.js",
+            "import": "./esm/errors.js",
+            "default": "./errors.ts"
+        },
+        "./util": {
+            "types": "./dist/util/index.d.ts",
+            "require": "./dist/util/index.js",
+            "import": "./esm/util/index.js",
+            "default": "./util/index.ts"
+        },
+        "./util/server": {
+            "types": "./dist/util/server.d.ts",
+            "require": "./dist/util/server.js",
+            "import": "./esm/util/server.js",
+            "default": "./util/server.ts"
+        },
+        "./web": {
+            "types": "./dist/web.d.ts",
+            "require": "./dist/web.js",
+            "import": "./esm/web.js",
+            "default": "./web.ts"
+        }
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"

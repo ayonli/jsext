@@ -1,12 +1,7 @@
 import type { ChildProcess } from "node:child_process";
-import { Channel } from "../chan/index.ts";
-import { AsyncTask } from "../async/index.ts";
-import { isBun, isDeno, isNode, isNodeBelow14, isNodeLike } from "../env/index.ts";
-import { BunWorker, NodeWorker, CallResponse, ChannelMessage } from "./types.ts";
-import { handleChannelMessage, isChannelMessage, wrapChannel } from "./channel.ts";
-import { getObjectURL } from "../module/util.ts";
-import { isPlainObject } from "../object/index.ts";
-import { serial } from "../number/index.ts";
+import { AsyncTask } from "@jsext/async";
+import { Channel } from "@jsext/chan";
+import { isBun, isDeno, isNode, isNodeBelow14, isNodeLike } from "@jsext/env";
 import {
     Exception,
     fromErrorEvent,
@@ -15,9 +10,14 @@ import {
     isDOMException,
     getErrorConstructor,
     toObject,
-} from "../error/index.ts";
-import * as path from "../path/index.ts";
-import { unrefTimer } from "../runtime/index.ts";
+} from "@jsext/error";
+import { getObjectURL } from "@jsext/module/util";
+import { serial } from "@jsext/number";
+import { isPlainObject } from "@jsext/object";
+import * as path from "@jsext/path";
+import { unrefTimer } from "@jsext/runtime";
+import { BunWorker, NodeWorker, CallResponse, ChannelMessage } from "./types.ts";
+import { handleChannelMessage, isChannelMessage, wrapChannel } from "./channel.ts";
 
 const workerIdCounter = serial(true);
 type PoolRecord = {

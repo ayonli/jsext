@@ -1,14 +1,16 @@
 {
     "name": "@jsext/env",
     "version": "2.0.0",
+    "description": "",
     "type": "module",
-    "exports": "./index.ts",
-    "devDependencies": {},
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+    "exports": {
+        "types": "./dist/index.d.ts",
+        "require": "./dist/index.js",
+        "import": "./esm/index.js",
+        "default": "./index.ts"
     },
+    "devDependencies": {},
     "keywords": [],
     "author": "",
-    "license": "MIT",
-    "description": ""
+    "license": "MIT"
 }

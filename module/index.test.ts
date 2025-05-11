@@ -3,7 +3,8 @@ import { importWasm, interop } from "./index.ts";
 import { readFile } from "@jsext/fs";
 import { isBun, isDeno, isNode } from "@jsext/env";
 import { run } from "@jsext/cli";
-import { randomPort, serve, serveStatic } from "@jsext/http";
+import { randomPort } from "@jsext/net";
+import { serve, serveStatic } from "@jsext/http";
 import func from "@jsext/func";
 
 describe("module", () => {

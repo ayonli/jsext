@@ -7,17 +7,24 @@
  * integrating with Vite dev server.
  * @module
  */
-import { orderBy } from "../array/index.ts";
-import { join } from "../path/index.ts";
-import runtime from "../runtime/index.ts";
-import { EventEndpoint } from "../sse/index.ts";
-import { capitalize, dedent } from "../string/index.ts";
-import type { DirEntry } from "../fs/types.ts";
-import { constructNetAddress } from "./server.ts";
-import type { NetAddress, FetchEvent, RequestContext, RequestErrorHandler, ServeOptions } from "./server.ts";
-import type { WebSocketServer } from "../ws/index.ts";
+
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
+import { orderBy } from "@jsext/array";
+import { join } from "@jsext/path";
+import runtime from "@jsext/runtime";
+import { EventEndpoint } from "@jsext/sse";
+import { capitalize, dedent } from "@jsext/string";
+import type { DirEntry } from "@jsext/fs";
+import type { WebSocketServer } from "@jsext/ws";
+import { constructNetAddress } from "./server.ts";
+import type {
+    NetAddress,
+    FetchEvent,
+    RequestContext,
+    RequestErrorHandler,
+    ServeOptions,
+} from "./server.ts";
 
 export interface TimingMetrics {
     timeStart: number;

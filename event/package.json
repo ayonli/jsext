@@ -1,14 +1,16 @@
 {
     "name": "@jsext/event",
     "version": "2.0.0",
-    "exports": "./index.ts",
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+    "description": "",
+    "exports": {
+        "types": "./dist/index.d.ts",
+        "require": "./dist/index.js",
+        "import": "./esm/index.js",
+        "default": "./index.ts"
     },
     "keywords": [],
     "author": "",
     "license": "MIT",
-    "description": "",
     "dependencies": {
         "@jsext/polyfills": "^2.0.0"
     }

@@ -1,9 +1,9 @@
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
 import { asyncTask, sleep, until } from "@jsext/async";
 import { isBun, isDeno, isNode } from "@jsext/env";
-import "../index.ts";
-import jsext from "../index.ts";
-import { randomPort, serve } from "@jsext/http";
+import func from "@jsext/func";
+import { randomPort } from "@jsext/net";
+import { serve } from "@jsext/http";
 import { withWeb } from "@jsext/http/internal";
 import { EventConsumer, EventEndpoint } from "./index.ts";
 
@@ -52,7 +52,7 @@ describe("sse", () => {
             strictEqual(sse3.closed, true);
         });
 
-        it("dispatchEvent", jsext.func(async function (defer) {
+        it("dispatchEvent", func(async function (defer) {
             const port = await randomPort();
             const task = asyncTask<InstanceType<typeof EventEndpoint>>();
             const handle = (req: Request) => {
@@ -143,7 +143,7 @@ describe("sse", () => {
             strictEqual(es.readyState, EventSource.CLOSED);
         }));
 
-        it("close", jsext.func(async function (defer) {
+        it("close", func(async function (defer) {
             const port = await randomPort();
             const task = asyncTask<InstanceType<typeof EventEndpoint>>();
             const handle = (req: Request) => {
@@ -185,7 +185,7 @@ describe("sse", () => {
             strictEqual(sse.closed, true);
         }));
 
-        it("listen close event", jsext.func(async function (defer) {
+        it("listen close event", func(async function (defer) {
             if (isBun) {
                 // Bun has a bug that the readable stream is not closed when
                 // when the connection is closed, so the program won't be able
@@ -240,7 +240,7 @@ describe("sse", () => {
             strictEqual(closeEvent!.wasClean, true);
         }));
 
-        it("listen network error", jsext.func(async function (defer) {
+        it("listen network error", func(async function (defer) {
             if (isBun) {
                 // Bun has a bug that the readable stream is not closed when
                 // when the connection is closed, so the program won't be able
@@ -391,7 +391,7 @@ describe("sse", () => {
             server3.close();
         });
 
-        it("dispatchEvent", jsext.func(async function (defer) {
+        it("dispatchEvent", func(async function (defer) {
             const http = await import("node:http");
             const { EventSource } = await import("./index.ts");
 
@@ -454,7 +454,7 @@ describe("sse", () => {
             strictEqual(es.readyState, EventSource.CLOSED);
         }));
 
-        it("close", jsext.func(async function (defer) {
+        it("close", func(async function (defer) {
             const http = await import("node:http");
             const { EventSource } = await import("./index.ts");
 
@@ -480,7 +480,7 @@ describe("sse", () => {
             strictEqual(es.readyState, EventSource.CONNECTING);
         }));
 
-        it("listen close event", jsext.func(async function (defer) {
+        it("listen close event", func(async function (defer) {
             const http = await import("node:http");
             const { EventSource } = await import("./index.ts");
 
@@ -513,7 +513,7 @@ describe("sse", () => {
             strictEqual(closeEvent!.wasClean, true);
         }));
 
-        it("listen network error", jsext.func(async function (defer) {
+        it("listen network error", func(async function (defer) {
             let closeEvent: CloseEvent | undefined = undefined;
             const task = asyncTask<InstanceType<typeof EventEndpoint>>();
             const port = await randomPort();
@@ -611,7 +611,7 @@ describe("sse", () => {
             return;
         }
 
-        it("open connection", jsext.func(async (defer) => {
+        it("open connection", func(async (defer) => {
             const { EventSource } = await import("./index.ts");
             const { port } = await openEventEndpoint({
                 defer,
@@ -661,7 +661,7 @@ describe("sse", () => {
             strictEqual(openEvent2.type, "open");
         }));
 
-        it("close connection", jsext.func(async function (defer) {
+        it("close connection", func(async function (defer) {
             if (isBun) {
                 // Bun has a bug that the readable stream is not closed when
                 // when the connection is closed, so the program won't be able
@@ -691,7 +691,7 @@ describe("sse", () => {
             strictEqual(es.readyState, EventSource.CLOSED);
         }));
 
-        it("server close and reconnect", jsext.func(async function (defer) {
+        it("server close and reconnect", func(async function (defer) {
             this.timeout(5_000);
 
             const { EventSource } = await import("./index.ts");
@@ -741,7 +741,7 @@ describe("sse", () => {
             ok(openEvents.length >= 2);
         }));
 
-        it("network error and reconnect", jsext.func(async function (defer) {
+        it("network error and reconnect", func(async function (defer) {
             this.timeout(5_000);
             const port = await randomPort();
             let terminate: () => Promise<any>;
@@ -803,7 +803,7 @@ describe("sse", () => {
             strictEqual(errorEvent_dup!.type, "error");
         }));
 
-        it("retry connection multiple times", jsext.func(async function (defer) {
+        it("retry connection multiple times", func(async function (defer) {
             this.timeout(10_000);
 
             const { EventSource } = await import("./index.ts");
@@ -835,7 +835,7 @@ describe("sse", () => {
             strictEqual(es.readyState, EventSource.OPEN);
         }));
 
-        it("listen message event", jsext.func(async (defer) => {
+        it("listen message event", func(async (defer) => {
             const { EventSource } = await import("./index.ts");
             const { port } = await openEventEndpoint({
                 defer,
@@ -872,7 +872,7 @@ describe("sse", () => {
             strictEqual(lastEventId, "2");
         }));
 
-        it("use onmessage property", jsext.func(async (defer) => {
+        it("use onmessage property", func(async (defer) => {
             const { EventSource } = await import("./index.ts");
             const { port } = await openEventEndpoint({
                 defer,
@@ -909,7 +909,7 @@ describe("sse", () => {
             strictEqual(lastEventId, "2");
         }));
 
-        it("listen custom event", jsext.func(async (defer) => {
+        it("listen custom event", func(async (defer) => {
             const { EventSource } = await import("./index.ts");
             const { port } = await openEventEndpoint({
                 defer,
@@ -946,7 +946,7 @@ describe("sse", () => {
             strictEqual(lastEventId, "4");
         }));
 
-        it("handle 204 response", jsext.func(async (defer) => {
+        it("handle 204 response", func(async (defer) => {
             const { EventSource } = await import("./index.ts");
             const port = await randomPort();
             const server = serve({
@@ -971,7 +971,7 @@ describe("sse", () => {
             strictEqual(es.readyState, EventSource.CLOSED);
         }));
 
-        it("handle non-200 response", jsext.func(async (defer) => {
+        it("handle non-200 response", func(async (defer) => {
             const { EventSource } = await import("./index.ts");
             const port = await randomPort();
             const server = serve({
@@ -996,7 +996,7 @@ describe("sse", () => {
             strictEqual(es.readyState, EventSource.CLOSED);
         }));
 
-        it("handle non-event-stream response", jsext.func(async (defer) => {
+        it("handle non-event-stream response", func(async (defer) => {
             const { EventSource } = await import("./index.ts");
             const port = await randomPort();
             const server = serve({
@@ -1027,7 +1027,7 @@ describe("sse", () => {
             return;
         }
 
-        it("listen message event", jsext.func(async (defer) => {
+        it("listen message event", func(async (defer) => {
             const { port, getSSE } = await openEventEndpoint({
                 defer,
                 onOpen(sse) {
@@ -1076,7 +1076,7 @@ describe("sse", () => {
             strictEqual(lastEventId, "2");
         }));
 
-        it("listen custom event", jsext.func(async (defer) => {
+        it("listen custom event", func(async (defer) => {
             const { port, getSSE } = await openEventEndpoint({
                 defer,
                 onOpen(sse) {
@@ -1125,7 +1125,7 @@ describe("sse", () => {
             strictEqual(lastEventId, "4");
         }));
 
-        it("listen close event", jsext.func(async (defer) => {
+        it("listen close event", func(async (defer) => {
             const { port, getSSE } = await openEventEndpoint({
                 defer,
                 onOpen(sse) {
@@ -1154,7 +1154,7 @@ describe("sse", () => {
             strictEqual(closeEvent!.wasClean, true);
         }));
 
-        it("close by the client", jsext.func(async function (defer) {
+        it("close by the client", func(async function (defer) {
             if (isBun) {
                 // Bun has a bug that the readable stream is not closed when
                 // when the connection is closed, so the program won't be able
@@ -1192,7 +1192,7 @@ describe("sse", () => {
             strictEqual(closeEvent!.wasClean, false);
         }));
 
-        it("listen network error", jsext.func(async function () {
+        it("listen network error", func(async function () {
             if (isBun) {
                 this.skip(); // Bun is buggy here, the worker is not working.
             }

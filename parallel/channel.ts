@@ -44,6 +44,7 @@ function wireChannel(
     channel: Channel<any>,
     channelWrite: (type: "send" | "close", msg: any, channelId: number) => void
 ) {
+    // @ts-ignore internal property
     const channelId = channel[id] as number;
 
     if (!channelStore.has(channelId)) {
@@ -120,6 +121,7 @@ export function wrapChannel(
     channelWrite: (type: "send" | "close", msg: any, channelId: number) => void
 ): object {
     wireChannel(channel, channelWrite);
+    // @ts-ignore internal property
     return { "@@type": "Channel", "@@id": channel[id], "capacity": channel.capacity };
 }
 
