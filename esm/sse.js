@@ -1,6 +1,6 @@
 import './external/event-target-polyfill/index.js';
 import { fixStringTag, getReadonly, setReadonly } from './class/util.js';
-import { isBun, isDeno } from './env.js';
+import { isDeno } from './env.js';
 import './error.js';
 import { createCloseEvent, createErrorEvent } from './event.js';
 import runtime, { customInspect } from './runtime.js';
@@ -166,22 +166,18 @@ class EventEndpoint extends EventTarget {
                 res.setHeader(name, value);
             }
             res.writeHead(resInit.status, resInit.statusText);
-            res.write(new Uint8Array(0));
+            // Send a non-empty chunk to ensure the client can parse the response
+            // immediately.
+            res.write(encoder.encode(":ok\n\n"));
         }
         else {
             const { writable, readable } = new TransformStream();
             const reader = readable.getReader();
             const _readable = new ReadableStream({
                 async start(controller) {
-                    if (isBun) {
-                        // In Bun, the response will not be sent to the client
-                        // until the first non-empty chunk is written. May be a
-                        // bug, but we need to work around it now.
-                        controller.enqueue(encoder.encode(":ok\n\n"));
-                    }
-                    else {
-                        controller.enqueue(new Uint8Array(0));
-                    }
+                    // Send a non-empty chunk to ensure the client can parse the response
+                    // immediately.
+                    controller.enqueue(encoder.encode(":ok\n\n"));
                 },
                 async pull(controller) {
                     while (true) {
