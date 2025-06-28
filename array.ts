@@ -598,3 +598,37 @@ export function partition<T>(
 
     return [match, rest];
 }
+
+/**
+ * Returns a new array containing the results of applying the given predicate
+ * function to each element of the array, filtering out any `undefined` results.
+ * 
+ * @example
+ * ```ts
+ * import { filterMap } from "@ayonli/jsext/array";
+ * 
+ * const arr = [1, 2, 3, 4, 5];
+ * const result = filterMap(arr, (item) => {
+ *     return item % 2 === 0 ? item * 2 : undefined;
+ * });
+ * 
+ * console.log(result); // [4, 8]
+ * ```
+ */
+export function filterMap<T, U>(
+    arr: T[],
+    fn: (item: T, i: number) => U | undefined
+): U[] {
+    const result: U[] = [];
+
+    for (let i = 0; i < arr.length; i++) {
+        const item = arr[i] as T;
+        const mapped = fn(item, i);
+
+        if (mapped !== undefined) {
+            result.push(mapped);
+        }
+    }
+
+    return result;
+}

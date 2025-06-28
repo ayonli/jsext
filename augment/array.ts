@@ -16,6 +16,7 @@ import {
     unique as _unique,
     uniqueBy as _uniqueBy,
     partition as _partition,
+    filterMap as _filterMap,
 } from "../array.ts";
 
 declare global {
@@ -96,6 +97,11 @@ declare global {
          * all that do not.
          */
         partition(predicate: (item: T, i: number) => boolean): [T[], T[]];
+        /**
+         * Returns a new array containing the results of applying the given predicate
+         * function to each element of the array, filtering out any `undefined` results.
+         */
+        filterMap<U>(fn: (item: T, i: number) => U | undefined): U[];
     }
 }
 
@@ -187,4 +193,8 @@ Array.prototype.keyBy = function keyBy(
 
 Array.prototype.partition = function partition(predicate) {
     return _partition(this, predicate);
+};
+
+Array.prototype.filterMap = function filterMap(fn) {
+    return _filterMap(this, fn);
 };

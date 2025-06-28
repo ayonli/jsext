@@ -2,19 +2,19 @@ import "./augment.ts";
 import { strictEqual, deepStrictEqual, notDeepEqual, ok } from "node:assert";
 
 describe("Array", () => {
-    it("Array.prototype.first", () => {
+    it("first", () => {
         const arr = [1, 2, 3, 4, 5];
         strictEqual(arr.first(), 1);
         strictEqual([].first(), undefined);
     });
 
-    it("Array.prototype.last", () => {
+    it("last", () => {
         const arr = [1, 2, 3, 4, 5];
         strictEqual(arr.last(), 5);
         strictEqual([].last(), undefined);
     });
 
-    it("Array.prototype.random", () => {
+    it("random", () => {
         const arr = [1, 2, 3, 4, 5];
         ok(arr.includes(arr.random() as number));
         strictEqual([].random(), undefined);
@@ -24,20 +24,20 @@ describe("Array", () => {
         ok(!arr.includes(item));
     });
 
-    it("Array.prototype.count", () => {
+    it("count", () => {
         const arr = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0];
         strictEqual(arr.count(3), 2);
         strictEqual(arr.count(10), 0);
     });
 
-    it("Array.prototype.equals", () => {
+    it("equals", () => {
         const arr = [1, 2, 3, 4, 5];
         strictEqual(arr.equals([1, 2, 3, 4, 5]), true);
         strictEqual(arr.equals([1, 2, 3, 4]), false);
         strictEqual(arr.equals([2, 3, 4, 5, 6]), false);
     });
 
-    it("Array.prototype.includesSlice", () => {
+    it("includesSlice", () => {
         const arr = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1];
         const subset1 = [3, 4, 5];
         const subset2 = [3, 4, 5, 6];
@@ -50,7 +50,7 @@ describe("Array", () => {
         strictEqual(arr.includesSlice(subset4), true);
     });
 
-    it("Array.prototype.startsWith", () => {
+    it("startsWith", () => {
         const arr = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1];
         const subset1 = [0, 1, 2];
         const subset2 = [0, 1, 2, 3];
@@ -63,7 +63,7 @@ describe("Array", () => {
         strictEqual(arr.startsWith(subset), false);
     });
 
-    it("Array.prototype.endsWith", () => {
+    it("endsWith", () => {
         const arr = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1];
         const subset1 = [2, 1];
         const subset2 = [3, 2, 1];
@@ -76,7 +76,7 @@ describe("Array", () => {
         strictEqual(arr.endsWith(subset), false);
     });
 
-    it("Array.prototype.split", () => {
+    it("split", () => {
         const arr1 = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1];
         deepStrictEqual(arr1.split(2), [[0, 1], [3, 4, 5, 4, 3], [1]]);
         deepStrictEqual(arr1.split(5), [[0, 1, 2, 3, 4], [4, 3, 2, 1]]);
@@ -87,13 +87,13 @@ describe("Array", () => {
         deepStrictEqual(arr2.split("bar"), [["foo"], ["foo", "abc", "def", "foo"], []]);
     });
 
-    it("Array.prototype.chunk", () => {
+    it("chunk", () => {
         const arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
         deepStrictEqual(arr.chunk(2), [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]]);
         deepStrictEqual(arr.chunk(3), [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]);
     });
 
-    it("Array.prototype.shuffle", () => {
+    it("shuffle", () => {
         const arr1 = [0, 12, 3, 4, 5, 6, 7, 8, 9];
         const arr2 = arr1.slice();
         const arr3 = arr1.slice();
@@ -108,20 +108,20 @@ describe("Array", () => {
         notDeepEqual(arr3, arr1);
     });
 
-    it("Array.prototype.toShuffled", () => {
+    it("toShuffled", () => {
         const arr1 = [0, 12, 3, 4, 5, 6, 7, 8, 9];
         const arr2 = arr1.toShuffled();
         strictEqual(arr2.length, arr1.length);
         notDeepEqual(arr2, arr1);
     });
 
-    it("Array.prototype.toReversed", () => {
+    it("toReversed", () => {
         const arr1 = [0, 12, 3, 4, 5, 6, 7, 8, 9];
         const arr2 = arr1.toReversed();
         deepStrictEqual(arr2, arr1.slice().reverse());
     });
 
-    it("Array.prototype.toSorted", () => {
+    it("toSorted", () => {
         const arr1 = [0, 12, 3, 4, 5, 6, 7, 8, 9];
         const arr2 = arr1.toSorted();
         deepStrictEqual(arr2, arr1.slice().sort());
@@ -130,12 +130,12 @@ describe("Array", () => {
         deepStrictEqual(arr3, arr1.slice().sort((a, b) => b - a));
     });
 
-    it("Array.prototype.unique", () => {
+    it("unique", () => {
         const list = [1, 2, 3, 4, 2, 3, 1].unique();
         deepStrictEqual(list, [1, 2, 3, 4]);
     });
 
-    it("Array.prototype.uniqueBy", () => {
+    it("uniqueBy", () => {
         type Item = { group: string; tag: string; };
         const arr: Item[] = [
             {
@@ -165,7 +165,7 @@ describe("Array", () => {
         ]);
     });
 
-    it("Array.prototype.orderBy", () => {
+    it("orderBy", () => {
         type Item = { id: string; age: number; tag: string; };
         const arr1: Item[] = [
             {
@@ -338,7 +338,7 @@ describe("Array", () => {
         });
     });
 
-    describe("Array.prototype.groupBy", () => {
+    describe("groupBy", () => {
         type Item = { group: string; tag: string; };
         const arr: Item[] = [
             {
@@ -384,7 +384,7 @@ describe("Array", () => {
         });
     });
 
-    describe("Array.prototype.keyBy", () => {
+    describe("keyBy", () => {
         type Item = { group: string; tag: string; };
         const arr: Item[] = [
             {
@@ -439,5 +439,11 @@ describe("Array", () => {
         const [even, odd] = arr.partition(n => n % 2 === 0);
         deepStrictEqual(even, [0, 2, 4, 6, 8]);
         deepStrictEqual(odd, [1, 3, 5, 7, 9]);
+    });
+
+    it("filterMap", () => {
+        const arr = [1, 2, 3, 4, 5];
+        const result = arr.filterMap(n => (n % 2 === 0 ? n * 2 : undefined));
+        deepStrictEqual(result, [4, 8]);
     });
 });
