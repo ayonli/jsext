@@ -57,8 +57,38 @@ export function isNumeric(value: unknown, strict = false): boolean {
  * 
  * This function is the same as `value >= min && value <= max`.
  */
-export function isBetween(value: number, [min, max]: [number, number]): boolean {
+export function isBetween(value: number, min: number, max: number): boolean;
+/**
+ * @deprecated use `isBetween(value, min, max)` instead. 
+ */
+export function isBetween(value: number, [min, max]: [number, number]): boolean;
+export function isBetween(
+    value: number,
+    arg1: number | [number, number],
+    arg2: number | undefined = undefined
+): boolean {
+    const min = Array.isArray(arg1) ? arg1[0] : arg1;
+    const max = Array.isArray(arg1) ? arg1[1] : arg2 as number;
+
+    if (min > max) {
+        throw new RangeError("Minimum value cannot be greater than maximum value.");
+    }
+
     return value >= min && value <= max;
+}
+
+/**
+ * Clamps a number to be within the specified range.
+ * 
+ * If the number is less than `min`, it returns `min`. If the number is greater than `max`,
+ * it returns `max`. Otherwise, it returns the original number.
+ */
+export function clamp(value: number, min: number, max: number): number {
+    if (min > max) {
+        throw new RangeError("Minimum value cannot be greater than maximum value.");
+    }
+
+    return Math.max(min, Math.min(max, value));
 }
 
 /**

@@ -1,4 +1,4 @@
-import { isBetween, isFloat, isNumeric, random, range, serial } from "../number.ts";
+import { clamp, isBetween, isFloat, isNumeric, random, range, serial } from "../number.ts";
 
 declare global {
     interface NumberConstructor {
@@ -13,7 +13,9 @@ declare global {
          * @param strict Only returns `true` when the value is of type `number`.
          */
         isNumeric(value: unknown, strict?: boolean): boolean;
-        /** Return `true` if a number is between the given range (inclusive). */
+        /**
+         * @deprecated use `value.isBetween(min, max)` instead.  
+         */
         isBetween(value: number, [min, max]: [number, number]): boolean;
         /** Returns a random integer ranged from `min` to `max` (inclusive). */
         random(min: number, max: number): number;
@@ -27,6 +29,23 @@ declare global {
          */
         serial(loop?: boolean): Generator<number, void, unknown>;
     }
+
+    interface Number {
+        /**
+         * Return `true` if a number is between the given range (inclusive).
+         * 
+         * This function is the same as `value >= min && value <= max`.
+         */
+        isBetween(min: number, max: number): boolean;
+
+        /**
+         * Clamps a number to be within the specified range.
+         * 
+         * If the number is less than `min`, it returns `min`. If the number is greater than `max`,
+         * it returns `max`. Otherwise, it returns the original number.
+         */
+        clamp(min: number, max: number): number;
+    }
 }
 
 Number.isFloat = isFloat;
@@ -35,3 +54,13 @@ Number.isBetween = isBetween;
 Number.random = random;
 Number.range = range;
 Number.serial = serial;
+
+Number.prototype.isBetween = function (this: number, min: number, max: number): boolean {
+    return isBetween(this, min, max);
+};
+
+if (!Number.prototype.clamp) {
+    Number.prototype.clamp = function (this: number, min: number, max: number): number {
+        return clamp(this, min, max);
+    };
+}
