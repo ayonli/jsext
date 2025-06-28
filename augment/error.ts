@@ -33,7 +33,11 @@ declare global {
         fromObject<T extends { name: "TypeError"; }>(obj: T): TypeError;
         fromObject<T extends { name: "URIError"; }>(obj: T): URIError;
         fromObject<T extends { name: "Exception"; }>(obj: T): Exception;
-        fromObject<T extends Error>(obj: { [x: string | symbol]: any; }, ctor?: Constructor<Error>): T | null;
+        fromObject<T extends Error>(
+            obj: { [x: string | symbol]: any; },
+            ctor?: Constructor<Error> | null,
+            strict?: boolean
+        ): T | null;
 
         /** Creates an `ErrorEvent` instance based on the given error. */
         toErrorEvent(err: Error, type?: string): ErrorEvent;

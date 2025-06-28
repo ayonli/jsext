@@ -82,6 +82,10 @@ export function toObject<T extends Error>(err: T): { [x: string | symbol]: any; 
         ...omit(err, ["toString", "toJSON", "__callSiteEvals"]),
     } as { [x: string | symbol]: any; };
 
+    if ("cause" in obj) {
+        obj["cause"] = obj["cause"] instanceof Error ? toObject(obj["cause"]) : obj["cause"];
+    }
+
     if (obj["@@type"] === "AggregateError" && Array.isArray(obj["errors"])) {
         obj["errors"] = (obj["errors"] as unknown[]).map(item => {
             return item instanceof Error ? toObject(item) : item;
@@ -120,13 +124,18 @@ export function fromObject<T extends { name: "SyntaxError"; }>(obj: T): SyntaxEr
 export function fromObject<T extends { name: "TypeError"; }>(obj: T): TypeError;
 export function fromObject<T extends { name: "URIError"; }>(obj: T): URIError;
 export function fromObject<T extends { name: "Exception"; }>(obj: T): Exception;
-export function fromObject<T extends Error>(obj: { [x: string | symbol]: any; }, ctor?: Constructor<Error>): T | null;
 export function fromObject<T extends Error>(
     obj: { [x: string | symbol]: any; },
-    ctor: Function | undefined = undefined
+    ctor?: Constructor<Error> | null,
+    strict?: boolean
+): T | null;
+export function fromObject<T extends Error>(
+    obj: { [x: string | symbol]: any; },
+    ctor: Function | null | undefined = null,
+    strict: boolean = false
 ): T | null {
     // @ts-ignore
-    if (!obj?.name) {
+    if (!obj?.name || (strict && !obj["@@type"])) {
         return null;
     }
 
@@ -169,7 +178,9 @@ export function fromObject<T extends Error>(
             configurable: true,
             enumerable: false,
             writable: true,
-            value: obj["cause"],
+            value: isPlainObject(obj["cause"])
+                ? (fromObject(obj["cause"], undefined, true) ?? obj["cause"])
+                : obj["cause"],
         });
     }
 

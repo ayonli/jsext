@@ -27,7 +27,9 @@ describe("Error", () => {
         strictEqual(obj1["code"], err1.code);
 
         // @ts-ignore
-        const err2 = Object.assign(new TypeError("something went wrong", { cause: "unknown" }), {
+        const err2 = Object.assign(new TypeError("something went wrong", {
+            cause: new Error("unknown"),
+        }), {
             code: 500,
         });
         const obj2 = Error.toObject(err2);
@@ -36,18 +38,21 @@ describe("Error", () => {
         strictEqual(obj2["message"], err2.message);
         strictEqual(obj2["stack"], err2.stack);
         // @ts-ignore
-        strictEqual(obj2["cause"], err2["cause"]);
+        deepStrictEqual(obj2["cause"], Error.toObject(err2.cause as Error));
         // @ts-ignore
         strictEqual(obj2["code"], err2.code);
 
         // @ts-ignore
-        const err3 = new Exception("something went wrong", { cause: "unknown", code: 500 });
+        const err3 = new Exception("something went wrong", {
+            cause: new Error("unknown"),
+            code: 500,
+        });
         const obj3 = Error.toObject(err3);
         strictEqual(obj3["@@type"], "Exception");
         strictEqual(obj3["name"], err3.name);
         strictEqual(obj3["message"], err3.message);
         strictEqual(obj3["stack"], err3.stack);
-        strictEqual(obj3["cause"], err3.cause);
+        deepStrictEqual(obj3["cause"], Error.toObject(err3.cause as Error));
         strictEqual(obj3["code"], err3.code);
 
         if (typeof DOMException === "function") {
@@ -93,7 +98,11 @@ describe("Error", () => {
             name: "EvalError",
             message: "something went wrong",
             stack: "",
-            cause: "unknown",
+            cause: {
+                "@@type": "Error",
+                name: "Error",
+                message: "unknown",
+            },
             code: 500,
         } as const;
         const err2 = Error.fromObject(obj2);
@@ -102,7 +111,9 @@ describe("Error", () => {
         strictEqual(err2.message, obj2.message);
         strictEqual(err2.stack, obj2.stack);
         // @ts-ignore
-        strictEqual(err2["cause"], obj2.cause);
+        strictEqual(err2["cause"] instanceof Error, true);
+        strictEqual((err2["cause"] as Error).name, "Error");
+        strictEqual((err2["cause"] as Error).message, "unknown");
         // @ts-ignore
         strictEqual(err2["code"], obj2.code);
 
@@ -195,14 +206,14 @@ describe("Error", () => {
             name: "Exception",
             message: "something went wrong",
             code: 500,
-            cause: err2,
+            cause: Error.toObject(err2),
             stack: "",
         } as const;
         const err8 = Error.fromObject(obj8);
         strictEqual(err8.constructor, Exception);
         strictEqual(err8.name, obj8.name);
         strictEqual(err8.message, obj8.message);
-        strictEqual(err8.cause, err2);
+        deepStrictEqual(err8.cause, err2);
         strictEqual(err8.code, 500);
         strictEqual(err8.stack, obj8.stack);
 
@@ -257,6 +268,13 @@ describe("Error", () => {
         }
 
         strictEqual(Error.fromObject({ foo: "bar" }), null);
+        strictEqual(Error.fromObject({
+            name: "Error",
+            message: "something went wrong",
+            stack: "",
+            cause: "unknown",
+            code: 500,
+        }, null, true), null);
     });
 
     it("Error.prototype.toJSON", () => {
@@ -318,7 +336,7 @@ describe("Error", () => {
         strictEqual(normalize(event.filename), toFsPath(import.meta.url));
 
         if (isDeno) {
-            strictEqual(event.lineno, 303);
+            strictEqual(event.lineno, 321);
             strictEqual(event.colno, 21);
         } else {
             ok(event.lineno > 0);
@@ -338,7 +356,7 @@ describe("Error", () => {
         strictEqual(normalize(event2.filename), toFsPath(import.meta.url));
 
         if (isDeno) {
-            strictEqual(event2.lineno, 328);
+            strictEqual(event2.lineno, 346);
             strictEqual(event2.colno, 22);
         } else {
             ok(event2.lineno > 0);
