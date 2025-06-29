@@ -367,6 +367,33 @@ function partition(arr, predicate) {
     }
     return [match, rest];
 }
+/**
+ * Returns a new array containing the results of applying the given predicate
+ * function to each element of the array, filtering out any `undefined` results.
+ *
+ * @example
+ * ```ts
+ * import { filterMap } from "@ayonli/jsext/array";
+ *
+ * const arr = [1, 2, 3, 4, 5];
+ * const result = filterMap(arr, (item) => {
+ *     return item % 2 === 0 ? item * 2 : undefined;
+ * });
+ *
+ * console.log(result); // [4, 8]
+ * ```
+ */
+function filterMap(arr, fn) {
+    const result = [];
+    for (let i = 0; i < arr.length; i++) {
+        const item = arr[i];
+        const mapped = fn(item, i);
+        if (mapped !== undefined) {
+            result.push(mapped);
+        }
+    }
+    return result;
+}
 
-export { chunk, count, endsWith, equals, first, groupBy, includesSlice, keyBy, last, orderBy, partition, random, shuffle, split, startsWith, unique, uniqueBy };
+export { chunk, count, endsWith, equals, filterMap, first, groupBy, includesSlice, keyBy, last, orderBy, partition, random, shuffle, split, startsWith, unique, uniqueBy };
 //# sourceMappingURL=array.js.map

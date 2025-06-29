@@ -51,13 +51,25 @@ function isNumeric(value, strict = false) {
     }
     return false;
 }
-/**
- * Return `true` if a number is between the given range (inclusive).
- *
- * This function is the same as `value >= min && value <= max`.
- */
-function isBetween(value, [min, max]) {
+function isBetween(value, arg1, arg2 = undefined) {
+    const min = Array.isArray(arg1) ? arg1[0] : arg1;
+    const max = Array.isArray(arg1) ? arg1[1] : arg2;
+    if (min > max) {
+        throw new RangeError("Minimum value cannot be greater than maximum value.");
+    }
     return value >= min && value <= max;
+}
+/**
+ * Clamps a number to be within the specified range.
+ *
+ * If the number is less than `min`, it returns `min`. If the number is greater than `max`,
+ * it returns `max`. Otherwise, it returns the original number.
+ */
+function clamp(value, min, max) {
+    if (min > max) {
+        throw new RangeError("Minimum value cannot be greater than maximum value.");
+    }
+    return Math.max(min, Math.min(max, value));
 }
 /**
  * Returns a random integer ranged from `min` to `max` (inclusive).
@@ -132,5 +144,5 @@ function* sequence(min, max, step = 1, loop = false) {
     }
 }
 
-export { isBetween, isFloat, isNumeric, random, range, serial };
+export { clamp, isBetween, isFloat, isNumeric, random, range, serial };
 //# sourceMappingURL=number.js.map

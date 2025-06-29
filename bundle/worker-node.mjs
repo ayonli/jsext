@@ -870,6 +870,9 @@ function toObject(err) {
         "@@type": err.constructor.name,
         ...omit(err, ["toString", "toJSON", "__callSiteEvals"]),
     };
+    if ("cause" in obj) {
+        obj["cause"] = obj["cause"] instanceof Error ? toObject(obj["cause"]) : obj["cause"];
+    }
     if (obj["@@type"] === "AggregateError" && Array.isArray(obj["errors"])) {
         obj["errors"] = obj["errors"].map(item => {
             return item instanceof Error ? toObject(item) : item;
@@ -877,10 +880,10 @@ function toObject(err) {
     }
     return obj;
 }
-function fromObject(obj, ctor = undefined) {
-    var _a, _b, _c;
+function fromObject(obj, ctor = null, strict = false) {
+    var _a, _b, _c, _d;
     // @ts-ignore
-    if (!(obj === null || obj === void 0 ? void 0 : obj.name)) {
+    if (!(obj === null || obj === void 0 ? void 0 : obj.name) || (strict && !obj["@@type"])) {
         return null;
     }
     // @ts-ignore
@@ -920,7 +923,9 @@ function fromObject(obj, ctor = undefined) {
             configurable: true,
             enumerable: false,
             writable: true,
-            value: obj["cause"],
+            value: isPlainObject(obj["cause"])
+                ? ((_d = fromObject(obj["cause"], undefined, true)) !== null && _d !== void 0 ? _d : obj["cause"])
+                : obj["cause"],
         });
     }
     const otherKeys = Reflect.ownKeys(obj).filter(key => ![
