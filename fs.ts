@@ -653,7 +653,7 @@ export async function readFileAsFile(
     }
 
     const _stat = await stat(target, options);
-    const bytes = await readFile(target, options);
+    const bytes = await readFile(target, options) as Uint8Array<ArrayBuffer>;
     const type = getMIME(extname(target)) ?? "";
     const file = new File([bytes], basename(target), { type });
     const lastModified = _stat.mtime?.getTime() ?? Date.now();
@@ -663,7 +663,7 @@ export async function readFileAsFile(
         enumerable: true,
         writable: false,
         value: lastModified,
-    })
+    });
     Object.defineProperty(file, "lastModifiedDate", {
         configurable: true,
         enumerable: true,
@@ -1496,14 +1496,17 @@ export function createReadableStream(
         })());
     } else {
         let reader: import("node:fs").ReadStream;
+        const encoder = new TextEncoder();
         return new ReadableStream<Uint8Array>({
             async start(controller) {
                 const fs = await import("node:fs");
                 const filename = await resolveHomeDir(target as string);
 
                 reader = fs.createReadStream(filename);
-                reader.on("data", (chunk: Buffer) => {
-                    const bytes = new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+                reader.on("data", (chunk: string | Buffer) => {
+                    const bytes = typeof chunk === "string"
+                        ? encoder.encode(chunk)
+                        : new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
                     controller.enqueue(bytes);
                 });
                 reader.on("end", () => controller.close());

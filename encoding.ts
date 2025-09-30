@@ -60,7 +60,7 @@ export function encodeHex(data: string | ArrayBufferLike | ArrayBufferView): str
  * const data = decodeHex("48656c6c6f2c20576f726c6421");
  * console.log(data); // Uint8Array(13) [ 72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33 ]
  */
-export function decodeHex(hex: string): Uint8Array {
+export function decodeHex(hex: string): Uint8Array<ArrayBuffer> {
     const bytes = new Uint8Array(hex.length / 2);
 
     for (let i = 0; i < hex.length; i += 2) {
@@ -151,7 +151,7 @@ export function encodeBase64(data: string | ArrayBufferLike | Uint8Array): strin
  * console.log(new TextDecoder().decode(data2)); // "你好，世界！"
  * ```
  */
-export function decodeBase64(base64: string): Uint8Array {
+export function decodeBase64(base64: string): Uint8Array<ArrayBuffer> {
     if (typeof Buffer === "function" && typeof Buffer.from === "function") {
         const buf = Buffer.from(base64, "base64");
         const buffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);

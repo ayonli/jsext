@@ -15,11 +15,11 @@ declare global {
         override get(key: K): V | undefined;
         override has(key: K): boolean;
         override delete(key: K): boolean;
-        override entries(): IterableIterator<[K, V]>;
-        override keys(): IterableIterator<K>;
-        override values(): IterableIterator<V>;
+        override entries(): MapIterator<[K, V]>;
+        override keys(): MapIterator<K>;
+        override values(): MapIterator<V>;
         override forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void;
-        [Symbol.iterator](): IterableIterator<[K, V]>;
+        [Symbol.iterator](): MapIterator<[K, V]>;
     }
 }
 

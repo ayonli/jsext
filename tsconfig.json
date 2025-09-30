@@ -25,7 +25,7 @@
             "ESNext",
             "DOM",
             "DOM.AsyncIterable",
-            "DOM.Iterable"
+            "DOM.Iterable",
         ],
         "types": [
             "node",

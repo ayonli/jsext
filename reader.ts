@@ -110,7 +110,7 @@ export async function readAsArrayBuffer(
     if (typeof Blob === "function" && source instanceof Blob) {
         return await source.arrayBuffer();
     } else if (ArrayBuffer.isView(source)) {
-        return source.buffer;
+        return source.buffer as ArrayBuffer;
     }
 
     const iterable = asAsyncIterable(source) as AsyncIterable<Uint8Array> | null;
@@ -122,7 +122,7 @@ export async function readAsArrayBuffer(
     const chunks = await readAsArray(iterable);
     const bytes = concatBytes(...chunks);
 
-    return bytes.buffer;
+    return bytes.buffer as ArrayBuffer;
 }
 
 /**
@@ -142,7 +142,7 @@ export async function readAsBlob(
     type: string
 ): Promise<Blob> {
     if (source instanceof ArrayBuffer || ArrayBuffer.isView(source)) {
-        return new Blob([source], { type });
+        return new Blob([source as BufferSource], { type });
     }
 
     const buffer = await readAsArrayBuffer(source);
@@ -204,7 +204,7 @@ export async function readAsObjectURL(
     if (source instanceof Blob) {
         return URL.createObjectURL(source);
     } else if (source instanceof ArrayBuffer || ArrayBuffer.isView(source)) {
-        const blob = new Blob([source], { type });
+        const blob = new Blob([source as BufferSource], { type });
         return URL.createObjectURL(blob);
     }
 

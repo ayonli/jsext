@@ -86,19 +86,19 @@ export function resolveByteStream(
                         // The final chunk may be empty, but still needs to be
                         // responded in order to close the request reader.
                         if (result.value !== undefined) {
-                            request.respondWithNewView(result.value);
+                            request.respondWithNewView(result.value as Uint8Array<ArrayBuffer>);
                         } else {
                             request.respond(0);
                         }
                     } else if (srcReader instanceof ReadableStreamBYOBReader) {
                         // Respond to the request reader with the same underlying
                         // buffer of the source stream.
-                        request.respondWithNewView(result.value);
+                        request.respondWithNewView(result.value as Uint8Array<ArrayBuffer>);
                     } else {
                         // This stream is requested for zero-copy read, but the
                         // source stream doesn't support it. We need to copy and
                         // deliver the new buffer instead.
-                        controller.enqueue(result.value);
+                        controller.enqueue(result.value as Uint8Array<ArrayBuffer>);
                     }
                 } else {
                     if (result.done) {

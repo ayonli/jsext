@@ -392,7 +392,7 @@ export async function writeFile(
         } else if (data instanceof ReadableStream) {
             await data.pipeTo(writer);
         } else {
-            await writer.write(data);
+            await writer.write(data as BufferSource);
             await writer.close();
         }
     } catch (err) {

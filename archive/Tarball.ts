@@ -636,7 +636,7 @@ export default class Tarball {
 
         if (options.gzip) {
             const gzip = new CompressionStream("gzip");
-            return stream.pipeThrough<Uint8Array>(gzip);
+            return stream.pipeThrough<Uint8Array>(gzip as TransformStream<Uint8Array>);
         } else {
             return stream;
         }
@@ -657,7 +657,7 @@ export default class Tarball {
     } = {}): Promise<Tarball> {
         if (options.gzip) {
             const gzip = new DecompressionStream("gzip");
-            stream = stream.pipeThrough<Uint8Array>(gzip);
+            stream = stream.pipeThrough<Uint8Array>(gzip as TransformStream<Uint8Array>);
         }
 
         const tarball = new Tarball();
