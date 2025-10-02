@@ -69,6 +69,9 @@ async function stat(target, options = {}) {
     const filenames = Object.keys(manifest);
     if (filenames.includes(filename)) {
         const buffer = await kv.get(filename, { type: "arrayBuffer" });
+        if (!buffer) {
+            throwNotFoundError(filename);
+        }
         return {
             name: basename(filename),
             kind: "file",

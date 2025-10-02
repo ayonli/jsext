@@ -173,7 +173,9 @@ async function readAsText(source, encoding = undefined) {
     if (typeof Blob === "function" && source instanceof Blob && !encoding) {
         return await source.text();
     }
-    else if (source instanceof ArrayBuffer || ArrayBuffer.isView(source)) {
+    else if (source instanceof ArrayBuffer
+        || ArrayBuffer.isView(source)
+        || (typeof SharedArrayBuffer === "function" && source instanceof SharedArrayBuffer)) {
         return new TextDecoder(encoding).decode(source);
     }
     const buffer = await readAsArrayBuffer(source);

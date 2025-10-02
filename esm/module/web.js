@@ -17,10 +17,14 @@ function interop(module, strict = undefined) {
         return module.then(mod => interop(mod, strict));
     }
     let exports = module["module.exports"];
-    if (typeof exports !== "undefined") {
+    if (isObject(exports) || typeof exports === "function") {
+        const keys = Object.getOwnPropertyNames(module).sort().join(",");
+        if (keys === "default,module.exports" && module["default"] === exports && strict !== false) {
+            return { default: exports };
+        }
         return exports;
     }
-    else if (isExportsObject(exports = module["default"])) {
+    if (isObject(exports = module["default"])) {
         const hasEsModule = module["__esModule"] === true
             || exports["__esModule"] === true;
         if (hasEsModule) {
@@ -41,7 +45,7 @@ function interop(module, strict = undefined) {
     }
     return module;
 }
-function isExportsObject(module) {
+function isObject(module) {
     return typeof module === "object" && module !== null && !Array.isArray(module);
 }
 function isMain(importMeta) {

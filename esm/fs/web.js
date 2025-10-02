@@ -528,7 +528,7 @@ function createReadableStream(target, options = {}) {
     })());
 }
 function createWritableStream(target, options = {}) {
-    const { readable, writable } = new TransformStream();
+    const { readable, writable, } = new TransformStream();
     const getHandle = typeof target === "object"
         ? Promise.resolve(target)
         : getFileHandle(target, { root: options.root, create: true });

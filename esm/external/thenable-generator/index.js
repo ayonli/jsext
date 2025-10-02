@@ -79,6 +79,7 @@ class ThenableGenerator extends Thenable {
             throw err;
         }
     }
+    // @ts-ignore
     [Symbol.iterator]() {
         return this;
     }
@@ -132,6 +133,9 @@ class ThenableAsyncGenerator extends Thenable {
     }
     [Symbol.asyncIterator]() {
         return this;
+    }
+    async [Symbol.asyncDispose]() {
+        await this.return();
     }
 }
 const ThenableGeneratorFunction = (function (fn) {

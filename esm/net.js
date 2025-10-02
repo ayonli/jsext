@@ -458,7 +458,7 @@ async function nodeToSocket(socket) {
     });
     socket.once("connect", () => {
         ready.resolve();
-    }).on("data", data => {
+    }).on("data", (data) => {
         readCtrl.enqueue(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
     }).once("error", (error) => {
         try {
@@ -639,10 +639,13 @@ async function udpSocket(localAddress = {}) {
             _socket.bind(localAddress.port, localAddress.hostname, resolve);
         });
         _socket.on("message", (data, rinfo) => {
-            channel.send([new Uint8Array(data.buffer, data.byteOffset, data.byteLength), {
+            channel.send([
+                new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+                {
                     hostname: rinfo.address,
                     port: rinfo.port,
-                }]).catch(() => { });
+                }
+            ]).catch(() => { });
         }).once("error", err => {
             channel.close(err);
             closed.reject(err);

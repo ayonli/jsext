@@ -171,7 +171,7 @@ class EventEndpoint extends EventTarget {
             res.write(encoder.encode(":ok\n\n"));
         }
         else {
-            const { writable, readable } = new TransformStream();
+            const { writable, readable, } = new TransformStream();
             const reader = readable.getReader();
             const _readable = new ReadableStream({
                 async start(controller) {

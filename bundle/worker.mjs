@@ -13,6 +13,7 @@ const isNode = isNodeLike && !isDeno && !isBun;
 isNode && parseInt(process.version.slice(1)) < 14;
 isNode && parseInt(process.version.slice(1)) < 16;
 isNode && parseInt(process.version.slice(1)) < 20;
+isNode && parseInt(process.version.slice(1)) >= 23;
 const isNodeWorkerThread = isNode
     && (process.abort.disabled === true || process.argv.includes("--worker-thread"));
 const isMainThread = !isNodeWorkerThread
@@ -1621,10 +1622,14 @@ function interop(module, strict = undefined) {
         return module.then(mod => interop(mod, strict));
     }
     let exports = module["module.exports"];
-    if (typeof exports !== "undefined") {
+    if (isObject(exports) || typeof exports === "function") {
+        const keys = Object.getOwnPropertyNames(module).sort().join(",");
+        if (keys === "default,module.exports" && module["default"] === exports && strict !== false) {
+            return { default: exports };
+        }
         return exports;
     }
-    else if (isExportsObject(exports = module["default"])) {
+    if (isObject(exports = module["default"])) {
         const hasEsModule = module["__esModule"] === true
             || exports["__esModule"] === true;
         if (hasEsModule) {
@@ -1645,7 +1650,7 @@ function interop(module, strict = undefined) {
     }
     return module;
 }
-function isExportsObject(module) {
+function isObject(module) {
     return typeof module === "object" && module !== null && !Array.isArray(module);
 }
 

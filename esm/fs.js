@@ -1182,13 +1182,16 @@ function createReadableStream(target, options = {}) {
     }
     else {
         let reader;
+        const encoder = new TextEncoder();
         return new ReadableStream({
             async start(controller) {
                 const fs = await import('node:fs');
                 const filename = await resolveHomeDir(target);
                 reader = fs.createReadStream(filename);
                 reader.on("data", (chunk) => {
-                    const bytes = new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+                    const bytes = typeof chunk === "string"
+                        ? encoder.encode(chunk)
+                        : new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
                     controller.enqueue(bytes);
                 });
                 reader.on("end", () => controller.close());
@@ -1235,7 +1238,7 @@ function createWritableStream(target, options = {}) {
     }
     const filename = target;
     if (isDeno) {
-        const { readable, writable } = new TransformStream();
+        const { readable, writable, } = new TransformStream();
         resolveHomeDir(filename).then(filename => {
             var _a;
             return Deno.open(filename, {

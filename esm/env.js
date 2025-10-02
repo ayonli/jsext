@@ -17,10 +17,11 @@ const isNode = isNodeLike && !isDeno && !isBun;
 const isNodeBelow14 = isNode && parseInt(process.version.slice(1)) < 14;
 const isNodeBelow16 = isNode && parseInt(process.version.slice(1)) < 16;
 const isNodeBelow20 = isNode && parseInt(process.version.slice(1)) < 20;
+const isNodeAbove23 = isNode && parseInt(process.version.slice(1)) >= 23;
 const isNodeWorkerThread = isNode
     && (process.abort.disabled === true || process.argv.includes("--worker-thread"));
 const isMainThread = !isNodeWorkerThread
     && (isBun ? Bun.isMainThread : typeof WorkerGlobalScope === "undefined");
 
-export { id, isBrowserWindow, isBun, isDedicatedWorker, isDeno, isMainThread, isNode, isNodeBelow14, isNodeBelow16, isNodeBelow20, isNodeLike, isServiceWorker, isSharedWorker, isWorker };
+export { id, isBrowserWindow, isBun, isDedicatedWorker, isDeno, isMainThread, isNode, isNodeAbove23, isNodeBelow14, isNodeBelow16, isNodeBelow20, isNodeLike, isServiceWorker, isSharedWorker, isWorker };
 //# sourceMappingURL=env.js.map
