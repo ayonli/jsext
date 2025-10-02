@@ -1,6 +1,6 @@
 {
     "name": "@ayonli/jsext",
-    "version": "1.8.0",
+    "version": "1.9.0",
     "description": "A JavaScript extension package for building strong and modern applications.",
     "type": "module",
     "exports": {
@@ -198,6 +198,12 @@
             "import": "./esm/http/util.js",
             "require": "./cjs/http/util.js",
             "default": "./http/util.ts"
+        },
+        "./iterator": {
+            "types": "./types/iterator.d.ts",
+            "import": "./esm/iterator.js",
+            "require": "./cjs/iterator.js",
+            "default": "./iterator.ts"
         },
         "./json": {
             "types": "./types/json.d.ts",

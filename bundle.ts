@@ -15,6 +15,7 @@ import * as filetype from "./filetype.ts";
 import * as fs from "./fs.ts";
 import * as hash from "./hash.ts";
 import * as http from "./http.ts";
+import * as iterator from "./iterator.ts";
 import * as json from "./json.ts";
 import * as math from "./math.ts";
 import * as module from "./module.ts";
@@ -60,6 +61,7 @@ export default {
         hash: hash.default,
     },
     http,
+    iterator,
     json,
     math,
     module,

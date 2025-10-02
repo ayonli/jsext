@@ -1,7 +1,7 @@
 import "./external/event-target-polyfill/index.ts";
 import "./augment/string.ts";
 import "./augment/number.ts";
-import "./augment/iter.ts";
+import "./augment/iterator.ts";
 import "./augment/array.ts";
 import "./augment/uint8array.ts";
 import "./augment/object.ts";

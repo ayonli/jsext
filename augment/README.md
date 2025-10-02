@@ -87,6 +87,18 @@ _These types are augmented to the global scope._
 - `TimeoutError` (extends `Exception`)
 - `NetworkError` (extends `Exception`)
 
+### Augment Iterator
+
+- `Iterator`
+  - `prototype`
+    - `concat(...others: Iterator<T>[]): IteratorObject<T, undefined, unknown>`
+    - `filterMap<U>(fn: (item: T, i: number) => U | null | undefined): IteratorObject<U, undefined, unknown>`
+    - `inspect(fn: (item: T, i: number) => void): IteratorObject<T, undefined, unknown>`
+    - `stepBy(step: number): IteratorObject<T, undefined, unknown>`
+    - `chunk(size: number): IteratorObject<T[], undefined, unknown>`
+    - `enumerate(): IteratorObject<[number, T], undefined, unknown>`
+    - `zip<U>(other: IteratorObject<U, unknown, undefined>): IteratorObject<[T, U], undefined, unknown>`
+
 ### Augment JSON
 
 - `JSON`

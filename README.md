@@ -131,6 +131,8 @@ categories:
   various data types.
 - [http](https://jsr.io/@ayonli/jsext/doc/http/~) Functions for handling HTTP
   related tasks, such as parsing headers and serving HTTP requests.
+- [iterator](https://jsr.io/@ayonli/jsext/doc/iterator/~) Functions for dealing
+    with iterator objects.
 - [json](https://jsr.io/@ayonli/jsext/doc/json/~) Functions for parsing JSONs to
   specific structures.
 - [math](https://jsr.io/@ayonli/jsext/doc/math/~) Functions for mathematical

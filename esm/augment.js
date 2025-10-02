@@ -1,7 +1,7 @@
 import './external/event-target-polyfill/index.js';
 import './augment/string.js';
 import './augment/number.js';
-import './augment/iter.js';
+import './augment/iterator.js';
 import './augment/array.js';
 import './augment/uint8array.js';
 import './augment/object.js';

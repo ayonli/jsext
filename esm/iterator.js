@@ -1,5 +1,6 @@
 /**
- * Functions for dealing with [iterators](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Iterator).
+ * Functions for dealing with [iterator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Iterator)
+ * objects.
  *
  * NOTE: `Iterator` is a pretty new API, requires Node.js v22+, Deno v1.39+, Bun v1.1.31+,
  * Chrome 122+, Firefox 131+, Safari 18.4+.
@@ -139,7 +140,7 @@ function inspect(iter, fn) {
  * Creates an iterator starting at the same point, but stepping by the given
  * amount at each iteration.
  *
- * Note 1: The first element of the iterator will always be returned, regardless
+ * NOTE: The first element of the iterator will always be returned, regardless
  * of the step given.
  *
  * @example
@@ -185,7 +186,7 @@ function stepBy(iter, step) {
     });
 }
 /**
- * Returns an iterator that yields chunks of the specified size from the input
+ * Creates an iterator that yields chunks of the specified size from the input
  * iterator.
  *
  * * @example
@@ -234,7 +235,7 @@ function nextChunk(iter, size) {
     return chunk.length > 0 ? chunk : undefined;
 }
 /**
- * Creates a new iterator which yields pairs `[index, value]` for each value
+ * Creates an iterator which yields pairs `[index, value]` for each value
  * from the input iterator.
  *
  * @example
@@ -270,7 +271,7 @@ function enumerate(iter) {
     });
 }
 /**
- * Returns a new iterator that will iterate over two other iterators, returning
+ * Creates an iterator that will iterate over two other iterators, returning
  * a tuple where the first element comes from the first iterator, and the second
  * element comes from the second iterator.
  *
@@ -314,4 +315,4 @@ function zip(iter1, iter2) {
 }
 
 export { chunk, concat, enumerate, filterMap, inspect, stepBy, zip };
-//# sourceMappingURL=iter.js.map
+//# sourceMappingURL=iterator.js.map

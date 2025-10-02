@@ -1,4 +1,4 @@
-import { concat, filterMap, inspect, stepBy, chunk, enumerate, zip } from '../iter.js';
+import { concat, filterMap, inspect, stepBy, chunk, enumerate, zip } from '../iterator.js';
 
 if (typeof Iterator === "function") {
     Iterator.prototype.concat = function concat$1(...others) {
@@ -23,4 +23,4 @@ if (typeof Iterator === "function") {
         return zip(this, other);
     };
 }
-//# sourceMappingURL=iter.js.map
+//# sourceMappingURL=iterator.js.map
