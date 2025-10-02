@@ -471,8 +471,8 @@ describe("dialog", () => {
             strictEqual(progressBar.value, 0);
             strictEqual(progressBar.max, 100);
 
-            const button = dialog.querySelector("button")!;
-            ok(button === null);
+            const cancelButton = dialog.querySelector("button")!;
+            ok(cancelButton !== null);
 
             await until(() => !dialog.open);
             strictEqual(await job, "Success!");
@@ -499,14 +499,82 @@ describe("dialog", () => {
             strictEqual(progressBar.value, 0);
             strictEqual(progressBar.max, 100);
 
-            const button = dialog.querySelector("button")!;
-            ok(button === null);
+            const cancelButton = dialog.querySelector("button")!;
+            ok(cancelButton !== null);
 
             await until(() => progressBar.value === 50);
             strictEqual(html2text(p.innerHTML), "Halfway there...");
 
             await until(() => !dialog.open);
             strictEqual(await job, "Success!");
+        });
+
+        it("cancel", async () => {
+            const job = progress("Loading...", async (set) => {
+                await sleep(500);
+                set({ percent: 50, message: "Halfway there..." });
+                await sleep(500);
+                return "Success!";
+            });
+            const dialog = await until(() => document.body.querySelector("dialog"));
+            ok(dialog !== null);
+
+            await until(() => dialog.open);
+
+            const p = dialog.querySelector("p")!;
+            ok(p !== null);
+            strictEqual(p.textContent, "Loading...");
+
+            const progressBar = dialog.querySelector("progress")!;
+            ok(progressBar !== null);
+            strictEqual(progressBar.value, 0);
+            strictEqual(progressBar.max, 100);
+
+            await until(() => progressBar.value === 50);
+            strictEqual(html2text(p.innerHTML), "Halfway there...");
+
+            const cancelButton = dialog.querySelector("button")!;
+            ok(cancelButton !== null);
+            cancelButton.click();
+
+            await until(() => !dialog.open);
+            strictEqual(await job, null);
+        });
+
+        it("cancel and log", async () => {
+            let log: string | null = null;
+            const job = progress("Loading...", async (set) => {
+                await sleep(500);
+                set({ percent: 50, message: "Halfway there..." });
+                await sleep(500);
+                return "Success!";
+            }, () => {
+                log = "Canceled";
+            });
+            const dialog = await until(() => document.body.querySelector("dialog"));
+            ok(dialog !== null);
+
+            await until(() => dialog.open);
+
+            const p = dialog.querySelector("p")!;
+            ok(p !== null);
+            strictEqual(p.textContent, "Loading...");
+
+            const progressBar = dialog.querySelector("progress")!;
+            ok(progressBar !== null);
+            strictEqual(progressBar.value, 0);
+            strictEqual(progressBar.max, 100);
+
+            await until(() => progressBar.value === 50);
+            strictEqual(html2text(p.innerHTML), "Halfway there...");
+
+            const cancelButton = dialog.querySelector("button")!;
+            ok(cancelButton !== null);
+            cancelButton.click();
+
+            await until(() => !dialog.open);
+            strictEqual(await job, null);
+            strictEqual(log, "Canceled");
         });
 
         it("cancel with fallback", async () => {

@@ -14,7 +14,7 @@ export type ProgressState = {
 };
 
 export type ProgressFunc<T> = (set: (state: ProgressState) => void, signal: AbortSignal) => Promise<T>;
-export type ProgressAbortHandler<T> = () => T | never | Promise<T | never>;
+export type ProgressAbortHandler<T> = () => T | void | Promise<T | void>;
 
 /**
  * Displays a dialog with a progress bar indicating the ongoing state of the

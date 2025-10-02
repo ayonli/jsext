@@ -131,17 +131,27 @@ async function progress(message, fn, onAbort = undefined) {
     const ctrl = new AbortController();
     const signal = ctrl.signal;
     let fallback = null;
-    const abort = !onAbort ? undefined : async () => {
+    const abort = async () => {
         try {
-            const result = await onAbort();
-            fallback = { value: result };
+            if (onAbort) {
+                const result = await onAbort();
+                if (result !== null && result !== undefined) {
+                    fallback = { value: result };
+                }
+                else {
+                    fallback = { value: null };
+                }
+            }
+            else {
+                fallback = { value: null };
+            }
             ctrl.abort();
         }
         catch (err) {
             ctrl.abort(err);
         }
     };
-    const listenForAbort = !onAbort ? undefined : () => new Promise((resolve, reject) => {
+    const listenForAbort = () => new Promise((resolve, reject) => {
         signal.addEventListener("abort", () => {
             if (fallback) {
                 resolve(fallback.value);
@@ -165,17 +175,9 @@ async function progress(message, fn, onAbort = undefined) {
             setValue(state.percent);
         }
     };
-    if (abort) {
-        dialog.appendChild(Footer(progressBar, CancelButton()));
-    }
-    else {
-        dialog.appendChild(progressBar);
-    }
+    dialog.appendChild(Footer(progressBar, CancelButton()));
     document.body.appendChild(dialog);
-    let job = fn(set, signal);
-    if (listenForAbort) {
-        job = Promise.race([job, listenForAbort()]);
-    }
+    const job = Promise.race([fn(set, signal), listenForAbort()]);
     try {
         return await job;
     }

@@ -999,6 +999,65 @@ describe("dialog - " + (useDeno ? "Deno" : useBun ? "Bun" : "Node.js"), () => {
             ]);
         });
 
+        it("cancel", async function () {
+            this.timeout(10_000);
+            const { cmd, output } = await runInEmulator("examples/dialog/progress.ts");
+
+            await sleep(2500);
+            cmd.write(String(ESC));
+
+            const outputs = await output;
+            deepStrictEqual(outputs, [
+                [
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [=     ]",
+                    "\r\u001b[KProcessing... [==    ]",
+                    "\r\u001b[KProcessing... [===   ]",
+                    "\r\u001b[KProcessing... [ ===  ]",
+                    "\r\u001b[KProcessing... [  === ]",
+                    "\r\u001b[KProcessing... [   ===]",
+                    "\r\u001b[KProcessing... [    ==]",
+                    "\r\u001b[KProcessing... [     =]",
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [=     ]",
+                    "\r\u001b[KProcessing... [==    ]",
+                ].join(""),
+                "\u001b[1mnull\u001b[22m",
+                ""
+            ]);
+        });
+
+        it("cancel and log", async function () {
+            this.timeout(10_000);
+            const { cmd, output } = await runInEmulator("examples/dialog/progress-cancel-log.ts");
+
+            await sleep(2500);
+            cmd.write(String(ESC));
+
+            const outputs = await output;
+            deepStrictEqual(outputs, [
+                [
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [=     ]",
+                    "\r\u001b[KProcessing... [==    ]",
+                    "\r\u001b[KProcessing... [===   ]",
+                    "\r\u001b[KProcessing... [ ===  ]",
+                    "\r\u001b[KProcessing... [  === ]",
+                    "\r\u001b[KProcessing... [   ===]",
+                    "\r\u001b[KProcessing... [    ==]",
+                    "\r\u001b[KProcessing... [     =]",
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [      ]",
+                    "\r\u001b[KProcessing... [=     ]",
+                    "\r\u001b[KProcessing... [==    ]",
+                ].join(""),
+                "\u001b[1mnull\u001b[22m",
+                "Canceled",
+                ""
+            ]);
+        });
+
         it("cancel with fallback", async function () {
             this.timeout(10_000);
             const { cmd, output } = await runInEmulator("examples/dialog/progress-cancel-fallback.ts");

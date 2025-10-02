@@ -140,17 +140,26 @@ export default async function progress<T>(
 ): Promise<T | null> {
     const ctrl = new AbortController();
     const signal = ctrl.signal;
-    let fallback: { value: T; } | null = null;
-    const abort = !onAbort ? undefined : async () => {
+    let fallback: { value: T | null; } | null = null;
+    const abort = async () => {
         try {
-            const result = await onAbort();
-            fallback = { value: result };
+            if (onAbort) {
+                const result = await onAbort();
+                if (result !== null && result !== undefined) {
+                    fallback = { value: result };
+                } else {
+                    fallback = { value: null };
+                }
+            } else {
+                fallback = { value: null };
+            }
+
             ctrl.abort();
         } catch (err) {
             ctrl.abort(err);
         }
     };
-    const listenForAbort = !onAbort ? undefined : () => new Promise<T>((resolve, reject) => {
+    const listenForAbort = () => new Promise<T | null>((resolve, reject) => {
         signal.addEventListener("abort", () => {
             if (fallback) {
                 resolve(fallback.value);
