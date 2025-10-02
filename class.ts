@@ -3,7 +3,7 @@
  * @module
  */
 
-import { Constructor } from "./types.ts";
+import type { Constructor } from "./types.ts";
 
 /**
  * Checks if a value is a class/constructor.

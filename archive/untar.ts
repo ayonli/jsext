@@ -50,7 +50,7 @@ export interface UntarOptions extends TarOptions {
  * ```
  */
 export default function untar(
-    src: string | URL | FileSystemFileHandle | ReadableStream<Uint8Array>,
+    src: string | URL | FileSystemFileHandle | ReadableStream<Uint8Array<ArrayBuffer>>,
     dest: string | URL | FileSystemDirectoryHandle,
     options?: UntarOptions
 ): Promise<void>;
@@ -67,11 +67,11 @@ export default function untar(
  * ```
  */
 export default function untar(
-    src: string | URL | FileSystemFileHandle | ReadableStream<Uint8Array>,
+    src: string | URL | FileSystemFileHandle | ReadableStream<Uint8Array<ArrayBuffer>>,
     options?: TarOptions
 ): Promise<Tarball>;
 export default async function untar(
-    src: string | URL | FileSystemFileHandle | ReadableStream<Uint8Array>,
+    src: string | URL | FileSystemFileHandle | ReadableStream<Uint8Array<ArrayBuffer>>,
     dest: string | URL | FileSystemDirectoryHandle | UntarOptions = {},
     options: UntarOptions = {}
 ): Promise<Tarball | void> {
@@ -98,7 +98,7 @@ export default async function untar(
 
     if (options.gzip) {
         const gzip = new DecompressionStream("gzip");
-        input = input.pipeThrough<Uint8Array>(gzip);
+        input = input.pipeThrough(gzip as ReadableWritablePair<Uint8Array<ArrayBuffer>>);
     }
 
     const { signal } = options;
@@ -129,9 +129,9 @@ export default async function untar(
 
     const entries: TarEntry[] = [];
     const reader = input.getReader();
-    let remains: Uint8Array = new Uint8Array(0);
+    let remains: Uint8Array<ArrayBuffer> = new Uint8Array(0);
     let entry: TarEntry | null = null;
-    let writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
+    let writer: WritableStreamDefaultWriter<Uint8Array<ArrayBuffer>> | null = null;
     let writtenBytes = 0;
     let paddingSize = 0;
 

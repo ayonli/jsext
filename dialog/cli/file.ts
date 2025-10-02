@@ -7,6 +7,7 @@ import { fixFileType } from "../../fs/util.ts";
 import { as, pick } from "../../object.ts";
 import { basename, join } from "../../path.ts";
 import { platform } from "../../runtime.ts";
+import type { BinarySource } from "../../types.ts";
 import type { ProgressState } from "../progress.ts";
 import progress from "./progress.ts";
 import { linuxPickFile, linuxPickFiles, linuxPickFolder } from "./file/linux.ts";
@@ -129,7 +130,7 @@ export async function openDirectory(
 }
 
 export async function saveFile(
-    file: File | Blob | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array>,
+    file: File | BinarySource,
     options: SaveFileOptions = {}
 ): Promise<void> {
     const { title } = options;
@@ -205,7 +206,7 @@ export async function downloadFile(
         const { onProgress } = options;
         let loaded = 0;
 
-        const transform = new TransformStream<Uint8Array, Uint8Array>({
+        const transform = new TransformStream<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>({
             transform(chunk, controller) {
                 controller.enqueue(chunk);
                 loaded += chunk.byteLength;

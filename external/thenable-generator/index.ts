@@ -128,6 +128,7 @@ export class ThenableGenerator<T = unknown, TReturn = any, TNext = unknown> exte
         }
     }
 
+    // @ts-ignore
     [Symbol.iterator]() {
         return this;
     };
@@ -186,6 +187,10 @@ export class ThenableAsyncGenerator<T = unknown, TReturn = any, TNext = unknown>
 
     [Symbol.asyncIterator]() {
         return this;
+    }
+
+    async [Symbol.asyncDispose]() {
+        await this.return();
     }
 }
 

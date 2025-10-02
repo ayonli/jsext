@@ -13,7 +13,7 @@ import {
 } from "./array/base.ts";
 import { decodeBase64, decodeHex, encodeBase64, encodeHex } from "./encoding.ts";
 import { sum } from "./math.ts";
-import { Constructor } from "./types.ts";
+import type { Constructor } from "./types.ts";
 
 const defaultEncoder = new TextEncoder();
 const defaultDecoder = new TextDecoder();
@@ -57,7 +57,7 @@ export class ByteArray extends Uint8Array {
  * ```
  */
 export default function bytes(str: string, encoding?: "utf8" | "hex" | "base64"): ByteArray;
-export default function bytes(arr: string | ArrayBuffer | ArrayBufferView | ArrayLike<number>): ByteArray;
+export default function bytes(arr: string | BufferSource | ArrayLike<number>): ByteArray;
 /**
  * Creates a byte array with the specified length.
  * 
@@ -73,7 +73,7 @@ export default function bytes(arr: string | ArrayBuffer | ArrayBufferView | Arra
  */
 export default function bytes(length: number): ByteArray;
 export default function bytes(
-    data: number | string | ArrayBuffer | ArrayBufferView | ArrayLike<number>,
+    data: number | string | BufferSource | ArrayLike<number>,
     encoding: "utf8" | "hex" | "base64" = "utf8"
 ): ByteArray {
     if (typeof data === "number") {
@@ -91,7 +91,7 @@ export default function bytes(
 
         return new ByteArray(_data.buffer, _data.byteOffset, _data.byteLength);
     } else if (ArrayBuffer.isView(data)) {
-        return new ByteArray(data.buffer as ArrayBuffer, data.byteOffset, data.byteLength);
+        return new ByteArray(data.buffer, data.byteOffset, data.byteLength);
     } else {
         return new ByteArray(data);
     }

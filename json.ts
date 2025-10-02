@@ -3,7 +3,7 @@
  * @module
  */
 
-import { Constructor } from "./types.ts";
+import type { Constructor } from "./types.ts";
 import { isValid } from "./object.ts";
 import { fromObject } from "./error.ts";
 import bytes from "./bytes.ts";

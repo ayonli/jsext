@@ -17,6 +17,7 @@ import hash, {
     sha512 as _sha512,
     hmac as _hmac,
 } from "./hash/web.ts";
+import type { BinarySource } from "./types.ts";
 
 export type { DataSource };
 
@@ -25,7 +26,7 @@ export { adler32, crc32 };
 
 async function nodeHash(
     algorithm: "sha1" | "sha256" | "sha512" | "md5",
-    data: DataSource,
+    data: string | BinarySource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<ArrayBuffer | string> {
     const crypto = await import("node:crypto");
@@ -37,7 +38,7 @@ async function nodeHash(
     if (encoding) {
         return hash.digest(encoding);
     } else {
-        const result = hash.digest();
+        const result = hash.digest() as Buffer<ArrayBuffer>;
         // Truncate the buffer to the actual byte length so it's consistent with the web API.
         return result.buffer.slice(result.byteOffset, result.byteOffset + result.byteLength);
     }
@@ -54,7 +55,7 @@ async function nodeHash(
  * console.log(buffer); // ArrayBuffer(20) { ... }
  * ```
  */
-export function sha1(data: DataSource): Promise<ArrayBuffer>;
+export function sha1(data: string | BinarySource): Promise<ArrayBuffer>;
 /**
  * @example
  * ```ts
@@ -67,9 +68,9 @@ export function sha1(data: DataSource): Promise<ArrayBuffer>;
  * console.log(base64); // CgqfKmdylCVXq1NV12r0Qvj2XgE=
  * ```
  */
-export function sha1(data: DataSource, encoding: "hex" | "base64"): Promise<string>;
+export function sha1(data: string | BinarySource, encoding: "hex" | "base64"): Promise<string>;
 export async function sha1(
-    data: DataSource,
+    data: string | BinarySource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
     if (typeof crypto === "object" && typeof crypto.subtle === "object") {
@@ -92,7 +93,7 @@ export async function sha1(
  * console.log(buffer); // ArrayBuffer(32) { ... }
  * ```
  */
-export async function sha256(data: DataSource): Promise<ArrayBuffer>;
+export async function sha256(data: string | BinarySource): Promise<ArrayBuffer>;
 /**
  * @example
  * ```ts
@@ -105,9 +106,9 @@ export async function sha256(data: DataSource): Promise<ArrayBuffer>;
  * console.log(base64); // 3/1gIbsr1bCvZ2KQgJ7DpTGR3YHH9wpLKGiKNiGCmG8=
  * ```
  */
-export async function sha256(data: DataSource, encoding: "hex" | "base64"): Promise<string>;
+export async function sha256(data: string | BinarySource, encoding: "hex" | "base64"): Promise<string>;
 export async function sha256(
-    data: DataSource,
+    data: string | BinarySource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
     if (typeof crypto === "object" && typeof crypto.subtle === "object") {
@@ -130,7 +131,7 @@ export async function sha256(
  * console.log(buffer); // ArrayBuffer(64) { ... }
  * ```
  */
-export async function sha512(data: DataSource): Promise<ArrayBuffer>;
+export async function sha512(data: string | BinarySource): Promise<ArrayBuffer>;
 /**
  * @example
  * ```ts
@@ -145,9 +146,9 @@ export async function sha512(data: DataSource): Promise<ArrayBuffer>;
  * // N015SpXNz9izWZMYX++bo2jxYNja9DLQi6nx7R5avmzGkpHg+i/gAGpSVw7xjBne9OYXwzzlLvCm5fvjGMsDhw==
  * ``` 
  */
-export async function sha512(data: DataSource, encoding: "hex" | "base64"): Promise<string>;
+export async function sha512(data: string | BinarySource, encoding: "hex" | "base64"): Promise<string>;
 export async function sha512(
-    data: DataSource,
+    data: string | BinarySource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
     if (typeof crypto === "object" && typeof crypto.subtle === "object") {
@@ -172,7 +173,7 @@ export async function sha512(
  * console.log(buffer); // ArrayBuffer(16) { ... }
  * ```
  */
-export async function md5(data: DataSource): Promise<ArrayBuffer>;
+export async function md5(data: string | BinarySource): Promise<ArrayBuffer>;
 /**
  * @example
  * ```ts
@@ -185,9 +186,9 @@ export async function md5(data: DataSource): Promise<ArrayBuffer>;
  * console.log(base64); // ZajifYh5KDgxtmS9i38K1A==
  * ```
  */
-export async function md5(data: DataSource, encoding: "hex" | "base64"): Promise<string>;
+export async function md5(data: string | BinarySource, encoding: "hex" | "base64"): Promise<string>;
 export async function md5(
-    data: DataSource,
+    data: string | BinarySource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
     if (isDeno || isNodeLike) {
@@ -200,18 +201,18 @@ export async function md5(
 export async function hmac(
     algorithm: "sha1" | "sha256" | "sha512",
     key: string | BufferSource,
-    data: DataSource
+    data: string | BinarySource
 ): Promise<ArrayBuffer>;
 export async function hmac(
     algorithm: "sha1" | "sha256" | "sha512",
     key: string | BufferSource,
-    data: DataSource,
+    data: string | BinarySource,
     encoding: "hex" | "base64"
 ): Promise<string>;
 export async function hmac(
     algorithm: "sha1" | "sha256" | "sha512",
     key: string | BufferSource,
-    data: DataSource,
+    data: string | BinarySource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
     if (typeof crypto === "object" && typeof crypto.subtle === "object") {
@@ -226,7 +227,7 @@ export async function hmac(
         if (encoding) {
             return hash.digest(encoding);
         } else {
-            const result = hash.digest();
+            const result = hash.digest() as Buffer<ArrayBuffer>;
             // Truncate the buffer to the actual byte length so it's consistent with the web API.
             return result.buffer.slice(result.byteOffset, result.byteOffset + result.byteLength);
         }

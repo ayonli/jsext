@@ -16,6 +16,7 @@ import type { FileSystemOptions, FileInfo, DirEntry, DirTree } from "../fs/types
 import { makeTree } from "../fs/util.ts";
 import { basename, extname, isFileUrl, join } from "../path.ts";
 import { readAsArray, readAsArrayBuffer } from "../reader.ts";
+import type { BinarySource } from "../types.ts";
 import { KVNamespace } from "./types.ts";
 
 export * from "../fs/errors.ts";
@@ -118,7 +119,11 @@ export async function stat(
     const filenames = Object.keys(manifest);
 
     if (filenames.includes(filename)) {
-        const buffer = await kv.get(filename, { type: "arrayBuffer" }) as ArrayBuffer;
+        const buffer = await kv.get(filename, { type: "arrayBuffer" });
+        if (!buffer) {
+            throwNotFoundError(filename);
+        }
+
         return {
             name: basename(filename),
             kind: "file",
@@ -261,7 +266,7 @@ export async function readTree(
 export async function readFile(
     target: string | URL | FileSystemFileHandle,
     options: ReadFileOptions = {}
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
     target = ensureFsTarget(target);
     const filename = target as string;
     const kv = getKVStore(options);
@@ -323,7 +328,7 @@ export async function readFileAsFile(
 
 export async function writeFile(
     target: string | URL | FileSystemFileHandle,
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
+    data: string | BinarySource,
     options: WriteFileOptions = {}
 ): Promise<void> {
     void target, data, options;

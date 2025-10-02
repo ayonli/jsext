@@ -82,6 +82,7 @@ import { as } from "./object.ts";
 import { basename, extname, join } from "./path.ts";
 import { readAsArray, readAsText, resolveByteStream } from "./reader.ts";
 import runtime, { platform } from "./runtime.ts";
+import type { BinarySource } from "./types.ts";
 
 export * from "./fs/errors.ts";
 export type { FileSystemOptions, FileInfo, DirEntry, DirTree };
@@ -563,7 +564,7 @@ export interface ReadFileOptions extends FileSystemOptions {
 export async function readFile(
     target: string | URL | FileSystemFileHandle,
     options: ReadFileOptions = {}
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
     target = ensureFsTarget(target);
 
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
@@ -573,10 +574,10 @@ export async function readFile(
     const filename = await resolveHomeDir(target);
 
     if (isDeno) {
-        return await rawOp(Deno.readFile(filename, options));
+        return await rawOp(Deno.readFile(filename, options)) as Uint8Array<ArrayBuffer>;
     } else {
         const fs = await import("node:fs/promises");
-        const buffer = await rawOp(fs.readFile(filename, options));
+        const buffer = await rawOp(fs.readFile(filename, options)) as Buffer<ArrayBuffer>;
         return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
     }
 }
@@ -653,7 +654,7 @@ export async function readFileAsFile(
     }
 
     const _stat = await stat(target, options);
-    const bytes = await readFile(target, options) as Uint8Array<ArrayBuffer>;
+    const bytes = await readFile(target, options);
     const type = getMIME(extname(target)) ?? "";
     const file = new File([bytes], basename(target), { type });
     const lastModified = _stat.mtime?.getTime() ?? Date.now();
@@ -757,7 +758,7 @@ export interface WriteFileOptions extends FileSystemOptions {
  */
 export async function writeFile(
     target: string | URL | FileSystemFileHandle,
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
+    data: string | BinarySource,
     options: WriteFileOptions = {}
 ): Promise<void> {
     target = ensureFsTarget(target);
@@ -1481,7 +1482,7 @@ export async function utimes(
 export function createReadableStream(
     target: string | URL | FileSystemFileHandle,
     options: FileSystemOptions = {}
-): ReadableStream<Uint8Array> {
+): ReadableStream<Uint8Array<ArrayBuffer>> {
     target = ensureFsTarget(target);
 
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
@@ -1492,21 +1493,21 @@ export function createReadableStream(
         return resolveByteStream((async () => {
             const filename = await resolveHomeDir(target);
             const file = await rawOp(Deno.open(filename, { read: true }));
-            return file.readable;
+            return file.readable as ReadableStream<Uint8Array<ArrayBuffer>>;
         })());
     } else {
         let reader: import("node:fs").ReadStream;
         const encoder = new TextEncoder();
-        return new ReadableStream<Uint8Array>({
+        return new ReadableStream<Uint8Array<ArrayBuffer>>({
             async start(controller) {
                 const fs = await import("node:fs");
                 const filename = await resolveHomeDir(target as string);
 
                 reader = fs.createReadStream(filename);
-                reader.on("data", (chunk: string | Buffer) => {
+                reader.on("data", (chunk) => {
                     const bytes = typeof chunk === "string"
                         ? encoder.encode(chunk)
-                        : new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+                        : new Uint8Array(chunk.buffer as ArrayBuffer, chunk.byteOffset, chunk.byteLength);
                     controller.enqueue(bytes);
                 });
                 reader.on("end", () => controller.close());
@@ -1550,7 +1551,7 @@ export function createReadableStream(
 export function createWritableStream(
     target: string | URL | FileSystemFileHandle,
     options: Omit<WriteFileOptions, "signal"> = {}
-): WritableStream<Uint8Array> {
+): WritableStream<Uint8Array<ArrayBuffer>> {
     target = ensureFsTarget(target);
 
     if (typeof target === "object" || !(isDeno || isNodeLike)) {
@@ -1560,7 +1561,10 @@ export function createWritableStream(
     const filename = target;
 
     if (isDeno) {
-        const { readable, writable } = new TransformStream();
+        const {
+            readable,
+            writable,
+        } = new TransformStream<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>();
         resolveHomeDir(filename).then(filename => Deno.open(filename, {
             write: true,
             create: true,
@@ -1578,9 +1582,9 @@ function createNodeWritableStream(filename: string, options: {
     append?: boolean;
     mode?: number;
     signal?: AbortSignal;
-}): WritableStream<Uint8Array> {
+}): WritableStream<Uint8Array<ArrayBuffer>> {
     let dest: import("node:fs").WriteStream;
-    return new WritableStream<Uint8Array>({
+    return new WritableStream<Uint8Array<ArrayBuffer>>({
         async start() {
             const { append, ...rest } = options;
             const { createWriteStream } = await import("node:fs");

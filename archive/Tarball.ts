@@ -4,7 +4,7 @@ import { omit } from "../object.ts";
 import { basename, dirname } from "../path.ts";
 import { concat as concatStreams, toReadableStream } from "../reader.ts";
 import { stripEnd } from "../string.ts";
-import { RequiredKeys } from "../types.ts";
+import type { BinarySource, RequiredKeys } from "../types.ts";
 import { CorruptedArchiveError, FilenameTooLongError } from "./errors.ts";
 
 const _stream = Symbol.for("stream");
@@ -70,8 +70,8 @@ export interface TarTree extends TarEntry {
 }
 
 interface TarEntryWithData extends TarEntry {
-    header: Uint8Array;
-    body: ReadableStream<Uint8Array>;
+    header: Uint8Array<ArrayBuffer>;
+    body: ReadableStream<Uint8Array<ArrayBuffer>>;
 }
 
 enum FileTypes {
@@ -136,7 +136,11 @@ export function throwCorruptedArchiveError(): never {
     throw new CorruptedArchiveError("The archive is corrupted.");
 }
 
-export function parseHeader(header: Uint8Array): [info: USTarFileHeader, data: Uint8Array, remains: Uint8Array] | null {
+export function parseHeader(header: Uint8Array<ArrayBuffer>): [
+    info: USTarFileHeader,
+    data: Uint8Array<ArrayBuffer>,
+    remains: Uint8Array<ArrayBuffer>
+] | null {
     const decoder = new TextDecoder();
     const info: USTarFileHeader = {} as USTarFileHeader;
     let offset = 0;
@@ -201,7 +205,7 @@ function trimHeaderField(data: string): string {
     return (index === -1 ? data : data.slice(0, index)).trim();
 }
 
-function getEmptyData(info: Partial<TarEntry>): Uint8Array {
+function getEmptyData(info: Partial<TarEntry>): Uint8Array<ArrayBuffer> {
     if (info.kind === "directory") {
         return new Uint8Array(0);
     } else {
@@ -262,7 +266,7 @@ export default class Tarball {
 
     private constructEntry(
         relativePath: string,
-        data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob | null,
+        data: string | BinarySource | null,
         info: Partial<Omit<TarEntry, "relativePath">>,
     ): TarEntryWithData {
         // UStar format has a limitation of file name length. Specifically:
@@ -298,7 +302,7 @@ export default class Tarball {
         }
 
         const encoder = new TextEncoder();
-        let body: ReadableStream<Uint8Array>;
+        let body: ReadableStream<Uint8Array<ArrayBuffer>>;
         let size = 0;
         let mtime = info.mtime;
 
@@ -310,7 +314,7 @@ export default class Tarball {
             body = toReadableStream([new Uint8Array(data)]);
             size = data.byteLength;
         } else if (data instanceof Uint8Array) {
-            body = toReadableStream([data]);
+            body = toReadableStream([data as Uint8Array<ArrayBuffer>]);
             size = data.byteLength;
         } else if (ArrayBuffer.isView(data)) {
             const _data = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
@@ -411,11 +415,11 @@ export default class Tarball {
      */
     append(data: File): void;
     append(
-        data: string | ArrayBuffer | ArrayBufferView | Blob | ReadableStream<Uint8Array> | null,
+        data: string | BinarySource | null,
         info: RequiredKeys<Partial<TarEntry>, "relativePath">
     ): void;
     append(
-        data: string | ArrayBuffer | ArrayBufferView | Blob | ReadableStream<Uint8Array> | null,
+        data: string | BinarySource | null,
         info: Partial<TarEntry> = {}
     ): void {
         data ??= getEmptyData(info);
@@ -459,7 +463,7 @@ export default class Tarball {
      * necessary.
      */
     retrieve(relativePath: string): (TarEntry & {
-        readonly stream: ReadableStream<Uint8Array>;
+        readonly stream: ReadableStream<Uint8Array<ArrayBuffer>>;
     }) | null {
         const _entry = this[_entries].find((entry) => entry.relativePath === relativePath);
 
@@ -509,7 +513,7 @@ export default class Tarball {
      */
     replace(
         relativePath: string,
-        data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob | null,
+        data: string | BinarySource | null,
         info: Partial<Omit<TarEntry, "relativePath">> = {}
     ): boolean {
         const index = this[_entries].findIndex((entry) => entry.relativePath === relativePath);
@@ -613,13 +617,13 @@ export default class Tarball {
          * Compress the archive with gzip.
          */
         gzip?: boolean;
-    } = {}): ReadableStream<Uint8Array> {
+    } = {}): ReadableStream<Uint8Array<ArrayBuffer>> {
         if (this[_bodyUsed]) {
             throw new TypeError("The body of the tarball has been used.");
         }
 
         this[_bodyUsed] = true;
-        const streams: ReadableStream<Uint8Array>[] = [];
+        const streams: ReadableStream<Uint8Array<ArrayBuffer>>[] = [];
 
         for (const { size, header, body } of this[_entries]) {
             streams.push(toReadableStream([header]));
@@ -636,7 +640,7 @@ export default class Tarball {
 
         if (options.gzip) {
             const gzip = new CompressionStream("gzip");
-            return stream.pipeThrough<Uint8Array>(gzip as TransformStream<Uint8Array>);
+            return stream.pipeThrough(gzip as ReadableWritablePair<Uint8Array<ArrayBuffer>>);
         } else {
             return stream;
         }
@@ -649,7 +653,7 @@ export default class Tarball {
      * suitable for large archives. For large archives, use the `untar` function
      * to extract files to the file system instead.
      */
-    static async load(stream: ReadableStream<Uint8Array>, options: {
+    static async load(stream: ReadableStream<Uint8Array<ArrayBuffer>>, options: {
         /**
          * Decompress the archive with gzip.
          */
@@ -657,16 +661,16 @@ export default class Tarball {
     } = {}): Promise<Tarball> {
         if (options.gzip) {
             const gzip = new DecompressionStream("gzip");
-            stream = stream.pipeThrough<Uint8Array>(gzip as TransformStream<Uint8Array>);
+            stream = stream.pipeThrough(gzip as ReadableWritablePair<Uint8Array<ArrayBuffer>>);
         }
 
         const tarball = new Tarball();
         const reader = stream.getReader();
-        let remains: Uint8Array = new Uint8Array(0);
-        let header: Uint8Array | null = null;
+        let remains: Uint8Array<ArrayBuffer> = new Uint8Array(0);
+        let header: Uint8Array<ArrayBuffer> | null = null;
         let headerInfo: USTarFileHeader | null = null;
         let entry: TarEntry | null = null;
-        let writer: Uint8Array[] | null = null;
+        let writer: Uint8Array<ArrayBuffer>[] | null = null;
         let writtenBytes = 0;
         let paddingSize = 0;
 

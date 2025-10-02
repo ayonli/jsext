@@ -20,7 +20,7 @@ import {
     compare,
     equals,
 } from "../object.ts";
-import { Comparable } from "../types.ts";
+import type { Comparable, Constructor } from "../types.ts";
 
 declare global {
     interface ObjectConstructor {

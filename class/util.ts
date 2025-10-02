@@ -1,3 +1,4 @@
+import type { Constructor } from "../types.ts";
 
 export function setReadonly<T>(obj: any, name: string | symbol, value: T) {
     Object.defineProperty(obj, name, {

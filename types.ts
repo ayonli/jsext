@@ -133,6 +133,12 @@ export interface TypedArray {
 }
 
 /**
+ * A type that represents binary data sources, including `ArrayBuffer`, `TypedArray`,
+ * `DataView`, `ReadableStream` of `Uint8Array`, and `Blob`.
+ */
+export type BinarySource = BufferSource | ReadableStream<Uint8Array<ArrayBuffer>> | Blob;
+
+/**
  * A sequence is an array-like object that can be sliced.
  */
 export interface Sequence<T> extends ArrayLike<T> {

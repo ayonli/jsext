@@ -269,7 +269,7 @@ export function parseRange(str: string): Range {
  * const etag3 = await etag(info);
  * ```
  */
-export async function etag(data: string | Uint8Array | FileInfo): Promise<string> {
+export async function etag(data: string | Uint8Array<ArrayBuffer> | FileInfo): Promise<string> {
     if (typeof data === "string" || data instanceof Uint8Array) {
         if (!data.length) {
             // a short circuit for zero length entities
@@ -484,7 +484,10 @@ function throwInvalidMessageError(): never {
     throw new SyntaxError("Invalid message");
 }
 
-function parseMessage(message: string): { headers: Headers, body: string | Uint8Array; } {
+function parseMessage(message: string): {
+    headers: Headers;
+    body: string | Uint8Array<ArrayBuffer>;
+} {
     const headerEnd = message.indexOf("\r\n\r\n");
     if (headerEnd === -1) {
         throwInvalidMessageError();
@@ -512,13 +515,13 @@ function parseMessage(message: string): { headers: Headers, body: string | Uint8
         }
     }
 
-    let body: string | Uint8Array = message.slice(headerEnd + 4);
+    let body: string | Uint8Array<ArrayBuffer> = message.slice(headerEnd + 4);
 
     if (headers.get("Transfer-Encoding") === "chunked") {
         const decoder = new TextDecoder();
         const encoder = new TextEncoder();
         const lineBreak = encoder.encode("\r\n");
-        const chunks: Uint8Array[] = [];
+        const chunks: Uint8Array<ArrayBuffer>[] = [];
         let bodyBytes = encoder.encode(body);
 
         while (bodyBytes.length) {
@@ -614,7 +617,7 @@ export function parseRequest(message: string): Request {
     }
 
     const { headers, body: _body } = parseMessage(message.slice(lineEnd + 2));
-    let body: string | Uint8Array | null = _body;
+    let body: string | Uint8Array<ArrayBuffer> | null = _body;
 
     if (method === "GET" || method === "HEAD") {
         if (body) {
@@ -675,7 +678,7 @@ export function parseResponse(message: string): Response {
     }
 
     const { headers, body: _body } = parseMessage(message.slice(lineEnd + 2));
-    let body: string | Uint8Array | null = _body;
+    let body: string | Uint8Array<ArrayBuffer> | null = _body;
 
     if (status === 204 || status === 304) {
         if (body) {

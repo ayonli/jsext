@@ -793,11 +793,13 @@ describe("fs", () => {
             let _file: File;
 
             if (isDeno) {
-                _file = new File([await Deno.readFile("./fs.ts")], "fs.ts", {
+                const bytes = await Deno.readFile("./fs.ts") as Uint8Array<ArrayBuffer>;
+                _file = new File([bytes], "fs.ts", {
                     type: "video/mp2t"
                 });
             } else {
-                _file = new File([await fs.readFile("./fs.ts")], "fs.ts", {
+                const bytes = await fs.readFile("./fs.ts") as Uint8Array<ArrayBuffer>;
+                _file = new File([bytes], "fs.ts", {
                     type: "video/mp2t"
                 });
             }
@@ -842,11 +844,13 @@ describe("fs", () => {
             let _file: File;
 
             if (isDeno) {
-                _file = new File([await Deno.readFile("./fs.ts")], "fs.ts", {
+                const bytes = await Deno.readFile("./fs.ts") as Uint8Array<ArrayBuffer>;
+                _file = new File([bytes], "fs.ts", {
                     type: "video/mp2t"
                 });
             } else {
-                _file = new File([await fs.readFile("./fs.ts")], "fs.ts", {
+                const bytes = await fs.readFile("./fs.ts") as Uint8Array<ArrayBuffer>;
+                _file = new File([bytes], "fs.ts", {
                     type: "video/mp2t"
                 });
             }

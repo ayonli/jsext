@@ -3,7 +3,7 @@
  * @module
  */
 import { equals as bytesEquals } from "./bytes.ts";
-import { Comparable, Constructor, TypedArray } from "./types.ts";
+import type { Comparable, Constructor, TypedArray } from "./types.ts";
 import { isClass } from "./class.ts";
 
 /**

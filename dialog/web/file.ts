@@ -3,6 +3,7 @@ import { readDir } from "../../fs/web.ts";
 import { fixFileType } from "../../fs/util.ts";
 import { basename } from "../../path.ts";
 import { readAsObjectURL } from "../../reader.ts";
+import type { BinarySource } from "../../types.ts";
 import type {
     DownloadFileOptions,
     FileDialogOptions,
@@ -261,7 +262,7 @@ export async function openDirectory(): Promise<File[]> {
 }
 
 export async function saveFile(
-    file: File | Blob | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array>,
+    file: File | BinarySource,
     options: SaveFileOptions = {}
 ): Promise<void> {
     const a = document.createElement("a");

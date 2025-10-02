@@ -148,7 +148,7 @@ export interface EventEndpointOptions {
  * ```
  */
 export class EventEndpoint<T extends Request | IncomingMessage | Http2ServerRequest = Request | IncomingMessage | Http2ServerRequest> extends EventTarget {
-    private [_writer]: WritableStreamDefaultWriter<Uint8Array>;
+    private [_writer]: WritableStreamDefaultWriter<Uint8Array<ArrayBuffer>>;
     private [_response]: Response | null;
     private [_lastEventId]: string;
     private [_reconnectionTime]: number;
@@ -233,10 +233,13 @@ export class EventEndpoint<T extends Request | IncomingMessage | Http2ServerRequ
             // immediately.
             (res as ServerResponse).write(encoder.encode(":ok\n\n"));
         } else {
-            const { writable, readable } = new TransformStream<Uint8Array, Uint8Array>();
+            const {
+                writable,
+                readable,
+            } = new TransformStream<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>();
             const reader = readable.getReader();
 
-            const _readable = new ReadableStream<Uint8Array>({
+            const _readable = new ReadableStream<Uint8Array<ArrayBuffer>>({
                 async start(controller) {
                     // Send a non-empty chunk to ensure the client can parse the response
                     // immediately.
@@ -361,7 +364,7 @@ export class EventEndpoint<T extends Request | IncomingMessage | Http2ServerRequ
     private buildMessage(data: string, options: {
         id?: string | undefined;
         event?: string | undefined;
-    } = {}): Uint8Array {
+    } = {}): Uint8Array<ArrayBuffer> {
         let message = "";
 
         if (options.id) {

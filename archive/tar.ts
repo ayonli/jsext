@@ -83,7 +83,7 @@ export default async function tar(
     for await (const entry of entries) {
         let filename: string;
         let info: FileInfo;
-        let stream: ReadableStream<Uint8Array> | null = null;
+        let stream: ReadableStream<Uint8Array<ArrayBuffer>> | null = null;
 
         if (entry.handle) {
             filename = entry.relativePath;

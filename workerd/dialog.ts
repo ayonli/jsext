@@ -10,6 +10,7 @@ import type {
     SaveFileOptions,
 } from "../dialog.ts";
 import { throwUnsupportedRuntimeError } from "../error.ts";
+import type { BinarySource } from "../types.ts";
 
 export type {
     DialogOptions,
@@ -94,12 +95,9 @@ export async function openDirectory(
 }
 
 export async function saveFile(file: File, options?: Pick<SaveFileOptions, "title">): Promise<void>;
+export async function saveFile(file: BinarySource, options?: SaveFileOptions): Promise<void>;
 export async function saveFile(
-    file: Blob | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array>,
-    options?: SaveFileOptions
-): Promise<void>;
-export async function saveFile(
-    file: File | Blob | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array>,
+    file: File | BinarySource,
     options: SaveFileOptions = {}
 ): Promise<void> {
     void file, options;

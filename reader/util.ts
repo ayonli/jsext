@@ -25,7 +25,7 @@ async function* resolveAsyncIterable<T>(promise: Promise<ReadableStream<T>>): As
 }
 
 export function resolveReadableStream<T>(promise: Promise<ReadableStream<T>>): ReadableStream<T> {
-    const { readable, writable } = new TransformStream();
+    const { readable, writable } = new TransformStream<T, T>();
     promise.then(stream => stream.pipeTo(writable));
     return readable;
 }
@@ -40,12 +40,12 @@ export function resolveReadableStream<T>(promise: Promise<ReadableStream<T>>): R
  * this function when the source stream is a byte stream.
  */
 export function resolveByteStream(
-    promise: Promise<ReadableStream<Uint8Array>>
-): ReadableStream<Uint8Array> {
+    promise: Promise<ReadableStream<Uint8Array<ArrayBuffer>>>
+): ReadableStream<Uint8Array<ArrayBuffer>> {
     let srcReader: ReadableStreamBYOBReader
-        | ReadableStreamDefaultReader<Uint8Array>;
+        | ReadableStreamDefaultReader<Uint8Array<ArrayBuffer>>;
 
-    return new ReadableStream<Uint8Array>({
+    return new ReadableStream<Uint8Array<ArrayBuffer>>({
         type: "bytes",
         async start() {
             const source = await promise;
@@ -59,13 +59,13 @@ export function resolveByteStream(
         async pull(controller) {
             try {
                 let request: ReadableStreamBYOBRequest | undefined;
-                let view: Uint8Array | undefined;
-                let result: ReadableStreamReadResult<Uint8Array>;
+                let view: Uint8Array<ArrayBuffer> | undefined;
+                let result: ReadableStreamReadResult<Uint8Array<ArrayBuffer>>;
 
                 if ("byobRequest" in controller && controller.byobRequest?.view) {
                     // This stream is requested for zero-copy read.
                     request = controller.byobRequest;
-                    view = request.view as Uint8Array;
+                    view = request.view as Uint8Array<ArrayBuffer>;
                 }
 
                 if (srcReader instanceof ReadableStreamBYOBReader) {
@@ -86,19 +86,19 @@ export function resolveByteStream(
                         // The final chunk may be empty, but still needs to be
                         // responded in order to close the request reader.
                         if (result.value !== undefined) {
-                            request.respondWithNewView(result.value as Uint8Array<ArrayBuffer>);
+                            request.respondWithNewView(result.value);
                         } else {
                             request.respond(0);
                         }
                     } else if (srcReader instanceof ReadableStreamBYOBReader) {
                         // Respond to the request reader with the same underlying
                         // buffer of the source stream.
-                        request.respondWithNewView(result.value as Uint8Array<ArrayBuffer>);
+                        request.respondWithNewView(result.value);
                     } else {
                         // This stream is requested for zero-copy read, but the
                         // source stream doesn't support it. We need to copy and
                         // deliver the new buffer instead.
-                        controller.enqueue(result.value as Uint8Array<ArrayBuffer>);
+                        controller.enqueue(result.value);
                     }
                 } else {
                     if (result.done) {

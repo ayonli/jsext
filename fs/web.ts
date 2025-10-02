@@ -13,6 +13,7 @@ import { basename, dirname, extname, join, split } from "../path.ts";
 import { readAsArray, readAsText, resolveByteStream, toAsyncIterable } from "../reader.ts";
 import { stripStart } from "../string.ts";
 import { try_ } from "../result.ts";
+import type { BinarySource } from "../types.ts";
 import { fixDirEntry, fixFileType, makeTree, rawOp, wrapFsError } from "./util.ts";
 import type { FileInfo, FileSystemOptions, DirEntry, DirTree } from "./types.ts";
 import type {
@@ -322,7 +323,7 @@ export async function readTree(
 export async function readFile(
     target: string | FileSystemFileHandle,
     options: ReadFileOptions = {}
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
     const handle = typeof target === "object"
         ? target
         : await getFileHandle(target, { root: options.root });
@@ -365,7 +366,7 @@ export async function readFileAsFile(
 
 export async function writeFile(
     target: string | FileSystemFileHandle,
-    data: string | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array> | Blob,
+    data: string | BinarySource,
     options: WriteFileOptions = {}
 ): Promise<void> {
     const handle = typeof target === "object"
@@ -644,7 +645,7 @@ async function copyDirHandleToDirHandle(
 export function createReadableStream(
     target: string | FileSystemFileHandle,
     options: FileSystemOptions = {}
-): ReadableStream<Uint8Array> {
+): ReadableStream<Uint8Array<ArrayBuffer>> {
     return resolveByteStream((async () => {
         const handle = typeof target === "object"
             ? target
@@ -657,8 +658,11 @@ export function createReadableStream(
 export function createWritableStream(
     target: string | FileSystemFileHandle,
     options: Omit<WriteFileOptions, "signal"> = {}
-): WritableStream<Uint8Array> {
-    const { readable, writable } = new TransformStream();
+): WritableStream<Uint8Array<ArrayBuffer>> {
+    const {
+        readable,
+        writable,
+    } = new TransformStream<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>();
     const getHandle = typeof target === "object"
         ? Promise.resolve(target)
         : getFileHandle(target, { root: options.root, create: true });

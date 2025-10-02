@@ -129,14 +129,14 @@ export class SocketStream extends Socket {
     /**
      * The readable side of the socket.
      */
-    get readable(): ReadableStream<Uint8Array> {
+    get readable(): ReadableStream<Uint8Array<ArrayBuffer>> {
         return this[_impl].readable;
     }
 
     /**
      * The writable side of the socket.
      */
-    get writable(): WritableStream<Uint8Array> {
+    get writable(): WritableStream<Uint8Array<ArrayBuffer>> {
         return this[_impl].writable;
     }
 }
@@ -194,7 +194,7 @@ export class UnixSocketStream extends SocketStream { }
  * A UDP socket bound to a local address, with the ability to send and receive
  * messages.
  */
-export class UdpSocket extends Socket implements AsyncIterable<[data: Uint8Array, sender: NetAddress]> {
+export class UdpSocket extends Socket implements AsyncIterable<[data: Uint8Array<ArrayBuffer>, sender: NetAddress]> {
     protected override[_impl]: ToDict<UdpSocket>;
 
     constructor(impl: ToDict<UdpSocket>) {
@@ -213,7 +213,7 @@ export class UdpSocket extends Socket implements AsyncIterable<[data: Uint8Array
      * Receives a message from the socket, returns the data and the sender
      * address in a tuple.
      */
-    receive(): Promise<[data: Uint8Array, sender: NetAddress]> {
+    receive(): Promise<[data: Uint8Array<ArrayBuffer>, sender: NetAddress]> {
         return this[_impl].receive();
     }
 
@@ -225,7 +225,7 @@ export class UdpSocket extends Socket implements AsyncIterable<[data: Uint8Array
      * https://nodejs.org/docs/latest/api/dgram.html#note-about-udp-datagram-size.
      * 
      */
-    send(data: Uint8Array, receiver: NetAddress): Promise<number> {
+    send(data: Uint8Array<ArrayBuffer>, receiver: NetAddress): Promise<number> {
         return this[_impl].send(data, receiver);
     }
 
@@ -295,7 +295,7 @@ export class UdpSocket extends Socket implements AsyncIterable<[data: Uint8Array
         return this[_impl].setTTL(ttl);
     }
 
-    async *[Symbol.asyncIterator](): AsyncIterableIterator<[data: Uint8Array, sender: NetAddress]> {
+    async *[Symbol.asyncIterator](): AsyncIterableIterator<[data: Uint8Array<ArrayBuffer>, sender: NetAddress]> {
         while (true) {
             try {
                 const msg = await this.receive();
@@ -341,14 +341,14 @@ export class UdpSocketStream extends Socket {
     /**
      * The readable side of the socket.
      */
-    get readable(): ReadableStream<Uint8Array> {
+    get readable(): ReadableStream<Uint8Array<ArrayBuffer>> {
         return this[_impl].readable;
     }
 
     /**
      * The writable side of the socket.
      */
-    get writable(): WritableStream<Uint8Array> {
+    get writable(): WritableStream<Uint8Array<ArrayBuffer>> {
         return this[_impl].writable;
     }
 }

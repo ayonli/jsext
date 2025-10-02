@@ -115,7 +115,7 @@ export type Server = HttpServer;
  * const etag3 = await etag(info);
  * ```
  */
-export async function etag(data: string | Uint8Array | FileInfo): Promise<string> {
+export async function etag(data: string | Uint8Array<ArrayBuffer> | FileInfo): Promise<string> {
     if (typeof data === "string" || data instanceof Uint8Array) {
         if (!data.length) {
             // a short circuit for zero length entities

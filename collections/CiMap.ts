@@ -50,19 +50,19 @@ export default class CiMap<K extends string, V> extends Map<K, any> {
         return super.delete(id as K);
     }
 
-    override * entries(): IterableIterator<[K, V]> {
+    override * entries(): MapIterator<[K, V]> {
         for (const { key, value } of super.values()) {
             yield [key, value];
         }
     }
 
-    override * keys(): IterableIterator<K> {
+    override * keys(): MapIterator<K> {
         for (const { key } of super.values()) {
             yield key;
         }
     }
 
-    override * values(): IterableIterator<V> {
+    override * values(): MapIterator<V> {
         for (const { value } of super.values()) {
             yield value;
         }
@@ -74,7 +74,7 @@ export default class CiMap<K extends string, V> extends Map<K, any> {
         }, thisArg);
     }
 
-    override[Symbol.iterator](): IterableIterator<[K, V]> {
+    override[Symbol.iterator](): MapIterator<[K, V]> {
         return this.entries();
     }
 }

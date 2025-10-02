@@ -269,7 +269,7 @@ async function connectTcp(options: TcpConnectOptions): Promise<TcpSocketStream> 
     } else if (isBun) {
         const ready = asyncTask<void>();
         const closed = asyncTask<void>();
-        let readCtrl: ReadableStreamDefaultController<Uint8Array> | null = null;
+        let readCtrl: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | null = null;
         let writeCtrl: WritableStreamDefaultController | null = null;
         const closeStreams = () => {
             try { _socket.terminate(); } catch { }
@@ -277,7 +277,7 @@ async function connectTcp(options: TcpConnectOptions): Promise<TcpSocketStream> 
             try { writeCtrl?.error(new TypeError("The stream is closed.")); } catch { }
         };
 
-        const readable = new ReadableStream<Uint8Array>({
+        const readable = new ReadableStream<Uint8Array<ArrayBuffer>>({
             start(controller) {
                 readCtrl = controller;
             },
@@ -286,7 +286,7 @@ async function connectTcp(options: TcpConnectOptions): Promise<TcpSocketStream> 
                 closeStreams();
             },
         });
-        const writable = new WritableStream<Uint8Array>({
+        const writable = new WritableStream<Uint8Array<ArrayBuffer>>({
             start(controller) {
                 writeCtrl = controller;
             },
@@ -308,7 +308,7 @@ async function connectTcp(options: TcpConnectOptions): Promise<TcpSocketStream> 
                     ready.resolve();
                 },
                 data(_socket, data: Uint8Array) {
-                    readCtrl!.enqueue(data);
+                    readCtrl!.enqueue(data as Uint8Array<ArrayBuffer>);
                 },
                 error(_socket, error) {
                     try { readCtrl!.error(error); } catch { }
@@ -370,7 +370,7 @@ async function connectUnix(options: UnixConnectOptions): Promise<UnixSocketStrea
     } else if (isBun) {
         const ready = asyncTask<void>();
         const closed = asyncTask<void>();
-        let readCtrl: ReadableStreamDefaultController<Uint8Array> | null = null;
+        let readCtrl: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | null = null;
         let writeCtrl: WritableStreamDefaultController | null = null;
         const closeStreams = () => {
             try { _socket.terminate(); } catch { }
@@ -378,7 +378,7 @@ async function connectUnix(options: UnixConnectOptions): Promise<UnixSocketStrea
             try { writeCtrl?.error(new TypeError("The stream is closed.")); } catch { }
         };
 
-        const readable = new ReadableStream<Uint8Array>({
+        const readable = new ReadableStream<Uint8Array<ArrayBuffer>>({
             start(controller) {
                 readCtrl = controller;
             },
@@ -387,7 +387,7 @@ async function connectUnix(options: UnixConnectOptions): Promise<UnixSocketStrea
                 closeStreams();
             },
         });
-        const writable = new WritableStream<Uint8Array>({
+        const writable = new WritableStream<Uint8Array<ArrayBuffer>>({
             start(controller) {
                 writeCtrl = controller;
             },
@@ -407,7 +407,7 @@ async function connectUnix(options: UnixConnectOptions): Promise<UnixSocketStrea
                     ready.resolve();
                 },
                 data(_socket, data: Uint8Array) {
-                    readCtrl!.enqueue(data);
+                    readCtrl!.enqueue(data as Uint8Array<ArrayBuffer>);
                 },
                 error(_socket, error) {
                     try { readCtrl!.error(error); } catch { }
@@ -441,7 +441,7 @@ async function nodeToSocket(
 ): Promise<ToDict<SocketStream>> {
     const ready = asyncTask<void>();
     const closed = asyncTask<void>();
-    let readCtrl: ReadableStreamDefaultController<Uint8Array> | null = null;
+    let readCtrl: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | null = null;
     let writeCtrl: WritableStreamDefaultController | null = null;
     const closeStreams = () => {
         try { socket.destroyed || socket.destroy(); } catch { }
@@ -449,7 +449,7 @@ async function nodeToSocket(
         try { writeCtrl?.error(new TypeError("The stream is closed.")); } catch { }
     };
 
-    const readable = new ReadableStream<Uint8Array>({
+    const readable = new ReadableStream<Uint8Array<ArrayBuffer>>({
         start(controller) {
             readCtrl = controller;
         },
@@ -458,7 +458,7 @@ async function nodeToSocket(
             closeStreams();
         },
     });
-    const writable = new WritableStream<Uint8Array>({
+    const writable = new WritableStream<Uint8Array<ArrayBuffer>>({
         start(controller) {
             writeCtrl = controller;
         },
@@ -478,7 +478,7 @@ async function nodeToSocket(
 
     socket.once("connect", () => {
         ready.resolve();
-    }).on("data", data => {
+    }).on("data", (data: Buffer<ArrayBuffer>) => {
         readCtrl!.enqueue(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
     }).once("error", (error) => {
         try { readCtrl!.error(error); } catch { }
@@ -509,7 +509,7 @@ function denoToSocket(
 ): ToDict<SocketStream> {
     const closed = asyncTask<void>();
     let closeCalled = false;
-    let readCtrl: ReadableStreamDefaultController<Uint8Array> | null = null;
+    let readCtrl: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | null = null;
     let writeCtrl: WritableStreamDefaultController | null = null;
     const closeStreams = () => {
         try { socket.close(); } catch { }
@@ -518,7 +518,7 @@ function denoToSocket(
     };
 
     return {
-        readable: new ReadableStream<Uint8Array>({
+        readable: new ReadableStream<Uint8Array<ArrayBuffer>>({
             start(controller) {
                 readCtrl = controller;
             },
@@ -548,7 +548,7 @@ function denoToSocket(
                 closeStreams();
             },
         }),
-        writable: new WritableStream<Uint8Array>({
+        writable: new WritableStream<Uint8Array<ArrayBuffer>>({
             start(controller) {
                 writeCtrl = controller;
             },
@@ -639,17 +639,20 @@ export async function udpSocket(localAddress: UdpBindOptions = {}): Promise<UdpS
         let isConnected = false;
         let isClosed = false;
         const closed = asyncTask<void>();
-        const channel = chan<[Uint8Array, NetAddress]>(Infinity);
+        const channel = chan<[Uint8Array<ArrayBuffer>, NetAddress]>(Infinity);
 
         await new Promise<void>(resolve => {
             _socket.bind(localAddress.port, localAddress.hostname, resolve);
         });
 
         _socket.on("message", (data, rinfo) => {
-            channel.send([new Uint8Array(data.buffer, data.byteOffset, data.byteLength), {
-                hostname: rinfo.address,
-                port: rinfo.port,
-            }]).catch(() => { });
+            channel.send([
+                new Uint8Array(data.buffer as ArrayBuffer, data.byteOffset, data.byteLength),
+                {
+                    hostname: rinfo.address,
+                    port: rinfo.port,
+                }
+            ]).catch(() => { });
         }).once("error", err => {
             channel.close(err);
             closed.reject(err);
@@ -709,7 +712,7 @@ export async function udpSocket(localAddress: UdpBindOptions = {}): Promise<UdpS
                     _socket.connect(remoteAddress.port, remoteAddress.hostname, () => {
                         const localAddr = _socket.address();
                         const remoteAddr = _socket.remoteAddress();
-                        let readCtrl: ReadableStreamDefaultController<Uint8Array> | null = null;
+                        let readCtrl: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | null = null;
                         let writeCtrl: WritableStreamDefaultController | null = null;
                         const closeStreams = () => {
                             channel.close();
@@ -728,7 +731,7 @@ export async function udpSocket(localAddress: UdpBindOptions = {}): Promise<UdpS
                                 hostname: remoteAddr.address,
                                 port: remoteAddr.port,
                             },
-                            readable: new ReadableStream<Uint8Array>({
+                            readable: new ReadableStream<Uint8Array<ArrayBuffer>>({
                                 start(controller) {
                                     readCtrl = controller;
                                 },
@@ -758,7 +761,7 @@ export async function udpSocket(localAddress: UdpBindOptions = {}): Promise<UdpS
                                     closeStreams();
                                 },
                             }),
-                            writable: new WritableStream<Uint8Array>({
+                            writable: new WritableStream<Uint8Array<ArrayBuffer>>({
                                 start(controller) {
                                     writeCtrl = controller;
                                 },

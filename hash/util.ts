@@ -1,14 +1,14 @@
 import bytes from "../bytes.ts";
 import { readAsArrayBuffer } from "../reader.ts";
-import type { DataSource } from "./web.ts";
+import type { BinarySource } from "../types.ts";
 
-export function toBytes(data: string | BufferSource): Uint8Array {
+export function toBytes(data: string | BufferSource): Uint8Array<ArrayBuffer> {
     if (typeof data === "string") {
         return bytes(data);
     } else if (data instanceof ArrayBuffer) {
         return new Uint8Array(data);
     } else if (data instanceof Uint8Array) {
-        return data;
+        return data as Uint8Array<ArrayBuffer>;
     } else if (ArrayBuffer.isView(data)) {
         return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
     } else {
@@ -16,7 +16,7 @@ export function toBytes(data: string | BufferSource): Uint8Array {
     }
 }
 
-export async function toBytesAsync(data: DataSource): Promise<Uint8Array> {
+export async function toBytesAsync(data: string | BinarySource): Promise<Uint8Array<ArrayBuffer>> {
     if (typeof data === "string" || data instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
         return toBytes(data);
     } else if (typeof ReadableStream === "function" && data instanceof ReadableStream) {

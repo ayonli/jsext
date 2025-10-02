@@ -418,7 +418,7 @@ function toWebRequest(req: IncomingMessage | Http2ServerRequest): Request {
         init.body = new ReadableStream({
             type: "bytes",
             start(controller) {
-                req.on("data", (chunk: Buffer) => {
+                req.on("data", (chunk: Buffer<ArrayBuffer>) => {
                     const data = new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
                     const request = getByobRequest(controller);
 

@@ -7,9 +7,13 @@
  * @module
  */
 import bytes, { text } from "../bytes.ts";
+import type { BinarySource } from "../types.ts";
 import { toBytes, toBytesAsync } from "./util.ts";
 
-export type DataSource = string | BufferSource | ReadableStream<Uint8Array> | Blob;
+/**
+ * @deprecated use `string | BinarySource` instead.
+ */
+export type DataSource = string | BinarySource;
 
 /**
  * Calculates the hash of the given data, the result is a 32-bit unsigned integer.
@@ -153,10 +157,10 @@ export function crc32(data: string | BufferSource, previous = 0): number {
     return (crc ^ -1) >>> 0;
 }
 
-export function sha1(data: DataSource): Promise<ArrayBuffer>;
-export function sha1(data: DataSource, encoding: "hex" | "base64"): Promise<string>;
+export function sha1(data: string | BinarySource): Promise<ArrayBuffer>;
+export function sha1(data: string | BinarySource, encoding: "hex" | "base64"): Promise<string>;
 export async function sha1(
-    data: DataSource,
+    data: string | BinarySource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
     const bytes = await toBytesAsync(data);
@@ -171,10 +175,10 @@ export async function sha1(
     }
 }
 
-export async function sha256(data: DataSource): Promise<ArrayBuffer>;
-export async function sha256(data: DataSource, encoding: "hex" | "base64"): Promise<string>;
+export async function sha256(data: string | BinarySource): Promise<ArrayBuffer>;
+export async function sha256(data: string | BinarySource, encoding: "hex" | "base64"): Promise<string>;
 export async function sha256(
-    data: DataSource,
+    data: string | BinarySource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
     const bytes = await toBytesAsync(data);
@@ -189,10 +193,10 @@ export async function sha256(
     }
 }
 
-export async function sha512(data: DataSource): Promise<ArrayBuffer>;
-export async function sha512(data: DataSource, encoding: "hex" | "base64"): Promise<string>;
+export async function sha512(data: string | BinarySource): Promise<ArrayBuffer>;
+export async function sha512(data: string | BinarySource, encoding: "hex" | "base64"): Promise<string>;
 export async function sha512(
-    data: DataSource,
+    data: string | BinarySource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
     const bytes = await toBytesAsync(data);
@@ -210,18 +214,18 @@ export async function sha512(
 export async function hmac(
     algorithm: "sha1" | "sha256" | "sha512",
     key: string | BufferSource,
-    data: DataSource
+    data: string | BinarySource
 ): Promise<ArrayBuffer>;
 export async function hmac(
     algorithm: "sha1" | "sha256" | "sha512",
     key: string | BufferSource,
-    data: DataSource,
+    data: string | BinarySource,
     encoding: "hex" | "base64"
 ): Promise<string>;
 export async function hmac(
     algorithm: "sha1" | "sha256" | "sha512",
     key: string | BufferSource,
-    data: DataSource,
+    data: string | BinarySource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
     const keyBuffer = await crypto.subtle.importKey("raw", bytes(key), {

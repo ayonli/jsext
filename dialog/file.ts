@@ -1,5 +1,6 @@
 import { isBrowserWindow, isDeno, isNodeLike } from "../env.ts";
 import { throwUnsupportedRuntimeError } from "../error.ts";
+import type { BinarySource } from "../types.ts";
 
 /**
  * Options for file dialog functions, such as {@link pickFile} and
@@ -317,12 +318,9 @@ export async function saveFile(file: File, options?: Pick<SaveFileOptions, "titl
  * await saveFile(data, { name: "hello.txt", type: "text/plain" });
  * ```
  */
+export async function saveFile(file: BinarySource, options?: SaveFileOptions): Promise<void>;
 export async function saveFile(
-    file: Blob | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array>,
-    options?: SaveFileOptions
-): Promise<void>;
-export async function saveFile(
-    file: File | Blob | ArrayBuffer | ArrayBufferView | ReadableStream<Uint8Array>,
+    file: File | BinarySource,
     options: SaveFileOptions = {}
 ): Promise<void> {
     if (isBrowserWindow) {

@@ -470,7 +470,7 @@ export class WebSocketServer {
     get bunListener(): {
         idleTimeout: number;
         perMessageDeflate: boolean;
-        message: (ws: any, message: string | ArrayBuffer | Uint8Array) => void;
+        message: (ws: any, message: string | ArrayBuffer | Uint8Array<ArrayBuffer>) => void;
         open: (ws: any) => void;
         error: (ws: any, error: Error) => void;
         close: (ws: any, code: number, reason: string) => void;
@@ -491,7 +491,7 @@ export class WebSocketServer {
                     task.resolve(ws);
                 }
             },
-            message: (ws: ServerWebSocket, msg: string | ArrayBuffer | Uint8Array) => {
+            message: (ws: ServerWebSocket, msg: string | ArrayBuffer | Uint8Array<ArrayBuffer>) => {
                 const { request } = ws.data;
                 const client = clients.get(request);
 

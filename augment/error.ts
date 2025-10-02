@@ -13,7 +13,7 @@ import {
     fromErrorEvent,
     isCausedBy as _isCausedBy,
 } from "../error.ts";
-import { Constructor } from "../types.ts";
+import type { Constructor } from "../types.ts";
 
 declare global {
     interface Error {

@@ -9,16 +9,17 @@ import hash, {
     sha256,
     sha512,
 } from "../hash/web.ts";
+import type { BinarySource } from "../types.ts";
 
 export type { DataSource };
 
 export default hash;
 export { adler32, crc32, hmac, sha1, sha256, sha512 };
 
-export function md5(data: DataSource): Promise<ArrayBuffer>;
-export function md5(data: DataSource, encoding: "hex" | "base64"): Promise<string>;
+export function md5(data: string | BinarySource): Promise<ArrayBuffer>;
+export function md5(data: string | BinarySource, encoding: "hex" | "base64"): Promise<string>;
 export async function md5(
-    data: DataSource,
+    data: string | BinarySource,
     encoding: "hex" | "base64" | undefined = undefined
 ): Promise<string | ArrayBuffer> {
     let bytes = await toBytesAsync(data);

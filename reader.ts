@@ -105,15 +105,18 @@ export async function readAsArray<T>(source: AsyncIterable<T> | ReadableStream<T
  * ```
  */
 export async function readAsArrayBuffer(
-    source: Blob | ArrayBufferView | AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>
+    source: Blob
+        | ArrayBufferView<ArrayBuffer>
+        | AsyncIterable<Uint8Array<ArrayBuffer>>
+        | ReadableStream<Uint8Array<ArrayBuffer>>
 ): Promise<ArrayBuffer> {
     if (typeof Blob === "function" && source instanceof Blob) {
         return await source.arrayBuffer();
     } else if (ArrayBuffer.isView(source)) {
-        return source.buffer as ArrayBuffer;
+        return source.buffer;
     }
 
-    const iterable = asAsyncIterable(source) as AsyncIterable<Uint8Array> | null;
+    const iterable = asAsyncIterable(source) as AsyncIterable<Uint8Array<ArrayBuffer>> | null;
 
     if (!iterable) {
         throw new TypeError("The source is not an async iterable object.");
@@ -122,7 +125,7 @@ export async function readAsArrayBuffer(
     const chunks = await readAsArray(iterable);
     const bytes = concatBytes(...chunks);
 
-    return bytes.buffer as ArrayBuffer;
+    return bytes.buffer;
 }
 
 /**
@@ -138,11 +141,13 @@ export async function readAsArrayBuffer(
  * ```
  */
 export async function readAsBlob(
-    source: ArrayBuffer | ArrayBufferView | AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>,
+    source: BufferSource
+        | AsyncIterable<Uint8Array<ArrayBuffer>>
+        | ReadableStream<Uint8Array<ArrayBuffer>>,
     type: string
 ): Promise<Blob> {
     if (source instanceof ArrayBuffer || ArrayBuffer.isView(source)) {
-        return new Blob([source as BufferSource], { type });
+        return new Blob([source], { type });
     }
 
     const buffer = await readAsArrayBuffer(source);
@@ -163,7 +168,10 @@ export async function readAsBlob(
  * ```
  */
 export async function readAsDataURL(
-    source: Blob | ArrayBuffer | ArrayBufferView | AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>,
+    source: Blob
+        | BufferSource
+        | AsyncIterable<Uint8Array<ArrayBuffer>>
+        | ReadableStream<Uint8Array<ArrayBuffer>>,
     type: string
 ): Promise<string> {
     if (source instanceof ArrayBuffer) {
@@ -198,7 +206,10 @@ export async function readAsDataURL(
  * ```
  */
 export async function readAsObjectURL(
-    source: Blob | ArrayBuffer | ArrayBufferView | AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>,
+    source: Blob
+        | BufferSource
+        | AsyncIterable<Uint8Array<ArrayBuffer>>
+        | ReadableStream<Uint8Array<ArrayBuffer>>,
     type: string
 ): Promise<string> {
     if (source instanceof Blob) {
@@ -226,16 +237,23 @@ export async function readAsObjectURL(
  * ```
  */
 export async function readAsText(
-    source: Blob | ArrayBuffer | ArrayBufferView | AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>,
+    source: Blob
+        | BufferSource
+        | AsyncIterable<Uint8Array<ArrayBuffer>>
+        | ReadableStream<Uint8Array<ArrayBuffer>>
+        | SharedArrayBuffer,
     encoding: string | undefined = undefined
 ): Promise<string> {
     if (typeof Blob === "function" && source instanceof Blob && !encoding) {
         return await source.text();
-    } else if (source instanceof ArrayBuffer || ArrayBuffer.isView(source)) {
+    } else if (source instanceof ArrayBuffer
+        || ArrayBuffer.isView(source)
+        || (typeof SharedArrayBuffer === "function" && source instanceof SharedArrayBuffer)
+    ) {
         return new TextDecoder(encoding).decode(source);
     }
 
-    const buffer = await readAsArrayBuffer(source);
+    const buffer = await readAsArrayBuffer(source as any);
     return new TextDecoder(encoding).decode(buffer);
 }
 
@@ -252,7 +270,11 @@ export async function readAsText(
  * ```
  */
 export async function readAsJSON<T>(
-    source: Blob | ArrayBuffer | ArrayBufferView | AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>,
+    source: Blob
+        | BufferSource
+        | AsyncIterable<Uint8Array<ArrayBuffer>>
+        | ReadableStream<Uint8Array<ArrayBuffer>>
+        | SharedArrayBuffer,
 ): Promise<T> {
     const text = await readAsText(source);
     return JSON.parse(text);

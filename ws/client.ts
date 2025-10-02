@@ -34,7 +34,7 @@ function initWebSocketStream(wss: WebSocketStream, ws: WebSocket) {
                                 controller.enqueue(new Uint8Array(data));
                             } else if (data instanceof Uint8Array) {
                                 controller.enqueue(new Uint8Array(
-                                    data.buffer,
+                                    data.buffer as ArrayBuffer,
                                     data.byteOffset,
                                     data.byteLength
                                 ));
@@ -78,8 +78,8 @@ export interface WebSocketStreamOptions {
 }
 
 export interface WebSocketStreamPair {
-    readable: ReadableStream<string | Uint8Array>;
-    writable: WritableStream<string | Uint8Array>;
+    readable: ReadableStream<string | Uint8Array<ArrayBuffer>>;
+    writable: WritableStream<string | Uint8Array<ArrayBuffer>>;
 }
 
 export interface WebSocketCloseInfo {
@@ -177,7 +177,7 @@ export function toWebSocketStream(ws: WebSocket | WebSocketConnection): WebSocke
                     ws.close();
                 },
             }),
-            writable: new WritableStream({
+            writable: new WritableStream<string | BufferSource>({
                 write(chunk) {
                     ws.send(chunk);
                 },

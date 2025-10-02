@@ -127,6 +127,14 @@ declare global {
     }
 
     /**
+     * A type that represents binary data sources, including `ArrayBuffer`, `TypedArray`,
+     * `DataView`, `ReadableStream` of `Uint8Array`, and `Blob`.
+     */
+    type BinarySource = BufferSource
+        | ReadableStream<Uint8Array<ArrayBuffer>>
+        | Blob;
+
+    /**
      * A sequence is an array-like object that can be sliced.
      */
     interface Sequence<T> extends ArrayLike<T> {

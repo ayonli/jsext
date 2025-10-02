@@ -1,4 +1,4 @@
-import { Constructor, Sequence } from "../types.ts";
+import type { Constructor, Sequence } from "../types.ts";
 
 /**
  * Performs a shallow compare to another sequence and see if it contains the same elements as

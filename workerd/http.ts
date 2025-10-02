@@ -148,7 +148,7 @@ export async function serveStatic(
     }
 }
 
-async function serveFile(data: Uint8Array, options: {
+async function serveFile(data: Uint8Array<ArrayBuffer>, options: {
     filename: string;
     reqHeaders: Headers;
     extraHeaders: HeadersInit;

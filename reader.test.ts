@@ -257,7 +257,7 @@ describe("reader", () => {
                 this.skip(); // Bun does not support gb2312 at the moment.
             }
 
-            const data = await readFile("./examples/samples/gb2312.txt");
+            const data = await readFile("./examples/samples/gb2312.txt") as Buffer<ArrayBuffer>;
             const text = (await readAsText(data, "gb2312")).trimEnd();
             strictEqual(text, "你好，世界！");
         });
@@ -862,7 +862,7 @@ describe("reader", () => {
         });
 
         it("resolve default stream for bytes reader", async () => {
-            const promise = Promise.resolve(toReadableStream<Uint8Array>([
+            const promise = Promise.resolve(toReadableStream<Uint8Array<ArrayBuffer>>([
                 new TextEncoder().encode("Hello, World!")
             ]));
             const resolved = resolveByteStream(promise);
@@ -887,7 +887,7 @@ describe("reader", () => {
         });
 
         it("resolve default stream for default reader", async () => {
-            const promise = Promise.resolve(toReadableStream<Uint8Array>([
+            const promise = Promise.resolve(toReadableStream<Uint8Array<ArrayBuffer>>([
                 new TextEncoder().encode("Hello, World!")
             ]));
             const resolved = resolveByteStream(promise);

@@ -27,7 +27,7 @@ export type WebSocketLike = RequiredKeys<Partial<WebSocket>, "readyState" | "clo
  *   event, and the close event will have the `wasClean` set to `false`, and the
  *   `reason` property contains the error message, if any.
  */
-export class WebSocketConnection extends EventTarget implements AsyncIterable<string | Uint8Array> {
+export class WebSocketConnection extends EventTarget implements AsyncIterable<string | Uint8Array<ArrayBuffer>> {
     private [_source]: Promise<WebSocketLike>;
     private [_socket]: WebSocketLike | null = null;
 
@@ -67,7 +67,7 @@ export class WebSocketConnection extends EventTarget implements AsyncIterable<st
     /**
      * Sends data to the WebSocket client.
      */
-    send(data: string | ArrayBufferLike | ArrayBufferView): void {
+    send(data: string | BufferSource): void {
         this.socket.send(data);
     }
 
@@ -91,7 +91,7 @@ export class WebSocketConnection extends EventTarget implements AsyncIterable<st
      */
     override addEventListener(
         type: "message",
-        listener: (this: WebSocketConnection, ev: MessageEvent<string | Uint8Array>) => void,
+        listener: (this: WebSocketConnection, ev: MessageEvent<string | Uint8Array<ArrayBuffer>>) => void,
         options?: boolean | AddEventListenerOptions
     ): void;
     /**
@@ -136,7 +136,7 @@ export class WebSocketConnection extends EventTarget implements AsyncIterable<st
     ): void;
     override removeEventListener(
         type: "message",
-        listener: (this: WebSocketConnection, ev: MessageEvent<string | Uint8Array>) => void,
+        listener: (this: WebSocketConnection, ev: MessageEvent<string | Uint8Array<ArrayBuffer>>) => void,
         options?: boolean | EventListenerOptions
     ): void;
     override removeEventListener(
@@ -162,9 +162,9 @@ export class WebSocketConnection extends EventTarget implements AsyncIterable<st
         return super.removeEventListener(event, listener, options);
     }
 
-    async *[Symbol.asyncIterator](): AsyncIterableIterator<string | Uint8Array> {
-        const channel = chan<string | Uint8Array>(Infinity);
-        const handleMessage = (ev: MessageEvent<string | Uint8Array>) => {
+    async *[Symbol.asyncIterator](): AsyncIterableIterator<string | Uint8Array<ArrayBuffer>> {
+        const channel = chan<string | Uint8Array<ArrayBuffer>>(Infinity);
+        const handleMessage = (ev: MessageEvent<string | Uint8Array<ArrayBuffer>>) => {
             channel.send(ev.data);
         };
         const handleClose = (ev: CloseEvent) => {

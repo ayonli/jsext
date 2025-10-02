@@ -1,4 +1,5 @@
 import { as, parseAs, type } from "../json.ts";
+import type { Constructor } from "../types.ts";
 
 declare global {
     interface JSON {
