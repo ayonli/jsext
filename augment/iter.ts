@@ -20,30 +20,32 @@ declare global {
     }
 }
 
-Iterator.prototype.concat = function concat(...others: Iterator<any>[]) {
-    return _concat(this, ...others);
-}
+if (typeof Iterator === "function") {
+    Iterator.prototype.concat = function concat(...others: Iterator<any>[]) {
+        return _concat(this, ...others);
+    };
 
-Iterator.prototype.filterMap = function filterMap<U>(fn: (item: any, i: number) => U | undefined) {
-    return _filterMap(this, fn);
-}
+    Iterator.prototype.filterMap = function filterMap<U>(fn: (item: any, i: number) => U | undefined) {
+        return _filterMap(this, fn);
+    };
 
-Iterator.prototype.inspect = function inspect(fn: (item: any) => void) {
-    return _inspect(this, fn);
-}
+    Iterator.prototype.inspect = function inspect(fn: (item: any) => void) {
+        return _inspect(this, fn);
+    };
 
-Iterator.prototype.stepBy = function stepBy(step: number) {
-    return _stepBy(this, step);
-}
+    Iterator.prototype.stepBy = function stepBy(step: number) {
+        return _stepBy(this, step);
+    };
 
-Iterator.prototype.chunk = function chunk(size: number) {
-    return _chunk(this, size);
-}
+    Iterator.prototype.chunk = function chunk(size: number) {
+        return _chunk(this, size);
+    };
 
-Iterator.prototype.enumerate = function enumerate() {
-    return _enumerate(this);
-}
+    Iterator.prototype.enumerate = function enumerate() {
+        return _enumerate(this);
+    };
 
-Iterator.prototype.zip = function zip<U>(other: Iterator<U, unknown, undefined>) {
-    return _zip(this, other);
+    Iterator.prototype.zip = function zip<U>(other: Iterator<U, unknown, undefined>) {
+        return _zip(this, other);
+    };
 }

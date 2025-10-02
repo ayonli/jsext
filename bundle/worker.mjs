@@ -13,7 +13,6 @@ const isNode = isNodeLike && !isDeno && !isBun;
 isNode && parseInt(process.version.slice(1)) < 14;
 isNode && parseInt(process.version.slice(1)) < 16;
 isNode && parseInt(process.version.slice(1)) < 20;
-isNode && parseInt(process.version.slice(1)) >= 23;
 const isNodeWorkerThread = isNode
     && (process.abort.disabled === true || process.argv.includes("--worker-thread"));
 const isMainThread = !isNodeWorkerThread

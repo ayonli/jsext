@@ -2,6 +2,10 @@ import "./augment.ts";
 import { deepStrictEqual } from "node:assert";
 
 describe("Iterator", () => {
+    if (typeof Iterator !== "function") {
+        return;
+    }
+
     it("concat", async () => {
         const iter1 = [1, 2, 3].values();
         const iter2 = [4, 5].values();
@@ -19,7 +23,7 @@ describe("Iterator", () => {
 
     it("inspect", async () => {
         const iter = [1, 2, 3].values();
-        const inspected: string[] = []
+        const inspected: string[] = [];
         const result = iter.inspect((item) => {
             inspected.push(`before: ${item}`);
         }).map((item) => {

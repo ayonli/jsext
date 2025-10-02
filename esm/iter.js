@@ -1,5 +1,8 @@
 /**
  * Functions for dealing with [iterators](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Iterator).
+ *
+ * NOTE: `Iterator` is a pretty new API, requires Node.js v22+, Deno v1.39+, Bun v1.1.31+,
+ * Chrome 122+, Firefox 131+, Safari 18.4+.
  * @module
  */
 /**
