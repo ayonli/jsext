@@ -388,7 +388,7 @@ function filterMap(arr, fn) {
     for (let i = 0; i < arr.length; i++) {
         const item = arr[i];
         const mapped = fn(item, i);
-        if (mapped !== undefined) {
+        if (mapped !== undefined && mapped !== null) {
             result.push(mapped);
         }
     }

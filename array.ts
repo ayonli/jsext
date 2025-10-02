@@ -617,7 +617,7 @@ export function partition<T>(
  */
 export function filterMap<T, U>(
     arr: T[],
-    fn: (item: T, i: number) => U | undefined
+    fn: (item: T, i: number) => U | null | undefined
 ): U[] {
     const result: U[] = [];
 
@@ -625,7 +625,7 @@ export function filterMap<T, U>(
         const item = arr[i] as T;
         const mapped = fn(item, i);
 
-        if (mapped !== undefined) {
+        if (mapped !== undefined && mapped !== null) {
             result.push(mapped);
         }
     }

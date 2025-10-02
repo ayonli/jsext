@@ -14,11 +14,16 @@ describe("Iterator", () => {
     });
 
     it("filterMap", async () => {
-        const iter = [1, 2, 3, 4, 5].values();
-        const result = iter.filterMap((item) => {
+        const arr = [1, 2, 3, 4, 5];
+        const result1 = Iterator.from(arr).filterMap((item) => {
             return item % 2 === 0 ? item * 2 : undefined;
         });
-        deepStrictEqual([...result], [4, 8]);
+        deepStrictEqual([...result1], [4, 8]);
+
+        const result2 = Iterator.from(arr).filterMap((item) => {
+            return item > 3 ? item.toString() : null;
+        });
+        deepStrictEqual([...result2], ["4", "5"]);
     });
 
     it("inspect", async () => {

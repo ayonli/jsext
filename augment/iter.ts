@@ -11,7 +11,7 @@ import {
 declare global {
     interface IteratorObject<T, TReturn, TNext> {
         concat(...others: Iterator<T>[]): IteratorObject<T, undefined, unknown>;
-        filterMap<U>(fn: (item: T, i: number) => U | undefined): IteratorObject<U, undefined, unknown>;
+        filterMap<U>(fn: (item: T, i: number) => U | null | undefined): IteratorObject<U, undefined, unknown>;
         inspect(fn: (item: T) => void): IteratorObject<T, undefined, unknown>;
         stepBy(step: number): IteratorObject<T, undefined, unknown>;
         chunk(size: number): IteratorObject<T[], undefined, unknown>;
@@ -25,7 +25,7 @@ if (typeof Iterator === "function") {
         return _concat(this, ...others);
     };
 
-    Iterator.prototype.filterMap = function filterMap<U>(fn: (item: any, i: number) => U | undefined) {
+    Iterator.prototype.filterMap = function filterMap<U>(fn: (item: any, i: number) => U | null | undefined) {
         return _filterMap(this, fn);
     };
 

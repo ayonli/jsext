@@ -46,7 +46,7 @@ function concat(...iters) {
 }
 /**
  * Returns a new iterator containing the results of applying the given predicate
- * function to each element of the iterator, filtering out any `undefined`
+ * function to each element of the iterator, filtering out any `null` or `undefined`
  * results.
  *
  * @example
@@ -71,7 +71,7 @@ function filterMap(iter, fn) {
                     return result;
                 }
                 const mapped = fn(result.value, i++);
-                if (mapped !== undefined) {
+                if (mapped !== undefined && mapped !== null) {
                     return { done: false, value: mapped };
                 }
             }

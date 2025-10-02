@@ -49,7 +49,7 @@ export function concat<T>(
 
 /**
  * Returns a new iterator containing the results of applying the given predicate
- * function to each element of the iterator, filtering out any `undefined`
+ * function to each element of the iterator, filtering out any `null` or `undefined`
  * results.
  * 
  * @example
@@ -66,7 +66,7 @@ export function concat<T>(
  */
 export function filterMap<T, U>(
     iter: Iterator<T, unknown, undefined>,
-    fn: (item: T, i: number) => U | undefined,
+    fn: (item: T, i: number) => U | null | undefined,
 ): IteratorObject<U, undefined, unknown> {
     let i = 0;
     return Iterator.from({
@@ -78,7 +78,7 @@ export function filterMap<T, U>(
                 }
 
                 const mapped = fn(result.value, i++);
-                if (mapped !== undefined) {
+                if (mapped !== undefined && mapped !== null) {
                     return { done: false, value: mapped };
                 }
             }

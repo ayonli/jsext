@@ -443,7 +443,10 @@ describe("Array", () => {
 
     it("filterMap", () => {
         const arr = [1, 2, 3, 4, 5];
-        const result = arr.filterMap(n => (n % 2 === 0 ? n * 2 : undefined));
-        deepStrictEqual(result, [4, 8]);
+        const result1 = arr.filterMap(n => (n % 2 === 0 ? n * 2 : undefined));
+        deepStrictEqual(result1, [4, 8]);
+
+        const result2 = arr.filterMap(n => (n > 3 ? n.toString() : null));
+        deepStrictEqual(result2, ["4", "5"]);
     });
 });

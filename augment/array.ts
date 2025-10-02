@@ -99,9 +99,10 @@ declare global {
         partition(predicate: (item: T, i: number) => boolean): [T[], T[]];
         /**
          * Returns a new array containing the results of applying the given predicate
-         * function to each element of the array, filtering out any `undefined` results.
+         * function to each element of the array, filtering out any `null` or `undefined`
+         * results.
          */
-        filterMap<U>(fn: (item: T, i: number) => U | undefined): U[];
+        filterMap<U>(fn: (item: T, i: number) => U | null | undefined): U[];
     }
 }
 
