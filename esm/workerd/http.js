@@ -4,7 +4,7 @@ import { renderDirectoryPage } from '../http/internal.js';
 export { withWeb } from '../http/internal.js';
 import { HttpServer } from '../http/server.js';
 import { parseRange, etag, ifNoneMatch, ifMatch } from '../http/util.js';
-export { HTTP_METHODS, HTTP_STATUS, parseAccepts, parseBasicAuth, parseContentType, parseRequest, parseResponse, setFilename, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from '../http/util.js';
+export { HTTP_METHODS, HTTP_STATUS, getFilename, parseAccepts, parseBasicAuth, parseContentDisposition, parseContentType, parseRequest, parseResponse, setFilename, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from '../http/util.js';
 import { as } from '../object.js';
 import { join, extname } from '../path.js';
 import { readAsArray } from '../reader.js';

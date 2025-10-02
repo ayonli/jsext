@@ -134,6 +134,82 @@ export function parseContentType(str: string): ContentType {
     return parsed;
 }
 
+export type ContentDispositionInline = {
+    type: "inline";
+};
+
+export type ContentDispositionAttachment = {
+    type: "attachment";
+    filename?: string | undefined;
+};
+
+export type ContentDispositionFormData = {
+    type: "form-data";
+    name: string;
+    filename?: string | undefined;
+};
+
+/**
+ * Represents the HTTP request or response `Content-Disposition` header.
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Disposition
+ */
+export type ContentDisposition = ContentDispositionInline
+    | ContentDispositionAttachment
+    | ContentDispositionFormData;
+
+/**
+ * Parses the `Content-Disposition` header.
+ * 
+ * @example
+ * ```ts
+ * import { parseContentDisposition } from "@ayonli/jsext/http";
+ * 
+ * const disposition = parseContentDisposition("attachment; filename=\"hello.txt\"; filename*=UTF-8''hello.txt");
+ * console.log(disposition);
+ * // { type: "attachment", filename: "hello.txt" }
+ * 
+ * const disposition2 = parseContentDisposition("form-data; name=\"file\"; filename=\"hello.txt\"");
+ * console.log(disposition2);
+ * // { type: "form-data", name: "file", filename: "hello.txt" }
+ * 
+ * const disposition3 = parseContentDisposition("inline");
+ * console.log(disposition3);
+ * // { type: "inline" }
+ * ```
+ */
+export function parseContentDisposition(str: string): ContentDisposition {
+    const offset = str.indexOf(";");
+    const type = offset === -1 ? str.trim() : str.slice(0, offset).trim();
+    str = offset === -1 ? "" : str.slice(offset + 1).trim();
+
+    if (type === "inline") {
+        return { type };
+    } else if (type === "attachment") {
+        return {
+            type,
+            filename: parseContentDispositionFilename(str),
+        };
+    } else if (type === "form-data") {
+        const nameMatch = str.match(/name="([^"]+)"/);
+        if (!nameMatch) {
+            throw new SyntaxError("Invalid Content-Disposition header: missing 'name' parameter");
+        }
+
+        return {
+            type,
+            name: nameMatch[1]!,
+            filename: parseContentDispositionFilename(str),
+        };
+    } else {
+        throw new SyntaxError("Invalid Content-Disposition header: unknown type");
+    }
+}
+
+function parseContentDispositionFilename(str: string): string | undefined {
+    const match = str.match(/filename\*?=(?:UTF-8''|")?([^";]+)/);
+    return match ? decodeURIComponent(match[1]!) : undefined;
+}
+
 /**
  * Sets the `Content-Disposition` header with the given filename when the
  * response is intended to be downloaded.
@@ -169,6 +245,39 @@ export function setFilename(res: Response | Headers, filename: string): void {
     } else {
         res.headers.set("Content-Disposition", disposition);
     }
+}
+
+/**
+ * Parses the `Content-Disposition` header and returns the filename if the
+ * response is intended to be downloaded.
+ * 
+ * NOTE: This function can be used with both {@link Response} and {@link Headers}
+ * objects.
+ * 
+ * @example
+ * ```ts
+ * import { getFilename } from "@ayonli/jsext/http";
+ * 
+ * const res = new Response("Hello, World!", {
+ *    headers: {
+ *       "Content-Disposition": "attachment; filename=\"hello.txt\"; filename*=UTF-8''hello.txt"
+ *    }
+ * });
+ * 
+ * const filename = getFilename(res);
+ * console.log(filename); // "hello.txt"
+ * ```
+ */
+export function getFilename(res: Response | Headers): string | null {
+    const disposition = res instanceof Headers
+        ? res.get("Content-Disposition")
+        : res.headers.get("Content-Disposition");
+    if (!disposition) {
+        return null;
+    }
+
+    const parsed = parseContentDisposition(disposition);
+    return parsed.type === "attachment" ? parsed.filename ?? null : null;
 }
 
 /**

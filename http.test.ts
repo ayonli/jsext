@@ -11,10 +11,12 @@ import {
     etag,
     getCookie,
     getCookies,
+    getFilename,
     ifMatch,
     ifNoneMatch,
     parseAccepts,
     parseBasicAuth,
+    parseContentDisposition,
     parseContentType,
     parseCookie,
     parseCookies,
@@ -271,6 +273,45 @@ describe("http", () => {
         deepStrictEqual(type3, {
             type: "multipart/form-data",
             boundary: "----WebKitFormBoundaryzjK4sVZ2QeZvz5zB",
+        });
+    });
+
+    it("parseContentDisposition", () => {
+        const disposition = parseContentDisposition("attachment; filename=\"hello.txt\"; filename*=UTF-8''hello.txt");
+        deepStrictEqual(disposition, {
+            type: "attachment",
+            filename: "hello.txt",
+        });
+
+        const disposition2 = parseContentDisposition("attachment; filename=\"%E4%BD%A0%E5%A5%BD.txt\"; filename*=UTF-8''%E4%BD%A0%E5%A5%BD.txt");
+        deepStrictEqual(disposition2, {
+            type: "attachment",
+            filename: "你好.txt",
+        });
+
+        const disposition3 = parseContentDisposition("form-data; name=\"field1\"; filename=\"example.txt\"");
+        deepStrictEqual(disposition3, {
+            type: "form-data",
+            name: "field1",
+            filename: "example.txt",
+        });
+
+        const disposition4 = parseContentDisposition("form-data; name=\"field1\"");
+        deepStrictEqual(disposition4, {
+            type: "form-data",
+            name: "field1",
+            filename: undefined,
+        });
+
+        const disposition5 = parseContentDisposition("attachment");
+        deepStrictEqual(disposition5, {
+            type: "attachment",
+            filename: undefined,
+        });
+
+        const disposition6 = parseContentDisposition("inline");
+        deepStrictEqual(disposition6, {
+            type: "inline",
         });
     });
 
@@ -565,9 +606,9 @@ describe("http", () => {
             deepStrictEqual(getCookies(new Request("http://example.com")), []);
         });
 
-        it("Response", () => {
+        it("Response", function () {
             if (typeof Response === "undefined") {
-                return;
+                this.skip();
             }
 
             const headers = new Headers([
@@ -601,9 +642,9 @@ describe("http", () => {
             strictEqual(cookie2, null);
         });
 
-        it("Response", () => {
+        it("Response", function () {
             if (typeof Response === "undefined") {
-                return;
+                this.skip();
             }
 
             const headers = new Headers([
@@ -629,9 +670,9 @@ describe("http", () => {
         });
     });
 
-    it("setCookie", () => {
+    it("setCookie", function () {
         if (typeof Response === "undefined") {
-            return;
+            this.skip();
         }
 
         const headers = new Headers();
@@ -670,9 +711,9 @@ describe("http", () => {
         deepStrictEqual(req.headers.get("Cookie"), "foo=bar; baz=qux");
     });
 
-    it("setFilename", () => {
+    it("setFilename", function () {
         if (typeof Response === "undefined") {
-            return;
+            this.skip();
         }
 
         const headers = new Headers();
@@ -686,6 +727,24 @@ describe("http", () => {
 
         strictEqual(res.headers.get("Content-Disposition"),
             "attachment; filename=\"%E4%BD%A0%E5%A5%BD.txt\"; filename*=UTF-8''%E4%BD%A0%E5%A5%BD.txt");
+    });
+
+    it("getFilename", function () {
+        if (typeof Response === "undefined") {
+            this.skip();
+        }
+
+        const headers = new Headers([
+            ["Content-Disposition", "attachment; filename=\"example.txt\"; filename*=UTF-8''example.txt"]
+        ]);
+        strictEqual(getFilename(headers), "example.txt");
+
+        const res = new Response("Hello, World!", {
+            headers: [
+                ["Content-Disposition", "attachment; filename=\"%E4%BD%A0%E5%A5%BD.txt\"; filename*=UTF-8''%E4%BD%A0%E5%A5%BD.txt"],
+            ],
+        });
+        strictEqual(getFilename(res), "你好.txt");
     });
 
     describe("parseUserAgent", () => {

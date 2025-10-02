@@ -16,7 +16,7 @@ import { sha256 } from './hash.js';
 import { createRequestContext, withHeaders, patchTimingMetrics, listenFetchEvent, renderDirectoryPage, createTimingFunctions, withWeb } from './http/internal.js';
 import { HttpServer, constructNetAddress } from './http/server.js';
 import { parseRange, ifNoneMatch, ifMatch } from './http/util.js';
-export { HTTP_METHODS, HTTP_STATUS, parseAccepts, parseBasicAuth, parseContentType, parseRequest, parseResponse, setFilename, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from './http/util.js';
+export { HTTP_METHODS, HTTP_STATUS, getFilename, parseAccepts, parseBasicAuth, parseContentDisposition, parseContentType, parseRequest, parseResponse, setFilename, stringifyRequest, stringifyResponse, suggestResponseType, verifyBasicAuth } from './http/util.js';
 import { randomPort as randomPort$1 } from './net.js';
 import { readAsArray } from './reader.js';
 import { WebSocketServer } from './ws.js';
