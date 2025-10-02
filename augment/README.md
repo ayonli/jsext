@@ -15,6 +15,7 @@ import "@ayonli/jsext/augment";
 import "@ayonli/jsext/augment/array";
 import "@ayonli/jsext/augment/collections";
 import "@ayonli/jsext/augment/error";
+import "@ayonli/jsext/augment/iterator";
 import "@ayonli/jsext/augment/json";
 import "@ayonli/jsext/augment/math";
 import "@ayonli/jsext/augment/number";
