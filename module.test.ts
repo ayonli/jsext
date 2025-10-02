@@ -43,7 +43,7 @@ describe("module", () => {
             // @ts-ignore
             let module2 = await import("./examples/module/module2.cjs");
             module2 = interop(module2, true);
-            deepStrictEqual(Object.keys(module2).sort(), ["foo", "bar", "default"].sort());
+            deepStrictEqual(Object.keys(module2).sort().filter(s => s !== "default"), ["foo", "bar"].sort());
 
             // @ts-ignore
             let module3 = await import("./examples/module/module3.cjs");

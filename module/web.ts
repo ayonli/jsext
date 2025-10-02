@@ -74,9 +74,16 @@ export function interop<T extends { [x: string]: any; }>(
 
     let exports = module["module.exports"];
 
-    if (typeof exports !== "undefined") {
+    if (isObject(exports) || typeof exports === "function") {
+        const keys = Object.getOwnPropertyNames(module).sort().join(",");
+        if (keys === "default,module.exports" && module["default"] === exports && strict !== false) {
+            return { default: exports } as unknown as T;
+        }
+
         return exports as T;
-    } else if (isExportsObject(exports = module["default"])) {
+    }
+
+    if (isObject(exports = module["default"])) {
         const hasEsModule = module["__esModule"] === true
             || exports["__esModule"] === true;
 
@@ -102,7 +109,7 @@ export function interop<T extends { [x: string]: any; }>(
     return module;
 }
 
-function isExportsObject(module: unknown): module is { [x: string]: unknown; } {
+function isObject(module: unknown): module is { [x: string]: unknown; } {
     return typeof module === "object" && module !== null && !Array.isArray(module);
 }
 
