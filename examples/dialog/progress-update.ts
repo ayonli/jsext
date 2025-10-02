@@ -28,3 +28,4 @@ const result = await progress("Processing...", async (set, signal) => {
 });
 
 console.log(result);
+process.exit(0);

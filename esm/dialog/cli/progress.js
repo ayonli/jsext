@@ -72,33 +72,28 @@ async function handleTerminalProgress(message, fn, options) {
         }
     };
     const denoReader = typeof Deno === "object" ? Deno.stdin.readable.getReader() : null;
-    if (abort) {
-        if (nodeReader) {
-            process.stdin.on("data", nodeReader);
-        }
-        else if (denoReader) {
-            (async () => {
-                while (true) {
-                    try {
-                        const { done, value } = await denoReader.read();
-                        if (done || equals(value, ESC) || equals(value, CTRL_C)) {
-                            signal.aborted || abort();
-                            break;
-                        }
-                    }
-                    catch (_a) {
+    if (nodeReader) {
+        process.stdin.on("data", nodeReader);
+    }
+    else if (denoReader) {
+        (async () => {
+            while (true) {
+                try {
+                    const { done, value } = await denoReader.read();
+                    if (done || equals(value, ESC) || equals(value, CTRL_C)) {
                         signal.aborted || abort();
                         break;
                     }
                 }
-                denoReader.releaseLock();
-            })();
-        }
+                catch (_a) {
+                    signal.aborted || abort();
+                    break;
+                }
+            }
+            denoReader.releaseLock();
+        })();
     }
-    let job = fn(set, signal);
-    if (listenForAbort) {
-        job = Promise.race([job, listenForAbort()]);
-    }
+    const job = Promise.race([fn(set, signal), listenForAbort()]);
     try {
         return await job;
     }
@@ -154,5 +149,5 @@ async function progress(message, fn, onAbort = undefined) {
     }));
 }
 
-export { progress as default, handleTerminalProgress };
+export { progress as default };
 //# sourceMappingURL=progress.js.map

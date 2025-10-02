@@ -24,13 +24,13 @@ const ongoingIndicators = [
     "      ",
 ];
 
-export async function handleTerminalProgress(
+async function handleTerminalProgress(
     message: string,
     fn: ProgressFunc<any>,
     options: {
         signal: AbortSignal;
-        abort?: (() => void) | undefined;
-        listenForAbort?: (() => Promise<any>) | undefined;
+        abort: () => void;
+        listenForAbort: () => Promise<any>;
     }
 ) {
     const { signal, abort, listenForAbort } = options;
@@ -89,35 +89,29 @@ export async function handleTerminalProgress(
     };
     const denoReader = typeof Deno === "object" ? Deno.stdin.readable.getReader() : null;
 
-    if (abort) {
-        if (nodeReader) {
-            process.stdin.on("data", nodeReader);
-        } else if (denoReader) {
-            (async () => {
-                while (true) {
-                    try {
-                        const { done, value } = await denoReader.read();
+    if (nodeReader) {
+        process.stdin.on("data", nodeReader);
+    } else if (denoReader) {
+        (async () => {
+            while (true) {
+                try {
+                    const { done, value } = await denoReader.read();
 
-                        if (done || equals(value, ESC) || equals(value, CTRL_C)) {
-                            signal.aborted || abort();
-                            break;
-                        }
-                    } catch {
+                    if (done || equals(value, ESC) || equals(value, CTRL_C)) {
                         signal.aborted || abort();
                         break;
                     }
+                } catch {
+                    signal.aborted || abort();
+                    break;
                 }
+            }
 
-                denoReader.releaseLock();
-            })();
-        }
+            denoReader.releaseLock();
+        })();
     }
 
-    let job = fn(set, signal);
-
-    if (listenForAbort) {
-        job = Promise.race([job, listenForAbort()]);
-    }
+    const job = Promise.race([fn(set, signal), listenForAbort()]);
 
     try {
         return await job;

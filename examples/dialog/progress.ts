@@ -8,3 +8,4 @@ const result = await progress("Processing...", async () => {
 });
 
 console.log(result);
+process.exit(0);
