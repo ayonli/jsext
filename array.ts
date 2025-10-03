@@ -236,7 +236,7 @@ export function unique<T>(arr: T[]): T[] {
  * // ]
  * ```
  */
-export function uniqueBy<T, K extends string | number | symbol>(
+export function uniqueBy<T, K>(
     arr: T[],
     fn: (item: T, i: number) => K
 ): T[] {

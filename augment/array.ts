@@ -53,7 +53,7 @@ declare global {
          * Returns a subset of the array that contains only unique items filtered by the
          * given callback function.
          */
-        uniqueBy<K extends string | number | symbol>(fn: (item: T, i: number) => K): T[];
+        uniqueBy<K>(fn: (item: T, i: number) => K): T[];
         /**
          * Reorganizes the elements in the array in random order.
          * 

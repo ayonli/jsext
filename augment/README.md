@@ -41,7 +41,7 @@ import "@ayonli/jsext/augment/types";
     - `split(delimiter: T): T[][]`
     - `chunk(length: number): T[][]`
     - `unique(): T[]`
-    - `uniqueBy<K extends string | number | symbol>(fn: (item: T, i: number) => K): T[]`
+    - `uniqueBy<K>(fn: (item: T, i: number) => K): T[]`
     - `shuffle(): T[]`
     - `toShuffled(): T[]`
     - `toReversed(): T[]`
@@ -90,15 +90,29 @@ _These types are augmented to the global scope._
 
 ### Augment Iterator
 
-- `Iterator`
+- `Iterator<T, TReturn, TNext>`
   - `prototype`
-    - `concat(...others: Iterator<T>[]): IteratorObject<T, undefined, unknown>`
     - `filterMap<U>(fn: (item: T, i: number) => U | null | undefined): IteratorObject<U, undefined, unknown>`
-    - `inspect(fn: (item: T, i: number) => void): IteratorObject<T, undefined, unknown>`
+    - `dropWhile(predicate: (item: T, i: number) => boolean): IteratorObject<T, undefined, unknown>`
+    - `takeWhile(predicate: (item: T, i: number) => boolean): IteratorObject<T, undefined, unknown>`
     - `stepBy(step: number): IteratorObject<T, undefined, unknown>`
+    - `unique(): IteratorObject<T, undefined, unknown>`
+    - `uniqueBy<K>(fn: (item: T) => K): IteratorObject<T, undefined, unknown>`
     - `chunk(size: number): IteratorObject<T[], undefined, unknown>`
-    - `enumerate(): IteratorObject<[number, T], undefined, unknown>`
+    - `partition(predicate: (item: T, i: number) => boolean): [T[], T[]]`
     - `zip<U>(other: IteratorObject<U, unknown, undefined>): IteratorObject<[T, U], undefined, unknown>`
+    - `unzip<A, B>(this: IteratorObject<[A, B], TReturn, TNext>): [A[], B[]]`
+    - `flat<T>(this: IteratorObject<T | T[], TReturn, TNext>): IteratorObject<T, undefined, unknown>`
+    - `concat(...others: Iterator<T>[]): IteratorObject<T, undefined, unknown>`
+    - `inspect(fn: (item: T, i: number) => void): IteratorObject<T, undefined, unknown>`
+    - `enumerate(): IteratorObject<[number, T], undefined, unknown>`
+    - `nth(n: number): T | undefined`
+    - `last(): T | undefined`
+    - `min(this: IteratorObject<number | string, TReturn, TNext>): T | undefined`
+    - `max(this: IteratorObject<number | string, TReturn, TNext>): T | undefined`
+    - `avg(this: IteratorObject<number, TReturn, TNext>): number | undefined`
+    - `sum(this: IteratorObject<number, TReturn, TNext>): number`
+    - `product(this: IteratorObject<number, TReturn, TNext>): number`
 
 ### Augment JSON
 
