@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        runner: [ ubuntu-latest ]
+        runner: [ ubuntu-latest, windows-latest ]
 
     steps:
       - uses: actions/checkout@v4
