@@ -369,7 +369,8 @@ function partition(arr, predicate) {
 }
 /**
  * Returns a new array containing the results of applying the given predicate
- * function to each element of the array, filtering out any `undefined` results.
+ * function to each element of the array, filtering out any `null` and `undefined`
+ * results.
  *
  * @example
  * ```ts
