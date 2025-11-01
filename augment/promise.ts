@@ -1,4 +1,4 @@
-import { after, pace, sleep, timeout, until, select } from "../async.ts";
+import { after, pace, sleep, timeout, until, select, yieldNow } from "../async.ts";
 
 declare global {
     interface PromiseConstructor {
@@ -26,6 +26,13 @@ declare global {
             tasks: (PromiseLike<T> | ((signal: AbortSignal) => PromiseLike<T>))[],
             signal?: AbortSignal | undefined
         ): Promise<T>;
+        /**
+         * Yields control to the event loop, allowing other tasks to run.
+         * 
+         * This function uses the experimental `scheduler.yield()` API if available,
+         * otherwise it falls back to a zero-delay `setTimeout` call.
+         */
+        yieldNow(): Promise<void>;
     }
 }
 
@@ -35,3 +42,4 @@ Promise.pace = pace;
 Promise.sleep = sleep;
 Promise.until = until;
 Promise.select = select;
+Promise.yieldNow = yieldNow;

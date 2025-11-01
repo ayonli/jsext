@@ -17,7 +17,6 @@
         "noFallthroughCasesInSwitch": true,
         "noPropertyAccessFromIndexSignature": true,
         "noUncheckedIndexedAccess": true,
-        "exactOptionalPropertyTypes": true,
         "experimentalDecorators": true,
         "isolatedModules": true,
         "skipLibCheck": true,

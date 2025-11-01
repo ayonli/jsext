@@ -130,7 +130,6 @@ async function saveFile(file, options = {}) {
     }
 }
 async function downloadFile(url, options = {}) {
-    var _a;
     const src = typeof url === "object" ? url.href : url;
     const name = options.name || basename(src);
     const dest = await pickFile({
@@ -142,7 +141,7 @@ async function downloadFile(url, options = {}) {
     if (!dest) // user canceled
         return;
     const task = asyncTask();
-    let signal = (_a = options.signal) !== null && _a !== void 0 ? _a : null;
+    let signal = options.signal;
     let result;
     let updateProgress;
     if (options.showProgress) {
@@ -193,7 +192,7 @@ async function downloadFile(url, options = {}) {
         });
         stream = stream.pipeThrough(transform);
     }
-    writeFile(dest, stream, { signal: signal }).then(() => {
+    writeFile(dest, stream, { signal }).then(() => {
         task.resolve();
     }).catch(err => {
         task.reject(err);

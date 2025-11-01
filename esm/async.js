@@ -301,6 +301,22 @@ function abortWith(_parent, options = undefined) {
     }
     return ctrl;
 }
+/**
+ * Yields control to the event loop, allowing other tasks to run.
+ *
+ * This function uses the experimental `scheduler.yield()` API if available,
+ * otherwise it falls back to a zero-delay `setTimeout` call.
+ */
+async function yieldNow() {
+    // @ts-ignore experimental Web API
+    if (typeof scheduler === "object" && typeof scheduler.yield === "function") {
+        // @ts-ignore experimental Web API
+        await scheduler.yield();
+    }
+    else {
+        await sleep(0);
+    }
+}
 
-export { abortWith, abortable, after, asyncTask, pace, select, sleep, timeout, until };
+export { abortWith, abortable, after, asyncTask, pace, select, sleep, timeout, until, yieldNow };
 //# sourceMappingURL=async.js.map

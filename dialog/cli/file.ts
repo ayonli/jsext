@@ -174,7 +174,7 @@ export async function downloadFile(
         return;
 
     const task = asyncTask<void>();
-    let signal = options.signal ?? null;
+    let signal = options.signal;
     let result: Promise<void | null>;
     let updateProgress: ((state: ProgressState) => void) | undefined;
 
@@ -234,7 +234,7 @@ export async function downloadFile(
         stream = stream.pipeThrough(transform);
     }
 
-    writeFile(dest, stream, { signal: signal! }).then(() => {
+    writeFile(dest, stream, { signal }).then(() => {
         task.resolve();
     }).catch(err => {
         task.reject(err);

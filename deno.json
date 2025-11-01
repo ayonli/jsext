@@ -1,9 +1,10 @@
 {
     "name": "@ayonli/jsext",
-    "version": "1.9.0",
+    "version": "1.9.1",
     "exports": {
         ".": "./index.ts",
         "./archive": "./archive.ts",
+        "./augment": "./augment.ts",
         "./array": "./array.ts",
         "./async": "./async.ts",
         "./bytes": "./bytes.ts",
@@ -79,8 +80,6 @@
             "**/*.test.ts",
             "*/augment.ts",
             "*/index.ts",
-            "augment.ts",
-            "augment/*",
             "workerd/*",
             "!workerd/types.ts",
             "worker-node.ts",

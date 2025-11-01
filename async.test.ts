@@ -1,6 +1,6 @@
 import "./augment.ts";
 import { deepStrictEqual, ok, strictEqual } from "node:assert";
-import { asyncTask, abortable, sleep, abortWith, pace, timeout, until, select } from "./async.ts";
+import { asyncTask, abortable, sleep, abortWith, pace, timeout, until, select, yieldNow } from "./async.ts";
 import { isNodeBelow16 } from "./env.ts";
 import { as } from "./object.ts";
 import { try_ } from "./result.ts";
@@ -709,5 +709,19 @@ describe("async", () => {
             strictEqual((err as Error)?.name, "TypeError");
             strictEqual(child4, undefined);
         });
+    });
+
+    it("yieldNow", async () => {
+        let value = 0;
+        const job = async () => {
+            value = 1;
+            await yieldNow();
+            value = 2;
+        };
+
+        const promise = job();
+        strictEqual(value, 1);
+        await promise;
+        strictEqual(value, 2);
     });
 });

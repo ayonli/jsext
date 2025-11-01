@@ -462,14 +462,14 @@ export interface ParseOptions {
  * ```
  */
 export function parseArgs(args: string[], options: ParseOptions = {}): {
-    [key: string]: string | number | boolean | (string | number | boolean)[];
-    [x: number]: string | number | boolean;
+    [key: string]: string | number | boolean | (string | number | boolean)[] | undefined;
+    [x: number]: string | number | boolean | undefined;
     "--"?: string[];
 } {
     const { alias: alias = {}, lists = [], noCoercion = false } = options;
     const result: {
-        [key: string]: string | number | boolean | (string | number | boolean)[];
-        [x: number]: string | number | boolean;
+        [key: string]: string | number | boolean | (string | number | boolean)[] | undefined;
+        [x: number]: string | number | boolean | undefined;
         "--"?: string[];
     } = {};
     let key: string | null = null;

@@ -188,6 +188,7 @@ _These types are augmented to the global scope._
   - `sleep(ms: number): Promise<void>`
   - `until<T>(test: () => T | Promise<T>): Promise<T extends false | null | undefined ? never : T>`
   - `select<T>(tasks: ((signal: AbortSignal) => Promise<T>)[]): Promise<T>`
+  - `yieldNow(): Promise<void>`
 
 ### Augment String
 
