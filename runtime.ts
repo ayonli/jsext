@@ -418,9 +418,9 @@ const shutdownListeners: ((event: CloseEvent) => void | Promise<void>)[] = [];
 
 /**
  * Adds a listener function to be called when the program receives a `SIGINT`
- * (`Ctrl+C`) signal, or a `shutdown` message sent by the parent process (a
- * **PM2** pattern for Windows), so that the program can perform a graceful
- * shutdown.
+ * (`Ctrl+C`) signal or a `SIGTERM` signal, or a `shutdown` message sent by the
+ * parent process (a **PM2** pattern for Windows), so that the program can
+ * perform a graceful shutdown.
  * 
  * This function can be called multiple times to register multiple listeners,
  * they will be executed in the order they were added, and any asynchronous
@@ -502,8 +502,10 @@ export function addShutdownListener(fn: (event: CloseEvent) => void | Promise<vo
 
     if (isDeno) {
         Deno.addSignalListener("SIGINT", shutdownListener);
+        Deno.addSignalListener("SIGTERM", shutdownListener);
     } else {
         process.on("SIGINT", shutdownListener);
+        process.on("SIGTERM", shutdownListener);
 
         if (platform() === "windows") {
             process.on("message", message => {

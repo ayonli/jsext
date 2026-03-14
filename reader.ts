@@ -350,7 +350,7 @@ export function concat<T>(
         return new ReadableStream<T>({
             async pull(controller) {
                 try {
-                    let { done, value } = await reader!.read();
+                    const { done, value } = await reader!.read();
 
                     if (!done) {
                         controller.enqueue(value);
